@@ -19,7 +19,7 @@ import {
 import { getRandomColor } from "@packages/utils/colors";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Tag, X } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { IconName } from "@/features/icon-selector/lib/available-icons";
 import { IconDisplay } from "@/features/icon-selector/ui/icon-display";
@@ -56,13 +56,15 @@ export function ChangeBillCategoryForm({
 
 	// Update selectedTagIds when billTags loads
 	const initialTagIds = billTags.map((t) => t.id);
-	if (
-		billTags.length > 0 &&
-		selectedTagIds.length === 0 &&
-		initialTagIds.length > 0
-	) {
-		setSelectedTagIds(initialTagIds);
-	}
+	useEffect(() => {
+		if (
+			billTags.length > 0 &&
+			selectedTagIds.length === 0 &&
+			initialTagIds.length > 0
+		) {
+			setSelectedTagIds(initialTagIds);
+		}
+	}, [billTags, initialTagIds, selectedTagIds]);
 
 	const { data: allCategories = [] } = useQuery(
 		trpc.categories.getAll.queryOptions(),
