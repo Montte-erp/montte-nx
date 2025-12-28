@@ -9,6 +9,7 @@ import {
    ChevronRightIcon,
 } from "lucide-react";
 import * as React from "react";
+import { ptBR } from "react-day-picker/locale";
 import {
    type DayButton,
    DayPicker,
@@ -177,6 +178,7 @@ function Calendar({
             },
             ...components,
          }}
+         locale={ptBR}
          formatters={{
             formatMonthDropdown: (date) => formatDate(date, "MMM"),
             ...formatters,

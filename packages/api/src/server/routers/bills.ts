@@ -860,7 +860,25 @@ export const billRouter = router({
          }
 
          if (existingBill.completionDate) {
-            throw APIError.conflict("Cannot edit completed bill");
+            const metadataFields = new Set([
+               "notes",
+               "categoryId",
+               "tagIds",
+               "counterpartyId",
+               "costCenterId",
+            ]);
+            const requestedFields = Object.keys(input.data).filter(
+               (key) =>
+                  input.data[key as keyof typeof input.data] !== undefined,
+            );
+            const hasNonMetadataField = requestedFields.some(
+               (field) => !metadataFields.has(field),
+            );
+            if (hasNonMetadataField) {
+               throw APIError.conflict(
+                  "Cannot edit financial fields on completed bill. Only metadata (notes, category, tags, counterparty, cost center) can be updated.",
+               );
+            }
          }
 
          const updateData: Partial<NewBill> = {};

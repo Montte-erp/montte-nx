@@ -106,7 +106,9 @@
       "label": "Nome",
       "placeholder": "Digite seu nome completo"
    },
+   "none": "Nenhum",
    "notes": {
+      "description": "Adicione informações adicionais ou lembretes",
       "label": "Observações",
       "placeholder": "Digite suas observações"
    },

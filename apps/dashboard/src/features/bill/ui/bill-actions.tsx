@@ -38,6 +38,7 @@ export function BillActions({
       handleDelete,
       handleDuplicate,
       handleEdit,
+      handleEditMetadata,
       handleLinkFile,
       handleMarkAsRecurrent,
    } = useBillActions(bill, { onDeleteSuccess });
@@ -48,7 +49,7 @@ export function BillActions({
    return (
       <div className="flex flex-wrap items-center gap-2">
          {/* Primary Actions */}
-         {!isCompleted && (
+         {!isCompleted ? (
             <>
                <CompleteBillDialog bill={bill}>
                   <Button size="sm" variant="outline">
@@ -63,6 +64,11 @@ export function BillActions({
                   {translate("dashboard.routes.bills.actions.edit")}
                </Button>
             </>
+         ) : (
+            <Button onClick={handleEditMetadata} size="sm" variant="outline">
+               <Pencil className="size-4" />
+               {translate("dashboard.routes.bills.actions.edit-metadata")}
+            </Button>
          )}
 
          {/* Management Actions */}

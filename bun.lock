@@ -243,7 +243,7 @@
       "name": "@packages/api",
       "version": "0.9.1",
       "dependencies": {
-        "@f-o-t/condition-evaluator": "workspace:*",
+        "@f-o-t/condition-evaluator": "2.0.0",
         "@f-o-t/rules-engine": "workspace:*",
         "@packages/arcjet": "workspace:*",
         "@packages/authentication": "workspace:*",
@@ -616,7 +616,7 @@
       "name": "@packages/workflows",
       "version": "0.1.0",
       "dependencies": {
-        "@f-o-t/condition-evaluator": "workspace:*",
+        "@f-o-t/condition-evaluator": "2.0.0",
         "@f-o-t/rules-engine": "workspace:*",
         "@packages/database": "workspace:*",
         "@packages/queue": "workspace:*",
