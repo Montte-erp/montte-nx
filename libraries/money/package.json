@@ -3,7 +3,7 @@
       "url": "https://github.com/F-O-T/montte-nx/issues"
    },
    "dependencies": {
-      "@f-o-t/condition-evaluator": "workspace:*",
+      "@f-o-t/condition-evaluator": "2.0.0",
       "zod": "4.2.1"
    },
    "description": "Type-safe money handling library with BigInt precision and ISO 4217 currency support",

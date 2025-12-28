@@ -1,6 +1,6 @@
 {
    "dependencies": {
-      "@f-o-t/condition-evaluator": "workspace:*",
+      "@f-o-t/condition-evaluator": "2.0.0",
       "@f-o-t/rules-engine": "workspace:*",
       "@packages/arcjet": "workspace:*",
       "@packages/authentication": "workspace:*",
@@ -16,7 +16,6 @@
       "@packages/posthog": "workspace:*",
       "@packages/workflows": "workspace:*",
       "@packages/utils": "workspace:*",
-
       "@trpc/client": "catalog:trpc",
       "@trpc/server": "catalog:trpc",
       "superjson": "catalog:trpc",

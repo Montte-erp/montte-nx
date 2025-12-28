@@ -10,7 +10,7 @@
       "typecheck": "tsc"
    },
    "dependencies": {
-      "@f-o-t/condition-evaluator": "workspace:*",
+      "@f-o-t/condition-evaluator": "2.0.0",
       "@f-o-t/rules-engine": "workspace:*",
       "@packages/database": "workspace:*",
       "@packages/queue": "workspace:*"
