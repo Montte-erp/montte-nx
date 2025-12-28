@@ -287,7 +287,12 @@
             },
             "preview": "{{count}} parcelas de {{value}}",
             "title": "Parcelamento",
-            "totalAmount": "Total: {{amount}}"
+            "totalAmount": "Total: {{amount}}",
+            "validation": {
+               "excess": "Excesso de {{amount}}",
+               "remaining": "Falta {{amount}}",
+               "total": "Total"
+            }
          },
          "noCategoryFound": "Nenhuma categoria encontrada",
          "placeholders": {
