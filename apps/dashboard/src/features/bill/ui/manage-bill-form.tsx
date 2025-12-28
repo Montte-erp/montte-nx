@@ -124,6 +124,22 @@ const allSteps: Array<{ id: StepId; title: string }> = [
 
 const { Stepper } = defineStepper(...allSteps);
 
+function getCustomAmountsValidation(
+   amount: number,
+   installmentAmountType: string | null,
+   installmentCustomAmounts: (number | null)[] | null,
+) {
+   const customAmountsSum = (installmentCustomAmounts || []).reduce(
+      (sum, val) => sum + (val || 0),
+      0,
+   );
+   const amountDifference = amount - customAmountsSum;
+   const isValid =
+      installmentAmountType !== "custom" || Math.abs(amountDifference) < 0.01;
+
+   return { customAmountsSum, amountDifference, isValid };
+}
+
 function getActiveSteps(
    billCategory: BillCategory | null,
    billMode: BillMode | null,
@@ -1012,15 +1028,12 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                occurrenceUntilDate,
                recurrencePattern,
             }) => {
-               // Custom amounts validation
-               const customAmountsSum = (installmentCustomAmounts || []).reduce(
-                  (sum, val) => sum + (val || 0),
-                  0,
-               );
-               const amountDifference = amount - customAmountsSum;
-               const isCustomAmountsValid =
-                  installmentAmountType !== "custom" ||
-                  Math.abs(amountDifference) < 0.01;
+               const { customAmountsSum, amountDifference, isValid: isCustomAmountsValid } =
+                  getCustomAmountsValidation(
+                     amount,
+                     installmentAmountType,
+                     installmentCustomAmounts,
+                  );
 
                return (
                <div className="space-y-4">
@@ -2563,13 +2576,12 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                               installmentAmountType,
                               installmentCustomAmounts,
                            }) => {
-                              const customAmountsSum = (
-                                 installmentCustomAmounts || []
-                              ).reduce((sum, val) => sum + (val || 0), 0);
-                              const amountDifference = amount - customAmountsSum;
-                              const isCustomAmountsValid =
-                                 installmentAmountType !== "custom" ||
-                                 Math.abs(amountDifference) < 0.01;
+                              const { customAmountsSum, amountDifference, isValid: isCustomAmountsValid } =
+                                 getCustomAmountsValidation(
+                                    amount,
+                                    installmentAmountType,
+                                    installmentCustomAmounts,
+                                 );
 
                               return (
                                  <>
