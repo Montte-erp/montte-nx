@@ -1,6 +1,6 @@
 import type { Bill } from "@packages/database/repositories/bill-repository";
 import { translate } from "@packages/localization";
-import { formatCurrency, formatDecimalCurrency } from "@packages/money";
+import { formatDecimalCurrency } from "@packages/money";
 import {
    Alert,
    AlertDescription,
@@ -2375,10 +2375,11 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
    return (
       <Stepper.Provider className="h-full" initialStep={activeSteps[0]}>
          {({ methods }) => {
+            const currentId = methods.current.id;
+
             const goToNextStep = () => {
-               const currentIndex = activeSteps.indexOf(
-                  methods.current.id as StepId,
-               );
+               if (currentId === undefined) return;
+               const currentIndex = activeSteps.indexOf(currentId as StepId);
                const nextIndex = currentIndex + 1;
                if (nextIndex < activeSteps.length) {
                   methods.goTo(activeSteps[nextIndex]);
@@ -2386,9 +2387,8 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
             };
 
             const goToPrevStep = () => {
-               const currentIndex = activeSteps.indexOf(
-                  methods.current.id as StepId,
-               );
+               if (currentId === undefined) return;
+               const currentIndex = activeSteps.indexOf(currentId as StepId);
                const prevIndex = currentIndex - 1;
                if (prevIndex >= 0) {
                   methods.goTo(activeSteps[prevIndex]);
@@ -2396,7 +2396,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
             };
 
             const isLastActiveStep =
-               methods.current.id === activeSteps[activeSteps.length - 1];
+               currentId === activeSteps[activeSteps.length - 1];
 
             return (
             <form className="h-full flex flex-col" onSubmit={handleSubmit}>
