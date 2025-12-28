@@ -1,10 +1,11 @@
 {
    "actions": {
-      "change-category": "Alterar Categoria",
+      "change-category": "Categorizar",
       "create-installments": "Criar Parcelas",
       "delete": "Excluir",
       "duplicate": "Duplicar",
       "edit": "Editar",
+      "edit-metadata": "Editar",
       "label": "Ações",
       "link-file": "Anexar Arquivo",
       "mark-as-recurrent": "Tornar Recorrente",
@@ -81,8 +82,10 @@
    },
    "features": {
       "change-category": {
-         "description": "Altere a categoria desta conta",
-         "title": "Alterar Categoria"
+         "description": "Associe categoria, tags e centro de custo a esta conta",
+         "error": "Erro ao atualizar categorização",
+         "success": "Categorização atualizada com sucesso",
+         "title": "Categorizar Conta"
       },
       "duplicate-bill": {
          "date-options": {
@@ -330,6 +333,13 @@
          "success": "Conta atualizada com sucesso",
          "title": "Editar Conta",
          "updating": "Atualizando..."
+      },
+      "edit-metadata": {
+         "description": "Atualize o fornecedor/cliente e observações desta conta.",
+         "error": "Erro ao atualizar conta",
+         "no-changes": "Nenhuma alteração detectada",
+         "success": "Conta atualizada com sucesso",
+         "title": "Editar Conta"
       },
       "from-transaction": {
          "description": "Crie uma conta a pagar/receber recorrente baseada nesta transação",

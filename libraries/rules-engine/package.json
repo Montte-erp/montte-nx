@@ -4,7 +4,7 @@
    },
    "description": "Type-safe, functional rules orchestration engine for TypeScript",
    "dependencies": {
-      "@f-o-t/condition-evaluator": "2.0.0",
+      "@f-o-t/condition-evaluator": "workspace:*",
       "zod": "4.2.1"
    },
    "devDependencies": {

@@ -4,6 +4,7 @@ import { useDeleteBillDialog } from "../hooks/use-delete-bill-dialog";
 import { ChangeBillCategoryForm } from "../ui/change-bill-category-form";
 import { CreateInstallmentsForm } from "../ui/create-installments-form";
 import { DuplicateBillSheet } from "../ui/duplicate-bill-sheet";
+import { EditBillMetadataForm } from "../ui/edit-bill-metadata-form";
 import { LinkFileBillForm } from "../ui/link-file-bill-form";
 import { ManageBillForm } from "../ui/manage-bill-form";
 import { MarkAsRecurrentForm } from "../ui/mark-as-recurrent-form";
@@ -75,6 +76,12 @@ export function useBillActions(bill: Bill, options?: UseBillActionsOptions) {
       });
    };
 
+   const handleEditMetadata = () => {
+      openSheet({
+         children: <EditBillMetadataForm bill={bill} onSuccess={closeSheet} />,
+      });
+   };
+
    const handleComplete = () => {
       // CompleteBillDialog is used as a wrapper component with children
       // This function is for programmatic opening if needed
@@ -87,6 +94,7 @@ export function useBillActions(bill: Bill, options?: UseBillActionsOptions) {
       handleDelete: handleDeleteBill,
       handleDuplicate,
       handleEdit,
+      handleEditMetadata,
       handleLinkFile,
       handleMarkAsRecurrent,
    };
