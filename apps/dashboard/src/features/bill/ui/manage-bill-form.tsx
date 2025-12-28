@@ -2548,6 +2548,80 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                               </>
                            )}
                         </form.Subscribe>
+                     ) : methods.current.id === "recurrence" ? (
+                        <form.Subscribe
+                           selector={(state) => ({
+                              amount: state.values.amount,
+                              installmentAmountType:
+                                 state.values.installmentAmountType,
+                              installmentCustomAmounts:
+                                 state.values.installmentCustomAmounts,
+                           })}
+                        >
+                           {({
+                              amount,
+                              installmentAmountType,
+                              installmentCustomAmounts,
+                           }) => {
+                              const customAmountsSum = (
+                                 installmentCustomAmounts || []
+                              ).reduce((sum, val) => sum + (val || 0), 0);
+                              const amountDifference = amount - customAmountsSum;
+                              const isCustomAmountsValid =
+                                 installmentAmountType !== "custom" ||
+                                 Math.abs(amountDifference) < 0.01;
+
+                              return (
+                                 <>
+                                    <Button
+                                       className="w-full"
+                                       onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          goToPrevStep();
+                                       }}
+                                       type="button"
+                                       variant="ghost"
+                                    >
+                                       {translate("common.actions.previous")}
+                                    </Button>
+                                    <Button
+                                       className="w-full"
+                                       disabled={!isCustomAmountsValid}
+                                       onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          goToNextStep();
+                                       }}
+                                       type="button"
+                                    >
+                                       {translate("common.actions.next")}
+                                    </Button>
+                                    {!isCustomAmountsValid && (
+                                       <p className="text-xs text-destructive text-center">
+                                          {amountDifference > 0
+                                             ? translate(
+                                                  "dashboard.routes.bills.features.create-bill.installments.validation.remaining",
+                                                  {
+                                                     amount: formatDecimalCurrency(
+                                                        amountDifference,
+                                                     ),
+                                                  },
+                                               )
+                                             : translate(
+                                                  "dashboard.routes.bills.features.create-bill.installments.validation.excess",
+                                                  {
+                                                     amount: formatDecimalCurrency(
+                                                        Math.abs(amountDifference),
+                                                     ),
+                                                  },
+                                               )}
+                                       </p>
+                                    )}
+                                 </>
+                              );
+                           }}
+                        </form.Subscribe>
                      ) : isLastActiveStep ? (
                         <form.Subscribe
                            selector={(state) => ({
