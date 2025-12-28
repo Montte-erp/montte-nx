@@ -1,6 +1,6 @@
 import type { Bill } from "@packages/database/repositories/bill-repository";
 import { translate } from "@packages/localization";
-import { formatCurrency } from "@packages/money";
+import { formatCurrency, formatDecimalCurrency } from "@packages/money";
 import {
    Alert,
    AlertDescription,
@@ -77,7 +77,14 @@ import {
    Receipt,
    Repeat,
 } from "lucide-react";
-import { type FormEvent, useCallback, useMemo, useState } from "react";
+import {
+   type FormEvent,
+   type RefObject,
+   useCallback,
+   useMemo,
+   useRef,
+   useState,
+} from "react";
 import { z } from "zod";
 import type { IconName } from "@/features/icon-selector/lib/available-icons";
 import { IconDisplay } from "@/features/icon-selector/ui/icon-display";
@@ -138,8 +145,8 @@ function getActiveSteps(
       return ["bill-type", "bill-mode", "details", "categorization"];
    }
 
-   // recurring or installment - recurrence config comes before details
-   return ["bill-type", "bill-mode", "recurrence", "details", "categorization"];
+   // recurring or installment - details comes before recurrence config
+   return ["bill-type", "bill-mode", "details", "recurrence", "categorization"];
 }
 
 export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
@@ -955,6 +962,29 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
       const [installmentSection, setInstallmentSection] =
          useState<InstallmentSection>("count");
 
+      // Refs for auto-scroll on mobile
+      const frequencySectionRef = useRef<HTMLDivElement>(null);
+      const occurrenceSectionRef = useRef<HTMLDivElement>(null);
+      const countSectionRef = useRef<HTMLDivElement>(null);
+      const intervalSectionRef = useRef<HTMLDivElement>(null);
+      const amountsSectionRef = useRef<HTMLDivElement>(null);
+
+      const scrollToSection = useCallback(
+         (ref: RefObject<HTMLDivElement | null>) => {
+            requestAnimationFrame(() => {
+               ref.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+               });
+               const focusable = ref.current?.querySelector<HTMLElement>(
+                  'input, button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+               );
+               focusable?.focus({ preventScroll: true });
+            });
+         },
+         [],
+      );
+
       return (
          <form.Subscribe
             selector={(state) => ({
@@ -962,6 +992,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                billMode: state.values.billMode,
                installmentAmountType: state.values.installmentAmountType,
                installmentCount: state.values.installmentCount,
+               installmentCustomAmounts: state.values.installmentCustomAmounts,
                installmentIntervalType: state.values.installmentIntervalType,
                occurrenceCount: state.values.occurrenceCount,
                occurrenceType: state.values.occurrenceType,
@@ -974,24 +1005,39 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                billMode,
                installmentAmountType,
                installmentCount,
+               installmentCustomAmounts,
                installmentIntervalType,
                occurrenceCount,
                occurrenceType,
                occurrenceUntilDate,
                recurrencePattern,
-            }) => (
+            }) => {
+               // Custom amounts validation
+               const customAmountsSum = (installmentCustomAmounts || []).reduce(
+                  (sum, val) => sum + (val || 0),
+                  0,
+               );
+               const amountDifference = amount - customAmountsSum;
+               const isCustomAmountsValid =
+                  installmentAmountType !== "custom" ||
+                  Math.abs(amountDifference) < 0.01;
+
+               return (
                <div className="space-y-4">
                   {billMode === "recurring" && (
                      <>
                         {/* Step 1: Frequency */}
-                        <Collapsible
-                           onOpenChange={(open) => {
-                              if (open) setRecurringSection("frequency");
-                              else if (recurrencePattern)
-                                 setRecurringSection("occurrence");
-                           }}
-                           open={recurringSection === "frequency"}
-                        >
+                        <div ref={frequencySectionRef}>
+                           <Collapsible
+                              onOpenChange={(open) => {
+                                 if (open) setRecurringSection("frequency");
+                                 else if (recurrencePattern) {
+                                    setRecurringSection("occurrence");
+                                    scrollToSection(occurrenceSectionRef);
+                                 }
+                              }}
+                              open={recurringSection === "frequency"}
+                           >
                            <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
                               <div className="flex items-center gap-3">
                                  <div
@@ -1073,19 +1119,21 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                               </div>
                            </CollapsibleContent>
                         </Collapsible>
+                        </div>
 
                         {/* Step 2: Occurrence */}
-                        <Collapsible
-                           onOpenChange={(open) => {
-                              if (open && recurrencePattern)
-                                 setRecurringSection("occurrence");
-                              else if (occurrenceType)
-                                 setRecurringSection("review");
-                              else if (recurrencePattern)
-                                 setRecurringSection("frequency");
-                           }}
-                           open={recurringSection === "occurrence"}
-                        >
+                        <div ref={occurrenceSectionRef}>
+                           <Collapsible
+                              onOpenChange={(open) => {
+                                 if (open && recurrencePattern)
+                                    setRecurringSection("occurrence");
+                                 else if (occurrenceType)
+                                    setRecurringSection("review");
+                                 else if (recurrencePattern)
+                                    setRecurringSection("frequency");
+                              }}
+                              open={recurringSection === "occurrence"}
+                           >
                            <CollapsibleTrigger
                               className={`flex w-full items-center justify-between rounded-lg border p-4 transition-colors ${
                                  recurrencePattern
@@ -1257,6 +1305,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                               </div>
                            </CollapsibleContent>
                         </Collapsible>
+                        </div>
 
                         {/* Preview - Shows when all steps are complete */}
                         {recurrencePattern &&
@@ -1296,14 +1345,17 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                   {billMode === "installment" && (
                      <>
                         {/* Step 1: Count */}
-                        <Collapsible
-                           onOpenChange={(open) => {
-                              if (open) setInstallmentSection("count");
-                              else if (installmentCount > 0)
-                                 setInstallmentSection("interval");
-                           }}
-                           open={installmentSection === "count"}
-                        >
+                        <div ref={countSectionRef}>
+                           <Collapsible
+                              onOpenChange={(open) => {
+                                 if (open) setInstallmentSection("count");
+                                 else if (installmentCount > 0) {
+                                    setInstallmentSection("interval");
+                                    scrollToSection(intervalSectionRef);
+                                 }
+                              }}
+                              open={installmentSection === "count"}
+                           >
                            <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
                               <div className="flex items-center gap-3">
                                  <div
@@ -1427,16 +1479,20 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                               </div>
                            </CollapsibleContent>
                         </Collapsible>
+                        </div>
 
                         {/* Step 2: Interval */}
-                        <Collapsible
-                           onOpenChange={(open) => {
-                              if (open) setInstallmentSection("interval");
-                              else if (installmentIntervalType)
-                                 setInstallmentSection("amounts");
-                           }}
-                           open={installmentSection === "interval"}
-                        >
+                        <div ref={intervalSectionRef}>
+                           <Collapsible
+                              onOpenChange={(open) => {
+                                 if (open) setInstallmentSection("interval");
+                                 else if (installmentIntervalType) {
+                                    setInstallmentSection("amounts");
+                                    scrollToSection(amountsSectionRef);
+                                 }
+                              }}
+                              open={installmentSection === "interval"}
+                           >
                            <CollapsibleTrigger
                               className={`flex w-full items-center justify-between rounded-lg border p-4 transition-colors ${
                                  installmentCount > 0
@@ -1563,9 +1619,10 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                        </form.Field>
                                        <Button
                                           className="w-full mt-2"
-                                          onClick={() =>
-                                             setInstallmentSection("amounts")
-                                          }
+                                          onClick={() => {
+                                             setInstallmentSection("amounts");
+                                             scrollToSection(amountsSectionRef);
+                                          }}
                                           size="sm"
                                           type="button"
                                        >
@@ -1576,15 +1633,17 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                               </div>
                            </CollapsibleContent>
                         </Collapsible>
+                        </div>
 
                         {/* Step 3: Amounts */}
-                        <Collapsible
-                           onOpenChange={(open) => {
-                              if (open) setInstallmentSection("amounts");
-                              else setInstallmentSection("review");
-                           }}
-                           open={installmentSection === "amounts"}
-                        >
+                        <div ref={amountsSectionRef}>
+                           <Collapsible
+                              onOpenChange={(open) => {
+                                 if (open) setInstallmentSection("amounts");
+                                 else setInstallmentSection("review");
+                              }}
+                              open={installmentSection === "amounts"}
+                           >
                            <CollapsibleTrigger
                               className={`flex w-full items-center justify-between rounded-lg border p-4 transition-colors ${
                                  installmentIntervalType
@@ -1737,57 +1796,65 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                              )}
                                           </form.Field>
                                        ))}
-                                       <Button
-                                          className="w-full mt-2"
-                                          onClick={() =>
-                                             setInstallmentSection("review")
-                                          }
-                                          size="sm"
-                                          type="button"
+
+                                       {/* Validation summary */}
+                                       <div
+                                          className={`p-3 rounded-lg space-y-1.5 text-sm ${
+                                             isCustomAmountsValid
+                                                ? "bg-muted/50"
+                                                : "bg-destructive/10 border border-destructive/20"
+                                          }`}
                                        >
-                                          {translate("common.actions.confirm")}
-                                       </Button>
+                                          <div className="flex justify-between">
+                                             <span className="text-muted-foreground">
+                                                {translate(
+                                                   "dashboard.routes.bills.features.create-bill.installments.validation.total",
+                                                )}
+                                             </span>
+                                             <span
+                                                className={`font-medium ${
+                                                   isCustomAmountsValid
+                                                      ? ""
+                                                      : "text-destructive"
+                                                }`}
+                                             >
+                                                {formatDecimalCurrency(customAmountsSum)} /{" "}
+                                                {formatDecimalCurrency(amount)}
+                                             </span>
+                                          </div>
+                                          {!isCustomAmountsValid && (
+                                             <div className="text-destructive text-xs">
+                                                {amountDifference > 0
+                                                   ? translate(
+                                                        "dashboard.routes.bills.features.create-bill.installments.validation.remaining",
+                                                        {
+                                                           amount: formatDecimalCurrency(
+                                                              amountDifference,
+                                                           ),
+                                                        },
+                                                     )
+                                                   : translate(
+                                                        "dashboard.routes.bills.features.create-bill.installments.validation.excess",
+                                                        {
+                                                           amount: formatDecimalCurrency(
+                                                              Math.abs(amountDifference),
+                                                           ),
+                                                        },
+                                                     )}
+                                             </div>
+                                          )}
+                                       </div>
                                     </div>
                                  )}
                               </div>
                            </CollapsibleContent>
                         </Collapsible>
-
-                        {/* Preview */}
-                        {installmentSection === "review" &&
-                           installmentAmountType &&
-                           amount > 0 && (
-                              <Alert>
-                                 <CalendarCheck className="h-4 w-4" />
-                                 <AlertTitle>
-                                    {translate(
-                                       "dashboard.routes.bills.features.create-bill.recurrence-step.preview.title",
-                                    )}
-                                 </AlertTitle>
-                                 <AlertDescription>
-                                    {installmentAmountType === "equal"
-                                       ? translate(
-                                            "dashboard.routes.bills.features.create-bill.installments.preview",
-                                            {
-                                               count: installmentCount,
-                                               value: formatCurrency(
-                                                  amount / installmentCount,
-                                               ),
-                                            },
-                                         )
-                                       : translate(
-                                            "dashboard.routes.bills.features.create-bill.installments.totalAmount",
-                                            {
-                                               amount: formatCurrency(amount),
-                                            },
-                                         )}
-                                 </AlertDescription>
-                              </Alert>
-                           )}
+                        </div>
                      </>
                   )}
                </div>
-            )}
+               );
+            }}
          </form.Subscribe>
       );
    }
@@ -2307,7 +2374,31 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
 
    return (
       <Stepper.Provider className="h-full" initialStep={activeSteps[0]}>
-         {({ methods }) => (
+         {({ methods }) => {
+            const goToNextStep = () => {
+               const currentIndex = activeSteps.indexOf(
+                  methods.current.id as StepId,
+               );
+               const nextIndex = currentIndex + 1;
+               if (nextIndex < activeSteps.length) {
+                  methods.goTo(activeSteps[nextIndex]);
+               }
+            };
+
+            const goToPrevStep = () => {
+               const currentIndex = activeSteps.indexOf(
+                  methods.current.id as StepId,
+               );
+               const prevIndex = currentIndex - 1;
+               if (prevIndex >= 0) {
+                  methods.goTo(activeSteps[prevIndex]);
+               }
+            };
+
+            const isLastActiveStep =
+               methods.current.id === activeSteps[activeSteps.length - 1];
+
+            return (
             <form className="h-full flex flex-col" onSubmit={handleSubmit}>
                <SheetHeader>
                   <SheetTitle className="flex items-center gap-2">
@@ -2362,7 +2453,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                  onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    methods.next();
+                                    goToNextStep();
                                  }}
                                  type="button"
                               >
@@ -2383,7 +2474,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                     onClick={(e) => {
                                        e.preventDefault();
                                        e.stopPropagation();
-                                       methods.prev();
+                                       goToPrevStep();
                                     }}
                                     type="button"
                                     variant="ghost"
@@ -2396,7 +2487,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                     onClick={(e) => {
                                        e.preventDefault();
                                        e.stopPropagation();
-                                       methods.next();
+                                       goToNextStep();
                                     }}
                                     type="button"
                                  >
@@ -2428,7 +2519,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                        onClick={(e) => {
                                           e.preventDefault();
                                           e.stopPropagation();
-                                          methods.prev();
+                                          goToPrevStep();
                                        }}
                                        type="button"
                                        variant="ghost"
@@ -2446,7 +2537,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                     onClick={(e) => {
                                        e.preventDefault();
                                        e.stopPropagation();
-                                       methods.next();
+                                       goToNextStep();
                                     }}
                                     type="button"
                                  >
@@ -2455,7 +2546,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                               </>
                            )}
                         </form.Subscribe>
-                     ) : methods.isLast ? (
+                     ) : isLastActiveStep ? (
                         <form.Subscribe
                            selector={(state) => ({
                               canSubmit: state.canSubmit,
@@ -2469,7 +2560,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                     onClick={(e) => {
                                        e.preventDefault();
                                        e.stopPropagation();
-                                       methods.prev();
+                                       goToPrevStep();
                                     }}
                                     type="button"
                                     variant="ghost"
@@ -2495,7 +2586,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                               onClick={(e) => {
                                  e.preventDefault();
                                  e.stopPropagation();
-                                 methods.prev();
+                                 goToPrevStep();
                               }}
                               type="button"
                               variant="ghost"
@@ -2507,7 +2598,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                               onClick={(e) => {
                                  e.preventDefault();
                                  e.stopPropagation();
-                                 methods.next();
+                                 goToNextStep();
                               }}
                               type="button"
                            >
@@ -2518,7 +2609,8 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                   </Stepper.Controls>
                </SheetFooter>
             </form>
-         )}
+            );
+         }}
       </Stepper.Provider>
    );
 }

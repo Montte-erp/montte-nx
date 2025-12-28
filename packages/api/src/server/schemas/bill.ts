@@ -41,18 +41,29 @@ export const installmentConfigSchema = z.object({
    totalInstallments: z.number().min(2).max(120),
 });
 
-export const createBillWithInstallmentsSchema = z.object({
-   amount: z.number().positive("Valor deve ser maior que zero"),
-   bankAccountId: z.string().optional(),
-   categoryId: z.string().optional(),
-   costCenterId: z.string().uuid().optional(),
-   counterpartyId: z.string().optional(),
-   description: z.string().optional(),
-   dueDate: z.date(),
-   installments: installmentConfigSchema,
-   interestTemplateId: z.string().optional(),
-   issueDate: z.string().optional(),
-   notes: z.string().optional(),
-   tagIds: z.array(z.string().uuid()).optional(),
-   type: z.enum(["expense", "income"], { error: "Tipo é obrigatório" }),
-});
+export const createBillWithInstallmentsSchema = z
+   .object({
+      amount: z.number().positive("Valor deve ser maior que zero"),
+      bankAccountId: z.string().optional(),
+      categoryId: z.string().optional(),
+      costCenterId: z.string().uuid().optional(),
+      counterpartyId: z.string().optional(),
+      description: z.string().optional(),
+      dueDate: z.date(),
+      installments: installmentConfigSchema,
+      interestTemplateId: z.string().optional(),
+      issueDate: z.string().optional(),
+      notes: z.string().optional(),
+      tagIds: z.array(z.string().uuid()).optional(),
+      type: z.enum(["expense", "income"], { error: "Tipo é obrigatório" }),
+   })
+   .refine(
+      (data) => {
+         if (Array.isArray(data.installments.amounts)) {
+            const sum = data.installments.amounts.reduce((a, b) => a + b, 0);
+            return Math.abs(sum - data.amount) < 0.01;
+         }
+         return true;
+      },
+      { message: "A soma das parcelas deve ser igual ao valor total" },
+   );
