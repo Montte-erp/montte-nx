@@ -2381,8 +2381,9 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                if (currentId === undefined) return;
                const currentIndex = activeSteps.indexOf(currentId as StepId);
                const nextIndex = currentIndex + 1;
-               if (nextIndex < activeSteps.length) {
-                  methods.goTo(activeSteps[nextIndex]);
+               const nextStep = activeSteps[nextIndex];
+               if (nextStep !== undefined) {
+                  methods.goTo(nextStep);
                }
             };
 
@@ -2390,8 +2391,9 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                if (currentId === undefined) return;
                const currentIndex = activeSteps.indexOf(currentId as StepId);
                const prevIndex = currentIndex - 1;
-               if (prevIndex >= 0) {
-                  methods.goTo(activeSteps[prevIndex]);
+               const prevStep = activeSteps[prevIndex];
+               if (prevStep !== undefined) {
+                  methods.goTo(prevStep);
                }
             };
 
