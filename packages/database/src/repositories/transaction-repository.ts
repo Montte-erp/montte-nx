@@ -5,7 +5,17 @@ import {
 } from "@packages/encryption/service";
 import { AppError, propagateError } from "@packages/utils/errors";
 import type { SQL } from "drizzle-orm";
-import { and, eq, exists, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
+import {
+   and,
+   eq,
+   exists,
+   gte,
+   ilike,
+   inArray,
+   lte,
+   or,
+   sql,
+} from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import { category, transactionCategory } from "../schemas/categories";
 import { transactionTag } from "../schemas/tags";

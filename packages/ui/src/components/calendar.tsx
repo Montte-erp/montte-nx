@@ -9,12 +9,12 @@ import {
    ChevronRightIcon,
 } from "lucide-react";
 import * as React from "react";
-import { ptBR } from "react-day-picker/locale";
 import {
    type DayButton,
    DayPicker,
    getDefaultClassNames,
 } from "react-day-picker";
+import { ptBR } from "react-day-picker/locale";
 
 function Calendar({
    className,
@@ -178,11 +178,11 @@ function Calendar({
             },
             ...components,
          }}
-         locale={ptBR}
          formatters={{
             formatMonthDropdown: (date) => formatDate(date, "MMM"),
             ...formatters,
          }}
+         locale={ptBR}
          showOutsideDays={showOutsideDays}
          {...props}
       />

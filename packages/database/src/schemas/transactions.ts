@@ -21,35 +21,37 @@ export type CategorySplit = {
    splitType: "amount";
 };
 
-export const transaction = pgTable("transaction", {
-   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-   attachmentKey: text("attachment_key"),
-   bankAccountId: uuid("bank_account_id").references(() => bankAccount.id, {
-      onDelete: "cascade",
-   }),
-   categorySplits: jsonb("category_splits").$type<CategorySplit[]>(),
-   costCenterId: uuid("cost_center_id").references(() => costCenter.id, {
-      onDelete: "set null",
-   }),
-   createdAt: timestamp("created_at").defaultNow().notNull(),
-   date: timestamp("date").notNull(),
-   description: text("description").notNull(),
-   externalId: text("external_id"),
-   id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-   organizationId: uuid("organization_id")
-      .notNull()
-      .references(() => organization.id, { onDelete: "cascade" }),
-   searchIndex: text("search_index"),
-   type: text("type").notNull(),
-   updatedAt: timestamp("updated_at")
-      .defaultNow()
-      .$onUpdate(() => new Date())
-      .notNull(),
-},
-(table) => [
-   index("transaction_organizationId_idx").on(table.organizationId),
-   index("transaction_searchIndex_idx").on(table.searchIndex),
-],
+export const transaction = pgTable(
+   "transaction",
+   {
+      amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+      attachmentKey: text("attachment_key"),
+      bankAccountId: uuid("bank_account_id").references(() => bankAccount.id, {
+         onDelete: "cascade",
+      }),
+      categorySplits: jsonb("category_splits").$type<CategorySplit[]>(),
+      costCenterId: uuid("cost_center_id").references(() => costCenter.id, {
+         onDelete: "set null",
+      }),
+      createdAt: timestamp("created_at").defaultNow().notNull(),
+      date: timestamp("date").notNull(),
+      description: text("description").notNull(),
+      externalId: text("external_id"),
+      id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
+      organizationId: uuid("organization_id")
+         .notNull()
+         .references(() => organization.id, { onDelete: "cascade" }),
+      searchIndex: text("search_index"),
+      type: text("type").notNull(),
+      updatedAt: timestamp("updated_at")
+         .defaultNow()
+         .$onUpdate(() => new Date())
+         .notNull(),
+   },
+   (table) => [
+      index("transaction_organizationId_idx").on(table.organizationId),
+      index("transaction_searchIndex_idx").on(table.searchIndex),
+   ],
 );
 
 export const transactionAttachment = pgTable("transaction_attachment", {

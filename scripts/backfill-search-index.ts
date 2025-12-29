@@ -16,7 +16,7 @@ import chalk from "chalk";
 import { Command } from "commander";
 import { config } from "dotenv";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { eq } from "drizzle-orm";
+import { asc, eq, gt } from "drizzle-orm";
 import { Pool } from "pg";
 
 import { bill } from "../packages/database/src/schemas/bills";
@@ -25,6 +25,8 @@ import { decryptIfNeeded, isEncrypted } from "../packages/encryption/src/server"
 import { createSearchIndex } from "../packages/encryption/src/search-index";
 
 const program = new Command();
+
+const BATCH_SIZE = 100;
 
 const colors = {
 	blue: chalk.blue,
@@ -64,45 +66,58 @@ function decryptValue(
 	}
 }
 
-async function backfillBills(
+type SearchableTable = typeof bill | typeof transaction;
+
+interface BackfillResult {
+	updated: number;
+	skipped: number;
+}
+
+async function backfillTable(
 	db: ReturnType<typeof drizzle>,
+	table: SearchableTable,
+	tableName: string,
 	encryptionKey: string,
 	searchKey: string,
 	dryRun: boolean,
-) {
-	console.log(colors.blue("\n📦 Backfilling bill search indexes..."));
+): Promise<BackfillResult> {
+	console.log(colors.blue(`\n📦 Backfilling ${tableName} search indexes...`));
 
-	const BATCH_SIZE = 100;
-	let offset = 0;
+	let lastId: string | null = null;
 	let totalUpdated = 0;
 	let totalSkipped = 0;
+	let totalProcessed = 0;
 	let batchNumber = 0;
 
 	while (true) {
-		const bills = await db
+		const query = db
 			.select({
-				id: bill.id,
-				description: bill.description,
-				searchIndex: bill.searchIndex,
+				id: table.id,
+				description: table.description,
+				searchIndex: table.searchIndex,
 			})
-			.from(bill)
-			.limit(BATCH_SIZE)
-			.offset(offset);
+			.from(table)
+			.orderBy(asc(table.id))
+			.limit(BATCH_SIZE);
 
-		if (bills.length === 0) break;
+		const records = lastId
+			? await query.where(gt(table.id, lastId))
+			: await query;
+
+		if (records.length === 0) break;
 		batchNumber++;
 
 		const updates: Array<{ id: string; searchIndex: string }> = [];
 
-		for (const b of bills) {
+		for (const record of records) {
 			// Skip if already has search index
-			if (b.searchIndex) {
+			if (record.searchIndex) {
 				totalSkipped++;
 				continue;
 			}
 
 			// Decrypt description to get plaintext
-			const plaintext = decryptValue(b.description, encryptionKey);
+			const plaintext = decryptValue(record.description, encryptionKey);
 			if (!plaintext) {
 				totalSkipped++;
 				continue;
@@ -110,7 +125,7 @@ async function backfillBills(
 
 			// Generate search index from plaintext
 			const searchIndex = createSearchIndex(plaintext, searchKey);
-			updates.push({ id: b.id, searchIndex });
+			updates.push({ id: record.id, searchIndex });
 		}
 
 		if (updates.length > 0) {
@@ -121,9 +136,9 @@ async function backfillBills(
 					await db.transaction(async (tx) => {
 						for (const update of updates) {
 							await tx
-								.update(bill)
+								.update(table)
 								.set({ searchIndex: update.searchIndex })
-								.where(eq(bill.id, update.id));
+								.where(eq(table.id, update.id));
 						}
 					});
 					totalUpdated += updates.length;
@@ -136,10 +151,15 @@ async function backfillBills(
 			}
 		}
 
-		offset += BATCH_SIZE;
+		// Update cursor to last record's id for next batch
+		lastId = records[records.length - 1].id;
+		totalProcessed += records.length;
 		process.stdout.write(
-			`\r   Processed ${offset} bills... (${dryRun ? "DRY RUN" : "LIVE"})`,
+			`\r   Processed ${totalProcessed} ${tableName}... (${dryRun ? "DRY RUN" : "LIVE"})`,
 		);
+
+		// Exit if we got fewer records than the batch size (last batch)
+		if (records.length < BATCH_SIZE) break;
 	}
 
 	console.log(
@@ -147,6 +167,17 @@ async function backfillBills(
 			`\n   ✅ ${dryRun ? "Would update" : "Updated"}: ${totalUpdated}, Skipped: ${totalSkipped}`,
 		),
 	);
+
+	return { updated: totalUpdated, skipped: totalSkipped };
+}
+
+async function backfillBills(
+	db: ReturnType<typeof drizzle>,
+	encryptionKey: string,
+	searchKey: string,
+	dryRun: boolean,
+): Promise<BackfillResult> {
+	return backfillTable(db, bill, "bills", encryptionKey, searchKey, dryRun);
 }
 
 async function backfillTransactions(
@@ -154,80 +185,14 @@ async function backfillTransactions(
 	encryptionKey: string,
 	searchKey: string,
 	dryRun: boolean,
-) {
-	console.log(colors.blue("\n📦 Backfilling transaction search indexes..."));
-
-	const BATCH_SIZE = 100;
-	let offset = 0;
-	let totalUpdated = 0;
-	let totalSkipped = 0;
-	let batchNumber = 0;
-
-	while (true) {
-		const transactions = await db
-			.select({
-				id: transaction.id,
-				description: transaction.description,
-				searchIndex: transaction.searchIndex,
-			})
-			.from(transaction)
-			.limit(BATCH_SIZE)
-			.offset(offset);
-
-		if (transactions.length === 0) break;
-		batchNumber++;
-
-		const updates: Array<{ id: string; searchIndex: string }> = [];
-
-		for (const t of transactions) {
-			if (t.searchIndex) {
-				totalSkipped++;
-				continue;
-			}
-
-			const plaintext = decryptValue(t.description, encryptionKey);
-			if (!plaintext) {
-				totalSkipped++;
-				continue;
-			}
-
-			const searchIndex = createSearchIndex(plaintext, searchKey);
-			updates.push({ id: t.id, searchIndex });
-		}
-
-		if (updates.length > 0) {
-			if (dryRun) {
-				totalUpdated += updates.length;
-			} else {
-				try {
-					await db.transaction(async (tx) => {
-						for (const update of updates) {
-							await tx
-								.update(transaction)
-								.set({ searchIndex: update.searchIndex })
-								.where(eq(transaction.id, update.id));
-						}
-					});
-					totalUpdated += updates.length;
-				} catch (error) {
-					console.error(
-						colors.red(`\n   ❌ Batch ${batchNumber} failed: ${error}`),
-					);
-					throw error;
-				}
-			}
-		}
-
-		offset += BATCH_SIZE;
-		process.stdout.write(
-			`\r   Processed ${offset} transactions... (${dryRun ? "DRY RUN" : "LIVE"})`,
-		);
-	}
-
-	console.log(
-		colors.green(
-			`\n   ✅ ${dryRun ? "Would update" : "Updated"}: ${totalUpdated}, Skipped: ${totalSkipped}`,
-		),
+): Promise<BackfillResult> {
+	return backfillTable(
+		db,
+		transaction,
+		"transactions",
+		encryptionKey,
+		searchKey,
+		dryRun,
 	);
 }
 
@@ -305,8 +270,11 @@ program
 	.description("Run the backfill migration")
 	.option("-e, --env <environment>", "Environment (local, production)", "local")
 	.option("--dry-run", "Preview changes without modifying data", false)
-	.action((options) => {
-		runBackfill(options.env, options.dryRun);
+	.action(async (options) => {
+		await runBackfill(options.env, options.dryRun).catch((err) => {
+			console.error(err);
+			process.exit(1);
+		});
 	});
 
 program
