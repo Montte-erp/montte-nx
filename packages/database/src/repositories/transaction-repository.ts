@@ -1,10 +1,11 @@
+import { createSearchTokens } from "@packages/encryption/search-index";
 import {
    decryptTransactionFields,
    encryptTransactionFields,
 } from "@packages/encryption/service";
 import { AppError, propagateError } from "@packages/utils/errors";
 import type { SQL } from "drizzle-orm";
-import { and, eq, exists, gte, ilike, inArray, lte, sql } from "drizzle-orm";
+import { and, eq, exists, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import { category, transactionCategory } from "../schemas/categories";
 import { transactionTag } from "../schemas/tags";
@@ -198,7 +199,18 @@ export async function findTransactionsByOrganizationIdPaginated(
          }
 
          if (search) {
-            conditions.push(ilikeOp(txn.description, `%${search}%`));
+            const searchKey = process.env.SEARCH_KEY;
+            if (searchKey) {
+               // Use blind index search with HMAC tokens
+               const tokens = createSearchTokens(search, searchKey);
+               if (tokens.length > 0) {
+                  const tokenConditions = tokens.map((token) =>
+                     ilike(transaction.searchIndex, `%${token}%`),
+                  );
+                  conditions.push(or(...tokenConditions)!);
+               }
+            }
+            // If no SEARCH_KEY, search is silently skipped (search index not available)
          }
 
          if (startDate) {
@@ -420,7 +432,18 @@ export async function findTransactionsByBankAccountIdPaginated(
       const baseConditions = [eq(transaction.bankAccountId, bankAccountId)];
 
       if (search) {
-         baseConditions.push(ilike(transaction.description, `%${search}%`));
+         const searchKey = process.env.SEARCH_KEY;
+         if (searchKey) {
+            // Use blind index search with HMAC tokens
+            const tokens = createSearchTokens(search, searchKey);
+            if (tokens.length > 0) {
+               const tokenConditions = tokens.map((token) =>
+                  ilike(transaction.searchIndex, `%${token}%`),
+               );
+               baseConditions.push(or(...tokenConditions)!);
+            }
+         }
+         // If no SEARCH_KEY, search is silently skipped (search index not available)
       }
 
       if (startDate) {
