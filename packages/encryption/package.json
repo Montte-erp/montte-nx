@@ -19,6 +19,10 @@
       "./service": {
          "default": "./src/service.ts",
          "types": "./dist/src/service.d.ts"
+      },
+      "./search-index": {
+         "default": "./src/search-index.ts",
+         "types": "./dist/src/search-index.d.ts"
       }
    },
    "files": [

@@ -22,6 +22,13 @@ const EnvSchema = z.object({
       .length(64, "ENCRYPTION_KEY must be a 64-character hex string")
       .regex(/^[0-9a-fA-F]+$/, "ENCRYPTION_KEY must be a valid hex string")
       .optional(),
+   // Search key for blind index encryption (64-character hex string = 32 bytes)
+   // Used for searchable encryption on encrypted fields (bills, transactions)
+   SEARCH_KEY: z
+      .string()
+      .length(64, "SEARCH_KEY must be a 64-character hex string")
+      .regex(/^[0-9a-fA-F]+$/, "SEARCH_KEY must be a valid hex string")
+      .optional(),
    MINIO_ACCESS_KEY: z.string(),
    MINIO_BUCKET: z.string().default("content-writer"),
    MINIO_ENDPOINT: z.string(),

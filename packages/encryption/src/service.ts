@@ -17,6 +17,7 @@ import {
    isEncrypted,
    type EncryptedData,
 } from "./server";
+import { createSearchIndex } from "./search-index";
 
 /**
  * Gets the encryption key from environment
@@ -24,6 +25,18 @@ import {
  */
 function getEncryptionKey(): string | null {
    const key = process.env.ENCRYPTION_KEY;
+   if (!key || key.length !== 64) {
+      return null;
+   }
+   return key;
+}
+
+/**
+ * Gets the search key from environment
+ * Returns null if search indexing is not configured
+ */
+function getSearchKey(): string | null {
+   const key = process.env.SEARCH_KEY;
    if (!key || key.length !== 64) {
       return null;
    }
@@ -86,21 +99,40 @@ export function decryptValue(value: string | EncryptedData): string {
 
 /**
  * Encrypts sensitive fields in a transaction
+ * Also generates search index for blind index search
  */
 export function encryptTransactionFields<
-   T extends { description?: string | null; notes?: string | null },
+   T extends {
+      description?: string | null;
+      notes?: string | null;
+      searchIndex?: string | null;
+   },
 >(transaction: T): T {
-   const key = getEncryptionKey();
-   if (!key) return transaction;
+   const encryptionKey = getEncryptionKey();
+   const searchKey = getSearchKey();
+
+   // Generate search index from plaintext before encryption
+   let searchIndex: string | null = null;
+   if (transaction.description && searchKey) {
+      searchIndex = createSearchIndex(transaction.description, searchKey);
+   }
+
+   if (!encryptionKey) {
+      return {
+         ...transaction,
+         searchIndex,
+      };
+   }
 
    return {
       ...transaction,
       description: transaction.description
-         ? JSON.stringify(encryptField(transaction.description, key))
+         ? JSON.stringify(encryptField(transaction.description, encryptionKey))
          : transaction.description,
       notes: transaction.notes
-         ? JSON.stringify(encryptField(transaction.notes, key))
+         ? JSON.stringify(encryptField(transaction.notes, encryptionKey))
          : transaction.notes,
+      searchIndex,
    };
 }
 
@@ -122,21 +154,40 @@ export function decryptTransactionFields<
 
 /**
  * Encrypts sensitive fields in a bill
+ * Also generates search index for blind index search
  */
 export function encryptBillFields<
-   T extends { description?: string | null; notes?: string | null },
+   T extends {
+      description?: string | null;
+      notes?: string | null;
+      searchIndex?: string | null;
+   },
 >(bill: T): T {
-   const key = getEncryptionKey();
-   if (!key) return bill;
+   const encryptionKey = getEncryptionKey();
+   const searchKey = getSearchKey();
+
+   // Generate search index from plaintext before encryption
+   let searchIndex: string | null = null;
+   if (bill.description && searchKey) {
+      searchIndex = createSearchIndex(bill.description, searchKey);
+   }
+
+   if (!encryptionKey) {
+      return {
+         ...bill,
+         searchIndex,
+      };
+   }
 
    return {
       ...bill,
       description: bill.description
-         ? JSON.stringify(encryptField(bill.description, key))
+         ? JSON.stringify(encryptField(bill.description, encryptionKey))
          : bill.description,
       notes: bill.notes
-         ? JSON.stringify(encryptField(bill.notes, key))
+         ? JSON.stringify(encryptField(bill.notes, encryptionKey))
          : bill.notes,
+      searchIndex,
    };
 }
 
