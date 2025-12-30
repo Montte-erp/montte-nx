@@ -22,7 +22,10 @@ import { Pool } from "pg";
 import { bill } from "../packages/database/src/schemas/bills";
 import { transaction } from "../packages/database/src/schemas/transactions";
 import { isEncrypted } from "../packages/encryption/src/server";
-import { createSearchIndex } from "../packages/encryption/src/search-index";
+import {
+	createSearchIndex,
+	validateSearchKey,
+} from "../packages/encryption/src/search-index";
 import { decryptValue as decryptValueFromService } from "../packages/encryption/src/service";
 
 const program = new Command();
@@ -217,16 +220,34 @@ async function runBackfill(env: string, dryRun: boolean) {
 	const SEARCH_KEY = process.env.SEARCH_KEY;
 	const DATABASE_URL = process.env.DATABASE_URL;
 
-	if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 64) {
+	if (!ENCRYPTION_KEY) {
+		console.error(colors.red("❌ ENCRYPTION_KEY is required"));
+		process.exit(1);
+	}
+
+	try {
+		validateSearchKey(ENCRYPTION_KEY);
+	} catch (error) {
 		console.error(
-			colors.red("❌ ENCRYPTION_KEY must be a 64-character hex string"),
+			colors.red(
+				`❌ Invalid ENCRYPTION_KEY: ${error instanceof Error ? error.message : "unknown error"}`,
+			),
 		);
 		process.exit(1);
 	}
 
-	if (!SEARCH_KEY || SEARCH_KEY.length !== 64) {
+	if (!SEARCH_KEY) {
+		console.error(colors.red("❌ SEARCH_KEY is required"));
+		process.exit(1);
+	}
+
+	try {
+		validateSearchKey(SEARCH_KEY);
+	} catch (error) {
 		console.error(
-			colors.red("❌ SEARCH_KEY must be a 64-character hex string"),
+			colors.red(
+				`❌ Invalid SEARCH_KEY: ${error instanceof Error ? error.message : "unknown error"}`,
+			),
 		);
 		process.exit(1);
 	}

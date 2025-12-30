@@ -21,7 +21,7 @@ const EXPECTED_KEY_LENGTH = 64; // 32 bytes = 64 hex characters
  * Validates that a search key is a valid hex string with correct length
  * @throws Error if the key is invalid
  */
-function validateSearchKey(searchKey: string): void {
+export function validateSearchKey(searchKey: string): void {
 	if (searchKey.length !== EXPECTED_KEY_LENGTH) {
 		throw new Error(
 			`Invalid search key length: expected ${EXPECTED_KEY_LENGTH} hex characters (32 bytes), got ${searchKey.length}`,

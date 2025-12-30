@@ -4,7 +4,6 @@ import { parseEnv } from "./helpers";
 const EnvSchema = z.object({
    ARCJET_ENV: z.enum(["development", "production"]),
    ARCJET_KEY: z.string(),
-   APP_URL: z.string(),
    LOG_LEVEL: z
       .enum(["trace", "debug", "info", "warn", "error", "fatal"])
       .default("info"),

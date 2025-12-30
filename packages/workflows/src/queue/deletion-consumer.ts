@@ -1,6 +1,7 @@
 import type { DatabaseInstance } from "@packages/database/client";
 import { deleteAllUserData } from "@packages/database/repositories/user-deletion-repository";
 import { accountDeletionRequest, user } from "@packages/database/schema";
+import { getDomain } from "@packages/environment/helpers";
 import type { ConnectionOptions, WorkerOptions } from "@packages/queue/bullmq";
 import { type Job, Worker } from "@packages/queue/bullmq";
 import {
@@ -22,7 +23,6 @@ export type DeletionWorkerConfig = {
    connection: ConnectionOptions;
    db: DatabaseInstance;
    resendClient?: Resend;
-   appUrl: string;
    concurrency?: number;
    onCompleted?: (
       job: Job<DeletionJobData, DeletionJobResult>,
@@ -117,7 +117,6 @@ async function processScheduledDeletions(
 async function sendDeletionReminders(
    db: DatabaseInstance,
    resendClient: Resend | undefined,
-   appUrl: string,
 ): Promise<{ processedCount: number; emailsSent: number }> {
    if (!resendClient) {
       return { processedCount: 0, emailsSent: 0 };
@@ -165,7 +164,7 @@ async function sendDeletionReminders(
          ),
    });
 
-   const cancelUrl = `${appUrl}/settings/profile`;
+   const cancelUrl = `${getDomain()}/settings/profile`;
 
    // Send 7-day reminders
    for (const deletion of sevenDayReminders) {
@@ -240,7 +239,6 @@ export function createDeletionWorker(
       connection,
       db,
       resendClient,
-      appUrl,
       concurrency = 1,
       onCompleted,
       onFailed,
@@ -276,7 +274,7 @@ export function createDeletionWorker(
 
          if (type === "send-reminders") {
             try {
-               const result = await sendDeletionReminders(db, resendClient, appUrl);
+               const result = await sendDeletionReminders(db, resendClient);
                return {
                   ...result,
                   success: true,
