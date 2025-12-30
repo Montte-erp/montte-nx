@@ -55,6 +55,7 @@ export const bill = pgTable(
       issueDate: timestamp("issue_date"),
       lastInterestUpdate: timestamp("last_interest_update"),
       notes: text("notes"),
+      searchIndex: text("search_index"),
       organizationId: uuid("organization_id")
          .notNull()
          .references(() => organization.id, { onDelete: "cascade" }),
@@ -71,7 +72,10 @@ export const bill = pgTable(
          .$onUpdate(() => new Date())
          .notNull(),
    },
-   (table) => [index("bill_organizationId_idx").on(table.organizationId)],
+   (table) => [
+      index("bill_organizationId_idx").on(table.organizationId),
+      index("bill_searchIndex_idx").on(table.searchIndex),
+   ],
 );
 
 export const billAttachment = pgTable("bill_attachment", {

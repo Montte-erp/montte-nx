@@ -1,10 +1,21 @@
+import { createSearchTokens } from "@packages/encryption/search-index";
 import {
    decryptTransactionFields,
    encryptTransactionFields,
 } from "@packages/encryption/service";
 import { AppError, propagateError } from "@packages/utils/errors";
 import type { SQL } from "drizzle-orm";
-import { and, eq, exists, gte, ilike, inArray, lte, sql } from "drizzle-orm";
+import {
+   and,
+   eq,
+   exists,
+   gte,
+   ilike,
+   inArray,
+   lte,
+   or,
+   sql,
+} from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import { category, transactionCategory } from "../schemas/categories";
 import { transactionTag } from "../schemas/tags";
@@ -25,6 +36,30 @@ type DrizzleOperators = {
 export type Transaction = typeof transaction.$inferSelect;
 export type NewTransaction = typeof transaction.$inferInsert;
 export type { CategorySplit };
+
+/**
+ * Builds a SQL condition for searching transactions using blind index HMAC tokens.
+ * Returns undefined if SEARCH_KEY is not configured or search string produces no tokens.
+ */
+function buildSearchIndexCondition(
+   search: string,
+   searchIndexColumn: typeof transaction.searchIndex,
+): SQL | undefined {
+   const searchKey = process.env.SEARCH_KEY;
+   if (!searchKey) {
+      return undefined;
+   }
+
+   const tokens = createSearchTokens(search, searchKey);
+   if (tokens.length === 0) {
+      return undefined;
+   }
+
+   const tokenConditions = tokens.map((token) =>
+      ilike(searchIndexColumn, `%${token}%`),
+   );
+   return or(...tokenConditions);
+}
 
 export async function createTransaction(
    dbClient: DatabaseInstance,
@@ -198,7 +233,13 @@ export async function findTransactionsByOrganizationIdPaginated(
          }
 
          if (search) {
-            conditions.push(ilikeOp(txn.description, `%${search}%`));
+            const searchCondition = buildSearchIndexCondition(
+               search,
+               transaction.searchIndex,
+            );
+            if (searchCondition) {
+               conditions.push(searchCondition);
+            }
          }
 
          if (startDate) {
@@ -420,7 +461,13 @@ export async function findTransactionsByBankAccountIdPaginated(
       const baseConditions = [eq(transaction.bankAccountId, bankAccountId)];
 
       if (search) {
-         baseConditions.push(ilike(transaction.description, `%${search}%`));
+         const searchCondition = buildSearchIndexCondition(
+            search,
+            transaction.searchIndex,
+         );
+         if (searchCondition) {
+            baseConditions.push(searchCondition);
+         }
       }
 
       if (startDate) {

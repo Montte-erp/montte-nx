@@ -46,12 +46,12 @@ export function DatePicker({
          </PopoverTrigger>
          <PopoverContent className="w-auto p-0">
             <Calendar
+               captionLayout="dropdown"
+               endMonth={new Date(new Date().getFullYear() + 20, 11)}
                mode="single"
                onSelect={onSelect}
                selected={date}
-               captionLayout="dropdown"
                startMonth={new Date(new Date().getFullYear() - 20, 0)}
-               endMonth={new Date(new Date().getFullYear() + 20, 11)}
             />
          </PopoverContent>
       </Popover>

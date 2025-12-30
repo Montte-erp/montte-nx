@@ -1028,844 +1028,928 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                occurrenceUntilDate,
                recurrencePattern,
             }) => {
-               const { customAmountsSum, amountDifference, isValid: isCustomAmountsValid } =
-                  getCustomAmountsValidation(
-                     amount,
-                     installmentAmountType,
-                     installmentCustomAmounts,
-                  );
+               const {
+                  customAmountsSum,
+                  amountDifference,
+                  isValid: isCustomAmountsValid,
+               } = getCustomAmountsValidation(
+                  amount,
+                  installmentAmountType,
+                  installmentCustomAmounts,
+               );
 
                return (
-               <div className="space-y-4">
-                  {billMode === "recurring" && (
-                     <>
-                        {/* Step 1: Frequency */}
-                        <div ref={frequencySectionRef}>
-                           <Collapsible
-                              onOpenChange={(open) => {
-                                 if (open) setRecurringSection("frequency");
-                                 else if (recurrencePattern) {
-                                    setRecurringSection("occurrence");
-                                    scrollToSection(occurrenceSectionRef);
-                                 }
-                              }}
-                              open={recurringSection === "frequency"}
-                           >
-                           <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
-                              <div className="flex items-center gap-3">
-                                 <div
-                                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
-                                       recurrencePattern
-                                          ? "bg-primary text-primary-foreground"
-                                          : "bg-muted text-muted-foreground"
-                                    }`}
-                                 >
-                                    {recurrencePattern ? (
-                                       <Check className="h-3.5 w-3.5" />
-                                    ) : (
-                                       "1"
-                                    )}
-                                 </div>
-                                 <div className="text-left">
-                                    <div className="font-medium">
-                                       {translate(
-                                          "dashboard.routes.bills.features.create-bill.recurrence-step.frequency.title",
-                                       )}
-                                    </div>
-                                    <div className="text-sm text-muted-foreground">
-                                       {recurrencePattern &&
-                                       recurringSection !== "frequency"
-                                          ? frequencyLabels[recurrencePattern]
-                                          : translate(
-                                               "dashboard.routes.bills.features.create-bill.recurrence-step.frequency.description",
-                                            )}
-                                    </div>
-                                 </div>
-                              </div>
-                              <ChevronDown
-                                 className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
-                                    recurringSection === "frequency"
-                                       ? "rotate-180"
-                                       : ""
-                                 }`}
-                              />
-                           </CollapsibleTrigger>
-                           <CollapsibleContent>
-                              <div className="pt-4">
-                                 <form.Field name="recurrencePattern">
-                                    {(field) => (
-                                       <Choicebox
-                                          onValueChange={(value) => {
-                                             field.handleChange(
-                                                value as RecurrencePattern,
-                                             );
-                                             setRecurringSection("occurrence");
-                                          }}
-                                          value={field.state.value || ""}
+                  <div className="space-y-4">
+                     {billMode === "recurring" && (
+                        <>
+                           {/* Step 1: Frequency */}
+                           <div ref={frequencySectionRef}>
+                              <Collapsible
+                                 onOpenChange={(open) => {
+                                    if (open) setRecurringSection("frequency");
+                                    else if (recurrencePattern) {
+                                       setRecurringSection("occurrence");
+                                       scrollToSection(occurrenceSectionRef);
+                                    }
+                                 }}
+                                 open={recurringSection === "frequency"}
+                              >
+                                 <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                       <div
+                                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
+                                             recurrencePattern
+                                                ? "bg-primary text-primary-foreground"
+                                                : "bg-muted text-muted-foreground"
+                                          }`}
                                        >
-                                          {frequencyOptions.map((option) => (
-                                             <ChoiceboxItem
-                                                id={`freq-${option}`}
-                                                key={option}
-                                                value={option}
-                                             >
-                                                <ChoiceboxItemHeader>
-                                                   <ChoiceboxItemTitle>
-                                                      {translate(
-                                                         `dashboard.routes.bills.features.create-bill.recurrence-step.frequency.options.${option}.title`,
-                                                      )}
-                                                   </ChoiceboxItemTitle>
-                                                   <ChoiceboxItemDescription>
-                                                      {translate(
-                                                         `dashboard.routes.bills.features.create-bill.recurrence-step.frequency.options.${option}.description`,
-                                                      )}
-                                                   </ChoiceboxItemDescription>
-                                                </ChoiceboxItemHeader>
-                                                <ChoiceboxIndicator
-                                                   id={`freq-${option}`}
-                                                />
-                                             </ChoiceboxItem>
-                                          ))}
-                                       </Choicebox>
-                                    )}
-                                 </form.Field>
-                              </div>
-                           </CollapsibleContent>
-                        </Collapsible>
-                        </div>
-
-                        {/* Step 2: Occurrence */}
-                        <div ref={occurrenceSectionRef}>
-                           <Collapsible
-                              onOpenChange={(open) => {
-                                 if (open && recurrencePattern)
-                                    setRecurringSection("occurrence");
-                                 else if (occurrenceType)
-                                    setRecurringSection("review");
-                                 else if (recurrencePattern)
-                                    setRecurringSection("frequency");
-                              }}
-                              open={recurringSection === "occurrence"}
-                           >
-                           <CollapsibleTrigger
-                              className={`flex w-full items-center justify-between rounded-lg border p-4 transition-colors ${
-                                 recurrencePattern
-                                    ? "hover:bg-muted/50"
-                                    : "opacity-50 cursor-not-allowed"
-                              }`}
-                              disabled={!recurrencePattern}
-                           >
-                              <div className="flex items-center gap-3">
-                                 <div
-                                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
-                                       occurrenceType
-                                          ? "bg-primary text-primary-foreground"
-                                          : "bg-muted text-muted-foreground"
-                                    }`}
-                                 >
-                                    {occurrenceType ? (
-                                       <Check className="h-3.5 w-3.5" />
-                                    ) : (
-                                       "2"
-                                    )}
-                                 </div>
-                                 <div className="text-left">
-                                    <div className="font-medium">
-                                       {translate(
-                                          "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.title",
-                                       )}
-                                    </div>
-                                    <div className="text-sm text-muted-foreground">
-                                       {occurrenceType &&
-                                       recurringSection !== "occurrence" ? (
-                                          <>
-                                             {occurrenceLabels[occurrenceType]}
-                                             {occurrenceType === "count" &&
-                                                ` (${occurrenceCount}x)`}
-                                             {occurrenceType === "until-date" &&
-                                                occurrenceUntilDate &&
-                                                ` (${occurrenceUntilDate.toLocaleDateString("pt-BR")})`}
-                                          </>
-                                       ) : (
-                                          translate(
-                                             "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.description",
-                                          )
-                                       )}
-                                    </div>
-                                 </div>
-                              </div>
-                              <ChevronDown
-                                 className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
-                                    recurringSection === "occurrence"
-                                       ? "rotate-180"
-                                       : ""
-                                 }`}
-                              />
-                           </CollapsibleTrigger>
-                           <CollapsibleContent>
-                              <div className="pt-4 space-y-4">
-                                 <form.Field name="occurrenceType">
-                                    {(field) => (
-                                       <Choicebox
-                                          onValueChange={(value) => {
-                                             const occ = value as
-                                                | "auto"
-                                                | "count"
-                                                | "until-date";
-                                             field.handleChange(occ);
-                                             if (occ === "auto") {
-                                                setRecurringSection("review");
-                                             }
-                                          }}
-                                          value={field.state.value || ""}
-                                       >
-                                          {occurrenceOptions.map((option) => (
-                                             <ChoiceboxItem
-                                                id={`occ-${option}`}
-                                                key={option}
-                                                value={option}
-                                             >
-                                                <ChoiceboxItemHeader>
-                                                   <ChoiceboxItemTitle>
-                                                      {translate(
-                                                         `dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.${option}.title`,
-                                                      )}
-                                                   </ChoiceboxItemTitle>
-                                                   <ChoiceboxItemDescription>
-                                                      {translate(
-                                                         `dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.${option}.description`,
-                                                      )}
-                                                   </ChoiceboxItemDescription>
-                                                </ChoiceboxItemHeader>
-                                                <ChoiceboxIndicator
-                                                   id={`occ-${option}`}
-                                                />
-                                             </ChoiceboxItem>
-                                          ))}
-                                       </Choicebox>
-                                    )}
-                                 </form.Field>
-
-                                 {occurrenceType === "count" && (
-                                    <div className="space-y-2">
-                                       <Label>
-                                          {translate(
-                                             "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.count.input-label",
+                                          {recurrencePattern ? (
+                                             <Check className="h-3.5 w-3.5" />
+                                          ) : (
+                                             "1"
                                           )}
-                                       </Label>
-                                       <form.Field name="occurrenceCount">
+                                       </div>
+                                       <div className="text-left">
+                                          <div className="font-medium">
+                                             {translate(
+                                                "dashboard.routes.bills.features.create-bill.recurrence-step.frequency.title",
+                                             )}
+                                          </div>
+                                          <div className="text-sm text-muted-foreground">
+                                             {recurrencePattern &&
+                                             recurringSection !== "frequency"
+                                                ? frequencyLabels[
+                                                     recurrencePattern
+                                                  ]
+                                                : translate(
+                                                     "dashboard.routes.bills.features.create-bill.recurrence-step.frequency.description",
+                                                  )}
+                                          </div>
+                                       </div>
+                                    </div>
+                                    <ChevronDown
+                                       className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                                          recurringSection === "frequency"
+                                             ? "rotate-180"
+                                             : ""
+                                       }`}
+                                    />
+                                 </CollapsibleTrigger>
+                                 <CollapsibleContent>
+                                    <div className="pt-4">
+                                       <form.Field name="recurrencePattern">
                                           {(field) => (
-                                             <Input
-                                                max={365}
-                                                min={1}
-                                                onBlur={() => {
-                                                   if (field.state.value < 1) {
-                                                      field.handleChange(1);
-                                                   }
+                                             <Choicebox
+                                                onValueChange={(value) => {
+                                                   field.handleChange(
+                                                      value as RecurrencePattern,
+                                                   );
+                                                   setRecurringSection(
+                                                      "occurrence",
+                                                   );
                                                 }}
-                                                onChange={(e) => {
-                                                   const val = e.target.value;
-                                                   if (val === "") {
-                                                      field.handleChange(0);
-                                                   } else {
-                                                      field.handleChange(
-                                                         Number(val),
-                                                      );
-                                                   }
-                                                }}
-                                                type="number"
-                                                value={
-                                                   field.state.value === 0
-                                                      ? ""
-                                                      : field.state.value
-                                                }
-                                             />
+                                                value={field.state.value || ""}
+                                             >
+                                                {frequencyOptions.map(
+                                                   (option) => (
+                                                      <ChoiceboxItem
+                                                         id={`freq-${option}`}
+                                                         key={option}
+                                                         value={option}
+                                                      >
+                                                         <ChoiceboxItemHeader>
+                                                            <ChoiceboxItemTitle>
+                                                               {translate(
+                                                                  `dashboard.routes.bills.features.create-bill.recurrence-step.frequency.options.${option}.title`,
+                                                               )}
+                                                            </ChoiceboxItemTitle>
+                                                            <ChoiceboxItemDescription>
+                                                               {translate(
+                                                                  `dashboard.routes.bills.features.create-bill.recurrence-step.frequency.options.${option}.description`,
+                                                               )}
+                                                            </ChoiceboxItemDescription>
+                                                         </ChoiceboxItemHeader>
+                                                         <ChoiceboxIndicator
+                                                            id={`freq-${option}`}
+                                                         />
+                                                      </ChoiceboxItem>
+                                                   ),
+                                                )}
+                                             </Choicebox>
                                           )}
                                        </form.Field>
-                                       <Button
-                                          className="w-full mt-2"
-                                          onClick={() =>
-                                             setRecurringSection("review")
-                                          }
-                                          size="sm"
-                                          type="button"
-                                       >
-                                          {translate("common.actions.confirm")}
-                                       </Button>
                                     </div>
-                                 )}
+                                 </CollapsibleContent>
+                              </Collapsible>
+                           </div>
 
-                                 {occurrenceType === "until-date" && (
-                                    <div className="space-y-2">
-                                       <form.Field name="occurrenceUntilDate">
+                           {/* Step 2: Occurrence */}
+                           <div ref={occurrenceSectionRef}>
+                              <Collapsible
+                                 onOpenChange={(open) => {
+                                    if (open && recurrencePattern)
+                                       setRecurringSection("occurrence");
+                                    else if (occurrenceType)
+                                       setRecurringSection("review");
+                                    else if (recurrencePattern)
+                                       setRecurringSection("frequency");
+                                 }}
+                                 open={recurringSection === "occurrence"}
+                              >
+                                 <CollapsibleTrigger
+                                    className={`flex w-full items-center justify-between rounded-lg border p-4 transition-colors ${
+                                       recurrencePattern
+                                          ? "hover:bg-muted/50"
+                                          : "opacity-50 cursor-not-allowed"
+                                    }`}
+                                    disabled={!recurrencePattern}
+                                 >
+                                    <div className="flex items-center gap-3">
+                                       <div
+                                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
+                                             occurrenceType
+                                                ? "bg-primary text-primary-foreground"
+                                                : "bg-muted text-muted-foreground"
+                                          }`}
+                                       >
+                                          {occurrenceType ? (
+                                             <Check className="h-3.5 w-3.5" />
+                                          ) : (
+                                             "2"
+                                          )}
+                                       </div>
+                                       <div className="text-left">
+                                          <div className="font-medium">
+                                             {translate(
+                                                "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.title",
+                                             )}
+                                          </div>
+                                          <div className="text-sm text-muted-foreground">
+                                             {occurrenceType &&
+                                             recurringSection !==
+                                                "occurrence" ? (
+                                                <>
+                                                   {
+                                                      occurrenceLabels[
+                                                         occurrenceType
+                                                      ]
+                                                   }
+                                                   {occurrenceType ===
+                                                      "count" &&
+                                                      ` (${occurrenceCount}x)`}
+                                                   {occurrenceType ===
+                                                      "until-date" &&
+                                                      occurrenceUntilDate &&
+                                                      ` (${occurrenceUntilDate.toLocaleDateString("pt-BR")})`}
+                                                </>
+                                             ) : (
+                                                translate(
+                                                   "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.description",
+                                                )
+                                             )}
+                                          </div>
+                                       </div>
+                                    </div>
+                                    <ChevronDown
+                                       className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                                          recurringSection === "occurrence"
+                                             ? "rotate-180"
+                                             : ""
+                                       }`}
+                                    />
+                                 </CollapsibleTrigger>
+                                 <CollapsibleContent>
+                                    <div className="pt-4 space-y-4">
+                                       <form.Field name="occurrenceType">
                                           {(field) => (
-                                             <DatePicker
-                                                className="w-full"
-                                                date={field.state.value}
-                                                onSelect={(date) => {
-                                                   field.handleChange(date);
-                                                   if (date) {
+                                             <Choicebox
+                                                onValueChange={(value) => {
+                                                   const occ = value as
+                                                      | "auto"
+                                                      | "count"
+                                                      | "until-date";
+                                                   field.handleChange(occ);
+                                                   if (occ === "auto") {
                                                       setRecurringSection(
                                                          "review",
                                                       );
                                                    }
                                                 }}
-                                             />
+                                                value={field.state.value || ""}
+                                             >
+                                                {occurrenceOptions.map(
+                                                   (option) => (
+                                                      <ChoiceboxItem
+                                                         id={`occ-${option}`}
+                                                         key={option}
+                                                         value={option}
+                                                      >
+                                                         <ChoiceboxItemHeader>
+                                                            <ChoiceboxItemTitle>
+                                                               {translate(
+                                                                  `dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.${option}.title`,
+                                                               )}
+                                                            </ChoiceboxItemTitle>
+                                                            <ChoiceboxItemDescription>
+                                                               {translate(
+                                                                  `dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.${option}.description`,
+                                                               )}
+                                                            </ChoiceboxItemDescription>
+                                                         </ChoiceboxItemHeader>
+                                                         <ChoiceboxIndicator
+                                                            id={`occ-${option}`}
+                                                         />
+                                                      </ChoiceboxItem>
+                                                   ),
+                                                )}
+                                             </Choicebox>
+                                          )}
+                                       </form.Field>
+
+                                       {occurrenceType === "count" && (
+                                          <div className="space-y-2">
+                                             <Label>
+                                                {translate(
+                                                   "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.count.input-label",
+                                                )}
+                                             </Label>
+                                             <form.Field name="occurrenceCount">
+                                                {(field) => (
+                                                   <Input
+                                                      max={365}
+                                                      min={1}
+                                                      onBlur={() => {
+                                                         if (
+                                                            field.state.value <
+                                                            1
+                                                         ) {
+                                                            field.handleChange(
+                                                               1,
+                                                            );
+                                                         }
+                                                      }}
+                                                      onChange={(e) => {
+                                                         const val =
+                                                            e.target.value;
+                                                         if (val === "") {
+                                                            field.handleChange(
+                                                               0,
+                                                            );
+                                                         } else {
+                                                            field.handleChange(
+                                                               Number(val),
+                                                            );
+                                                         }
+                                                      }}
+                                                      type="number"
+                                                      value={
+                                                         field.state.value === 0
+                                                            ? ""
+                                                            : field.state.value
+                                                      }
+                                                   />
+                                                )}
+                                             </form.Field>
+                                             <Button
+                                                className="w-full mt-2"
+                                                onClick={() =>
+                                                   setRecurringSection("review")
+                                                }
+                                                size="sm"
+                                                type="button"
+                                             >
+                                                {translate(
+                                                   "common.actions.confirm",
+                                                )}
+                                             </Button>
+                                          </div>
+                                       )}
+
+                                       {occurrenceType === "until-date" && (
+                                          <div className="space-y-2">
+                                             <form.Field name="occurrenceUntilDate">
+                                                {(field) => (
+                                                   <DatePicker
+                                                      className="w-full"
+                                                      date={field.state.value}
+                                                      onSelect={(date) => {
+                                                         field.handleChange(
+                                                            date,
+                                                         );
+                                                         if (date) {
+                                                            setRecurringSection(
+                                                               "review",
+                                                            );
+                                                         }
+                                                      }}
+                                                   />
+                                                )}
+                                             </form.Field>
+                                          </div>
+                                       )}
+                                    </div>
+                                 </CollapsibleContent>
+                              </Collapsible>
+                           </div>
+
+                           {/* Preview - Shows when all steps are complete */}
+                           {recurrencePattern &&
+                              occurrenceType &&
+                              recurringSection === "review" && (
+                                 <Alert>
+                                    <CalendarCheck className="h-4 w-4" />
+                                    <AlertTitle>
+                                       {translate(
+                                          "dashboard.routes.bills.features.create-bill.recurrence-step.preview.title",
+                                       )}
+                                    </AlertTitle>
+                                    <AlertDescription>
+                                       {translate(
+                                          "dashboard.routes.bills.features.create-bill.recurrence-step.preview.message",
+                                          {
+                                             frequency:
+                                                frequencyLabels[
+                                                   recurrencePattern
+                                                ],
+                                             type:
+                                                occurrenceType === "auto"
+                                                   ? translate(
+                                                        "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.auto.title",
+                                                     )
+                                                   : occurrenceType === "count"
+                                                     ? `${occurrenceCount}x`
+                                                     : occurrenceUntilDate?.toLocaleDateString(
+                                                          "pt-BR",
+                                                       ) || "",
+                                          },
+                                       )}
+                                    </AlertDescription>
+                                 </Alert>
+                              )}
+                        </>
+                     )}
+
+                     {billMode === "installment" && (
+                        <>
+                           {/* Step 1: Count */}
+                           <div ref={countSectionRef}>
+                              <Collapsible
+                                 onOpenChange={(open) => {
+                                    if (open) setInstallmentSection("count");
+                                    else if (installmentCount > 0) {
+                                       setInstallmentSection("interval");
+                                       scrollToSection(intervalSectionRef);
+                                    }
+                                 }}
+                                 open={installmentSection === "count"}
+                              >
+                                 <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                       <div
+                                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
+                                             installmentCount > 0
+                                                ? "bg-primary text-primary-foreground"
+                                                : "bg-muted text-muted-foreground"
+                                          }`}
+                                       >
+                                          {installmentCount > 0 ? (
+                                             <Check className="h-3.5 w-3.5" />
+                                          ) : (
+                                             "1"
+                                          )}
+                                       </div>
+                                       <div className="text-left">
+                                          <div className="font-medium">
+                                             {translate(
+                                                "dashboard.routes.bills.features.create-bill.installments.count",
+                                             )}
+                                          </div>
+                                          <div className="text-sm text-muted-foreground">
+                                             {installmentSection !== "count" &&
+                                             installmentCount > 0
+                                                ? `${installmentCount}x`
+                                                : translate(
+                                                     "dashboard.routes.bills.features.create-bill.recurrence-step.installment.count.description",
+                                                  )}
+                                          </div>
+                                       </div>
+                                    </div>
+                                    <ChevronDown
+                                       className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                                          installmentSection === "count"
+                                             ? "rotate-180"
+                                             : ""
+                                       }`}
+                                    />
+                                 </CollapsibleTrigger>
+                                 <CollapsibleContent>
+                                    <div className="pt-3 space-y-3">
+                                       <form.Field name="installmentCount">
+                                          {(field) => (
+                                             <div className="space-y-3">
+                                                <div className="flex items-center justify-center gap-4">
+                                                   <Button
+                                                      className="h-9 w-9 rounded-full"
+                                                      disabled={
+                                                         field.state.value <= 2
+                                                      }
+                                                      onClick={() =>
+                                                         field.handleChange(
+                                                            Math.max(
+                                                               2,
+                                                               field.state
+                                                                  .value - 1,
+                                                            ),
+                                                         )
+                                                      }
+                                                      size="icon"
+                                                      type="button"
+                                                      variant="outline"
+                                                   >
+                                                      <Minus className="h-4 w-4" />
+                                                   </Button>
+                                                   <div className="flex flex-col items-center">
+                                                      <span className="text-2xl font-bold tabular-nums">
+                                                         {field.state.value}
+                                                      </span>
+                                                      <span className="text-xs text-muted-foreground">
+                                                         parcelas
+                                                      </span>
+                                                   </div>
+                                                   <Button
+                                                      className="h-9 w-9 rounded-full"
+                                                      disabled={
+                                                         field.state.value >=
+                                                         120
+                                                      }
+                                                      onClick={() =>
+                                                         field.handleChange(
+                                                            Math.min(
+                                                               120,
+                                                               field.state
+                                                                  .value + 1,
+                                                            ),
+                                                         )
+                                                      }
+                                                      size="icon"
+                                                      type="button"
+                                                      variant="outline"
+                                                   >
+                                                      <Plus className="h-4 w-4" />
+                                                   </Button>
+                                                </div>
+                                                <div className="flex flex-wrap justify-center gap-1.5">
+                                                   {[2, 3, 6, 10, 12, 24].map(
+                                                      (count) => (
+                                                         <Button
+                                                            className="h-7 px-2.5 text-xs"
+                                                            key={`installment-${count}`}
+                                                            onClick={() =>
+                                                               field.handleChange(
+                                                                  count,
+                                                               )
+                                                            }
+                                                            size="sm"
+                                                            type="button"
+                                                            variant={
+                                                               field.state
+                                                                  .value ===
+                                                               count
+                                                                  ? "default"
+                                                                  : "outline"
+                                                            }
+                                                         >
+                                                            {count}x
+                                                         </Button>
+                                                      ),
+                                                   )}
+                                                </div>
+                                             </div>
                                           )}
                                        </form.Field>
                                     </div>
-                                 )}
-                              </div>
-                           </CollapsibleContent>
-                        </Collapsible>
-                        </div>
+                                 </CollapsibleContent>
+                              </Collapsible>
+                           </div>
 
-                        {/* Preview - Shows when all steps are complete */}
-                        {recurrencePattern &&
-                           occurrenceType &&
-                           recurringSection === "review" && (
-                              <Alert>
-                                 <CalendarCheck className="h-4 w-4" />
-                                 <AlertTitle>
-                                    {translate(
-                                       "dashboard.routes.bills.features.create-bill.recurrence-step.preview.title",
-                                    )}
-                                 </AlertTitle>
-                                 <AlertDescription>
-                                    {translate(
-                                       "dashboard.routes.bills.features.create-bill.recurrence-step.preview.message",
-                                       {
-                                          frequency:
-                                             frequencyLabels[recurrencePattern],
-                                          type:
-                                             occurrenceType === "auto"
-                                                ? translate(
-                                                     "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.auto.title",
-                                                  )
-                                                : occurrenceType === "count"
-                                                  ? `${occurrenceCount}x`
-                                                  : occurrenceUntilDate?.toLocaleDateString(
-                                                       "pt-BR",
-                                                    ) || "",
-                                       },
-                                    )}
-                                 </AlertDescription>
-                              </Alert>
-                           )}
-                     </>
-                  )}
-
-                  {billMode === "installment" && (
-                     <>
-                        {/* Step 1: Count */}
-                        <div ref={countSectionRef}>
-                           <Collapsible
-                              onOpenChange={(open) => {
-                                 if (open) setInstallmentSection("count");
-                                 else if (installmentCount > 0) {
-                                    setInstallmentSection("interval");
-                                    scrollToSection(intervalSectionRef);
-                                 }
-                              }}
-                              open={installmentSection === "count"}
-                           >
-                           <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
-                              <div className="flex items-center gap-3">
-                                 <div
-                                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
+                           {/* Step 2: Interval */}
+                           <div ref={intervalSectionRef}>
+                              <Collapsible
+                                 onOpenChange={(open) => {
+                                    if (open) setInstallmentSection("interval");
+                                    else if (installmentIntervalType) {
+                                       setInstallmentSection("amounts");
+                                       scrollToSection(amountsSectionRef);
+                                    }
+                                 }}
+                                 open={installmentSection === "interval"}
+                              >
+                                 <CollapsibleTrigger
+                                    className={`flex w-full items-center justify-between rounded-lg border p-4 transition-colors ${
                                        installmentCount > 0
-                                          ? "bg-primary text-primary-foreground"
-                                          : "bg-muted text-muted-foreground"
+                                          ? "hover:bg-muted/50"
+                                          : "opacity-50 cursor-not-allowed"
                                     }`}
+                                    disabled={installmentCount <= 0}
                                  >
-                                    {installmentCount > 0 ? (
-                                       <Check className="h-3.5 w-3.5" />
-                                    ) : (
-                                       "1"
-                                    )}
-                                 </div>
-                                 <div className="text-left">
-                                    <div className="font-medium">
-                                       {translate(
-                                          "dashboard.routes.bills.features.create-bill.installments.count",
-                                       )}
-                                    </div>
-                                    <div className="text-sm text-muted-foreground">
-                                       {installmentSection !== "count" &&
-                                       installmentCount > 0
-                                          ? `${installmentCount}x`
-                                          : translate(
-                                               "dashboard.routes.bills.features.create-bill.recurrence-step.installment.count.description",
-                                            )}
-                                    </div>
-                                 </div>
-                              </div>
-                              <ChevronDown
-                                 className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
-                                    installmentSection === "count"
-                                       ? "rotate-180"
-                                       : ""
-                                 }`}
-                              />
-                           </CollapsibleTrigger>
-                           <CollapsibleContent>
-                              <div className="pt-3 space-y-3">
-                                 <form.Field name="installmentCount">
-                                    {(field) => (
-                                       <div className="space-y-3">
-                                          <div className="flex items-center justify-center gap-4">
-                                             <Button
-                                                className="h-9 w-9 rounded-full"
-                                                disabled={
-                                                   field.state.value <= 2
-                                                }
-                                                onClick={() =>
-                                                   field.handleChange(
-                                                      Math.max(
-                                                         2,
-                                                         field.state.value - 1,
-                                                      ),
-                                                   )
-                                                }
-                                                size="icon"
-                                                type="button"
-                                                variant="outline"
-                                             >
-                                                <Minus className="h-4 w-4" />
-                                             </Button>
-                                             <div className="flex flex-col items-center">
-                                                <span className="text-2xl font-bold tabular-nums">
-                                                   {field.state.value}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground">
-                                                   parcelas
-                                                </span>
-                                             </div>
-                                             <Button
-                                                className="h-9 w-9 rounded-full"
-                                                disabled={
-                                                   field.state.value >= 120
-                                                }
-                                                onClick={() =>
-                                                   field.handleChange(
-                                                      Math.min(
-                                                         120,
-                                                         field.state.value + 1,
-                                                      ),
-                                                   )
-                                                }
-                                                size="icon"
-                                                type="button"
-                                                variant="outline"
-                                             >
-                                                <Plus className="h-4 w-4" />
-                                             </Button>
-                                          </div>
-                                          <div className="flex flex-wrap justify-center gap-1.5">
-                                             {[2, 3, 6, 10, 12, 24].map(
-                                                (count) => (
-                                                   <Button
-                                                      className="h-7 px-2.5 text-xs"
-                                                      key={`installment-${count}`}
-                                                      onClick={() =>
-                                                         field.handleChange(
-                                                            count,
-                                                         )
-                                                      }
-                                                      size="sm"
-                                                      type="button"
-                                                      variant={
-                                                         field.state.value ===
-                                                         count
-                                                            ? "default"
-                                                            : "outline"
-                                                      }
-                                                   >
-                                                      {count}x
-                                                   </Button>
-                                                ),
+                                    <div className="flex items-center gap-3">
+                                       <div
+                                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
+                                             installmentIntervalType
+                                                ? "bg-primary text-primary-foreground"
+                                                : "bg-muted text-muted-foreground"
+                                          }`}
+                                       >
+                                          {installmentIntervalType ? (
+                                             <Check className="h-3.5 w-3.5" />
+                                          ) : (
+                                             "2"
+                                          )}
+                                       </div>
+                                       <div className="text-left">
+                                          <div className="font-medium">
+                                             {translate(
+                                                "dashboard.routes.bills.features.create-bill.installments.interval",
                                              )}
                                           </div>
+                                          <div className="text-sm text-muted-foreground">
+                                             {installmentSection !==
+                                                "interval" &&
+                                             installmentIntervalType
+                                                ? intervalLabels[
+                                                     installmentIntervalType
+                                                  ]
+                                                : translate(
+                                                     "dashboard.routes.bills.features.create-bill.recurrence-step.installment.interval.description",
+                                                  )}
+                                          </div>
                                        </div>
-                                    )}
-                                 </form.Field>
-                              </div>
-                           </CollapsibleContent>
-                        </Collapsible>
-                        </div>
-
-                        {/* Step 2: Interval */}
-                        <div ref={intervalSectionRef}>
-                           <Collapsible
-                              onOpenChange={(open) => {
-                                 if (open) setInstallmentSection("interval");
-                                 else if (installmentIntervalType) {
-                                    setInstallmentSection("amounts");
-                                    scrollToSection(amountsSectionRef);
-                                 }
-                              }}
-                              open={installmentSection === "interval"}
-                           >
-                           <CollapsibleTrigger
-                              className={`flex w-full items-center justify-between rounded-lg border p-4 transition-colors ${
-                                 installmentCount > 0
-                                    ? "hover:bg-muted/50"
-                                    : "opacity-50 cursor-not-allowed"
-                              }`}
-                              disabled={installmentCount <= 0}
-                           >
-                              <div className="flex items-center gap-3">
-                                 <div
-                                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
-                                       installmentIntervalType
-                                          ? "bg-primary text-primary-foreground"
-                                          : "bg-muted text-muted-foreground"
-                                    }`}
-                                 >
-                                    {installmentIntervalType ? (
-                                       <Check className="h-3.5 w-3.5" />
-                                    ) : (
-                                       "2"
-                                    )}
-                                 </div>
-                                 <div className="text-left">
-                                    <div className="font-medium">
-                                       {translate(
-                                          "dashboard.routes.bills.features.create-bill.installments.interval",
-                                       )}
                                     </div>
-                                    <div className="text-sm text-muted-foreground">
-                                       {installmentSection !== "interval" &&
-                                       installmentIntervalType
-                                          ? intervalLabels[
-                                               installmentIntervalType
-                                            ]
-                                          : translate(
-                                               "dashboard.routes.bills.features.create-bill.recurrence-step.installment.interval.description",
-                                            )}
-                                    </div>
-                                 </div>
-                              </div>
-                              <ChevronDown
-                                 className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
-                                    installmentSection === "interval"
-                                       ? "rotate-180"
-                                       : ""
-                                 }`}
-                              />
-                           </CollapsibleTrigger>
-                           <CollapsibleContent>
-                              <div className="pt-4 space-y-4">
-                                 <form.Field name="installmentIntervalType">
-                                    {(field) => (
-                                       <Choicebox
-                                          onValueChange={(value) => {
-                                             const interval = value as
-                                                | "monthly"
-                                                | "biweekly"
-                                                | "weekly"
-                                                | "custom";
-                                             field.handleChange(interval);
-                                             if (interval !== "custom") {
-                                                setInstallmentSection(
-                                                   "amounts",
-                                                );
-                                             }
-                                          }}
-                                          value={field.state.value || ""}
-                                       >
-                                          {intervalOptions.map((option) => (
-                                             <ChoiceboxItem
-                                                id={`interval-${option}`}
-                                                key={option}
-                                                value={option}
-                                             >
-                                                <ChoiceboxItemHeader>
-                                                   <ChoiceboxItemTitle>
-                                                      {intervalLabels[option]}
-                                                   </ChoiceboxItemTitle>
-                                                </ChoiceboxItemHeader>
-                                                <ChoiceboxIndicator
-                                                   id={`interval-${option}`}
-                                                />
-                                             </ChoiceboxItem>
-                                          ))}
-                                       </Choicebox>
-                                    )}
-                                 </form.Field>
-
-                                 {installmentIntervalType === "custom" && (
-                                    <div className="space-y-2">
-                                       <Label>
-                                          {translate(
-                                             "dashboard.routes.bills.features.create-bill.installments.customDays",
-                                          )}
-                                       </Label>
-                                       <form.Field name="installmentCustomDays">
+                                    <ChevronDown
+                                       className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                                          installmentSection === "interval"
+                                             ? "rotate-180"
+                                             : ""
+                                       }`}
+                                    />
+                                 </CollapsibleTrigger>
+                                 <CollapsibleContent>
+                                    <div className="pt-4 space-y-4">
+                                       <form.Field name="installmentIntervalType">
                                           {(field) => (
-                                             <Input
-                                                max={365}
-                                                min={1}
-                                                onBlur={() => {
-                                                   if (field.state.value < 1) {
-                                                      field.handleChange(1);
-                                                   }
-                                                }}
-                                                onChange={(e) => {
-                                                   const val = e.target.value;
-                                                   if (val === "") {
-                                                      field.handleChange(0);
-                                                   } else {
-                                                      field.handleChange(
-                                                         Number(val),
+                                             <Choicebox
+                                                onValueChange={(value) => {
+                                                   const interval = value as
+                                                      | "monthly"
+                                                      | "biweekly"
+                                                      | "weekly"
+                                                      | "custom";
+                                                   field.handleChange(interval);
+                                                   if (interval !== "custom") {
+                                                      setInstallmentSection(
+                                                         "amounts",
                                                       );
                                                    }
                                                 }}
-                                                type="number"
-                                                value={
-                                                   field.state.value === 0
-                                                      ? ""
-                                                      : field.state.value
-                                                }
-                                             />
+                                                value={field.state.value || ""}
+                                             >
+                                                {intervalOptions.map(
+                                                   (option) => (
+                                                      <ChoiceboxItem
+                                                         id={`interval-${option}`}
+                                                         key={option}
+                                                         value={option}
+                                                      >
+                                                         <ChoiceboxItemHeader>
+                                                            <ChoiceboxItemTitle>
+                                                               {
+                                                                  intervalLabels[
+                                                                     option
+                                                                  ]
+                                                               }
+                                                            </ChoiceboxItemTitle>
+                                                         </ChoiceboxItemHeader>
+                                                         <ChoiceboxIndicator
+                                                            id={`interval-${option}`}
+                                                         />
+                                                      </ChoiceboxItem>
+                                                   ),
+                                                )}
+                                             </Choicebox>
                                           )}
                                        </form.Field>
-                                       <Button
-                                          className="w-full mt-2"
-                                          onClick={() => {
-                                             setInstallmentSection("amounts");
-                                             scrollToSection(amountsSectionRef);
-                                          }}
-                                          size="sm"
-                                          type="button"
-                                       >
-                                          {translate("common.actions.confirm")}
-                                       </Button>
-                                    </div>
-                                 )}
-                              </div>
-                           </CollapsibleContent>
-                        </Collapsible>
-                        </div>
 
-                        {/* Step 3: Amounts */}
-                        <div ref={amountsSectionRef}>
-                           <Collapsible
-                              onOpenChange={(open) => {
-                                 if (open) setInstallmentSection("amounts");
-                                 else setInstallmentSection("review");
-                              }}
-                              open={installmentSection === "amounts"}
-                           >
-                           <CollapsibleTrigger
-                              className={`flex w-full items-center justify-between rounded-lg border p-4 transition-colors ${
-                                 installmentIntervalType
-                                    ? "hover:bg-muted/50"
-                                    : "opacity-50 cursor-not-allowed"
-                              }`}
-                              disabled={!installmentIntervalType}
-                           >
-                              <div className="flex items-center gap-3">
-                                 <div
-                                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
-                                       installmentAmountType
-                                          ? "bg-primary text-primary-foreground"
-                                          : "bg-muted text-muted-foreground"
-                                    }`}
-                                 >
-                                    {installmentAmountType ? (
-                                       <Check className="h-3.5 w-3.5" />
-                                    ) : (
-                                       "3"
-                                    )}
-                                 </div>
-                                 <div className="text-left">
-                                    <div className="font-medium">
-                                       {translate(
-                                          "dashboard.routes.bills.features.create-bill.installments.amountType",
+                                       {installmentIntervalType ===
+                                          "custom" && (
+                                          <div className="space-y-2">
+                                             <Label>
+                                                {translate(
+                                                   "dashboard.routes.bills.features.create-bill.installments.customDays",
+                                                )}
+                                             </Label>
+                                             <form.Field name="installmentCustomDays">
+                                                {(field) => (
+                                                   <Input
+                                                      max={365}
+                                                      min={1}
+                                                      onBlur={() => {
+                                                         if (
+                                                            field.state.value <
+                                                            1
+                                                         ) {
+                                                            field.handleChange(
+                                                               1,
+                                                            );
+                                                         }
+                                                      }}
+                                                      onChange={(e) => {
+                                                         const val =
+                                                            e.target.value;
+                                                         if (val === "") {
+                                                            field.handleChange(
+                                                               0,
+                                                            );
+                                                         } else {
+                                                            field.handleChange(
+                                                               Number(val),
+                                                            );
+                                                         }
+                                                      }}
+                                                      type="number"
+                                                      value={
+                                                         field.state.value === 0
+                                                            ? ""
+                                                            : field.state.value
+                                                      }
+                                                   />
+                                                )}
+                                             </form.Field>
+                                             <Button
+                                                className="w-full mt-2"
+                                                onClick={() => {
+                                                   setInstallmentSection(
+                                                      "amounts",
+                                                   );
+                                                   scrollToSection(
+                                                      amountsSectionRef,
+                                                   );
+                                                }}
+                                                size="sm"
+                                                type="button"
+                                             >
+                                                {translate(
+                                                   "common.actions.confirm",
+                                                )}
+                                             </Button>
+                                          </div>
                                        )}
                                     </div>
-                                    <div className="text-sm text-muted-foreground">
-                                       {installmentSection !== "amounts" &&
-                                       installmentAmountType
-                                          ? installmentAmountType === "equal"
-                                             ? translate(
-                                                  "dashboard.routes.bills.features.create-bill.installments.amountEqual",
-                                               )
-                                             : translate(
-                                                  "dashboard.routes.bills.features.create-bill.installments.amountCustom",
-                                               )
-                                          : translate(
-                                               "dashboard.routes.bills.features.create-bill.recurrence-step.installment.amounts.description",
-                                            )}
-                                    </div>
-                                 </div>
-                              </div>
-                              <ChevronDown
-                                 className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
-                                    installmentSection === "amounts"
-                                       ? "rotate-180"
-                                       : ""
-                                 }`}
-                              />
-                           </CollapsibleTrigger>
-                           <CollapsibleContent>
-                              <div className="pt-4 space-y-4">
-                                 <form.Field name="installmentAmountType">
-                                    {(field) => (
-                                       <Choicebox
-                                          onValueChange={(value) => {
-                                             field.handleChange(
-                                                value as "equal" | "custom",
-                                             );
-                                             if (value === "equal") {
-                                                setInstallmentSection("review");
-                                             }
-                                          }}
-                                          value={field.state.value || ""}
-                                       >
-                                          <ChoiceboxItem
-                                             id="amount-equal"
-                                             value="equal"
-                                          >
-                                             <ChoiceboxItemHeader>
-                                                <ChoiceboxItemTitle>
-                                                   {translate(
-                                                      "dashboard.routes.bills.features.create-bill.installments.amountEqual",
-                                                   )}
-                                                </ChoiceboxItemTitle>
-                                                <ChoiceboxItemDescription>
-                                                   {translate(
-                                                      "dashboard.routes.bills.features.create-bill.recurrence-step.installment.amounts.equal-description",
-                                                   )}
-                                                </ChoiceboxItemDescription>
-                                             </ChoiceboxItemHeader>
-                                             <ChoiceboxIndicator id="amount-equal" />
-                                          </ChoiceboxItem>
-                                          <ChoiceboxItem
-                                             id="amount-custom"
-                                             value="custom"
-                                          >
-                                             <ChoiceboxItemHeader>
-                                                <ChoiceboxItemTitle>
-                                                   {translate(
-                                                      "dashboard.routes.bills.features.create-bill.installments.amountCustom",
-                                                   )}
-                                                </ChoiceboxItemTitle>
-                                                <ChoiceboxItemDescription>
-                                                   {translate(
-                                                      "dashboard.routes.bills.features.create-bill.recurrence-step.installment.amounts.custom-description",
-                                                   )}
-                                                </ChoiceboxItemDescription>
-                                             </ChoiceboxItemHeader>
-                                             <ChoiceboxIndicator id="amount-custom" />
-                                          </ChoiceboxItem>
-                                       </Choicebox>
-                                    )}
-                                 </form.Field>
+                                 </CollapsibleContent>
+                              </Collapsible>
+                           </div>
 
-                                 {installmentAmountType === "custom" && (
-                                    <div className="space-y-2">
-                                       {Array.from({
-                                          length: installmentCount,
-                                       }).map((_, index) => (
-                                          <form.Field
-                                             key={`installment-${index + 1}`}
-                                             name="installmentCustomAmounts"
-                                          >
-                                             {(field) => (
-                                                <Field>
-                                                   <FieldLabel
-                                                      htmlFor={`installment-amount-${index}`}
-                                                   >
-                                                      {translate(
-                                                         "dashboard.routes.bills.features.create-bill.installments.installmentLabel",
-                                                         {
-                                                            number: index + 1,
-                                                         },
-                                                      )}
-                                                   </FieldLabel>
-                                                   <MoneyInput
-                                                      id={`installment-amount-${index}`}
-                                                      onChange={(value) => {
-                                                         const newAmounts = [
-                                                            ...(field.state
-                                                               .value || []),
-                                                         ];
-                                                         newAmounts[index] =
-                                                            value || 0;
-                                                         field.handleChange(
-                                                            newAmounts,
-                                                         );
-                                                      }}
-                                                      placeholder="0,00"
-                                                      value={
-                                                         (field.state.value ||
-                                                            [])[index] || 0
-                                                      }
-                                                      valueInCents={false}
-                                                   />
-                                                </Field>
-                                             )}
-                                          </form.Field>
-                                       ))}
-
-                                       {/* Validation summary */}
+                           {/* Step 3: Amounts */}
+                           <div ref={amountsSectionRef}>
+                              <Collapsible
+                                 onOpenChange={(open) => {
+                                    if (open) setInstallmentSection("amounts");
+                                    else setInstallmentSection("review");
+                                 }}
+                                 open={installmentSection === "amounts"}
+                              >
+                                 <CollapsibleTrigger
+                                    className={`flex w-full items-center justify-between rounded-lg border p-4 transition-colors ${
+                                       installmentIntervalType
+                                          ? "hover:bg-muted/50"
+                                          : "opacity-50 cursor-not-allowed"
+                                    }`}
+                                    disabled={!installmentIntervalType}
+                                 >
+                                    <div className="flex items-center gap-3">
                                        <div
-                                          className={`p-3 rounded-lg space-y-1.5 text-sm ${
-                                             isCustomAmountsValid
-                                                ? "bg-muted/50"
-                                                : "bg-destructive/10 border border-destructive/20"
+                                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
+                                             installmentAmountType
+                                                ? "bg-primary text-primary-foreground"
+                                                : "bg-muted text-muted-foreground"
                                           }`}
                                        >
-                                          <div className="flex justify-between">
-                                             <span className="text-muted-foreground">
-                                                {translate(
-                                                   "dashboard.routes.bills.features.create-bill.installments.validation.total",
-                                                )}
-                                             </span>
-                                             <span
-                                                className={`font-medium ${
-                                                   isCustomAmountsValid
-                                                      ? ""
-                                                      : "text-destructive"
-                                                }`}
-                                             >
-                                                {formatDecimalCurrency(customAmountsSum)} /{" "}
-                                                {formatDecimalCurrency(amount)}
-                                             </span>
-                                          </div>
-                                          {!isCustomAmountsValid && (
-                                             <div className="text-destructive text-xs">
-                                                {amountDifference > 0
-                                                   ? translate(
-                                                        "dashboard.routes.bills.features.create-bill.installments.validation.remaining",
-                                                        {
-                                                           amount: formatDecimalCurrency(
-                                                              amountDifference,
-                                                           ),
-                                                        },
-                                                     )
-                                                   : translate(
-                                                        "dashboard.routes.bills.features.create-bill.installments.validation.excess",
-                                                        {
-                                                           amount: formatDecimalCurrency(
-                                                              Math.abs(amountDifference),
-                                                           ),
-                                                        },
-                                                     )}
-                                             </div>
+                                          {installmentAmountType ? (
+                                             <Check className="h-3.5 w-3.5" />
+                                          ) : (
+                                             "3"
                                           )}
                                        </div>
+                                       <div className="text-left">
+                                          <div className="font-medium">
+                                             {translate(
+                                                "dashboard.routes.bills.features.create-bill.installments.amountType",
+                                             )}
+                                          </div>
+                                          <div className="text-sm text-muted-foreground">
+                                             {installmentSection !==
+                                                "amounts" &&
+                                             installmentAmountType
+                                                ? installmentAmountType ===
+                                                  "equal"
+                                                   ? translate(
+                                                        "dashboard.routes.bills.features.create-bill.installments.amountEqual",
+                                                     )
+                                                   : translate(
+                                                        "dashboard.routes.bills.features.create-bill.installments.amountCustom",
+                                                     )
+                                                : translate(
+                                                     "dashboard.routes.bills.features.create-bill.recurrence-step.installment.amounts.description",
+                                                  )}
+                                          </div>
+                                       </div>
                                     </div>
-                                 )}
-                              </div>
-                           </CollapsibleContent>
-                        </Collapsible>
-                        </div>
-                     </>
-                  )}
-               </div>
+                                    <ChevronDown
+                                       className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                                          installmentSection === "amounts"
+                                             ? "rotate-180"
+                                             : ""
+                                       }`}
+                                    />
+                                 </CollapsibleTrigger>
+                                 <CollapsibleContent>
+                                    <div className="pt-4 space-y-4">
+                                       <form.Field name="installmentAmountType">
+                                          {(field) => (
+                                             <Choicebox
+                                                onValueChange={(value) => {
+                                                   field.handleChange(
+                                                      value as
+                                                         | "equal"
+                                                         | "custom",
+                                                   );
+                                                   if (value === "equal") {
+                                                      setInstallmentSection(
+                                                         "review",
+                                                      );
+                                                   }
+                                                }}
+                                                value={field.state.value || ""}
+                                             >
+                                                <ChoiceboxItem
+                                                   id="amount-equal"
+                                                   value="equal"
+                                                >
+                                                   <ChoiceboxItemHeader>
+                                                      <ChoiceboxItemTitle>
+                                                         {translate(
+                                                            "dashboard.routes.bills.features.create-bill.installments.amountEqual",
+                                                         )}
+                                                      </ChoiceboxItemTitle>
+                                                      <ChoiceboxItemDescription>
+                                                         {translate(
+                                                            "dashboard.routes.bills.features.create-bill.recurrence-step.installment.amounts.equal-description",
+                                                         )}
+                                                      </ChoiceboxItemDescription>
+                                                   </ChoiceboxItemHeader>
+                                                   <ChoiceboxIndicator id="amount-equal" />
+                                                </ChoiceboxItem>
+                                                <ChoiceboxItem
+                                                   id="amount-custom"
+                                                   value="custom"
+                                                >
+                                                   <ChoiceboxItemHeader>
+                                                      <ChoiceboxItemTitle>
+                                                         {translate(
+                                                            "dashboard.routes.bills.features.create-bill.installments.amountCustom",
+                                                         )}
+                                                      </ChoiceboxItemTitle>
+                                                      <ChoiceboxItemDescription>
+                                                         {translate(
+                                                            "dashboard.routes.bills.features.create-bill.recurrence-step.installment.amounts.custom-description",
+                                                         )}
+                                                      </ChoiceboxItemDescription>
+                                                   </ChoiceboxItemHeader>
+                                                   <ChoiceboxIndicator id="amount-custom" />
+                                                </ChoiceboxItem>
+                                             </Choicebox>
+                                          )}
+                                       </form.Field>
+
+                                       {installmentAmountType === "custom" && (
+                                          <div className="space-y-2">
+                                             {Array.from({
+                                                length: installmentCount,
+                                             }).map((_, index) => (
+                                                <form.Field
+                                                   key={`installment-${index + 1}`}
+                                                   name="installmentCustomAmounts"
+                                                >
+                                                   {(field) => (
+                                                      <Field>
+                                                         <FieldLabel
+                                                            htmlFor={`installment-amount-${index}`}
+                                                         >
+                                                            {translate(
+                                                               "dashboard.routes.bills.features.create-bill.installments.installmentLabel",
+                                                               {
+                                                                  number:
+                                                                     index + 1,
+                                                               },
+                                                            )}
+                                                         </FieldLabel>
+                                                         <MoneyInput
+                                                            id={`installment-amount-${index}`}
+                                                            onChange={(
+                                                               value,
+                                                            ) => {
+                                                               const newAmounts =
+                                                                  [
+                                                                     ...(field
+                                                                        .state
+                                                                        .value ||
+                                                                        []),
+                                                                  ];
+                                                               newAmounts[
+                                                                  index
+                                                               ] = value || 0;
+                                                               field.handleChange(
+                                                                  newAmounts,
+                                                               );
+                                                            }}
+                                                            placeholder="0,00"
+                                                            value={
+                                                               (field.state
+                                                                  .value || [])[
+                                                                  index
+                                                               ] || 0
+                                                            }
+                                                            valueInCents={false}
+                                                         />
+                                                      </Field>
+                                                   )}
+                                                </form.Field>
+                                             ))}
+
+                                             {/* Validation summary */}
+                                             <div
+                                                className={`p-3 rounded-lg space-y-1.5 text-sm ${
+                                                   isCustomAmountsValid
+                                                      ? "bg-muted/50"
+                                                      : "bg-destructive/10 border border-destructive/20"
+                                                }`}
+                                             >
+                                                <div className="flex justify-between">
+                                                   <span className="text-muted-foreground">
+                                                      {translate(
+                                                         "dashboard.routes.bills.features.create-bill.installments.validation.total",
+                                                      )}
+                                                   </span>
+                                                   <span
+                                                      className={`font-medium ${
+                                                         isCustomAmountsValid
+                                                            ? ""
+                                                            : "text-destructive"
+                                                      }`}
+                                                   >
+                                                      {formatDecimalCurrency(
+                                                         customAmountsSum,
+                                                      )}{" "}
+                                                      /{" "}
+                                                      {formatDecimalCurrency(
+                                                         amount,
+                                                      )}
+                                                   </span>
+                                                </div>
+                                                {!isCustomAmountsValid && (
+                                                   <div className="text-destructive text-xs">
+                                                      {amountDifference > 0
+                                                         ? translate(
+                                                              "dashboard.routes.bills.features.create-bill.installments.validation.remaining",
+                                                              {
+                                                                 amount:
+                                                                    formatDecimalCurrency(
+                                                                       amountDifference,
+                                                                    ),
+                                                              },
+                                                           )
+                                                         : translate(
+                                                              "dashboard.routes.bills.features.create-bill.installments.validation.excess",
+                                                              {
+                                                                 amount:
+                                                                    formatDecimalCurrency(
+                                                                       Math.abs(
+                                                                          amountDifference,
+                                                                       ),
+                                                                    ),
+                                                              },
+                                                           )}
+                                                   </div>
+                                                )}
+                                             </div>
+                                          </div>
+                                       )}
+                                    </div>
+                                 </CollapsibleContent>
+                              </Collapsible>
+                           </div>
+                        </>
+                     )}
+                  </div>
                );
             }}
          </form.Subscribe>
@@ -2414,91 +2498,59 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                currentId === activeSteps[activeSteps.length - 1];
 
             return (
-            <form className="h-full flex flex-col" onSubmit={handleSubmit}>
-               <SheetHeader>
-                  <SheetTitle className="flex items-center gap-2">
-                     {modeTexts.title}
-                     {isEditMode && bill?.installmentGroupId && (
-                        <Badge variant="secondary">
-                           {translate(
-                              "dashboard.routes.bills.features.create-bill.installments.badge",
-                              {
-                                 current: bill.installmentNumber,
-                                 total: bill.totalInstallments,
-                              },
-                           )}
-                        </Badge>
-                     )}
-                  </SheetTitle>
-                  <SheetDescription>{modeTexts.description}</SheetDescription>
-               </SheetHeader>
+               <form className="h-full flex flex-col" onSubmit={handleSubmit}>
+                  <SheetHeader>
+                     <SheetTitle className="flex items-center gap-2">
+                        {modeTexts.title}
+                        {isEditMode && bill?.installmentGroupId && (
+                           <Badge variant="secondary">
+                              {translate(
+                                 "dashboard.routes.bills.features.create-bill.installments.badge",
+                                 {
+                                    current: bill.installmentNumber,
+                                    total: bill.totalInstallments,
+                                 },
+                              )}
+                           </Badge>
+                        )}
+                     </SheetTitle>
+                     <SheetDescription>
+                        {modeTexts.description}
+                     </SheetDescription>
+                  </SheetHeader>
 
-               <div className="px-4 py-2">
-                  <Stepper.Navigation>
-                     {allSteps
-                        .filter((step) => activeSteps.includes(step.id))
-                        .map((step) => (
-                           <Stepper.Step key={step.id} of={step.id} />
-                        ))}
-                  </Stepper.Navigation>
-               </div>
+                  <div className="px-4 py-2">
+                     <Stepper.Navigation>
+                        {allSteps
+                           .filter((step) => activeSteps.includes(step.id))
+                           .map((step) => (
+                              <Stepper.Step key={step.id} of={step.id} />
+                           ))}
+                     </Stepper.Navigation>
+                  </div>
 
-               <div className="px-4 flex-1 overflow-y-auto">
-                  {methods.switch({
-                     "bill-mode": () => <BillModeStep />,
-                     "bill-type": () => <BillTypeStep />,
-                     categorization: () => <CategorizationStep />,
-                     details: () => <DetailsStep />,
-                     recurrence: () => <RecurrenceStep />,
-                  })}
-               </div>
+                  <div className="px-4 flex-1 overflow-y-auto">
+                     {methods.switch({
+                        "bill-mode": () => <BillModeStep />,
+                        "bill-type": () => <BillTypeStep />,
+                        categorization: () => <CategorizationStep />,
+                        details: () => <DetailsStep />,
+                        recurrence: () => <RecurrenceStep />,
+                     })}
+                  </div>
 
-               <SheetFooter className="px-4">
-                  <Stepper.Controls className="flex flex-col w-full gap-2">
-                     {methods.current.id === "bill-type" ? (
-                        <form.Subscribe
-                           selector={(state) => ({
-                              billCategoryValue: state.values.billCategory,
-                           })}
-                        >
-                           {({ billCategoryValue }) => (
-                              <Button
-                                 className="w-full"
-                                 disabled={!billCategoryValue}
-                                 onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    goToNextStep();
-                                 }}
-                                 type="button"
-                              >
-                                 {translate("common.actions.next")}
-                              </Button>
-                           )}
-                        </form.Subscribe>
-                     ) : methods.current.id === "bill-mode" ? (
-                        <form.Subscribe
-                           selector={(state) => ({
-                              billModeValue: state.values.billMode,
-                           })}
-                        >
-                           {({ billModeValue }) => (
-                              <>
+                  <SheetFooter className="px-4">
+                     <Stepper.Controls className="flex flex-col w-full gap-2">
+                        {methods.current.id === "bill-type" ? (
+                           <form.Subscribe
+                              selector={(state) => ({
+                                 billCategoryValue: state.values.billCategory,
+                              })}
+                           >
+                              {({ billCategoryValue }) => (
                                  <Button
                                     className="w-full"
-                                    onClick={(e) => {
-                                       e.preventDefault();
-                                       e.stopPropagation();
-                                       goToPrevStep();
-                                    }}
-                                    type="button"
-                                    variant="ghost"
-                                 >
-                                    {translate("common.actions.previous")}
-                                 </Button>
-                                 <Button
-                                    className="w-full"
-                                    disabled={!billModeValue}
+                                    disabled={!billCategoryValue}
                                     onClick={(e) => {
                                        e.preventDefault();
                                        e.stopPropagation();
@@ -2508,82 +2560,15 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                  >
                                     {translate("common.actions.next")}
                                  </Button>
-                              </>
-                           )}
-                        </form.Subscribe>
-                     ) : methods.current.id === "details" ? (
-                        <form.Subscribe
-                           selector={(state) => ({
-                              amountValid:
-                                 state.fieldMeta.amount?.isValid !== false,
-                              descriptionValid:
-                                 state.fieldMeta.description?.isValid !== false,
-                              dueDateValid:
-                                 state.fieldMeta.dueDate?.isValid !== false,
-                           })}
-                        >
-                           {({
-                              amountValid,
-                              descriptionValid,
-                              dueDateValid,
-                           }) => (
-                              <>
-                                 {!isEditMode && (
-                                    <Button
-                                       className="w-full"
-                                       onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          goToPrevStep();
-                                       }}
-                                       type="button"
-                                       variant="ghost"
-                                    >
-                                       {translate("common.actions.previous")}
-                                    </Button>
-                                 )}
-                                 <Button
-                                    className="w-full"
-                                    disabled={
-                                       !amountValid ||
-                                       !descriptionValid ||
-                                       !dueDateValid
-                                    }
-                                    onClick={(e) => {
-                                       e.preventDefault();
-                                       e.stopPropagation();
-                                       goToNextStep();
-                                    }}
-                                    type="button"
-                                 >
-                                    {translate("common.actions.next")}
-                                 </Button>
-                              </>
-                           )}
-                        </form.Subscribe>
-                     ) : methods.current.id === "recurrence" ? (
-                        <form.Subscribe
-                           selector={(state) => ({
-                              amount: state.values.amount,
-                              installmentAmountType:
-                                 state.values.installmentAmountType,
-                              installmentCustomAmounts:
-                                 state.values.installmentCustomAmounts,
-                           })}
-                        >
-                           {({
-                              amount,
-                              installmentAmountType,
-                              installmentCustomAmounts,
-                           }) => {
-                              const { customAmountsSum, amountDifference, isValid: isCustomAmountsValid } =
-                                 getCustomAmountsValidation(
-                                    amount,
-                                    installmentAmountType,
-                                    installmentCustomAmounts,
-                                 );
-
-                              return (
+                              )}
+                           </form.Subscribe>
+                        ) : methods.current.id === "bill-mode" ? (
+                           <form.Subscribe
+                              selector={(state) => ({
+                                 billModeValue: state.values.billMode,
+                              })}
+                           >
+                              {({ billModeValue }) => (
                                  <>
                                     <Button
                                        className="w-full"
@@ -2599,7 +2584,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                     </Button>
                                     <Button
                                        className="w-full"
-                                       disabled={!isCustomAmountsValid}
+                                       disabled={!billModeValue}
                                        onClick={(e) => {
                                           e.preventDefault();
                                           e.stopPropagation();
@@ -2609,94 +2594,205 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                     >
                                        {translate("common.actions.next")}
                                     </Button>
-                                    {!isCustomAmountsValid && (
-                                       <p className="text-xs text-destructive text-center">
-                                          {amountDifference > 0
-                                             ? translate(
-                                                  "dashboard.routes.bills.features.create-bill.installments.validation.remaining",
-                                                  {
-                                                     amount: formatDecimalCurrency(
-                                                        amountDifference,
-                                                     ),
-                                                  },
-                                               )
-                                             : translate(
-                                                  "dashboard.routes.bills.features.create-bill.installments.validation.excess",
-                                                  {
-                                                     amount: formatDecimalCurrency(
-                                                        Math.abs(amountDifference),
-                                                     ),
-                                                  },
-                                               )}
-                                       </p>
-                                    )}
                                  </>
-                              );
-                           }}
-                        </form.Subscribe>
-                     ) : isLastActiveStep ? (
-                        <form.Subscribe
-                           selector={(state) => ({
-                              canSubmit: state.canSubmit,
-                              isSubmitting: state.isSubmitting,
-                           })}
-                        >
-                           {({ canSubmit, isSubmitting }) => (
-                              <>
-                                 <Button
-                                    className="w-full"
-                                    onClick={(e) => {
-                                       e.preventDefault();
-                                       e.stopPropagation();
-                                       goToPrevStep();
-                                    }}
-                                    type="button"
-                                    variant="ghost"
-                                 >
-                                    {translate("common.actions.previous")}
-                                 </Button>
-                                 <Button
-                                    className="w-full"
-                                    disabled={
-                                       !canSubmit || isSubmitting || isPending
-                                    }
-                                    type="submit"
-                                 >
-                                    {translate("common.actions.submit")}
-                                 </Button>
-                              </>
-                           )}
-                        </form.Subscribe>
-                     ) : (
-                        <>
-                           <Button
-                              className="w-full"
-                              onClick={(e) => {
-                                 e.preventDefault();
-                                 e.stopPropagation();
-                                 goToPrevStep();
-                              }}
-                              type="button"
-                              variant="ghost"
+                              )}
+                           </form.Subscribe>
+                        ) : methods.current.id === "details" ? (
+                           <form.Subscribe
+                              selector={(state) => ({
+                                 amountValid:
+                                    state.fieldMeta.amount?.isValid !== false,
+                                 descriptionValid:
+                                    state.fieldMeta.description?.isValid !==
+                                    false,
+                                 dueDateValid:
+                                    state.fieldMeta.dueDate?.isValid !== false,
+                              })}
                            >
-                              {translate("common.actions.previous")}
-                           </Button>
-                           <Button
-                              className="w-full"
-                              onClick={(e) => {
-                                 e.preventDefault();
-                                 e.stopPropagation();
-                                 goToNextStep();
-                              }}
-                              type="button"
+                              {({
+                                 amountValid,
+                                 descriptionValid,
+                                 dueDateValid,
+                              }) => (
+                                 <>
+                                    {!isEditMode && (
+                                       <Button
+                                          className="w-full"
+                                          onClick={(e) => {
+                                             e.preventDefault();
+                                             e.stopPropagation();
+                                             goToPrevStep();
+                                          }}
+                                          type="button"
+                                          variant="ghost"
+                                       >
+                                          {translate("common.actions.previous")}
+                                       </Button>
+                                    )}
+                                    <Button
+                                       className="w-full"
+                                       disabled={
+                                          !amountValid ||
+                                          !descriptionValid ||
+                                          !dueDateValid
+                                       }
+                                       onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          goToNextStep();
+                                       }}
+                                       type="button"
+                                    >
+                                       {translate("common.actions.next")}
+                                    </Button>
+                                 </>
+                              )}
+                           </form.Subscribe>
+                        ) : methods.current.id === "recurrence" ? (
+                           <form.Subscribe
+                              selector={(state) => ({
+                                 amount: state.values.amount,
+                                 installmentAmountType:
+                                    state.values.installmentAmountType,
+                                 installmentCustomAmounts:
+                                    state.values.installmentCustomAmounts,
+                              })}
                            >
-                              {translate("common.actions.next")}
-                           </Button>
-                        </>
-                     )}
-                  </Stepper.Controls>
-               </SheetFooter>
-            </form>
+                              {({
+                                 amount,
+                                 installmentAmountType,
+                                 installmentCustomAmounts,
+                              }) => {
+                                 const {
+                                    customAmountsSum,
+                                    amountDifference,
+                                    isValid: isCustomAmountsValid,
+                                 } = getCustomAmountsValidation(
+                                    amount,
+                                    installmentAmountType,
+                                    installmentCustomAmounts,
+                                 );
+
+                                 return (
+                                    <>
+                                       <Button
+                                          className="w-full"
+                                          onClick={(e) => {
+                                             e.preventDefault();
+                                             e.stopPropagation();
+                                             goToPrevStep();
+                                          }}
+                                          type="button"
+                                          variant="ghost"
+                                       >
+                                          {translate("common.actions.previous")}
+                                       </Button>
+                                       <Button
+                                          className="w-full"
+                                          disabled={!isCustomAmountsValid}
+                                          onClick={(e) => {
+                                             e.preventDefault();
+                                             e.stopPropagation();
+                                             goToNextStep();
+                                          }}
+                                          type="button"
+                                       >
+                                          {translate("common.actions.next")}
+                                       </Button>
+                                       {!isCustomAmountsValid && (
+                                          <p className="text-xs text-destructive text-center">
+                                             {amountDifference > 0
+                                                ? translate(
+                                                     "dashboard.routes.bills.features.create-bill.installments.validation.remaining",
+                                                     {
+                                                        amount:
+                                                           formatDecimalCurrency(
+                                                              amountDifference,
+                                                           ),
+                                                     },
+                                                  )
+                                                : translate(
+                                                     "dashboard.routes.bills.features.create-bill.installments.validation.excess",
+                                                     {
+                                                        amount:
+                                                           formatDecimalCurrency(
+                                                              Math.abs(
+                                                                 amountDifference,
+                                                              ),
+                                                           ),
+                                                     },
+                                                  )}
+                                          </p>
+                                       )}
+                                    </>
+                                 );
+                              }}
+                           </form.Subscribe>
+                        ) : isLastActiveStep ? (
+                           <form.Subscribe
+                              selector={(state) => ({
+                                 canSubmit: state.canSubmit,
+                                 isSubmitting: state.isSubmitting,
+                              })}
+                           >
+                              {({ canSubmit, isSubmitting }) => (
+                                 <>
+                                    <Button
+                                       className="w-full"
+                                       onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          goToPrevStep();
+                                       }}
+                                       type="button"
+                                       variant="ghost"
+                                    >
+                                       {translate("common.actions.previous")}
+                                    </Button>
+                                    <Button
+                                       className="w-full"
+                                       disabled={
+                                          !canSubmit ||
+                                          isSubmitting ||
+                                          isPending
+                                       }
+                                       type="submit"
+                                    >
+                                       {translate("common.actions.submit")}
+                                    </Button>
+                                 </>
+                              )}
+                           </form.Subscribe>
+                        ) : (
+                           <>
+                              <Button
+                                 className="w-full"
+                                 onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    goToPrevStep();
+                                 }}
+                                 type="button"
+                                 variant="ghost"
+                              >
+                                 {translate("common.actions.previous")}
+                              </Button>
+                              <Button
+                                 className="w-full"
+                                 onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    goToNextStep();
+                                 }}
+                                 type="button"
+                              >
+                                 {translate("common.actions.next")}
+                              </Button>
+                           </>
+                        )}
+                     </Stepper.Controls>
+                  </SheetFooter>
+               </form>
             );
          }}
       </Stepper.Provider>

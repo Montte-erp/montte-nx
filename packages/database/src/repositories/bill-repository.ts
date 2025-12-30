@@ -1,10 +1,11 @@
+import { createSearchTokens } from "@packages/encryption/search-index";
 import {
    decryptBillFields,
    encryptBillFields,
 } from "@packages/encryption/service";
 import { centsToReais, reaisToCents } from "@packages/money";
 import { AppError, propagateError } from "@packages/utils/errors";
-import { and, eq, gte, ilike, lte, sql } from "drizzle-orm";
+import { and, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import type { bankAccount } from "../schemas/bank-accounts";
 import { bill } from "../schemas/bills";
@@ -243,7 +244,18 @@ export async function findBillsByOrganizationIdPaginated(
          }
 
          if (search) {
-            conditions.push(ilike(bill.description, `%${search}%`));
+            const searchKey = process.env.SEARCH_KEY;
+            if (searchKey) {
+               // Use blind index search with HMAC tokens
+               const tokens = createSearchTokens(search, searchKey);
+               if (tokens.length > 0) {
+                  const tokenConditions = tokens.map((token) =>
+                     ilike(bill.searchIndex, `%${token}%`),
+                  );
+                  conditions.push(or(...tokenConditions)!);
+               }
+            }
+            // If no SEARCH_KEY, search is silently skipped (search index not available)
          }
 
          if (startDate) {

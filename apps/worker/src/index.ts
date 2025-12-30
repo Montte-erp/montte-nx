@@ -125,7 +125,6 @@ const { worker: deletionWorker, close: closeDeletionWorker } =
       connection: redisConnection,
       db,
       resendClient,
-      appUrl: env.APP_URL,
       onCompleted: async (
          job: Job<DeletionJobData, DeletionJobResult>,
          result: DeletionJobResult,

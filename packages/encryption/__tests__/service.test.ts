@@ -66,7 +66,7 @@ describe("encryption service", () => {
 		});
 
 		describe("domain-specific encryption functions", () => {
-			it("should return transaction unchanged", () => {
+			it("should return transaction unchanged (except searchIndex)", () => {
 				const transaction = {
 					id: "123",
 					description: "Groceries",
@@ -75,10 +75,10 @@ describe("encryption service", () => {
 				};
 
 				const result = encryptTransactionFields(transaction);
-				expect(result).toEqual(transaction);
+				expect(result).toEqual({ ...transaction, searchIndex: null });
 			});
 
-			it("should return bill unchanged", () => {
+			it("should return bill unchanged (except searchIndex)", () => {
 				const bill = {
 					id: "456",
 					description: "Electricity",
@@ -87,7 +87,7 @@ describe("encryption service", () => {
 				};
 
 				const result = encryptBillFields(bill);
-				expect(result).toEqual(bill);
+				expect(result).toEqual({ ...bill, searchIndex: null });
 			});
 
 			it("should return bank account unchanged", () => {
@@ -456,11 +456,14 @@ describe("encryption service", () => {
 			};
 			expect(
 				decryptTransactionFields(encryptTransactionFields(transaction)),
-			).toEqual(transaction);
+			).toEqual({ ...transaction, searchIndex: null });
 
 			// Bill
 			const bill = { description: "Test bill", notes: "Bill notes" };
-			expect(decryptBillFields(encryptBillFields(bill))).toEqual(bill);
+			expect(decryptBillFields(encryptBillFields(bill))).toEqual({
+				...bill,
+				searchIndex: null,
+			});
 
 			// Bank Account
 			const account = { accountNumber: "12345", notes: "Account notes" };
