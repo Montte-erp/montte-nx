@@ -12,6 +12,7 @@ export {
    type CsvParseOptionsWithProgress,
    type CsvProgressCallback,
    type CsvProgressEvent,
+   detectAmountFormat,
    type ParsedRow,
    parseAmount,
    parseCsvContent,

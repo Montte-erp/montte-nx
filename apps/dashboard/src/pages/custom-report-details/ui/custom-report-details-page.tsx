@@ -124,6 +124,7 @@ function mapSnapshotToTableTransaction(
       })),
       type: snapshot.type,
       updatedAt: snapshotDate,
+      searchIndex: "",
    };
 }
 

@@ -27,6 +27,7 @@ export type CsvPreviewData = {
    };
    totalRows: number;
    delimiter: string;
+   amountFormat: "decimal-comma" | "decimal-dot";
 };
 
 export type ParsedTransaction = {

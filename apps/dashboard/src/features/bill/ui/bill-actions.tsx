@@ -7,8 +7,10 @@ import {
    Copy,
    Eye,
    FolderOpen,
+   Layers,
    Paperclip,
    Pencil,
+   Repeat,
    Split,
    Trash2,
    Wallet,
@@ -40,7 +42,9 @@ export function BillActions({
       handleEdit,
       handleEditMetadata,
       handleLinkFile,
+      handleManageRecurrence,
       handleMarkAsRecurrent,
+      handleViewInstallments,
    } = useBillActions(bill, { onDeleteSuccess });
 
    const isCompleted = !!bill.completionDate;
@@ -125,6 +129,42 @@ export function BillActions({
                   <Split className="size-4" />
                   {translate(
                      "dashboard.routes.bills.actions.create-installments",
+                  )}
+               </Button>
+               {/* Separator */}
+               <div className="h-4 w-px bg-border" />
+            </>
+         )}
+
+         {/* Recurring bill actions */}
+         {bill.isRecurring && (
+            <>
+               <Button
+                  onClick={handleManageRecurrence}
+                  size="sm"
+                  variant="outline"
+               >
+                  <Repeat className="size-4" />
+                  {translate(
+                     "dashboard.routes.bills.actions.manage-recurrence",
+                  )}
+               </Button>
+               {/* Separator */}
+               <div className="h-4 w-px bg-border" />
+            </>
+         )}
+
+         {/* Installment bill actions */}
+         {bill.installmentGroupId && (
+            <>
+               <Button
+                  onClick={handleViewInstallments}
+                  size="sm"
+                  variant="outline"
+               >
+                  <Layers className="size-4" />
+                  {translate(
+                     "dashboard.routes.bills.actions.view-installments",
                   )}
                </Button>
                {/* Separator */}

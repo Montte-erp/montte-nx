@@ -2,12 +2,10 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { isEncrypted } from "../src/server";
 import {
 	decryptArray,
-	decryptBankAccountFields,
 	decryptBillFields,
 	decryptCounterpartyFields,
 	decryptTransactionFields,
 	decryptValue,
-	encryptBankAccountFields,
 	encryptBillFields,
 	encryptCounterpartyFields,
 	encryptTransactionFields,
@@ -88,18 +86,6 @@ describe("encryption service", () => {
 
 				const result = encryptBillFields(bill);
 				expect(result).toEqual({ ...bill, searchIndex: null });
-			});
-
-			it("should return bank account unchanged", () => {
-				const account = {
-					id: "789",
-					accountNumber: "1234567890",
-					notes: "Primary account",
-					bankName: "Test Bank",
-				};
-
-				const result = encryptBankAccountFields(account);
-				expect(result).toEqual(account);
 			});
 
 			it("should return counterparty unchanged", () => {
@@ -282,44 +268,6 @@ describe("encryption service", () => {
 			});
 		});
 
-		describe("encryptBankAccountFields / decryptBankAccountFields", () => {
-			it("should encrypt and decrypt bank account fields correctly", () => {
-				const original = {
-					id: "789",
-					accountNumber: "1234567890",
-					notes: "Primary checking account",
-					bankName: "Test Bank",
-					routingNumber: "111222333",
-				};
-
-				const encrypted = encryptBankAccountFields(original);
-
-				expect(encrypted.accountNumber).not.toBe("1234567890");
-				expect(encrypted.notes).not.toBe("Primary checking account");
-				expect(encrypted.bankName).toBe("Test Bank");
-				expect(encrypted.routingNumber).toBe("111222333");
-
-				const decrypted = decryptBankAccountFields(encrypted);
-
-				expect(decrypted.accountNumber).toBe("1234567890");
-				expect(decrypted.notes).toBe("Primary checking account");
-			});
-
-			it("should handle account without notes", () => {
-				const account = {
-					id: "789",
-					accountNumber: "9876543210",
-					bankName: "Other Bank",
-				};
-
-				const encrypted = encryptBankAccountFields(account);
-				const decrypted = decryptBankAccountFields(encrypted);
-
-				expect(decrypted.accountNumber).toBe("9876543210");
-				expect(decrypted.notes).toBeUndefined();
-			});
-		});
-
 		describe("encryptCounterpartyFields / decryptCounterpartyFields", () => {
 			it("should encrypt and decrypt counterparty notes", () => {
 				const original = {
@@ -464,12 +412,6 @@ describe("encryption service", () => {
 				...bill,
 				searchIndex: null,
 			});
-
-			// Bank Account
-			const account = { accountNumber: "12345", notes: "Account notes" };
-			expect(decryptBankAccountFields(encryptBankAccountFields(account))).toEqual(
-				account,
-			);
 
 			// Counterparty
 			const counterparty = { notes: "Counterparty notes" };
