@@ -36,6 +36,41 @@ export interface CsvParseOptionsWithProgress extends CsvParseOptions {
    onProgress?: CsvProgressCallback;
 }
 
+/**
+ * Detects the amount format (decimal separator) from sample values.
+ * Analyzes values to determine if they use dot or comma as decimal separator.
+ *
+ * @param values - Array of amount strings to analyze
+ * @returns The detected format: "decimal-comma" or "decimal-dot"
+ *
+ * @example
+ * detectAmountFormat(["-1.50", "100.00"]) // "decimal-dot"
+ * detectAmountFormat(["-1,50", "100,00"]) // "decimal-comma"
+ */
+export function detectAmountFormat(
+   values: string[],
+): "decimal-comma" | "decimal-dot" {
+   const cleaned = values
+      .map((v) => v.trim().replace(/[R$\s]/g, ""))
+      .filter((v) => v.length > 0);
+
+   for (const value of cleaned) {
+      // Check for decimal pattern: separator followed by exactly 2 digits at end
+      const commaMatch = value.match(/,(\d{2})$/);
+      const dotMatch = value.match(/\.(\d{2})$/);
+
+      if (commaMatch && !dotMatch) {
+         return "decimal-comma";
+      }
+      if (dotMatch && !commaMatch) {
+         return "decimal-dot";
+      }
+   }
+
+   // Default to decimal-comma for Brazilian context
+   return "decimal-comma";
+}
+
 export function parseAmount(
    value: string,
    format: "decimal-comma" | "decimal-dot",
@@ -401,6 +436,7 @@ export function previewCsv(
    };
    totalRows: number;
    delimiter: string;
+   amountFormat: "decimal-comma" | "decimal-dot";
 } {
    const delimiter = options?.delimiter ?? detectDelimiter(content);
 
@@ -423,6 +459,23 @@ export function previewCsv(
       .slice(0, maxRows)
       .map((row) => row.fields);
 
+   // Detect amount format from sample data
+   // Use the suggested amount column if available, otherwise try all columns
+   let amountValues: string[] = [];
+   if (suggestedMapping.amount !== null) {
+      amountValues = sampleRows.map(
+         (row) => row[suggestedMapping.amount!] ?? "",
+      );
+   } else {
+      // Try to find numeric-looking columns
+      amountValues = sampleRows.flatMap((row) =>
+         row.filter((cell) =>
+            /^-?[\d.,]+$/.test(cell.trim().replace(/[R$\s]/g, "")),
+         ),
+      );
+   }
+   const amountFormat = detectAmountFormat(amountValues);
+
    return {
       headers,
       sampleRows,
@@ -432,5 +485,6 @@ export function previewCsv(
       suggestedMapping,
       totalRows: csvDoc.totalRows,
       delimiter,
+      amountFormat,
    };
 }

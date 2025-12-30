@@ -2,7 +2,9 @@ import { createSearchTokens } from "@packages/encryption/search-index";
 import {
    decryptBillFields,
    encryptBillFields,
+   encryptTransactionFields,
 } from "@packages/encryption/service";
+import { serverEnv } from "@packages/environment/server";
 import { centsToReais, reaisToCents } from "@packages/money";
 import { AppError, propagateError } from "@packages/utils/errors";
 import { and, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
@@ -244,7 +246,7 @@ export async function findBillsByOrganizationIdPaginated(
          }
 
          if (search) {
-            const searchKey = process.env.SEARCH_KEY;
+            const searchKey = serverEnv.SEARCH_KEY;
             if (searchKey) {
                // Use blind index search with HMAC tokens
                const tokens = createSearchTokens(search, searchKey);
@@ -739,7 +741,7 @@ export async function completeManyBills(
          transactionIds.push(transactionId);
 
          await dbClient.transaction(async (tx) => {
-            await tx.insert(transaction).values({
+            const transactionData = encryptTransactionFields({
                amount: billItem.amount,
                bankAccountId: billItem.bankAccountId,
                date: completionDate,
@@ -748,6 +750,7 @@ export async function completeManyBills(
                organizationId,
                type: billItem.type as "income" | "expense",
             });
+            await tx.insert(transaction).values(transactionData);
 
             await tx
                .update(bill)
@@ -889,7 +892,7 @@ export async function createBillWithInstallments(
             const installmentAmount = installmentAmounts[i];
             const billId = crypto.randomUUID();
 
-            await tx.insert(bill).values({
+            const installmentData = encryptBillFields({
                ...billData,
                amount: String(installmentAmount),
                dueDate: installmentDueDate,
@@ -900,6 +903,7 @@ export async function createBillWithInstallments(
                originalAmount: String(installmentAmount),
                totalInstallments,
             });
+            await tx.insert(bill).values(installmentData);
 
             const createdBill = await tx.query.bill.findFirst({
                where: (bill, { eq }) => eq(bill.id, billId),
@@ -919,7 +923,7 @@ export async function createBillWithInstallments(
       });
 
       return {
-         bills: createdBills,
+         bills: createdBills.map(decryptBillFields),
          installmentGroupId,
          totalInstallments,
       };

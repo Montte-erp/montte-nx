@@ -4,10 +4,12 @@ import { useDeleteBillDialog } from "../hooks/use-delete-bill-dialog";
 import { ChangeBillCategoryForm } from "../ui/change-bill-category-form";
 import { CreateInstallmentsForm } from "../ui/create-installments-form";
 import { DuplicateBillSheet } from "../ui/duplicate-bill-sheet";
+import { EditBillForm } from "../ui/edit-bill-form";
 import { EditBillMetadataForm } from "../ui/edit-bill-metadata-form";
 import { LinkFileBillForm } from "../ui/link-file-bill-form";
-import { ManageBillForm } from "../ui/manage-bill-form";
+import { ManageRecurrenceForm } from "../ui/manage-recurrence-form";
 import { MarkAsRecurrentForm } from "../ui/mark-as-recurrent-form";
+import { ViewInstallmentsSheet } from "../ui/view-installments-sheet";
 
 type Bill = BillWithRelations;
 
@@ -62,6 +64,18 @@ export function useBillActions(bill: Bill, options?: UseBillActionsOptions) {
       });
    };
 
+   const handleManageRecurrence = () => {
+      openSheet({
+         children: <ManageRecurrenceForm bill={bill} onSuccess={closeSheet} />,
+      });
+   };
+
+   const handleViewInstallments = () => {
+      openSheet({
+         children: <ViewInstallmentsSheet bill={bill} />,
+      });
+   };
+
    const handleCreateInstallments = () => {
       openSheet({
          children: (
@@ -72,7 +86,7 @@ export function useBillActions(bill: Bill, options?: UseBillActionsOptions) {
 
    const handleEdit = () => {
       openSheet({
-         children: <ManageBillForm bill={bill} />,
+         children: <EditBillForm bill={bill} />,
       });
    };
 
@@ -96,6 +110,8 @@ export function useBillActions(bill: Bill, options?: UseBillActionsOptions) {
       handleEdit,
       handleEditMetadata,
       handleLinkFile,
+      handleManageRecurrence,
       handleMarkAsRecurrent,
+      handleViewInstallments,
    };
 }

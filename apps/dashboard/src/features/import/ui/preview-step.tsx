@@ -160,7 +160,7 @@ export function PreviewStep({
                const result = await parseCsvBatch(csvInputs, {
                   columnMapping: columnMapping as CsvColumnMapping,
                   dateFormat: "DD/MM/YYYY",
-                  amountFormat: "decimal-comma",
+                  amountFormat: csvPreviewData?.amountFormat ?? "decimal-comma",
                   delimiter: csvPreviewData?.delimiter,
                   onProgress,
                });

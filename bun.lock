@@ -338,6 +338,7 @@
       "version": "0.12.1",
       "dependencies": {
         "@f-o-t/rules-engine": "workspace:*",
+        "@packages/environment": "workspace:*",
         "@packages/money": "workspace:*",
         "@packages/utils": "workspace:*",
         "drizzle-orm": "catalog:database",
