@@ -1,8 +1,11 @@
 import type { Consequence } from "@packages/database/schema";
 import { addTagHandler } from "./handlers/add-tag";
 import { createTransactionHandler } from "./handlers/create-transaction";
+import { fetchBillsReportHandler } from "./handlers/fetch-bills-report";
+import { formatDataHandler } from "./handlers/format-data";
 import { markAsTransferHandler } from "./handlers/mark-as-transfer";
 import { removeTagHandler } from "./handlers/remove-tag";
+import { sendBillsDigestHandler } from "./handlers/send-bills-digest";
 import { sendEmailHandler } from "./handlers/send-email";
 import { sendPushNotificationHandler } from "./handlers/send-push-notification";
 import { setCategoryHandler } from "./handlers/set-category";
@@ -45,6 +48,9 @@ export function initializeDefaultHandlers(): void {
    registerActionHandler(markAsTransferHandler);
    registerActionHandler(sendPushNotificationHandler);
    registerActionHandler(sendEmailHandler);
+   registerActionHandler(sendBillsDigestHandler);
+   registerActionHandler(fetchBillsReportHandler);
+   registerActionHandler(formatDataHandler);
    registerActionHandler(stopExecutionHandler);
 }
 

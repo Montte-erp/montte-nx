@@ -15,7 +15,12 @@ import type {
 import type { Resend } from "resend";
 import { executeConsequences } from "../actions/executor";
 import type { VapidConfig } from "../actions/types";
-import type { TransactionEventData, WorkflowEvent } from "../types/events";
+import type {
+	ScheduleEventData,
+	ScheduleTriggeredEvent,
+	TransactionEventData,
+	WorkflowEvent,
+} from "../types/events";
 import type {
 	ExecutedConsequence,
 	RuleExecutionResult,
@@ -45,6 +50,10 @@ export type WorkflowRunner = {
 		event: WorkflowEvent,
 		rule: WorkflowRule,
 	) => Promise<RuleExecutionResult>;
+	processScheduleEvent: (
+		event: ScheduleTriggeredEvent,
+		rule: WorkflowRule,
+	) => Promise<WorkflowExecutionResult>;
 	getEngine: () => WorkflowEngine;
 };
 
@@ -430,10 +439,173 @@ export function createWorkflowRunner(
 		return flattened;
 	}
 
+	/**
+	 * Process a schedule-triggered event for a specific rule.
+	 * Unlike regular events, schedule events skip condition evaluation
+	 * and directly execute the rule's consequences.
+	 */
+	async function processScheduleEvent(
+		event: ScheduleTriggeredEvent,
+		rule: WorkflowRule,
+	): Promise<WorkflowExecutionResult> {
+		const startTime = performance.now();
+		const startedAt = new Date();
+		const consequencesExecuted: ExecutedConsequence[] = [];
+		let error: string | undefined;
+		let stopProcessing = false;
+
+		try {
+			// For schedule events, we create a minimal context with schedule data
+			const scheduleContext = {
+				triggerTime: event.data.triggerTime,
+				organizationId: event.data.organizationId,
+				automationRuleId: event.data.automationRuleId,
+			};
+
+			// Execute consequences directly (no condition evaluation for schedules)
+			const executionResult = await executeConsequences(
+				rule.consequences.map((c) => ({
+					payload: c.payload,
+					priority: rule.priority,
+					ruleId: rule.id,
+					type: c.type as keyof WorkflowConsequences,
+				})),
+				{
+					db,
+					dryRun,
+					eventData: scheduleContext as unknown as TransactionContext,
+					organizationId: event.organizationId,
+					resendClient,
+					ruleId: rule.id,
+					vapidConfig,
+				},
+			);
+
+			for (let i = 0; i < executionResult.results.length; i++) {
+				const consequenceResult = executionResult.results[i];
+				if (!consequenceResult) continue;
+				consequencesExecuted.push({
+					consequenceIndex: i,
+					error: consequenceResult.error,
+					result: consequenceResult.result,
+					skippedReason: consequenceResult.skipReason,
+					status: consequenceResult.skipped
+						? "skipped"
+						: consequenceResult.success
+							? "success"
+							: "failed",
+					type: consequenceResult.type as ActionType,
+				});
+			}
+
+			stopProcessing =
+				executionResult.stoppedEarly || (rule.stopOnMatch ?? false);
+		} catch (e) {
+			error = e instanceof Error ? e.message : "Unknown error";
+		}
+
+		const durationMs = Math.round(performance.now() - startTime);
+		const completedAt = new Date();
+
+		const result: RuleExecutionResult = {
+			conditionsPassed: true, // Always true for schedules (no conditions)
+			consequencesExecuted,
+			durationMs,
+			error,
+			matched: true,
+			ruleId: rule.id,
+			ruleName: rule.name,
+			stopProcessing,
+		};
+
+		// Log the execution
+		await logScheduleRuleExecution(event, rule, result, {
+			completedAt,
+			startedAt,
+		});
+
+		const totalDurationMs = performance.now() - startTime;
+
+		return {
+			eventId: event.id,
+			eventType: event.type,
+			organizationId: event.organizationId,
+			results: [result],
+			rulesEvaluated: 1,
+			rulesMatched: 1,
+			stoppedByRuleId: undefined,
+			stoppedEarly: stopProcessing,
+			totalDurationMs,
+		};
+	}
+
+	async function logScheduleRuleExecution(
+		event: ScheduleTriggeredEvent,
+		rule: WorkflowRule,
+		result: RuleExecutionResult,
+		options: {
+			startedAt: Date;
+			completedAt: Date;
+		},
+	) {
+		if (dryRun) return;
+
+		const consequencesLogResults: ConsequenceExecutionLogResult[] =
+			result.consequencesExecuted.map((c) => ({
+				consequenceIndex: c.consequenceIndex,
+				error: c.error,
+				result: c.result,
+				success: c.status === "success",
+				type: c.type,
+			}));
+
+		let status: AutomationLogStatus;
+		if (result.error) {
+			status = "failed";
+		} else {
+			const allSuccess = result.consequencesExecuted.every(
+				(c) => c.status === "success" || c.status === "skipped",
+			);
+			const anySuccess = result.consequencesExecuted.some(
+				(c) => c.status === "success",
+			);
+			if (allSuccess) {
+				status = "success";
+			} else if (anySuccess) {
+				status = "partial";
+			} else {
+				status = "failed";
+			}
+		}
+
+		try {
+			await createAutomationLog(db, {
+				completedAt: options.completedAt,
+				conditionsEvaluated: [],
+				consequencesExecuted: consequencesLogResults,
+				durationMs: result.durationMs,
+				errorMessage: result.error ?? null,
+				organizationId: event.organizationId,
+				relatedEntityId: null,
+				relatedEntityType: null,
+				ruleId: rule.id,
+				ruleName: rule.name,
+				startedAt: options.startedAt,
+				status,
+				triggeredBy: "event",
+				triggerEvent: event.data,
+				triggerType: rule.triggerType as TriggerType,
+			});
+		} catch (logError) {
+			console.error("Failed to create automation log:", logError);
+		}
+	}
+
 	return {
 		getEngine: () => engine,
 		processEvent,
 		processEventForRule,
+		processScheduleEvent,
 	};
 }
 

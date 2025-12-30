@@ -16,6 +16,7 @@ import {
    Bell,
    Building,
    ChevronRight,
+   ClipboardList,
    Copy,
    FileText,
    FolderTree,
@@ -24,6 +25,7 @@ import {
    Mail,
    Play,
    Plus,
+   Search,
    Settings,
    StopCircle,
    Tag,
@@ -52,6 +54,132 @@ const edgeTypes: EdgeTypes = {
 
 const NODE_WIDTH = 280;
 const NODE_HEIGHT = 150;
+
+// Menu dimensions for boundary calculations
+const MENU_WIDTH = 220;
+const MENU_HEIGHT = 400; // approximate max height
+const SUBMENU_WIDTH = 220;
+const MENU_PADDING = 10;
+
+// Calculate menu position with viewport boundary checking
+function calculateMenuPosition(
+   x: number,
+   y: number,
+   menuWidth = MENU_WIDTH,
+   menuHeight = MENU_HEIGHT,
+): { x: number; y: number } {
+   const viewportWidth = window.innerWidth;
+   const viewportHeight = window.innerHeight;
+
+   let adjustedX = x;
+   let adjustedY = y;
+
+   // If menu overflows right edge, move to left
+   if (x + menuWidth > viewportWidth - MENU_PADDING) {
+      adjustedX = viewportWidth - menuWidth - MENU_PADDING;
+   }
+
+   // If menu overflows bottom edge, move up
+   if (y + menuHeight > viewportHeight - MENU_PADDING) {
+      adjustedY = viewportHeight - menuHeight - MENU_PADDING;
+   }
+
+   // Ensure menu doesn't go off left edge
+   if (adjustedX < MENU_PADDING) {
+      adjustedX = MENU_PADDING;
+   }
+
+   // Ensure menu doesn't go off top edge
+   if (adjustedY < MENU_PADDING) {
+      adjustedY = MENU_PADDING;
+   }
+
+   return { x: adjustedX, y: adjustedY };
+}
+
+// Determine submenu position based on available space
+function getSubmenuPosition(menuX: number): "left" | "right" {
+   const spaceOnRight = window.innerWidth - menuX - MENU_WIDTH;
+   return spaceOnRight > SUBMENU_WIDTH + MENU_PADDING ? "right" : "left";
+}
+
+// Action categories for organized menu
+type ActionItem = {
+   type: ActionType;
+   label: string;
+   icon: React.ComponentType<{ className?: string }>;
+   description: string;
+};
+
+type ActionCategory = {
+   id: string;
+   label: string;
+   actions: ActionItem[];
+};
+
+const ACTION_CATEGORIES: ActionCategory[] = [
+   {
+      id: "categorization",
+      label: "Categorização",
+      actions: [
+         { type: "set_category", label: "Definir Categoria", icon: FolderTree, description: "Atribuir categoria à transação" },
+         { type: "set_cost_center", label: "Definir Centro de Custo", icon: Building, description: "Atribuir centro de custo" },
+      ],
+   },
+   {
+      id: "tagging",
+      label: "Tags",
+      actions: [
+         { type: "add_tag", label: "Adicionar Tag", icon: Tag, description: "Adicionar tags à transação" },
+         { type: "remove_tag", label: "Remover Tag", icon: Tag, description: "Remover tags da transação" },
+      ],
+   },
+   {
+      id: "modification",
+      label: "Modificação",
+      actions: [
+         { type: "update_description", label: "Atualizar Descrição", icon: FileText, description: "Modificar descrição da transação" },
+         { type: "mark_as_transfer", label: "Marcar como Transferência", icon: ArrowLeftRight, description: "Converter para transferência entre contas" },
+      ],
+   },
+   {
+      id: "creation",
+      label: "Criação",
+      actions: [
+         { type: "create_transaction", label: "Criar Transação", icon: Plus, description: "Criar nova transação baseada no evento" },
+      ],
+   },
+   {
+      id: "data",
+      label: "Dados",
+      actions: [
+         { type: "fetch_bills_report", label: "Buscar Relatório de Contas", icon: ClipboardList, description: "Buscar contas a pagar/receber" },
+      ],
+   },
+   {
+      id: "transformation",
+      label: "Transformação",
+      actions: [
+         { type: "format_data", label: "Formatar Dados", icon: FileText, description: "Converter dados para CSV, PDF, HTML ou JSON" },
+      ],
+   },
+   {
+      id: "notification",
+      label: "Notificações",
+      actions: [
+         { type: "send_email", label: "Enviar E-mail", icon: Mail, description: "Enviar email com template ou personalizado" },
+         { type: "send_push_notification", label: "Enviar Push", icon: Bell, description: "Enviar notificação push" },
+         { type: "send_bills_digest", label: "Resumo de Contas", icon: ClipboardList, description: "Enviar resumo de contas por email" },
+      ],
+   },
+   {
+      id: "control",
+      label: "Controle",
+      actions: [
+         { type: "stop_execution", label: "Parar Execução", icon: StopCircle, description: "Parar processamento de regras" },
+      ],
+   },
+];
 
 function getAutoLayoutedNodes(
    nodes: AutomationNode[],
@@ -134,6 +262,34 @@ export function AutomationCanvas({
    const [menu, setMenu] = useState<MenuState>(null);
    const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
    const [showConnections, setShowConnections] = useState(true);
+   const [actionSearch, setActionSearch] = useState("");
+
+   // Calculate adjusted menu position to prevent overflow
+   const adjustedMenuPosition = useMemo(() => {
+      if (!menu) return null;
+      return calculateMenuPosition(menu.x, menu.y);
+   }, [menu]);
+
+   // Calculate submenu position (left or right) based on available space
+   const submenuSide = useMemo(() => {
+      if (!menu) return "right";
+      return getSubmenuPosition(menu.x);
+   }, [menu]);
+
+   // Filter actions based on search query
+   const filteredActionCategories = useMemo(() => {
+      if (!actionSearch.trim()) return ACTION_CATEGORIES;
+
+      const searchLower = actionSearch.toLowerCase();
+      return ACTION_CATEGORIES.map((category) => ({
+         ...category,
+         actions: category.actions.filter(
+            (action) =>
+               action.label.toLowerCase().includes(searchLower) ||
+               action.description.toLowerCase().includes(searchLower),
+         ),
+      })).filter((category) => category.actions.length > 0);
+   }, [actionSearch]);
 
    const handleNodeClick = useCallback(
       (event: React.MouseEvent, node: AutomationNode) => {
@@ -147,6 +303,7 @@ export function AutomationCanvas({
       onNodeSelect?.(null);
       setMenu(null);
       setOpenSubmenu(null);
+      setActionSearch("");
    }, [onNodeSelect]);
 
    const handlePaneContextMenu = useCallback(
@@ -202,6 +359,7 @@ export function AutomationCanvas({
          }
          setMenu(null);
          setOpenSubmenu(null);
+         setActionSearch("");
       },
       [menu, onAddNode],
    );
@@ -363,10 +521,10 @@ export function AutomationCanvas({
             )}
          </ReactFlow>
 
-         {menu && menu.type === "canvas" && (
+         {menu && menu.type === "canvas" && adjustedMenuPosition && (
             <div
                className="fixed z-50 min-w-[220px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-               style={{ top: menu.y, left: menu.x }}
+               style={{ top: adjustedMenuPosition.y, left: adjustedMenuPosition.x }}
             >
                <div className={labelClass}>
                   <Plus className="size-4" />
@@ -388,7 +546,9 @@ export function AutomationCanvas({
                         <ChevronRight className="size-4" />
                      </div>
                      {openSubmenu === "trigger" && (
-                        <div className="absolute left-full top-0 z-50 ml-1 min-w-[180px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                        <div
+                           className={`absolute top-0 z-50 min-w-[180px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md ${submenuSide === "right" ? "left-full ml-1" : "right-full mr-1"}`}
+                        >
                            <div
                               className={menuItemClass}
                               onClick={() =>
@@ -429,7 +589,7 @@ export function AutomationCanvas({
                      <ChevronRight className="size-4" />
                   </div>
                   {openSubmenu === "condition" && (
-                     <div className="absolute left-full top-0 z-50 ml-1 min-w-[220px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                     <div className={`absolute top-0 z-50 min-w-[220px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md ${submenuSide === "right" ? "left-full ml-1" : "right-full mr-1"}`}>
                         <div
                            className={menuItemClass}
                            onClick={() =>
@@ -465,116 +625,52 @@ export function AutomationCanvas({
                      <ChevronRight className="size-4" />
                   </div>
                   {openSubmenu === "action" && (
-                     <div className="absolute left-full top-0 z-50 ml-1 min-w-[220px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", {
-                                 actionType: "set_category",
-                              })
-                           }
-                        >
-                           <FolderTree className="size-4" />
-                           Definir Categoria
+                     <div className={`absolute top-0 z-50 min-w-[260px] max-h-[70vh] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md ${submenuSide === "right" ? "left-full ml-1" : "right-full mr-1"}`}>
+                        {/* Search input */}
+                        <div className="p-2 border-b">
+                           <div className="relative">
+                              <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                              <input
+                                 type="text"
+                                 placeholder="Buscar ação..."
+                                 value={actionSearch}
+                                 onChange={(e) => setActionSearch(e.target.value)}
+                                 className="w-full pl-8 pr-2 py-1.5 text-sm bg-transparent border rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                                 autoFocus
+                              />
+                           </div>
                         </div>
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", { actionType: "add_tag" })
-                           }
-                        >
-                           <Tag className="size-4" />
-                           Adicionar Tag
-                        </div>
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", {
-                                 actionType: "remove_tag",
-                              })
-                           }
-                        >
-                           <Tag className="size-4" />
-                           Remover Tag
-                        </div>
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", {
-                                 actionType: "set_cost_center",
-                              })
-                           }
-                        >
-                           <Building className="size-4" />
-                           Definir Centro de Custo
-                        </div>
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", {
-                                 actionType: "update_description",
-                              })
-                           }
-                        >
-                           <FileText className="size-4" />
-                           Atualizar Descricao
-                        </div>
-                        <div className={separatorClass} />
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", {
-                                 actionType: "send_push_notification",
-                              })
-                           }
-                        >
-                           <Bell className="size-4" />
-                           Enviar Notificacao Push
-                        </div>
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", {
-                                 actionType: "send_email",
-                              })
-                           }
-                        >
-                           <Mail className="size-4" />
-                           Enviar E-mail
-                        </div>
-                        <div className={separatorClass} />
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", {
-                                 actionType: "create_transaction",
-                              })
-                           }
-                        >
-                           <Plus className="size-4" />
-                           Criar Transacao
-                        </div>
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", {
-                                 actionType: "mark_as_transfer",
-                              })
-                           }
-                        >
-                           <ArrowLeftRight className="size-4" />
-                           Marcar como Transferencia
-                        </div>
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", {
-                                 actionType: "stop_execution",
-                              })
-                           }
-                        >
-                           <StopCircle className="size-4" />
-                           Parar Execucao
+
+                        {/* Categorized actions */}
+                        <div className="overflow-y-auto max-h-[calc(70vh-60px)] p-1">
+                           {filteredActionCategories.length === 0 ? (
+                              <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                                 Nenhuma ação encontrada
+                              </div>
+                           ) : (
+                              filteredActionCategories.map((category, categoryIndex) => (
+                                 <div key={category.id}>
+                                    {categoryIndex > 0 && <div className={separatorClass} />}
+                                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                       {category.label}
+                                    </div>
+                                    {category.actions.map((action) => {
+                                       const ActionIcon = action.icon;
+                                       return (
+                                          <div
+                                             key={action.type}
+                                             className={menuItemClass}
+                                             onClick={() => handleAddNode("action", { actionType: action.type })}
+                                             title={action.description}
+                                          >
+                                             <ActionIcon className="size-4" />
+                                             <span className="flex-1">{action.label}</span>
+                                          </div>
+                                       );
+                                    })}
+                                 </div>
+                              ))
+                           )}
                         </div>
                      </div>
                   )}
@@ -582,10 +678,10 @@ export function AutomationCanvas({
             </div>
          )}
 
-         {menu && menu.type === "node" && menu.node && (
+         {menu && menu.type === "node" && menu.node && adjustedMenuPosition && (
             <div
                className="fixed z-50 min-w-[180px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-               style={{ top: menu.y, left: menu.x }}
+               style={{ top: adjustedMenuPosition.y, left: adjustedMenuPosition.x }}
             >
                <div className={menuItemClass} onClick={handleConfigureNode}>
                   <Settings className="size-4" />

@@ -44,7 +44,7 @@ import {
    createDefaultConditionNode,
    createDefaultTriggerNode,
 } from "../lib/flow-serialization";
-import type { AutomationEdge, AutomationNode } from "../lib/types";
+import type { ActionNodeData, AutomationEdge, AutomationNode } from "../lib/types";
 import { AutomationCanvas } from "./automation-canvas";
 import { AutomationVersionHistoryView } from "./automation-version-history-view";
 import type { ViewMode } from "./canvas-toolbar";
@@ -210,29 +210,35 @@ function AutomationBuilderContent({
 
    return (
       <div className="relative h-full w-full">
-         {viewMode === "history" && automationId ? (
-            <AutomationVersionHistoryView
-               automationId={automationId}
-               onBackToEditor={() => setViewMode("editor")}
-            />
-         ) : (
-            <AutomationCanvas
-               edges={edges}
-               hasTrigger={hasTrigger}
-               nodes={nodes}
-               onAddNode={handleAddNode}
-               onAutoLayout={handleAutoLayout}
-               onConnect={onConnect}
-               onDeleteNode={handleDeleteNode}
-               onDuplicateNode={handleDuplicateNode}
-               onEdgesChange={onEdgesChange}
-               onNodeSelect={handleNodeSelect}
-               onNodesChange={onNodesChange}
-               onViewModeChange={automationId ? setViewMode : undefined}
-               readOnly={readOnly}
-               viewMode={viewMode}
-            />
-         )}
+         <div className="size-full">
+            {viewMode === "history" && automationId ? (
+               <AutomationVersionHistoryView
+                  automationId={automationId}
+                  onBackToEditor={() => setViewMode("editor")}
+               />
+            ) : (
+               <AutomationCanvas
+                  edges={edges}
+                  hasTrigger={hasTrigger}
+                  nodes={nodes}
+                  onAddNode={handleAddNode}
+                  onAutoLayout={handleAutoLayout}
+                  onConnect={onConnect}
+                  onDeleteNode={handleDeleteNode}
+                  onDuplicateNode={handleDuplicateNode}
+                  onEdgesChange={onEdgesChange}
+                  onNodeSelect={handleNodeSelect}
+                  onNodesChange={onNodesChange}
+                  onViewModeChange={automationId ? setViewMode : undefined}
+                  readOnly={readOnly}
+                  viewMode={viewMode}
+               />
+            )}
+
+            {automationId && viewMode === "editor" && (
+               <ActivityPanel automationId={automationId} />
+            )}
+         </div>
 
          {selectedNode && !readOnly && viewMode === "editor" && (
             <NodeDetailsPanel
@@ -241,10 +247,6 @@ function AutomationBuilderContent({
                onDelete={handleDeleteNode}
                onUpdate={handleNodeUpdate}
             />
-         )}
-
-         {automationId && viewMode === "editor" && (
-            <ActivityPanel automationId={automationId} />
          )}
       </div>
    );
@@ -351,14 +353,40 @@ function NodeDetailsPanel({
    onDelete,
    onUpdate,
 }: NodeDetailsPanelProps) {
-   const [activeTab, setActiveTab] = useState<"config" | "settings">("config");
    const nodeType = node.type as keyof typeof NODE_TYPE_CONFIG;
    const config = NODE_TYPE_CONFIG[nodeType];
    const NodeIcon = config.icon;
 
+   // Dynamic tabs based on action type
+   const actionType = node.type === "action" ? (node.data as ActionNodeData).actionType : null;
+   const hasExtraTabs =
+      actionType === "fetch_bills_report" ||
+      actionType === "send_bills_digest" ||
+      actionType === "format_data" ||
+      actionType === "send_email";
+
+   type TabType = "config" | "about" | "filters" | "settings";
+   const [activeTab, setActiveTab] = useState<TabType>("config");
+
+   // Reset to config tab when node changes
+   useEffect(() => {
+      setActiveTab("config");
+   }, [node.id]);
+
+   // Actions that have a Filters tab (for configuring bill filters)
+   const hasFiltersTab =
+      actionType === "fetch_bills_report" || actionType === "send_bills_digest";
+
+   const tabs: { id: TabType; label: string }[] = [
+      { id: "config", label: "Geral" },
+      ...(hasExtraTabs ? [{ id: "about" as TabType, label: "Sobre" }] : []),
+      ...(hasFiltersTab ? [{ id: "filters" as TabType, label: "Filtros" }] : []),
+      { id: "settings", label: "Avançado" },
+   ];
+
    return (
-      <div className="absolute left-4 top-4 z-20 flex max-h-[calc(100%-2rem)] w-[420px] flex-col overflow-hidden rounded-xl border bg-background/95 shadow-xl backdrop-blur-sm">
-         <div className="flex items-center gap-3 px-5 pt-4">
+      <div className="absolute right-0 top-14 bottom-0 z-20 flex w-[400px] flex-col rounded-tl-xl border-l border-t bg-background shadow-xl">
+         <div className="flex items-center gap-3 border-b px-4 py-3">
             <NodeIcon className={cn("size-5 shrink-0", config.color)} />
             <EditableTitle
                onChange={(newLabel) => onUpdate(node.id, { label: newLabel })}
@@ -375,46 +403,35 @@ function NodeDetailsPanel({
             </Button>
          </div>
 
-         <div className="flex gap-6 border-b px-5">
-            <button
-               className={cn(
-                  "relative py-3 text-sm font-medium transition-colors",
-                  activeTab === "config"
-                     ? "text-foreground"
-                     : "text-muted-foreground hover:text-foreground",
-               )}
-               onClick={() => setActiveTab("config")}
-               type="button"
-            >
-               Configurações
-               {activeTab === "config" && (
-                  <span className="absolute inset-x-0 -bottom-px h-0.5 bg-primary" />
-               )}
-            </button>
-            <button
-               className={cn(
-                  "relative py-3 text-sm font-medium transition-colors",
-                  activeTab === "settings"
-                     ? "text-foreground"
-                     : "text-muted-foreground hover:text-foreground",
-               )}
-               onClick={() => setActiveTab("settings")}
-               type="button"
-            >
-               Settings
-               {activeTab === "settings" && (
-                  <span className="absolute inset-x-0 -bottom-px h-0.5 bg-primary" />
-               )}
-            </button>
+         <div className="flex gap-4 border-b px-4 overflow-x-auto">
+            {tabs.map((tab) => (
+               <button
+                  key={tab.id}
+                  className={cn(
+                     "relative shrink-0 py-2.5 text-sm font-medium transition-colors",
+                     activeTab === tab.id
+                        ? "text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                  )}
+                  onClick={() => setActiveTab(tab.id)}
+                  type="button"
+               >
+                  {tab.label}
+                  {activeTab === tab.id && (
+                     <span className="absolute inset-x-0 -bottom-px h-0.5 bg-primary" />
+                  )}
+               </button>
+            ))}
          </div>
 
          <ScrollArea className="flex-1">
-            <div className="p-5">
-               {activeTab === "config" && (
+            <div className="p-4">
+               {(activeTab === "config" || activeTab === "about" || activeTab === "filters") && (
                   <NodeConfigurationPanel
                      node={node}
                      onClose={onClose}
                      onUpdate={onUpdate}
+                     activeTab={activeTab}
                   />
                )}
                {activeTab === "settings" && (
@@ -483,6 +500,10 @@ const STATUS_CONFIG: Record<
 const TRIGGER_TYPE_LABELS: Record<string, string> = {
    "transaction.created": "Transação criada",
    "transaction.updated": "Transação atualizada",
+   "schedule.daily": "Agendamento diário",
+   "schedule.weekly": "Agendamento semanal",
+   "schedule.biweekly": "Agendamento quinzenal",
+   "schedule.custom": "Agendamento personalizado",
 };
 
 const TRIGGERED_BY_LABELS: Record<TriggeredBy, string> = {
@@ -493,8 +514,11 @@ const TRIGGERED_BY_LABELS: Record<TriggeredBy, string> = {
 const ACTION_TYPE_LABELS: Record<ActionType, string> = {
    add_tag: "Adicionar tag",
    create_transaction: "Criar transação",
+   fetch_bills_report: "Buscar relatório de contas",
+   format_data: "Formatar dados",
    mark_as_transfer: "Marcar como transferência",
    remove_tag: "Remover tag",
+   send_bills_digest: "Enviar resumo de contas",
    send_email: "Enviar e-mail",
    send_push_notification: "Enviar notificação",
    set_category: "Definir categoria",

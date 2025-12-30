@@ -1,25 +1,36 @@
-import type { TriggerType } from "@packages/database/schema";
+import type {
+	ScheduleTriggerType,
+	TriggerType,
+} from "@packages/database/schema";
 
 export type TransactionEventType =
-   | "transaction.created"
-   | "transaction.updated";
+	| "transaction.created"
+	| "transaction.updated";
 
-export type EventType = TransactionEventType;
+export type ScheduleEventType = ScheduleTriggerType;
+
+export type EventType = TransactionEventType | ScheduleEventType;
 
 export type TransactionEventData = {
-   id: string;
-   organizationId: string;
-   bankAccountId?: string | null;
-   description: string;
-   amount: number;
-   type: "income" | "expense" | "transfer";
-   date: string;
-   categoryIds?: string[];
-   costCenterId?: string | null;
-   counterpartyId?: string | null;
-   tagIds?: string[];
-   metadata?: Record<string, unknown>;
-   previousData?: Partial<TransactionEventData>;
+	id: string;
+	organizationId: string;
+	bankAccountId?: string | null;
+	description: string;
+	amount: number;
+	type: "income" | "expense" | "transfer";
+	date: string;
+	categoryIds?: string[];
+	costCenterId?: string | null;
+	counterpartyId?: string | null;
+	tagIds?: string[];
+	metadata?: Record<string, unknown>;
+	previousData?: Partial<TransactionEventData>;
+};
+
+export type ScheduleEventData = {
+	triggerTime: string;
+	organizationId: string;
+	automationRuleId: string;
 };
 
 export type BaseEvent<T extends EventType, D> = {
@@ -36,11 +47,16 @@ export type TransactionCreatedEvent = BaseEvent<
 >;
 
 export type TransactionUpdatedEvent = BaseEvent<
-   "transaction.updated",
-   TransactionEventData
+	"transaction.updated",
+	TransactionEventData
 >;
 
-export type WorkflowEvent = TransactionCreatedEvent | TransactionUpdatedEvent;
+export type ScheduleTriggeredEvent = BaseEvent<ScheduleEventType, ScheduleEventData>;
+
+export type WorkflowEvent =
+	| TransactionCreatedEvent
+	| TransactionUpdatedEvent
+	| ScheduleTriggeredEvent;
 
 export function createTransactionCreatedEvent(
    organizationId: string,
@@ -77,6 +93,30 @@ export function isTransactionEvent(
    );
 }
 
+export function isScheduleEvent(
+	event: WorkflowEvent,
+): event is ScheduleTriggeredEvent {
+	return event.type.startsWith("schedule.");
+}
+
+export function createScheduleTriggeredEvent(
+	organizationId: string,
+	automationRuleId: string,
+	triggerType: ScheduleEventType,
+): ScheduleTriggeredEvent {
+	return {
+		data: {
+			automationRuleId,
+			organizationId,
+			triggerTime: new Date().toISOString(),
+		},
+		id: crypto.randomUUID(),
+		organizationId,
+		timestamp: new Date().toISOString(),
+		type: triggerType,
+	};
+}
+
 export function eventTypeToTriggerType(eventType: EventType): TriggerType {
-   return eventType as TriggerType;
+	return eventType as TriggerType;
 }

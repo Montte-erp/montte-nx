@@ -930,3 +930,73 @@ export async function createBillWithInstallments(
       );
    }
 }
+
+export type FindBillsDueWithinDaysOptions = {
+   type?: "income" | "expense";
+   includeOverdue?: boolean;
+};
+
+/**
+ * Find bills due within a specified number of days.
+ * Used for bills digest emails.
+ */
+export async function findBillsDueWithinDays(
+   dbClient: DatabaseInstance,
+   organizationId: string,
+   daysAhead: number,
+   options: FindBillsDueWithinDaysOptions = {},
+): Promise<BillWithRelations[]> {
+   const { type, includeOverdue = false } = options;
+
+   try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const futureDate = new Date(today);
+      futureDate.setDate(futureDate.getDate() + daysAhead);
+      futureDate.setHours(23, 59, 59, 999);
+
+      const buildWhereCondition = () => {
+         const conditions = [eq(bill.organizationId, organizationId)];
+
+         // Only include non-completed bills
+         conditions.push(sql`${bill.completionDate} IS NULL`);
+
+         if (type) {
+            conditions.push(eq(bill.type, type));
+         }
+
+         // Date range condition
+         if (includeOverdue) {
+            // Include all bills up to futureDate (overdue + pending)
+            conditions.push(lte(bill.dueDate, futureDate));
+         } else {
+            // Only pending bills: from today to futureDate
+            conditions.push(gte(bill.dueDate, today));
+            conditions.push(lte(bill.dueDate, futureDate));
+         }
+
+         return and(...conditions);
+      };
+
+      const result = await dbClient.query.bill.findMany({
+         orderBy: (bill, { asc }) => asc(bill.dueDate),
+         where: buildWhereCondition,
+         with: {
+            bankAccount: true,
+            costCenter: true,
+            counterparty: true,
+            interestTemplate: true,
+            transaction: true,
+         },
+      });
+
+      // Decrypt sensitive fields before returning
+      return result.map(decryptBillFields);
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database(
+         `Failed to find bills due within days: ${(err as Error).message}`,
+      );
+   }
+}

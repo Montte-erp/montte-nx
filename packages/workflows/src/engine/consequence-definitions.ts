@@ -19,6 +19,7 @@ export const WorkflowConsequences = {
 	create_transaction: ActionConfigSchema,
 	mark_as_transfer: ActionConfigSchema,
 	remove_tag: ActionConfigSchema,
+	send_bills_digest: ActionConfigSchema,
 	send_email: ActionConfigSchema,
 	send_push_notification: ActionConfigSchema,
 	set_category: ActionConfigSchema,

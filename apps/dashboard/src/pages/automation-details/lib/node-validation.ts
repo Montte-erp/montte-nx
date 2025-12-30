@@ -4,7 +4,9 @@ import type {
    ActionNodeData,
    AutomationNode,
    ConditionNodeData,
+   TriggerNodeData,
 } from "./types";
+import { isScheduleTrigger } from "./types";
 
 export type ValidationResult = {
    valid: boolean;
@@ -113,6 +115,21 @@ export function validateActionNode(data: ActionNodeData): ValidationResult {
    if (data.actionType === "set_category") {
       const setCategoryErrors = validateSetCategoryAction(data.config);
       errors.push(...setCategoryErrors);
+   } else if (data.actionType === "send_bills_digest") {
+      // Validate send_bills_digest specific rules
+      const includePending = data.config.includePending ?? true;
+      const includeOverdue = data.config.includeOverdue ?? true;
+
+      if (!includePending && !includeOverdue) {
+         errors.push(
+            "Selecione ao menos um tipo de conta (pendentes ou vencidas)",
+         );
+      }
+
+      const billTypes = data.config.billTypes as string[] | undefined;
+      if (!billTypes || billTypes.length === 0) {
+         errors.push("Selecione ao menos um tipo de conta");
+      }
    } else {
       for (const field of definition.configSchema) {
          if (!field.required) continue;
@@ -164,13 +181,52 @@ export function validateConditionNode(
    };
 }
 
+export function validateTriggerNode(data: TriggerNodeData): ValidationResult {
+   const errors: string[] = [];
+
+   if (isScheduleTrigger(data.triggerType)) {
+      if (!data.config?.time) {
+         errors.push("Horário é obrigatório para triggers agendados");
+      }
+
+      if (!data.config?.timezone) {
+         errors.push("Fuso horário é obrigatório para triggers agendados");
+      }
+
+      if (
+         data.triggerType === "schedule.custom" &&
+         !data.config?.cronPattern
+      ) {
+         errors.push(
+            "Padrão CRON é obrigatório para agendamento personalizado",
+         );
+      }
+   }
+
+   return {
+      errors,
+      valid: errors.length === 0,
+   };
+}
+
 export function validateAllNodes(
    nodes: AutomationNode[],
 ): NodesValidationResult {
    const invalidNodes: NodeValidationResult[] = [];
 
    for (const node of nodes) {
-      if (node.type === "action") {
+      if (node.type === "trigger") {
+         const data = node.data as TriggerNodeData;
+         const validation = validateTriggerNode(data);
+         if (!validation.valid) {
+            invalidNodes.push({
+               errors: validation.errors,
+               nodeId: node.id,
+               nodeLabel: data.label,
+               nodeType: "trigger",
+            });
+         }
+      } else if (node.type === "action") {
          const data = node.data as ActionNodeData;
          const validation = validateActionNode(data);
          if (!validation.valid) {

@@ -45,7 +45,7 @@ export function createTestEvent(
       timestamp: new Date().toISOString(),
       data: createTestEventData(),
       ...overrides,
-   };
+   } as WorkflowEvent;
 }
 
 export function createTestConsequence(overrides: Partial<Consequence> = {}): Consequence {

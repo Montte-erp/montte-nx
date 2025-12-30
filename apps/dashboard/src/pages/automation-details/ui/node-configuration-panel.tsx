@@ -36,7 +36,7 @@ import {
 } from "@packages/utils/split";
 import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Tag, X } from "lucide-react";
+import { AlertTriangle, FileText, Tag, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { IconName } from "@/features/icon-selector/lib/available-icons";
 import { IconDisplay } from "@/features/icon-selector/ui/icon-display";
@@ -54,6 +54,8 @@ import type {
 import {
    ACTION_TYPE_LABELS,
    CONDITION_OPERATOR_LABELS,
+   DAYS_OF_WEEK,
+   isScheduleTrigger,
    TRANSACTION_FIELDS,
    TRIGGER_TYPE_LABELS,
 } from "../lib/types";
@@ -62,12 +64,14 @@ type NodeConfigurationPanelProps = {
    node: AutomationNode | null;
    onClose: () => void;
    onUpdate: (nodeId: string, data: Partial<AutomationNode["data"]>) => void;
+   activeTab?: "config" | "about" | "filters";
 };
 
 export function NodeConfigurationPanel({
    node,
    onClose: _onClose,
    onUpdate,
+   activeTab = "config",
 }: NodeConfigurationPanelProps) {
    if (!node) return null;
 
@@ -92,6 +96,7 @@ export function NodeConfigurationPanel({
                data={node.data as ActionNodeData}
                nodeId={node.id}
                onUpdate={onUpdate}
+               activeTab={activeTab}
             />
          )}
       </div>
@@ -112,11 +117,25 @@ function TriggerConfigurationForm({
    const form = useForm({
       defaultValues: {
          triggerType: data.triggerType,
+         time: (data.config?.time as string) ?? "09:00",
+         timezone: (data.config?.timezone as string) ?? "America/Sao_Paulo",
+         dayOfWeek: (data.config?.dayOfWeek as number) ?? 1,
+         cronPattern: (data.config?.cronPattern as string) ?? "",
       },
    });
 
    useEffect(() => {
       form.setFieldValue("triggerType", data.triggerType);
+      form.setFieldValue("time", (data.config?.time as string) ?? "09:00");
+      form.setFieldValue(
+         "timezone",
+         (data.config?.timezone as string) ?? "America/Sao_Paulo",
+      );
+      form.setFieldValue("dayOfWeek", (data.config?.dayOfWeek as number) ?? 1);
+      form.setFieldValue(
+         "cronPattern",
+         (data.config?.cronPattern as string) ?? "",
+      );
    }, [data, form]);
 
    const handleFieldChange = useCallback(
@@ -125,6 +144,18 @@ function TriggerConfigurationForm({
       },
       [nodeId, onUpdate],
    );
+
+   const handleConfigChange = useCallback(
+      (field: string, value: unknown) => {
+         const currentConfig = data.config ?? {};
+         onUpdate(nodeId, {
+            config: { ...currentConfig, [field]: value } as TriggerNodeData["config"],
+         });
+      },
+      [nodeId, data.config, onUpdate],
+   );
+
+   const isSchedule = isScheduleTrigger(data.triggerType);
 
    return (
       <div className="space-y-4">
@@ -159,6 +190,132 @@ function TriggerConfigurationForm({
                )}
             </form.Field>
          </FieldGroup>
+
+         {isSchedule && (
+            <>
+               <FieldGroup>
+                  <form.Field name="time">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel htmlFor={field.name}>Horário</FieldLabel>
+                           <Input
+                              id={field.name}
+                              type="time"
+                              value={field.state.value}
+                              onChange={(e) => {
+                                 field.handleChange(e.target.value);
+                                 handleConfigChange("time", e.target.value);
+                              }}
+                           />
+                           <FieldDescription>
+                              Horário de execução do agendamento
+                           </FieldDescription>
+                        </Field>
+                     )}
+                  </form.Field>
+               </FieldGroup>
+
+               <FieldGroup>
+                  <form.Field name="timezone">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel htmlFor={field.name}>
+                              Fuso Horário
+                           </FieldLabel>
+                           <Select
+                              value={field.state.value}
+                              onValueChange={(v) => {
+                                 field.handleChange(v);
+                                 handleConfigChange("timezone", v);
+                              }}
+                           >
+                              <SelectTrigger id={field.name}>
+                                 <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 <SelectItem value="America/Sao_Paulo">
+                                    Brasília (GMT-3)
+                                 </SelectItem>
+                                 <SelectItem value="America/New_York">
+                                    Nova York (GMT-5)
+                                 </SelectItem>
+                                 <SelectItem value="Europe/London">
+                                    Londres (GMT+0)
+                                 </SelectItem>
+                                 <SelectItem value="UTC">UTC</SelectItem>
+                              </SelectContent>
+                           </Select>
+                        </Field>
+                     )}
+                  </form.Field>
+               </FieldGroup>
+
+               {data.triggerType === "schedule.weekly" && (
+                  <FieldGroup>
+                     <form.Field name="dayOfWeek">
+                        {(field) => (
+                           <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                 Dia da Semana
+                              </FieldLabel>
+                              <Select
+                                 value={String(field.state.value)}
+                                 onValueChange={(v) => {
+                                    const num = Number(v);
+                                    field.handleChange(num);
+                                    handleConfigChange("dayOfWeek", num);
+                                 }}
+                              >
+                                 <SelectTrigger id={field.name}>
+                                    <SelectValue />
+                                 </SelectTrigger>
+                                 <SelectContent>
+                                    {DAYS_OF_WEEK.map((day) => (
+                                       <SelectItem
+                                          key={day.value}
+                                          value={String(day.value)}
+                                       >
+                                          {day.label}
+                                       </SelectItem>
+                                    ))}
+                                 </SelectContent>
+                              </Select>
+                           </Field>
+                        )}
+                     </form.Field>
+                  </FieldGroup>
+               )}
+
+               {data.triggerType === "schedule.custom" && (
+                  <FieldGroup>
+                     <form.Field name="cronPattern">
+                        {(field) => (
+                           <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                 Padrão CRON
+                              </FieldLabel>
+                              <Input
+                                 id={field.name}
+                                 placeholder="0 9 * * 1-5"
+                                 value={field.state.value}
+                                 onChange={(e) => {
+                                    field.handleChange(e.target.value);
+                                    handleConfigChange(
+                                       "cronPattern",
+                                       e.target.value,
+                                    );
+                                 }}
+                              />
+                              <FieldDescription>
+                                 Formato: minuto hora dia mês dia-da-semana
+                              </FieldDescription>
+                           </Field>
+                        )}
+                     </form.Field>
+                  </FieldGroup>
+               )}
+            </>
+         )}
       </div>
    );
 }
@@ -373,12 +530,14 @@ type ActionConfigurationFormProps = {
    nodeId: string;
    data: ActionNodeData;
    onUpdate: (nodeId: string, data: Partial<ActionNodeData>) => void;
+   activeTab?: "config" | "about" | "filters";
 };
 
 function ActionConfigurationForm({
    nodeId,
    data,
    onUpdate,
+   activeTab = "config",
 }: ActionConfigurationFormProps) {
    const validation = validateActionNode(data);
    const trpc = useTRPC();
@@ -412,6 +571,13 @@ function ActionConfigurationForm({
          to: (data.config.to as string) ?? "owner",
          toBankAccountId: (data.config.toBankAccountId as string) ?? "",
          value: (data.config.value as string) ?? "",
+         // Bills digest fields
+         recipients: (data.config.recipients as string) ?? "owner",
+         detailLevel: (data.config.detailLevel as string) ?? "detailed",
+         includePending: (data.config.includePending as boolean) ?? true,
+         includeOverdue: (data.config.includeOverdue as boolean) ?? true,
+         daysAhead: (data.config.daysAhead as number) ?? 7,
+         billTypes: (data.config.billTypes as string[]) ?? ["expense"],
       },
    });
 
@@ -442,6 +608,28 @@ function ActionConfigurationForm({
          "toBankAccountId",
          (data.config.toBankAccountId as string) ?? "",
       );
+      // Bills digest fields
+      form.setFieldValue(
+         "recipients",
+         (data.config.recipients as string) ?? "owner",
+      );
+      form.setFieldValue(
+         "detailLevel",
+         (data.config.detailLevel as string) ?? "detailed",
+      );
+      form.setFieldValue(
+         "includePending",
+         (data.config.includePending as boolean) ?? true,
+      );
+      form.setFieldValue(
+         "includeOverdue",
+         (data.config.includeOverdue as boolean) ?? true,
+      );
+      form.setFieldValue("daysAhead", (data.config.daysAhead as number) ?? 7);
+      form.setFieldValue(
+         "billTypes",
+         (data.config.billTypes as string[]) ?? ["expense"],
+      );
    }, [data, form]);
 
    const handleFieldChange = useCallback(
@@ -449,7 +637,12 @@ function ActionConfigurationForm({
          if (field === "continueOnError") {
             onUpdate(nodeId, { continueOnError: value as boolean });
          } else if (field === "actionType") {
-            onUpdate(nodeId, { actionType: value as ActionType, config: {} });
+            const newType = value as ActionType;
+            onUpdate(nodeId, {
+               actionType: newType,
+               config: {},
+               label: ACTION_TYPE_LABELS[newType],
+            });
          } else {
             onUpdate(nodeId, { config: { ...data.config, [field]: value } });
          }
@@ -476,6 +669,240 @@ function ActionConfigurationForm({
       value: account.id,
    }));
 
+   // Check if this action type has special tabs
+   const hasSpecialTabs =
+      data.actionType === "fetch_bills_report" ||
+      data.actionType === "send_bills_digest" ||
+      data.actionType === "format_data" ||
+      data.actionType === "send_email";
+
+   // Content for "Sobre" tab
+   const renderAboutContent = () => {
+      const aboutContent = {
+         fetch_bills_report: {
+            title: "Buscar Relatório de Contas",
+            description:
+               "Esta ação busca contas a pagar/receber e disponibiliza os dados para as próximas ações. Use em conjunto com 'Formatar Dados' e 'Enviar E-mail' para enviar relatórios personalizados.",
+            howTo: [
+               "Configure os filtros na aba 'Filtros'",
+               "Adicione 'Formatar Dados' para gerar CSV, HTML ou JSON",
+               "Adicione 'Enviar E-mail' com 'Incluir Anexo' ativado",
+            ],
+         },
+         send_bills_digest: {
+            title: "Enviar Resumo de Contas",
+            description:
+               "Esta ação busca contas a pagar/receber e envia um resumo formatado por e-mail usando o template de resumo de contas.",
+            howTo: [
+               "Configure os destinatários na aba 'Geral'",
+               "Configure os filtros na aba 'Filtros'",
+               "O e-mail será enviado automaticamente quando executado",
+            ],
+         },
+         format_data: {
+            title: "Formatar Dados",
+            description:
+               "Esta ação transforma dados de ações anteriores em diferentes formatos (CSV, HTML, JSON). Os dados formatados podem ser usados como anexo em e-mails.",
+            howTo: [
+               "Adicione uma ação que retorna dados antes (ex: 'Buscar Relatório de Contas')",
+               "Escolha o formato desejado (CSV, HTML, JSON)",
+               "Configure o nome do arquivo com variáveis: {{period}}, {{date}}",
+               "Adicione 'Enviar E-mail' após com 'Incluir Anexo' ativado",
+            ],
+            templates: {
+               fileName: [
+                  "{{period}} - Substitui pelo período do relatório",
+                  "{{date}} - Substitui pela data atual (YYYY-MM-DD)",
+                  "{{timestamp}} - Substitui pelo timestamp atual",
+               ],
+            },
+         },
+         send_email: {
+            title: "Enviar E-mail",
+            description:
+               "Envia e-mails personalizados ou usando templates pré-definidos. Suporta anexos de ações anteriores como 'Formatar Dados'.",
+            howTo: [
+               "Escolha o modo: Personalizado ou Resumo de Contas",
+               "Configure o destinatário (dono ou e-mail personalizado)",
+               "Para anexar arquivos, ative 'Incluir Anexo'",
+               "Os anexos vêm da ação 'Formatar Dados'",
+            ],
+            templates: {
+               body: [
+                  "{{description}} - Descrição da transação",
+                  "{{amount}} - Valor da transação",
+                  "{{date}} - Data da transação",
+                  "{{bankAccount.name}} - Nome da conta bancária",
+                  "{{category.name}} - Nome da categoria",
+               ],
+            },
+         },
+      };
+
+      const content = aboutContent[data.actionType as keyof typeof aboutContent];
+      if (!content) return null;
+
+      return (
+         <div className="space-y-4">
+            <Alert>
+               <FileText className="size-4" />
+               <AlertTitle>{content.title}</AlertTitle>
+               <AlertDescription>{content.description}</AlertDescription>
+            </Alert>
+
+            <div className="rounded-lg border p-4 space-y-2">
+               <p className="text-sm font-medium">Como usar</p>
+               <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                  {content.howTo.map((step) => (
+                     <li key={step}>{step}</li>
+                  ))}
+               </ol>
+            </div>
+
+            {"templates" in content && content.templates && (
+               <div className="rounded-lg border p-4 space-y-2">
+                  <p className="text-sm font-medium">Variáveis disponíveis</p>
+                  <div className="text-sm text-muted-foreground space-y-2">
+                     {Object.entries(content.templates).map(([key, vars]) => (
+                        <div key={key} className="space-y-1">
+                           <p className="font-medium text-foreground capitalize">{key}:</p>
+                           <ul className="list-disc list-inside pl-2">
+                              {(vars as string[]).map((v: string) => (
+                                 <li key={v} className="font-mono text-xs">{v}</li>
+                              ))}
+                           </ul>
+                        </div>
+                     ))}
+                  </div>
+               </div>
+            )}
+         </div>
+      );
+   };
+
+   // Content for "Filtros" tab
+   const renderFiltersContent = () => (
+      <div className="space-y-4">
+         <FieldGroup>
+            <form.Field name="billTypes">
+               {(field) => (
+                  <Field>
+                     <FieldLabel htmlFor={field.name}>
+                        Tipos de Conta
+                     </FieldLabel>
+                     <MultiSelect
+                        className="w-full"
+                        emptyMessage="Nenhum tipo selecionado"
+                        onChange={(val) => {
+                           field.handleChange(val);
+                           handleFieldChange("billTypes", val);
+                        }}
+                        options={[
+                           { label: "Despesas (a pagar)", value: "expense" },
+                           { label: "Receitas (a receber)", value: "income" },
+                        ]}
+                        placeholder="Selecione os tipos..."
+                        selected={field.state.value}
+                     />
+                  </Field>
+               )}
+            </form.Field>
+         </FieldGroup>
+
+         <FieldGroup>
+            <form.Field name="daysAhead">
+               {(field) => (
+                  <Field>
+                     <FieldLabel htmlFor={field.name}>
+                        Período de Previsão
+                     </FieldLabel>
+                     <div className="flex items-center gap-2">
+                        <Input
+                           id={field.name}
+                           type="number"
+                           min={1}
+                           max={90}
+                           className="w-20"
+                           value={field.state.value}
+                           onChange={(e) => {
+                              const num = Number(e.target.value);
+                              field.handleChange(num);
+                              handleFieldChange("daysAhead", num);
+                           }}
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          dias à frente
+                        </span>
+                     </div>
+                     <FieldDescription>
+                        Incluir contas com vencimento nos próximos X dias
+                     </FieldDescription>
+                  </Field>
+               )}
+            </form.Field>
+         </FieldGroup>
+
+         <div className="space-y-3 rounded-lg border p-3">
+            <p className="text-sm font-medium">Incluir no relatório</p>
+
+            <div className="flex items-center justify-between">
+               <div>
+                  <p className="text-sm">Contas Pendentes</p>
+                  <p className="text-xs text-muted-foreground">
+                     Contas a vencer no período
+                  </p>
+               </div>
+               <form.Field name="includePending">
+                  {(field) => (
+                     <Switch
+                        checked={field.state.value}
+                        onCheckedChange={(checked) => {
+                           field.handleChange(checked);
+                           handleFieldChange("includePending", checked);
+                        }}
+                     />
+                  )}
+               </form.Field>
+            </div>
+
+            <div className="flex items-center justify-between">
+               <div>
+                  <p className="text-sm">Contas Vencidas</p>
+                  <p className="text-xs text-muted-foreground">
+                     Contas atrasadas não pagas
+                  </p>
+               </div>
+               <form.Field name="includeOverdue">
+                  {(field) => (
+                     <Switch
+                        checked={field.state.value}
+                        onCheckedChange={(checked) => {
+                           field.handleChange(checked);
+                           handleFieldChange("includeOverdue", checked);
+                        }}
+                     />
+                  )}
+               </form.Field>
+            </div>
+         </div>
+      </div>
+   );
+
+   // Actions that have a Filters tab (for configuring bill filters)
+   const hasFiltersTab =
+      data.actionType === "fetch_bills_report" ||
+      data.actionType === "send_bills_digest";
+
+   // Handle special tabs
+   if (hasSpecialTabs && activeTab === "about") {
+      return renderAboutContent();
+   }
+
+   if (hasFiltersTab && activeTab === "filters") {
+      return renderFiltersContent();
+   }
+
+   // Default "config" tab content
    return (
       <div className="space-y-4">
          {!validation.valid && (
@@ -851,6 +1278,83 @@ function ActionConfigurationForm({
             </FieldGroup>
          )}
 
+         {data.actionType === "send_bills_digest" && (
+            <>
+               <FieldGroup>
+                  <form.Field name="recipients">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel htmlFor={field.name}>
+                              Destinatários
+                           </FieldLabel>
+                           <Select
+                              value={field.state.value}
+                              onValueChange={(v) => {
+                                 field.handleChange(v);
+                                 handleFieldChange("recipients", v);
+                              }}
+                           >
+                              <SelectTrigger id={field.name}>
+                                 <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 <SelectItem value="owner">
+                                    Dono da Organização
+                                 </SelectItem>
+                                 <SelectItem value="all_members">
+                                    Todos os Membros
+                                 </SelectItem>
+                              </SelectContent>
+                           </Select>
+                           <FieldDescription>
+                              Quem receberá o e-mail com o resumo das contas
+                           </FieldDescription>
+                        </Field>
+                     )}
+                  </form.Field>
+               </FieldGroup>
+
+               <FieldGroup>
+                  <form.Field name="detailLevel">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel htmlFor={field.name}>
+                              Nível de Detalhe
+                           </FieldLabel>
+                           <Select
+                              value={field.state.value}
+                              onValueChange={(v) => {
+                                 field.handleChange(v);
+                                 handleFieldChange("detailLevel", v);
+                              }}
+                           >
+                              <SelectTrigger id={field.name}>
+                                 <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 <SelectItem value="summary">
+                                    Resumo (apenas totais)
+                                 </SelectItem>
+                                 <SelectItem value="detailed">
+                                    Detalhado (lista de contas)
+                                 </SelectItem>
+                                 <SelectItem value="full">
+                                    Completo (com descrições)
+                                 </SelectItem>
+                              </SelectContent>
+                           </Select>
+                           <FieldDescription>
+                              Define quanta informação será incluída no e-mail
+                           </FieldDescription>
+                        </Field>
+                     )}
+                  </form.Field>
+               </FieldGroup>
+            </>
+         )}
+
+         {/* fetch_bills_report doesn't need config tab content - it's all in About/Filters */}
+
          <div className="flex items-center justify-between rounded-md border p-3">
             <div>
                <FieldLabel className="font-medium">
@@ -972,7 +1476,7 @@ function CategorySplitConfiguration({
             className="flex size-4 items-center justify-center rounded"
             style={{ backgroundColor: category.color }}
          >
-            <IconDisplay iconName={category.icon as IconName} size={10} />
+            <IconDisplay iconName={category.icon as IconName | null} size={10} />
          </div>
       ),
       label: category.name,

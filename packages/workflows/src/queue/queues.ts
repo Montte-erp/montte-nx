@@ -1,23 +1,61 @@
+import type { ScheduleTriggerType } from "@packages/database/schema";
 import type { ConnectionOptions } from "@packages/queue/bullmq";
 import { Queue } from "@packages/queue/bullmq";
 import type { WorkflowEvent } from "../types/events";
 
 export const WORKFLOW_QUEUE_NAME = "workflow-events";
 
-export type WorkflowJobData = {
-   event: WorkflowEvent;
-   metadata?: {
-      triggeredBy?: "event" | "manual";
-      correlationId?: string;
-   };
+/**
+ * Job data for event-triggered workflows (transaction.created, transaction.updated)
+ */
+export type EventJobData = {
+	type: "event";
+	event: WorkflowEvent;
+	metadata?: {
+		triggeredBy?: "event" | "manual";
+		correlationId?: string;
+	};
 };
 
+/**
+ * Job data for schedule-triggered workflows (schedule.daily, schedule.weekly, etc.)
+ */
+export type ScheduleTriggerJobData = {
+	type: "schedule-trigger";
+	ruleId: string;
+	organizationId: string;
+	triggerType: ScheduleTriggerType;
+};
+
+/**
+ * Union type for all workflow job data
+ */
+export type WorkflowJobData = EventJobData | ScheduleTriggerJobData;
+
+/**
+ * Helper to check if job data is an event job
+ */
+export function isEventJobData(data: WorkflowJobData): data is EventJobData {
+	return data.type === "event";
+}
+
+/**
+ * Helper to check if job data is a schedule trigger job
+ */
+export function isScheduleTriggerJobData(
+	data: WorkflowJobData,
+): data is ScheduleTriggerJobData {
+	return data.type === "schedule-trigger";
+}
+
 export type WorkflowJobResult = {
-   eventId: string;
-   rulesEvaluated: number;
-   rulesMatched: number;
-   success: boolean;
-   error?: string;
+	eventId?: string;
+	ruleId?: string;
+	rulesEvaluated: number;
+	rulesMatched: number;
+	success: boolean;
+	skipped?: boolean;
+	error?: string;
 };
 
 let workflowQueue: Queue<WorkflowJobData, WorkflowJobResult> | null = null;

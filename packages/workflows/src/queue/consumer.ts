@@ -1,14 +1,18 @@
 import type { DatabaseInstance } from "@packages/database/client";
+import { findAutomationRuleById } from "@packages/database/repositories/automation-repository";
 import type { ConnectionOptions, WorkerOptions } from "@packages/queue/bullmq";
 import { type Job, Worker } from "@packages/queue/bullmq";
 import type { Resend } from "resend";
 import type { VapidConfig } from "../actions/types";
 import { createWorkflowRunner } from "../engine/runner";
-import type { WorkflowExecutionResult } from "../types/rules";
+import { createScheduleTriggeredEvent } from "../types/events";
+import { toWorkflowRule, type WorkflowExecutionResult } from "../types/rules";
 import {
-   WORKFLOW_QUEUE_NAME,
-   type WorkflowJobData,
-   type WorkflowJobResult,
+	isEventJobData,
+	isScheduleTriggerJobData,
+	WORKFLOW_QUEUE_NAME,
+	type WorkflowJobData,
+	type WorkflowJobResult,
 } from "./queues";
 
 export type WorkflowWorkerConfig = {
@@ -60,30 +64,92 @@ export function createWorkflowWorker(
    const worker = new Worker<WorkflowJobData, WorkflowJobResult>(
       WORKFLOW_QUEUE_NAME,
       async (job: Job<WorkflowJobData, WorkflowJobResult>) => {
-         const { event } = job.data;
+         const jobData = job.data;
 
-         try {
-            const result: WorkflowExecutionResult =
-               await runner.processEvent(event);
+         // Handle schedule-trigger jobs
+         if (isScheduleTriggerJobData(jobData)) {
+            const { ruleId, organizationId, triggerType } = jobData;
 
-            return {
-               error: undefined,
-               eventId: event.id,
-               rulesEvaluated: result.rulesEvaluated,
-               rulesMatched: result.rulesMatched,
-               success: true,
-            };
-         } catch (error) {
-            const message =
-               error instanceof Error ? error.message : "Unknown error";
-            return {
-               error: message,
-               eventId: event.id,
-               rulesEvaluated: 0,
-               rulesMatched: 0,
-               success: false,
-            };
+            try {
+               // Find the automation rule
+               const rule = await findAutomationRuleById(db, ruleId);
+               if (!rule || !rule.enabled) {
+                  return {
+                     ruleId,
+                     rulesEvaluated: 0,
+                     rulesMatched: 0,
+                     skipped: true,
+                     success: true,
+                  };
+               }
+
+               // Create a synthetic schedule event
+               const event = createScheduleTriggeredEvent(
+                  organizationId,
+                  ruleId,
+                  triggerType,
+               );
+
+               // Process the event with only this specific rule
+               const result = await runner.processScheduleEvent(
+                  event,
+                  toWorkflowRule(rule),
+               );
+
+               return {
+                  eventId: event.id,
+                  ruleId,
+                  rulesEvaluated: result.rulesEvaluated,
+                  rulesMatched: result.rulesMatched,
+                  success: true,
+               };
+            } catch (error) {
+               const message =
+                  error instanceof Error ? error.message : "Unknown error";
+               return {
+                  error: message,
+                  ruleId,
+                  rulesEvaluated: 0,
+                  rulesMatched: 0,
+                  success: false,
+               };
+            }
          }
+
+         // Handle event-based jobs (transaction.created, transaction.updated)
+         if (isEventJobData(jobData)) {
+            const { event } = jobData;
+
+            try {
+               const result: WorkflowExecutionResult =
+                  await runner.processEvent(event);
+
+               return {
+                  eventId: event.id,
+                  rulesEvaluated: result.rulesEvaluated,
+                  rulesMatched: result.rulesMatched,
+                  success: true,
+               };
+            } catch (error) {
+               const message =
+                  error instanceof Error ? error.message : "Unknown error";
+               return {
+                  error: message,
+                  eventId: event.id,
+                  rulesEvaluated: 0,
+                  rulesMatched: 0,
+                  success: false,
+               };
+            }
+         }
+
+         // Unknown job type
+         return {
+            error: "Unknown job type",
+            rulesEvaluated: 0,
+            rulesMatched: 0,
+            success: false,
+         };
       },
       workerOptions,
    );
@@ -109,32 +175,91 @@ export function createWorkflowWorker(
 }
 
 export async function processWorkflowJob(
-   job: Job<WorkflowJobData, WorkflowJobResult>,
-   db: DatabaseInstance,
-   resendClient?: Resend,
-   vapidConfig?: VapidConfig,
+	job: Job<WorkflowJobData, WorkflowJobResult>,
+	db: DatabaseInstance,
+	resendClient?: Resend,
+	vapidConfig?: VapidConfig,
 ): Promise<WorkflowJobResult> {
-   const runner = createWorkflowRunner({ db, resendClient, vapidConfig });
-   const { event } = job.data;
+	const runner = createWorkflowRunner({ db, resendClient, vapidConfig });
+	const jobData = job.data;
 
-   try {
-      const result = await runner.processEvent(event);
+	// Handle schedule-trigger jobs
+	if (isScheduleTriggerJobData(jobData)) {
+		const { ruleId, organizationId, triggerType } = jobData;
 
-      return {
-         error: undefined,
-         eventId: event.id,
-         rulesEvaluated: result.rulesEvaluated,
-         rulesMatched: result.rulesMatched,
-         success: true,
-      };
-   } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      return {
-         error: message,
-         eventId: event.id,
-         rulesEvaluated: 0,
-         rulesMatched: 0,
-         success: false,
-      };
-   }
+		try {
+			const rule = await findAutomationRuleById(db, ruleId);
+			if (!rule || !rule.enabled) {
+				return {
+					ruleId,
+					rulesEvaluated: 0,
+					rulesMatched: 0,
+					skipped: true,
+					success: true,
+				};
+			}
+
+			const event = createScheduleTriggeredEvent(
+				organizationId,
+				ruleId,
+				triggerType,
+			);
+
+			const result = await runner.processScheduleEvent(
+				event,
+				toWorkflowRule(rule),
+			);
+
+			return {
+				eventId: event.id,
+				ruleId,
+				rulesEvaluated: result.rulesEvaluated,
+				rulesMatched: result.rulesMatched,
+				success: true,
+			};
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : "Unknown error";
+			return {
+				error: message,
+				ruleId,
+				rulesEvaluated: 0,
+				rulesMatched: 0,
+				success: false,
+			};
+		}
+	}
+
+	// Handle event-based jobs
+	if (isEventJobData(jobData)) {
+		const { event } = jobData;
+
+		try {
+			const result = await runner.processEvent(event);
+
+			return {
+				eventId: event.id,
+				rulesEvaluated: result.rulesEvaluated,
+				rulesMatched: result.rulesMatched,
+				success: true,
+			};
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : "Unknown error";
+			return {
+				error: message,
+				eventId: event.id,
+				rulesEvaluated: 0,
+				rulesMatched: 0,
+				success: false,
+			};
+		}
+	}
+
+	return {
+		error: "Unknown job type",
+		rulesEvaluated: 0,
+		rulesMatched: 0,
+		success: false,
+	};
 }

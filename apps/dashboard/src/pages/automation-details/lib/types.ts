@@ -54,13 +54,33 @@ export type AutomationFlowState = {
 export const TRIGGER_TYPE_LABELS: Record<TriggerType, string> = {
    "transaction.created": "Transação Criada",
    "transaction.updated": "Transação Atualizada",
+   "schedule.daily": "Agendamento Diário",
+   "schedule.weekly": "Agendamento Semanal",
+   "schedule.biweekly": "Agendamento Quinzenal",
+   "schedule.custom": "Agendamento Personalizado",
 };
+
+export const isScheduleTrigger = (type: TriggerType): boolean =>
+   type.startsWith("schedule.");
+
+export const DAYS_OF_WEEK = [
+   { label: "Domingo", value: 0 },
+   { label: "Segunda", value: 1 },
+   { label: "Terça", value: 2 },
+   { label: "Quarta", value: 3 },
+   { label: "Quinta", value: 4 },
+   { label: "Sexta", value: 5 },
+   { label: "Sábado", value: 6 },
+] as const;
 
 export const ACTION_TYPE_LABELS: Record<ActionType, string> = {
    add_tag: "Adicionar Tag",
    create_transaction: "Criar Transação",
+   fetch_bills_report: "Buscar Relatório de Contas",
+   format_data: "Formatar Dados",
    mark_as_transfer: "Marcar como Transferência",
    remove_tag: "Remover Tag",
+   send_bills_digest: "Enviar Resumo de Contas",
    send_email: "Enviar E-mail",
    send_push_notification: "Enviar Notificação Push",
    set_category: "Definir Categoria",

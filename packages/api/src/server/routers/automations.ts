@@ -1,53 +1,81 @@
 import { type ConditionGroup, ConditionGroupSchema } from "@f-o-t/rules-engine";
 import {
-   findAutomationLogsByOrganizationIdPaginated,
-   findAutomationLogsByRuleId,
-   findRecentAutomationLogs,
-   getAutomationLogStats,
-   getAverageExecutionTime,
+	findAutomationLogsByOrganizationIdPaginated,
+	findAutomationLogsByRuleId,
+	findRecentAutomationLogs,
+	getAutomationLogStats,
+	getAverageExecutionTime,
 } from "@packages/database/repositories/automation-log-repository";
 import {
-   createAutomationRule,
-   deleteAutomationRule,
-   deleteManyAutomationRules,
-   duplicateAutomationRule,
-   findAutomationRuleById,
-   findAutomationRulesByOrganizationId,
-   findAutomationRulesByOrganizationIdPaginated,
-   getActiveAutomationRulesCount,
-   getTotalAutomationRulesByOrganizationId,
-   toggleAutomationRule,
-   updateAutomationRule,
+	createAutomationRule,
+	deleteAutomationRule,
+	deleteManyAutomationRules,
+	duplicateAutomationRule,
+	findAutomationRuleById,
+	findAutomationRulesByOrganizationId,
+	findAutomationRulesByOrganizationIdPaginated,
+	getActiveAutomationRulesCount,
+	getTotalAutomationRulesByOrganizationId,
+	toggleAutomationRule,
+	updateAutomationRule,
 } from "@packages/database/repositories/automation-repository";
 import {
-   computeDiff,
-   createSnapshotFromRule,
-   createVersion,
-   getVersionHistory,
+	computeDiff,
+	createSnapshotFromRule,
+	createVersion,
+	getVersionHistory,
 } from "@packages/database/repositories/automation-version-repository";
 import type {
-   AutomationRuleVersionSnapshot,
-   Consequence,
-   FlowData,
-   TriggerConfig,
-   TriggerType,
+	AutomationRuleVersionSnapshot,
+	Consequence,
+	FlowData,
+	ScheduleTriggerConfig,
+	ScheduleTriggerType,
+	TriggerConfig,
+	TriggerType,
 } from "@packages/database/schema";
 import { APIError } from "@packages/utils/errors";
 import { enqueueManualWorkflowRun } from "@packages/workflows/queue/producer";
 import {
-   createTransactionCreatedEvent,
-   createTransactionUpdatedEvent,
-   type WorkflowEvent,
+	removeScheduleJob,
+	upsertScheduleJob,
+} from "@packages/workflows/queue/schedule-jobs";
+import {
+	createScheduleTriggeredEvent,
+	createTransactionCreatedEvent,
+	createTransactionUpdatedEvent,
+	type WorkflowEvent,
 } from "@packages/workflows/types/events";
 import { z } from "zod";
 import { protectedProcedure, router } from "../trpc";
 
 const triggerTypeSchema = z.enum([
-   "transaction.created",
-   "transaction.updated",
+	"transaction.created",
+	"transaction.updated",
+	"schedule.daily",
+	"schedule.weekly",
+	"schedule.biweekly",
+	"schedule.custom",
 ]);
 
-const triggerConfigSchema = z.object({}).optional().default({});
+const scheduleTriggerConfigSchema = z.object({
+	time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:mm)"),
+	timezone: z.string().default("America/Sao_Paulo"),
+	dayOfWeek: z.number().min(0).max(6).optional(),
+	cronPattern: z.string().optional(),
+});
+
+const triggerConfigSchema = z.union([
+	scheduleTriggerConfigSchema,
+	z.object({}).default({}),
+]).optional().default({});
+
+/**
+ * Helper to check if a trigger type is a schedule trigger
+ */
+function isScheduleTrigger(triggerType: string): triggerType is ScheduleTriggerType {
+	return triggerType.startsWith("schedule.");
+}
 
 const actionTypeSchema = z.enum([
    "set_category",
@@ -59,6 +87,9 @@ const actionTypeSchema = z.enum([
    "mark_as_transfer",
    "send_push_notification",
    "send_email",
+   "send_bills_digest",
+   "fetch_bills_report",
+   "format_data",
    "stop_execution",
 ]);
 
@@ -94,6 +125,26 @@ const actionConfigSchema = z.object({
    type: z.enum(["income", "expense"]).optional(),
    url: z.string().optional(),
    value: z.string().optional(),
+   // send_bills_digest and fetch_bills_report fields
+   recipients: z.enum(["owner", "all_members", "specific"]).optional(),
+   memberIds: z.array(z.string()).optional(),
+   detailLevel: z.enum(["summary", "detailed", "full"]).optional(),
+   includePending: z.boolean().optional(),
+   includeOverdue: z.boolean().optional(),
+   daysAhead: z.number().min(1).max(90).optional(),
+   billTypes: z.array(z.enum(["expense", "income"])).optional(),
+   // send_email template mode
+   useTemplate: z.enum(["bills_digest", "custom"]).optional(),
+   // send_email attachment support
+   includeAttachment: z.boolean().optional(),
+   // format_data config
+   outputFormat: z.enum(["csv", "pdf", "html_table", "json"]).optional(),
+   fileName: z.string().optional(),
+   csvIncludeHeaders: z.boolean().optional(),
+   csvDelimiter: z.enum([",", ";", "\t"]).optional(),
+   pdfTemplate: z.enum(["bills_report", "custom"]).optional(),
+   pdfPageSize: z.enum(["A4", "Letter"]).optional(),
+   htmlTableStyle: z.enum(["default", "striped", "bordered"]).optional(),
 });
 
 const consequenceSchema = z.object({
@@ -196,6 +247,20 @@ export const automationRouter = router({
                ruleId: createdRule.id,
                snapshot: snapshot as AutomationRuleVersionSnapshot,
             });
+
+            // Create schedule job if this is a schedule trigger and enabled
+            if (isScheduleTrigger(input.triggerType) && input.enabled) {
+               try {
+                  await upsertScheduleJob(
+                     createdRule.id,
+                     organizationId,
+                     input.triggerType as ScheduleTriggerType,
+                     input.triggerConfig as ScheduleTriggerConfig,
+                  );
+               } catch (error) {
+                  console.error("Failed to create schedule job:", error);
+               }
+            }
          }
 
          return createdRule;
@@ -216,6 +281,15 @@ export const automationRouter = router({
             throw APIError.notFound("Automation rule not found");
          }
 
+         // Remove schedule job if this is a schedule trigger
+         if (isScheduleTrigger(existingRule.triggerType)) {
+            try {
+               await removeScheduleJob(input.id);
+            } catch (error) {
+               console.error("Failed to remove schedule job:", error);
+            }
+         }
+
          return deleteAutomationRule(resolvedCtx.db, input.id);
       }),
 
@@ -224,6 +298,15 @@ export const automationRouter = router({
       .mutation(async ({ ctx, input }) => {
          const resolvedCtx = await ctx;
          const organizationId = resolvedCtx.organizationId;
+
+         // Remove schedule jobs for all rules being deleted
+         for (const id of input.ids) {
+            try {
+               await removeScheduleJob(id);
+            } catch (error) {
+               console.error(`Failed to remove schedule job for rule ${id}:`, error);
+            }
+         }
 
          return deleteManyAutomationRules(
             resolvedCtx.db,
@@ -464,6 +547,24 @@ export const automationRouter = router({
             throw APIError.notFound("Automation rule not found");
          }
 
+         // Manage schedule job based on enabled state
+         if (isScheduleTrigger(existingRule.triggerType)) {
+            try {
+               if (input.enabled) {
+                  await upsertScheduleJob(
+                     input.id,
+                     organizationId,
+                     existingRule.triggerType as ScheduleTriggerType,
+                     existingRule.triggerConfig as ScheduleTriggerConfig,
+                  );
+               } else {
+                  await removeScheduleJob(input.id);
+               }
+            } catch (error) {
+               console.error("Failed to manage schedule job:", error);
+            }
+         }
+
          return toggleAutomationRule(resolvedCtx.db, input.id, input.enabled);
       }),
 
@@ -607,6 +708,30 @@ export const automationRouter = router({
                   ruleId: input.id,
                   snapshot: newSnapshot as AutomationRuleVersionSnapshot,
                });
+            }
+
+            // Handle schedule job updates
+            const wasSchedule = isScheduleTrigger(existingRule.triggerType);
+            const isNowSchedule = isScheduleTrigger(updatedRule.triggerType);
+
+            try {
+               if (wasSchedule && !isNowSchedule) {
+                  // Trigger type changed from schedule to non-schedule
+                  await removeScheduleJob(input.id);
+               } else if (isNowSchedule && updatedRule.enabled) {
+                  // Trigger is schedule and enabled - create/update job
+                  await upsertScheduleJob(
+                     input.id,
+                     organizationId,
+                     updatedRule.triggerType as ScheduleTriggerType,
+                     updatedRule.triggerConfig as ScheduleTriggerConfig,
+                  );
+               } else if (isNowSchedule && !updatedRule.enabled) {
+                  // Trigger is schedule but disabled - remove job
+                  await removeScheduleJob(input.id);
+               }
+            } catch (error) {
+               console.error("Failed to manage schedule job:", error);
             }
          }
 

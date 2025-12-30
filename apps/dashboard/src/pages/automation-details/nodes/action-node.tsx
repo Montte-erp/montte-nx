@@ -15,6 +15,7 @@ import { AutomationHandle } from "./automation-handle";
 
 export function ActionNode({ data }: NodeProps<ActionNodeType>) {
    const validation = validateActionNode(data);
+   const label = ACTION_TYPE_LABELS[data.actionType] ?? data.label;
 
    return (
       <BaseNode
@@ -48,12 +49,12 @@ export function ActionNode({ data }: NodeProps<ActionNodeType>) {
             {!validation.valid && <AlertTriangle className="size-4" />}
             {validation.valid && <Play className="size-4" />}
             <BaseNodeHeaderTitle className="text-sm">
-               {data.label}
+               {label}
             </BaseNodeHeaderTitle>
          </BaseNodeHeader>
          <BaseNodeContent>
             <div className="text-xs text-muted-foreground">
-               {ACTION_TYPE_LABELS[data.actionType]}
+               {data.actionType}
             </div>
             {!validation.valid && (
                <div className="flex items-center gap-1 text-xs text-red-600">
