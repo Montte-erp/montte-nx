@@ -51,6 +51,19 @@ export function isEncryptionEnabled(): boolean {
 }
 
 /**
+ * Generates a search index for blind index search if enabled
+ * Returns null if description is empty or search key is not configured
+ */
+function generateSearchIndexIfEnabled(
+   description: string | null | undefined,
+): string | null {
+   if (!description) return null;
+   const searchKey = getSearchKey();
+   if (!searchKey) return null;
+   return createSearchIndex(description, searchKey);
+}
+
+/**
  * Decrypts a field value if it contains encrypted data
  * Handles JSON parsing and encryption detection
  */
@@ -109,13 +122,7 @@ export function encryptTransactionFields<
    },
 >(transaction: T): T {
    const encryptionKey = getEncryptionKey();
-   const searchKey = getSearchKey();
-
-   // Generate search index from plaintext before encryption
-   let searchIndex: string | null = null;
-   if (transaction.description && searchKey) {
-      searchIndex = createSearchIndex(transaction.description, searchKey);
-   }
+   const searchIndex = generateSearchIndexIfEnabled(transaction.description);
 
    if (!encryptionKey) {
       return {
@@ -164,13 +171,7 @@ export function encryptBillFields<
    },
 >(bill: T): T {
    const encryptionKey = getEncryptionKey();
-   const searchKey = getSearchKey();
-
-   // Generate search index from plaintext before encryption
-   let searchIndex: string | null = null;
-   if (bill.description && searchKey) {
-      searchIndex = createSearchIndex(bill.description, searchKey);
-   }
+   const searchIndex = generateSearchIndexIfEnabled(bill.description);
 
    if (!encryptionKey) {
       return {

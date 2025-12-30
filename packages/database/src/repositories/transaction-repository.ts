@@ -37,6 +37,30 @@ export type Transaction = typeof transaction.$inferSelect;
 export type NewTransaction = typeof transaction.$inferInsert;
 export type { CategorySplit };
 
+/**
+ * Builds a SQL condition for searching transactions using blind index HMAC tokens.
+ * Returns undefined if SEARCH_KEY is not configured or search string produces no tokens.
+ */
+function buildSearchIndexCondition(
+   search: string,
+   searchIndexColumn: typeof transaction.searchIndex,
+): SQL | undefined {
+   const searchKey = process.env.SEARCH_KEY;
+   if (!searchKey) {
+      return undefined;
+   }
+
+   const tokens = createSearchTokens(search, searchKey);
+   if (tokens.length === 0) {
+      return undefined;
+   }
+
+   const tokenConditions = tokens.map((token) =>
+      ilike(searchIndexColumn, `%${token}%`),
+   );
+   return or(...tokenConditions);
+}
+
 export async function createTransaction(
    dbClient: DatabaseInstance,
    data: NewTransaction,
@@ -209,18 +233,13 @@ export async function findTransactionsByOrganizationIdPaginated(
          }
 
          if (search) {
-            const searchKey = process.env.SEARCH_KEY;
-            if (searchKey) {
-               // Use blind index search with HMAC tokens
-               const tokens = createSearchTokens(search, searchKey);
-               if (tokens.length > 0) {
-                  const tokenConditions = tokens.map((token) =>
-                     ilike(transaction.searchIndex, `%${token}%`),
-                  );
-                  conditions.push(or(...tokenConditions)!);
-               }
+            const searchCondition = buildSearchIndexCondition(
+               search,
+               transaction.searchIndex,
+            );
+            if (searchCondition) {
+               conditions.push(searchCondition);
             }
-            // If no SEARCH_KEY, search is silently skipped (search index not available)
          }
 
          if (startDate) {
@@ -442,18 +461,13 @@ export async function findTransactionsByBankAccountIdPaginated(
       const baseConditions = [eq(transaction.bankAccountId, bankAccountId)];
 
       if (search) {
-         const searchKey = process.env.SEARCH_KEY;
-         if (searchKey) {
-            // Use blind index search with HMAC tokens
-            const tokens = createSearchTokens(search, searchKey);
-            if (tokens.length > 0) {
-               const tokenConditions = tokens.map((token) =>
-                  ilike(transaction.searchIndex, `%${token}%`),
-               );
-               baseConditions.push(or(...tokenConditions)!);
-            }
+         const searchCondition = buildSearchIndexCondition(
+            search,
+            transaction.searchIndex,
+         );
+         if (searchCondition) {
+            baseConditions.push(searchCondition);
          }
-         // If no SEARCH_KEY, search is silently skipped (search index not available)
       }
 
       if (startDate) {

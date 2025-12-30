@@ -21,8 +21,9 @@ import { Pool } from "pg";
 
 import { bill } from "../packages/database/src/schemas/bills";
 import { transaction } from "../packages/database/src/schemas/transactions";
-import { decryptIfNeeded, isEncrypted } from "../packages/encryption/src/server";
+import { isEncrypted } from "../packages/encryption/src/server";
 import { createSearchIndex } from "../packages/encryption/src/search-index";
+import { decryptValue as decryptValueFromService } from "../packages/encryption/src/service";
 
 const program = new Command();
 
@@ -50,15 +51,21 @@ function getEnvFilePath(env: string): string {
 	throw new Error(`No environment file found for ${env}`);
 }
 
+/**
+ * Decrypts a value if encrypted, with null handling.
+ * Uses canonical decryptValue from packages/encryption/src/service.ts
+ * Note: encryptionKey param is kept for API compatibility but the service
+ * reads ENCRYPTION_KEY from process.env (set via dotenv config() call above)
+ */
 function decryptValue(
 	value: string | null,
-	encryptionKey: string,
+	_encryptionKey: string,
 ): string | null {
 	if (!value) return null;
 	try {
 		const parsed = JSON.parse(value);
 		if (isEncrypted(parsed)) {
-			return decryptIfNeeded(parsed, encryptionKey);
+			return decryptValueFromService(parsed);
 		}
 		return value;
 	} catch {

@@ -11,9 +11,28 @@
  * 4. Search queries hash the search term and match against stored hashes
  */
 
-import { createHmac } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 
 const MIN_PREFIX_LENGTH = 3;
+const HEX_REGEX = /^[0-9a-fA-F]+$/;
+const EXPECTED_KEY_LENGTH = 64; // 32 bytes = 64 hex characters
+
+/**
+ * Validates that a search key is a valid hex string with correct length
+ * @throws Error if the key is invalid
+ */
+function validateSearchKey(searchKey: string): void {
+	if (searchKey.length !== EXPECTED_KEY_LENGTH) {
+		throw new Error(
+			`Invalid search key length: expected ${EXPECTED_KEY_LENGTH} hex characters (32 bytes), got ${searchKey.length}`,
+		);
+	}
+	if (!HEX_REGEX.test(searchKey)) {
+		throw new Error(
+			"Invalid search key: must contain only hexadecimal characters (0-9, a-f, A-F)",
+		);
+	}
+}
 
 /**
  * Normalizes text for consistent tokenization
@@ -74,9 +93,12 @@ function tokenize(text: string): string[] {
  * @param text - The plaintext to tokenize
  * @param searchKey - 64-character hex string (32 bytes)
  * @returns Array of hashed tokens
+ * @throws Error if searchKey is invalid
  */
 export function createSearchTokens(text: string, searchKey: string): string[] {
 	if (!text || !searchKey) return [];
+
+	validateSearchKey(searchKey);
 
 	const tokens = tokenize(text);
 	return tokens.map((token) => hashToken(token, searchKey));
@@ -100,6 +122,5 @@ export function createSearchIndex(text: string, searchKey: string): string {
  * Returns a 64-character hex string (32 bytes)
  */
 export function generateSearchKey(): string {
-	const { randomBytes } = require("node:crypto");
 	return randomBytes(32).toString("hex");
 }
