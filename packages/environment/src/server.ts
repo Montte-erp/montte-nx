@@ -1,6 +1,16 @@
 import { z } from "zod";
 import { parseEnv } from "./helpers";
 
+/**
+ * Creates a Zod validator for 64-character hex strings.
+ * Used for cryptographic keys like ENCRYPTION_KEY and SEARCH_KEY.
+ */
+const hex64 = (fieldName: string) =>
+   z
+      .string()
+      .length(64, `${fieldName} must be a 64-character hex string`)
+      .regex(/^[0-9a-fA-F]+$/, `${fieldName} must be a valid hex string`);
+
 const EnvSchema = z.object({
    ARCJET_ENV: z.enum(["development", "production"]),
    ARCJET_KEY: z.string(),
@@ -14,14 +24,8 @@ const EnvSchema = z.object({
    BETTER_AUTH_SECRET: z.string(),
    BETTER_AUTH_TRUSTED_ORIGINS: z.string(),
    DATABASE_URL: z.string(),
-   ENCRYPTION_KEY: z
-      .string()
-      .length(64, "ENCRYPTION_KEY must be a 64-character hex string")
-      .regex(/^[0-9a-fA-F]+$/, "ENCRYPTION_KEY must be a valid hex string"),
-   SEARCH_KEY: z
-      .string()
-      .length(64, "SEARCH_KEY must be a 64-character hex string")
-      .regex(/^[0-9a-fA-F]+$/, "SEARCH_KEY must be a valid hex string"),
+   ENCRYPTION_KEY: hex64("ENCRYPTION_KEY"),
+   SEARCH_KEY: hex64("SEARCH_KEY"),
    MINIO_ACCESS_KEY: z.string(),
    MINIO_BUCKET: z.string().default("content-writer"),
    MINIO_ENDPOINT: z.string(),

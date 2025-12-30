@@ -57,13 +57,9 @@ function getEnvFilePath(env: string): string {
 /**
  * Decrypts a value if encrypted, with null handling.
  * Uses canonical decryptValue from packages/encryption/src/service.ts
- * Note: encryptionKey param is kept for API compatibility but the service
- * reads ENCRYPTION_KEY from process.env (set via dotenv config() call above)
+ * Note: The service reads ENCRYPTION_KEY from process.env (set via dotenv config() call above)
  */
-function decryptValue(
-	value: string | null,
-	_encryptionKey: string,
-): string | null {
+function decryptValue(value: string | null): string | null {
 	if (!value) return null;
 	try {
 		const parsed = JSON.parse(value);
@@ -127,7 +123,7 @@ async function backfillTable(
 			}
 
 			// Decrypt description to get plaintext
-			const plaintext = decryptValue(record.description, encryptionKey);
+			const plaintext = decryptValue(record.description);
 			if (!plaintext) {
 				totalSkipped++;
 				continue;
