@@ -6,6 +6,7 @@ import {
 } from "@packages/encryption/service";
 import { serverEnv } from "@packages/environment/server";
 import { centsToReais, reaisToCents } from "@packages/money";
+import { calculateInstallmentDates } from "@packages/utils/date-math";
 import { AppError, propagateError } from "@packages/utils/errors";
 import { and, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
@@ -771,6 +772,82 @@ export async function completeManyBills(
    }
 }
 
+export type BillCompletionItem = {
+   billId: string;
+   completionDate: Date;
+};
+
+export async function completeManyBillsWithDates(
+   dbClient: DatabaseInstance,
+   items: BillCompletionItem[],
+   organizationId: string,
+) {
+   try {
+      if (items.length === 0) {
+         return { completedCount: 0, transactionIds: [] as string[] };
+      }
+
+      const billIds = items.map((item) => item.billId);
+      const datesByBillId = new Map(
+         items.map((item) => [item.billId, item.completionDate]),
+      );
+
+      const billsToComplete = await dbClient.query.bill.findMany({
+         where: (bill, { and, eq, isNull, inArray }) =>
+            and(
+               eq(bill.organizationId, organizationId),
+               inArray(bill.id, billIds),
+               isNull(bill.completionDate),
+            ),
+         with: {
+            bankAccount: true,
+         },
+      });
+
+      if (billsToComplete.length === 0) {
+         return { completedCount: 0, transactionIds: [] as string[] };
+      }
+
+      const transactionIds: string[] = [];
+
+      for (const billItem of billsToComplete) {
+         const completionDate = datesByBillId.get(billItem.id);
+         if (!completionDate) continue;
+
+         const transactionId = crypto.randomUUID();
+         transactionIds.push(transactionId);
+
+         await dbClient.transaction(async (tx) => {
+            const transactionData = encryptTransactionFields({
+               amount: billItem.amount,
+               bankAccountId: billItem.bankAccountId,
+               date: completionDate,
+               description: billItem.description,
+               id: transactionId,
+               organizationId,
+               type: billItem.type as "income" | "expense",
+            });
+            await tx.insert(transaction).values(transactionData);
+
+            await tx
+               .update(bill)
+               .set({
+                  completionDate,
+                  transactionId,
+               })
+               .where(eq(bill.id, billItem.id));
+         });
+      }
+
+      return { completedCount: billsToComplete.length, transactionIds };
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database(
+         `Failed to complete multiple bills with dates: ${(err as Error).message}`,
+      );
+   }
+}
+
 export async function findBillsByInstallmentGroupId(
    dbClient: DatabaseInstance,
    installmentGroupId: string,
@@ -882,14 +959,17 @@ export async function createBillWithInstallments(
 
       const createdBills: BillWithRelations[] = [];
 
+      // Calculate all installment dates upfront, preserving day-of-month for monthly intervals
+      const installmentDates = calculateInstallmentDates(
+         baseDueDate,
+         totalInstallments,
+         intervalDays,
+      );
+
       await dbClient.transaction(async (tx) => {
          for (let i = 0; i < totalInstallments; i++) {
-            const installmentDueDate = new Date(baseDueDate);
-            installmentDueDate.setDate(
-               baseDueDate.getDate() + i * intervalDays,
-            );
-
-            const installmentAmount = installmentAmounts[i];
+            const installmentDueDate = installmentDates[i] as Date;
+            const installmentAmount = installmentAmounts[i] as number;
             const billId = crypto.randomUUID();
 
             const installmentData = encryptBillFields({
