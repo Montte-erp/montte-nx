@@ -8,9 +8,11 @@
       "edit-metadata": "Editar",
       "label": "Ações",
       "link-file": "Anexar Arquivo",
+      "manage-recurrence": "Gerenciar Recorrência",
       "mark-as-recurrent": "Tornar Recorrente",
       "pay": "Pagar",
-      "receive": "Receber"
+      "receive": "Receber",
+      "view-installments": "Ver Parcelas"
    },
    "actions-toolbar": {
       "actions": {
@@ -19,6 +21,25 @@
       }
    },
    "bulk-actions": {
+      "bulk-pay": {
+         "title": "Pagar Contas Selecionadas",
+         "description": "Escolha como deseja registrar o pagamento",
+         "options": {
+            "today": {
+               "title": "Pagar Hoje",
+               "description": "Todas as contas serão marcadas como pagas na data de hoje"
+            },
+            "custom": {
+               "title": "Datas Personalizadas",
+               "description": "Defina a data de pagamento para cada conta (pré-preenchido com vencimento)"
+            }
+         },
+         "bill-list": {
+            "due-date": "Vencimento",
+            "payment-date": "Data do Pagamento"
+         },
+         "submit": "Confirmar Pagamento"
+      },
       "complete": "Pagar/Receber",
       "complete-confirm-description": "Deseja marcar {{count}} conta(s) como paga(s)? Serão criadas transações para cada conta.",
       "complete-confirm-title": "Confirmar pagamento de {{count}} conta(s)",
@@ -349,6 +370,23 @@
       "from-transaction": {
          "description": "Crie uma conta a pagar/receber recorrente baseada nesta transação",
          "title": "Criar Conta a partir de Transação"
+      },
+      "manage-recurrence": {
+         "current-pattern": "Padrão Atual",
+         "description": "Altere ou desative a recorrência desta conta",
+         "disable": "Desativar Recorrência",
+         "no-pattern": "Sem padrão definido",
+         "success": "Recorrência atualizada com sucesso",
+         "title": "Gerenciar Recorrência"
+      },
+      "view-installments": {
+         "current": "Atual",
+         "description": "Visualize todas as parcelas desta conta",
+         "due-date": "Vencimento:",
+         "installment-number": "Parcela {{current}}/{{total}}",
+         "progress": "Progresso",
+         "title": "Parcelas",
+         "total-amount": "Valor Total"
       },
       "filter": {
          "actions": {

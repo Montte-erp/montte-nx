@@ -218,7 +218,7 @@ export async function findTransactionsByOrganizationIdPaginated(
    try {
       const buildWhereCondition = (
          txn: TransactionColumns,
-         { eq: eqOp, and: andOp, ilike: ilikeOp }: DrizzleOperators,
+         { eq: eqOp, and: andOp }: DrizzleOperators,
       ) => {
          const conditions: (SQL | undefined)[] = [
             eqOp(txn.organizationId, organizationId),

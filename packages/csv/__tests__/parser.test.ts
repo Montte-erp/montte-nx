@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
+	detectAmountFormat,
 	parseAmount,
 	parseCsvContent,
 	parseDate,
@@ -100,6 +101,76 @@ describe("parseAmount", () => {
 
 		it("handles small decimal values", () => {
 			expect(parseAmount("0.01", "decimal-dot")).toBe(0.01);
+		});
+	});
+});
+
+describe("detectAmountFormat", () => {
+	describe("decimal-dot detection", () => {
+		it("detects dot decimal from Nubank-style values", () => {
+			expect(detectAmountFormat(["-1.50", "-3.50", "11196.05"])).toBe(
+				"decimal-dot",
+			);
+		});
+
+		it("detects dot decimal from simple values", () => {
+			expect(detectAmountFormat(["100.00", "50.25", "-30.99"])).toBe(
+				"decimal-dot",
+			);
+		});
+
+		it("detects dot decimal from single value", () => {
+			expect(detectAmountFormat(["123.45"])).toBe("decimal-dot");
+		});
+	});
+
+	describe("decimal-comma detection", () => {
+		it("detects comma decimal from Brazilian-style values", () => {
+			expect(detectAmountFormat(["1.234,56", "-500,00", "100,50"])).toBe(
+				"decimal-comma",
+			);
+		});
+
+		it("detects comma decimal from simple values", () => {
+			expect(detectAmountFormat(["100,00", "50,25", "-30,99"])).toBe(
+				"decimal-comma",
+			);
+		});
+
+		it("detects comma decimal from single value", () => {
+			expect(detectAmountFormat(["123,45"])).toBe("decimal-comma");
+		});
+	});
+
+	describe("edge cases", () => {
+		it("returns decimal-comma as default for empty array", () => {
+			expect(detectAmountFormat([])).toBe("decimal-comma");
+		});
+
+		it("returns decimal-comma as default for ambiguous values", () => {
+			expect(detectAmountFormat(["100", "200", "300"])).toBe("decimal-comma");
+		});
+
+		it("strips R$ currency symbol before detection", () => {
+			expect(detectAmountFormat(["R$ 100,50", "R$ -50,00"])).toBe(
+				"decimal-comma",
+			);
+		});
+
+		it("strips R$ and detects dot decimal", () => {
+			expect(detectAmountFormat(["R$ 100.50", "R$ -50.00"])).toBe(
+				"decimal-dot",
+			);
+		});
+
+		it("handles whitespace", () => {
+			expect(detectAmountFormat(["  100.50  ", "  -50.00  "])).toBe(
+				"decimal-dot",
+			);
+		});
+
+		it("filters out empty strings", () => {
+			expect(detectAmountFormat(["", "100.50", ""])).toBe("decimal-dot");
 		});
 	});
 });
@@ -736,6 +807,38 @@ a,b,c`;
 			const preview = previewCsv(csv);
 
 			expect(preview.detectedFormat).toBeNull();
+		});
+	});
+
+	describe("amount format detection", () => {
+		it("detects decimal-comma format from sample values", () => {
+			const csv = `Data,Descrição,Valor
+15/06/2023,PIX Recebido,100,00
+16/06/2023,Compra,-50,25`;
+
+			const preview = previewCsv(csv);
+
+			expect(preview.amountFormat).toBe("decimal-comma");
+		});
+
+		it("detects decimal-dot format from Nubank-style values", () => {
+			const csv = `Data,Valor,Identificador,Descrição
+01/12/2025,-1.50,abc-123,Transferência enviada
+01/12/2025,-3.50,def-456,Compra no débito
+05/12/2025,11196.05,ghi-789,Transferência Recebida`;
+
+			const preview = previewCsv(csv);
+
+			expect(preview.amountFormat).toBe("decimal-dot");
+		});
+
+		it("defaults to decimal-comma for ambiguous values", () => {
+			const csv = `Data,Descrição,Valor
+15/06/2023,Compra,100`;
+
+			const preview = previewCsv(csv);
+
+			expect(preview.amountFormat).toBe("decimal-comma");
 		});
 	});
 

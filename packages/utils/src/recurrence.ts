@@ -1,3 +1,5 @@
+import { addDays, addMonthsPreserveDay } from "./date-math";
+
 export type RecurrencePattern =
    | "daily"
    | "weekly"
@@ -16,33 +18,22 @@ export function getNextDueDate(
    currentDueDate: Date,
    pattern: RecurrencePattern,
 ): Date {
-   const nextDate = new Date(currentDueDate);
-
    switch (pattern) {
       case "daily":
-         nextDate.setDate(nextDate.getDate() + 1);
-         break;
+         return addDays(currentDueDate, 1);
       case "weekly":
-         nextDate.setDate(nextDate.getDate() + 7);
-         break;
+         return addDays(currentDueDate, 7);
       case "biweekly":
-         nextDate.setDate(nextDate.getDate() + 14);
-         break;
+         return addDays(currentDueDate, 14);
       case "monthly":
-         nextDate.setMonth(nextDate.getMonth() + 1);
-         break;
+         return addMonthsPreserveDay(currentDueDate, 1);
       case "quarterly":
-         nextDate.setMonth(nextDate.getMonth() + 3);
-         break;
+         return addMonthsPreserveDay(currentDueDate, 3);
       case "semiannual":
-         nextDate.setMonth(nextDate.getMonth() + 6);
-         break;
+         return addMonthsPreserveDay(currentDueDate, 6);
       case "annual":
-         nextDate.setFullYear(nextDate.getFullYear() + 1);
-         break;
+         return addMonthsPreserveDay(currentDueDate, 12);
    }
-
-   return nextDate;
 }
 
 export function getRecurrenceLabel(pattern: RecurrencePattern): string {

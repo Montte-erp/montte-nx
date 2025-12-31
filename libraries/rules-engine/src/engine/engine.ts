@@ -422,7 +422,6 @@ export const createEngine = <
          const enabledRules = Array.from(state.rules.values()).filter(
             (r) => r.enabled,
          ).length;
-         const _cacheStats = cache.getStats();
          return {
             totalRules: state.rules.size,
             enabledRules,

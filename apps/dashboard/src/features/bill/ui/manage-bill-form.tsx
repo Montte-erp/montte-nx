@@ -129,7 +129,7 @@ function getCustomAmountsValidation(
    installmentAmountType: string | null,
    installmentCustomAmounts: (number | null)[] | null,
 ) {
-   const customAmountsSum = (installmentCustomAmounts || []).reduce(
+   const customAmountsSum = (installmentCustomAmounts || []).reduce<number>(
       (sum, val) => sum + (val || 0),
       0,
    );
@@ -146,6 +146,9 @@ function getActiveSteps(
    isEditMode: boolean,
 ): StepId[] {
    if (isEditMode) {
+      if (billMode === "onetime") {
+         return ["details", "categorization"];
+      }
       return ["details", "recurrence", "categorization"];
    }
 
@@ -2664,7 +2667,6 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                  installmentCustomAmounts,
                               }) => {
                                  const {
-                                    customAmountsSum,
                                     amountDifference,
                                     isValid: isCustomAmountsValid,
                                  } = getCustomAmountsValidation(

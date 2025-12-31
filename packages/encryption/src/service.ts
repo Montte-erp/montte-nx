@@ -7,7 +7,6 @@
  * Sensitive fields to encrypt:
  * - Transaction: description, notes
  * - Bill: description, notes
- * - Bank Account: accountNumber, notes
  * - Counterparty: notes
  */
 
@@ -205,42 +204,6 @@ export function decryptBillFields<
       ...bill,
       description: decryptFieldValue(bill.description, key),
       notes: decryptFieldValue(bill.notes, key),
-   } as T;
-}
-
-/**
- * Encrypts sensitive fields in a bank account
- */
-export function encryptBankAccountFields<
-   T extends { accountNumber?: string | null; notes?: string | null },
->(account: T): T {
-   const key = getEncryptionKey();
-   if (!key) return account;
-
-   return {
-      ...account,
-      accountNumber: account.accountNumber
-         ? JSON.stringify(encryptField(account.accountNumber, key))
-         : account.accountNumber,
-      notes: account.notes
-         ? JSON.stringify(encryptField(account.notes, key))
-         : account.notes,
-   };
-}
-
-/**
- * Decrypts sensitive fields in a bank account
- */
-export function decryptBankAccountFields<
-   T extends { accountNumber?: string | null; notes?: string | null },
->(account: T): T {
-   const key = getEncryptionKey();
-   if (!key) return account;
-
-   return {
-      ...account,
-      accountNumber: decryptFieldValue(account.accountNumber, key),
-      notes: decryptFieldValue(account.notes, key),
    } as T;
 }
 

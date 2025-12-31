@@ -21,6 +21,10 @@
          "default": "./src/date.ts",
          "types": "./dist/src/date.d.ts"
       },
+      "./date-math": {
+         "default": "./src/date-math.ts",
+         "types": "./dist/src/date-math.d.ts"
+      },
       "./diff": {
          "default": "./src/diff.ts",
          "types": "./dist/src/diff.d.ts"

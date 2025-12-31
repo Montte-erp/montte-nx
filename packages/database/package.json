@@ -1,6 +1,7 @@
 {
    "dependencies": {
       "@f-o-t/rules-engine": "workspace:*",
+      "@packages/environment": "workspace:*",
       "@packages/money": "workspace:*",
       "@packages/utils": "workspace:*",
       "drizzle-orm": "catalog:database",
