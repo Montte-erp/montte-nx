@@ -75,24 +75,6 @@ const collectAllFields = (condition: ConditionGroup): Set<string> => {
    return fields;
 };
 
-const _collectAllConditionIds = (condition: ConditionGroup): Set<string> => {
-   const ids = new Set<string>();
-
-   const traverse = (c: Condition | ConditionGroup) => {
-      if (isConditionGroup(c)) {
-         ids.add(c.id);
-         for (const child of c.conditions) {
-            traverse(child as Condition | ConditionGroup);
-         }
-      } else {
-         ids.add(c.id);
-      }
-   };
-
-   traverse(condition);
-   return ids;
-};
-
 const checkDuplicateConditionIds = (
    condition: ConditionGroup,
    ruleId: string,

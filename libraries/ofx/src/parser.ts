@@ -16,10 +16,10 @@ const CHARSET_MAP: Record<string, string> = {
    "1252": "windows-1252",
    "WINDOWS-1252": "windows-1252",
    CP1252: "windows-1252",
-   "8859-1": "iso-8859-1",
-   "ISO-8859-1": "iso-8859-1",
-   LATIN1: "iso-8859-1",
-   "LATIN-1": "iso-8859-1",
+   "8859-1": "windows-1252",
+   "ISO-8859-1": "windows-1252",
+   LATIN1: "windows-1252",
+   "LATIN-1": "windows-1252",
    "UTF-8": "utf-8",
    UTF8: "utf-8",
    NONE: "utf-8",
@@ -351,9 +351,7 @@ function parseHeaderFromBuffer(buffer: Uint8Array): {
    encoding: string;
 } {
    const maxHeaderSize = Math.min(buffer.length, 1000);
-   // TextDecoder supports multiple encodings at runtime, TypeScript types are restrictive
-   // biome-ignore lint/suspicious/noExplicitAny: TextDecoder runtime supports more encodings than TypeScript types
-   const headerSection = new TextDecoder("iso-8859-1" as any).decode(
+   const headerSection = new TextDecoder("windows-1252").decode(
       buffer.slice(0, maxHeaderSize),
    );
 
@@ -437,9 +435,7 @@ export function parseBuffer(buffer: Uint8Array): ParseResult<OFXDocument> {
       }
 
       const { encoding } = parseHeaderFromBuffer(buffer);
-      // TextDecoder supports multiple encodings at runtime, TypeScript types are restrictive
-      // biome-ignore lint/suspicious/noExplicitAny: TextDecoder runtime supports more encodings than TypeScript types
-      const decoder = new TextDecoder(encoding as any);
+      const decoder = new TextDecoder(encoding as Bun.Encoding);
       const content = decoder.decode(buffer);
 
       return parse(content);

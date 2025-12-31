@@ -4,12 +4,11 @@ import type {
    ConsequenceDefinitions,
    DefaultConsequences,
 } from "./consequence";
-import {
-   type ConflictResolutionStrategy,
-   ConflictResolutionStrategySchema,
-   type EngineExecutionResult,
-   type EvaluationContext,
-   type RuleEvaluationResult,
+import type {
+   ConflictResolutionStrategy,
+   EngineExecutionResult,
+   EvaluationContext,
+   RuleEvaluationResult,
 } from "./evaluation";
 import type { Rule } from "./rule";
 
