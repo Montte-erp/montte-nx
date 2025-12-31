@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2025-12-31
+
+### Changed
+
+- **WHATWG-compliant encoding mapping**: ISO-8859-1 / Latin-1 variants now map to `windows-1252`
+  - `8859-1`, `ISO-8859-1`, `LATIN1`, `LATIN-1` → `windows-1252` (previously `iso-8859-1`)
+  - Per WHATWG Encoding Standard, browsers treat ISO-8859-1 as windows-1252
+  - Improves compatibility with real-world OFX files from Brazilian banks
+- Default header parsing encoding changed from `iso-8859-1` to `windows-1252`
+- Replaced `as any` type casts with `as Bun.Encoding` for TextDecoder instances
+- Removed biome-ignore lint suppressions that are no longer needed
+- Removed unused type imports (`OFXAccountType`, `OFXTransactionType`) from generator module
+
 ## [2.3.0] - 2025-12-25
 
 ### Added

@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-   accountTypeSchema,
-   type OFXAccountType,
-   type OFXTransactionType,
-   transactionTypeSchema,
-} from "./schemas";
+import { accountTypeSchema, transactionTypeSchema } from "./schemas";
 import { escapeOfxText, formatAmount, formatOfxDate } from "./utils";
 
 export const generateHeaderOptionsSchema = z

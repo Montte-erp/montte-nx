@@ -6,6 +6,7 @@ import {
 } from "@packages/database/repositories/bill-attachment-repository";
 import {
    completeManyBills,
+   completeManyBillsWithDates,
    createBill,
    createBillWithInstallments,
    deleteBill,
@@ -329,6 +330,34 @@ export const billRouter = router({
 
          return result;
       }),
+
+   completeManyWithDates: protectedProcedure
+      .input(
+         z.object({
+            items: z.array(
+               z.object({
+                  billId: z.string(),
+                  completionDate: z.string(),
+               }),
+            ),
+         }),
+      )
+      .mutation(async ({ ctx, input }) => {
+         const resolvedCtx = await ctx;
+         const organizationId = resolvedCtx.organizationId;
+
+         const result = await completeManyBillsWithDates(
+            resolvedCtx.db,
+            input.items.map((item) => ({
+               billId: item.billId,
+               completionDate: new Date(item.completionDate),
+            })),
+            organizationId,
+         );
+
+         return result;
+      }),
+
    create: protectedProcedure
       .input(createBillSchema)
       .mutation(async ({ ctx, input }) => {

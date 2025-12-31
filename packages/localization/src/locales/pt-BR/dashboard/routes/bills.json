@@ -21,6 +21,25 @@
       }
    },
    "bulk-actions": {
+      "bulk-pay": {
+         "title": "Pagar Contas Selecionadas",
+         "description": "Escolha como deseja registrar o pagamento",
+         "options": {
+            "today": {
+               "title": "Pagar Hoje",
+               "description": "Todas as contas serão marcadas como pagas na data de hoje"
+            },
+            "custom": {
+               "title": "Datas Personalizadas",
+               "description": "Defina a data de pagamento para cada conta (pré-preenchido com vencimento)"
+            }
+         },
+         "bill-list": {
+            "due-date": "Vencimento",
+            "payment-date": "Data do Pagamento"
+         },
+         "submit": "Confirmar Pagamento"
+      },
       "complete": "Pagar/Receber",
       "complete-confirm-description": "Deseja marcar {{count}} conta(s) como paga(s)? Serão criadas transações para cada conta.",
       "complete-confirm-title": "Confirmar pagamento de {{count}} conta(s)",

@@ -12,6 +12,7 @@ import { formatDate } from "@packages/utils/date";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import { AlertCircle, Check, Clock } from "lucide-react";
+import { type BillStatus, getBillStatus } from "@/features/bill/lib/bill-status";
 import { useTRPC } from "@/integrations/clients";
 
 type Bill = BillWithRelations;
@@ -20,24 +21,12 @@ type ViewInstallmentsSheetProps = {
    bill: Bill;
 };
 
-function getBillStatus(bill: Bill) {
-   if (bill.completionDate) {
-      return "completed";
-   }
-   const today = new Date();
-   const dueDate = new Date(bill.dueDate);
-   if (dueDate < today) {
-      return "overdue";
-   }
-   return "pending";
-}
-
 function StatusBadge({
    status,
 }: {
-   status: "completed" | "pending" | "overdue";
+   status: BillStatus;
 }) {
-   if (status === "completed") {
+   if (status === "paid") {
       return (
          <Badge className="gap-1 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
             <Check className="size-3" />
@@ -130,61 +119,77 @@ export function ViewInstallmentsSheet({ bill }: ViewInstallmentsSheetProps) {
                   : installments?.map((installment, index) => {
                        const status = getBillStatus(installment);
                        const isCurrent = installment.id === bill.id;
+                       const baseClassName = `block p-3 rounded-lg border transition-colors ${
+                          isCurrent ? "border-primary bg-primary/5" : ""
+                       }`;
+
+                       const content = (
+                          <div className="flex items-center justify-between">
+                             <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                   <span className="font-medium text-sm">
+                                      {translate(
+                                         "dashboard.routes.bills.features.view-installments.installment-number",
+                                         {
+                                            current: index + 1,
+                                            total: totalCount,
+                                         },
+                                      )}
+                                   </span>
+                                   {isCurrent && (
+                                      <Badge
+                                         className="text-xs"
+                                         variant="outline"
+                                      >
+                                         {translate(
+                                            "dashboard.routes.bills.features.view-installments.current",
+                                         )}
+                                      </Badge>
+                                   )}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                   {translate(
+                                      "dashboard.routes.bills.features.view-installments.due-date",
+                                   )}{" "}
+                                   {formatDate(
+                                      new Date(installment.dueDate),
+                                      "DD/MM/YYYY",
+                                   )}
+                                </div>
+                             </div>
+                             <div className="flex items-center gap-3">
+                                <span className="font-medium">
+                                   {formatDecimalCurrency(
+                                      Number(installment.amount),
+                                   )}
+                                </span>
+                                <StatusBadge status={status} />
+                             </div>
+                          </div>
+                       );
+
+                       if (!slug) {
+                          return (
+                             <div
+                                className={baseClassName}
+                                key={installment.id}
+                             >
+                                {content}
+                             </div>
+                          );
+                       }
 
                        return (
                           <Link
-                             className={`block p-3 rounded-lg border transition-colors hover:bg-muted/50 ${
-                                isCurrent ? "border-primary bg-primary/5" : ""
-                             }`}
+                             className={`${baseClassName} hover:bg-muted/50`}
                              key={installment.id}
                              params={{
                                 billId: installment.id,
-                                slug: slug as string,
+                                slug,
                              }}
                              to="/$slug/bills/$billId"
                           >
-                             <div className="flex items-center justify-between">
-                                <div className="space-y-1">
-                                   <div className="flex items-center gap-2">
-                                      <span className="font-medium text-sm">
-                                         {translate(
-                                            "dashboard.routes.bills.features.view-installments.installment-number",
-                                            {
-                                               current: index + 1,
-                                               total: totalCount,
-                                            },
-                                         )}
-                                      </span>
-                                      {isCurrent && (
-                                         <Badge
-                                            className="text-xs"
-                                            variant="outline"
-                                         >
-                                            {translate(
-                                               "dashboard.routes.bills.features.view-installments.current",
-                                            )}
-                                         </Badge>
-                                      )}
-                                   </div>
-                                   <div className="text-xs text-muted-foreground">
-                                      {translate(
-                                         "dashboard.routes.bills.features.view-installments.due-date",
-                                      )}{" "}
-                                      {formatDate(
-                                         new Date(installment.dueDate),
-                                         "DD/MM/YYYY",
-                                      )}
-                                   </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                   <span className="font-medium">
-                                      {formatDecimalCurrency(
-                                         Number(installment.amount),
-                                      )}
-                                   </span>
-                                   <StatusBadge status={status} />
-                                </div>
-                             </div>
+                             {content}
                           </Link>
                        );
                     })}

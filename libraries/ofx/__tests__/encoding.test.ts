@@ -21,17 +21,17 @@ describe("getEncodingFromCharset", () => {
       expect(getEncodingFromCharset("CP1252")).toBe("windows-1252");
    });
 
-   it("returns iso-8859-1 for Latin-1 variants", () => {
-      expect(getEncodingFromCharset("8859-1")).toBe("iso-8859-1");
-      expect(getEncodingFromCharset("ISO-8859-1")).toBe("iso-8859-1");
-      expect(getEncodingFromCharset("LATIN1")).toBe("iso-8859-1");
-      expect(getEncodingFromCharset("LATIN-1")).toBe("iso-8859-1");
+   it("returns windows-1252 for Latin-1 variants (per WHATWG spec)", () => {
+      expect(getEncodingFromCharset("8859-1")).toBe("windows-1252");
+      expect(getEncodingFromCharset("ISO-8859-1")).toBe("windows-1252");
+      expect(getEncodingFromCharset("LATIN1")).toBe("windows-1252");
+      expect(getEncodingFromCharset("LATIN-1")).toBe("windows-1252");
    });
 
    it("handles case insensitivity", () => {
       expect(getEncodingFromCharset("utf-8")).toBe("utf-8");
       expect(getEncodingFromCharset("UTF-8")).toBe("utf-8");
-      expect(getEncodingFromCharset("latin1")).toBe("iso-8859-1");
+      expect(getEncodingFromCharset("latin1")).toBe("windows-1252");
    });
 
    it("returns windows-1252 as fallback for unknown charsets", () => {

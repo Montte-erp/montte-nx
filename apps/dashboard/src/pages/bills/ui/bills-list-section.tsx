@@ -34,7 +34,9 @@ import {
    BillMobileCard,
    createBillColumns,
 } from "@/features/bill/ui/bill-table-columns";
+import { BulkPaySheet } from "@/features/bill/ui/bulk-pay-sheet";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";
 
 type BillsListSectionProps = {
@@ -89,6 +91,7 @@ function BillsListSkeleton() {
 function BillsListContent({ type }: BillsListSectionProps) {
    const trpc = useTRPC();
    const { openAlertDialog } = useAlertDialog();
+   const { openSheet } = useSheet();
    const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
    const {
@@ -203,7 +206,7 @@ function BillsListContent({ type }: BillsListSectionProps) {
       0,
    );
 
-   const { completeSelected, deleteSelected, isLoading } = useBillBulkActions({
+   const { deleteSelected, isLoading } = useBillBulkActions({
       onSuccess: () => setRowSelection({}),
    });
 
@@ -292,22 +295,12 @@ function BillsListContent({ type }: BillsListSectionProps) {
                   disabled={isLoading}
                   icon={<Wallet className="size-3.5" />}
                   onClick={() =>
-                     openAlertDialog({
-                        actionLabel: translate(
-                           "dashboard.routes.bills.bulk-actions.confirm",
-                        ),
-                        description: translate(
-                           "dashboard.routes.bills.bulk-actions.complete-confirm-description",
-                           { count: pendingSelectedBills.length },
-                        ),
-                        onAction: async () => {
-                           await completeSelected(
-                              pendingSelectedBills.map((b) => b.id),
-                           );
-                        },
-                        title: translate(
-                           "dashboard.routes.bills.bulk-actions.complete-confirm-title",
-                           { count: pendingSelectedBills.length },
+                     openSheet({
+                        children: (
+                           <BulkPaySheet
+                              bills={pendingSelectedBills}
+                              onSuccess={handleClearSelection}
+                           />
                         ),
                      })
                   }

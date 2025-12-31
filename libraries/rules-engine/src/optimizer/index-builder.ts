@@ -1,4 +1,3 @@
-import type { ConditionGroup } from "@f-o-t/condition-evaluator";
 import type {
    ConsequenceDefinitions,
    DefaultConsequences,

@@ -148,9 +148,9 @@ export async function* parseStream(
    };
 
    let detectedEncoding: string | undefined = options?.encoding;
-   // TextDecoder supports multiple encodings at runtime, TypeScript types are restrictive
-   // biome-ignore lint/suspicious/noExplicitAny: TextDecoder runtime supports more encodings than TypeScript types
-   let decoder = new TextDecoder((detectedEncoding ?? "utf-8") as any);
+   let decoder = new TextDecoder(
+      (detectedEncoding ?? "utf-8") as Bun.Encoding,
+   );
    const tagRegex = /<(\/?)([\w.]+)>([^<]*)/g;
 
    let pendingLedgerBalance: OFXBalance | undefined;
@@ -173,8 +173,7 @@ export async function* parseStream(
                detectedEncoding = getEncodingFromCharset(
                   headerResult.header.CHARSET,
                );
-               // biome-ignore lint/suspicious/noExplicitAny: TextDecoder runtime supports more encodings than TypeScript types
-               decoder = new TextDecoder(detectedEncoding as any);
+               decoder = new TextDecoder(detectedEncoding as Bun.Encoding);
             }
 
             yield { data: headerResult.header, type: "header" };
@@ -310,8 +309,7 @@ export async function* parseStream(
                offset += chunk.length;
             }
 
-            // biome-ignore lint/suspicious/noExplicitAny: TextDecoder runtime supports more encodings than TypeScript types
-            const headerSection = new TextDecoder("iso-8859-1" as any).decode(
+            const headerSection = new TextDecoder("windows-1252").decode(
                combined.slice(0, Math.min(combined.length, 1000)),
             );
 
@@ -322,8 +320,7 @@ export async function* parseStream(
                const charsetMatch = headerSection.match(/CHARSET:(\S+)/i);
                if (charsetMatch && !detectedEncoding) {
                   detectedEncoding = getEncodingFromCharset(charsetMatch[1]);
-                  // biome-ignore lint/suspicious/noExplicitAny: TextDecoder runtime supports more encodings than TypeScript types
-                  decoder = new TextDecoder(detectedEncoding as any);
+                  decoder = new TextDecoder(detectedEncoding as Bun.Encoding);
                }
                headerFound = true;
 
@@ -434,7 +431,7 @@ export async function* parseBatchStream(
          let fileTransactionCount = 0;
 
          // Detect encoding from the first part of the buffer
-         const headerSection = new TextDecoder("iso-8859-1").decode(
+         const headerSection = new TextDecoder("windows-1252").decode(
             file.buffer.slice(0, Math.min(file.buffer.length, 1000)),
          );
          const charsetMatch = headerSection.match(/CHARSET:(\S+)/i);
@@ -443,8 +440,7 @@ export async function* parseBatchStream(
             : (options?.encoding ?? "utf-8");
 
          // Decode the entire buffer
-         // biome-ignore lint/suspicious/noExplicitAny: TextDecoder runtime supports more encodings than TypeScript types
-         const decoder = new TextDecoder(encoding as any);
+         const decoder = new TextDecoder(encoding as Bun.Encoding);
          const content = decoder.decode(file.buffer);
 
          // Create chunked async iterable
