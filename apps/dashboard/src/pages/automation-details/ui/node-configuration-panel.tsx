@@ -98,10 +98,10 @@ export function NodeConfigurationPanel({
          )}
          {node.type === "action" && (
             <ActionConfigurationForm
+               activeTab={activeTab}
                data={node.data as ActionNodeData}
                nodeId={node.id}
                onUpdate={onUpdate}
-               activeTab={activeTab}
             />
          )}
       </div>
@@ -154,7 +154,10 @@ function TriggerConfigurationForm({
       (field: string, value: unknown) => {
          const currentConfig = data.config ?? {};
          onUpdate(nodeId, {
-            config: { ...currentConfig, [field]: value } as TriggerNodeData["config"],
+            config: {
+               ...currentConfig,
+               [field]: value,
+            } as TriggerNodeData["config"],
          });
       },
       [nodeId, data.config, onUpdate],
@@ -205,12 +208,12 @@ function TriggerConfigurationForm({
                            <FieldLabel htmlFor={field.name}>Horário</FieldLabel>
                            <Input
                               id={field.name}
-                              type="time"
-                              value={field.state.value}
                               onChange={(e) => {
                                  field.handleChange(e.target.value);
                                  handleConfigChange("time", e.target.value);
                               }}
+                              type="time"
+                              value={field.state.value}
                            />
                            <FieldDescription>
                               Horário de execução do agendamento
@@ -228,11 +231,11 @@ function TriggerConfigurationForm({
                               Fuso Horário
                            </FieldLabel>
                            <Select
-                              value={field.state.value}
                               onValueChange={(v) => {
                                  field.handleChange(v);
                                  handleConfigChange("timezone", v);
                               }}
+                              value={field.state.value}
                            >
                               <SelectTrigger id={field.name}>
                                  <SelectValue />
@@ -264,12 +267,12 @@ function TriggerConfigurationForm({
                                  Dia da Semana
                               </FieldLabel>
                               <Select
-                                 value={String(field.state.value)}
                                  onValueChange={(v) => {
                                     const num = Number(v);
                                     field.handleChange(num);
                                     handleConfigChange("dayOfWeek", num);
                                  }}
+                                 value={String(field.state.value)}
                               >
                                  <SelectTrigger id={field.name}>
                                     <SelectValue />
@@ -301,8 +304,6 @@ function TriggerConfigurationForm({
                               </FieldLabel>
                               <Input
                                  id={field.name}
-                                 placeholder="0 9 * * 1-5"
-                                 value={field.state.value}
                                  onChange={(e) => {
                                     field.handleChange(e.target.value);
                                     handleConfigChange(
@@ -310,6 +311,8 @@ function TriggerConfigurationForm({
                                        e.target.value,
                                     );
                                  }}
+                                 placeholder="0 9 * * 1-5"
+                                 value={field.state.value}
                               />
                               <FieldDescription>
                                  Formato: minuto hora dia mês dia-da-semana
@@ -587,8 +590,11 @@ function ActionConfigurationForm({
    const actionTabs = actionDefinition.tabs ?? [];
 
    // Check if action has documentation (for "Sobre" tab)
-   const hasAboutTab = actionDefinition.documentation !== undefined ||
-      ["fetch_bills_report", "format_data", "send_email"].includes(data.actionType);
+   const hasAboutTab =
+      actionDefinition.documentation !== undefined ||
+      ["fetch_bills_report", "format_data", "send_email"].includes(
+         data.actionType,
+      );
 
    // Check if action has a Filters tab (config-driven)
    const hasFiltersTab = actionTabs.some((tab) => tab.id === "filters");
@@ -601,7 +607,7 @@ function ActionConfigurationForm({
       }
 
       const actionTabs = getActionTabs(data.actionType);
-      
+
       // If action has custom tabs, get fields for the active tab directly
       if (actionTabs.length > 0) {
          return getFieldsForTab(data.actionType, activeTab);
@@ -667,7 +673,8 @@ function ActionConfigurationForm({
          },
       };
 
-      const content = aboutContent[data.actionType as keyof typeof aboutContent];
+      const content =
+         aboutContent[data.actionType as keyof typeof aboutContent];
       if (!content) return null;
 
       return (
@@ -692,11 +699,15 @@ function ActionConfigurationForm({
                   <p className="text-sm font-medium">Variáveis disponíveis</p>
                   <div className="text-sm text-muted-foreground space-y-2">
                      {Object.entries(content.templates).map(([key, vars]) => (
-                        <div key={key} className="space-y-1">
-                           <p className="font-medium text-foreground capitalize">{key}:</p>
+                        <div className="space-y-1" key={key}>
+                           <p className="font-medium text-foreground capitalize">
+                              {key}:
+                           </p>
                            <ul className="list-disc list-inside pl-2">
                               {(vars as string[]).map((v: string) => (
-                                 <li key={v} className="font-mono text-xs">{v}</li>
+                                 <li className="font-mono text-xs" key={v}>
+                                    {v}
+                                 </li>
                               ))}
                            </ul>
                         </div>
@@ -711,7 +722,7 @@ function ActionConfigurationForm({
    // Content for "Filtros" tab - render using dynamic fields from config
    const renderFiltersContent = () => {
       const filterFields = getFieldsForTab(data.actionType, "filters");
-      
+
       if (filterFields.length === 0) {
          // Fallback for actions without explicit filters tab fields
          return null;
@@ -721,11 +732,11 @@ function ActionConfigurationForm({
          <div className="space-y-4">
             {filterFields.map((field) => (
                <DynamicFieldRenderer
-                  key={field.key}
-                  field={field}
-                  value={allValues[field.key]}
                   allValues={allValues}
+                  field={field}
+                  key={field.key}
                   onChange={(value) => handleFieldChange(field.key, value)}
+                  value={allValues[field.key]}
                />
             ))}
          </div>
@@ -794,12 +805,14 @@ function ActionConfigurationForm({
             if (field.type === "category-split") {
                return (
                   <CategorySplitConfiguration
-                     key={field.key}
                      categories={categories}
                      categoriesLoading={categoriesLoading}
                      config={data.config}
+                     key={field.key}
                      onUpdate={(updates) =>
-                        onUpdate(nodeId, { config: { ...data.config, ...updates } })
+                        onUpdate(nodeId, {
+                           config: { ...data.config, ...updates },
+                        })
                      }
                   />
                );
@@ -807,11 +820,11 @@ function ActionConfigurationForm({
 
             return (
                <DynamicFieldRenderer
-                  key={field.key}
-                  field={field}
-                  value={allValues[field.key]}
                   allValues={allValues}
+                  field={field}
+                  key={field.key}
                   onChange={(value) => handleFieldChange(field.key, value)}
+                  value={allValues[field.key]}
                />
             );
          })}
@@ -937,7 +950,10 @@ function CategorySplitConfiguration({
             className="flex size-4 items-center justify-center rounded"
             style={{ backgroundColor: category.color }}
          >
-            <IconDisplay iconName={category.icon as IconName | null} size={10} />
+            <IconDisplay
+               iconName={category.icon as IconName | null}
+               size={10}
+            />
          </div>
       ),
       label: category.name,

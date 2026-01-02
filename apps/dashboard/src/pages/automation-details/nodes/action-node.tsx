@@ -4,19 +4,33 @@ import {
    BaseNodeHeader,
    BaseNodeHeaderTitle,
 } from "@packages/ui/components/base-node";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@packages/ui/components/tooltip";
+import {
+   Tooltip,
+   TooltipContent,
+   TooltipTrigger,
+} from "@packages/ui/components/tooltip";
 import { cn } from "@packages/ui/lib/utils";
 import { getAction } from "@packages/workflows/config/actions";
 import type { NodeProps } from "@xyflow/react";
 import { Position, useReactFlow } from "@xyflow/react";
-import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Info, Play } from "lucide-react";
+import {
+   AlertTriangle,
+   ArrowDownToLine,
+   ArrowUpFromLine,
+   Info,
+   Play,
+} from "lucide-react";
 import { useMemo } from "react";
 import {
    validateActionNode,
    validateDataDependencies,
    validateEmailAttachmentDependency,
 } from "../lib/node-validation";
-import type { ActionNode as ActionNodeType, AutomationEdge, AutomationNode } from "../lib/types";
+import type {
+   ActionNode as ActionNodeType,
+   AutomationEdge,
+   AutomationNode,
+} from "../lib/types";
 import { ACTION_TYPE_LABELS } from "../lib/types";
 import { AutomationHandle } from "./automation-handle";
 
@@ -36,21 +50,32 @@ export function ActionNode({ id, data }: NodeProps<ActionNodeType>) {
       const depValidation = validateDataDependencies(id, data, nodes, edges);
       allWarnings.push(...depValidation.warnings);
 
-      const attachmentValidation = validateEmailAttachmentDependency(id, data, nodes, edges);
+      const attachmentValidation = validateEmailAttachmentDependency(
+         id,
+         data,
+         nodes,
+         edges,
+      );
       allWarnings.push(...attachmentValidation.warnings);
 
       return allWarnings;
    }, [id, data, getNodes, getEdges]);
 
    const hasWarnings = warnings.length > 0;
-   const hasInput = !!dataFlow?.requires || (dataFlow?.optionalInputs && dataFlow.optionalInputs.length > 0);
+   const hasInput =
+      !!dataFlow?.requires ||
+      (dataFlow?.optionalInputs && dataFlow.optionalInputs.length > 0);
    const hasOutput = !!dataFlow?.produces;
 
    return (
       <BaseNode
          className={cn(
             "min-w-[200px] relative",
-            !validation.valid ? "border-red-500" : hasWarnings ? "border-amber-500" : "border-blue-500",
+            !validation.valid
+               ? "border-red-500"
+               : hasWarnings
+                 ? "border-amber-500"
+                 : "border-blue-500",
          )}
       >
          {/* Input data flow indicator - left side */}
@@ -61,11 +86,15 @@ export function ActionNode({ id, data }: NodeProps<ActionNodeType>) {
                      <ArrowDownToLine className="size-3.5" />
                   </div>
                </TooltipTrigger>
-               <TooltipContent side="left" className="text-xs">
+               <TooltipContent className="text-xs" side="left">
                   {dataFlow?.requires ? (
-                     <span>Requer: {dataFlow.requiresLabel ?? dataFlow.requires}</span>
+                     <span>
+                        Requer: {dataFlow.requiresLabel ?? dataFlow.requires}
+                     </span>
                   ) : (
-                     <span>Entrada opcional: {dataFlow?.optionalInputsLabel}</span>
+                     <span>
+                        Entrada opcional: {dataFlow?.optionalInputsLabel}
+                     </span>
                   )}
                </TooltipContent>
             </Tooltip>
@@ -79,7 +108,7 @@ export function ActionNode({ id, data }: NodeProps<ActionNodeType>) {
                      <ArrowUpFromLine className="size-3.5" />
                   </div>
                </TooltipTrigger>
-               <TooltipContent side="right" className="text-xs">
+               <TooltipContent className="text-xs" side="right">
                   Produz: {dataFlow?.producesLabel ?? dataFlow?.produces}
                </TooltipContent>
             </Tooltip>
@@ -87,7 +116,11 @@ export function ActionNode({ id, data }: NodeProps<ActionNodeType>) {
 
          <AutomationHandle
             className={cn(
-               !validation.valid ? "!border-red-500" : hasWarnings ? "!border-amber-500" : "!border-blue-500",
+               !validation.valid
+                  ? "!border-red-500"
+                  : hasWarnings
+                    ? "!border-amber-500"
+                    : "!border-blue-500",
             )}
             id="top"
             position={Position.Top}
@@ -95,7 +128,11 @@ export function ActionNode({ id, data }: NodeProps<ActionNodeType>) {
          />
          <AutomationHandle
             className={cn(
-               !validation.valid ? "!border-red-500" : hasWarnings ? "!border-amber-500" : "!border-blue-500",
+               !validation.valid
+                  ? "!border-red-500"
+                  : hasWarnings
+                    ? "!border-amber-500"
+                    : "!border-blue-500",
             )}
             id="left"
             position={Position.Left}
@@ -104,7 +141,11 @@ export function ActionNode({ id, data }: NodeProps<ActionNodeType>) {
          <BaseNodeHeader
             className={cn(
                "rounded-t-md text-white",
-               !validation.valid ? "bg-red-500" : hasWarnings ? "bg-amber-500" : "bg-blue-500",
+               !validation.valid
+                  ? "bg-red-500"
+                  : hasWarnings
+                    ? "bg-amber-500"
+                    : "bg-blue-500",
             )}
          >
             {!validation.valid && <AlertTriangle className="size-4" />}
@@ -132,9 +173,14 @@ export function ActionNode({ id, data }: NodeProps<ActionNodeType>) {
                         Dependência ausente
                      </div>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-[250px] text-xs">
+                  <TooltipContent
+                     className="max-w-[250px] text-xs"
+                     side="bottom"
+                  >
                      {warnings.map((w, i) => (
-                        <p key={`warning-${i + 1}`} className="mb-1 last:mb-0">{w}</p>
+                        <p className="mb-1 last:mb-0" key={`warning-${i + 1}`}>
+                           {w}
+                        </p>
                      ))}
                   </TooltipContent>
                </Tooltip>
@@ -147,7 +193,11 @@ export function ActionNode({ id, data }: NodeProps<ActionNodeType>) {
          </BaseNodeContent>
          <AutomationHandle
             className={cn(
-               !validation.valid ? "!border-red-500" : hasWarnings ? "!border-amber-500" : "!border-blue-500",
+               !validation.valid
+                  ? "!border-red-500"
+                  : hasWarnings
+                    ? "!border-amber-500"
+                    : "!border-blue-500",
             )}
             id="bottom"
             position={Position.Bottom}
@@ -155,7 +205,11 @@ export function ActionNode({ id, data }: NodeProps<ActionNodeType>) {
          />
          <AutomationHandle
             className={cn(
-               !validation.valid ? "!border-red-500" : hasWarnings ? "!border-amber-500" : "!border-blue-500",
+               !validation.valid
+                  ? "!border-red-500"
+                  : hasWarnings
+                    ? "!border-amber-500"
+                    : "!border-blue-500",
             )}
             id="right"
             position={Position.Right}

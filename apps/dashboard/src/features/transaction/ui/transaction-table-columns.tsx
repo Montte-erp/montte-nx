@@ -147,7 +147,9 @@ export function createSimilarTransactionColumns(
                <Tooltip>
                   <TooltipTrigger asChild>
                      <span className="font-medium flex items-center gap-1 max-w-[180px]">
-                        <span className="truncate">{transaction.description}</span>
+                        <span className="truncate">
+                           {transaction.description}
+                        </span>
                         <Info className="size-3 text-muted-foreground shrink-0" />
                      </span>
                   </TooltipTrigger>
@@ -271,7 +273,9 @@ export function createTransactionColumns(
                   <Tooltip>
                      <TooltipTrigger asChild>
                         <span className="font-medium flex items-center gap-1 max-w-[200px]">
-                           <span className="truncate">{transaction.description}</span>
+                           <span className="truncate">
+                              {transaction.description}
+                           </span>
                            <Info className="size-3 text-muted-foreground shrink-0" />
                         </span>
                      </TooltipTrigger>

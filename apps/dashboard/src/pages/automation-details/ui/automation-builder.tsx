@@ -1,3 +1,4 @@
+import type { AutomationTemplate } from "@packages/database/repositories/automation-template-repository";
 import type {
    ActionType,
    ConditionEvaluationLogResult,
@@ -5,7 +6,6 @@ import type {
    TriggeredBy,
    TriggerType,
 } from "@packages/database/schema";
-import type { AutomationTemplate } from "@packages/database/repositories/automation-template-repository";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { ScrollArea } from "@packages/ui/components/scroll-area";
@@ -47,7 +47,11 @@ import {
    createDefaultConditionNode,
    createDefaultTriggerNode,
 } from "../lib/flow-serialization";
-import type { ActionNodeData, AutomationEdge, AutomationNode } from "../lib/types";
+import type {
+   ActionNodeData,
+   AutomationEdge,
+   AutomationNode,
+} from "../lib/types";
 import { AutomationCanvas } from "./automation-canvas";
 import { AutomationVersionHistoryView } from "./automation-version-history-view";
 import type { ViewMode } from "./canvas-toolbar";
@@ -88,9 +92,7 @@ function AutomationBuilderContent({
             toast.error(`Erro ao testar automação: ${error.message}`);
          },
          onSuccess: (data) => {
-            toast.success(
-               `Automação executada! Job ID: ${data.jobId}`,
-            );
+            toast.success(`Automação executada! Job ID: ${data.jobId}`);
          },
       }),
    );
@@ -311,9 +313,9 @@ function AutomationBuilderContent({
          )}
 
          <TemplatesPickerDialog
-            open={templatesDialogOpen}
             onOpenChange={setTemplatesDialogOpen}
             onSelect={handleApplyTemplate}
+            open={templatesDialogOpen}
          />
       </div>
    );
@@ -425,7 +427,8 @@ function NodeDetailsPanel({
    const NodeIcon = config.icon;
 
    // Get action definition from config for dynamic tabs
-   const actionType = node.type === "action" ? (node.data as ActionNodeData).actionType : null;
+   const actionType =
+      node.type === "action" ? (node.data as ActionNodeData).actionType : null;
    const actionDefinition = actionType ? getAction(actionType) : null;
    const actionTabs = actionType ? getActionTabs(actionType) : [];
 
@@ -438,41 +441,43 @@ function NodeDetailsPanel({
 
    // Build tabs array from config
    type TabType = "config" | "about" | "filters" | "settings" | string;
-   
+
    // Determine initial tab based on action config
-   const initialTab = actionTabs.length > 0 
-      ? (actionDefinition?.defaultTab ?? actionTabs[0]?.id ?? "config")
-      : "config";
+   const initialTab =
+      actionTabs.length > 0
+         ? (actionDefinition?.defaultTab ?? actionTabs[0]?.id ?? "config")
+         : "config";
    const [activeTab, setActiveTab] = useState<TabType>(initialTab);
 
    // Reset to appropriate tab when node changes
    useEffect(() => {
-      const newInitialTab = actionTabs.length > 0 
-         ? (actionDefinition?.defaultTab ?? actionTabs[0]?.id ?? "config")
-         : "config";
+      const newInitialTab =
+         actionTabs.length > 0
+            ? (actionDefinition?.defaultTab ?? actionTabs[0]?.id ?? "config")
+            : "config";
       setActiveTab(newInitialTab);
-   }, [node.id, actionTabs.length, actionDefinition?.defaultTab]);
+   }, [actionTabs.length, actionDefinition?.defaultTab, actionTabs[0]?.id]);
 
    // Build tabs dynamically from action config
    const tabs: { id: TabType; label: string }[] = [];
-   
+
    // Only add "Geral" if action has NO custom tabs defined
    if (actionTabs.length === 0) {
       tabs.push({ id: "config", label: "Geral" });
    }
-   
+
    // Add custom tabs from action config (sorted by order)
    tabs.push(
       ...actionTabs
          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-         .map((tab) => ({ id: tab.id, label: tab.label }))
+         .map((tab) => ({ id: tab.id, label: tab.label })),
    );
-   
+
    // Add "about" tab for actions with documentation
    if (hasAboutTab) {
       tabs.push({ id: "about", label: "Sobre" });
    }
-   
+
    // Always add settings tab
    tabs.push({ id: "settings", label: "Avançado" });
 
@@ -502,13 +507,13 @@ function NodeDetailsPanel({
          <div className="flex gap-4 border-b px-4 overflow-x-auto">
             {tabs.map((tab) => (
                <button
-                  key={tab.id}
                   className={cn(
                      "relative shrink-0 py-2.5 text-sm font-medium transition-colors",
                      activeTab === tab.id
                         ? "text-foreground"
                         : "text-muted-foreground hover:text-foreground",
                   )}
+                  key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   type="button"
                >
@@ -524,10 +529,10 @@ function NodeDetailsPanel({
             <div className="p-4">
                {isConfigPanelTab && (
                   <NodeConfigurationPanel
+                     activeTab={activeTab as "config" | "about" | "filters"}
                      node={node}
                      onClose={onClose}
                      onUpdate={onUpdate}
-                     activeTab={activeTab as "config" | "about" | "filters"}
                   />
                )}
                {activeTab === "settings" && (

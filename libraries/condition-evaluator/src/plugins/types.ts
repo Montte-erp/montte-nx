@@ -66,7 +66,10 @@ export type CustomOperatorConfig<
 // =============================================================================
 
 // biome-ignore lint/suspicious/noExplicitAny: Operators can have any value/options types
-export type OperatorMap = Record<string, CustomOperatorConfig<string, any, any>>;
+export type OperatorMap = Record<
+   string,
+   CustomOperatorConfig<string, any, any>
+>;
 
 export type InferOperatorNames<T extends OperatorMap> = keyof T & string;
 

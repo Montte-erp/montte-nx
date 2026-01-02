@@ -5,22 +5,22 @@
  * functions, powered by the new condition-evaluator-based system.
  */
 
+import {
+   DEFAULT_DATE_TOLERANCE_DAYS,
+   DEFAULT_MAX_SCORE,
+   DEFAULT_THRESHOLD_PERCENTAGE,
+   DEFAULT_WEIGHTS,
+} from "./constants";
+import {
+   calculateJaccardSimilarity,
+   datesWithinTolerance,
+   extractDescriptionTokens,
+} from "./evaluator";
 import { matchTransactions } from "./matcher";
 import { defaultProfile } from "./profiles/default";
-import {
-	extractDescriptionTokens,
-	calculateJaccardSimilarity,
-	datesWithinTolerance,
-} from "./evaluator";
-import {
-	DEFAULT_WEIGHTS,
-	DEFAULT_MAX_SCORE,
-	DEFAULT_THRESHOLD_PERCENTAGE,
-	DEFAULT_DATE_TOLERANCE_DAYS,
-} from "./constants";
 import type {
-	DuplicateDetectionTransaction,
-	DuplicateScoreResult,
+   DuplicateDetectionTransaction,
+   DuplicateScoreResult,
 } from "./types";
 
 // Re-export constants for backward compatibility
@@ -37,10 +37,10 @@ export { extractDescriptionTokens, datesWithinTolerance };
  * @deprecated Use calculateJaccardSimilarity from @packages/reconciliation/operators
  */
 export function calculateTokenSimilarity(
-	tokens1: string[],
-	tokens2: string[],
+   tokens1: string[],
+   tokens2: string[],
 ): number {
-	return calculateJaccardSimilarity(tokens1, tokens2);
+   return calculateJaccardSimilarity(tokens1, tokens2);
 }
 
 /**
@@ -48,14 +48,14 @@ export function calculateTokenSimilarity(
  * Backward-compatible with @packages/utils/duplicate-detection.
  */
 export function calculateDuplicateScore(
-	candidate: DuplicateDetectionTransaction,
-	target: DuplicateDetectionTransaction,
+   candidate: DuplicateDetectionTransaction,
+   target: DuplicateDetectionTransaction,
 ): DuplicateScoreResult {
-	const result = matchTransactions(candidate, target, defaultProfile);
+   const result = matchTransactions(candidate, target, defaultProfile);
 
-	return {
-		score: result.totalScore,
-		scorePercentage: result.scorePercentage,
-		passed: result.passed,
-	};
+   return {
+      score: result.totalScore,
+      scorePercentage: result.scorePercentage,
+      passed: result.passed,
+   };
 }

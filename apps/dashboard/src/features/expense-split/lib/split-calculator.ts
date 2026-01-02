@@ -2,8 +2,8 @@ import type { SplitType } from "@packages/database/schemas/expense-splits";
 import {
    allocate,
    formatDecimalCurrency,
-   of,
    split as moneySplit,
+   of,
    toDecimal,
 } from "@packages/money";
 

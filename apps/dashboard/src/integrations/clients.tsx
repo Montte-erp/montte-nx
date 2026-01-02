@@ -12,7 +12,7 @@ import {
    QueryClient,
    QueryClientProvider,
 } from "@tanstack/react-query";
-import { Suspense, lazy } from "react";
+import { lazy, Suspense } from "react";
 
 // Lazy load devtools - excluded from production bundle
 const ReactQueryDevtools = import.meta.env.PROD
@@ -22,6 +22,7 @@ const ReactQueryDevtools = import.meta.env.PROD
            default: m.ReactQueryDevtools,
         })),
      );
+
 import { TRPCClientError } from "@trpc/client";
 import {
    createTRPCContext,

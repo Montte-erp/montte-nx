@@ -148,9 +148,7 @@ export async function* parseStream(
    };
 
    let detectedEncoding: string | undefined = options?.encoding;
-   let decoder = new TextDecoder(
-      (detectedEncoding ?? "utf-8") as Bun.Encoding,
-   );
+   let decoder = new TextDecoder((detectedEncoding ?? "utf-8") as Bun.Encoding);
    const tagRegex = /<(\/?)([\w.]+)>([^<]*)/g;
 
    let pendingLedgerBalance: OFXBalance | undefined;

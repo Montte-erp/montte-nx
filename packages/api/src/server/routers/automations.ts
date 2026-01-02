@@ -1,80 +1,87 @@
 import { type ConditionGroup, ConditionGroupSchema } from "@f-o-t/rules-engine";
 import {
-	findAutomationLogsByOrganizationIdPaginated,
-	findAutomationLogsByRuleId,
-	findRecentAutomationLogs,
-	getAutomationLogStats,
-	getAverageExecutionTime,
+   findAutomationLogsByOrganizationIdPaginated,
+   findAutomationLogsByRuleId,
+   findRecentAutomationLogs,
+   getAutomationLogStats,
+   getAverageExecutionTime,
 } from "@packages/database/repositories/automation-log-repository";
 import {
-	createAutomationRule,
-	deleteAutomationRule,
-	deleteManyAutomationRules,
-	duplicateAutomationRule,
-	findAutomationRuleById,
-	findAutomationRulesByOrganizationId,
-	findAutomationRulesByOrganizationIdPaginated,
-	getActiveAutomationRulesCount,
-	getTotalAutomationRulesByOrganizationId,
-	toggleAutomationRule,
-	updateAutomationRule,
+   createAutomationRule,
+   deleteAutomationRule,
+   deleteManyAutomationRules,
+   duplicateAutomationRule,
+   findAutomationRuleById,
+   findAutomationRulesByOrganizationId,
+   findAutomationRulesByOrganizationIdPaginated,
+   getActiveAutomationRulesCount,
+   getTotalAutomationRulesByOrganizationId,
+   toggleAutomationRule,
+   updateAutomationRule,
 } from "@packages/database/repositories/automation-repository";
 import {
-	computeDiff,
-	createSnapshotFromRule,
-	createVersion,
-	getVersionHistory,
+   computeDiff,
+   createSnapshotFromRule,
+   createVersion,
+   getVersionHistory,
 } from "@packages/database/repositories/automation-version-repository";
 import type {
-	AutomationRuleVersionSnapshot,
-	Consequence,
-	FlowData,
-	ScheduleTriggerConfig,
-	ScheduleTriggerType,
-	TriggerConfig,
-	TriggerType,
+   AutomationRuleVersionSnapshot,
+   Consequence,
+   FlowData,
+   ScheduleTriggerConfig,
+   ScheduleTriggerType,
+   TriggerConfig,
+   TriggerType,
 } from "@packages/database/schema";
 import { APIError } from "@packages/utils/errors";
 import { enqueueManualWorkflowRun } from "@packages/workflows/queue/producer";
 import {
-	removeScheduleJob,
-	upsertScheduleJob,
+   removeScheduleJob,
+   upsertScheduleJob,
 } from "@packages/workflows/queue/schedule-jobs";
 import {
-	createScheduleTriggeredEvent,
-	createTransactionCreatedEvent,
-	createTransactionUpdatedEvent,
-	type WorkflowEvent,
+   createScheduleTriggeredEvent,
+   createTransactionCreatedEvent,
+   createTransactionUpdatedEvent,
+   type WorkflowEvent,
 } from "@packages/workflows/types/events";
 import { z } from "zod";
 import { protectedProcedure, router } from "../trpc";
 
 const triggerTypeSchema = z.enum([
-	"transaction.created",
-	"transaction.updated",
-	"schedule.daily",
-	"schedule.weekly",
-	"schedule.biweekly",
-	"schedule.custom",
+   "transaction.created",
+   "transaction.updated",
+   "schedule.daily",
+   "schedule.weekly",
+   "schedule.biweekly",
+   "schedule.custom",
 ]);
 
 const scheduleTriggerConfigSchema = z.object({
-	time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:mm)"),
-	timezone: z.string().default("America/Sao_Paulo"),
-	dayOfWeek: z.number().min(0).max(6).optional(),
-	cronPattern: z.string().optional(),
+   time: z
+      .string()
+      .regex(
+         /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
+         "Invalid time format (HH:mm)",
+      ),
+   timezone: z.string().default("America/Sao_Paulo"),
+   dayOfWeek: z.number().min(0).max(6).optional(),
+   cronPattern: z.string().optional(),
 });
 
-const triggerConfigSchema = z.union([
-	scheduleTriggerConfigSchema,
-	z.object({}).default({}),
-]).optional().default({});
+const triggerConfigSchema = z
+   .union([scheduleTriggerConfigSchema, z.object({}).default({})])
+   .optional()
+   .default({});
 
 /**
  * Helper to check if a trigger type is a schedule trigger
  */
-function isScheduleTrigger(triggerType: string): triggerType is ScheduleTriggerType {
-	return triggerType.startsWith("schedule.");
+function isScheduleTrigger(
+   triggerType: string,
+): triggerType is ScheduleTriggerType {
+   return triggerType.startsWith("schedule.");
 }
 
 const actionTypeSchema = z.enum([
@@ -135,15 +142,21 @@ const actionConfigSchema = z.object({
    // send_email template mode
    useTemplate: z.enum(["bills_digest", "custom", "visual"]).optional(),
    // send_email visual template
-   emailTemplate: z.object({
-      blocks: z.array(z.unknown()),
-      styles: z.object({
-         primaryColor: z.string().optional(),
-         backgroundColor: z.string().optional(),
-         textColor: z.string().optional(),
-         fontFamily: z.enum(["sans-serif", "serif", "monospace"]).optional(),
-      }).optional(),
-   }).optional(),
+   emailTemplate: z
+      .object({
+         blocks: z.array(z.unknown()),
+         styles: z
+            .object({
+               primaryColor: z.string().optional(),
+               backgroundColor: z.string().optional(),
+               textColor: z.string().optional(),
+               fontFamily: z
+                  .enum(["sans-serif", "serif", "monospace"])
+                  .optional(),
+            })
+            .optional(),
+      })
+      .optional(),
    // send_email attachment support
    includeAttachment: z.boolean().optional(),
    // format_data config
@@ -313,7 +326,10 @@ export const automationRouter = router({
             try {
                await removeScheduleJob(id);
             } catch (error) {
-               console.error(`Failed to remove schedule job for rule ${id}:`, error);
+               console.error(
+                  `Failed to remove schedule job for rule ${id}:`,
+                  error,
+               );
             }
          }
 

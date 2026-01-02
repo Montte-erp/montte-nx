@@ -7,7 +7,6 @@ import { translate } from "@packages/localization";
 import { PostHogWrapper, PosthogRouterTracker } from "@packages/posthog/client";
 import { Toaster } from "@packages/ui/components/sonner";
 import { useQuery } from "@tanstack/react-query";
-import { Suspense, lazy } from "react";
 import {
    createRootRoute,
    HeadContent,
@@ -15,6 +14,8 @@ import {
    redirect,
    useLocation,
 } from "@tanstack/react-router";
+import { lazy, Suspense } from "react";
+
 // Lazy load devtools - excluded from production bundle
 const TanStackRouterDevtools = import.meta.env.PROD
    ? () => null
@@ -23,6 +24,7 @@ const TanStackRouterDevtools = import.meta.env.PROD
            default: m.TanStackRouterDevtools,
         })),
      );
+
 import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
 import { GlobalCredenza } from "@/hooks/use-credenza";
 import { GlobalSheet } from "@/hooks/use-sheet";

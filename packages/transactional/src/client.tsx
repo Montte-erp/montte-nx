@@ -1,7 +1,7 @@
 import type { Resend } from "resend";
 import BillsDigestEmail, {
-	type BillDigestItem,
-	type BillsDigestSummary,
+   type BillDigestItem,
+   type BillsDigestSummary,
 } from "./emails/bills-digest";
 import DeletionCompletedEmail from "./emails/deletion-completed";
 import DeletionReminderEmail from "./emails/deletion-reminder";

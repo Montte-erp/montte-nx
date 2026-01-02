@@ -111,9 +111,7 @@ function AutomationActionsCell({ automation }: { automation: Automation }) {
             toast.error(`Erro ao testar automação: ${error.message}`);
          },
          onSuccess: (data) => {
-            toast.success(
-               `Automação executada! Job ID: ${data.jobId}`,
-            );
+            toast.success(`Automação executada! Job ID: ${data.jobId}`);
          },
       }),
    );

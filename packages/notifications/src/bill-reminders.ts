@@ -4,8 +4,8 @@ import {
    findOverdueBillsByOrganizationId,
    findPendingBillsByOrganizationId,
 } from "@packages/database/repositories/bill-repository";
-import { formatDecimalCurrency } from "@packages/money";
 import { shouldSendNotification } from "@packages/database/repositories/notification-preferences-repository";
+import { formatDecimalCurrency } from "@packages/money";
 import { createNotificationPayload, sendPushNotificationToUser } from "./push";
 
 interface BillReminderConfig {

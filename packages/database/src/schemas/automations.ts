@@ -36,31 +36,31 @@ export type ConditionType =
    | "custom";
 
 export type TriggerType =
-	| "transaction.created"
-	| "transaction.updated"
-	| "schedule.daily"
-	| "schedule.weekly"
-	| "schedule.biweekly"
-	| "schedule.custom";
+   | "transaction.created"
+   | "transaction.updated"
+   | "schedule.daily"
+   | "schedule.weekly"
+   | "schedule.biweekly"
+   | "schedule.custom";
 
 export type ScheduleTriggerType =
-	| "schedule.daily"
-	| "schedule.weekly"
-	| "schedule.biweekly"
-	| "schedule.custom";
+   | "schedule.daily"
+   | "schedule.weekly"
+   | "schedule.biweekly"
+   | "schedule.custom";
 
 /**
  * Configuration for schedule-based triggers
  */
 export type ScheduleTriggerConfig = {
-	/** Time in HH:mm format (24h), e.g., "09:00" */
-	time: string;
-	/** IANA timezone, e.g., "America/Sao_Paulo" */
-	timezone: string;
-	/** Day of week (0-6, where 0 = Sunday) - used for schedule.weekly */
-	dayOfWeek?: number;
-	/** Custom cron pattern - used for schedule.custom */
-	cronPattern?: string;
+   /** Time in HH:mm format (24h), e.g., "09:00" */
+   time: string;
+   /** IANA timezone, e.g., "America/Sao_Paulo" */
+   timezone: string;
+   /** Day of week (0-6, where 0 = Sunday) - used for schedule.weekly */
+   dayOfWeek?: number;
+   /** Custom cron pattern - used for schedule.custom */
+   cronPattern?: string;
 };
 
 export type TriggerConfig = ScheduleTriggerConfig | Record<string, never>;

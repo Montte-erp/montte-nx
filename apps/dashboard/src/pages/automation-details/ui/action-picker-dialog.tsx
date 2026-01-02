@@ -9,9 +9,9 @@ import {
    CommandSeparator,
 } from "@packages/ui/components/command";
 import {
+   type ActionCategory,
    getActionsForCategory,
    getUniqueCategories,
-   type ActionCategory,
 } from "@packages/workflows/config/actions";
 import {
    ArrowLeftRight,
@@ -61,7 +61,10 @@ type ActionPickerDialogProps = {
 // Icon Mappings
 // ============================================
 
-const ACTION_ICONS: Record<ActionType, React.ComponentType<{ className?: string }>> = {
+const ACTION_ICONS: Record<
+   ActionType,
+   React.ComponentType<{ className?: string }>
+> = {
    set_category: FolderTree,
    set_cost_center: Building,
    add_tag: Tag,
@@ -76,7 +79,10 @@ const ACTION_ICONS: Record<ActionType, React.ComponentType<{ className?: string 
    stop_execution: StopCircle,
 };
 
-const CATEGORY_META: Record<ActionCategory, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
+const CATEGORY_META: Record<
+   ActionCategory,
+   { label: string; icon: React.ComponentType<{ className?: string }> }
+> = {
    categorization: { label: "Categorização", icon: FolderTree },
    tagging: { label: "Tags", icon: Tag },
    modification: { label: "Modificação", icon: FileText },
@@ -176,11 +182,11 @@ export function ActionPickerDialog({
 
    return (
       <CommandDialog
-         open={open}
-         onOpenChange={onOpenChange}
-         title={title}
          description="Selecione uma opção"
+         onOpenChange={onOpenChange}
+         open={open}
          showCloseButton={false}
+         title={title}
       >
          <CommandInput placeholder={title} />
          <CommandList>
@@ -195,8 +201,8 @@ export function ActionPickerDialog({
                         {TRIGGER_OPTIONS.map((trigger) => (
                            <CommandItem
                               key={trigger.type}
-                              value={`trigger-${trigger.type}`}
                               onSelect={() => handleTriggerSelect(trigger.type)}
+                              value={`trigger-${trigger.type}`}
                            >
                               <Zap className="size-4 text-yellow-500" />
                               <div className="flex flex-col">
@@ -215,8 +221,10 @@ export function ActionPickerDialog({
                      {CONDITION_OPTIONS.map((condition) => (
                         <CommandItem
                            key={condition.operator}
+                           onSelect={() =>
+                              handleConditionSelect(condition.operator)
+                           }
                            value={`condition-${condition.operator}`}
-                           onSelect={() => handleConditionSelect(condition.operator)}
                         >
                            <GitBranch className="size-4 text-blue-500" />
                            <div className="flex flex-col">
@@ -237,14 +245,23 @@ export function ActionPickerDialog({
                      const actions = getActionsForCategory(category);
 
                      return (
-                        <CommandGroup key={category} heading={categoryMeta.label}>
+                        <CommandGroup
+                           heading={categoryMeta.label}
+                           key={category}
+                        >
                            {actions.map((action) => {
-                              const ActionIcon = ACTION_ICONS[action.type as ActionType] ?? Play;
+                              const ActionIcon =
+                                 ACTION_ICONS[action.type as ActionType] ??
+                                 Play;
                               return (
                                  <CommandItem
                                     key={action.type}
+                                    onSelect={() =>
+                                       handleActionSelect(
+                                          action.type as ActionType,
+                                       )
+                                    }
                                     value={`action-${action.type}-${action.label}`}
-                                    onSelect={() => handleActionSelect(action.type as ActionType)}
                                  >
                                     <ActionIcon className="size-4" />
                                     <div className="flex flex-col">
@@ -268,8 +285,8 @@ export function ActionPickerDialog({
                   {TRIGGER_OPTIONS.map((trigger) => (
                      <CommandItem
                         key={trigger.type}
-                        value={trigger.type}
                         onSelect={() => handleTriggerSelect(trigger.type)}
+                        value={trigger.type}
                      >
                         <Zap className="size-4 text-yellow-500" />
                         <div className="flex flex-col">
@@ -289,8 +306,10 @@ export function ActionPickerDialog({
                   {CONDITION_OPTIONS.map((condition) => (
                      <CommandItem
                         key={condition.operator}
+                        onSelect={() =>
+                           handleConditionSelect(condition.operator)
+                        }
                         value={condition.operator}
-                        onSelect={() => handleConditionSelect(condition.operator)}
                      >
                         <GitBranch className="size-4 text-blue-500" />
                         <div className="flex flex-col">
@@ -308,12 +327,15 @@ export function ActionPickerDialog({
             {mode.type === "category" && (
                <CommandGroup heading={CATEGORY_META[mode.category].label}>
                   {getActionsForCategory(mode.category).map((action) => {
-                     const ActionIcon = ACTION_ICONS[action.type as ActionType] ?? Play;
+                     const ActionIcon =
+                        ACTION_ICONS[action.type as ActionType] ?? Play;
                      return (
                         <CommandItem
                            key={action.type}
+                           onSelect={() =>
+                              handleActionSelect(action.type as ActionType)
+                           }
                            value={`${action.type}-${action.label}`}
-                           onSelect={() => handleActionSelect(action.type as ActionType)}
                         >
                            <ActionIcon className="size-4" />
                            <div className="flex flex-col">

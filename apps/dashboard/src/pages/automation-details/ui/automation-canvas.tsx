@@ -31,20 +31,20 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import "@xyflow/react/dist/style.css";
 import type { ActionType, TriggerType } from "@packages/database/schema";
 import {
-   getUniqueCategories,
    type ActionCategory,
+   getUniqueCategories,
 } from "@packages/workflows/config/actions";
 import { DeletableEdge } from "../edges/deletable-edge";
 import type { AutomationEdge, AutomationNode } from "../lib/types";
 import { ActionNode } from "../nodes/action-node";
 import { ConditionNode } from "../nodes/condition-node";
 import { TriggerNode } from "../nodes/trigger-node";
-import { CanvasToolbar, type ViewMode } from "./canvas-toolbar";
 import {
    ActionPickerDialog,
    type PickerMode,
    type PickerSelection,
 } from "./action-picker-dialog";
+import { CanvasToolbar, type ViewMode } from "./canvas-toolbar";
 
 const nodeTypes: NodeTypes = {
    action: ActionNode,
@@ -101,7 +101,10 @@ function calculateMenuPosition(
 }
 
 // Category labels and icons mapping
-const CATEGORY_META: Record<ActionCategory, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
+const CATEGORY_META: Record<
+   ActionCategory,
+   { label: string; icon: React.ComponentType<{ className?: string }> }
+> = {
    categorization: { label: "Categorização", icon: FolderTree },
    tagging: { label: "Tags", icon: Tag },
    modification: { label: "Modificação", icon: FileText },
@@ -202,7 +205,10 @@ export function AutomationCanvas({
    const [showConnections, setShowConnections] = useState(true);
    const [pickerOpen, setPickerOpen] = useState(false);
    const [pickerMode, setPickerMode] = useState<PickerMode | null>(null);
-   const [nodePosition, setNodePosition] = useState<{ x: number; y: number } | null>(null);
+   const [nodePosition, setNodePosition] = useState<{
+      x: number;
+      y: number;
+   } | null>(null);
 
    // Calculate adjusted menu position to prevent overflow
    const adjustedMenuPosition = useMemo(() => {
@@ -319,24 +325,30 @@ export function AutomationCanvas({
    }, [nodes, edges, onAutoLayout, fitView]);
 
    // Open picker dialog for a specific mode
-   const openPicker = useCallback((mode: PickerMode) => {
-      if (menu) {
-         setNodePosition({ x: menu.flowX, y: menu.flowY });
-      }
-      setPickerMode(mode);
-      setPickerOpen(true);
-      setMenu(null); // Close context menu
-   }, [menu]);
+   const openPicker = useCallback(
+      (mode: PickerMode) => {
+         if (menu) {
+            setNodePosition({ x: menu.flowX, y: menu.flowY });
+         }
+         setPickerMode(mode);
+         setPickerOpen(true);
+         setMenu(null); // Close context menu
+      },
+      [menu],
+   );
 
    // Handle picker selection
-   const handlePickerSelect = useCallback((selection: PickerSelection) => {
-      if (nodePosition) {
-         onAddNode?.(selection.nodeType, selection.data, nodePosition);
-      }
-      setPickerOpen(false);
-      setPickerMode(null);
-      setNodePosition(null);
-   }, [nodePosition, onAddNode]);
+   const handlePickerSelect = useCallback(
+      (selection: PickerSelection) => {
+         if (nodePosition) {
+            onAddNode?.(selection.nodeType, selection.data, nodePosition);
+         }
+         setPickerOpen(false);
+         setPickerMode(null);
+         setNodePosition(null);
+      },
+      [nodePosition, onAddNode],
+   );
 
    const defaultEdgeOptions = useMemo(
       () => ({
@@ -450,7 +462,10 @@ export function AutomationCanvas({
          {menu && menu.type === "canvas" && adjustedMenuPosition && (
             <div
                className="fixed z-50 min-w-[220px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-               style={{ top: adjustedMenuPosition.y, left: adjustedMenuPosition.x }}
+               style={{
+                  top: adjustedMenuPosition.y,
+                  left: adjustedMenuPosition.x,
+               }}
             >
                <div className={labelClass}>
                   <Plus className="size-4" />
@@ -497,9 +512,11 @@ export function AutomationCanvas({
                   const Icon = meta.icon;
                   return (
                      <div
-                        key={category}
                         className={menuItemClass}
-                        onClick={() => openPicker({ type: "category", category })}
+                        key={category}
+                        onClick={() =>
+                           openPicker({ type: "category", category })
+                        }
                      >
                         <Icon className="size-4" />
                         {meta.label}
@@ -512,18 +529,21 @@ export function AutomationCanvas({
          {/* Action Picker Dialog */}
          {pickerMode && (
             <ActionPickerDialog
-               open={pickerOpen}
-               onOpenChange={setPickerOpen}
-               mode={pickerMode}
-               onSelect={handlePickerSelect}
                hasTrigger={hasTrigger}
+               mode={pickerMode}
+               onOpenChange={setPickerOpen}
+               onSelect={handlePickerSelect}
+               open={pickerOpen}
             />
          )}
 
          {menu && menu.type === "node" && menu.node && adjustedMenuPosition && (
             <div
                className="fixed z-50 min-w-[180px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-               style={{ top: adjustedMenuPosition.y, left: adjustedMenuPosition.x }}
+               style={{
+                  top: adjustedMenuPosition.y,
+                  left: adjustedMenuPosition.x,
+               }}
             >
                <div className={menuItemClass} onClick={handleConfigureNode}>
                   <Settings className="size-4" />

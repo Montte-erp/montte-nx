@@ -21,6 +21,7 @@ COPY packages/encryption/package.json ./packages/encryption/
 COPY packages/utils/package.json ./packages/utils/
 COPY packages/logging/package.json ./packages/logging/
 COPY packages/money/package.json ./packages/money/
+COPY packages/reconciliation/package.json ./packages/reconciliation/
 COPY libraries/condition-evaluator/package.json ./libraries/condition-evaluator/
 COPY libraries/rules-engine/package.json ./libraries/rules-engine/
 COPY libraries/money/package.json ./libraries/money/

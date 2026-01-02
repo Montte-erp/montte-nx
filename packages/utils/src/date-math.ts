@@ -8,33 +8,33 @@
  * - Mar 31 + 1 month = Apr 30
  */
 export function addMonthsPreserveDay(date: Date, months: number): Date {
-	const targetDay = date.getDate();
-	const result = new Date(date);
+   const targetDay = date.getDate();
+   const result = new Date(date);
 
-	// Move to the 1st to avoid overflow during month change
-	result.setDate(1);
-	result.setMonth(result.getMonth() + months);
+   // Move to the 1st to avoid overflow during month change
+   result.setDate(1);
+   result.setMonth(result.getMonth() + months);
 
-	// Get the last day of the target month
-	const lastDayOfMonth = new Date(
-		result.getFullYear(),
-		result.getMonth() + 1,
-		0,
-	).getDate();
+   // Get the last day of the target month
+   const lastDayOfMonth = new Date(
+      result.getFullYear(),
+      result.getMonth() + 1,
+      0,
+   ).getDate();
 
-	// Set to target day or last day of month, whichever is smaller
-	result.setDate(Math.min(targetDay, lastDayOfMonth));
+   // Set to target day or last day of month, whichever is smaller
+   result.setDate(Math.min(targetDay, lastDayOfMonth));
 
-	return result;
+   return result;
 }
 
 /**
  * Adds days to a date, handling month/year boundaries correctly.
  */
 export function addDays(date: Date, days: number): Date {
-	const result = new Date(date);
-	result.setDate(result.getDate() + days);
-	return result;
+   const result = new Date(date);
+   result.setDate(result.getDate() + days);
+   return result;
 }
 
 /**
@@ -46,20 +46,20 @@ export function addDays(date: Date, days: number): Date {
  * @param intervalDays - Days between installments (30 = monthly with day preservation)
  */
 export function calculateInstallmentDates(
-	baseDueDate: Date,
-	totalInstallments: number,
-	intervalDays: number,
+   baseDueDate: Date,
+   totalInstallments: number,
+   intervalDays: number,
 ): Date[] {
-	const dates: Date[] = [];
-	const isMonthlyInterval = intervalDays === 30;
+   const dates: Date[] = [];
+   const isMonthlyInterval = intervalDays === 30;
 
-	for (let i = 0; i < totalInstallments; i++) {
-		if (isMonthlyInterval) {
-			dates.push(addMonthsPreserveDay(baseDueDate, i));
-		} else {
-			dates.push(addDays(baseDueDate, i * intervalDays));
-		}
-	}
+   for (let i = 0; i < totalInstallments; i++) {
+      if (isMonthlyInterval) {
+         dates.push(addMonthsPreserveDay(baseDueDate, i));
+      } else {
+         dates.push(addDays(baseDueDate, i * intervalDays));
+      }
+   }
 
-	return dates;
+   return dates;
 }

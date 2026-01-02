@@ -191,10 +191,7 @@ export function validateTriggerNode(data: TriggerNodeData): ValidationResult {
          errors.push("Fuso horário é obrigatório para triggers agendados");
       }
 
-      if (
-         data.triggerType === "schedule.custom" &&
-         !data.config?.cronPattern
-      ) {
+      if (data.triggerType === "schedule.custom" && !data.config?.cronPattern) {
          errors.push(
             "Padrão CRON é obrigatório para agendamento personalizado",
          );
@@ -375,7 +372,7 @@ export function validateAllNodesWithDependencies(
 
    for (const node of nodes) {
       let errors: string[] = [];
-      let warnings: string[] = [];
+      const warnings: string[] = [];
       let nodeLabel = "";
       let nodeType = "";
 
