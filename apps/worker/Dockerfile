@@ -36,6 +36,11 @@ COPY . .
 WORKDIR /app/libraries/money
 RUN bun run build
 WORKDIR /app
+
+WORKDIR /app/libraries/csv
+RUN bun run build
+WORKDIR /app
+
 WORKDIR /app/libraries/condition-evaluator
 RUN bun run build
 WORKDIR /app
