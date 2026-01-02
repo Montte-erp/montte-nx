@@ -5,6 +5,7 @@ import {
 } from "@packages/database/repositories/transaction-repository";
 import { createTransferLog } from "@packages/database/repositories/transfer-log-repository";
 import type { Consequence } from "@packages/database/schema";
+import { negate, of, toDecimal } from "@packages/money";
 import {
    type ActionHandler,
    type ActionHandlerContext,
@@ -97,7 +98,7 @@ export const markAsTransferHandler: ActionHandler = {
             counterpartId = exactMatch.id;
          } else {
             const counterpart = await createTransaction(context.db, {
-               amount: (-numericAmount).toString(),
+               amount: toDecimal(negate(of(String(numericAmount), "BRL"))),
                bankAccountId: toBankAccountId,
                date: transactionDate,
                description: description || "",

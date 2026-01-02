@@ -188,10 +188,13 @@ logger.info(
 );
 
 worker.on("active", (job: Job<WorkflowJobData, WorkflowJobResult>) => {
-   logger.debug(
-      { jobId: job.id, eventType: job.data.event.type },
-      "Job active",
-   );
+   const eventType =
+      job.data.type === "event"
+         ? job.data.event.type
+         : job.data.type === "schedule-trigger"
+           ? job.data.triggerType
+           : "unknown";
+   logger.debug({ jobId: job.id, eventType }, "Job active");
 });
 
 worker.on("stalled", (jobId: string) => {

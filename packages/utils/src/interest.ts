@@ -109,6 +109,15 @@ export function calculateMonetaryCorrection(
    return originalAmount * (dailyRate / 100) * daysOverdue;
 }
 
+/**
+ * Round to 2 decimal places using string-based approach to avoid floating-point issues
+ */
+function roundMoney(value: number): number {
+   const rounded = Math.round(value * 100) / 100;
+   // Use string conversion to ensure precision
+   return Number.parseFloat(rounded.toFixed(2));
+}
+
 export function calculateInterest(
    originalAmount: number,
    dueDate: Date,
@@ -162,13 +171,13 @@ export function calculateInterest(
    const updatedAmount = originalAmount + totalInterest;
 
    return {
-      correctionAmount: Math.round(correctionAmount * 100) / 100,
+      correctionAmount: roundMoney(correctionAmount),
       daysOverdue,
       effectiveDaysOverdue,
-      interestAmount: Math.round(interestAmount * 100) / 100,
-      penaltyAmount: Math.round(penaltyAmount * 100) / 100,
-      totalInterest: Math.round(totalInterest * 100) / 100,
-      updatedAmount: Math.round(updatedAmount * 100) / 100,
+      interestAmount: roundMoney(interestAmount),
+      penaltyAmount: roundMoney(penaltyAmount),
+      totalInterest: roundMoney(totalInterest),
+      updatedAmount: roundMoney(updatedAmount),
    };
 }
 

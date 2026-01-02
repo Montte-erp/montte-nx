@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-01-02
+
+### Added
+
+- `decodeOfxBuffer(buffer: Uint8Array): string` - Decodes an OFX buffer to string with automatic charset detection
+  - Detects encoding from OFX header (CHARSET field)
+  - Handles windows-1252, UTF-8, and Latin-1 variants
+  - Single source of truth for buffer decoding across the library
+
+### Changed
+
+- Refactored `parseBuffer` to use `decodeOfxBuffer` internally
+- Refactored `parseBatchStream` to use `decodeOfxBuffer` instead of inline encoding detection
+  - Removed ~12 lines of duplicate charset detection code
+- Consolidated all buffer-to-string conversion logic into `decodeOfxBuffer`
+
 ## [2.3.1] - 2025-12-31
 
 ### Changed

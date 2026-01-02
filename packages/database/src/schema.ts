@@ -1,5 +1,6 @@
 export * from "./schemas/account-deletion";
 export * from "./schemas/auth";
+export * from "./schemas/automation-templates";
 export * from "./schemas/automations";
 export * from "./schemas/bank-accounts";
 export * from "./schemas/bills";

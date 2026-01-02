@@ -19,6 +19,7 @@ export {
    generateTransactionInputSchema,
 } from "./generator";
 export {
+   decodeOfxBuffer,
    getEncodingFromCharset,
    type ParseResult,
    parse,

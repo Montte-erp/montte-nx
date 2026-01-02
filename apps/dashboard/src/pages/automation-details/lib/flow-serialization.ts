@@ -259,6 +259,8 @@ function getActionLabel(actionType: ActionType): string {
    const labels: Record<ActionType, string> = {
       add_tag: "Adicionar Tag",
       create_transaction: "Criar Transação",
+      fetch_bills_report: "Buscar Relatório de Contas",
+      format_data: "Formatar Dados",
       mark_as_transfer: "Marcar como Transferência",
       remove_tag: "Remover Tag",
       send_email: "Enviar E-mail",

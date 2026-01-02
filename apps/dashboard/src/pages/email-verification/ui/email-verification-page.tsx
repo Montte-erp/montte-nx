@@ -89,7 +89,7 @@ export function EmailVerificationPage() {
                      ),
                   );
                   router.navigate({
-                     params: { slug: "" },
+                     params: { slug: "_" },
                      to: "/$slug/home",
                   });
                },

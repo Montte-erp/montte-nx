@@ -1,3 +1,4 @@
+import type { AutomationTemplate } from "@packages/database/repositories/automation-template-repository";
 import type {
    ActionType,
    ConditionEvaluationLogResult,
@@ -10,7 +11,8 @@ import { Button } from "@packages/ui/components/button";
 import { ScrollArea } from "@packages/ui/components/scroll-area";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { cn } from "@packages/ui/lib/utils";
-import { useQuery } from "@tanstack/react-query";
+import { getAction, getActionTabs } from "@packages/workflows/config/actions";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
    addEdge,
    type Connection,
@@ -38,17 +40,23 @@ import {
    Zap,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useTRPC } from "@/integrations/clients";
 import {
    createDefaultActionNode,
    createDefaultConditionNode,
    createDefaultTriggerNode,
 } from "../lib/flow-serialization";
-import type { AutomationEdge, AutomationNode } from "../lib/types";
+import type {
+   ActionNodeData,
+   AutomationEdge,
+   AutomationNode,
+} from "../lib/types";
 import { AutomationCanvas } from "./automation-canvas";
 import { AutomationVersionHistoryView } from "./automation-version-history-view";
 import type { ViewMode } from "./canvas-toolbar";
 import { NodeConfigurationPanel } from "./node-configuration-panel";
+import { TemplatesPickerDialog } from "./templates-picker-dialog";
 
 type AutomationBuilderProps = {
    automationId?: string;
@@ -73,7 +81,29 @@ function AutomationBuilderContent({
       useEdgesState<AutomationEdge>(initialEdges);
    const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
    const [viewMode, setViewMode] = useState<ViewMode>("editor");
+   const [templatesDialogOpen, setTemplatesDialogOpen] = useState(false);
    const { fitView } = useReactFlow();
+   const trpc = useTRPC();
+
+   // Test run mutation
+   const testRunMutation = useMutation(
+      trpc.automations.triggerManually.mutationOptions({
+         onError: (error) => {
+            toast.error(`Erro ao testar automação: ${error.message}`);
+         },
+         onSuccess: (data) => {
+            toast.success(`Automação executada! Job ID: ${data.jobId}`);
+         },
+      }),
+   );
+
+   const handleTestRun = useCallback(() => {
+      if (!automationId) return;
+      testRunMutation.mutate({
+         dryRun: false,
+         ruleId: automationId,
+      });
+   }, [automationId, testRunMutation]);
 
    useEffect(() => {
       onViewModeChange?.(viewMode);
@@ -81,6 +111,35 @@ function AutomationBuilderContent({
 
    const selectedNode = nodes.find((n) => n.id === selectedNodeId) ?? null;
    const hasTrigger = nodes.some((n) => n.type === "trigger");
+
+   // Handle opening templates dialog
+   const handleOpenTemplates = useCallback(() => {
+      setTemplatesDialogOpen(true);
+   }, []);
+
+   // Handle applying a template
+   const handleApplyTemplate = useCallback(
+      (template: AutomationTemplate) => {
+         // Extract nodes and edges from template flowData
+         const flowData = template.flowData as {
+            nodes?: AutomationNode[];
+            edges?: AutomationEdge[];
+         };
+
+         const templateNodes = flowData?.nodes ?? [];
+         const templateEdges = flowData?.edges ?? [];
+
+         // Update canvas with template data
+         setNodes(templateNodes);
+         setEdges(templateEdges);
+         onChange?.(templateNodes, templateEdges);
+
+         // Close dialog and fit view
+         setTemplatesDialogOpen(false);
+         setTimeout(() => fitView({ duration: 300, padding: 0.2 }), 50);
+      },
+      [setNodes, setEdges, onChange, fitView],
+   );
 
    const onConnect = useCallback(
       (connection: Connection) => {
@@ -210,29 +269,39 @@ function AutomationBuilderContent({
 
    return (
       <div className="relative h-full w-full">
-         {viewMode === "history" && automationId ? (
-            <AutomationVersionHistoryView
-               automationId={automationId}
-               onBackToEditor={() => setViewMode("editor")}
-            />
-         ) : (
-            <AutomationCanvas
-               edges={edges}
-               hasTrigger={hasTrigger}
-               nodes={nodes}
-               onAddNode={handleAddNode}
-               onAutoLayout={handleAutoLayout}
-               onConnect={onConnect}
-               onDeleteNode={handleDeleteNode}
-               onDuplicateNode={handleDuplicateNode}
-               onEdgesChange={onEdgesChange}
-               onNodeSelect={handleNodeSelect}
-               onNodesChange={onNodesChange}
-               onViewModeChange={automationId ? setViewMode : undefined}
-               readOnly={readOnly}
-               viewMode={viewMode}
-            />
-         )}
+         <div className="size-full">
+            {viewMode === "history" && automationId ? (
+               <AutomationVersionHistoryView
+                  automationId={automationId}
+                  onBackToEditor={() => setViewMode("editor")}
+               />
+            ) : (
+               <AutomationCanvas
+                  edges={edges}
+                  hasTrigger={hasTrigger}
+                  isTestRunDisabled={!automationId || readOnly}
+                  isTestRunning={testRunMutation.isPending}
+                  nodes={nodes}
+                  onAddNode={handleAddNode}
+                  onAutoLayout={handleAutoLayout}
+                  onConnect={onConnect}
+                  onDeleteNode={handleDeleteNode}
+                  onDuplicateNode={handleDuplicateNode}
+                  onEdgesChange={onEdgesChange}
+                  onNodeSelect={handleNodeSelect}
+                  onNodesChange={onNodesChange}
+                  onOpenTemplates={handleOpenTemplates}
+                  onTestRun={automationId ? handleTestRun : undefined}
+                  onViewModeChange={automationId ? setViewMode : undefined}
+                  readOnly={readOnly}
+                  viewMode={viewMode}
+               />
+            )}
+
+            {automationId && viewMode === "editor" && (
+               <ActivityPanel automationId={automationId} />
+            )}
+         </div>
 
          {selectedNode && !readOnly && viewMode === "editor" && (
             <NodeDetailsPanel
@@ -243,9 +312,11 @@ function AutomationBuilderContent({
             />
          )}
 
-         {automationId && viewMode === "editor" && (
-            <ActivityPanel automationId={automationId} />
-         )}
+         <TemplatesPickerDialog
+            onOpenChange={setTemplatesDialogOpen}
+            onSelect={handleApplyTemplate}
+            open={templatesDialogOpen}
+         />
       </div>
    );
 }
@@ -351,14 +422,72 @@ function NodeDetailsPanel({
    onDelete,
    onUpdate,
 }: NodeDetailsPanelProps) {
-   const [activeTab, setActiveTab] = useState<"config" | "settings">("config");
    const nodeType = node.type as keyof typeof NODE_TYPE_CONFIG;
    const config = NODE_TYPE_CONFIG[nodeType];
    const NodeIcon = config.icon;
 
+   // Get action definition from config for dynamic tabs
+   const actionType =
+      node.type === "action" ? (node.data as ActionNodeData).actionType : null;
+   const actionDefinition = actionType ? getAction(actionType) : null;
+   const actionTabs = actionType ? getActionTabs(actionType) : [];
+
+   // Determine if action has special documentation (for "about" tab)
+   const hasAboutTab =
+      actionDefinition?.documentation !== undefined ||
+      actionType === "fetch_bills_report" ||
+      actionType === "format_data" ||
+      actionType === "send_email";
+
+   // Build tabs array from config
+   type TabType = "config" | "about" | "filters" | "settings" | string;
+
+   // Determine initial tab based on action config
+   const initialTab =
+      actionTabs.length > 0
+         ? (actionDefinition?.defaultTab ?? actionTabs[0]?.id ?? "config")
+         : "config";
+   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
+
+   // Reset to appropriate tab when node changes
+   useEffect(() => {
+      const newInitialTab =
+         actionTabs.length > 0
+            ? (actionDefinition?.defaultTab ?? actionTabs[0]?.id ?? "config")
+            : "config";
+      setActiveTab(newInitialTab);
+   }, [actionTabs.length, actionDefinition?.defaultTab, actionTabs[0]?.id]);
+
+   // Build tabs dynamically from action config
+   const tabs: { id: TabType; label: string }[] = [];
+
+   // Only add "Geral" if action has NO custom tabs defined
+   if (actionTabs.length === 0) {
+      tabs.push({ id: "config", label: "Geral" });
+   }
+
+   // Add custom tabs from action config (sorted by order)
+   tabs.push(
+      ...actionTabs
+         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+         .map((tab) => ({ id: tab.id, label: tab.label })),
+   );
+
+   // Add "about" tab for actions with documentation
+   if (hasAboutTab) {
+      tabs.push({ id: "about", label: "Sobre" });
+   }
+
+   // Always add settings tab
+   tabs.push({ id: "settings", label: "Avançado" });
+
+   // Determine which tabs go to NodeConfigurationPanel
+   const configPanelTabs = ["config", "about", ...actionTabs.map((t) => t.id)];
+   const isConfigPanelTab = configPanelTabs.includes(activeTab);
+
    return (
-      <div className="absolute left-4 top-4 z-20 flex max-h-[calc(100%-2rem)] w-[420px] flex-col overflow-hidden rounded-xl border bg-background/95 shadow-xl backdrop-blur-sm">
-         <div className="flex items-center gap-3 px-5 pt-4">
+      <div className="absolute right-0 top-14 bottom-0 z-20 flex w-[400px] flex-col rounded-tl-xl border-l border-t bg-background shadow-xl">
+         <div className="flex items-center gap-3 border-b px-4 py-3">
             <NodeIcon className={cn("size-5 shrink-0", config.color)} />
             <EditableTitle
                onChange={(newLabel) => onUpdate(node.id, { label: newLabel })}
@@ -375,43 +504,32 @@ function NodeDetailsPanel({
             </Button>
          </div>
 
-         <div className="flex gap-6 border-b px-5">
-            <button
-               className={cn(
-                  "relative py-3 text-sm font-medium transition-colors",
-                  activeTab === "config"
-                     ? "text-foreground"
-                     : "text-muted-foreground hover:text-foreground",
-               )}
-               onClick={() => setActiveTab("config")}
-               type="button"
-            >
-               Configurações
-               {activeTab === "config" && (
-                  <span className="absolute inset-x-0 -bottom-px h-0.5 bg-primary" />
-               )}
-            </button>
-            <button
-               className={cn(
-                  "relative py-3 text-sm font-medium transition-colors",
-                  activeTab === "settings"
-                     ? "text-foreground"
-                     : "text-muted-foreground hover:text-foreground",
-               )}
-               onClick={() => setActiveTab("settings")}
-               type="button"
-            >
-               Settings
-               {activeTab === "settings" && (
-                  <span className="absolute inset-x-0 -bottom-px h-0.5 bg-primary" />
-               )}
-            </button>
+         <div className="flex gap-4 border-b px-4 overflow-x-auto">
+            {tabs.map((tab) => (
+               <button
+                  className={cn(
+                     "relative shrink-0 py-2.5 text-sm font-medium transition-colors",
+                     activeTab === tab.id
+                        ? "text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                  )}
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  type="button"
+               >
+                  {tab.label}
+                  {activeTab === tab.id && (
+                     <span className="absolute inset-x-0 -bottom-px h-0.5 bg-primary" />
+                  )}
+               </button>
+            ))}
          </div>
 
          <ScrollArea className="flex-1">
-            <div className="p-5">
-               {activeTab === "config" && (
+            <div className="p-4">
+               {isConfigPanelTab && (
                   <NodeConfigurationPanel
+                     activeTab={activeTab as "config" | "about" | "filters"}
                      node={node}
                      onClose={onClose}
                      onUpdate={onUpdate}
@@ -483,6 +601,10 @@ const STATUS_CONFIG: Record<
 const TRIGGER_TYPE_LABELS: Record<string, string> = {
    "transaction.created": "Transação criada",
    "transaction.updated": "Transação atualizada",
+   "schedule.daily": "Agendamento diário",
+   "schedule.weekly": "Agendamento semanal",
+   "schedule.biweekly": "Agendamento quinzenal",
+   "schedule.custom": "Agendamento personalizado",
 };
 
 const TRIGGERED_BY_LABELS: Record<TriggeredBy, string> = {
@@ -493,6 +615,8 @@ const TRIGGERED_BY_LABELS: Record<TriggeredBy, string> = {
 const ACTION_TYPE_LABELS: Record<ActionType, string> = {
    add_tag: "Adicionar tag",
    create_transaction: "Criar transação",
+   fetch_bills_report: "Buscar relatório de contas",
+   format_data: "Formatar dados",
    mark_as_transfer: "Marcar como transferência",
    remove_tag: "Remover tag",
    send_email: "Enviar e-mail",

@@ -1,7 +1,13 @@
 import type React from "react";
 import { createContext, useContext, useState } from "react";
 
-export type TriggerTypeFilter = "transaction.created" | "transaction.updated";
+export type TriggerTypeFilter =
+   | "transaction.created"
+   | "transaction.updated"
+   | "schedule.daily"
+   | "schedule.weekly"
+   | "schedule.biweekly"
+   | "schedule.custom";
 
 interface AutomationsListContextType {
    triggerType: TriggerTypeFilter | null;

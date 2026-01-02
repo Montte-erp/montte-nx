@@ -14,7 +14,7 @@ import {
 import { formatDate } from "@packages/utils/date";
 import { Link } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Check, CheckCheck, Eye, Minus, Split, X } from "lucide-react";
+import { Check, CheckCheck, Eye, Info, Minus, Split, X } from "lucide-react";
 import type { IconName } from "@/features/icon-selector/lib/available-icons";
 import { IconDisplay } from "@/features/icon-selector/ui/icon-display";
 import { AmountAnnouncement } from "./amount-announcement";
@@ -144,9 +144,17 @@ export function createSimilarTransactionColumns(
          cell: ({ row }) => {
             const transaction = row.original;
             return (
-               <span className="font-medium block max-w-[180px] truncate">
-                  {transaction.description}
-               </span>
+               <Tooltip>
+                  <TooltipTrigger asChild>
+                     <span className="font-medium flex items-center gap-1 max-w-[180px]">
+                        <span className="truncate">
+                           {transaction.description}
+                        </span>
+                        <Info className="size-3 text-muted-foreground shrink-0" />
+                     </span>
+                  </TooltipTrigger>
+                  <TooltipContent>{transaction.description}</TooltipContent>
+               </Tooltip>
             );
          },
          enableSorting: false,
@@ -262,9 +270,17 @@ export function createTransactionColumns(
 
             return (
                <div className="flex items-center gap-1.5">
-                  <span className="font-medium block max-w-[200px] truncate">
-                     {transaction.description}
-                  </span>
+                  <Tooltip>
+                     <TooltipTrigger asChild>
+                        <span className="font-medium flex items-center gap-1 max-w-[200px]">
+                           <span className="truncate">
+                              {transaction.description}
+                           </span>
+                           <Info className="size-3 text-muted-foreground shrink-0" />
+                        </span>
+                     </TooltipTrigger>
+                     <TooltipContent>{transaction.description}</TooltipContent>
+                  </Tooltip>
                   {hasSplit && (
                      <Tooltip>
                         <TooltipTrigger asChild>

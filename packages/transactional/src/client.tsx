@@ -1,4 +1,8 @@
 import type { Resend } from "resend";
+import BillsDigestEmail, {
+   type BillDigestItem,
+   type BillsDigestSummary,
+} from "./emails/bills-digest";
 import DeletionCompletedEmail from "./emails/deletion-completed";
 import DeletionReminderEmail from "./emails/deletion-reminder";
 import DeletionScheduledEmail from "./emails/deletion-scheduled";
@@ -9,6 +13,7 @@ import WorkflowNotificationEmail from "./emails/workflow-notification";
 import type { SendWorkflowEmailOptions } from "./utils";
 
 export type { SendWorkflowEmailOptions };
+export type { BillDigestItem, BillsDigestSummary } from "./emails/bills-digest";
 export { getResendClient, type ResendClient } from "./utils";
 
 export interface SendEmailOTPOptions {
@@ -185,6 +190,53 @@ export const sendDeletionCompletedEmail = async (
    await client.emails.send({
       from: `${name} <suporte@mail.montte.co>`,
       react: <DeletionCompletedEmail userName={userName} />,
+      subject,
+      to: email,
+   });
+};
+
+// Bills Digest Email
+
+export interface SendBillsDigestEmailOptions {
+   email: string;
+   userName: string;
+   organizationName: string;
+   period: string;
+   summary: BillsDigestSummary;
+   bills: BillDigestItem[];
+   dashboardUrl: string;
+   detailLevel: "summary" | "detailed" | "full";
+   from?: string;
+}
+
+export const sendBillsDigestEmail = async (
+   client: Resend,
+   {
+      email,
+      userName,
+      organizationName,
+      period,
+      summary,
+      bills,
+      dashboardUrl,
+      detailLevel,
+      from,
+   }: SendBillsDigestEmailOptions,
+) => {
+   const subject = `Resumo de contas - ${period}`;
+   await client.emails.send({
+      from: from || `${name} <suporte@mail.montte.co>`,
+      react: (
+         <BillsDigestEmail
+            bills={bills}
+            dashboardUrl={dashboardUrl}
+            detailLevel={detailLevel}
+            organizationName={organizationName}
+            period={period}
+            summary={summary}
+            userName={userName}
+         />
+      ),
       subject,
       to: email,
    });

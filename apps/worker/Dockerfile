@@ -18,11 +18,16 @@ COPY packages/workflows/package.json ./packages/workflows/
 COPY packages/transactional/package.json ./packages/transactional/
 COPY packages/notifications/package.json ./packages/notifications/
 COPY packages/encryption/package.json ./packages/encryption/
+
 COPY packages/utils/package.json ./packages/utils/
 COPY packages/logging/package.json ./packages/logging/
 COPY packages/money/package.json ./packages/money/
+COPY packages/reconciliation/package.json ./packages/reconciliation/
+COPY packages/csv/package.json ./packages/csv/
+COPY packages/pdf/package.json ./packages/pdf/
 COPY libraries/condition-evaluator/package.json ./libraries/condition-evaluator/
 COPY libraries/rules-engine/package.json ./libraries/rules-engine/
+COPY libraries/csv/package.json ./libraries/csv/
 COPY libraries/money/package.json ./libraries/money/
 
 RUN bun install
@@ -32,6 +37,12 @@ COPY . .
 WORKDIR /app/libraries/money
 RUN bun run build
 WORKDIR /app
+
+WORKDIR /app/libraries/csv
+
+RUN bun run build
+WORKDIR /app
+
 WORKDIR /app/libraries/condition-evaluator
 RUN bun run build
 WORKDIR /app

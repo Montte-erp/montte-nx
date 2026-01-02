@@ -12,7 +12,10 @@ import { formatDate } from "@packages/utils/date";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import { AlertCircle, Check, Clock } from "lucide-react";
-import { type BillStatus, getBillStatus } from "@/features/bill/lib/bill-status";
+import {
+   type BillStatus,
+   getBillStatus,
+} from "@/features/bill/lib/bill-status";
 import { useTRPC } from "@/integrations/clients";
 
 type Bill = BillWithRelations;
@@ -21,11 +24,7 @@ type ViewInstallmentsSheetProps = {
    bill: Bill;
 };
 
-function StatusBadge({
-   status,
-}: {
-   status: BillStatus;
-}) {
+function StatusBadge({ status }: { status: BillStatus }) {
    if (status === "paid") {
       return (
          <Badge className="gap-1 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">

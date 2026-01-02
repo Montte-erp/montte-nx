@@ -4,6 +4,7 @@ import { parseEnv } from "./helpers";
 const EnvSchema = z.object({
    BETTER_STACK_HEARTBEAT_URL: z.string().url().optional(),
    DATABASE_URL: z.string(),
+   ENCRYPTION_KEY: z.string().length(64).optional(),
    LOG_LEVEL: z
       .enum(["trace", "debug", "info", "warn", "error", "fatal"])
       .optional()

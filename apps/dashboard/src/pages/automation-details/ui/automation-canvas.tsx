@@ -12,18 +12,15 @@ import {
    useReactFlow,
 } from "@xyflow/react";
 import {
-   ArrowLeftRight,
-   Bell,
-   Building,
-   ChevronRight,
+   ClipboardList,
    Copy,
    FileText,
    FolderTree,
    GitBranch,
    Link2Off,
    Mail,
-   Play,
    Plus,
+   Search,
    Settings,
    StopCircle,
    Tag,
@@ -33,11 +30,20 @@ import {
 import { useCallback, useMemo, useRef, useState } from "react";
 import "@xyflow/react/dist/style.css";
 import type { ActionType, TriggerType } from "@packages/database/schema";
+import {
+   type ActionCategory,
+   getUniqueCategories,
+} from "@packages/workflows/config/actions";
 import { DeletableEdge } from "../edges/deletable-edge";
 import type { AutomationEdge, AutomationNode } from "../lib/types";
 import { ActionNode } from "../nodes/action-node";
 import { ConditionNode } from "../nodes/condition-node";
 import { TriggerNode } from "../nodes/trigger-node";
+import {
+   ActionPickerDialog,
+   type PickerMode,
+   type PickerSelection,
+} from "./action-picker-dialog";
 import { CanvasToolbar, type ViewMode } from "./canvas-toolbar";
 
 const nodeTypes: NodeTypes = {
@@ -52,6 +58,62 @@ const edgeTypes: EdgeTypes = {
 
 const NODE_WIDTH = 280;
 const NODE_HEIGHT = 150;
+
+// Menu dimensions for boundary calculations
+const MENU_WIDTH = 220;
+const MENU_HEIGHT = 400; // approximate max height
+const MENU_PADDING = 10;
+
+// Calculate menu position with viewport boundary checking
+function calculateMenuPosition(
+   x: number,
+   y: number,
+   menuWidth = MENU_WIDTH,
+   menuHeight = MENU_HEIGHT,
+): { x: number; y: number } {
+   const viewportWidth = window.innerWidth;
+   const viewportHeight = window.innerHeight;
+
+   let adjustedX = x;
+   let adjustedY = y;
+
+   // If menu overflows right edge, move to left
+   if (x + menuWidth > viewportWidth - MENU_PADDING) {
+      adjustedX = viewportWidth - menuWidth - MENU_PADDING;
+   }
+
+   // If menu overflows bottom edge, move up
+   if (y + menuHeight > viewportHeight - MENU_PADDING) {
+      adjustedY = viewportHeight - menuHeight - MENU_PADDING;
+   }
+
+   // Ensure menu doesn't go off left edge
+   if (adjustedX < MENU_PADDING) {
+      adjustedX = MENU_PADDING;
+   }
+
+   // Ensure menu doesn't go off top edge
+   if (adjustedY < MENU_PADDING) {
+      adjustedY = MENU_PADDING;
+   }
+
+   return { x: adjustedX, y: adjustedY };
+}
+
+// Category labels and icons mapping
+const CATEGORY_META: Record<
+   ActionCategory,
+   { label: string; icon: React.ComponentType<{ className?: string }> }
+> = {
+   categorization: { label: "Categorização", icon: FolderTree },
+   tagging: { label: "Tags", icon: Tag },
+   modification: { label: "Modificação", icon: FileText },
+   creation: { label: "Criação", icon: Plus },
+   data: { label: "Dados", icon: ClipboardList },
+   transformation: { label: "Transformação", icon: FileText },
+   notification: { label: "Notificações", icon: Mail },
+   control: { label: "Controle", icon: StopCircle },
+};
 
 function getAutoLayoutedNodes(
    nodes: AutomationNode[],
@@ -107,6 +169,10 @@ type AutomationCanvasProps = {
    onDeleteNode?: (nodeId: string) => void;
    onDuplicateNode?: (nodeId: string) => void;
    onAutoLayout?: (nodes: AutomationNode[]) => void;
+   onOpenTemplates?: () => void;
+   onTestRun?: () => void;
+   isTestRunning?: boolean;
+   isTestRunDisabled?: boolean;
    readOnly?: boolean;
    hasTrigger?: boolean;
    viewMode?: ViewMode;
@@ -124,6 +190,10 @@ export function AutomationCanvas({
    onDeleteNode,
    onDuplicateNode,
    onAutoLayout,
+   onOpenTemplates,
+   onTestRun,
+   isTestRunning = false,
+   isTestRunDisabled = false,
    readOnly = false,
    hasTrigger = false,
    viewMode = "editor",
@@ -132,8 +202,22 @@ export function AutomationCanvas({
    const { screenToFlowPosition, fitView } = useReactFlow();
    const ref = useRef<HTMLDivElement>(null);
    const [menu, setMenu] = useState<MenuState>(null);
-   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
    const [showConnections, setShowConnections] = useState(true);
+   const [pickerOpen, setPickerOpen] = useState(false);
+   const [pickerMode, setPickerMode] = useState<PickerMode | null>(null);
+   const [nodePosition, setNodePosition] = useState<{
+      x: number;
+      y: number;
+   } | null>(null);
+
+   // Calculate adjusted menu position to prevent overflow
+   const adjustedMenuPosition = useMemo(() => {
+      if (!menu) return null;
+      return calculateMenuPosition(menu.x, menu.y);
+   }, [menu]);
+
+   // Get all categories from config
+   const allCategories = useMemo(() => getUniqueCategories(), []);
 
    const handleNodeClick = useCallback(
       (event: React.MouseEvent, node: AutomationNode) => {
@@ -146,7 +230,7 @@ export function AutomationCanvas({
    const handlePaneClick = useCallback(() => {
       onNodeSelect?.(null);
       setMenu(null);
-      setOpenSubmenu(null);
+      setPickerOpen(false);
    }, [onNodeSelect]);
 
    const handlePaneContextMenu = useCallback(
@@ -163,7 +247,6 @@ export function AutomationCanvas({
             flowX: flowPosition.x,
             flowY: flowPosition.y,
          });
-         setOpenSubmenu(null);
       },
       [screenToFlowPosition],
    );
@@ -183,27 +266,8 @@ export function AutomationCanvas({
             flowX: flowPosition.x,
             flowY: flowPosition.y,
          });
-         setOpenSubmenu(null);
       },
       [screenToFlowPosition],
-   );
-
-   const handleAddNode = useCallback(
-      (
-         type: "trigger" | "condition" | "action",
-         data: {
-            triggerType?: TriggerType;
-            actionType?: ActionType;
-            operator?: "AND" | "OR";
-         },
-      ) => {
-         if (menu) {
-            onAddNode?.(type, data, { x: menu.flowX, y: menu.flowY });
-         }
-         setMenu(null);
-         setOpenSubmenu(null);
-      },
-      [menu, onAddNode],
    );
 
    const handleConfigureNode = useCallback(() => {
@@ -260,6 +324,32 @@ export function AutomationCanvas({
       }, 50);
    }, [nodes, edges, onAutoLayout, fitView]);
 
+   // Open picker dialog for a specific mode
+   const openPicker = useCallback(
+      (mode: PickerMode) => {
+         if (menu) {
+            setNodePosition({ x: menu.flowX, y: menu.flowY });
+         }
+         setPickerMode(mode);
+         setPickerOpen(true);
+         setMenu(null); // Close context menu
+      },
+      [menu],
+   );
+
+   // Handle picker selection
+   const handlePickerSelect = useCallback(
+      (selection: PickerSelection) => {
+         if (nodePosition) {
+            onAddNode?.(selection.nodeType, selection.data, nodePosition);
+         }
+         setPickerOpen(false);
+         setPickerMode(null);
+         setNodePosition(null);
+      },
+      [nodePosition, onAddNode],
+   );
+
    const defaultEdgeOptions = useMemo(
       () => ({
          animated: true,
@@ -279,8 +369,6 @@ export function AutomationCanvas({
       "flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none select-none hover:bg-accent hover:text-accent-foreground";
    const menuItemDestructiveClass =
       "flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none select-none text-destructive hover:bg-destructive/10 hover:text-destructive";
-   const submenuTriggerClass =
-      "flex cursor-default items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none select-none hover:bg-accent hover:text-accent-foreground";
    const separatorClass = "bg-border -mx-1 my-1 h-px";
    const labelClass = "px-2 py-1.5 text-sm font-medium flex items-center gap-2";
 
@@ -307,7 +395,11 @@ export function AutomationCanvas({
                <Background gap={16} size={1} variant={BackgroundVariant.Dots} />
                <CanvasToolbar
                   className="hidden md:flex"
+                  isTestRunDisabled={isTestRunDisabled}
+                  isTestRunning={isTestRunning}
                   onAutoLayout={handleAutoLayout}
+                  onOpenTemplates={onOpenTemplates}
+                  onTestRun={onTestRun}
                   onToggleConnections={handleToggleConnections}
                   onViewModeChange={onViewModeChange}
                   showConnections={showConnections}
@@ -345,7 +437,11 @@ export function AutomationCanvas({
 
             <CanvasToolbar
                className="hidden md:flex"
+               isTestRunDisabled={isTestRunDisabled}
+               isTestRunning={isTestRunning}
                onAutoLayout={handleAutoLayout}
+               onOpenTemplates={onOpenTemplates}
+               onTestRun={onTestRun}
                onToggleConnections={handleToggleConnections}
                onViewModeChange={onViewModeChange}
                showConnections={showConnections}
@@ -363,229 +459,91 @@ export function AutomationCanvas({
             )}
          </ReactFlow>
 
-         {menu && menu.type === "canvas" && (
+         {menu && menu.type === "canvas" && adjustedMenuPosition && (
             <div
                className="fixed z-50 min-w-[220px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-               style={{ top: menu.y, left: menu.x }}
+               style={{
+                  top: adjustedMenuPosition.y,
+                  left: adjustedMenuPosition.x,
+               }}
             >
                <div className={labelClass}>
                   <Plus className="size-4" />
-                  Adicionar No
+                  Adicionar Nó
                </div>
                <div className={separatorClass} />
 
+               {/* All Actions - search across everything */}
+               <div
+                  className={menuItemClass}
+                  onClick={() => openPicker({ type: "all" })}
+               >
+                  <Search className="size-4" />
+                  Todas as Ações
+               </div>
+
+               <div className={separatorClass} />
+
+               {/* Trigger */}
                {!hasTrigger && (
                   <div
-                     className="relative"
-                     onMouseEnter={() => setOpenSubmenu("trigger")}
-                     onMouseLeave={() => setOpenSubmenu(null)}
+                     className={menuItemClass}
+                     onClick={() => openPicker({ type: "trigger" })}
                   >
-                     <div className={submenuTriggerClass}>
-                        <span className="flex items-center gap-2">
-                           <Zap className="size-4 text-yellow-500" />
-                           Gatilho
-                        </span>
-                        <ChevronRight className="size-4" />
-                     </div>
-                     {openSubmenu === "trigger" && (
-                        <div className="absolute left-full top-0 z-50 ml-1 min-w-[180px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
-                           <div
-                              className={menuItemClass}
-                              onClick={() =>
-                                 handleAddNode("trigger", {
-                                    triggerType: "transaction.created",
-                                 })
-                              }
-                           >
-                              <Play className="size-4" />
-                              Transacao Criada
-                           </div>
-                           <div
-                              className={menuItemClass}
-                              onClick={() =>
-                                 handleAddNode("trigger", {
-                                    triggerType: "transaction.updated",
-                                 })
-                              }
-                           >
-                              <FileText className="size-4" />
-                              Transacao Atualizada
-                           </div>
-                        </div>
-                     )}
+                     <Zap className="size-4 text-yellow-500" />
+                     Gatilho
                   </div>
                )}
 
+               {/* Condition */}
                <div
-                  className="relative"
-                  onMouseEnter={() => setOpenSubmenu("condition")}
-                  onMouseLeave={() => setOpenSubmenu(null)}
+                  className={menuItemClass}
+                  onClick={() => openPicker({ type: "condition" })}
                >
-                  <div className={submenuTriggerClass}>
-                     <span className="flex items-center gap-2">
-                        <GitBranch className="size-4 text-blue-500" />
-                        Condicao
-                     </span>
-                     <ChevronRight className="size-4" />
-                  </div>
-                  {openSubmenu === "condition" && (
-                     <div className="absolute left-full top-0 z-50 ml-1 min-w-[220px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("condition", { operator: "AND" })
-                           }
-                        >
-                           <GitBranch className="size-4" />E (todas devem
-                           corresponder)
-                        </div>
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("condition", { operator: "OR" })
-                           }
-                        >
-                           <GitBranch className="size-4" />
-                           OU (qualquer pode corresponder)
-                        </div>
-                     </div>
-                  )}
+                  <GitBranch className="size-4 text-blue-500" />
+                  Condição
                </div>
 
-               <div
-                  className="relative"
-                  onMouseEnter={() => setOpenSubmenu("action")}
-                  onMouseLeave={() => setOpenSubmenu(null)}
-               >
-                  <div className={submenuTriggerClass}>
-                     <span className="flex items-center gap-2">
-                        <Play className="size-4 text-green-500" />
-                        Acao
-                     </span>
-                     <ChevronRight className="size-4" />
-                  </div>
-                  {openSubmenu === "action" && (
-                     <div className="absolute left-full top-0 z-50 ml-1 min-w-[220px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", {
-                                 actionType: "set_category",
-                              })
-                           }
-                        >
-                           <FolderTree className="size-4" />
-                           Definir Categoria
-                        </div>
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", { actionType: "add_tag" })
-                           }
-                        >
-                           <Tag className="size-4" />
-                           Adicionar Tag
-                        </div>
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", {
-                                 actionType: "remove_tag",
-                              })
-                           }
-                        >
-                           <Tag className="size-4" />
-                           Remover Tag
-                        </div>
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", {
-                                 actionType: "set_cost_center",
-                              })
-                           }
-                        >
-                           <Building className="size-4" />
-                           Definir Centro de Custo
-                        </div>
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", {
-                                 actionType: "update_description",
-                              })
-                           }
-                        >
-                           <FileText className="size-4" />
-                           Atualizar Descricao
-                        </div>
-                        <div className={separatorClass} />
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", {
-                                 actionType: "send_push_notification",
-                              })
-                           }
-                        >
-                           <Bell className="size-4" />
-                           Enviar Notificacao Push
-                        </div>
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", {
-                                 actionType: "send_email",
-                              })
-                           }
-                        >
-                           <Mail className="size-4" />
-                           Enviar E-mail
-                        </div>
-                        <div className={separatorClass} />
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", {
-                                 actionType: "create_transaction",
-                              })
-                           }
-                        >
-                           <Plus className="size-4" />
-                           Criar Transacao
-                        </div>
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", {
-                                 actionType: "mark_as_transfer",
-                              })
-                           }
-                        >
-                           <ArrowLeftRight className="size-4" />
-                           Marcar como Transferencia
-                        </div>
-                        <div
-                           className={menuItemClass}
-                           onClick={() =>
-                              handleAddNode("action", {
-                                 actionType: "stop_execution",
-                              })
-                           }
-                        >
-                           <StopCircle className="size-4" />
-                           Parar Execucao
-                        </div>
+               <div className={separatorClass} />
+
+               {/* Action categories */}
+               {allCategories.map((category) => {
+                  const meta = CATEGORY_META[category];
+                  const Icon = meta.icon;
+                  return (
+                     <div
+                        className={menuItemClass}
+                        key={category}
+                        onClick={() =>
+                           openPicker({ type: "category", category })
+                        }
+                     >
+                        <Icon className="size-4" />
+                        {meta.label}
                      </div>
-                  )}
-               </div>
+                  );
+               })}
             </div>
          )}
 
-         {menu && menu.type === "node" && menu.node && (
+         {/* Action Picker Dialog */}
+         {pickerMode && (
+            <ActionPickerDialog
+               hasTrigger={hasTrigger}
+               mode={pickerMode}
+               onOpenChange={setPickerOpen}
+               onSelect={handlePickerSelect}
+               open={pickerOpen}
+            />
+         )}
+
+         {menu && menu.type === "node" && menu.node && adjustedMenuPosition && (
             <div
                className="fixed z-50 min-w-[180px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-               style={{ top: menu.y, left: menu.x }}
+               style={{
+                  top: adjustedMenuPosition.y,
+                  left: adjustedMenuPosition.x,
+               }}
             >
                <div className={menuItemClass} onClick={handleConfigureNode}>
                   <Settings className="size-4" />

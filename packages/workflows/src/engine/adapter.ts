@@ -25,6 +25,7 @@ export function adaptEventDataToContext(
 }
 
 /**
+ * @internal Test-only function - not part of public API
  * Gets a value from a context object by dot-notation path.
  * Useful for accessing nested properties in condition evaluation.
  */

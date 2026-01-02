@@ -6,7 +6,7 @@ import "@packages/localization";
 import { translate } from "@packages/localization";
 import { PostHogWrapper, PosthogRouterTracker } from "@packages/posthog/client";
 import { Toaster } from "@packages/ui/components/sonner";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
    createRootRoute,
    HeadContent,
@@ -14,7 +14,17 @@ import {
    redirect,
    useLocation,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { lazy, Suspense } from "react";
+
+// Lazy load devtools - excluded from production bundle
+const TanStackRouterDevtools = import.meta.env.PROD
+   ? () => null
+   : lazy(() =>
+        import("@tanstack/react-router-devtools").then((m) => ({
+           default: m.TanStackRouterDevtools,
+        })),
+     );
+
 import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
 import { GlobalCredenza } from "@/hooks/use-credenza";
 import { GlobalSheet } from "@/hooks/use-sheet";
@@ -66,9 +76,12 @@ function TelemetryAwarePostHogWrapper({
 }) {
    const trpc = useTRPC();
    const location = useLocation();
-   const { data: hasConsent } = useSuspenseQuery(
+   // Use non-blocking query with optimistic default (true = allow tracking initially)
+   // This prevents the entire app from suspending while waiting for consent status
+   const { data: hasConsent = true } = useQuery(
       trpc.session.getTelemetryConsent.queryOptions(undefined, {
          meta: { skipGlobalInvalidation: true },
+         staleTime: 5 * 60 * 1000, // Cache consent for 5 minutes
       }),
    );
 
@@ -92,7 +105,9 @@ function RootComponent() {
                   <GlobalSheet />
                   <Toaster />
                   <Outlet />
-                  <TanStackRouterDevtools position="bottom-left" />
+                  <Suspense fallback={null}>
+                     <TanStackRouterDevtools position="bottom-left" />
+                  </Suspense>
                </TelemetryAwarePostHogWrapper>
             </QueryProvider>
          </ThemeProvider>

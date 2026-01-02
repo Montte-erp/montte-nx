@@ -12,7 +12,11 @@ export type ActionCategory =
    | "modification"
    | "creation"
    | "notification"
-   | "control";
+   | "control"
+   | "transformation"
+   | "data";
+
+export type ActionAppliesTo = "transaction" | "schedule";
 
 export type ActionDefinition = {
    type: ActionType;
@@ -20,7 +24,7 @@ export type ActionDefinition = {
    description: string;
    category: ActionCategory;
    configSchema: ActionConfigField[];
-   appliesTo: "transaction"[];
+   appliesTo: ActionAppliesTo[];
 };
 
 export type ActionConfigField = {
@@ -291,10 +295,151 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
             required: true,
             type: "template",
          },
+         {
+            defaultValue: "custom",
+            key: "useTemplate",
+            label: "Modo do Email",
+            options: [
+               { label: "Personalizado", value: "custom" },
+               { label: "Resumo de Contas (usa dados de ação anterior)", value: "bills_digest" },
+            ],
+            type: "select",
+         },
+         {
+            defaultValue: false,
+            key: "includeAttachment",
+            label: "Incluir Anexo",
+            helpText: "Anexar arquivo gerado pela ação 'Formatar Dados'",
+            type: "boolean",
+         },
       ],
-      description: "Send an email notification",
-      label: "Send Email",
+      description: "Enviar email com template ou personalizado, com suporte a anexos",
+      label: "Enviar E-mail",
       type: "send_email",
+   },
+   {
+      appliesTo: ["schedule"],
+      category: "notification",
+      configSchema: [
+         {
+            defaultValue: true,
+            key: "includePending",
+            label: "Incluir Pendentes",
+            helpText: "Incluir contas a vencer no periodo",
+            type: "boolean",
+         },
+         {
+            defaultValue: true,
+            key: "includeOverdue",
+            label: "Incluir Vencidas",
+            helpText: "Incluir contas ja vencidas",
+            type: "boolean",
+         },
+         {
+            defaultValue: 7,
+            key: "daysAhead",
+            label: "Dias a Frente",
+            helpText: "Quantos dias a frente considerar para contas pendentes",
+            placeholder: "7",
+            type: "number",
+         },
+         {
+            defaultValue: ["expense"],
+            key: "billTypes",
+            label: "Tipos de Conta",
+            options: [
+               { label: "Despesas", value: "expense" },
+               { label: "Receitas", value: "income" },
+            ],
+            type: "multiselect",
+         },
+      ],
+      description: "Busca contas a pagar/receber para usar em proximas acoes",
+      label: "Buscar Relatorio de Contas",
+      type: "fetch_bills_report",
+   },
+   {
+      appliesTo: ["transaction", "schedule"],
+      category: "transformation",
+      configSchema: [
+         {
+            key: "outputFormat",
+            label: "Formato de Saída",
+            options: [
+               { label: "CSV", value: "csv" },
+               { label: "PDF", value: "pdf" },
+               { label: "Tabela HTML", value: "html_table" },
+               { label: "JSON", value: "json" },
+            ],
+            required: true,
+            type: "select",
+         },
+         {
+            helpText: "Nome do arquivo gerado. Use {{period}} para período",
+            key: "fileName",
+            label: "Nome do Arquivo",
+            placeholder: "relatorio_{{period}}",
+            type: "template",
+         },
+         {
+            defaultValue: true,
+            dependsOn: { field: "outputFormat", value: "csv" },
+            key: "csvIncludeHeaders",
+            label: "Incluir Cabeçalhos",
+            helpText: "Incluir linha de cabeçalho no CSV",
+            type: "boolean",
+         },
+         {
+            defaultValue: ",",
+            dependsOn: { field: "outputFormat", value: "csv" },
+            key: "csvDelimiter",
+            label: "Delimitador",
+            options: [
+               { label: "Vírgula (,)", value: "," },
+               { label: "Ponto e vírgula (;)", value: ";" },
+               { label: "Tab", value: "\t" },
+            ],
+            type: "select",
+         },
+         {
+            defaultValue: "bills_report",
+            dependsOn: { field: "outputFormat", value: "pdf" },
+            key: "pdfTemplate",
+            label: "Template PDF",
+            options: [
+               { label: "Relatório de Contas", value: "bills_report" },
+               { label: "Personalizado", value: "custom" },
+            ],
+            type: "select",
+         },
+         {
+            defaultValue: "A4",
+            dependsOn: { field: "outputFormat", value: "pdf" },
+            key: "pdfPageSize",
+            label: "Tamanho da Página",
+            options: [
+               { label: "A4", value: "A4" },
+               { label: "Carta (Letter)", value: "Letter" },
+            ],
+            type: "select",
+         },
+         {
+            defaultValue: "striped",
+            dependsOn: { field: "outputFormat", value: "html_table" },
+            key: "htmlTableStyle",
+            label: "Estilo da Tabela",
+            options: [
+               { label: "Padrão", value: "default" },
+               { label: "Listrado", value: "striped" },
+               { label: "Com Bordas", value: "bordered" },
+            ],
+            type: "select",
+         },
+      ],
+      description:
+         "Transforma dados em CSV, PDF, HTML ou JSON para usar em próximas ações (ex: anexo de email)",
+      label: "Formatar Dados",
+      type: "format_data",
    },
    {
       appliesTo: ["transaction"],
@@ -344,6 +489,7 @@ export type ActionExecutionResult = {
 	error?: string;
 	skipped?: boolean;
 	skipReason?: string;
+	outputData?: Record<string, unknown>;
 };
 
 export type ConsequenceExecutionResult = {
@@ -354,6 +500,7 @@ export type ConsequenceExecutionResult = {
 	error?: string;
 	skipped?: boolean;
 	skipReason?: string;
+	outputData?: Record<string, unknown>;
 };
 
 export function createConsequence(
@@ -373,7 +520,7 @@ export function getActionDefinition(
 }
 
 export function getActionsForTrigger(
-   triggerType: "transaction",
+   triggerType: ActionAppliesTo,
 ): ActionDefinition[] {
    return ACTION_DEFINITIONS.filter((def) =>
       def.appliesTo.includes(triggerType),

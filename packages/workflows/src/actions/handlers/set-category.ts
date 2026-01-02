@@ -1,6 +1,7 @@
 import { findCategoriesByOrganizationId } from "@packages/database/repositories/category-repository";
 import type { Consequence } from "@packages/database/schema";
 import { transaction, transactionCategory } from "@packages/database/schema";
+import { reaisToCents } from "@packages/money";
 import {
    adjustFixedSplitsProportionally,
    type CategorySplit,
@@ -30,8 +31,8 @@ export const setCategoryHandler: ActionHandler = {
       } = consequence.payload;
 
       const transactionId = context.eventData.id as string;
-      const transactionAmount = Math.round(
-         Math.abs(Number(context.eventData.amount ?? 0)) * 100,
+      const transactionAmount = reaisToCents(
+         Math.abs(Number(context.eventData.amount ?? 0)),
       );
       const description = (context.eventData.description as string) ?? "";
 

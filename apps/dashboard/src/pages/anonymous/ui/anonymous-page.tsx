@@ -25,7 +25,7 @@ export function AnonymousPage() {
                toast.success(
                   translate("dashboard.routes.anonymous.messages.success"),
                );
-               router.navigate({ params: { slug: "" }, to: "/$slug/home" });
+               router.navigate({ params: { slug: "_" }, to: "/$slug/home" });
             },
          },
       );

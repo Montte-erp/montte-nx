@@ -32,8 +32,15 @@ export function escapeOfxText(text: string): string {
    );
 }
 
+/**
+ * Format amount for OFX output.
+ * Uses string-based formatting to avoid floating-point precision issues.
+ */
 export function formatAmount(amount: number): string {
-   return amount.toFixed(2);
+   // Use string manipulation to avoid floating-point precision issues
+   const rounded = Math.round(amount * 100) / 100;
+   const [intPart, decPart = ""] = rounded.toString().split(".");
+   return `${intPart}.${decPart.padEnd(2, "0").slice(0, 2)}`;
 }
 
 export function formatOfxDate(

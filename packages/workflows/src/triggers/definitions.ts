@@ -22,7 +22,7 @@ export type EventDataField = {
 };
 
 export type TriggerConfigField = {
-   key: keyof TriggerConfig;
+   key: string;
    label: string;
    type: "string" | "number" | "boolean" | "select" | "multiselect";
    required?: boolean;
@@ -31,6 +31,86 @@ export type TriggerConfigField = {
    placeholder?: string;
    helpText?: string;
 };
+
+const SCHEDULE_EVENT_DATA_SCHEMA: EventDataField[] = [
+	{
+		field: "triggerTime",
+		label: "Trigger Time",
+		required: true,
+		type: "date",
+		description: "The time when the schedule was triggered",
+	},
+	{
+		field: "organizationId",
+		label: "Organization ID",
+		required: true,
+		type: "string",
+	},
+	{
+		field: "automationRuleId",
+		label: "Automation Rule ID",
+		required: true,
+		type: "string",
+	},
+];
+
+const SCHEDULE_CONFIG_SCHEMA: TriggerConfigField[] = [
+	{
+		key: "time",
+		label: "Horario",
+		type: "string",
+		required: true,
+		placeholder: "09:00",
+		helpText: "Horario no formato HH:mm (24h)",
+	},
+	{
+		key: "timezone",
+		label: "Fuso Horario",
+		type: "string",
+		required: false,
+		defaultValue: "America/Sao_Paulo",
+		helpText: "Fuso horario IANA (ex: America/Sao_Paulo)",
+	},
+];
+
+const SCHEDULE_WEEKLY_CONFIG_SCHEMA: TriggerConfigField[] = [
+	...SCHEDULE_CONFIG_SCHEMA,
+	{
+		key: "dayOfWeek",
+		label: "Dia da Semana",
+		type: "select",
+		required: true,
+		defaultValue: 1,
+		options: [
+			{ value: "0", label: "Domingo" },
+			{ value: "1", label: "Segunda-feira" },
+			{ value: "2", label: "Terca-feira" },
+			{ value: "3", label: "Quarta-feira" },
+			{ value: "4", label: "Quinta-feira" },
+			{ value: "5", label: "Sexta-feira" },
+			{ value: "6", label: "Sabado" },
+		],
+	},
+];
+
+const SCHEDULE_CUSTOM_CONFIG_SCHEMA: TriggerConfigField[] = [
+	{
+		key: "cronPattern",
+		label: "Padrao Cron",
+		type: "string",
+		required: true,
+		placeholder: "0 9 * * 1",
+		helpText: "Expressao cron (minuto hora dia-mes mes dia-semana)",
+	},
+	{
+		key: "timezone",
+		label: "Fuso Horario",
+		type: "string",
+		required: false,
+		defaultValue: "America/Sao_Paulo",
+		helpText: "Fuso horario IANA (ex: America/Sao_Paulo)",
+	},
+];
 
 const TRANSACTION_EVENT_DATA_SCHEMA: EventDataField[] = [
    { field: "id", label: "Transaction ID", required: true, type: "string" },
@@ -89,6 +169,47 @@ export const TRIGGER_DEFINITIONS: TriggerDefinition[] = [
       label: "Transaction Updated",
       supportsSimulation: true,
       type: "transaction.updated",
+   },
+   // Schedule triggers
+   {
+      availableFields: [],
+      category: "scheduled",
+      configSchema: SCHEDULE_CONFIG_SCHEMA,
+      description: "Executa todos os dias no horario configurado",
+      eventDataSchema: SCHEDULE_EVENT_DATA_SCHEMA,
+      label: "Diario",
+      supportsSimulation: true,
+      type: "schedule.daily",
+   },
+   {
+      availableFields: [],
+      category: "scheduled",
+      configSchema: SCHEDULE_WEEKLY_CONFIG_SCHEMA,
+      description: "Executa uma vez por semana no dia e horario configurados",
+      eventDataSchema: SCHEDULE_EVENT_DATA_SCHEMA,
+      label: "Semanal",
+      supportsSimulation: true,
+      type: "schedule.weekly",
+   },
+   {
+      availableFields: [],
+      category: "scheduled",
+      configSchema: SCHEDULE_CONFIG_SCHEMA,
+      description: "Executa a cada duas semanas (dias 1 e 15 de cada mes)",
+      eventDataSchema: SCHEDULE_EVENT_DATA_SCHEMA,
+      label: "Quinzenal",
+      supportsSimulation: true,
+      type: "schedule.biweekly",
+   },
+   {
+      availableFields: [],
+      category: "scheduled",
+      configSchema: SCHEDULE_CUSTOM_CONFIG_SCHEMA,
+      description: "Executa de acordo com uma expressao cron personalizada",
+      eventDataSchema: SCHEDULE_EVENT_DATA_SCHEMA,
+      label: "Personalizado",
+      supportsSimulation: true,
+      type: "schedule.custom",
    },
 ];
 

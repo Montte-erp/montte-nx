@@ -35,9 +35,35 @@ export type ConditionType =
    | "array"
    | "custom";
 
-export type TriggerType = "transaction.created" | "transaction.updated";
+export type TriggerType =
+   | "transaction.created"
+   | "transaction.updated"
+   | "schedule.daily"
+   | "schedule.weekly"
+   | "schedule.biweekly"
+   | "schedule.custom";
 
-export type TriggerConfig = Record<string, never>;
+export type ScheduleTriggerType =
+   | "schedule.daily"
+   | "schedule.weekly"
+   | "schedule.biweekly"
+   | "schedule.custom";
+
+/**
+ * Configuration for schedule-based triggers
+ */
+export type ScheduleTriggerConfig = {
+   /** Time in HH:mm format (24h), e.g., "09:00" */
+   time: string;
+   /** IANA timezone, e.g., "America/Sao_Paulo" */
+   timezone: string;
+   /** Day of week (0-6, where 0 = Sunday) - used for schedule.weekly */
+   dayOfWeek?: number;
+   /** Custom cron pattern - used for schedule.custom */
+   cronPattern?: string;
+};
+
+export type TriggerConfig = ScheduleTriggerConfig | Record<string, never>;
 
 export type ActionType =
    | "set_category"
@@ -49,6 +75,8 @@ export type ActionType =
    | "mark_as_transfer"
    | "send_push_notification"
    | "send_email"
+   | "fetch_bills_report"
+   | "format_data"
    | "stop_execution";
 
 export type CategorySplitMode = "equal" | "percentage" | "fixed" | "dynamic";
@@ -57,6 +85,11 @@ export type CategorySplitConfig = {
    categoryId: string;
    value: number;
 };
+
+export type BillsDigestRecipient = "owner" | "all_members" | "specific";
+export type BillsDigestDetailLevel = "summary" | "detailed" | "full";
+export type FormatDataOutputFormat = "csv" | "pdf" | "html_table" | "json";
+export type CsvDelimiter = "," | ";" | "\t";
 
 export type ActionConfig = {
    categoryId?: string;
@@ -83,6 +116,36 @@ export type ActionConfig = {
    customEmail?: string;
    subject?: string;
    reason?: string;
+   // fetch_bills_report config
+   recipients?: BillsDigestRecipient;
+   memberIds?: string[];
+   detailLevel?: BillsDigestDetailLevel;
+   includePending?: boolean;
+   includeOverdue?: boolean;
+   daysAhead?: number;
+   billTypes?: ("expense" | "income")[];
+   // send_email template mode
+   useTemplate?: "bills_digest" | "custom" | "visual";
+   // send_email visual template
+   emailTemplate?: {
+      blocks: unknown[];
+      styles?: {
+         primaryColor?: string;
+         backgroundColor?: string;
+         textColor?: string;
+         fontFamily?: "sans-serif" | "serif" | "monospace";
+      };
+   };
+   // send_email attachment support
+   includeAttachment?: boolean;
+   // format_data config
+   outputFormat?: FormatDataOutputFormat;
+   fileName?: string;
+   csvIncludeHeaders?: boolean;
+   csvDelimiter?: CsvDelimiter;
+   pdfTemplate?: "bills_report" | "custom";
+   pdfPageSize?: "A4" | "Letter";
+   htmlTableStyle?: "default" | "striped" | "bordered";
 };
 
 /**
@@ -186,6 +249,7 @@ export const automationLog = pgTable(
          ConditionEvaluationLogResult[]
       >(),
       createdAt: timestamp("created_at").defaultNow().notNull(),
+      dryRun: boolean("dry_run").default(false),
       durationMs: integer("duration_ms"),
       errorMessage: text("error_message"),
       errorStack: text("error_stack"),

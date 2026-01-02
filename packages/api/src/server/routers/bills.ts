@@ -36,6 +36,7 @@ import {
    setBillTags,
 } from "@packages/database/repositories/tag-repository";
 import { createTransaction } from "@packages/database/repositories/transaction-repository";
+import { serverEnv } from "@packages/environment/server";
 import {
    deleteFile,
    generatePresignedPutUrl,
@@ -671,6 +672,7 @@ export const billRouter = router({
             {
                ...input,
                endDate: input.endDate ? new Date(input.endDate) : undefined,
+               searchKey: serverEnv.SEARCH_KEY,
                startDate: input.startDate
                   ? new Date(input.startDate)
                   : undefined,

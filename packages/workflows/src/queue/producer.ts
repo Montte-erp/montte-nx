@@ -1,45 +1,48 @@
 import type { ConnectionOptions } from "@packages/queue/bullmq";
 import type { WorkflowEvent } from "../types/events";
 import {
-   createWorkflowQueue,
-   getWorkflowQueue,
-   type WorkflowJobData,
+	createWorkflowQueue,
+	getWorkflowQueue,
+	type EventJobData,
 } from "./queues";
 
 export type EnqueueOptions = {
-   delay?: number;
-   priority?: number;
-   jobId?: string;
-   triggeredBy?: "event" | "manual";
-   correlationId?: string;
+	delay?: number;
+	priority?: number;
+	jobId?: string;
+	triggeredBy?: "event" | "manual";
+	correlationId?: string;
+	dryRun?: boolean;
 };
 
 export async function enqueueWorkflowEvent(
-   event: WorkflowEvent,
-   options: EnqueueOptions = {},
+	event: WorkflowEvent,
+	options: EnqueueOptions = {},
 ): Promise<string> {
-   const queue = getWorkflowQueue();
-   if (!queue) {
-      throw new Error(
-         "Workflow queue not initialized. Call initializeWorkflowQueue first.",
-      );
-   }
+	const queue = getWorkflowQueue();
+	if (!queue) {
+		throw new Error(
+			"Workflow queue not initialized. Call initializeWorkflowQueue first.",
+		);
+	}
 
-   const jobData: WorkflowJobData = {
-      event,
-      metadata: {
-         correlationId: options.correlationId,
-         triggeredBy: options.triggeredBy ?? "event",
-      },
-   };
+	const jobData: EventJobData = {
+		type: "event",
+		event,
+		metadata: {
+			correlationId: options.correlationId,
+			triggeredBy: options.triggeredBy ?? "event",
+			dryRun: options.dryRun ?? false,
+		},
+	};
 
-   const job = await queue.add(event.type, jobData, {
-      delay: options.delay,
-      jobId: options.jobId ?? `${event.type}-${event.id}`,
-      priority: options.priority,
-   });
+	const job = await queue.add(event.type, jobData, {
+		delay: options.delay,
+		jobId: options.jobId ?? `${event.type}-${event.id}`,
+		priority: options.priority,
+	});
 
-   return job.id ?? event.id;
+	return job.id ?? event.id;
 }
 
 export function initializeWorkflowQueue(connection: ConnectionOptions): void {

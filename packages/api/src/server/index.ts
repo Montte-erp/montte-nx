@@ -6,6 +6,7 @@ import type { ResendClient } from "@packages/transactional/client";
 import type { PostHog } from "posthog-node";
 import { accountRouter } from "./routers/account";
 import { accountDeletionRouter } from "./routers/account-deletion";
+import { automationTemplateRouter } from "./routers/automation-templates";
 import { automationRouter } from "./routers/automations";
 import { bankAccountRouter } from "./routers/bank-accounts";
 import { billingRouter } from "./routers/billing";
@@ -37,6 +38,7 @@ export const appRouter = router({
    account: accountRouter,
    accountDeletion: accountDeletionRouter,
    automations: automationRouter,
+   automationTemplates: automationTemplateRouter,
    bankAccounts: bankAccountRouter,
    billing: billingRouter,
    bills: billRouter,

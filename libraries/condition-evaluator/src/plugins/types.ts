@@ -51,8 +51,8 @@ export type CustomOperatorConfig<
       expectedValue: TValue,
       options?: TOptions,
    ) => boolean;
-   readonly valueSchema?: z.ZodSchema<TValue>;
-   readonly optionsSchema?: z.ZodSchema<TOptions>;
+   readonly valueSchema?: z.ZodType<TValue>;
+   readonly optionsSchema?: z.ZodType<TOptions>;
    readonly reasonGenerator?: (
       passed: boolean,
       currentValue: unknown,
@@ -65,7 +65,11 @@ export type CustomOperatorConfig<
 // Operator Map
 // =============================================================================
 
-export type OperatorMap = Record<string, CustomOperatorConfig>;
+// biome-ignore lint/suspicious/noExplicitAny: Operators can have any value/options types
+export type OperatorMap = Record<
+   string,
+   CustomOperatorConfig<string, any, any>
+>;
 
 export type InferOperatorNames<T extends OperatorMap> = keyof T & string;
 

@@ -10,7 +10,7 @@ export const Route = createFileRoute("/auth/magic-link")({
          .fetchQuery(trpc.session.getSession.queryOptions())
          .catch(() => null);
       if (session) {
-         throw redirect({ params: { slug: "" }, to: "/$slug/home" });
+         throw redirect({ params: { slug: "_" }, to: "/$slug/home" });
       }
    },
    component: RouteComponent,

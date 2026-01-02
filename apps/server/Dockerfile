@@ -48,6 +48,7 @@ COPY packages/stripe/package.json ./packages/stripe/
 COPY packages/arcjet/package.json ./packages/arcjet/
 COPY packages/logging/package.json ./packages/logging/
 COPY packages/csv/package.json ./packages/csv/
+COPY packages/reconciliation/package.json ./packages/reconciliation/
 COPY packages/money/package.json ./packages/money/
 COPY libraries/money/package.json ./libraries/money/
 COPY libraries/condition-evaluator/package.json ./libraries/condition-evaluator/

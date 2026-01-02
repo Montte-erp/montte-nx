@@ -41,16 +41,6 @@ export async function executeConsequences(
 	let failedConsequences = 0;
 	let skippedConsequences = 0;
 
-	const handlerContext: ActionHandlerContext = {
-		db: context.db,
-		dryRun: context.dryRun,
-		eventData: context.eventData,
-		organizationId: context.organizationId,
-		resendClient: context.resendClient,
-		ruleId: context.ruleId,
-		vapidConfig: context.vapidConfig,
-	};
-
 	for (let i = 0; i < consequences.length; i++) {
 		const consequence = consequences[i];
 		if (!consequence) continue;
@@ -71,6 +61,18 @@ export async function executeConsequences(
 			continue;
 		}
 
+		// Create context with previous results for this action
+		const handlerContext: ActionHandlerContext = {
+			db: context.db,
+			dryRun: context.dryRun,
+			eventData: context.eventData,
+			organizationId: context.organizationId,
+			resendClient: context.resendClient,
+			ruleId: context.ruleId,
+			vapidConfig: context.vapidConfig,
+			previousResults: results,
+		};
+
 		try {
 			// Create a compatible action-like structure for the handler
 			const actionLike: Consequence = {
@@ -88,6 +90,7 @@ export async function executeConsequences(
 				skipped: result.skipped,
 				success: result.success,
 				type: actionType,
+				outputData: result.outputData,
 			};
 
 			results.push(consequenceResult);

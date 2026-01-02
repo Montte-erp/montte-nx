@@ -5,6 +5,7 @@ import {
    findPendingBillsByOrganizationId,
 } from "@packages/database/repositories/bill-repository";
 import { shouldSendNotification } from "@packages/database/repositories/notification-preferences-repository";
+import { formatDecimalCurrency } from "@packages/money";
 import { createNotificationPayload, sendPushNotificationToUser } from "./push";
 
 interface BillReminderConfig {
@@ -22,13 +23,6 @@ export interface ReminderResult {
    billsCount: number;
    totalAmount: number;
    notificationSent: boolean;
-}
-
-function formatCurrency(amount: number): string {
-   return new Intl.NumberFormat("pt-BR", {
-      currency: "BRL",
-      style: "currency",
-   }).format(amount);
 }
 
 export async function checkBillReminders(
@@ -89,8 +83,8 @@ export async function checkBillReminders(
          const payload = createNotificationPayload("bill_reminder", {
             body:
                upcomingBills.length === 1
-                  ? `${upcomingBills[0]?.description || "Conta"} vence em breve - ${formatCurrency(totalAmount)}`
-                  : `${upcomingBills.length} contas vencem nos próximos ${reminderDaysBefore} dias - Total: ${formatCurrency(totalAmount)}`,
+                  ? `${upcomingBills[0]?.description || "Conta"} vence em breve - ${formatDecimalCurrency(totalAmount)}`
+                  : `${upcomingBills.length} contas vencem nos próximos ${reminderDaysBefore} dias - Total: ${formatDecimalCurrency(totalAmount)}`,
             metadata: {
                billIds: upcomingBills.map((b: BillWithRelations) => b.id),
                count: upcomingBills.length,
@@ -134,8 +128,8 @@ export async function checkBillReminders(
          const payload = createNotificationPayload("overdue_alert", {
             body:
                overdueBills.length === 1
-                  ? `${overdueBills[0]?.description || "Conta"} está vencida - ${formatCurrency(totalAmount)}`
-                  : `${overdueBills.length} contas estão vencidas - Total: ${formatCurrency(totalAmount)}`,
+                  ? `${overdueBills[0]?.description || "Conta"} está vencida - ${formatDecimalCurrency(totalAmount)}`
+                  : `${overdueBills.length} contas estão vencidas - Total: ${formatDecimalCurrency(totalAmount)}`,
             metadata: {
                billIds: overdueBills.map((b: BillWithRelations) => b.id),
                count: overdueBills.length,

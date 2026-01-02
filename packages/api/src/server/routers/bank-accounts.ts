@@ -1,3 +1,4 @@
+import { generate } from "@packages/csv";
 import {
    createBankAccount,
    createDefaultBusinessBankAccount,
@@ -24,7 +25,7 @@ import { renderBankStatement } from "@packages/pdf";
 import {
    calculateDuplicateScore,
    DATE_TOLERANCE_DAYS,
-} from "@packages/utils/duplicate-detection";
+} from "@packages/reconciliation/duplicate-detection";
 import { APIError, ErrorCodes } from "@packages/utils/errors";
 import { z } from "zod";
 import {
@@ -336,23 +337,18 @@ export const bankAccountRouter = router({
 
          // Generate CSV content
          const headers = ["Data", "Descrição", "Valor", "Tipo"];
-         const rows = transactions.map((trn) => {
-            const date = trn.date.toLocaleDateString("pt-BR");
-            const description = `"${(trn.description ?? "").replace(/"/g, '""')}"`;
-            const amount =
-               trn.type === "expense"
-                  ? `-${trn.amount}`
-                  : trn.amount.toString();
-            const type =
-               trn.type === "income"
-                  ? "Receita"
-                  : trn.type === "expense"
-                    ? "Despesa"
-                    : "Transferência";
-            return [date, description, amount, type].join(",");
-         });
+         const rows = transactions.map((trn) => [
+            trn.date.toLocaleDateString("pt-BR"),
+            trn.description ?? "",
+            trn.type === "expense" ? `-${trn.amount}` : trn.amount.toString(),
+            trn.type === "income"
+               ? "Receita"
+               : trn.type === "expense"
+                 ? "Despesa"
+                 : "Transferência",
+         ]);
 
-         const content = [headers.join(","), ...rows].join("\n");
+         const content = generate([headers, ...rows]);
 
          const formatDate = (d: Date) =>
             d.toISOString().split("T")[0]?.replace(/-/g, "") ?? "";

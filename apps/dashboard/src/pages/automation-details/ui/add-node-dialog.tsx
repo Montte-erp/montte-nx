@@ -34,6 +34,56 @@ const triggerOptions: NodeOption[] = [
       label: TRIGGER_TYPE_LABELS["transaction.updated"],
       type: "trigger",
    },
+   {
+      data: {
+         config: { time: "09:00", timezone: "America/Sao_Paulo" },
+         triggerType: "schedule.daily",
+      },
+      description: "Executa todos os dias no horário configurado",
+      keywords: ["agendamento", "diário", "schedule", "daily", "horário"],
+      label: TRIGGER_TYPE_LABELS["schedule.daily"],
+      type: "trigger",
+   },
+   {
+      data: {
+         config: { dayOfWeek: 1, time: "09:00", timezone: "America/Sao_Paulo" },
+         triggerType: "schedule.weekly",
+      },
+      description: "Executa uma vez por semana",
+      keywords: ["agendamento", "semanal", "schedule", "weekly", "semana"],
+      label: TRIGGER_TYPE_LABELS["schedule.weekly"],
+      type: "trigger",
+   },
+   {
+      data: {
+         config: { time: "09:00", timezone: "America/Sao_Paulo" },
+         triggerType: "schedule.biweekly",
+      },
+      description: "Executa nos dias 1 e 15 de cada mês",
+      keywords: [
+         "agendamento",
+         "quinzenal",
+         "schedule",
+         "biweekly",
+         "quinzena",
+      ],
+      label: TRIGGER_TYPE_LABELS["schedule.biweekly"],
+      type: "trigger",
+   },
+   {
+      data: {
+         config: {
+            cronPattern: "",
+            time: "09:00",
+            timezone: "America/Sao_Paulo",
+         },
+         triggerType: "schedule.custom",
+      },
+      description: "Executa em padrão CRON personalizado",
+      keywords: ["agendamento", "custom", "cron", "personalizado"],
+      label: TRIGGER_TYPE_LABELS["schedule.custom"],
+      type: "trigger",
+   },
 ];
 
 const conditionOptions: NodeOption[] = [
@@ -122,6 +172,21 @@ const actionOptions: NodeOption[] = [
       description: "Parar execução da regra",
       keywords: ["parar", "stop", "interromper", "cancelar"],
       label: ACTION_TYPE_LABELS.stop_execution,
+      type: "action",
+   },
+   {
+      data: { actionType: "fetch_bills_report" },
+      description: "Buscar contas a pagar/receber para usar em outras ações",
+      keywords: [
+         "contas",
+         "bills",
+         "buscar",
+         "fetch",
+         "relatorio",
+         "pagar",
+         "receber",
+      ],
+      label: ACTION_TYPE_LABELS.fetch_bills_report,
       type: "action",
    },
 ];

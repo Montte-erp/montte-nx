@@ -116,26 +116,3 @@ export function toWorkflowRule(rule: AutomationRule): WorkflowRule {
 		updatedAt: rule.updatedAt,
 	};
 }
-
-export function fromWorkflowRule(rule: WorkflowRule): AutomationRule {
-	return {
-		category: rule.category ?? null,
-		conditions: rule.conditions,
-		consequences: rule.consequences,
-		createdAt: rule.createdAt,
-		createdBy: rule.createdBy ?? null,
-		description: rule.description ?? null,
-		enabled: rule.enabled,
-		flowData: null,
-		id: rule.id,
-		metadata: rule.metadata,
-		name: rule.name,
-		organizationId: rule.organizationId,
-		priority: rule.priority,
-		stopOnMatch: rule.stopOnMatch ?? null,
-		tags: rule.tags,
-		triggerConfig: rule.triggerConfig,
-		triggerType: rule.triggerType,
-		updatedAt: rule.updatedAt,
-	};
-}

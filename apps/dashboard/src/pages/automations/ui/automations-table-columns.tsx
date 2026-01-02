@@ -23,6 +23,10 @@ import { Link } from "@tanstack/react-router";
 import type { ColumnDef, Row } from "@tanstack/react-table";
 import {
    Activity,
+   Calendar,
+   CalendarClock,
+   CalendarDays,
+   CalendarRange,
    ChevronDown,
    Clock,
    Copy,
@@ -41,11 +45,19 @@ type Automation = RouterOutput["automations"]["getAllPaginated"]["rules"][0];
 const triggerTypeLabels: Record<string, string> = {
    "transaction.created": "Transação Criada",
    "transaction.updated": "Transação Atualizada",
+   "schedule.daily": "Agendamento Diário",
+   "schedule.weekly": "Agendamento Semanal",
+   "schedule.biweekly": "Agendamento Quinzenal",
+   "schedule.custom": "Agendamento Personalizado",
 };
 
 const triggerTypeIcons: Record<string, typeof Zap> = {
    "transaction.created": Zap,
    "transaction.updated": Activity,
+   "schedule.daily": Calendar,
+   "schedule.weekly": CalendarDays,
+   "schedule.biweekly": CalendarRange,
+   "schedule.custom": CalendarClock,
 };
 
 function formatDate(date: Date | string | null): string {
@@ -93,6 +105,17 @@ function AutomationActionsCell({ automation }: { automation: Automation }) {
       }),
    );
 
+   const testRunMutation = useMutation(
+      trpc.automations.triggerManually.mutationOptions({
+         onError: (error) => {
+            toast.error(`Erro ao testar automação: ${error.message}`);
+         },
+         onSuccess: (data) => {
+            toast.success(`Automação executada! Job ID: ${data.jobId}`);
+         },
+      }),
+   );
+
    const handleDelete = () => {
       openAlertDialog({
          actionLabel: "Excluir",
@@ -113,8 +136,32 @@ function AutomationActionsCell({ automation }: { automation: Automation }) {
       });
    };
 
+   const handleTestRun = () => {
+      if (!automation.enabled) {
+         toast.error("Automação desativada. Ative-a primeiro para testar.");
+         return;
+      }
+      testRunMutation.mutate({
+         dryRun: false,
+         ruleId: automation.id,
+      });
+   };
+
    return (
       <div className="flex justify-end gap-1">
+         <Tooltip>
+            <TooltipTrigger asChild>
+               <Button
+                  disabled={!automation.enabled || testRunMutation.isPending}
+                  onClick={handleTestRun}
+                  size="icon"
+                  variant="outline"
+               >
+                  <Play className="size-4" />
+               </Button>
+            </TooltipTrigger>
+            <TooltipContent>Testar (Dry Run)</TooltipContent>
+         </Tooltip>
          <Tooltip>
             <TooltipTrigger asChild>
                <Button onClick={handleDuplicate} size="icon" variant="outline">

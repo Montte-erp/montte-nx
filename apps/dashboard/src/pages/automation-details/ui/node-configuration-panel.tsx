@@ -10,7 +10,6 @@ import {
    AlertTitle,
 } from "@packages/ui/components/alert";
 import { Button } from "@packages/ui/components/button";
-import { Combobox } from "@packages/ui/components/combobox";
 import {
    Field,
    FieldDescription,
@@ -29,14 +28,19 @@ import {
 } from "@packages/ui/components/select";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Switch } from "@packages/ui/components/switch";
-import { Textarea } from "@packages/ui/components/textarea";
 import {
    getPercentageRemaining,
    isPercentageSumValid,
 } from "@packages/utils/split";
+import {
+   getAction,
+   getActionTabs,
+   getFieldsForTab,
+} from "@packages/workflows/config/actions";
+import type { ActionField } from "@packages/workflows/schemas/action-field.schema";
 import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Tag, X } from "lucide-react";
+import { AlertTriangle, FileText, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { IconName } from "@/features/icon-selector/lib/available-icons";
 import { IconDisplay } from "@/features/icon-selector/ui/icon-display";
@@ -54,20 +58,25 @@ import type {
 import {
    ACTION_TYPE_LABELS,
    CONDITION_OPERATOR_LABELS,
+   DAYS_OF_WEEK,
+   isScheduleTrigger,
    TRANSACTION_FIELDS,
    TRIGGER_TYPE_LABELS,
 } from "../lib/types";
+import { DynamicFieldRenderer } from "./dynamic-field-renderer";
 
 type NodeConfigurationPanelProps = {
    node: AutomationNode | null;
    onClose: () => void;
    onUpdate: (nodeId: string, data: Partial<AutomationNode["data"]>) => void;
+   activeTab?: string;
 };
 
 export function NodeConfigurationPanel({
    node,
    onClose: _onClose,
    onUpdate,
+   activeTab = "config",
 }: NodeConfigurationPanelProps) {
    if (!node) return null;
 
@@ -89,6 +98,7 @@ export function NodeConfigurationPanel({
          )}
          {node.type === "action" && (
             <ActionConfigurationForm
+               activeTab={activeTab}
                data={node.data as ActionNodeData}
                nodeId={node.id}
                onUpdate={onUpdate}
@@ -112,11 +122,25 @@ function TriggerConfigurationForm({
    const form = useForm({
       defaultValues: {
          triggerType: data.triggerType,
+         time: (data.config?.time as string) ?? "09:00",
+         timezone: (data.config?.timezone as string) ?? "America/Sao_Paulo",
+         dayOfWeek: (data.config?.dayOfWeek as number) ?? 1,
+         cronPattern: (data.config?.cronPattern as string) ?? "",
       },
    });
 
    useEffect(() => {
       form.setFieldValue("triggerType", data.triggerType);
+      form.setFieldValue("time", (data.config?.time as string) ?? "09:00");
+      form.setFieldValue(
+         "timezone",
+         (data.config?.timezone as string) ?? "America/Sao_Paulo",
+      );
+      form.setFieldValue("dayOfWeek", (data.config?.dayOfWeek as number) ?? 1);
+      form.setFieldValue(
+         "cronPattern",
+         (data.config?.cronPattern as string) ?? "",
+      );
    }, [data, form]);
 
    const handleFieldChange = useCallback(
@@ -125,6 +149,21 @@ function TriggerConfigurationForm({
       },
       [nodeId, onUpdate],
    );
+
+   const handleConfigChange = useCallback(
+      (field: string, value: unknown) => {
+         const currentConfig = data.config ?? {};
+         onUpdate(nodeId, {
+            config: {
+               ...currentConfig,
+               [field]: value,
+            } as TriggerNodeData["config"],
+         });
+      },
+      [nodeId, data.config, onUpdate],
+   );
+
+   const isSchedule = isScheduleTrigger(data.triggerType);
 
    return (
       <div className="space-y-4">
@@ -159,6 +198,132 @@ function TriggerConfigurationForm({
                )}
             </form.Field>
          </FieldGroup>
+
+         {isSchedule && (
+            <>
+               <FieldGroup>
+                  <form.Field name="time">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel htmlFor={field.name}>Horário</FieldLabel>
+                           <Input
+                              id={field.name}
+                              onChange={(e) => {
+                                 field.handleChange(e.target.value);
+                                 handleConfigChange("time", e.target.value);
+                              }}
+                              type="time"
+                              value={field.state.value}
+                           />
+                           <FieldDescription>
+                              Horário de execução do agendamento
+                           </FieldDescription>
+                        </Field>
+                     )}
+                  </form.Field>
+               </FieldGroup>
+
+               <FieldGroup>
+                  <form.Field name="timezone">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel htmlFor={field.name}>
+                              Fuso Horário
+                           </FieldLabel>
+                           <Select
+                              onValueChange={(v) => {
+                                 field.handleChange(v);
+                                 handleConfigChange("timezone", v);
+                              }}
+                              value={field.state.value}
+                           >
+                              <SelectTrigger id={field.name}>
+                                 <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 <SelectItem value="America/Sao_Paulo">
+                                    Brasília (GMT-3)
+                                 </SelectItem>
+                                 <SelectItem value="America/New_York">
+                                    Nova York (GMT-5)
+                                 </SelectItem>
+                                 <SelectItem value="Europe/London">
+                                    Londres (GMT+0)
+                                 </SelectItem>
+                                 <SelectItem value="UTC">UTC</SelectItem>
+                              </SelectContent>
+                           </Select>
+                        </Field>
+                     )}
+                  </form.Field>
+               </FieldGroup>
+
+               {data.triggerType === "schedule.weekly" && (
+                  <FieldGroup>
+                     <form.Field name="dayOfWeek">
+                        {(field) => (
+                           <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                 Dia da Semana
+                              </FieldLabel>
+                              <Select
+                                 onValueChange={(v) => {
+                                    const num = Number(v);
+                                    field.handleChange(num);
+                                    handleConfigChange("dayOfWeek", num);
+                                 }}
+                                 value={String(field.state.value)}
+                              >
+                                 <SelectTrigger id={field.name}>
+                                    <SelectValue />
+                                 </SelectTrigger>
+                                 <SelectContent>
+                                    {DAYS_OF_WEEK.map((day) => (
+                                       <SelectItem
+                                          key={day.value}
+                                          value={String(day.value)}
+                                       >
+                                          {day.label}
+                                       </SelectItem>
+                                    ))}
+                                 </SelectContent>
+                              </Select>
+                           </Field>
+                        )}
+                     </form.Field>
+                  </FieldGroup>
+               )}
+
+               {data.triggerType === "schedule.custom" && (
+                  <FieldGroup>
+                     <form.Field name="cronPattern">
+                        {(field) => (
+                           <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                 Padrão CRON
+                              </FieldLabel>
+                              <Input
+                                 id={field.name}
+                                 onChange={(e) => {
+                                    field.handleChange(e.target.value);
+                                    handleConfigChange(
+                                       "cronPattern",
+                                       e.target.value,
+                                    );
+                                 }}
+                                 placeholder="0 9 * * 1-5"
+                                 value={field.state.value}
+                              />
+                              <FieldDescription>
+                                 Formato: minuto hora dia mês dia-da-semana
+                              </FieldDescription>
+                           </Field>
+                        )}
+                     </form.Field>
+                  </FieldGroup>
+               )}
+            </>
+         )}
       </div>
    );
 }
@@ -373,75 +538,33 @@ type ActionConfigurationFormProps = {
    nodeId: string;
    data: ActionNodeData;
    onUpdate: (nodeId: string, data: Partial<ActionNodeData>) => void;
+   activeTab?: string;
 };
 
 function ActionConfigurationForm({
    nodeId,
    data,
    onUpdate,
+   activeTab = "config",
 }: ActionConfigurationFormProps) {
    const validation = validateActionNode(data);
    const trpc = useTRPC();
 
-   const { data: tags = [], isLoading: tagsLoading } = useQuery(
-      trpc.tags.getAll.queryOptions(),
-   );
+   // Fetch data needed for CategorySplitConfiguration
    const { data: categories = [], isLoading: categoriesLoading } = useQuery(
       trpc.categories.getAll.queryOptions(),
-   );
-   const { data: costCenters = [], isLoading: costCentersLoading } = useQuery(
-      trpc.costCenters.getAll.queryOptions(),
-   );
-   const { data: bankAccounts = [], isLoading: bankAccountsLoading } = useQuery(
-      trpc.bankAccounts.getAll.queryOptions(),
    );
 
    const form = useForm({
       defaultValues: {
          actionType: data.actionType,
-         body: (data.config.body as string) ?? "",
-         categoryId: (data.config.categoryId as string) ?? "",
          continueOnError: data.continueOnError ?? false,
-         costCenterId: (data.config.costCenterId as string) ?? "",
-         customEmail: (data.config.customEmail as string) ?? "",
-         mode: (data.config.mode as string) ?? "replace",
-         reason: (data.config.reason as string) ?? "",
-         subject: (data.config.subject as string) ?? "",
-         tagIds: (data.config.tagIds as string[]) ?? [],
-         title: (data.config.title as string) ?? "",
-         to: (data.config.to as string) ?? "owner",
-         toBankAccountId: (data.config.toBankAccountId as string) ?? "",
-         value: (data.config.value as string) ?? "",
       },
    });
 
    useEffect(() => {
       form.setFieldValue("actionType", data.actionType);
       form.setFieldValue("continueOnError", data.continueOnError ?? false);
-      form.setFieldValue("tagIds", (data.config.tagIds as string[]) ?? []);
-      form.setFieldValue(
-         "categoryId",
-         (data.config.categoryId as string) ?? "",
-      );
-      form.setFieldValue(
-         "costCenterId",
-         (data.config.costCenterId as string) ?? "",
-      );
-      form.setFieldValue("mode", (data.config.mode as string) ?? "replace");
-      form.setFieldValue("value", (data.config.value as string) ?? "");
-      form.setFieldValue("title", (data.config.title as string) ?? "");
-      form.setFieldValue("body", (data.config.body as string) ?? "");
-      form.setFieldValue("to", (data.config.to as string) ?? "owner");
-      form.setFieldValue(
-         "customEmail",
-         (data.config.customEmail as string) ?? "",
-      );
-      form.setFieldValue("subject", (data.config.subject as string) ?? "");
-      form.setFieldValue("reason", (data.config.reason as string) ?? "");
-      form.setFieldValue(
-         "toBankAccountId",
-         (data.config.toBankAccountId as string) ?? "",
-      );
    }, [data, form]);
 
    const handleFieldChange = useCallback(
@@ -449,7 +572,12 @@ function ActionConfigurationForm({
          if (field === "continueOnError") {
             onUpdate(nodeId, { continueOnError: value as boolean });
          } else if (field === "actionType") {
-            onUpdate(nodeId, { actionType: value as ActionType, config: {} });
+            const newType = value as ActionType;
+            onUpdate(nodeId, {
+               actionType: newType,
+               config: {},
+               label: ACTION_TYPE_LABELS[newType],
+            });
          } else {
             onUpdate(nodeId, { config: { ...data.config, [field]: value } });
          }
@@ -457,25 +585,176 @@ function ActionConfigurationForm({
       [nodeId, data.config, onUpdate],
    );
 
-   const tagOptions = tags.map((tag) => ({
-      icon: <Tag className="size-4" style={{ color: tag.color }} />,
-      label: tag.name,
-      value: tag.id,
-   }));
+   // Get action definition from config
+   const actionDefinition = getAction(data.actionType);
+   const actionTabs = actionDefinition.tabs ?? [];
 
-   const costCenterOptions = [
-      { label: "Nenhum", value: "" },
-      ...costCenters.map((cc) => ({
-         label: cc.code ? `${cc.name} (${cc.code})` : cc.name,
-         value: cc.id,
-      })),
-   ];
+   // Check if action has documentation (for "Sobre" tab)
+   const hasAboutTab =
+      actionDefinition.documentation !== undefined ||
+      ["fetch_bills_report", "format_data", "send_email"].includes(
+         data.actionType,
+      );
 
-   const bankAccountOptions = bankAccounts.map((account) => ({
-      label: account.name ?? "Sem nome",
-      value: account.id,
-   }));
+   // Check if action has a Filters tab (config-driven)
+   const hasFiltersTab = actionTabs.some((tab) => tab.id === "filters");
 
+   // Get fields for the current tab
+   const getFieldsToRender = (): ActionField[] => {
+      // About and settings tabs don't have dynamic fields
+      if (activeTab === "about" || activeTab === "settings") {
+         return [];
+      }
+
+      const actionTabs = getActionTabs(data.actionType);
+
+      // If action has custom tabs, get fields for the active tab directly
+      if (actionTabs.length > 0) {
+         return getFieldsForTab(data.actionType, activeTab);
+      }
+
+      // No custom tabs defined - return all fields (for "config" tab)
+      return actionDefinition.fields;
+   };
+
+   // Convert config to allValues format for DynamicFieldRenderer
+   const allValues: Record<string, unknown> = data.config ?? {};
+
+   // Content for "Sobre" tab
+   const renderAboutContent = () => {
+      const aboutContent = {
+         fetch_bills_report: {
+            title: "Buscar Relatório de Contas",
+            description:
+               "Esta ação busca contas a pagar/receber e disponibiliza os dados para as próximas ações. Use em conjunto com 'Formatar Dados' e 'Enviar E-mail' para enviar relatórios personalizados.",
+            howTo: [
+               "Configure os filtros na aba 'Filtros'",
+               "Adicione 'Formatar Dados' para gerar CSV, HTML ou JSON",
+               "Adicione 'Enviar E-mail' com 'Incluir Anexo' ativado",
+            ],
+         },
+         format_data: {
+            title: "Formatar Dados",
+            description:
+               "Esta ação transforma dados de ações anteriores em diferentes formatos (CSV, HTML, JSON). Os dados formatados podem ser usados como anexo em e-mails.",
+            howTo: [
+               "Adicione uma ação que retorna dados antes (ex: 'Buscar Relatório de Contas')",
+               "Escolha o formato desejado (CSV, HTML, JSON)",
+               "Configure o nome do arquivo com variáveis: {{period}}, {{date}}",
+               "Adicione 'Enviar E-mail' após com 'Incluir Anexo' ativado",
+            ],
+            templates: {
+               fileName: [
+                  "{{period}} - Substitui pelo período do relatório",
+                  "{{date}} - Substitui pela data atual (YYYY-MM-DD)",
+                  "{{timestamp}} - Substitui pelo timestamp atual",
+               ],
+            },
+         },
+         send_email: {
+            title: "Enviar E-mail",
+            description:
+               "Envia e-mails personalizados ou usando templates pré-definidos. Suporta anexos de ações anteriores como 'Formatar Dados'.",
+            howTo: [
+               "Escolha o modo: Personalizado ou Resumo de Contas",
+               "Configure o destinatário (dono ou e-mail personalizado)",
+               "Para anexar arquivos, ative 'Incluir Anexo'",
+               "Os anexos vêm da ação 'Formatar Dados'",
+            ],
+            templates: {
+               body: [
+                  "{{description}} - Descrição da transação",
+                  "{{amount}} - Valor da transação",
+                  "{{date}} - Data da transação",
+                  "{{bankAccount.name}} - Nome da conta bancária",
+                  "{{category.name}} - Nome da categoria",
+               ],
+            },
+         },
+      };
+
+      const content =
+         aboutContent[data.actionType as keyof typeof aboutContent];
+      if (!content) return null;
+
+      return (
+         <div className="space-y-4">
+            <Alert>
+               <FileText className="size-4" />
+               <AlertTitle>{content.title}</AlertTitle>
+               <AlertDescription>{content.description}</AlertDescription>
+            </Alert>
+
+            <div className="rounded-lg border p-4 space-y-2">
+               <p className="text-sm font-medium">Como usar</p>
+               <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                  {content.howTo.map((step) => (
+                     <li key={step}>{step}</li>
+                  ))}
+               </ol>
+            </div>
+
+            {"templates" in content && content.templates && (
+               <div className="rounded-lg border p-4 space-y-2">
+                  <p className="text-sm font-medium">Variáveis disponíveis</p>
+                  <div className="text-sm text-muted-foreground space-y-2">
+                     {Object.entries(content.templates).map(([key, vars]) => (
+                        <div className="space-y-1" key={key}>
+                           <p className="font-medium text-foreground capitalize">
+                              {key}:
+                           </p>
+                           <ul className="list-disc list-inside pl-2">
+                              {(vars as string[]).map((v: string) => (
+                                 <li className="font-mono text-xs" key={v}>
+                                    {v}
+                                 </li>
+                              ))}
+                           </ul>
+                        </div>
+                     ))}
+                  </div>
+               </div>
+            )}
+         </div>
+      );
+   };
+
+   // Content for "Filtros" tab - render using dynamic fields from config
+   const renderFiltersContent = () => {
+      const filterFields = getFieldsForTab(data.actionType, "filters");
+
+      if (filterFields.length === 0) {
+         // Fallback for actions without explicit filters tab fields
+         return null;
+      }
+
+      return (
+         <div className="space-y-4">
+            {filterFields.map((field) => (
+               <DynamicFieldRenderer
+                  allValues={allValues}
+                  field={field}
+                  key={field.key}
+                  onChange={(value) => handleFieldChange(field.key, value)}
+                  value={allValues[field.key]}
+               />
+            ))}
+         </div>
+      );
+   };
+
+   // Handle special tabs
+   if (hasAboutTab && activeTab === "about") {
+      return renderAboutContent();
+   }
+
+   if (hasFiltersTab && activeTab === "filters") {
+      return renderFiltersContent();
+   }
+
+   const fieldsToRender = getFieldsToRender();
+
+   // Default "config" tab content
    return (
       <div className="space-y-4">
          {!validation.valid && (
@@ -520,336 +799,35 @@ function ActionConfigurationForm({
             </form.Field>
          </FieldGroup>
 
-         {(data.actionType === "add_tag" ||
-            data.actionType === "remove_tag") && (
-            <FieldGroup>
-               <form.Field name="tagIds">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel htmlFor={field.name}>
-                           {data.actionType === "add_tag"
-                              ? "Tags para adicionar"
-                              : "Tags para remover"}
-                        </FieldLabel>
-                        {tagsLoading ? (
-                           <Skeleton className="h-10 w-full" />
-                        ) : (
-                           <MultiSelect
-                              className="w-full"
-                              emptyMessage="Nenhuma tag encontrada"
-                              onChange={(val) => {
-                                 field.handleChange(val);
-                                 handleFieldChange("tagIds", val);
-                              }}
-                              options={tagOptions}
-                              placeholder="Selecione as tags..."
-                              selected={field.state.value}
-                           />
-                        )}
-                        <FieldDescription>
-                           {data.actionType === "add_tag"
-                              ? "Selecione as tags que serão adicionadas à transação"
-                              : "Selecione as tags que serão removidas da transação"}
-                        </FieldDescription>
-                     </Field>
-                  )}
-               </form.Field>
-            </FieldGroup>
-         )}
+         {/* Dynamic field rendering */}
+         {fieldsToRender.map((field) => {
+            // Special case: category-split is handled by CategorySplitConfiguration
+            if (field.type === "category-split") {
+               return (
+                  <CategorySplitConfiguration
+                     categories={categories}
+                     categoriesLoading={categoriesLoading}
+                     config={data.config}
+                     key={field.key}
+                     onUpdate={(updates) =>
+                        onUpdate(nodeId, {
+                           config: { ...data.config, ...updates },
+                        })
+                     }
+                  />
+               );
+            }
 
-         {data.actionType === "set_category" && (
-            <CategorySplitConfiguration
-               categories={categories}
-               categoriesLoading={categoriesLoading}
-               config={data.config}
-               onUpdate={(updates) =>
-                  onUpdate(nodeId, { config: { ...data.config, ...updates } })
-               }
-            />
-         )}
-
-         {data.actionType === "set_cost_center" && (
-            <FieldGroup>
-               <form.Field name="costCenterId">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel htmlFor={field.name}>
-                           Centro de Custo
-                        </FieldLabel>
-                        {costCentersLoading ? (
-                           <Skeleton className="h-10 w-full" />
-                        ) : (
-                           <Combobox
-                              className="w-full"
-                              emptyMessage="Nenhum centro de custo encontrado"
-                              onValueChange={(value) => {
-                                 field.handleChange(value);
-                                 handleFieldChange("costCenterId", value);
-                              }}
-                              options={costCenterOptions}
-                              placeholder="Selecione o centro de custo..."
-                              searchPlaceholder="Buscar centro de custo..."
-                              value={field.state.value}
-                           />
-                        )}
-                        <FieldDescription>
-                           O centro de custo que será definido para a transação
-                        </FieldDescription>
-                     </Field>
-                  )}
-               </form.Field>
-            </FieldGroup>
-         )}
-
-         {data.actionType === "update_description" && (
-            <>
-               <FieldGroup>
-                  <form.Field name="mode">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel htmlFor={field.name}>Modo</FieldLabel>
-                           <Select
-                              onValueChange={(v) => {
-                                 field.handleChange(v);
-                                 handleFieldChange("mode", v);
-                              }}
-                              value={field.state.value}
-                           >
-                              <SelectTrigger id={field.name}>
-                                 <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                 <SelectItem value="replace">
-                                    Substituir
-                                 </SelectItem>
-                                 <SelectItem value="append">
-                                    Adicionar ao final
-                                 </SelectItem>
-                                 <SelectItem value="prepend">
-                                    Adicionar ao início
-                                 </SelectItem>
-                              </SelectContent>
-                           </Select>
-                        </Field>
-                     )}
-                  </form.Field>
-               </FieldGroup>
-               <FieldGroup>
-                  <form.Field name="value">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel htmlFor={field.name}>Valor</FieldLabel>
-                           <Textarea
-                              id={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(e) => {
-                                 field.handleChange(e.target.value);
-                                 handleFieldChange("value", e.target.value);
-                              }}
-                              placeholder="Nova descrição ou padrão"
-                              value={field.state.value}
-                           />
-                        </Field>
-                     )}
-                  </form.Field>
-               </FieldGroup>
-            </>
-         )}
-
-         {data.actionType === "send_push_notification" && (
-            <>
-               <FieldGroup>
-                  <form.Field name="title">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel htmlFor={field.name}>Título</FieldLabel>
-                           <Input
-                              id={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(e) => {
-                                 field.handleChange(e.target.value);
-                                 handleFieldChange("title", e.target.value);
-                              }}
-                              placeholder="Título da notificação"
-                              value={field.state.value}
-                           />
-                        </Field>
-                     )}
-                  </form.Field>
-               </FieldGroup>
-               <FieldGroup>
-                  <form.Field name="body">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel htmlFor={field.name}>Corpo</FieldLabel>
-                           <Textarea
-                              id={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(e) => {
-                                 field.handleChange(e.target.value);
-                                 handleFieldChange("body", e.target.value);
-                              }}
-                              placeholder="Corpo da notificação"
-                              value={field.state.value}
-                           />
-                        </Field>
-                     )}
-                  </form.Field>
-               </FieldGroup>
-            </>
-         )}
-
-         {data.actionType === "send_email" && (
-            <>
-               <FieldGroup>
-                  <form.Field name="to">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel htmlFor={field.name}>Para</FieldLabel>
-                           <Select
-                              onValueChange={(v) => {
-                                 field.handleChange(v);
-                                 handleFieldChange("to", v);
-                              }}
-                              value={field.state.value}
-                           >
-                              <SelectTrigger id={field.name}>
-                                 <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                 <SelectItem value="owner">
-                                    Proprietário da Organização
-                                 </SelectItem>
-                                 <SelectItem value="custom">
-                                    E-mail Personalizado
-                                 </SelectItem>
-                              </SelectContent>
-                           </Select>
-                        </Field>
-                     )}
-                  </form.Field>
-               </FieldGroup>
-               {data.config.to === "custom" && (
-                  <FieldGroup>
-                     <form.Field name="customEmail">
-                        {(field) => (
-                           <Field>
-                              <FieldLabel htmlFor={field.name}>
-                                 E-mail Personalizado
-                              </FieldLabel>
-                              <Input
-                                 id={field.name}
-                                 onBlur={field.handleBlur}
-                                 onChange={(e) => {
-                                    field.handleChange(e.target.value);
-                                    handleFieldChange(
-                                       "customEmail",
-                                       e.target.value,
-                                    );
-                                 }}
-                                 placeholder="email@exemplo.com"
-                                 value={field.state.value}
-                              />
-                           </Field>
-                        )}
-                     </form.Field>
-                  </FieldGroup>
-               )}
-               <FieldGroup>
-                  <form.Field name="subject">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel htmlFor={field.name}>Assunto</FieldLabel>
-                           <Input
-                              id={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(e) => {
-                                 field.handleChange(e.target.value);
-                                 handleFieldChange("subject", e.target.value);
-                              }}
-                              placeholder="Assunto do e-mail"
-                              value={field.state.value}
-                           />
-                        </Field>
-                     )}
-                  </form.Field>
-               </FieldGroup>
-               <FieldGroup>
-                  <form.Field name="body">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel htmlFor={field.name}>Corpo</FieldLabel>
-                           <Textarea
-                              id={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(e) => {
-                                 field.handleChange(e.target.value);
-                                 handleFieldChange("body", e.target.value);
-                              }}
-                              placeholder="Corpo do e-mail"
-                              value={field.state.value}
-                           />
-                        </Field>
-                     )}
-                  </form.Field>
-               </FieldGroup>
-            </>
-         )}
-
-         {data.actionType === "mark_as_transfer" && (
-            <FieldGroup>
-               <form.Field name="toBankAccountId">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel htmlFor={field.name}>
-                           Conta Destino
-                        </FieldLabel>
-                        {bankAccountsLoading ? (
-                           <Skeleton className="h-10 w-full" />
-                        ) : (
-                           <Combobox
-                              className="w-full"
-                              emptyMessage="Nenhuma conta encontrada"
-                              onValueChange={(value) => {
-                                 field.handleChange(value);
-                                 handleFieldChange("toBankAccountId", value);
-                              }}
-                              options={bankAccountOptions}
-                              placeholder="Selecione a conta destino..."
-                              searchPlaceholder="Buscar conta..."
-                              value={field.state.value}
-                           />
-                        )}
-                        <FieldDescription>
-                           A conta para onde a transferência será feita
-                        </FieldDescription>
-                     </Field>
-                  )}
-               </form.Field>
-            </FieldGroup>
-         )}
-
-         {data.actionType === "stop_execution" && (
-            <FieldGroup>
-               <form.Field name="reason">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel htmlFor={field.name}>Motivo</FieldLabel>
-                        <Input
-                           id={field.name}
-                           onBlur={field.handleBlur}
-                           onChange={(e) => {
-                              field.handleChange(e.target.value);
-                              handleFieldChange("reason", e.target.value);
-                           }}
-                           placeholder="Por que parar a execução?"
-                           value={field.state.value}
-                        />
-                     </Field>
-                  )}
-               </form.Field>
-            </FieldGroup>
-         )}
+            return (
+               <DynamicFieldRenderer
+                  allValues={allValues}
+                  field={field}
+                  key={field.key}
+                  onChange={(value) => handleFieldChange(field.key, value)}
+                  value={allValues[field.key]}
+               />
+            );
+         })}
 
          <div className="flex items-center justify-between rounded-md border p-3">
             <div>
@@ -972,7 +950,10 @@ function CategorySplitConfiguration({
             className="flex size-4 items-center justify-center rounded"
             style={{ backgroundColor: category.color }}
          >
-            <IconDisplay iconName={category.icon as IconName} size={10} />
+            <IconDisplay
+               iconName={category.icon as IconName | null}
+               size={10}
+            />
          </div>
       ),
       label: category.name,

@@ -8,9 +8,6 @@
    "exclude": ["**/*.test.ts", "**/__tests__/**"],
    "references": [
     {
-      "path": "../transactional/tsconfig.lib.json"
-    },
-    {
       "path": "../environment/tsconfig.lib.json"
     },
     {
@@ -20,7 +17,19 @@
       "path": "../notifications/tsconfig.lib.json"
     },
     {
+      "path": "../transactional/tsconfig.lib.json"
+    },
+    {
+      "path": "../money"
+    },
+    {
       "path": "../queue/tsconfig.lib.json"
+    },
+    {
+      "path": "../pdf/tsconfig.lib.json"
+    },
+    {
+      "path": "../csv/tsconfig.lib.json"
     },
     {
       "path": "../../libraries/rules-engine"
