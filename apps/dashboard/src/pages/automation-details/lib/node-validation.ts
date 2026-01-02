@@ -1,7 +1,8 @@
 import { isPercentageSumValid } from "@packages/utils/split";
-import { ACTION_DEFINITIONS } from "@packages/workflows/types/actions";
+import { getAction } from "@packages/workflows/config/actions";
 import type {
    ActionNodeData,
+   AutomationEdge,
    AutomationNode,
    ConditionNodeData,
    TriggerNodeData,
@@ -11,6 +12,7 @@ import { isScheduleTrigger } from "./types";
 export type ValidationResult = {
    valid: boolean;
    errors: string[];
+   warnings?: string[];
 };
 
 export type NodeValidationResult = {
@@ -23,6 +25,16 @@ export type NodeValidationResult = {
 export type NodesValidationResult = {
    valid: boolean;
    invalidNodes: NodeValidationResult[];
+};
+
+export type ExtendedNodeValidationResult = NodeValidationResult & {
+   warnings: string[];
+};
+
+export type ExtendedNodesValidationResult = {
+   valid: boolean;
+   invalidNodes: ExtendedNodeValidationResult[];
+   nodesWithWarnings: ExtendedNodeValidationResult[];
 };
 
 const OPERATORS_WITHOUT_VALUE = new Set([
@@ -104,9 +116,7 @@ function validateSetCategoryAction(config: ActionNodeData["config"]): string[] {
 
 export function validateActionNode(data: ActionNodeData): ValidationResult {
    const errors: string[] = [];
-   const definition = ACTION_DEFINITIONS.find(
-      (def) => def.type === data.actionType,
-   );
+   const definition = getAction(data.actionType);
 
    if (!definition) {
       return { errors: ["Tipo de ação desconhecido"], valid: false };
@@ -115,33 +125,21 @@ export function validateActionNode(data: ActionNodeData): ValidationResult {
    if (data.actionType === "set_category") {
       const setCategoryErrors = validateSetCategoryAction(data.config);
       errors.push(...setCategoryErrors);
-   } else if (data.actionType === "send_bills_digest") {
-      // Validate send_bills_digest specific rules
-      const includePending = data.config.includePending ?? true;
-      const includeOverdue = data.config.includeOverdue ?? true;
-
-      if (!includePending && !includeOverdue) {
-         errors.push(
-            "Selecione ao menos um tipo de conta (pendentes ou vencidas)",
-         );
-      }
-
-      const billTypes = data.config.billTypes as string[] | undefined;
-      if (!billTypes || billTypes.length === 0) {
-         errors.push("Selecione ao menos um tipo de conta");
-      }
    } else {
-      for (const field of definition.configSchema) {
+      for (const field of definition.fields) {
          if (!field.required) continue;
 
+         // Cast config to Record for dynamic key access
+         const configRecord = data.config as Record<string, unknown>;
+
          if (field.dependsOn) {
-            const dependencyValue = data.config[field.dependsOn.field];
+            const dependencyValue = configRecord[field.dependsOn.field];
             if (dependencyValue !== field.dependsOn.value) {
                continue;
             }
          }
 
-         const value = data.config[field.key];
+         const value = configRecord[field.key];
          if (isFieldEmpty(value)) {
             errors.push(`${getFieldLabel(field.key)} é obrigatório`);
          }
@@ -209,6 +207,114 @@ export function validateTriggerNode(data: TriggerNodeData): ValidationResult {
    };
 }
 
+/**
+ * Finds all upstream nodes (nodes that can reach the target node)
+ */
+function findUpstreamNodes(
+   nodeId: string,
+   nodes: AutomationNode[],
+   edges: AutomationEdge[],
+   visited = new Set<string>(),
+): AutomationNode[] {
+   if (visited.has(nodeId)) return [];
+   visited.add(nodeId);
+
+   const upstreamNodes: AutomationNode[] = [];
+
+   // Find all edges that target this node
+   const incomingEdges = edges.filter((e) => e.target === nodeId);
+
+   for (const edge of incomingEdges) {
+      const sourceNode = nodes.find((n) => n.id === edge.source);
+      if (sourceNode) {
+         upstreamNodes.push(sourceNode);
+         // Recursively find upstream nodes of the source
+         upstreamNodes.push(
+            ...findUpstreamNodes(sourceNode.id, nodes, edges, visited),
+         );
+      }
+   }
+
+   return upstreamNodes;
+}
+
+/**
+ * Validates data flow dependencies for an action node
+ */
+export function validateDataDependencies(
+   nodeId: string,
+   data: ActionNodeData,
+   allNodes: AutomationNode[],
+   edges: AutomationEdge[],
+): { valid: boolean; warnings: string[] } {
+   const warnings: string[] = [];
+   const actionDef = getAction(data.actionType);
+   const dataFlow = actionDef.dataFlow;
+
+   if (!dataFlow?.requires) {
+      return { valid: true, warnings: [] };
+   }
+
+   const upstreamNodes = findUpstreamNodes(nodeId, allNodes, edges);
+   const upstreamActionNodes = upstreamNodes.filter(
+      (n): n is AutomationNode & { type: "action"; data: ActionNodeData } =>
+         n.type === "action",
+   );
+
+   const hasRequiredData = upstreamActionNodes.some((n) => {
+      const upstreamDef = getAction(n.data.actionType);
+      return upstreamDef.dataFlow?.produces === dataFlow.requires;
+   });
+
+   if (!hasRequiredData) {
+      warnings.push(
+         `Esta ação requer "${dataFlow.requiresLabel ?? dataFlow.requires}" de uma ação anterior. Conecte uma ação que produza esses dados.`,
+      );
+   }
+
+   return { valid: warnings.length === 0, warnings };
+}
+
+/**
+ * Validates attachment dependency for send_email action
+ */
+export function validateEmailAttachmentDependency(
+   nodeId: string,
+   data: ActionNodeData,
+   allNodes: AutomationNode[],
+   edges: AutomationEdge[],
+): { valid: boolean; warnings: string[] } {
+   if (data.actionType !== "send_email") {
+      return { valid: true, warnings: [] };
+   }
+
+   const config = data.config as Record<string, unknown>;
+   if (!config.includeAttachment) {
+      return { valid: true, warnings: [] };
+   }
+
+   const upstreamNodes = findUpstreamNodes(nodeId, allNodes, edges);
+   const upstreamActionNodes = upstreamNodes.filter(
+      (n): n is AutomationNode & { type: "action"; data: ActionNodeData } =>
+         n.type === "action",
+   );
+
+   const hasFormatData = upstreamActionNodes.some(
+      (n) => n.data.actionType === "format_data",
+   );
+
+   if (!hasFormatData) {
+      return {
+         valid: false,
+         warnings: [
+            'Anexo habilitado, mas nenhuma ação "Formatar Dados" foi encontrada antes deste nó. Adicione uma ação "Formatar Dados" para gerar o anexo.',
+         ],
+      };
+   }
+
+   return { valid: true, warnings: [] };
+}
+
 export function validateAllNodes(
    nodes: AutomationNode[],
 ): NodesValidationResult {
@@ -254,6 +360,86 @@ export function validateAllNodes(
    return {
       invalidNodes,
       valid: invalidNodes.length === 0,
+   };
+}
+
+/**
+ * Extended validation that includes data flow dependency checks
+ */
+export function validateAllNodesWithDependencies(
+   nodes: AutomationNode[],
+   edges: AutomationEdge[],
+): ExtendedNodesValidationResult {
+   const invalidNodes: ExtendedNodeValidationResult[] = [];
+   const nodesWithWarnings: ExtendedNodeValidationResult[] = [];
+
+   for (const node of nodes) {
+      let errors: string[] = [];
+      let warnings: string[] = [];
+      let nodeLabel = "";
+      let nodeType = "";
+
+      if (node.type === "trigger") {
+         const data = node.data as TriggerNodeData;
+         const validation = validateTriggerNode(data);
+         errors = validation.errors;
+         nodeLabel = data.label;
+         nodeType = "trigger";
+      } else if (node.type === "action") {
+         const data = node.data as ActionNodeData;
+         const validation = validateActionNode(data);
+         errors = validation.errors;
+         nodeLabel = data.label;
+         nodeType = "action";
+
+         // Check data flow dependencies
+         const depValidation = validateDataDependencies(
+            node.id,
+            data,
+            nodes,
+            edges,
+         );
+         warnings.push(...depValidation.warnings);
+
+         // Check email attachment dependency
+         const attachmentValidation = validateEmailAttachmentDependency(
+            node.id,
+            data,
+            nodes,
+            edges,
+         );
+         warnings.push(...attachmentValidation.warnings);
+      } else if (node.type === "condition") {
+         const data = node.data as ConditionNodeData;
+         const validation = validateConditionNode(data);
+         errors = validation.errors;
+         nodeLabel = data.label;
+         nodeType = "condition";
+      }
+
+      if (errors.length > 0) {
+         invalidNodes.push({
+            nodeId: node.id,
+            nodeLabel,
+            nodeType,
+            errors,
+            warnings,
+         });
+      } else if (warnings.length > 0) {
+         nodesWithWarnings.push({
+            nodeId: node.id,
+            nodeLabel,
+            nodeType,
+            errors: [],
+            warnings,
+         });
+      }
+   }
+
+   return {
+      valid: invalidNodes.length === 0,
+      invalidNodes,
+      nodesWithWarnings,
    };
 }
 

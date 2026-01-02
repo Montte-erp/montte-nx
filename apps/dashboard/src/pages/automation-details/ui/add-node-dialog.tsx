@@ -171,13 +171,6 @@ const actionOptions: NodeOption[] = [
       label: ACTION_TYPE_LABELS.fetch_bills_report,
       type: "action",
    },
-   {
-      data: { actionType: "send_bills_digest" },
-      description: "Enviar email com resumo de contas a pagar/receber",
-      keywords: ["contas", "bills", "email", "resumo", "digest", "pagar", "receber"],
-      label: ACTION_TYPE_LABELS.send_bills_digest,
-      type: "action",
-   },
 ];
 
 type AddNodeDialogProps = {

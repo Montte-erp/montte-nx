@@ -12,6 +12,7 @@ export type EnqueueOptions = {
 	jobId?: string;
 	triggeredBy?: "event" | "manual";
 	correlationId?: string;
+	dryRun?: boolean;
 };
 
 export async function enqueueWorkflowEvent(
@@ -31,6 +32,7 @@ export async function enqueueWorkflowEvent(
 		metadata: {
 			correlationId: options.correlationId,
 			triggeredBy: options.triggeredBy ?? "event",
+			dryRun: options.dryRun ?? false,
 		},
 	};
 

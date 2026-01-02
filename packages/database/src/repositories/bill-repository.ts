@@ -4,7 +4,6 @@ import {
    encryptBillFields,
    encryptTransactionFields,
 } from "@packages/encryption/service";
-import { serverEnv } from "@packages/environment/server";
 import { centsToReais, reaisToCents } from "@packages/money";
 import { calculateInstallmentDates } from "@packages/utils/date-math";
 import { AppError, propagateError } from "@packages/utils/errors";
@@ -220,6 +219,7 @@ export async function findBillsByOrganizationIdPaginated(
       startDate?: Date;
       endDate?: Date;
       search?: string;
+      searchKey?: string;
       orderBy?: "dueDate" | "issueDate" | "amount" | "createdAt";
       orderDirection?: "asc" | "desc";
    } = {},
@@ -232,6 +232,7 @@ export async function findBillsByOrganizationIdPaginated(
       startDate,
       endDate,
       search,
+      searchKey,
       orderBy = "dueDate",
       orderDirection = "desc",
    } = options;
@@ -246,19 +247,15 @@ export async function findBillsByOrganizationIdPaginated(
             conditions.push(eq(bill.type, type));
          }
 
-         if (search) {
-            const searchKey = serverEnv.SEARCH_KEY;
-            if (searchKey) {
-               // Use blind index search with HMAC tokens
-               const tokens = createSearchTokens(search, searchKey);
-               if (tokens.length > 0) {
-                  const tokenConditions = tokens.map((token) =>
-                     ilike(bill.searchIndex, `%${token}%`),
-                  );
-                  conditions.push(or(...tokenConditions)!);
-               }
+         if (search && searchKey) {
+            // Use blind index search with HMAC tokens
+            const tokens = createSearchTokens(search, searchKey);
+            if (tokens.length > 0) {
+               const tokenConditions = tokens.map((token) =>
+                  ilike(bill.searchIndex, `%${token}%`),
+               );
+               conditions.push(or(...tokenConditions)!);
             }
-            // If no SEARCH_KEY, search is silently skipped (search index not available)
          }
 
          if (startDate) {

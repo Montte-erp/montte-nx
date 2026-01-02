@@ -16,12 +16,15 @@ import {
 import { cn } from "@packages/ui/lib/utils";
 import { Panel, useReactFlow } from "@xyflow/react";
 import {
+   BookTemplate,
    Cable,
    History,
    LayoutGrid,
+   Loader2,
    Maximize,
    Minus,
    Pencil,
+   Play,
    Plus,
    RotateCcw,
 } from "lucide-react";
@@ -32,6 +35,10 @@ type CanvasToolbarProps = {
    showConnections: boolean;
    onToggleConnections: () => void;
    onAutoLayout: () => void;
+   onOpenTemplates?: () => void;
+   onTestRun?: () => void;
+   isTestRunning?: boolean;
+   isTestRunDisabled?: boolean;
    className?: string;
    viewMode?: ViewMode;
    onViewModeChange?: (mode: ViewMode) => void;
@@ -41,6 +48,10 @@ export function CanvasToolbar({
    showConnections,
    onToggleConnections,
    onAutoLayout,
+   onOpenTemplates,
+   onTestRun,
+   isTestRunning = false,
+   isTestRunDisabled = false,
    className,
    viewMode = "editor",
    onViewModeChange,
@@ -94,6 +105,41 @@ export function CanvasToolbar({
                </DropdownMenuItem>
             </DropdownMenuContent>
          </DropdownMenu>
+
+         {onOpenTemplates && (
+            <Tooltip>
+               <TooltipTrigger asChild>
+                  <Button
+                     onClick={onOpenTemplates}
+                     size="icon"
+                     variant="outline"
+                  >
+                     <BookTemplate className="size-4" />
+                  </Button>
+               </TooltipTrigger>
+               <TooltipContent side="right">Templates</TooltipContent>
+            </Tooltip>
+         )}
+
+         {onTestRun && (
+            <Tooltip>
+               <TooltipTrigger asChild>
+                  <Button
+                     disabled={isTestRunDisabled || isTestRunning}
+                     onClick={onTestRun}
+                     size="icon"
+                     variant="outline"
+                  >
+                     {isTestRunning ? (
+                        <Loader2 className="size-4 animate-spin" />
+                     ) : (
+                        <Play className="size-4" />
+                     )}
+                  </Button>
+               </TooltipTrigger>
+               <TooltipContent side="right">Testar (Dry Run)</TooltipContent>
+            </Tooltip>
+         )}
 
          <Separator className="my-0.5" />
 

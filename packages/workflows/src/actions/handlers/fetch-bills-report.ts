@@ -2,35 +2,14 @@ import { findOrganizationById } from "@packages/database/repositories/auth-repos
 import { findBillsDueWithinDays } from "@packages/database/repositories/bill-repository";
 import type { Consequence } from "@packages/database/schema";
 import type { BillDigestItem, BillsDigestSummary } from "@packages/transactional/client";
+import { getBillsPageUrl } from "../../constants";
+import { formatCurrency, formatDate, getPeriodLabel } from "../../utils/bills-helpers";
 import {
 	type ActionHandler,
 	type ActionHandlerContext,
 	createActionResultWithOutput,
 	createSkippedResult,
 } from "../types";
-
-function formatCurrency(value: number): string {
-	return new Intl.NumberFormat("pt-BR", {
-		currency: "BRL",
-		style: "currency",
-	}).format(value);
-}
-
-function formatDate(date: Date): string {
-	return new Intl.DateTimeFormat("pt-BR", {
-		day: "2-digit",
-		month: "2-digit",
-		year: "numeric",
-	}).format(date);
-}
-
-function getPeriodLabel(daysAhead: number): string {
-	if (daysAhead <= 1) return "hoje";
-	if (daysAhead <= 7) return "esta semana";
-	if (daysAhead <= 14) return "proximas duas semanas";
-	if (daysAhead <= 30) return "este mes";
-	return `proximos ${daysAhead} dias`;
-}
 
 export const fetchBillsReportHandler: ActionHandler = {
 	type: "fetch_bills_report",
@@ -42,6 +21,8 @@ export const fetchBillsReportHandler: ActionHandler = {
 			daysAhead = 7,
 			billTypes,
 		} = consequence.payload;
+
+		console.log(`[FetchBillsReport] Starting: includePending=${includePending}, includeOverdue=${includeOverdue}, daysAhead=${daysAhead}, orgId=${context.organizationId}`);
 
 		// Validate configuration
 		if (!includePending && !includeOverdue) {
@@ -84,13 +65,18 @@ export const fetchBillsReportHandler: ActionHandler = {
 			},
 		);
 
+		console.log(`[FetchBillsReport] Found ${bills.length} bills from query`);
+
 		// Filter by bill types if both are selected (default) or filter out specific types
 		const filteredBills =
 			billTypes && billTypes.length > 0
 				? bills.filter((b) => billTypes.includes(b.type as "expense" | "income"))
 				: bills;
 
+		console.log(`[FetchBillsReport] After filtering: ${filteredBills.length} bills`);
+
 		if (filteredBills.length === 0) {
+			console.log("[FetchBillsReport] No bills found, skipping action");
 			return createSkippedResult(consequence, "No bills found for the period");
 		}
 
@@ -130,7 +116,7 @@ export const fetchBillsReportHandler: ActionHandler = {
 			totalPending: billItems.length - totalOverdue,
 		};
 
-		const dashboardUrl = `https://app.montte.co/${organization.slug}/bills`;
+		const dashboardUrl = getBillsPageUrl(organization.slug);
 		const period = getPeriodLabel(daysAhead);
 
 		// Return the bills data in outputData for subsequent actions

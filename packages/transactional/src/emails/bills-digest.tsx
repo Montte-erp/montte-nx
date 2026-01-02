@@ -1,4 +1,4 @@
-import { Button, Hr, Section, Text } from "@react-email/components";
+import { Button, Section, Text } from "@react-email/components";
 import { DefaultFooter } from "./default-footer";
 import { DefaultHeading } from "./default-heading";
 import { DefaultEmailLayout } from "./default-layout";

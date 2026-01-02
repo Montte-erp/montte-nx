@@ -75,7 +75,6 @@ export type ActionType =
    | "mark_as_transfer"
    | "send_push_notification"
    | "send_email"
-   | "send_bills_digest"
    | "fetch_bills_report"
    | "format_data"
    | "stop_execution";
@@ -117,7 +116,7 @@ export type ActionConfig = {
    customEmail?: string;
    subject?: string;
    reason?: string;
-   // send_bills_digest and fetch_bills_report config
+   // fetch_bills_report config
    recipients?: BillsDigestRecipient;
    memberIds?: string[];
    detailLevel?: BillsDigestDetailLevel;
@@ -126,7 +125,17 @@ export type ActionConfig = {
    daysAhead?: number;
    billTypes?: ("expense" | "income")[];
    // send_email template mode
-   useTemplate?: "bills_digest" | "custom";
+   useTemplate?: "bills_digest" | "custom" | "visual";
+   // send_email visual template
+   emailTemplate?: {
+      blocks: unknown[];
+      styles?: {
+         primaryColor?: string;
+         backgroundColor?: string;
+         textColor?: string;
+         fontFamily?: "sans-serif" | "serif" | "monospace";
+      };
+   };
    // send_email attachment support
    includeAttachment?: boolean;
    // format_data config
@@ -240,6 +249,7 @@ export const automationLog = pgTable(
          ConditionEvaluationLogResult[]
       >(),
       createdAt: timestamp("created_at").defaultNow().notNull(),
+      dryRun: boolean("dry_run").default(false),
       durationMs: integer("duration_ms"),
       errorMessage: text("error_message"),
       errorStack: text("error_stack"),

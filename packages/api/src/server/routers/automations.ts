@@ -87,7 +87,6 @@ const actionTypeSchema = z.enum([
    "mark_as_transfer",
    "send_push_notification",
    "send_email",
-   "send_bills_digest",
    "fetch_bills_report",
    "format_data",
    "stop_execution",
@@ -125,7 +124,7 @@ const actionConfigSchema = z.object({
    type: z.enum(["income", "expense"]).optional(),
    url: z.string().optional(),
    value: z.string().optional(),
-   // send_bills_digest and fetch_bills_report fields
+   // fetch_bills_report fields
    recipients: z.enum(["owner", "all_members", "specific"]).optional(),
    memberIds: z.array(z.string()).optional(),
    detailLevel: z.enum(["summary", "detailed", "full"]).optional(),
@@ -134,7 +133,17 @@ const actionConfigSchema = z.object({
    daysAhead: z.number().min(1).max(90).optional(),
    billTypes: z.array(z.enum(["expense", "income"])).optional(),
    // send_email template mode
-   useTemplate: z.enum(["bills_digest", "custom"]).optional(),
+   useTemplate: z.enum(["bills_digest", "custom", "visual"]).optional(),
+   // send_email visual template
+   emailTemplate: z.object({
+      blocks: z.array(z.unknown()),
+      styles: z.object({
+         primaryColor: z.string().optional(),
+         backgroundColor: z.string().optional(),
+         textColor: z.string().optional(),
+         fontFamily: z.enum(["sans-serif", "serif", "monospace"]).optional(),
+      }).optional(),
+   }).optional(),
    // send_email attachment support
    includeAttachment: z.boolean().optional(),
    // format_data config
@@ -571,6 +580,7 @@ export const automationRouter = router({
    triggerManually: protectedProcedure
       .input(
          z.object({
+            dryRun: z.boolean().default(false),
             ruleId: z.string(),
             testData: z
                .object({
@@ -612,44 +622,50 @@ export const automationRouter = router({
             );
          }
 
-         if (
-            rule.triggerType !== "transaction.created" &&
-            rule.triggerType !== "transaction.updated"
-         ) {
-            throw APIError.validation(
-               "Manual trigger is only supported for transaction-based automations",
+         let event: WorkflowEvent;
+
+         // Handle schedule-based triggers
+         if (rule.triggerType.startsWith("schedule.")) {
+            event = createScheduleTriggeredEvent(
+               organizationId,
+               rule.id,
+               rule.triggerType as ScheduleTriggerType,
             );
+         } else {
+            // Handle transaction-based triggers
+            const txData = input.testData?.transaction ?? {
+               amount: 100,
+               description: "Test Transaction",
+               type: "expense" as const,
+            };
+
+            const eventData = {
+               amount: txData.amount,
+               bankAccountId: txData.bankAccountId ?? null,
+               categoryIds: txData.categoryIds ?? [],
+               costCenterId: txData.costCenterId ?? null,
+               counterpartyId: txData.counterpartyId ?? null,
+               date: txData.date ?? new Date().toISOString(),
+               description: txData.description,
+               id: txData.id ?? crypto.randomUUID(),
+               metadata: txData.metadata ?? {},
+               organizationId,
+               tagIds: txData.tagIds ?? [],
+               type: txData.type,
+            };
+
+            event =
+               rule.triggerType === "transaction.created"
+                  ? createTransactionCreatedEvent(organizationId, eventData)
+                  : createTransactionUpdatedEvent(organizationId, eventData);
          }
 
-         const txData = input.testData?.transaction ?? {
-            amount: 100,
-            description: "Test Transaction",
-            type: "expense" as const,
-         };
-
-         const eventData = {
-            amount: txData.amount,
-            bankAccountId: txData.bankAccountId ?? null,
-            categoryIds: txData.categoryIds ?? [],
-            costCenterId: txData.costCenterId ?? null,
-            counterpartyId: txData.counterpartyId ?? null,
-            date: txData.date ?? new Date().toISOString(),
-            description: txData.description,
-            id: txData.id ?? crypto.randomUUID(),
-            metadata: txData.metadata ?? {},
-            organizationId,
-            tagIds: txData.tagIds ?? [],
-            type: txData.type,
-         };
-
-         const event: WorkflowEvent =
-            rule.triggerType === "transaction.created"
-               ? createTransactionCreatedEvent(organizationId, eventData)
-               : createTransactionUpdatedEvent(organizationId, eventData);
-
-         const jobId = await enqueueManualWorkflowRun(event);
+         const jobId = await enqueueManualWorkflowRun(event, {
+            dryRun: input.dryRun,
+         });
 
          return {
+            dryRun: input.dryRun,
             eventId: event.id,
             jobId,
             status: "queued",

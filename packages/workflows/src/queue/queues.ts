@@ -1,6 +1,18 @@
 import type { ScheduleTriggerType } from "@packages/database/schema";
 import type { ConnectionOptions } from "@packages/queue/bullmq";
 import { Queue } from "@packages/queue/bullmq";
+import {
+	BACKOFF_TYPE,
+	DEFAULT_BACKOFF_DELAY_MS,
+	DEFAULT_RETRY_ATTEMPTS,
+	MAINTENANCE_BACKOFF_DELAY_MS,
+	MAINTENANCE_COMPLETED_RETENTION_SECONDS,
+	MAINTENANCE_FAILED_RETENTION_SECONDS,
+	MAINTENANCE_MAX_COMPLETED_JOBS,
+	WORKFLOW_COMPLETED_RETENTION_SECONDS,
+	WORKFLOW_FAILED_RETENTION_SECONDS,
+	WORKFLOW_MAX_COMPLETED_JOBS,
+} from "../constants";
 import type { WorkflowEvent } from "../types/events";
 
 export const WORKFLOW_QUEUE_NAME = "workflow-events";
@@ -14,6 +26,7 @@ export type EventJobData = {
 	metadata?: {
 		triggeredBy?: "event" | "manual";
 		correlationId?: string;
+		dryRun?: boolean;
 	};
 };
 
@@ -72,17 +85,17 @@ export function createWorkflowQueue(
       {
          connection,
          defaultJobOptions: {
-            attempts: 3,
+            attempts: DEFAULT_RETRY_ATTEMPTS,
             backoff: {
-               delay: 1000,
-               type: "exponential",
+               delay: DEFAULT_BACKOFF_DELAY_MS,
+               type: BACKOFF_TYPE,
             },
             removeOnComplete: {
-               age: 24 * 60 * 60,
-               count: 1000,
+               age: WORKFLOW_COMPLETED_RETENTION_SECONDS,
+               count: WORKFLOW_MAX_COMPLETED_JOBS,
             },
             removeOnFail: {
-               age: 7 * 24 * 60 * 60,
+               age: WORKFLOW_FAILED_RETENTION_SECONDS,
             },
          },
       },
@@ -135,17 +148,17 @@ export function createMaintenanceQueue(
       {
          connection,
          defaultJobOptions: {
-            attempts: 3,
+            attempts: DEFAULT_RETRY_ATTEMPTS,
             backoff: {
-               delay: 5000,
-               type: "exponential",
+               delay: MAINTENANCE_BACKOFF_DELAY_MS,
+               type: BACKOFF_TYPE,
             },
             removeOnComplete: {
-               age: 7 * 24 * 60 * 60,
-               count: 100,
+               age: MAINTENANCE_COMPLETED_RETENTION_SECONDS,
+               count: MAINTENANCE_MAX_COMPLETED_JOBS,
             },
             removeOnFail: {
-               age: 14 * 24 * 60 * 60,
+               age: MAINTENANCE_FAILED_RETENTION_SECONDS,
             },
          },
       },
@@ -199,17 +212,17 @@ export function createDeletionQueue(
       {
          connection,
          defaultJobOptions: {
-            attempts: 3,
+            attempts: DEFAULT_RETRY_ATTEMPTS,
             backoff: {
-               delay: 5000,
-               type: "exponential",
+               delay: MAINTENANCE_BACKOFF_DELAY_MS,
+               type: BACKOFF_TYPE,
             },
             removeOnComplete: {
-               age: 7 * 24 * 60 * 60,
-               count: 100,
+               age: MAINTENANCE_COMPLETED_RETENTION_SECONDS,
+               count: MAINTENANCE_MAX_COMPLETED_JOBS,
             },
             removeOnFail: {
-               age: 14 * 24 * 60 * 60,
+               age: MAINTENANCE_FAILED_RETENTION_SECONDS,
             },
          },
       },

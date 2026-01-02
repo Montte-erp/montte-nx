@@ -58,6 +58,7 @@ export function DeletableEdge({
             }}
          />
          <EdgeLabelRenderer>
+            {/* Delete button */}
             <div
                className="nodrag nopan pointer-events-auto absolute"
                onMouseEnter={() => setIsHovered(true)}

@@ -5,7 +5,6 @@ import { fetchBillsReportHandler } from "./handlers/fetch-bills-report";
 import { formatDataHandler } from "./handlers/format-data";
 import { markAsTransferHandler } from "./handlers/mark-as-transfer";
 import { removeTagHandler } from "./handlers/remove-tag";
-import { sendBillsDigestHandler } from "./handlers/send-bills-digest";
 import { sendEmailHandler } from "./handlers/send-email";
 import { sendPushNotificationHandler } from "./handlers/send-push-notification";
 import { setCategoryHandler } from "./handlers/set-category";
@@ -22,6 +21,9 @@ export function registerActionHandler(handler: ActionHandler): void {
    handlers.set(handler.type, handler);
 }
 
+/**
+ * @internal Test-only function - not part of public API
+ */
 export function unregisterActionHandler(type: ActionType): boolean {
    return handlers.delete(type);
 }
@@ -30,10 +32,16 @@ export function getActionHandler(type: ActionType): ActionHandler | undefined {
    return handlers.get(type);
 }
 
+/**
+ * @internal Test-only function - not part of public API
+ */
 export function hasActionHandler(type: ActionType): boolean {
    return handlers.has(type);
 }
 
+/**
+ * @internal Test-only function - not part of public API
+ */
 export function getRegisteredActionTypes(): ActionType[] {
    return Array.from(handlers.keys());
 }
@@ -48,7 +56,6 @@ export function initializeDefaultHandlers(): void {
    registerActionHandler(markAsTransferHandler);
    registerActionHandler(sendPushNotificationHandler);
    registerActionHandler(sendEmailHandler);
-   registerActionHandler(sendBillsDigestHandler);
    registerActionHandler(fetchBillsReportHandler);
    registerActionHandler(formatDataHandler);
    registerActionHandler(stopExecutionHandler);

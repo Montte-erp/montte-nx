@@ -8,6 +8,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
    Activity,
+   Calendar,
+   CalendarClock,
+   CalendarDays,
+   CalendarRange,
    Infinity as InfinityIcon,
    Loader2,
    Plus,
@@ -140,6 +144,26 @@ function AutomationsPageContent() {
          icon: Activity,
          label: "Transação Atualizada",
          value: "transaction.updated" as const,
+      },
+      {
+         icon: Calendar,
+         label: "Diário",
+         value: "schedule.daily" as const,
+      },
+      {
+         icon: CalendarDays,
+         label: "Semanal",
+         value: "schedule.weekly" as const,
+      },
+      {
+         icon: CalendarRange,
+         label: "Quinzenal",
+         value: "schedule.biweekly" as const,
+      },
+      {
+         icon: CalendarClock,
+         label: "Personalizado",
+         value: "schedule.custom" as const,
       },
    ];
 

@@ -2,6 +2,7 @@ import type {
 	ScheduleTriggerConfig,
 	ScheduleTriggerType,
 } from "@packages/database/schema";
+import { DEFAULT_TIMEZONE } from "../constants";
 import { getWorkflowQueue, type ScheduleTriggerJobData } from "./queues";
 
 /**
@@ -75,7 +76,7 @@ export async function upsertScheduleJob(
 		jobId,
 		repeat: {
 			pattern: cronPattern,
-			tz: config.timezone ?? "America/Sao_Paulo",
+			tz: config.timezone ?? DEFAULT_TIMEZONE,
 		},
 	});
 }
@@ -101,47 +102,4 @@ export async function removeScheduleJob(ruleId: string): Promise<boolean> {
 	}
 
 	return false;
-}
-
-/**
- * Gets all schedule jobs currently registered
- */
-export async function getScheduleJobs(): Promise<
-	Array<{
-		ruleId: string;
-		pattern: string;
-		timezone: string | undefined;
-		next: Date | undefined;
-	}>
-> {
-	const queue = getWorkflowQueue();
-	if (!queue) {
-		return [];
-	}
-
-	const repeatableJobs = await queue.getRepeatableJobs();
-
-	return repeatableJobs
-		.filter((job) => job.id?.startsWith("schedule-"))
-		.map((job) => ({
-			ruleId: job.id?.replace("schedule-", "") ?? "",
-			pattern: job.pattern ?? "",
-			timezone: job.tz ?? undefined,
-			next: job.next ? new Date(job.next) : undefined,
-		}));
-}
-
-/**
- * Checks if a schedule job exists for a rule
- */
-export async function hasScheduleJob(ruleId: string): Promise<boolean> {
-	const queue = getWorkflowQueue();
-	if (!queue) {
-		return false;
-	}
-
-	const jobId = `schedule-${ruleId}`;
-	const repeatableJobs = await queue.getRepeatableJobs();
-
-	return repeatableJobs.some((j) => j.id === jobId);
 }

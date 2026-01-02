@@ -4,7 +4,8 @@
       "@react-email/components": "catalog:transactional",
       "react": "catalog:react",
       "react-dom": "catalog:react",
-      "resend": "catalog:transactional"
+      "resend": "catalog:transactional",
+      "zod": "catalog:core"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
@@ -19,6 +20,14 @@
       "./utils": {
          "default": "./src/utils.ts",
          "types": "./dist/src/utils.d.ts"
+      },
+      "./lib/render-blocks": {
+         "default": "./src/lib/render-blocks.tsx",
+         "types": "./dist/src/lib/render-blocks.d.ts"
+      },
+      "./schemas/email-builder.schema": {
+         "default": "./src/schemas/email-builder.schema.ts",
+         "types": "./dist/src/schemas/email-builder.schema.d.ts"
       }
    },
    "files": [

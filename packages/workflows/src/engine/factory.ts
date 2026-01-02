@@ -4,6 +4,7 @@ import {
 	type EngineConfig,
 } from "@f-o-t/rules-engine";
 import type { DatabaseInstance } from "@packages/database/client";
+import { DEFAULT_CACHE_MAX_SIZE, DEFAULT_CACHE_TTL_MS } from "../constants";
 import {
 	WorkflowConsequences,
 	type WorkflowConsequences as WorkflowConsequencesType,
@@ -55,8 +56,8 @@ export function createWorkflowEngine(
 	> = {
 		cache: {
 			enabled: config.cacheEnabled ?? true,
-			maxSize: config.cacheMaxSize ?? 1000,
-			ttl: config.cacheTtl ?? 60000, // 1 minute default
+			maxSize: config.cacheMaxSize ?? DEFAULT_CACHE_MAX_SIZE,
+			ttl: config.cacheTtl ?? DEFAULT_CACHE_TTL_MS,
 		},
 		conflictResolution: "priority",
 		consequences: WorkflowConsequences,

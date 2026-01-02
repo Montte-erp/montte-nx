@@ -206,6 +206,7 @@ export interface SendBillsDigestEmailOptions {
    bills: BillDigestItem[];
    dashboardUrl: string;
    detailLevel: "summary" | "detailed" | "full";
+   from?: string;
 }
 
 export const sendBillsDigestEmail = async (
@@ -219,11 +220,12 @@ export const sendBillsDigestEmail = async (
       bills,
       dashboardUrl,
       detailLevel,
+      from,
    }: SendBillsDigestEmailOptions,
 ) => {
    const subject = `Resumo de contas - ${period}`;
    await client.emails.send({
-      from: `${name} <suporte@mail.montte.co>`,
+      from: from || `${name} <suporte@mail.montte.co>`,
       react: (
          <BillsDigestEmail
             bills={bills}

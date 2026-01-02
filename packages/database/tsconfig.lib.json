@@ -13,6 +13,9 @@
       "path": "../money"
     },
     {
+      "path": "../environment/tsconfig.lib.json"
+    },
+    {
       "path": "../../libraries/rules-engine"
     }
   ]

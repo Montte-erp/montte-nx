@@ -14,7 +14,8 @@
       "@f-o-t/rules-engine": "workspace:*",
       "@packages/database": "workspace:*",
       "@packages/pdf": "workspace:*",
-      "@packages/queue": "workspace:*"
+      "@packages/queue": "workspace:*",
+      "zod": "catalog:validation"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
@@ -29,10 +30,6 @@
          "default": "./src/actions/*.ts",
          "types": "./dist/src/actions/*.d.ts"
       },
-      "./analysis/*": {
-         "default": "./src/analysis/*.ts",
-         "types": "./dist/src/analysis/*.d.ts"
-      },
       "./engine/*": {
          "default": "./src/engine/*.ts",
          "types": "./dist/src/engine/*.d.ts"
@@ -41,9 +38,9 @@
          "default": "./src/queue/*.ts",
          "types": "./dist/src/queue/*.d.ts"
       },
-      "./simulation/*": {
-         "default": "./src/simulation/*.ts",
-         "types": "./dist/src/simulation/*.d.ts"
+      "./schemas/*": {
+         "default": "./src/schemas/*.ts",
+         "types": "./dist/src/schemas/*.d.ts"
       },
       "./triggers/*": {
          "default": "./src/triggers/*.ts",
@@ -57,13 +54,9 @@
          "default": "./src/utils/*.ts",
          "types": "./dist/src/utils/*.d.ts"
       },
-      "./validation/*": {
-         "default": "./src/validation/*.ts",
-         "types": "./dist/src/validation/*.d.ts"
-      },
-      "./versioning/*": {
-         "default": "./src/versioning/*.ts",
-         "types": "./dist/src/versioning/*.d.ts"
+      "./config/actions": {
+         "default": "./src/config/actions/index.ts",
+         "types": "./dist/src/config/actions/index.d.ts"
       }
    },
    "files": [

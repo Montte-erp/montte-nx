@@ -7,6 +7,7 @@ import type { PostHog } from "posthog-node";
 import { accountRouter } from "./routers/account";
 import { accountDeletionRouter } from "./routers/account-deletion";
 import { automationRouter } from "./routers/automations";
+import { automationTemplateRouter } from "./routers/automation-templates";
 import { bankAccountRouter } from "./routers/bank-accounts";
 import { billingRouter } from "./routers/billing";
 import { billRouter } from "./routers/bills";
@@ -37,6 +38,7 @@ export const appRouter = router({
    account: accountRouter,
    accountDeletion: accountDeletionRouter,
    automations: automationRouter,
+   automationTemplates: automationTemplateRouter,
    bankAccounts: bankAccountRouter,
    billing: billingRouter,
    bills: billRouter,

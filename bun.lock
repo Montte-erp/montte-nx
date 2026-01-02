@@ -200,7 +200,7 @@
     },
     "libraries/ofx": {
       "name": "@f-o-t/ofx",
-      "version": "2.3.0",
+      "version": "2.3.1",
       "dependencies": {
         "zod": "4.2.1",
       },
@@ -220,7 +220,7 @@
     },
     "libraries/rules-engine": {
       "name": "@f-o-t/rules-engine",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "dependencies": {
         "@f-o-t/condition-evaluator": "2.0.0",
         "zod": "4.2.1",
@@ -515,6 +515,7 @@
       "version": "0.8.1",
       "dependencies": {
         "@packages/utils": "workspace:*",
+        "@packages/workflows": "workspace:*",
         "@react-email/components": "catalog:transactional",
         "react": "catalog:react",
         "react-dom": "catalog:react",
@@ -622,6 +623,7 @@
         "@packages/database": "workspace:*",
         "@packages/pdf": "workspace:*",
         "@packages/queue": "workspace:*",
+        "zod": "catalog:validation",
       },
       "devDependencies": {
         "@tooling/typescript": "workspace:*",
@@ -4096,6 +4098,8 @@
     "@packages/ui/zod": ["zod@4.1.13", "", {}, "sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig=="],
 
     "@packages/utils/zod": ["zod@4.1.13", "", {}, "sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig=="],
+
+    "@packages/workflows/zod": ["zod@4.1.13", "", {}, "sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig=="],
 
     "@radix-ui/react-alert-dialog/@radix-ui/react-slot": ["@radix-ui/react-slot@1.2.3", "", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-aeNmHnBxbi2St0au6VBVC7JXFlhLlOnvIIlePNniyUNAClzmtAUEY8/pBiK3iHjufOlwA+c20/8jngo7xcrg8A=="],
 

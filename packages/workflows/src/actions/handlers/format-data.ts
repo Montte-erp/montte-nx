@@ -23,6 +23,17 @@ type BillsReportData = {
 	organizationName: string;
 };
 
+/**
+ * Escapes a CSV value by wrapping it in quotes if it contains the delimiter,
+ * newlines, or quotes. Internal quotes are doubled as per RFC 4180.
+ */
+function escapeCSVValue(value: string, delimiter: string): string {
+	if (value.includes(delimiter) || value.includes("\n") || value.includes('"')) {
+		return `"${value.replace(/"/g, '""')}"`;
+	}
+	return value;
+}
+
 function formatBillsToCSV(
 	data: BillsReportData,
 	options: { includeHeaders?: boolean; delimiter?: string },
@@ -30,9 +41,11 @@ function formatBillsToCSV(
 	const { includeHeaders = true, delimiter = "," } = options;
 	const lines: string[] = [];
 
+	const escape = (v: string) => escapeCSVValue(v, delimiter);
+
 	if (includeHeaders) {
 		lines.push(
-			["Descrição", "Valor", "Vencimento", "Tipo", "Status"].join(delimiter),
+			[escape("Descrição"), escape("Valor"), escape("Vencimento"), escape("Tipo"), escape("Status")].join(delimiter),
 		);
 	}
 
@@ -40,7 +53,7 @@ function formatBillsToCSV(
 		const status = bill.isOverdue ? "Vencido" : "Pendente";
 		const type = bill.type === "expense" ? "Despesa" : "Receita";
 		lines.push(
-			[bill.description, bill.amount, bill.dueDate, type, status].join(
+			[escape(bill.description), escape(bill.amount), escape(bill.dueDate), escape(type), escape(status)].join(
 				delimiter,
 			),
 		);
@@ -48,22 +61,22 @@ function formatBillsToCSV(
 
 	// Add summary section
 	lines.push("");
-	lines.push(["Resumo", "", "", "", ""].join(delimiter));
+	lines.push([escape("Resumo"), "", "", "", ""].join(delimiter));
 	lines.push(
-		["Total Despesas", data.summary.totalExpenseAmount, "", "", ""].join(
+		[escape("Total Despesas"), escape(data.summary.totalExpenseAmount), "", "", ""].join(
 			delimiter,
 		),
 	);
 	lines.push(
-		["Total Receitas", data.summary.totalIncomeAmount, "", "", ""].join(
+		[escape("Total Receitas"), escape(data.summary.totalIncomeAmount), "", "", ""].join(
 			delimiter,
 		),
 	);
 	lines.push(
-		["Pendentes", String(data.summary.totalPending), "", "", ""].join(delimiter),
+		[escape("Pendentes"), escape(String(data.summary.totalPending)), "", "", ""].join(delimiter),
 	);
 	lines.push(
-		["Vencidos", String(data.summary.totalOverdue), "", "", ""].join(delimiter),
+		[escape("Vencidos"), escape(String(data.summary.totalOverdue)), "", "", ""].join(delimiter),
 	);
 
 	return lines.join("\n");

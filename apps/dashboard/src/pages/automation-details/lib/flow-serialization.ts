@@ -263,7 +263,6 @@ function getActionLabel(actionType: ActionType): string {
       format_data: "Formatar Dados",
       mark_as_transfer: "Marcar como Transferência",
       remove_tag: "Remover Tag",
-      send_bills_digest: "Enviar Resumo de Contas",
       send_email: "Enviar E-mail",
       send_push_notification: "Enviar Notificação",
       set_category: "Definir Categoria",
