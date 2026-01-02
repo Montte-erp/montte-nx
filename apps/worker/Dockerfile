@@ -38,6 +38,7 @@ RUN bun run build
 WORKDIR /app
 
 WORKDIR /app/libraries/csv
+
 RUN bun run build
 WORKDIR /app
 
