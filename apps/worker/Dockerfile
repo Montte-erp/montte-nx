@@ -27,6 +27,7 @@ COPY packages/csv/package.json ./packages/csv/
 COPY packages/pdf/package.json ./packages/pdf/
 COPY libraries/condition-evaluator/package.json ./libraries/condition-evaluator/
 COPY libraries/rules-engine/package.json ./libraries/rules-engine/
+COPY libraries/csv/package.json ./libraries/csv/
 COPY libraries/money/package.json ./libraries/money/
 
 RUN bun install
