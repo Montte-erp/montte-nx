@@ -38,7 +38,7 @@ export function usePlanFeatures(): PlanFeatures {
       canAccessInterestTemplates: isErpPlan,
 
       // Automations: ERP only
-      canAccessAutomations: isErpPlan || isBasicPlan,
+      canAccessAutomations: isErpPlan,
 
       // Organization Members: ERP only
       canAccessOrgMembers: isErpPlan,

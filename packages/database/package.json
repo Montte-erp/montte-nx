@@ -37,10 +37,6 @@
       "./schemas/*": {
          "default": "./src/schemas/*.ts",
          "types": "./dist/src/schemas/*.d.ts"
-      },
-      "./seeds/*": {
-         "default": "./src/seeds/*.ts",
-         "types": "./dist/src/seeds/*.d.ts"
       }
    },
    "files": [
@@ -64,9 +60,6 @@
       "generate": "bun run env:run drizzle-kit generate --custom",
       "migrate": "bun run env:run drizzle-kit migrate",
       "push": "bun run env:run drizzle-kit push",
-      "seed": "bun run env:run bun src/seeds/run-seeds.ts",
-      "seed-local": "dotenv -e .env.local bun src/seeds/run-seeds.ts",
-      "seed-prod": "dotenv -e .env.production bun src/seeds/run-seeds.ts",
       "studio": "bun run env:run drizzle-kit studio",
       "typecheck": "tsc "
    },
