@@ -53,7 +53,7 @@ function calculateEqualSplit(
    const allocations = moneySplit(money, participants.length);
 
    return participants.map((participant, index) => ({
-      allocatedAmount: toDecimal(allocations[index]!),
+      allocatedAmount: toDecimal(allocations[index] ?? money),
       memberId: participant.memberId,
    }));
 }
@@ -67,10 +67,12 @@ function calculatePercentageSplit(
       0,
    );
 
-   if (Math.abs(totalPercentage - 100) > 0.01) {
-      console.warn(
-         `Percentages don't add up to 100% (got ${totalPercentage}%)`,
-      );
+   if (totalPercentage === 0) {
+      return participants.map((p) => ({
+         allocatedAmount: "0.00",
+         memberId: p.memberId,
+         percentageValue: "0.00",
+      }));
    }
 
    const money = of(String(totalAmount), "BRL");
@@ -78,7 +80,7 @@ function calculatePercentageSplit(
    const allocations = allocate(money, ratios);
 
    return participants.map((participant, index) => ({
-      allocatedAmount: toDecimal(allocations[index]!),
+      allocatedAmount: toDecimal(allocations[index] ?? money),
       memberId: participant.memberId,
       percentageValue: (participant.percentageValue || 0).toFixed(2),
    }));
@@ -106,7 +108,7 @@ function calculateSharesSplit(
    const allocations = allocate(money, ratios);
 
    return participants.map((participant, index) => ({
-      allocatedAmount: toDecimal(allocations[index]!),
+      allocatedAmount: toDecimal(allocations[index] ?? money),
       memberId: participant.memberId,
       shareValue: (participant.shareValue || 1).toString(),
    }));

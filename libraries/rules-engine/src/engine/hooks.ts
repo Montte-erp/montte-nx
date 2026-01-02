@@ -49,7 +49,7 @@ export const executeBeforeEvaluation = async <
    if (!hooks.beforeEvaluation) return;
    await executeWithTimeout(
       "beforeEvaluation",
-      () => hooks.beforeEvaluation!(context, rules),
+      () => hooks.beforeEvaluation?.(context, rules),
       hooks as EngineHooks<unknown, ConsequenceDefinitions>,
       timeoutMs,
    );
@@ -66,7 +66,7 @@ export const executeAfterEvaluation = async <
    if (!hooks.afterEvaluation) return;
    await executeWithTimeout(
       "afterEvaluation",
-      () => hooks.afterEvaluation!(result),
+      () => hooks.afterEvaluation?.(result),
       hooks as EngineHooks<unknown, ConsequenceDefinitions>,
       timeoutMs,
    );
@@ -84,7 +84,7 @@ export const executeBeforeRuleEvaluation = async <
    if (!hooks.beforeRuleEvaluation) return;
    await executeWithTimeout(
       "beforeRuleEvaluation",
-      () => hooks.beforeRuleEvaluation!(rule, context),
+      () => hooks.beforeRuleEvaluation?.(rule, context),
       hooks as EngineHooks<unknown, ConsequenceDefinitions>,
       timeoutMs,
    );
@@ -102,7 +102,7 @@ export const executeAfterRuleEvaluation = async <
    if (!hooks.afterRuleEvaluation) return;
    await executeWithTimeout(
       "afterRuleEvaluation",
-      () => hooks.afterRuleEvaluation!(rule, result),
+      () => hooks.afterRuleEvaluation?.(rule, result),
       hooks as EngineHooks<unknown, ConsequenceDefinitions>,
       timeoutMs,
    );

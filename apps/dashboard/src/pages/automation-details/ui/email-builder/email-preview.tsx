@@ -59,7 +59,7 @@ export function EmailPreview({ template }: EmailPreviewProps) {
             {template.blocks.map((block, index) => (
                <BlockPreview
                   block={block}
-                  key={`preview-${index}`}
+                  key={`preview-${index + 1}`}
                   styles={styles}
                />
             ))}
@@ -280,7 +280,7 @@ function TablePreview() {
             </thead>
             <tbody>
                {sampleBills.map((bill, index) => (
-                  <tr className="border-t" key={`bill-${index}`}>
+                  <tr className="border-t" key={`bill-${index + 1}`}>
                      <td className="px-4 py-2">{bill.description}</td>
                      <td className="px-4 py-2">{bill.dueDate}</td>
                      <td className="px-4 py-2 text-right">{bill.amount}</td>

@@ -144,7 +144,7 @@ export function EmailBuilderDialog({
                                  {template.blocks.map((block, index) => (
                                     <BlockEditor
                                        block={block}
-                                       key={`block-${index}`}
+                                       key={`block-${index + 1}`}
                                        onChange={(b) =>
                                           handleUpdateBlock(index, b)
                                        }

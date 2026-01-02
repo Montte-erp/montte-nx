@@ -55,18 +55,18 @@ export function DynamicFieldRenderer({
    allValues,
    onChange,
 }: DynamicFieldRendererProps) {
-   // Check dependsOn condition
-   if (!evaluateDependsOn(field, allValues)) {
-      return null;
-   }
-
-   // Get data source options if applicable
+   // Get data source options if applicable (must be called before any early returns)
    const dataSource =
       field.type === "select" || field.type === "multiselect"
          ? field.dataSource
          : undefined;
    const { options: dynamicOptions, isLoading } =
       useDataSourceOptions(dataSource);
+
+   // Check dependsOn condition
+   if (!evaluateDependsOn(field, allValues)) {
+      return null;
+   }
 
    // Get options - either from dataSource or from field definition
    // Type that includes optional color from dynamic sources
