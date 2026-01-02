@@ -14,6 +14,10 @@ export default defineConfig({
             access: "public",
             context: "client",
          }),
+         VITE_POSTHOG_UI_HOST: envField.string({
+            access: "public",
+            context: "client",
+         }),
       },
    },
    i18n: {
