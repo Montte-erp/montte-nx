@@ -120,7 +120,7 @@ export const executeOnRuleMatch = async <
    if (!hooks.onRuleMatch) return;
    await executeWithTimeout(
       "onRuleMatch",
-      () => hooks.onRuleMatch!(rule, context),
+      () => hooks.onRuleMatch?.(rule, context),
       hooks as EngineHooks<unknown, ConsequenceDefinitions>,
       timeoutMs,
    );
@@ -138,7 +138,7 @@ export const executeOnRuleSkip = async <
    if (!hooks.onRuleSkip) return;
    await executeWithTimeout(
       "onRuleSkip",
-      () => hooks.onRuleSkip!(rule, reason),
+      () => hooks.onRuleSkip?.(rule, reason),
       hooks as EngineHooks<unknown, ConsequenceDefinitions>,
       timeoutMs,
    );
@@ -156,7 +156,7 @@ export const executeOnRuleError = async <
    if (!hooks.onRuleError) return;
    await executeWithTimeout(
       "onRuleError",
-      () => hooks.onRuleError!(rule, ruleError),
+      () => hooks.onRuleError?.(rule, ruleError),
       hooks as EngineHooks<unknown, ConsequenceDefinitions>,
       timeoutMs,
    );
@@ -174,7 +174,7 @@ export const executeOnConsequenceCollected = async <
    if (!hooks.onConsequenceCollected) return;
    await executeWithTimeout(
       "onConsequenceCollected",
-      () => hooks.onConsequenceCollected!(rule, consequence),
+      () => hooks.onConsequenceCollected?.(rule, consequence),
       hooks as EngineHooks<unknown, ConsequenceDefinitions>,
       timeoutMs,
    );
@@ -192,7 +192,7 @@ export const executeOnCacheHit = async <
    if (!hooks.onCacheHit) return;
    await executeWithTimeout(
       "onCacheHit",
-      () => hooks.onCacheHit!(key, result),
+      () => hooks.onCacheHit?.(key, result),
       hooks as EngineHooks<unknown, ConsequenceDefinitions>,
       timeoutMs,
    );
@@ -209,7 +209,7 @@ export const executeOnCacheMiss = async <
    if (!hooks.onCacheMiss) return;
    await executeWithTimeout(
       "onCacheMiss",
-      () => hooks.onCacheMiss!(key),
+      () => hooks.onCacheMiss?.(key),
       hooks as EngineHooks<unknown, ConsequenceDefinitions>,
       timeoutMs,
    );
@@ -228,7 +228,7 @@ export const executeOnSlowRule = async <
    if (!hooks.onSlowRule) return;
    await executeWithTimeout(
       "onSlowRule",
-      () => hooks.onSlowRule!(rule, timeMs, threshold),
+      () => hooks.onSlowRule?.(rule, timeMs, threshold),
       hooks as EngineHooks<unknown, ConsequenceDefinitions>,
       timeoutMs,
    );
