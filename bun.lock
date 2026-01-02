@@ -515,11 +515,11 @@
       "version": "0.8.1",
       "dependencies": {
         "@packages/utils": "workspace:*",
-        "@packages/workflows": "workspace:*",
         "@react-email/components": "catalog:transactional",
         "react": "catalog:react",
         "react-dom": "catalog:react",
         "resend": "catalog:transactional",
+        "zod": "catalog:validation",
       },
       "devDependencies": {
         "@tooling/typescript": "workspace:*",
@@ -620,6 +620,7 @@
       "dependencies": {
         "@f-o-t/condition-evaluator": "2.0.0",
         "@f-o-t/rules-engine": "workspace:*",
+        "@packages/csv": "workspace:*",
         "@packages/database": "workspace:*",
         "@packages/pdf": "workspace:*",
         "@packages/queue": "workspace:*",
@@ -4094,6 +4095,8 @@
     "@packages/environment/zod": ["zod@4.1.13", "", {}, "sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig=="],
 
     "@packages/queue/zod": ["zod@4.1.13", "", {}, "sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig=="],
+
+    "@packages/transactional/zod": ["zod@4.1.13", "", {}, "sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig=="],
 
     "@packages/ui/zod": ["zod@4.1.13", "", {}, "sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig=="],
 

@@ -405,6 +405,16 @@ function parseHeaderFromBuffer(buffer: Uint8Array): {
    return { encoding, header: parsedHeader };
 }
 
+/**
+ * Decodes an OFX buffer to a string with proper charset detection.
+ * Automatically detects encoding from OFX header (CHARSET field).
+ */
+export function decodeOfxBuffer(buffer: Uint8Array): string {
+   const { encoding } = parseHeaderFromBuffer(buffer);
+   const decoder = new TextDecoder(encoding as Bun.Encoding);
+   return decoder.decode(buffer);
+}
+
 export function parseBuffer(buffer: Uint8Array): ParseResult<OFXDocument> {
    try {
       if (!(buffer instanceof Uint8Array)) {
@@ -434,10 +444,7 @@ export function parseBuffer(buffer: Uint8Array): ParseResult<OFXDocument> {
          };
       }
 
-      const { encoding } = parseHeaderFromBuffer(buffer);
-      const decoder = new TextDecoder(encoding as Bun.Encoding);
-      const content = decoder.decode(buffer);
-
+      const content = decodeOfxBuffer(buffer);
       return parse(content);
    } catch (err) {
       if (err instanceof z.ZodError) {

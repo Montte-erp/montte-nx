@@ -1,4 +1,5 @@
 import {
+   decodeOfxBuffer,
    generateBankStatement,
    type OFXAccountType,
    type OFXHeader,
@@ -92,39 +93,6 @@ async function* createChunkIterable(
 }
 
 /**
- * Creates an async iterable from a buffer.
- * Detects encoding from OFX header and decodes appropriately.
- */
-async function* createBufferIterable(
-   buffer: Uint8Array,
-   chunkSize = 65536,
-): AsyncGenerator<string> {
-   // First, detect encoding from the header section (iso-8859-1 is safe for reading raw bytes)
-   // TextDecoder supports multiple encodings at runtime, TypeScript types are restrictive
-   // biome-ignore lint/suspicious/noExplicitAny: TextDecoder runtime supports more encodings than TypeScript types
-   const headerSection = new TextDecoder("iso-8859-1" as any).decode(
-      buffer.slice(0, Math.min(buffer.length, 1000)),
-   );
-
-   let encoding = "utf-8";
-   const charsetMatch = headerSection.match(/CHARSET:(\S+)/i);
-   if (charsetMatch?.[1]) {
-      const charset = charsetMatch[1].toUpperCase();
-      if (charset === "1252" || charset === "WINDOWS-1252") {
-         encoding = "windows-1252";
-      } else if (charset === "ISO-8859-1" || charset === "LATIN1") {
-         encoding = "iso-8859-1";
-      }
-   }
-
-   // biome-ignore lint/suspicious/noExplicitAny: TextDecoder runtime supports more encodings than TypeScript types
-   const decoder = new TextDecoder(encoding as any);
-   const content = decoder.decode(buffer);
-
-   yield* createChunkIterable(content, chunkSize);
-}
-
-/**
  * Shared helper that parses OFX from an async iterable.
  * Handles progress callbacks, transaction mapping, and event processing.
  */
@@ -184,7 +152,8 @@ export async function parseOfxBuffer(
    buffer: Uint8Array,
    options?: ParseOfxOptions,
 ): Promise<ParsedTransaction[]> {
-   return parseFromIterable(createBufferIterable(buffer), options);
+   const content = decodeOfxBuffer(buffer);
+   return parseFromIterable(createChunkIterable(content), options);
 }
 
 // Export types

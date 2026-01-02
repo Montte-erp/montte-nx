@@ -1,4 +1,4 @@
-import { getEncodingFromCharset } from "./parser";
+import { decodeOfxBuffer, getEncodingFromCharset } from "./parser";
 import {
    balanceSchema,
    bankAccountSchema,
@@ -430,18 +430,8 @@ export async function* parseBatchStream(
       try {
          let fileTransactionCount = 0;
 
-         // Detect encoding from the first part of the buffer
-         const headerSection = new TextDecoder("windows-1252").decode(
-            file.buffer.slice(0, Math.min(file.buffer.length, 1000)),
-         );
-         const charsetMatch = headerSection.match(/CHARSET:(\S+)/i);
-         const encoding = charsetMatch
-            ? getEncodingFromCharset(charsetMatch[1])
-            : (options?.encoding ?? "utf-8");
-
-         // Decode the entire buffer
-         const decoder = new TextDecoder(encoding as Bun.Encoding);
-         const content = decoder.decode(file.buffer);
+         // Decode buffer with proper charset detection
+         const content = decodeOfxBuffer(file.buffer);
 
          // Create chunked async iterable
          const chunkIterable = createChunkIterable(content);

@@ -1,5 +1,6 @@
 import type { BillDigestItem, BillsDigestSummary } from "@packages/transactional/client";
 import type { Consequence } from "@packages/database/schema";
+import { generate } from "@packages/csv";
 import {
 	type ActionHandler,
 	type ActionHandlerContext,
@@ -23,63 +24,36 @@ type BillsReportData = {
 	organizationName: string;
 };
 
-/**
- * Escapes a CSV value by wrapping it in quotes if it contains the delimiter,
- * newlines, or quotes. Internal quotes are doubled as per RFC 4180.
- */
-function escapeCSVValue(value: string, delimiter: string): string {
-	if (value.includes(delimiter) || value.includes("\n") || value.includes('"')) {
-		return `"${value.replace(/"/g, '""')}"`;
-	}
-	return value;
-}
-
 function formatBillsToCSV(
 	data: BillsReportData,
 	options: { includeHeaders?: boolean; delimiter?: string },
 ): string {
 	const { includeHeaders = true, delimiter = "," } = options;
-	const lines: string[] = [];
-
-	const escape = (v: string) => escapeCSVValue(v, delimiter);
+	const rows: string[][] = [];
 
 	if (includeHeaders) {
-		lines.push(
-			[escape("Descrição"), escape("Valor"), escape("Vencimento"), escape("Tipo"), escape("Status")].join(delimiter),
-		);
+		rows.push(["Descrição", "Valor", "Vencimento", "Tipo", "Status"]);
 	}
 
 	for (const bill of data.bills) {
-		const status = bill.isOverdue ? "Vencido" : "Pendente";
-		const type = bill.type === "expense" ? "Despesa" : "Receita";
-		lines.push(
-			[escape(bill.description), escape(bill.amount), escape(bill.dueDate), escape(type), escape(status)].join(
-				delimiter,
-			),
-		);
+		rows.push([
+			bill.description,
+			bill.amount,
+			bill.dueDate,
+			bill.type === "expense" ? "Despesa" : "Receita",
+			bill.isOverdue ? "Vencido" : "Pendente",
+		]);
 	}
 
 	// Add summary section
-	lines.push("");
-	lines.push([escape("Resumo"), "", "", "", ""].join(delimiter));
-	lines.push(
-		[escape("Total Despesas"), escape(data.summary.totalExpenseAmount), "", "", ""].join(
-			delimiter,
-		),
-	);
-	lines.push(
-		[escape("Total Receitas"), escape(data.summary.totalIncomeAmount), "", "", ""].join(
-			delimiter,
-		),
-	);
-	lines.push(
-		[escape("Pendentes"), escape(String(data.summary.totalPending)), "", "", ""].join(delimiter),
-	);
-	lines.push(
-		[escape("Vencidos"), escape(String(data.summary.totalOverdue)), "", "", ""].join(delimiter),
-	);
+	rows.push([]);
+	rows.push(["Resumo", "", "", "", ""]);
+	rows.push(["Total Despesas", data.summary.totalExpenseAmount, "", "", ""]);
+	rows.push(["Total Receitas", data.summary.totalIncomeAmount, "", "", ""]);
+	rows.push(["Pendentes", String(data.summary.totalPending), "", "", ""]);
+	rows.push(["Vencidos", String(data.summary.totalOverdue), "", "", ""]);
 
-	return lines.join("\n");
+	return generate(rows, { delimiter });
 }
 
 function formatBillsToJSON(data: BillsReportData): string {

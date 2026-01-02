@@ -19,6 +19,7 @@ import {
    findTransactionsByBankAccountIdPaginated,
    findTransactionsForExport,
 } from "@packages/database/repositories/transaction-repository";
+import { generate } from "@packages/csv";
 import { generateOfxContent } from "@packages/ofx";
 import { renderBankStatement } from "@packages/pdf";
 import {
@@ -336,23 +337,18 @@ export const bankAccountRouter = router({
 
          // Generate CSV content
          const headers = ["Data", "Descrição", "Valor", "Tipo"];
-         const rows = transactions.map((trn) => {
-            const date = trn.date.toLocaleDateString("pt-BR");
-            const description = `"${(trn.description ?? "").replace(/"/g, '""')}"`;
-            const amount =
-               trn.type === "expense"
-                  ? `-${trn.amount}`
-                  : trn.amount.toString();
-            const type =
-               trn.type === "income"
-                  ? "Receita"
-                  : trn.type === "expense"
-                    ? "Despesa"
-                    : "Transferência";
-            return [date, description, amount, type].join(",");
-         });
+         const rows = transactions.map((trn) => [
+            trn.date.toLocaleDateString("pt-BR"),
+            trn.description ?? "",
+            trn.type === "expense" ? `-${trn.amount}` : trn.amount.toString(),
+            trn.type === "income"
+               ? "Receita"
+               : trn.type === "expense"
+                 ? "Despesa"
+                 : "Transferência",
+         ]);
 
-         const content = [headers.join(","), ...rows].join("\n");
+         const content = generate([headers, ...rows]);
 
          const formatDate = (d: Date) =>
             d.toISOString().split("T")[0]?.replace(/-/g, "") ?? "";

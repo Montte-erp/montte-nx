@@ -12,6 +12,7 @@
    "dependencies": {
       "@f-o-t/condition-evaluator": "2.0.0",
       "@f-o-t/rules-engine": "workspace:*",
+      "@packages/csv": "workspace:*",
       "@packages/database": "workspace:*",
       "@packages/pdf": "workspace:*",
       "@packages/queue": "workspace:*",

@@ -22,6 +22,9 @@ export {
    type StreamOptions,
 } from "./parser";
 
+// Re-export CSV generation functions from @f-o-t/csv
+export { generate, generateFromObjects, generateRow } from "@f-o-t/csv";
+
 export type {
    BankFormat,
    CsvColumnMapping,

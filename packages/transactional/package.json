@@ -5,7 +5,7 @@
       "react": "catalog:react",
       "react-dom": "catalog:react",
       "resend": "catalog:transactional",
-      "zod": "catalog:core"
+      "zod": "catalog:validation"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
