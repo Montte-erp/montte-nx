@@ -1,4 +1,11 @@
 import type { SplitType } from "@packages/database/schemas/expense-splits";
+import {
+   allocate,
+   formatDecimalCurrency,
+   of,
+   split as moneySplit,
+   toDecimal,
+} from "@packages/money";
 
 interface Participant {
    memberId: string;
@@ -42,19 +49,13 @@ function calculateEqualSplit(
    totalAmount: number,
    participants: Participant[],
 ): SplitResult[] {
-   const participantCount = participants.length;
-   const baseAmount = Math.floor((totalAmount * 100) / participantCount) / 100;
-   const remainder =
-      Math.round((totalAmount - baseAmount * participantCount) * 100) / 100;
+   const money = of(String(totalAmount), "BRL");
+   const allocations = moneySplit(money, participants.length);
 
-   return participants.map((participant, index) => {
-      // Add remainder to the first participant
-      const amount = index === 0 ? baseAmount + remainder : baseAmount;
-      return {
-         allocatedAmount: amount.toFixed(2),
-         memberId: participant.memberId,
-      };
-   });
+   return participants.map((participant, index) => ({
+      allocatedAmount: toDecimal(allocations[index]!),
+      memberId: participant.memberId,
+   }));
 }
 
 function calculatePercentageSplit(
@@ -72,27 +73,15 @@ function calculatePercentageSplit(
       );
    }
 
-   let allocatedTotal = 0;
-   const results = participants.map((participant, index) => {
-      const percentage = participant.percentageValue || 0;
-      let amount: number;
+   const money = of(String(totalAmount), "BRL");
+   const ratios = participants.map((p) => p.percentageValue || 0);
+   const allocations = allocate(money, ratios);
 
-      // For the last participant, allocate the remainder to avoid rounding issues
-      if (index === participants.length - 1) {
-         amount = Math.round((totalAmount - allocatedTotal) * 100) / 100;
-      } else {
-         amount = Math.round(((totalAmount * percentage) / 100) * 100) / 100;
-         allocatedTotal += amount;
-      }
-
-      return {
-         allocatedAmount: amount.toFixed(2),
-         memberId: participant.memberId,
-         percentageValue: percentage.toFixed(2),
-      };
-   });
-
-   return results;
+   return participants.map((participant, index) => ({
+      allocatedAmount: toDecimal(allocations[index]!),
+      memberId: participant.memberId,
+      percentageValue: (participant.percentageValue || 0).toFixed(2),
+   }));
 }
 
 function calculateSharesSplit(
@@ -112,44 +101,34 @@ function calculateSharesSplit(
       }));
    }
 
-   let allocatedTotal = 0;
-   const results = participants.map((participant, index) => {
-      const shares = participant.shareValue || 1;
-      let amount: number;
+   const money = of(String(totalAmount), "BRL");
+   const ratios = participants.map((p) => p.shareValue || 1);
+   const allocations = allocate(money, ratios);
 
-      // For the last participant, allocate the remainder to avoid rounding issues
-      if (index === participants.length - 1) {
-         amount = Math.round((totalAmount - allocatedTotal) * 100) / 100;
-      } else {
-         amount =
-            Math.round(((totalAmount * shares) / totalShares) * 100) / 100;
-         allocatedTotal += amount;
-      }
-
-      return {
-         allocatedAmount: amount.toFixed(2),
-         memberId: participant.memberId,
-         shareValue: shares.toString(),
-      };
-   });
-
-   return results;
-}
-
-function calculateAmountSplit(participants: Participant[]): SplitResult[] {
-   return participants.map((participant) => ({
-      allocatedAmount: (participant.customAmount || 0).toFixed(2),
+   return participants.map((participant, index) => ({
+      allocatedAmount: toDecimal(allocations[index]!),
       memberId: participant.memberId,
+      shareValue: (participant.shareValue || 1).toString(),
    }));
 }
 
+function calculateAmountSplit(participants: Participant[]): SplitResult[] {
+   return participants.map((participant) => {
+      const money = of(String(participant.customAmount || 0), "BRL");
+      return {
+         allocatedAmount: toDecimal(money),
+         memberId: participant.memberId,
+      };
+   });
+}
+
+/**
+ * Format currency amount (accepts both number and string for backwards compatibility)
+ */
 export function formatCurrency(amount: number | string): string {
    const numAmount =
       typeof amount === "string" ? Number.parseFloat(amount) : amount;
-   return new Intl.NumberFormat("pt-BR", {
-      currency: "BRL",
-      style: "currency",
-   }).format(numAmount);
+   return formatDecimalCurrency(numAmount);
 }
 
 export function validateSplit(
@@ -166,7 +145,7 @@ export function validateSplit(
    if (difference > 0.01) {
       return {
          isValid: false,
-         message: `Allocated amounts (${formatCurrency(allocatedTotal)}) don't match total (${formatCurrency(totalAmount)})`,
+         message: `Allocated amounts (${formatDecimalCurrency(allocatedTotal)}) don't match total (${formatDecimalCurrency(totalAmount)})`,
       };
    }
 

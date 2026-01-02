@@ -1,5 +1,5 @@
 import { translate } from "@packages/localization";
-import { formatDecimalCurrency } from "@packages/money";
+import { formatCurrency, formatDecimalCurrency } from "@packages/money";
 import { Button } from "@packages/ui/components/button";
 import { Field, FieldGroup, FieldLabel } from "@packages/ui/components/field";
 import { MoneyInput } from "@packages/ui/components/money-input";
@@ -195,8 +195,8 @@ export function CategorySplitForm({
                            : isValid
                              ? "Valores conferem"
                              : remainingAmount > 0
-                               ? `Falta: R$ ${(remainingAmount / 100).toFixed(2)}`
-                               : `Excede: R$ ${(Math.abs(remainingAmount) / 100).toFixed(2)}`}
+                               ? `Falta: ${formatCurrency(remainingAmount)}`
+                               : `Excede: ${formatCurrency(Math.abs(remainingAmount))}`}
                      </span>
                   </div>
 

@@ -1,5 +1,6 @@
 import type { Consequence } from "@packages/database/schema";
 import { transaction } from "@packages/database/schema";
+import { of, toDecimal } from "@packages/money";
 import {
    createTemplateContext,
    getNestedValue,
@@ -84,7 +85,7 @@ export const createTransactionHandler: ActionHandler = {
          const result = await context.db
             .insert(transaction)
             .values({
-               amount: Math.abs(amount).toFixed(2),
+               amount: toDecimal(of(String(Math.abs(amount)), "BRL")),
                bankAccountId,
                date: transactionDate,
                description: processedDescription,

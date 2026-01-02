@@ -1,3 +1,4 @@
+import { of, toDecimal } from "@packages/money";
 import { Button } from "@packages/ui/components/button";
 import {
    Field,
@@ -43,7 +44,7 @@ export function ExpenseSplitSettlementForm({
 
    const form = useForm({
       defaultValues: {
-         amount: remainingAmount.toFixed(2),
+         amount: toDecimal(of(String(remainingAmount), "BRL")),
          notes: "",
       },
       onSubmit: async ({ value }) => {
@@ -53,7 +54,7 @@ export function ExpenseSplitSettlementForm({
          }
 
          await settlementMutation.mutateAsync({
-            amount: amount.toFixed(2),
+            amount: toDecimal(of(String(amount), "BRL")),
             notes: value.notes || undefined,
             participantId,
          });

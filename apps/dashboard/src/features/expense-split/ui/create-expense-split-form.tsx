@@ -1,5 +1,6 @@
 import type { SplitType } from "@packages/database/schemas/expense-splits";
 import { translate } from "@packages/localization";
+import { of, toDecimal } from "@packages/money";
 import { Button } from "@packages/ui/components/button";
 import {
    Field,
@@ -126,7 +127,7 @@ export function CreateExpenseSplitForm({
             })),
             splitType,
             teamId,
-            totalAmount: totalAmount.toFixed(2),
+            totalAmount: toDecimal(of(String(totalAmount), "BRL")),
             transactionId,
          });
       },
