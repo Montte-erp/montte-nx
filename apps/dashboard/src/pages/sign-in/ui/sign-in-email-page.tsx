@@ -48,7 +48,7 @@ export function SignInEmailPage() {
                   toast.success(
                      translate("dashboard.routes.sign-in.messages.success"),
                   );
-                  router.navigate({ params: { slug: "" }, to: "/$slug/home" });
+                  router.navigate({ params: { slug: "_" }, to: "/$slug/home" });
                },
             },
          );

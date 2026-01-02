@@ -64,6 +64,30 @@ export function createMockDb(overrides: MockDbOverrides = {}) {
             findFirst: mock(() => Promise.resolve(selectResult[0] ?? null)),
             findMany: mock(() => Promise.resolve(selectResult)),
          },
+         organization: {
+            findFirst: mock(() =>
+               Promise.resolve({
+                  id: "org-123",
+                  name: "Test Organization",
+                  slug: "test-org",
+               }),
+            ),
+         },
+         member: {
+            findFirst: mock(() =>
+               Promise.resolve({
+                  userId: "user-owner",
+                  role: "owner",
+                  user: { id: "user-owner", email: "owner@example.com", name: "Owner User" },
+               }),
+            ),
+            findMany: mock(() =>
+               Promise.resolve([
+                  { userId: "user-owner", role: "owner", user: { id: "user-owner", email: "owner@example.com", name: "Owner User" } },
+                  { userId: "user-member", role: "member", user: { id: "user-member", email: "member@example.com", name: "Member User" } },
+               ]),
+            ),
+         },
       },
       transaction: async <T>(fn: (tx: unknown) => Promise<T>): Promise<T> => {
          const txDb = createMockDb(overrides);
@@ -127,6 +151,13 @@ export function createMockDbWithError(errorMessage: string) {
             findMany: mock(() => Promise.reject(error)),
          },
          automationRule: {
+            findFirst: mock(() => Promise.reject(error)),
+            findMany: mock(() => Promise.reject(error)),
+         },
+         organization: {
+            findFirst: mock(() => Promise.reject(error)),
+         },
+         member: {
             findFirst: mock(() => Promise.reject(error)),
             findMany: mock(() => Promise.reject(error)),
          },

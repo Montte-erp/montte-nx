@@ -12,7 +12,16 @@ import {
    QueryClient,
    QueryClientProvider,
 } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { Suspense, lazy } from "react";
+
+// Lazy load devtools - excluded from production bundle
+const ReactQueryDevtools = import.meta.env.PROD
+   ? () => null
+   : lazy(() =>
+        import("@tanstack/react-query-devtools").then((m) => ({
+           default: m.ReactQueryDevtools,
+        })),
+     );
 import { TRPCClientError } from "@trpc/client";
 import {
    createTRPCContext,
@@ -27,7 +36,7 @@ import { openCredenza } from "@/hooks/use-credenza";
 export const { TRPCProvider, useTRPC, useTRPCClient } =
    createTRPCContext<AppRouter>();
 
-export const reservedRoutes = ["auth", "home", "api"];
+export const reservedRoutes = ["auth", "home", "api", "_"];
 
 function getOrganizationSlugFromUrl(): string | undefined {
    if (typeof window === "undefined") return undefined;
@@ -201,7 +210,9 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
    return (
       <QueryClientProvider client={queryClient}>
          <TRPCProvider queryClient={queryClient} trpcClient={trpcClient}>
-            <ReactQueryDevtools buttonPosition="bottom-left" />
+            <Suspense fallback={null}>
+               <ReactQueryDevtools buttonPosition="bottom-left" />
+            </Suspense>
             {children}
          </TRPCProvider>
       </QueryClientProvider>

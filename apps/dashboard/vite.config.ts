@@ -201,4 +201,28 @@ export default defineConfig({
    server: {
       port: 3000,
    },
+   build: {
+      rollupOptions: {
+         output: {
+            manualChunks: {
+               // Core React - always needed first
+               "react-vendor": ["react", "react-dom"],
+               // Router - needed for navigation
+               router: ["@tanstack/react-router"],
+               // Data fetching - needed after auth
+               query: [
+                  "@tanstack/react-query",
+                  "@trpc/client",
+                  "@trpc/tanstack-react-query",
+               ],
+               // Heavy charting libs - lazy load per route
+               charts: ["recharts"],
+               // Flow editor - only automation page
+               flow: ["@xyflow/react"],
+               // Animation - defer loading
+               animation: ["framer-motion", "motion/react"],
+            },
+         },
+      },
+   },
 });

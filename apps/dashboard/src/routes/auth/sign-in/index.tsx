@@ -19,7 +19,7 @@ export const Route = createFileRoute("/auth/sign-in/")({
          if (search.redirect) {
             throw redirect({ to: search.redirect });
          }
-         throw redirect({ params: { slug: "" }, to: "/$slug/home" });
+         throw redirect({ params: { slug: "_" }, to: "/$slug/home" });
       }
    },
    component: RouteComponent,

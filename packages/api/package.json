@@ -13,6 +13,7 @@
       "@packages/notifications": "workspace:*",
       "@packages/ofx": "workspace:*",
       "@packages/pdf": "workspace:*",
+      "@packages/reconciliation": "workspace:*",
       "@packages/posthog": "workspace:*",
       "@packages/workflows": "workspace:*",
       "@packages/utils": "workspace:*",

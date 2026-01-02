@@ -25,7 +25,7 @@ import { renderBankStatement } from "@packages/pdf";
 import {
    calculateDuplicateScore,
    DATE_TOLERANCE_DAYS,
-} from "@packages/utils/duplicate-detection";
+} from "@packages/reconciliation/duplicate-detection";
 import { APIError, ErrorCodes } from "@packages/utils/errors";
 import { z } from "zod";
 import {

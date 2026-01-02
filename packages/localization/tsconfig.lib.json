@@ -3,6 +3,6 @@
    "compilerOptions": {
       "lib": ["dom", "ES2022"]
    },
-   "include": ["src"],
+   "include": ["src", "src/**/*.json"],
    "exclude": ["**/*.test.ts", "**/__tests__/**", "node_modules"]
 }

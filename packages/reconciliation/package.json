@@ -1,0 +1,32 @@
+{
+	"name": "@packages/reconciliation",
+	"version": "0.1.0",
+	"type": "module",
+	"private": true,
+	"license": "Apache-2.0",
+	"dependencies": {
+		"@f-o-t/condition-evaluator": "workspace:*",
+		"zod": "catalog:validation"
+	},
+	"devDependencies": {
+		"@tooling/typescript": "workspace:*",
+		"typescript": "catalog:development"
+	},
+	"exports": {
+		"./*": {
+			"default": "./src/*.ts",
+			"types": "./dist/src/*.d.ts"
+		},
+		"./profiles/*": {
+			"default": "./src/profiles/*.ts",
+			"types": "./dist/src/profiles/*.d.ts"
+		}
+	},
+	"files": ["dist"],
+	"scripts": {
+		"build": "tsc --build",
+		"check": "biome check --write ./src",
+		"test": "bun test",
+		"typecheck": "tsc"
+	}
+}
