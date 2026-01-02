@@ -75,6 +75,7 @@ ENV NODE_ENV=production
 ARG VITE_SERVER_URL
 ARG VITE_POSTHOG_HOST
 ARG VITE_POSTHOG_KEY
+ARG VITE_POSTHOG_UI_HOST
 RUN bun run --filter=dashboard build
 
 # Production stage
