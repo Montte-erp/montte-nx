@@ -20,10 +20,16 @@
       "path": "../transactional/tsconfig.lib.json"
     },
     {
+      "path": "../money"
+    },
+    {
       "path": "../queue/tsconfig.lib.json"
     },
     {
       "path": "../pdf/tsconfig.lib.json"
+    },
+    {
+      "path": "../csv/tsconfig.lib.json"
     },
     {
       "path": "../../libraries/rules-engine"
