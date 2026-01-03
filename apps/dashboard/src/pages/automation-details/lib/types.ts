@@ -58,10 +58,16 @@ export const TRIGGER_TYPE_LABELS: Record<TriggerType, string> = {
    "schedule.weekly": "Agendamento Semanal",
    "schedule.biweekly": "Agendamento Quinzenal",
    "schedule.custom": "Agendamento Personalizado",
+   "budget.threshold_reached": "Limite de Orçamento Atingido",
+   "budget.period_end": "Fim de Período do Orçamento",
+   "budget.overspent": "Orçamento Excedido",
 };
 
 export const isScheduleTrigger = (type: TriggerType): boolean =>
    type.startsWith("schedule.");
+
+export const isBudgetTrigger = (type: TriggerType): boolean =>
+   type.startsWith("budget.");
 
 export const DAYS_OF_WEEK = [
    { label: "Domingo", value: 0 },
@@ -86,6 +92,9 @@ export const ACTION_TYPE_LABELS: Record<ActionType, string> = {
    set_cost_center: "Definir Centro de Custo",
    stop_execution: "Parar Execução",
    update_description: "Atualizar Descrição",
+   generate_custom_report: "Gerar Relatório Personalizado",
+   fetch_budget_report: "Buscar Relatório de Orçamentos",
+   check_budget_status: "Verificar Status de Orçamentos",
 };
 
 export const CONDITION_OPERATOR_LABELS: Partial<Record<string, string>> = {

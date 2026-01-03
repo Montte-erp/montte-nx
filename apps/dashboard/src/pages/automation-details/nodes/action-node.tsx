@@ -78,42 +78,6 @@ export function ActionNode({ id, data }: NodeProps<ActionNodeType>) {
                  : "border-blue-500",
          )}
       >
-         {/* Input data flow indicator - left side */}
-         {hasInput && (
-            <Tooltip>
-               <TooltipTrigger asChild>
-                  <div className="absolute -left-3 top-1/2 -translate-y-1/2 flex size-6 items-center justify-center rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 shadow-sm cursor-help z-10">
-                     <ArrowDownToLine className="size-3.5" />
-                  </div>
-               </TooltipTrigger>
-               <TooltipContent className="text-xs" side="left">
-                  {dataFlow?.requires ? (
-                     <span>
-                        Requer: {dataFlow.requiresLabel ?? dataFlow.requires}
-                     </span>
-                  ) : (
-                     <span>
-                        Entrada opcional: {dataFlow?.optionalInputsLabel}
-                     </span>
-                  )}
-               </TooltipContent>
-            </Tooltip>
-         )}
-
-         {/* Output data flow indicator - right side */}
-         {hasOutput && (
-            <Tooltip>
-               <TooltipTrigger asChild>
-                  <div className="absolute -right-3 top-1/2 -translate-y-1/2 flex size-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 shadow-sm cursor-help z-10">
-                     <ArrowUpFromLine className="size-3.5" />
-                  </div>
-               </TooltipTrigger>
-               <TooltipContent className="text-xs" side="right">
-                  Produz: {dataFlow?.producesLabel ?? dataFlow?.produces}
-               </TooltipContent>
-            </Tooltip>
-         )}
-
          <AutomationHandle
             className={cn(
                !validation.valid
@@ -159,6 +123,43 @@ export function ActionNode({ id, data }: NodeProps<ActionNodeType>) {
             <div className="text-xs text-muted-foreground">
                {data.actionType}
             </div>
+            {/* Data flow badges */}
+            {(hasInput || hasOutput) && (
+               <div className="flex items-center gap-1.5 mt-1">
+                  {hasInput && (
+                     <Tooltip>
+                        <TooltipTrigger asChild>
+                           <div className="flex size-5 items-center justify-center rounded bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 cursor-help">
+                              <ArrowDownToLine className="size-3" />
+                           </div>
+                        </TooltipTrigger>
+                        <TooltipContent className="text-xs" side="bottom">
+                           {dataFlow?.requires ? (
+                              <span>
+                                 Requer: {dataFlow.requiresLabel ?? dataFlow.requires}
+                              </span>
+                           ) : (
+                              <span>
+                                 Entrada opcional: {dataFlow?.optionalInputsLabel}
+                              </span>
+                           )}
+                        </TooltipContent>
+                     </Tooltip>
+                  )}
+                  {hasOutput && (
+                     <Tooltip>
+                        <TooltipTrigger asChild>
+                           <div className="flex size-5 items-center justify-center rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 cursor-help">
+                              <ArrowUpFromLine className="size-3" />
+                           </div>
+                        </TooltipTrigger>
+                        <TooltipContent className="text-xs" side="bottom">
+                           Produz: {dataFlow?.producesLabel ?? dataFlow?.produces}
+                        </TooltipContent>
+                     </Tooltip>
+                  )}
+               </div>
+            )}
             {!validation.valid && (
                <div className="flex items-center gap-1 text-xs text-red-600">
                   <AlertTriangle className="size-3" />

@@ -41,7 +41,10 @@ export type TriggerType =
    | "schedule.daily"
    | "schedule.weekly"
    | "schedule.biweekly"
-   | "schedule.custom";
+   | "schedule.custom"
+   | "budget.threshold_reached"
+   | "budget.period_end"
+   | "budget.overspent";
 
 export type ScheduleTriggerType =
    | "schedule.daily"
@@ -77,7 +80,10 @@ export type ActionType =
    | "send_email"
    | "fetch_bills_report"
    | "format_data"
-   | "stop_execution";
+   | "stop_execution"
+   | "generate_custom_report"
+   | "fetch_budget_report"
+   | "check_budget_status";
 
 export type CategorySplitMode = "equal" | "percentage" | "fixed" | "dynamic";
 
@@ -146,6 +152,28 @@ export type ActionConfig = {
    pdfTemplate?: "bills_report" | "custom";
    pdfPageSize?: "A4" | "Letter";
    htmlTableStyle?: "default" | "striped" | "bordered";
+   // generate_custom_report config
+   reportType?: "dre_gerencial" | "dre_fiscal" | "budget_vs_actual" | "spending_trends" | "cash_flow_forecast" | "counterparty_analysis";
+   periodType?: "previous_month" | "previous_week" | "current_month" | "custom";
+   daysBack?: number;
+   forecastDays?: number;
+   filterConfig?: {
+      bankAccountIds?: string[];
+      categoryIds?: string[];
+      costCenterIds?: string[];
+      tagIds?: string[];
+      includeTransfers?: boolean;
+   };
+   saveReport?: boolean;
+   reportName?: string;
+   // fetch_budget_report config
+   includeOverBudget?: boolean;
+   includeNearLimit?: boolean;
+   budgetIds?: string[];
+   includeInactive?: boolean;
+   // check_budget_status config
+   alertThresholds?: number[];
+   checkCurrentStatus?: boolean;
 };
 
 /**

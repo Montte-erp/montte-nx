@@ -69,10 +69,7 @@ export function CanvasToolbar({
 
    return (
       <Panel
-         className={cn(
-            "bg-primary-foreground text-foreground flex flex-col gap-1 ",
-            className,
-         )}
+         className={cn(" text-foreground flex flex-col gap-1 ", className)}
          position="top-left"
       >
          <DropdownMenu>

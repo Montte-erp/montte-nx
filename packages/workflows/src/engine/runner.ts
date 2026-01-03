@@ -307,6 +307,7 @@ export function createWorkflowRunner(
 				resendClient,
 				ruleId: rule.id,
 				vapidConfig,
+				createdBy: rule.createdBy,
 			});
 
 			consequencesExecuted = mapToExecutedConsequences(executionResult.results);
@@ -509,6 +510,7 @@ export function createWorkflowRunner(
 					resendClient,
 					ruleId: rule.id,
 					vapidConfig,
+					createdBy: rule.createdBy,
 				},
 			);
 

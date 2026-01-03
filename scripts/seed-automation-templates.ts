@@ -170,6 +170,312 @@ type SystemTemplate = {
 };
 
 const SYSTEM_TEMPLATES: SystemTemplate[] = [
+	// ============================================
+	// TRANSACTION PROCESSING SUITE
+	// ============================================
+
+	// Auto-Categorize Subscription Services
+	{
+		name: "Categorizar Assinaturas Automaticamente",
+		description:
+			"Categoriza automaticamente transacoes de servicos de streaming e assinaturas como Netflix, Spotify, Disney+, etc.",
+		category: "transaction_processing",
+		icon: "Tv",
+		tags: ["assinatura", "categorizacao", "automatico", "streaming"],
+		triggerType: "transaction.created",
+		triggerConfig: {} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [
+				{
+					id: "subscription-keywords",
+					type: "string",
+					field: "description",
+					operator: "contains_any",
+					value: [
+						"NETFLIX",
+						"SPOTIFY",
+						"DISNEY",
+						"AMAZON PRIME",
+						"YOUTUBE",
+						"HBO",
+						"APPLE",
+						"DEEZER",
+						"GLOBOPLAY",
+						"PARAMOUNT",
+						"STAR+",
+						"CRUNCHYROLL",
+					],
+					options: { caseSensitive: false },
+				},
+			],
+		},
+		consequences: [
+			{
+				type: "set_category",
+				payload: {
+					// Note: Category ID will be resolved at activation time
+					categoryId: "{{entertainment_category}}",
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"transaction.created",
+			{} as TriggerConfig,
+			[
+				{
+					type: "set_category",
+					label: "Definir Categoria (Entretenimento)",
+					config: { categoryId: "{{entertainment_category}}" },
+				},
+			],
+		),
+	},
+
+	// Auto-Categorize by Merchant Pattern (Transport)
+	{
+		name: "Categorizar Transporte Automaticamente",
+		description:
+			"Categoriza automaticamente transacoes de transporte como Uber, 99, Lyft, etc.",
+		category: "transaction_processing",
+		icon: "Car",
+		tags: ["transporte", "categorizacao", "automatico", "uber"],
+		triggerType: "transaction.created",
+		triggerConfig: {} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [
+				{
+					id: "transport-keywords",
+					type: "string",
+					field: "description",
+					operator: "contains_any",
+					value: [
+						"UBER",
+						"99",
+						"LYFT",
+						"CABIFY",
+						"INDRIVER",
+						"TAXI",
+						"ESTACIONAMENTO",
+						"PARKING",
+						"COMBUSTIVEL",
+						"GASOLINA",
+						"POSTO",
+						"SHELL",
+						"IPIRANGA",
+						"BR DISTRIBUIDORA",
+					],
+					options: { caseSensitive: false },
+				},
+			],
+		},
+		consequences: [
+			{
+				type: "set_category",
+				payload: {
+					categoryId: "{{transport_category}}",
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"transaction.created",
+			{} as TriggerConfig,
+			[
+				{
+					type: "set_category",
+					label: "Definir Categoria (Transporte)",
+					config: { categoryId: "{{transport_category}}" },
+				},
+			],
+		),
+	},
+
+	// Flag Large Transactions for Review
+	{
+		name: "Alertar Transacoes de Alto Valor",
+		description:
+			"Marca e notifica sobre transacoes com valor acima de R$ 1.000 para revisao",
+		category: "transaction_processing",
+		icon: "AlertTriangle",
+		tags: ["alerta", "revisao", "grande-valor", "notificacao"],
+		triggerType: "transaction.created",
+		triggerConfig: {} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [
+				{
+					id: "high-value",
+					type: "number",
+					field: "amount",
+					operator: "gt",
+					value: 1000,
+				},
+			],
+		},
+		consequences: [
+			{
+				type: "add_tag",
+				payload: {
+					tagIds: ["{{review_tag}}"],
+				},
+			},
+			{
+				type: "send_push_notification",
+				payload: {
+					title: "Transacao de Alto Valor",
+					body: "Uma transacao acima de R$ 1.000 foi registrada e precisa de revisao",
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"transaction.created",
+			{} as TriggerConfig,
+			[
+				{
+					type: "add_tag",
+					label: "Adicionar Tag (Revisao)",
+					config: { tagIds: ["{{review_tag}}"] },
+				},
+				{
+					type: "send_push_notification",
+					label: "Enviar Notificacao",
+					config: {
+						title: "Transacao de Alto Valor",
+						body: "Uma transacao acima de R$ 1.000 foi registrada e precisa de revisao",
+					},
+				},
+			],
+		),
+	},
+
+	// Auto-Tag Recurring Income
+	{
+		name: "Identificar Receita Recorrente",
+		description:
+			"Marca automaticamente transacoes de receita que parecem ser salario ou pagamentos recorrentes",
+		category: "transaction_processing",
+		icon: "Wallet",
+		tags: ["receita", "recorrente", "salario", "automatico"],
+		triggerType: "transaction.created",
+		triggerConfig: {} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [
+				{
+					id: "is-income",
+					type: "string",
+					field: "type",
+					operator: "eq",
+					value: "income",
+				},
+				{
+					id: "salary-keywords",
+					type: "string",
+					field: "description",
+					operator: "contains_any",
+					value: [
+						"SALARIO",
+						"SALARY",
+						"PAGAMENTO",
+						"DEPOSITO",
+						"FOLHA",
+						"REMUNERACAO",
+						"PRO-LABORE",
+						"PROLABORE",
+						"ADIANTAMENTO",
+						"13",
+						"FERIAS",
+						"BONIFICACAO",
+						"PLR",
+					],
+					options: { caseSensitive: false },
+				},
+			],
+		},
+		consequences: [
+			{
+				type: "add_tag",
+				payload: {
+					tagIds: ["{{recurring_income_tag}}"],
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"transaction.created",
+			{} as TriggerConfig,
+			[
+				{
+					type: "add_tag",
+					label: "Adicionar Tag (Receita Recorrente)",
+					config: { tagIds: ["{{recurring_income_tag}}"] },
+				},
+			],
+		),
+	},
+
+	// Mark Potential Transfers
+	{
+		name: "Identificar Possiveis Transferencias",
+		description:
+			"Marca transacoes que parecem ser transferencias entre contas para revisao",
+		category: "transaction_processing",
+		icon: "ArrowLeftRight",
+		tags: ["transferencia", "identificacao", "pix", "ted"],
+		triggerType: "transaction.created",
+		triggerConfig: {} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [
+				{
+					id: "transfer-keywords",
+					type: "string",
+					field: "description",
+					operator: "contains_any",
+					value: [
+						"TRANSFERENCIA",
+						"TRANSFER",
+						"TRF",
+						"PIX",
+						"TED",
+						"DOC",
+						"TRANSF",
+						"P2P",
+					],
+					options: { caseSensitive: false },
+				},
+			],
+		},
+		consequences: [
+			{
+				type: "add_tag",
+				payload: {
+					tagIds: ["{{potential_transfer_tag}}"],
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"transaction.created",
+			{} as TriggerConfig,
+			[
+				{
+					type: "add_tag",
+					label: "Adicionar Tag (Transferencia Potencial)",
+					config: { tagIds: ["{{potential_transfer_tag}}"] },
+				},
+			],
+		),
+	},
+
+	// ============================================
+	// BILL MANAGEMENT SUITE (Existing)
+	// ============================================
+
 	// Weekly Bills Digest
 	{
 		name: "Resumo Semanal de Contas",
@@ -384,6 +690,699 @@ const SYSTEM_TEMPLATES: SystemTemplate[] = [
 						to: "owner",
 						subject: "Relatorio Semanal de Contas",
 						body: "<p>Segue em anexo o relatorio semanal de contas.</p><p>Este e-mail foi gerado automaticamente.</p>",
+						includeAttachment: true,
+					},
+				},
+			],
+		),
+	},
+
+	// ============================================
+	// REPORTS SUITE (Custom Reports)
+	// ============================================
+
+	// Weekly DRE Report (Income Statement)
+	{
+		name: "DRE Gerencial Semanal",
+		description:
+			"Gera e envia o DRE (Demonstrativo de Resultados) gerencial da semana anterior por e-mail",
+		category: "reporting",
+		icon: "BarChart3",
+		tags: ["dre", "semanal", "relatorio", "receita-despesa"],
+		triggerType: "schedule.weekly",
+		triggerConfig: {
+			time: "08:00",
+			timezone: "America/Sao_Paulo",
+			dayOfWeek: 1, // Monday
+		} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [],
+		},
+		consequences: [
+			{
+				type: "generate_custom_report",
+				payload: {
+					reportType: "dre_gerencial",
+					periodType: "previous_week",
+					saveReport: false,
+				},
+			},
+			{
+				type: "format_data",
+				payload: {
+					outputFormat: "html_table",
+					htmlTableStyle: "striped",
+				},
+			},
+			{
+				type: "send_email",
+				payload: {
+					to: "owner",
+					subject: "DRE Gerencial - Semana Anterior",
+					body: "<p>Segue o Demonstrativo de Resultados da semana anterior.</p>",
+					includeAttachment: false,
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"schedule.weekly",
+			{
+				time: "08:00",
+				timezone: "America/Sao_Paulo",
+				dayOfWeek: 1,
+			} as TriggerConfig,
+			[
+				{
+					type: "generate_custom_report",
+					label: "Gerar DRE Gerencial",
+					config: {
+						reportType: "dre_gerencial",
+						periodType: "previous_week",
+						saveReport: false,
+					},
+				},
+				{
+					type: "format_data",
+					label: "Formatar como Tabela HTML",
+					config: {
+						outputFormat: "html_table",
+						htmlTableStyle: "striped",
+					},
+				},
+				{
+					type: "send_email",
+					label: "Enviar E-mail",
+					config: {
+						to: "owner",
+						subject: "DRE Gerencial - Semana Anterior",
+						body: "<p>Segue o Demonstrativo de Resultados da semana anterior.</p>",
+					},
+				},
+			],
+		),
+	},
+
+	// Monthly Spending Trends Report
+	{
+		name: "Relatorio Mensal de Tendencias de Gastos",
+		description:
+			"Analisa tendencias de gastos do mes anterior com comparativo ano a ano",
+		category: "reporting",
+		icon: "TrendingUp",
+		tags: ["mensal", "tendencias", "gastos", "comparativo"],
+		triggerType: "schedule.custom",
+		triggerConfig: {
+			time: "09:00",
+			timezone: "America/Sao_Paulo",
+			cronPattern: "0 9 1 * *", // 1st of every month at 09:00
+		} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [],
+		},
+		consequences: [
+			{
+				type: "generate_custom_report",
+				payload: {
+					reportType: "spending_trends",
+					periodType: "previous_month",
+					saveReport: true,
+					reportName: "Tendencias de Gastos - {{period}}",
+				},
+			},
+			{
+				type: "format_data",
+				payload: {
+					outputFormat: "html_table",
+					htmlTableStyle: "striped",
+				},
+			},
+			{
+				type: "send_email",
+				payload: {
+					to: "owner",
+					subject: "Analise de Tendencias de Gastos - Mes Anterior",
+					body: "<p>Segue a analise de tendencias de gastos do mes anterior.</p><p>Este relatorio inclui comparativo com o mesmo periodo do ano anterior.</p>",
+					includeAttachment: false,
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"schedule.custom",
+			{
+				time: "09:00",
+				timezone: "America/Sao_Paulo",
+				cronPattern: "0 9 1 * *",
+			} as TriggerConfig,
+			[
+				{
+					type: "generate_custom_report",
+					label: "Gerar Relatorio de Tendencias",
+					config: {
+						reportType: "spending_trends",
+						periodType: "previous_month",
+						saveReport: true,
+					},
+				},
+				{
+					type: "format_data",
+					label: "Formatar como HTML",
+					config: {
+						outputFormat: "html_table",
+						htmlTableStyle: "striped",
+					},
+				},
+				{
+					type: "send_email",
+					label: "Enviar E-mail",
+					config: {
+						to: "owner",
+						subject: "Analise de Tendencias de Gastos",
+					},
+				},
+			],
+		),
+	},
+
+	// Weekly Budget vs Actual Report
+	{
+		name: "Orcamento vs Real Semanal",
+		description:
+			"Compara gastos reais com o orcamento planejado e envia alerta de variacoes",
+		category: "reporting",
+		icon: "Scale",
+		tags: ["orcamento", "real", "semanal", "variancia"],
+		triggerType: "schedule.weekly",
+		triggerConfig: {
+			time: "17:00",
+			timezone: "America/Sao_Paulo",
+			dayOfWeek: 5, // Friday
+		} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [],
+		},
+		consequences: [
+			{
+				type: "generate_custom_report",
+				payload: {
+					reportType: "budget_vs_actual",
+					periodType: "current_month",
+					saveReport: false,
+				},
+			},
+			{
+				type: "format_data",
+				payload: {
+					outputFormat: "html_table",
+					htmlTableStyle: "bordered",
+				},
+			},
+			{
+				type: "send_email",
+				payload: {
+					to: "owner",
+					subject: "Comparativo Orcamento vs Real - Atualizacao Semanal",
+					body: "<p>Acompanhe como seus gastos estao em relacao ao orcamento planejado para este mes.</p>",
+					includeAttachment: false,
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"schedule.weekly",
+			{
+				time: "17:00",
+				timezone: "America/Sao_Paulo",
+				dayOfWeek: 5,
+			} as TriggerConfig,
+			[
+				{
+					type: "generate_custom_report",
+					label: "Gerar Comparativo Orcamento vs Real",
+					config: {
+						reportType: "budget_vs_actual",
+						periodType: "current_month",
+					},
+				},
+				{
+					type: "format_data",
+					label: "Formatar como Tabela HTML",
+					config: {
+						outputFormat: "html_table",
+						htmlTableStyle: "bordered",
+					},
+				},
+				{
+					type: "send_email",
+					label: "Enviar E-mail",
+					config: {
+						to: "owner",
+						subject: "Comparativo Orcamento vs Real",
+					},
+				},
+			],
+		),
+	},
+
+	// Weekly Cash Flow Forecast
+	{
+		name: "Previsao de Fluxo de Caixa Semanal",
+		description:
+			"Projeta o fluxo de caixa para os proximos 30 dias com base em contas e padroes recorrentes",
+		category: "reporting",
+		icon: "Coins",
+		tags: ["fluxo-caixa", "previsao", "semanal", "projecao"],
+		triggerType: "schedule.weekly",
+		triggerConfig: {
+			time: "07:00",
+			timezone: "America/Sao_Paulo",
+			dayOfWeek: 1, // Monday
+		} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [],
+		},
+		consequences: [
+			{
+				type: "generate_custom_report",
+				payload: {
+					reportType: "cash_flow_forecast",
+					periodType: "current_month",
+					forecastDays: 30,
+					saveReport: false,
+				},
+			},
+			{
+				type: "send_email",
+				payload: {
+					to: "owner",
+					subject: "Previsao de Fluxo de Caixa - Proximos 30 Dias",
+					body: "<p>Confira a projecao do seu fluxo de caixa para os proximos 30 dias.</p><p>Esta previsao considera contas a pagar/receber e padroes recorrentes.</p>",
+					includeAttachment: false,
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"schedule.weekly",
+			{
+				time: "07:00",
+				timezone: "America/Sao_Paulo",
+				dayOfWeek: 1,
+			} as TriggerConfig,
+			[
+				{
+					type: "generate_custom_report",
+					label: "Gerar Previsao de Fluxo de Caixa",
+					config: {
+						reportType: "cash_flow_forecast",
+						forecastDays: 30,
+					},
+				},
+				{
+					type: "send_email",
+					label: "Enviar E-mail",
+					config: {
+						to: "owner",
+						subject: "Previsao de Fluxo de Caixa",
+					},
+				},
+			],
+		),
+	},
+
+	// Monthly Counterparty Analysis
+	{
+		name: "Analise Mensal de Clientes e Fornecedores",
+		description:
+			"Analisa transacoes por cliente e fornecedor do mes anterior em formato CSV",
+		category: "reporting",
+		icon: "Users",
+		tags: ["clientes", "fornecedores", "mensal", "analise"],
+		triggerType: "schedule.custom",
+		triggerConfig: {
+			time: "10:00",
+			timezone: "America/Sao_Paulo",
+			cronPattern: "0 10 1 * *", // 1st of every month at 10:00
+		} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [],
+		},
+		consequences: [
+			{
+				type: "generate_custom_report",
+				payload: {
+					reportType: "counterparty_analysis",
+					periodType: "previous_month",
+					saveReport: true,
+					reportName: "Analise de Contrapartes - {{period}}",
+				},
+			},
+			{
+				type: "format_data",
+				payload: {
+					outputFormat: "csv",
+					fileName: "contrapartes_{{date}}",
+					csvIncludeHeaders: true,
+					csvDelimiter: ";",
+				},
+			},
+			{
+				type: "send_email",
+				payload: {
+					to: "owner",
+					subject: "Analise de Clientes e Fornecedores - Mes Anterior",
+					body: "<p>Segue em anexo a analise de transacoes por cliente e fornecedor do mes anterior.</p>",
+					includeAttachment: true,
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"schedule.custom",
+			{
+				time: "10:00",
+				timezone: "America/Sao_Paulo",
+				cronPattern: "0 10 1 * *",
+			} as TriggerConfig,
+			[
+				{
+					type: "generate_custom_report",
+					label: "Gerar Analise de Contrapartes",
+					config: {
+						reportType: "counterparty_analysis",
+						periodType: "previous_month",
+						saveReport: true,
+					},
+				},
+				{
+					type: "format_data",
+					label: "Formatar como CSV",
+					config: {
+						outputFormat: "csv",
+						csvDelimiter: ";",
+					},
+				},
+				{
+					type: "send_email",
+					label: "Enviar E-mail com Anexo",
+					config: {
+						to: "owner",
+						subject: "Analise de Clientes e Fornecedores",
+						includeAttachment: true,
+					},
+				},
+			],
+		),
+	},
+
+	// ============================================
+	// BUDGET SUITE
+	// ============================================
+
+	// Budget Threshold Alert
+	{
+		name: "Alerta de Limite de Orcamento",
+		description:
+			"Envia notificacao quando um orcamento atinge 80% ou 100% do limite",
+		category: "notifications",
+		icon: "AlertTriangle",
+		tags: ["orcamento", "alerta", "limite", "notificacao"],
+		triggerType: "budget.threshold_reached",
+		triggerConfig: {} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [
+				{
+					id: "threshold-check",
+					type: "number",
+					field: "threshold",
+					operator: "gte",
+					value: 80,
+				},
+			],
+		},
+		consequences: [
+			{
+				type: "send_push_notification",
+				payload: {
+					title: "Alerta de Orcamento",
+					body: "Um orcamento atingiu o limite configurado",
+				},
+			},
+			{
+				type: "send_email",
+				payload: {
+					to: "owner",
+					subject: "Alerta: Orcamento Proximo do Limite",
+					body: "<p>Um dos seus orcamentos atingiu um nivel critico.</p><p>Acesse o sistema para mais detalhes.</p>",
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"budget.threshold_reached" as TriggerType,
+			{} as TriggerConfig,
+			[
+				{
+					type: "send_push_notification",
+					label: "Enviar Notificacao Push",
+					config: {
+						title: "Alerta de Orcamento",
+						body: "Um orcamento atingiu o limite configurado",
+					},
+				},
+				{
+					type: "send_email",
+					label: "Enviar E-mail",
+					config: {
+						to: "owner",
+						subject: "Alerta: Orcamento Proximo do Limite",
+					},
+				},
+			],
+		),
+	},
+
+	// Weekly Budget Status Report
+	{
+		name: "Relatorio Semanal de Orcamentos",
+		description:
+			"Envia um resumo semanal do status de todos os orcamentos ativos",
+		category: "reporting",
+		icon: "PieChart",
+		tags: ["orcamento", "semanal", "relatorio", "status"],
+		triggerType: "schedule.weekly",
+		triggerConfig: {
+			time: "17:00",
+			timezone: "America/Sao_Paulo",
+			dayOfWeek: 5, // Friday
+		} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [],
+		},
+		consequences: [
+			{
+				type: "fetch_budget_report",
+				payload: {
+					includeOverBudget: true,
+					includeNearLimit: true,
+					includeInactive: false,
+				},
+			},
+			{
+				type: "format_data",
+				payload: {
+					outputFormat: "html_table",
+					htmlTableStyle: "striped",
+				},
+			},
+			{
+				type: "send_email",
+				payload: {
+					to: "owner",
+					subject: "Relatorio Semanal de Orcamentos",
+					body: "<p>Confira o status dos seus orcamentos nesta semana.</p>",
+					includeAttachment: false,
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"schedule.weekly",
+			{
+				time: "17:00",
+				timezone: "America/Sao_Paulo",
+				dayOfWeek: 5,
+			} as TriggerConfig,
+			[
+				{
+					type: "fetch_budget_report",
+					label: "Buscar Relatorio de Orcamentos",
+					config: {
+						includeOverBudget: true,
+						includeNearLimit: true,
+					},
+				},
+				{
+					type: "format_data",
+					label: "Formatar como Tabela HTML",
+					config: {
+						outputFormat: "html_table",
+						htmlTableStyle: "striped",
+					},
+				},
+				{
+					type: "send_email",
+					label: "Enviar E-mail",
+					config: {
+						to: "owner",
+						subject: "Relatorio Semanal de Orcamentos",
+					},
+				},
+			],
+		),
+	},
+
+	// Budget Overspent Alert
+	{
+		name: "Alerta Urgente: Orcamento Excedido",
+		description:
+			"Envia alerta imediato quando um orcamento e excedido (acima de 100%)",
+		category: "notifications",
+		icon: "AlertOctagon",
+		tags: ["orcamento", "excedido", "urgente", "alerta"],
+		triggerType: "budget.overspent",
+		triggerConfig: {} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [],
+		},
+		consequences: [
+			{
+				type: "send_push_notification",
+				payload: {
+					title: "URGENTE: Orcamento Excedido!",
+					body: "Um dos seus orcamentos foi excedido. Verifique imediatamente.",
+				},
+			},
+			{
+				type: "send_email",
+				payload: {
+					to: "owner",
+					subject: "URGENTE: Orcamento Excedido",
+					body: "<p><strong>Atencao!</strong> Um dos seus orcamentos foi excedido.</p><p>Acesse o sistema imediatamente para revisar seus gastos.</p>",
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"budget.overspent" as TriggerType,
+			{} as TriggerConfig,
+			[
+				{
+					type: "send_push_notification",
+					label: "Enviar Notificacao Urgente",
+					config: {
+						title: "URGENTE: Orcamento Excedido!",
+						body: "Um dos seus orcamentos foi excedido",
+					},
+				},
+				{
+					type: "send_email",
+					label: "Enviar E-mail Urgente",
+					config: {
+						to: "owner",
+						subject: "URGENTE: Orcamento Excedido",
+					},
+				},
+			],
+		),
+	},
+
+	// Monthly Budget Summary
+	{
+		name: "Resumo Mensal de Orcamentos",
+		description:
+			"Gera e envia um resumo completo dos orcamentos do mes anterior",
+		category: "reporting",
+		icon: "FileText",
+		tags: ["orcamento", "mensal", "resumo", "relatorio"],
+		triggerType: "schedule.custom",
+		triggerConfig: {
+			time: "08:00",
+			timezone: "America/Sao_Paulo",
+			cronPattern: "0 8 1 * *", // 1st of every month at 08:00
+		} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [],
+		},
+		consequences: [
+			{
+				type: "fetch_budget_report",
+				payload: {
+					includeOverBudget: true,
+					includeNearLimit: true,
+					includeInactive: false,
+				},
+			},
+			{
+				type: "format_data",
+				payload: {
+					outputFormat: "csv",
+					fileName: "orcamentos_{{date}}",
+					csvIncludeHeaders: true,
+					csvDelimiter: ";",
+				},
+			},
+			{
+				type: "send_email",
+				payload: {
+					to: "owner",
+					subject: "Resumo Mensal de Orcamentos",
+					body: "<p>Segue em anexo o resumo completo dos seus orcamentos.</p><p>Este relatorio e gerado automaticamente no primeiro dia de cada mes.</p>",
+					includeAttachment: true,
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"schedule.custom",
+			{
+				time: "08:00",
+				timezone: "America/Sao_Paulo",
+				cronPattern: "0 8 1 * *",
+			} as TriggerConfig,
+			[
+				{
+					type: "fetch_budget_report",
+					label: "Buscar Relatorio de Orcamentos",
+					config: {
+						includeOverBudget: true,
+						includeNearLimit: true,
+					},
+				},
+				{
+					type: "format_data",
+					label: "Formatar como CSV",
+					config: {
+						outputFormat: "csv",
+						csvDelimiter: ";",
+					},
+				},
+				{
+					type: "send_email",
+					label: "Enviar E-mail com Anexo",
+					config: {
+						to: "owner",
+						subject: "Resumo Mensal de Orcamentos",
 						includeAttachment: true,
 					},
 				},

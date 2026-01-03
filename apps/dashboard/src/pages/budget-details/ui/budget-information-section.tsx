@@ -1,7 +1,19 @@
 import type { RouterOutput } from "@packages/api/client";
 import { translate } from "@packages/localization";
-import { StatsCard } from "@packages/ui/components/stats-card";
+import {
+   Announcement,
+   AnnouncementTag,
+   AnnouncementTitle,
+} from "@packages/ui/components/announcement";
+import {
+   Card,
+   CardContent,
+   CardDescription,
+   CardHeader,
+   CardTitle,
+} from "@packages/ui/components/card";
 import { formatDate } from "@packages/utils/date";
+import { Calendar, Clock, FolderOpen, Target } from "lucide-react";
 
 type Budget = RouterOutput["budgets"]["getById"];
 type BudgetTarget =
@@ -46,35 +58,60 @@ export function BudgetInformationSection({
       periodLabels[budget.periodType as string] ?? periodLabels.monthly ?? "-";
 
    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-         <StatsCard
-            description={targetLabel}
-            title={translate(
-               "dashboard.routes.budgets.details.information.target",
-            )}
-            value={targetLabel}
-         />
-         <StatsCard
-            description={periodLabel}
-            title={translate(
-               "dashboard.routes.budgets.details.information.period",
-            )}
-            value={periodLabel}
-         />
-         <StatsCard
-            description={formatBudgetDate(budget.createdAt)}
-            title={translate(
-               "dashboard.routes.budgets.details.information.created-at",
-            )}
-            value={formatBudgetDate(budget.createdAt)}
-         />
-         <StatsCard
-            description={formatBudgetDate(budget.updatedAt)}
-            title={translate(
-               "dashboard.routes.budgets.details.information.updated-at",
-            )}
-            value={formatBudgetDate(budget.updatedAt)}
-         />
-      </div>
+      <Card>
+         <CardHeader>
+            <CardTitle>Informações</CardTitle>
+            <CardDescription>Detalhes e configurações do orçamento</CardDescription>
+         </CardHeader>
+         <CardContent>
+            <div className="flex flex-wrap gap-2">
+               <Announcement>
+                  <AnnouncementTag className="flex items-center gap-1.5">
+                     <Target className="size-3.5" />
+                     {translate(
+                        "dashboard.routes.budgets.details.information.target",
+                     )}
+                  </AnnouncementTag>
+                  <AnnouncementTitle>{targetLabel}</AnnouncementTitle>
+               </Announcement>
+
+               <Announcement>
+                  <AnnouncementTag className="flex items-center gap-1.5">
+                     <Calendar className="size-3.5" />
+                     {translate(
+                        "dashboard.routes.budgets.details.information.period",
+                     )}
+                  </AnnouncementTag>
+                  <AnnouncementTitle>{periodLabel}</AnnouncementTitle>
+               </Announcement>
+
+               <div className="h-4 w-px bg-border" />
+
+               <Announcement>
+                  <AnnouncementTag className="flex items-center gap-1.5">
+                     <Clock className="size-3.5" />
+                     {translate(
+                        "dashboard.routes.budgets.details.information.created-at",
+                     )}
+                  </AnnouncementTag>
+                  <AnnouncementTitle>
+                     {formatBudgetDate(budget.createdAt)}
+                  </AnnouncementTitle>
+               </Announcement>
+
+               <Announcement>
+                  <AnnouncementTag className="flex items-center gap-1.5">
+                     <FolderOpen className="size-3.5" />
+                     {translate(
+                        "dashboard.routes.budgets.details.information.updated-at",
+                     )}
+                  </AnnouncementTag>
+                  <AnnouncementTitle>
+                     {formatBudgetDate(budget.updatedAt)}
+                  </AnnouncementTitle>
+               </Announcement>
+            </div>
+         </CardContent>
+      </Card>
    );
 }

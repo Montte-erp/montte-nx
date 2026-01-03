@@ -141,6 +141,20 @@ export async function processWorkflowJob(
 				}
 			}
 
+			// Handle budget events
+			if (event.type.startsWith("budget.")) {
+				console.log(`[Consumer] Processing budget event: type=${event.type}, orgId=${event.organizationId}`);
+				const result: WorkflowExecutionResult = await runner.processEvent(event);
+				console.log(`[Consumer] Budget event completed: rulesMatched=${result.rulesMatched}`);
+
+				return {
+					eventId: event.id,
+					rulesEvaluated: result.rulesEvaluated,
+					rulesMatched: result.rulesMatched,
+					success: true,
+				};
+			}
+
 			// Regular event processing for transaction events
 			const result: WorkflowExecutionResult =
 				await runner.processEvent(event);

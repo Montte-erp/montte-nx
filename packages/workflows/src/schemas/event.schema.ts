@@ -16,9 +16,16 @@ export const scheduleEventTypeSchema = z.enum([
 	"schedule.custom",
 ]);
 
+export const budgetEventTypeSchema = z.enum([
+	"budget.threshold_reached",
+	"budget.period_end",
+	"budget.overspent",
+]);
+
 export const eventTypeSchema = z.union([
 	transactionEventTypeSchema,
 	scheduleEventTypeSchema,
+	budgetEventTypeSchema,
 ]);
 
 // ============================================
@@ -50,6 +57,19 @@ export const scheduleEventDataSchema = z.object({
 	triggerTime: z.string(), // ISO datetime string
 	organizationId: z.string().uuid(),
 	automationRuleId: z.string().uuid(),
+});
+
+export const budgetEventDataSchema = z.object({
+	budgetId: z.string().uuid(),
+	organizationId: z.string().uuid(),
+	budgetName: z.string(),
+	threshold: z.number().optional(), // 50, 80, 100 for threshold_reached
+	spent: z.number(),
+	limit: z.number(),
+	percentUsed: z.number(),
+	periodStart: z.string(), // ISO date string
+	periodEnd: z.string(), // ISO date string
+	periodId: z.string().uuid().optional(),
 });
 
 // ============================================
@@ -88,11 +108,29 @@ export const scheduleTriggeredEventSchema = createBaseEventSchema(
 	scheduleEventDataSchema,
 );
 
+export const budgetThresholdReachedEventSchema = createBaseEventSchema(
+	z.literal("budget.threshold_reached"),
+	budgetEventDataSchema,
+);
+
+export const budgetPeriodEndEventSchema = createBaseEventSchema(
+	z.literal("budget.period_end"),
+	budgetEventDataSchema,
+);
+
+export const budgetOverspentEventSchema = createBaseEventSchema(
+	z.literal("budget.overspent"),
+	budgetEventDataSchema,
+);
+
 // Using union instead of discriminatedUnion for Zod 4 compatibility
 export const workflowEventSchema = z.union([
 	transactionCreatedEventSchema,
 	transactionUpdatedEventSchema,
 	scheduleTriggeredEventSchema,
+	budgetThresholdReachedEventSchema,
+	budgetPeriodEndEventSchema,
+	budgetOverspentEventSchema,
 ]);
 
 // ============================================
@@ -101,14 +139,21 @@ export const workflowEventSchema = z.union([
 
 export type TransactionEventType = z.infer<typeof transactionEventTypeSchema>;
 export type ScheduleEventType = z.infer<typeof scheduleEventTypeSchema>;
+export type BudgetEventType = z.infer<typeof budgetEventTypeSchema>;
 export type EventType = z.infer<typeof eventTypeSchema>;
 
 export type TransactionEventData = z.infer<typeof transactionEventDataSchema>;
 export type ScheduleEventData = z.infer<typeof scheduleEventDataSchema>;
+export type BudgetEventData = z.infer<typeof budgetEventDataSchema>;
 
 export type TransactionCreatedEvent = z.infer<typeof transactionCreatedEventSchema>;
 export type TransactionUpdatedEvent = z.infer<typeof transactionUpdatedEventSchema>;
 export type ScheduleTriggeredEvent = z.infer<typeof scheduleTriggeredEventSchema>;
+export type BudgetThresholdReachedEvent = z.infer<typeof budgetThresholdReachedEventSchema>;
+export type BudgetPeriodEndEvent = z.infer<typeof budgetPeriodEndEventSchema>;
+export type BudgetOverspentEvent = z.infer<typeof budgetOverspentEventSchema>;
+
+export type BudgetEvent = BudgetThresholdReachedEvent | BudgetPeriodEndEvent | BudgetOverspentEvent;
 
 export type WorkflowEvent = z.infer<typeof workflowEventSchema>;
 
@@ -149,4 +194,10 @@ export function isScheduleEvent(
 	event: WorkflowEvent,
 ): event is ScheduleTriggeredEvent {
 	return event.type.startsWith("schedule.");
+}
+
+export function isBudgetEvent(
+	event: WorkflowEvent,
+): event is BudgetEvent {
+	return event.type.startsWith("budget.");
 }

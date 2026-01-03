@@ -269,6 +269,9 @@ function getActionLabel(actionType: ActionType): string {
       set_cost_center: "Definir Centro de Custo",
       stop_execution: "Parar",
       update_description: "Atualizar Descrição",
+      generate_custom_report: "Gerar Relatório",
+      fetch_budget_report: "Buscar Orçamentos",
+      check_budget_status: "Verificar Orçamentos",
    };
    return labels[actionType] ?? actionType;
 }

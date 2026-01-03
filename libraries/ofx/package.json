@@ -3,7 +3,7 @@
       "url": "https://github.com/F-O-T/montte-nx/issues"
    },
    "dependencies": {
-      "zod": "4.2.1"
+      "zod": "4.3.4"
    },
    "description": "Typesafe ofx handling",
    "devDependencies": {

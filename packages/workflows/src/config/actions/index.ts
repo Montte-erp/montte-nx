@@ -3,7 +3,9 @@ import type {
 	ActionAppliesTo,
 	ActionCategory,
 	ActionDefinition,
+	ActionTab,
 } from "../../schemas/action-definition.schema";
+import type { ActionField } from "../../schemas/action-field.schema";
 import { createAction } from "../../lib/define-action";
 
 // ============================================
@@ -552,6 +554,178 @@ const markAsTransferAction = createAction("mark_as_transfer", {
 	],
 });
 
+const generateCustomReportAction = createAction("generate_custom_report", {
+	label: "Gerar Relatório Personalizado",
+	description: "Gera relatórios financeiros como DRE, Tendências de Gastos, Fluxo de Caixa e mais",
+	category: "data",
+	appliesTo: ["schedule"],
+	tabs: [
+		{ id: "report", label: "Relatório", order: 1 },
+		{ id: "period", label: "Período", order: 2 },
+		{ id: "filters", label: "Filtros", order: 3 },
+	],
+	defaultTab: "report",
+	dataFlow: {
+		produces: "report_data",
+		producesLabel: "Dados do Relatório",
+	},
+	fields: [
+		{
+			key: "reportType",
+			type: "select",
+			label: "Tipo de Relatório",
+			required: true,
+			tab: "report",
+			order: 1,
+			helpText: "Selecione o tipo de relatório a gerar",
+			options: [
+				{ value: "dre_gerencial", label: "DRE Gerencial" },
+				{ value: "dre_fiscal", label: "DRE Fiscal" },
+				{ value: "budget_vs_actual", label: "Orçado vs Realizado" },
+				{ value: "spending_trends", label: "Tendências de Gastos" },
+				{ value: "cash_flow_forecast", label: "Previsão de Fluxo de Caixa" },
+				{ value: "counterparty_analysis", label: "Análise de Contrapartes" },
+			],
+		},
+		{
+			key: "saveReport",
+			type: "boolean",
+			label: "Salvar Relatório",
+			tab: "report",
+			order: 2,
+			defaultValue: false,
+			helpText: "Salvar o relatório no histórico para consulta posterior",
+		},
+		{
+			key: "reportName",
+			type: "template",
+			label: "Nome do Relatório",
+			tab: "report",
+			order: 3,
+			placeholder: "{{reportType}} - {{date}}",
+			helpText: "Nome do relatório salvo. Use {{reportType}}, {{date}}, {{period}}",
+			dependsOn: { field: "saveReport", value: true },
+		},
+		{
+			key: "periodType",
+			type: "select",
+			label: "Período",
+			required: true,
+			tab: "period",
+			order: 1,
+			defaultValue: "previous_month",
+			helpText: "Período de dados para o relatório",
+			options: [
+				{ value: "previous_month", label: "Mês Anterior" },
+				{ value: "previous_week", label: "Semana Anterior" },
+				{ value: "current_month", label: "Mês Atual" },
+				{ value: "custom", label: "Personalizado" },
+			],
+		},
+		{
+			key: "daysBack",
+			type: "number",
+			label: "Dias Anteriores",
+			tab: "period",
+			order: 2,
+			placeholder: "30",
+			helpText: "Número de dias para período personalizado",
+			dependsOn: { field: "periodType", value: "custom" },
+		},
+		{
+			key: "forecastDays",
+			type: "number",
+			label: "Dias de Previsão",
+			tab: "period",
+			order: 3,
+			defaultValue: 30,
+			placeholder: "30",
+			helpText: "Dias à frente para previsão de fluxo de caixa (7-365)",
+		},
+	],
+});
+
+const fetchBudgetReportAction = createAction("fetch_budget_report", {
+	label: "Buscar Relatório de Orçamentos",
+	description: "Busca status dos orçamentos para usar em próximas ações",
+	category: "data",
+	appliesTo: ["schedule", "budget"],
+	tabs: [
+		{ id: "filters", label: "Filtros", order: 1 },
+	],
+	defaultTab: "filters",
+	dataFlow: {
+		produces: "budget_data",
+		producesLabel: "Dados de Orçamentos",
+	},
+	fields: [
+		{
+			key: "includeOverBudget",
+			type: "boolean",
+			label: "Incluir Excedidos",
+			tab: "filters",
+			order: 1,
+			defaultValue: true,
+			helpText: "Incluir orçamentos que excederam o limite",
+		},
+		{
+			key: "includeNearLimit",
+			type: "boolean",
+			label: "Incluir Próximos do Limite",
+			tab: "filters",
+			order: 2,
+			defaultValue: true,
+			helpText: "Incluir orçamentos acima de 80% do limite",
+		},
+		{
+			key: "includeInactive",
+			type: "boolean",
+			label: "Incluir Inativos",
+			tab: "filters",
+			order: 3,
+			defaultValue: false,
+			helpText: "Incluir orçamentos inativos",
+		},
+		{
+			key: "budgetIds",
+			type: "multiselect",
+			label: "Orçamentos Específicos",
+			tab: "filters",
+			order: 4,
+			helpText: "Selecione orçamentos específicos ou deixe vazio para todos",
+			dataSource: "budgets",
+		},
+	],
+});
+
+const checkBudgetStatusAction = createAction("check_budget_status", {
+	label: "Verificar Status de Orçamentos",
+	description: "Verifica status dos orçamentos e retorna alertas de threshold",
+	category: "data",
+	appliesTo: ["transaction", "schedule", "budget"],
+	fields: [
+		{
+			key: "alertThresholds",
+			type: "multiselect",
+			label: "Thresholds de Alerta",
+			defaultValue: ["50", "80", "100"],
+			helpText: "Percentuais que disparam alertas (ex: 50%, 80%, 100%)",
+			options: [
+				{ value: "50", label: "50%" },
+				{ value: "80", label: "80%" },
+				{ value: "100", label: "100%" },
+			],
+		},
+		{
+			key: "checkCurrentStatus",
+			type: "boolean",
+			label: "Verificar Status Atual",
+			defaultValue: true,
+			helpText: "Verificar o status atual de todos os orçamentos afetados",
+		},
+	],
+});
+
 // ============================================
 // Unified Actions Config
 // ============================================
@@ -573,6 +747,9 @@ export const actionsConfig = {
 	format_data: formatDataAction,
 	stop_execution: stopExecutionAction,
 	mark_as_transfer: markAsTransferAction,
+	generate_custom_report: generateCustomReportAction,
+	fetch_budget_report: fetchBudgetReportAction,
+	check_budget_status: checkBudgetStatusAction,
 } as const satisfies Record<ActionType, ActionDefinition>;
 
 // ============================================
@@ -589,14 +766,14 @@ export function getAction(type: ActionType): ActionDefinition {
 /**
  * Gets the tabs for an action (if any)
  */
-export function getActionTabs(type: ActionType) {
+export function getActionTabs(type: ActionType): ActionTab[] {
 	return actionsConfig[type].tabs ?? [];
 }
 
 /**
  * Gets fields for a specific tab
  */
-export function getFieldsForTab(type: ActionType, tabId: string) {
+export function getFieldsForTab(type: ActionType, tabId: string): ActionField[] {
 	return actionsConfig[type].fields.filter((f) => f.tab === tabId);
 }
 
@@ -654,4 +831,4 @@ export function getActionsForCategory(category: ActionCategory): ActionDefinitio
 }
 
 // Re-export types
-export type { ActionDefinition, ActionAppliesTo, ActionCategory };
+export type { ActionDefinition, ActionAppliesTo, ActionCategory, ActionTab, ActionField };

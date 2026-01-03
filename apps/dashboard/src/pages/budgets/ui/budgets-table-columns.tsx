@@ -1,5 +1,11 @@
 import type { RouterOutput } from "@packages/api/client";
 import { translate } from "@packages/localization";
+import { formatDecimalCurrency } from "@packages/money";
+import {
+   Announcement,
+   AnnouncementTag,
+   AnnouncementTitle,
+} from "@packages/ui/components/announcement";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -22,12 +28,16 @@ import { Link } from "@tanstack/react-router";
 import type { ColumnDef, Row } from "@tanstack/react-table";
 import {
    Calendar,
+   CheckCircle,
    ChevronDown,
+   CircleDashed,
    Edit,
    Eye,
    Power,
+   RefreshCw,
    Target,
    Trash2,
+   TrendingDown,
    TrendingUp,
    Wallet,
 } from "lucide-react";
@@ -39,13 +49,6 @@ import { useToggleBudgetStatus } from "../features/use-toggle-budget-status";
 
 type Budget = RouterOutput["budgets"]["getAllPaginated"]["budgets"][0];
 
-function formatCurrency(value: number): string {
-   return new Intl.NumberFormat("pt-BR", {
-      currency: "BRL",
-      style: "currency",
-   }).format(value);
-}
-
 const periodLabels: Record<string, string> = {
    custom: translate("dashboard.routes.budgets.form.period.custom"),
    daily: translate("dashboard.routes.budgets.form.period.daily"),
@@ -53,6 +56,11 @@ const periodLabels: Record<string, string> = {
    quarterly: translate("dashboard.routes.budgets.form.period.quarterly"),
    weekly: translate("dashboard.routes.budgets.form.period.weekly"),
    yearly: translate("dashboard.routes.budgets.form.period.yearly"),
+};
+
+const regimeLabels: Record<string, string> = {
+   accrual: translate("dashboard.routes.budgets.form.regime.accrual"),
+   cash: translate("dashboard.routes.budgets.form.regime.cash"),
 };
 
 function BudgetActionsCell({ budget }: { budget: Budget }) {
@@ -128,20 +136,17 @@ export function createBudgetColumns(): ColumnDef<Budget>[] {
          cell: ({ row }) => {
             const budget = row.original;
             return (
-               <div className="flex items-center gap-3">
-                  <div
-                     className="size-8 rounded-lg flex items-center justify-center text-white font-semibold text-xs"
+               <Announcement>
+                  <AnnouncementTag
+                     className="flex items-center justify-center font-semibold text-xs text-white"
                      style={{ backgroundColor: budget.color || "#6366f1" }}
                   >
                      {budget.name.substring(0, 2).toUpperCase()}
-                  </div>
-                  <div className="flex flex-col">
-                     <span className="font-medium">{budget.name}</span>
-                     <span className="text-xs text-muted-foreground">
-                        {periodLabels[budget.periodType]}
-                     </span>
-                  </div>
-               </div>
+                  </AnnouncementTag>
+                  <AnnouncementTitle className="font-medium">
+                     {budget.name}
+                  </AnnouncementTitle>
+               </Announcement>
             );
          },
          enableSorting: true,
@@ -152,7 +157,14 @@ export function createBudgetColumns(): ColumnDef<Budget>[] {
          cell: ({ row }) => {
             const amount = parseFloat(row.getValue("amount"));
             return (
-               <span className="font-medium">{formatCurrency(amount)}</span>
+               <Announcement>
+                  <AnnouncementTag className="flex items-center gap-1.5">
+                     <Wallet className="size-3.5" />
+                  </AnnouncementTag>
+                  <AnnouncementTitle className="font-medium">
+                     {formatDecimalCurrency(amount)}
+                  </AnnouncementTitle>
+               </Announcement>
             );
          },
          enableSorting: true,
@@ -170,21 +182,30 @@ export function createBudgetColumns(): ColumnDef<Budget>[] {
             const percentage =
                totalAmount > 0 ? (spent / totalAmount) * 100 : 0;
             const isOverBudget = percentage >= 100;
+            const isNearLimit = percentage >= 80 && percentage < 100;
+
+            const TrendIcon = isOverBudget ? TrendingDown : TrendingUp;
+            const trendColor = isOverBudget
+               ? "#ef4444"
+               : isNearLimit
+                 ? "#eab308"
+                 : "#10b981";
 
             return (
-               <div>
-                  <div
-                     className={`font-medium ${isOverBudget ? "text-destructive" : ""}`}
+               <Announcement>
+                  <AnnouncementTag
+                     className="flex items-center gap-1.5"
+                     style={{
+                        backgroundColor: `${trendColor}20`,
+                        color: trendColor,
+                     }}
                   >
-                     {formatCurrency(spent)}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                     {Math.round(percentage)}%{" "}
-                     {translate(
-                        "dashboard.routes.budgets.details.progress.of-budget",
-                     )}
-                  </div>
-               </div>
+                     <TrendIcon className="size-3.5" />
+                  </AnnouncementTag>
+                  <AnnouncementTitle>
+                     {Math.round(percentage)}% - {formatDecimalCurrency(spent)}
+                  </AnnouncementTitle>
+               </Announcement>
             );
          },
          header: translate("dashboard.routes.budgets.table.progress"),
@@ -193,12 +214,26 @@ export function createBudgetColumns(): ColumnDef<Budget>[] {
          accessorKey: "isActive",
          cell: ({ row }) => {
             const isActive = row.getValue("isActive") as boolean;
+            const StatusIcon = isActive ? CheckCircle : CircleDashed;
+            const statusColor = isActive ? "#10b981" : "#6b7280";
+
             return (
-               <Badge variant={isActive ? "default" : "secondary"}>
-                  {isActive
-                     ? translate("dashboard.routes.budgets.status.active")
-                     : translate("dashboard.routes.budgets.status.inactive")}
-               </Badge>
+               <Announcement>
+                  <AnnouncementTag
+                     className="flex items-center gap-1.5"
+                     style={{
+                        backgroundColor: `${statusColor}20`,
+                        color: statusColor,
+                     }}
+                  >
+                     <StatusIcon className="size-3.5" />
+                  </AnnouncementTag>
+                  <AnnouncementTitle>
+                     {isActive
+                        ? translate("dashboard.routes.budgets.status.active")
+                        : translate("dashboard.routes.budgets.status.inactive")}
+                  </AnnouncementTitle>
+               </Announcement>
             );
          },
          enableSorting: true,
@@ -235,6 +270,8 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
    const available = Math.max(0, totalAmount - spent - scheduled);
    const percentage = totalAmount > 0 ? (spent / totalAmount) * 100 : 0;
 
+   const rolloverColor = budget.rollover ? "#3b82f6" : "#6b7280";
+
    const handleEditClick = (e: React.MouseEvent) => {
       e.stopPropagation();
       openSheet({
@@ -269,61 +306,93 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
    if (isMobile) {
       return (
          <div className="p-4 space-y-4">
-            <div className="space-y-3">
-               <div className="flex items-center gap-2">
-                  <Target className="size-4 text-muted-foreground" />
-                  <div>
-                     <p className="text-xs text-muted-foreground">
-                        {translate("dashboard.routes.budgets.stats.total")}
-                     </p>
-                     <p className="text-sm font-medium">
-                        {formatCurrency(totalAmount)}
-                     </p>
-                  </div>
-               </div>
-               <Separator />
-               <div className="flex items-center gap-2">
-                  <TrendingUp className="size-4 text-destructive" />
-                  <div>
-                     <p className="text-xs text-muted-foreground">
-                        {translate("dashboard.routes.budgets.stats.spent")}
-                     </p>
-                     <p className="text-sm font-medium text-destructive">
-                        {formatCurrency(spent)} ({Math.round(percentage)}%)
-                     </p>
-                  </div>
-               </div>
-               <Separator />
-               <div className="flex items-center gap-2">
-                  <Wallet className="size-4 text-emerald-500" />
-                  <div>
-                     <p className="text-xs text-muted-foreground">
-                        {translate("dashboard.routes.budgets.stats.available")}
-                     </p>
-                     <p className="text-sm font-medium text-emerald-500">
-                        {formatCurrency(available)}
-                     </p>
-                  </div>
-               </div>
-               <Separator />
-               <div className="flex items-center gap-2">
-                  <Calendar className="size-4 text-muted-foreground" />
-                  <div>
-                     <p className="text-xs text-muted-foreground">
-                        {translate("dashboard.routes.budgets.table.period")}
-                     </p>
-                     <p className="text-sm font-medium">
+            {/* All Info Section */}
+            <div className="space-y-4">
+               {/* Announcements */}
+               <div className="flex flex-wrap items-center gap-2">
+                  <Announcement>
+                     <AnnouncementTag className="flex items-center gap-1.5">
+                        <Calendar className="size-3.5" />
+                     </AnnouncementTag>
+                     <AnnouncementTitle>
                         {periodLabels[budget.periodType]}
-                     </p>
-                  </div>
+                     </AnnouncementTitle>
+                  </Announcement>
+
+                  <Announcement>
+                     <AnnouncementTag
+                        className="flex items-center gap-1.5"
+                        style={{
+                           backgroundColor: `${rolloverColor}20`,
+                           color: rolloverColor,
+                        }}
+                     >
+                        <RefreshCw className="size-3.5" />
+                     </AnnouncementTag>
+                     <AnnouncementTitle>
+                        {budget.rollover ? "Rollover ativo" : "Sem rollover"}
+                     </AnnouncementTitle>
+                  </Announcement>
+
+                  <Announcement>
+                     <AnnouncementTag>Regime</AnnouncementTag>
+                     <AnnouncementTitle>
+                        {regimeLabels[budget.regime] ?? budget.regime}
+                     </AnnouncementTitle>
+                  </Announcement>
                </div>
-               <Separator />
-               {statusToggleElement}
+
+               {/* Stats */}
+               <div className="flex flex-wrap items-center gap-2">
+                  <Announcement>
+                     <AnnouncementTag className="flex items-center gap-1.5">
+                        <Target className="size-3.5" />
+                        {translate("dashboard.routes.budgets.stats.total")}
+                     </AnnouncementTag>
+                     <AnnouncementTitle>
+                        {formatDecimalCurrency(totalAmount)}
+                     </AnnouncementTitle>
+                  </Announcement>
+
+                  <Announcement>
+                     <AnnouncementTag
+                        className="flex items-center gap-1.5"
+                        style={{
+                           backgroundColor: "#ef444420",
+                           color: "#ef4444",
+                        }}
+                     >
+                        <TrendingUp className="size-3.5" />
+                        {translate("dashboard.routes.budgets.stats.spent")}
+                     </AnnouncementTag>
+                     <AnnouncementTitle>
+                        {formatDecimalCurrency(spent)} ({Math.round(percentage)}%)
+                     </AnnouncementTitle>
+                  </Announcement>
+
+                  <Announcement>
+                     <AnnouncementTag
+                        className="flex items-center gap-1.5"
+                        style={{
+                           backgroundColor: "#10b98120",
+                           color: "#10b981",
+                        }}
+                     >
+                        <Wallet className="size-3.5" />
+                        {translate("dashboard.routes.budgets.stats.available")}
+                     </AnnouncementTag>
+                     <AnnouncementTitle>
+                        {formatDecimalCurrency(available)}
+                     </AnnouncementTitle>
+                  </Announcement>
+               </div>
             </div>
 
             <Separator />
 
+            {/* Actions Only */}
             <div className="space-y-2">
+               {statusToggleElement}
                <Button
                   asChild
                   className="w-full justify-start"
@@ -371,45 +440,90 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
    }
 
    return (
-      <div className="p-4 flex items-center justify-between gap-6">
-         <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-               <Target className="size-4 text-muted-foreground" />
-               <div>
-                  <p className="text-xs text-muted-foreground">
-                     {translate("dashboard.routes.budgets.stats.total")}
-                  </p>
-                  <p className="text-sm font-medium">
-                     {formatCurrency(totalAmount)}
-                  </p>
-               </div>
-            </div>
-            <Separator className="h-8" orientation="vertical" />
-            <div className="flex items-center gap-2">
-               <TrendingUp className="size-4 text-destructive" />
-               <div>
-                  <p className="text-xs text-muted-foreground">
-                     {translate("dashboard.routes.budgets.stats.spent")}
-                  </p>
-                  <p className="text-sm font-medium text-destructive">
-                     {formatCurrency(spent)} ({Math.round(percentage)}%)
-                  </p>
-               </div>
-            </div>
-            <Separator className="h-8" orientation="vertical" />
-            <div className="flex items-center gap-2">
-               <Wallet className="size-4 text-emerald-500" />
-               <div>
-                  <p className="text-xs text-muted-foreground">
-                     {translate("dashboard.routes.budgets.stats.available")}
-                  </p>
-                  <p className="text-sm font-medium text-emerald-500">
-                     {formatCurrency(available)}
-                  </p>
-               </div>
-            </div>
+      <div className="p-4 space-y-4">
+         {/* All Info Section */}
+         <div className="flex flex-wrap items-center gap-2">
+            {/* Announcements */}
+            <Announcement>
+               <AnnouncementTag className="flex items-center gap-1.5">
+                  <Calendar className="size-3.5" />
+               </AnnouncementTag>
+               <AnnouncementTitle>
+                  {periodLabels[budget.periodType]}
+               </AnnouncementTitle>
+            </Announcement>
+
+            <Announcement>
+               <AnnouncementTag
+                  className="flex items-center gap-1.5"
+                  style={{
+                     backgroundColor: `${rolloverColor}20`,
+                     color: rolloverColor,
+                  }}
+               >
+                  <RefreshCw className="size-3.5" />
+               </AnnouncementTag>
+               <AnnouncementTitle>
+                  {budget.rollover ? "Rollover ativo" : "Sem rollover"}
+               </AnnouncementTitle>
+            </Announcement>
+
+            <Announcement>
+               <AnnouncementTag>Regime</AnnouncementTag>
+               <AnnouncementTitle>
+                  {regimeLabels[budget.regime] ?? budget.regime}
+               </AnnouncementTitle>
+            </Announcement>
+
+            <div className="h-4 w-px bg-border" />
+
+            {/* Stats */}
+            <Announcement>
+               <AnnouncementTag className="flex items-center gap-1.5">
+                  <Target className="size-3.5" />
+                  {translate("dashboard.routes.budgets.stats.total")}
+               </AnnouncementTag>
+               <AnnouncementTitle>
+                  {formatDecimalCurrency(totalAmount)}
+               </AnnouncementTitle>
+            </Announcement>
+
+            <Announcement>
+               <AnnouncementTag
+                  className="flex items-center gap-1.5"
+                  style={{
+                     backgroundColor: "#ef444420",
+                     color: "#ef4444",
+                  }}
+               >
+                  <TrendingUp className="size-3.5" />
+                  {translate("dashboard.routes.budgets.stats.spent")}
+               </AnnouncementTag>
+               <AnnouncementTitle>
+                  {formatDecimalCurrency(spent)} ({Math.round(percentage)}%)
+               </AnnouncementTitle>
+            </Announcement>
+
+            <Announcement>
+               <AnnouncementTag
+                  className="flex items-center gap-1.5"
+                  style={{
+                     backgroundColor: "#10b98120",
+                     color: "#10b981",
+                  }}
+               >
+                  <Wallet className="size-3.5" />
+                  {translate("dashboard.routes.budgets.stats.available")}
+               </AnnouncementTag>
+               <AnnouncementTitle>
+                  {formatDecimalCurrency(available)}
+               </AnnouncementTitle>
+            </Announcement>
          </div>
 
+         <Separator />
+
+         {/* Actions Only */}
          <div className="flex items-center gap-2">
             {statusToggleElement}
             <Button asChild size="sm" variant="outline">
@@ -481,7 +595,7 @@ export function BudgetMobileCard({
          <CardContent className="space-y-3">
             <div className="flex justify-between items-center">
                <span className="text-sm text-muted-foreground">
-                  {formatCurrency(spent)} / {formatCurrency(totalAmount)}
+                  {formatDecimalCurrency(spent)} / {formatDecimalCurrency(totalAmount)}
                </span>
                <span
                   className={`text-sm font-medium ${percentage >= 100 ? "text-destructive" : ""}`}

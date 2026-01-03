@@ -32,7 +32,7 @@ export const actionCategorySchema = z.enum([
 // Action Applies To Schema
 // ============================================
 
-export const actionAppliesToSchema = z.enum(["transaction", "schedule"]);
+export const actionAppliesToSchema = z.enum(["transaction", "schedule", "budget"]);
 
 // ============================================
 // Action Documentation Schema

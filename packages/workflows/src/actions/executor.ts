@@ -16,6 +16,7 @@ export type ConsequencesExecutionContext = {
 	dryRun?: boolean;
 	resendClient?: Resend;
 	vapidConfig?: VapidConfig;
+	createdBy?: string | null;
 };
 
 export type ConsequencesExecutionResult = {
@@ -71,6 +72,7 @@ export async function executeConsequences(
 			ruleId: context.ruleId,
 			vapidConfig: context.vapidConfig,
 			previousResults: results,
+			createdBy: context.createdBy,
 		};
 
 		try {

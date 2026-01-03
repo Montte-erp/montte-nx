@@ -11,7 +11,7 @@ import { Button } from "@packages/ui/components/button";
 import { ScrollArea } from "@packages/ui/components/scroll-area";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { cn } from "@packages/ui/lib/utils";
-import { getAction, getActionTabs } from "@packages/workflows/config/actions";
+import { type ActionTab, getAction, getActionTabs } from "@packages/workflows/config/actions";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
    addEdge,
@@ -430,7 +430,7 @@ function NodeDetailsPanel({
    const actionType =
       node.type === "action" ? (node.data as ActionNodeData).actionType : null;
    const actionDefinition = actionType ? getAction(actionType) : null;
-   const actionTabs = actionType ? getActionTabs(actionType) : [];
+   const actionTabs: ActionTab[] = actionType ? getActionTabs(actionType) : [];
 
    // Determine if action has special documentation (for "about" tab)
    const hasAboutTab =
@@ -605,6 +605,9 @@ const TRIGGER_TYPE_LABELS: Record<string, string> = {
    "schedule.weekly": "Agendamento semanal",
    "schedule.biweekly": "Agendamento quinzenal",
    "schedule.custom": "Agendamento personalizado",
+   "budget.threshold_reached": "Limite de orçamento atingido",
+   "budget.period_end": "Fim de período do orçamento",
+   "budget.overspent": "Orçamento excedido",
 };
 
 const TRIGGERED_BY_LABELS: Record<TriggeredBy, string> = {
@@ -625,6 +628,9 @@ const ACTION_TYPE_LABELS: Record<ActionType, string> = {
    set_cost_center: "Definir centro de custo",
    stop_execution: "Parar execução",
    update_description: "Atualizar descrição",
+   generate_custom_report: "Gerar relatório personalizado",
+   fetch_budget_report: "Buscar relatório de orçamentos",
+   check_budget_status: "Verificar status de orçamentos",
 };
 
 type ExecutionLog = {

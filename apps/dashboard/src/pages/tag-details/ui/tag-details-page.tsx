@@ -1,6 +1,6 @@
-import type { Tag as TagType } from "@packages/database/repositories/tag-repository";
 import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
+import { DateRangePickerPopover } from "@packages/ui/components/date-range-picker-popover";
 import {
    Empty,
    EmptyContent,
@@ -8,7 +8,6 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { MonthSelector } from "@packages/ui/components/month-selector";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import {
    getDateRangeForPeriod,
@@ -18,8 +17,7 @@ import {
 } from "@packages/ui/components/time-period-chips";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "@tanstack/react-router";
-import { endOfMonth, startOfMonth } from "date-fns";
-import { Edit, Home, Plus, Tag, Trash2 } from "lucide-react";
+import { Home, Plus, Tag } from "lucide-react";
 import { Suspense, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { DefaultHeader } from "@/default/default-header";
@@ -28,9 +26,9 @@ import { ManageTransactionForm } from "@/features/transaction/ui/manage-transact
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";
-import { ManageTagForm } from "../../tags/features/manage-tag-form";
-import { useDeleteTag } from "../../tags/features/use-delete-tag";
+import { TagActionButtons } from "./tag-action-buttons";
 import { TagCharts } from "./tag-charts";
+import { TagMetadataCard } from "./tag-metadata-card";
 import { TagStats } from "./tag-stats";
 import { TagTransactions } from "./tag-transactions-section";
 
@@ -38,14 +36,15 @@ function TagContent() {
    const params = useParams({ strict: false });
    const tagId = (params as { tagId?: string }).tagId ?? "";
    const trpc = useTRPC();
-   const router = useRouter();
-   const { activeOrganization } = useActiveOrganization();
    const { openSheet } = useSheet();
 
    const [timePeriod, setTimePeriod] = useState<TimePeriod | null>(
       "this-month",
    );
-   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+   const [customDateRange, setCustomDateRange] = useState<{
+      startDate: Date | null;
+      endDate: Date | null;
+   }>({ startDate: null, endDate: null });
    const [dateRange, setDateRange] = useState<{
       startDate: Date | null;
       endDate: Date | null;
@@ -59,31 +58,30 @@ function TagContent() {
       range: TimePeriodDateRange,
    ) => {
       setTimePeriod(period);
-      setDateRange({ endDate: range.endDate, startDate: range.startDate });
-      if (range.selectedMonth) {
-         setSelectedMonth(range.selectedMonth);
+      if (period === "custom") {
+         setDateRange({
+            endDate: customDateRange.endDate,
+            startDate: customDateRange.startDate,
+         });
+      } else {
+         setDateRange({ endDate: range.endDate, startDate: range.startDate });
       }
    };
 
-   const handleMonthChange = (month: Date) => {
-      setSelectedMonth(month);
-      setTimePeriod(null);
-      setDateRange({
-         endDate: endOfMonth(month),
-         startDate: startOfMonth(month),
-      });
+   const handleCustomDateChange = (range: {
+      startDate: Date | null;
+      endDate: Date | null;
+   }) => {
+      setCustomDateRange(range);
+      if (range.startDate && range.endDate) {
+         setTimePeriod("custom");
+         setDateRange(range);
+      }
    };
 
    const { data: tag } = useSuspenseQuery(
       trpc.tags.getById.queryOptions({ id: tagId }),
    );
-
-   const handleDeleteSuccess = () => {
-      router.navigate({
-         params: { slug: activeOrganization.slug },
-         to: "/$slug/tags",
-      });
-   };
 
    if (!tagId) {
       return (
@@ -97,50 +95,6 @@ function TagContent() {
    if (!tag) {
       return null;
    }
-
-   return (
-      <TagContentWithTag
-         dateRange={dateRange}
-         handleDeleteSuccess={handleDeleteSuccess}
-         handleMonthChange={handleMonthChange}
-         handleTimePeriodChange={handleTimePeriodChange}
-         openSheet={openSheet}
-         selectedMonth={selectedMonth}
-         tag={tag}
-         tagId={tagId}
-         timePeriod={timePeriod}
-      />
-   );
-}
-
-function TagContentWithTag({
-   dateRange,
-   handleDeleteSuccess,
-   handleMonthChange,
-   handleTimePeriodChange,
-   openSheet,
-   selectedMonth,
-   tag,
-   tagId,
-   timePeriod,
-}: {
-   dateRange: { startDate: Date | null; endDate: Date | null };
-   handleDeleteSuccess: () => void;
-   handleMonthChange: (month: Date) => void;
-   handleTimePeriodChange: (
-      period: TimePeriod | null,
-      range: TimePeriodDateRange,
-   ) => void;
-   openSheet: (options: { children: React.ReactNode }) => void;
-   selectedMonth: Date;
-   tag: TagType;
-   tagId: string;
-   timePeriod: TimePeriod | null;
-}) {
-   const { deleteTag } = useDeleteTag({
-      onSuccess: handleDeleteSuccess,
-      tag,
-   });
 
    return (
       <main className="space-y-4">
@@ -161,61 +115,59 @@ function TagContentWithTag({
                   )}
                </Button>
             }
-            description="Visualize detalhes e estatísticas da tag"
+            description={translate(
+               "dashboard.routes.tags.list-section.description",
+            )}
             title={tag.name}
          />
 
-         <div className="flex flex-wrap items-center gap-2">
-            <Button
-               onClick={() =>
-                  openSheet({ children: <ManageTagForm tag={tag} /> })
-               }
-               size="sm"
-               variant="outline"
-            >
-               <Edit className="size-4" />
-               Editar Tag
-            </Button>
-            <Button
-               className="text-destructive hover:text-destructive"
-               onClick={() => deleteTag()}
-               size="sm"
-               variant="outline"
-            >
-               <Trash2 className="size-4" />
-               Excluir Tag
-            </Button>
-         </div>
+         <TagActionButtons />
 
-         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+         <div className="flex flex-wrap items-center gap-3">
             <TimePeriodChips
                onValueChange={handleTimePeriodChange}
+               scrollable
                size="sm"
-               value={timePeriod}
+               value={timePeriod === "custom" ? null : timePeriod}
             />
-            <div className="hidden sm:block h-4 w-px bg-border" />
-            <MonthSelector
-               date={selectedMonth}
-               disabled={timePeriod !== null && timePeriod !== "all-time"}
-               onSelect={handleMonthChange}
+            <DateRangePickerPopover
+               endDate={customDateRange.endDate}
+               onRangeChange={handleCustomDateChange}
+               placeholder={translate("common.form.date-range.custom")}
+               startDate={customDateRange.startDate}
             />
          </div>
 
-         <TagStats
-            endDate={dateRange.endDate}
-            startDate={dateRange.startDate}
-            tagId={tagId}
-         />
-         <TagCharts
-            endDate={dateRange.endDate}
-            startDate={dateRange.startDate}
-            tagId={tagId}
-         />
-         <TagTransactions
-            endDate={dateRange.endDate}
-            startDate={dateRange.startDate}
-            tagId={tagId}
-         />
+         {/* Grid Layout */}
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Metadata */}
+            <div className="lg:col-span-1 space-y-6">
+               <TagMetadataCard />
+            </div>
+
+            {/* Center Column - Stats & Charts */}
+            <div className="lg:col-span-2 space-y-6">
+               <TagStats
+                  endDate={dateRange.endDate}
+                  startDate={dateRange.startDate}
+                  tagId={tagId}
+               />
+               <TagCharts
+                  endDate={dateRange.endDate}
+                  startDate={dateRange.startDate}
+                  tagId={tagId}
+               />
+            </div>
+
+            {/* Full Width - Transactions */}
+            <div className="lg:col-span-full">
+               <TagTransactions
+                  endDate={dateRange.endDate}
+                  startDate={dateRange.startDate}
+                  tagId={tagId}
+               />
+            </div>
+         </div>
       </main>
    );
 }
@@ -227,12 +179,34 @@ function TagPageSkeleton() {
             <Skeleton className="h-10 w-48" />
             <Skeleton className="h-6 w-72" />
          </div>
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
+         <div className="flex gap-2">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-8 w-32" />
          </div>
-         <Skeleton className="h-64 w-full" />
+         <div className="flex gap-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+               <Skeleton
+                  className="h-8 w-24"
+                  key={`period-skeleton-${i + 1}`}
+               />
+            ))}
+         </div>
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1">
+               <Skeleton className="h-48 w-full" />
+            </div>
+            <div className="lg:col-span-2 space-y-6">
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-full" />
+               </div>
+               <Skeleton className="h-64 w-full" />
+            </div>
+            <div className="lg:col-span-full">
+               <Skeleton className="h-64 w-full" />
+            </div>
+         </div>
       </main>
    );
 }

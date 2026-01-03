@@ -1,5 +1,4 @@
 import { translate } from "@packages/localization";
-import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
    Empty,
@@ -16,24 +15,10 @@ import {
    TimePeriodChips,
    type TimePeriodDateRange,
 } from "@packages/ui/components/time-period-chips";
-import {
-   Tooltip,
-   TooltipContent,
-   TooltipTrigger,
-} from "@packages/ui/components/tooltip";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "@tanstack/react-router";
 import { endOfMonth, startOfMonth } from "date-fns";
-import {
-   CircleDot,
-   Edit,
-   FileText,
-   HelpCircle,
-   Home,
-   Plus,
-   RefreshCw,
-   Trash2,
-} from "lucide-react";
+import { FileText, Home, Plus } from "lucide-react";
 import { Suspense, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { DefaultHeader } from "@/default/default-header";
@@ -42,12 +27,10 @@ import { ManageTransactionForm } from "@/features/transaction/ui/manage-transact
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";
-import { ManageBudgetForm } from "@/pages/budgets/features/manage-budget-form";
-import { useDeleteBudget } from "@/pages/budgets/features/use-delete-budget";
-import { useToggleBudgetStatus } from "@/pages/budgets/features/use-toggle-budget-status";
-import { useToggleRollover } from "@/pages/budgets/features/use-toggle-rollover";
+import { BudgetActionButtons } from "./budget-action-buttons";
 import { BudgetDetailsStats } from "./budget-details-stats";
 import { BudgetInformationSection } from "./budget-information-section";
+import { BudgetMetadataCard } from "./budget-metadata-card";
 import { BudgetProgressSection } from "./budget-progress-section";
 import { BudgetTransactionsSection } from "./budget-transactions-section";
 
@@ -95,28 +78,12 @@ function BudgetContent() {
       trpc.budgets.getById.queryOptions({ id: budgetId }),
    );
 
-   const budgetForList = {
-      ...budget,
-      periods: budget?.currentPeriod ? [budget.currentPeriod] : [],
-   };
-
    const handleDeleteSuccess = () => {
       router.navigate({
          params: { slug: activeOrganization.slug },
          to: "/$slug/budgets",
       });
    };
-
-   const { deleteBudget } = useDeleteBudget({
-      budget: budgetForList,
-      onSuccess: handleDeleteSuccess,
-   });
-   const { isUpdating: isStatusUpdating, toggleStatus } = useToggleBudgetStatus(
-      { budget: budgetForList },
-   );
-   const { isUpdating: isRolloverUpdating, toggleRollover } = useToggleRollover(
-      { budget },
-   );
 
    if (!budgetId) {
       return (
@@ -130,11 +97,6 @@ function BudgetContent() {
    if (!budget) {
       return null;
    }
-
-   const regimeLabels: Record<string, string> = {
-      accrual: translate("dashboard.routes.budgets.form.regime.accrual"),
-      cash: translate("dashboard.routes.budgets.form.regime.cash"),
-   };
 
    const target = budget.target as
       | { type: "category"; categoryId: string }
@@ -155,7 +117,7 @@ function BudgetContent() {
       target.type === "cost_center" ? target.costCenterId : "";
 
    return (
-      <main className="space-y-4">
+      <main className="space-y-6">
          <DefaultHeader
             actions={
                <Button
@@ -183,91 +145,10 @@ function BudgetContent() {
             title={budget.name}
          />
 
-         <div className="flex flex-wrap items-center gap-4">
-            <div className="flex flex-wrap items-center gap-2">
-               <Button
-                  onClick={() =>
-                     openSheet({
-                        children: <ManageBudgetForm />,
-                     })
-                  }
-               >
-                  <Edit className="size-4" />
-                  {translate("dashboard.routes.budgets.details.actions.edit")}
-               </Button>
-               <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={deleteBudget}
-                  size="sm"
-                  variant="outline"
-               >
-                  <Trash2 className="size-4" />
-                  {translate("dashboard.routes.budgets.details.actions.delete")}
-               </Button>
-            </div>
-
-            <div className="h-6 w-px bg-border hidden sm:block" />
-
-            <div className="flex flex-wrap items-center gap-2">
-               <Button
-                  className="gap-2"
-                  disabled={isStatusUpdating}
-                  onClick={toggleStatus}
-                  size="sm"
-                  variant="outline"
-               >
-                  <CircleDot className="size-4" />
-                  {translate(
-                     "dashboard.routes.budgets.details.information.status",
-                  )}
-                  <Badge variant={budget.isActive ? "default" : "secondary"}>
-                     {budget.isActive
-                        ? translate("dashboard.routes.budgets.status.active")
-                        : translate("dashboard.routes.budgets.status.inactive")}
-                  </Badge>
-               </Button>
-
-               <Button
-                  className="gap-2"
-                  disabled={isRolloverUpdating}
-                  onClick={toggleRollover}
-                  size="sm"
-                  variant="outline"
-               >
-                  <RefreshCw className="size-4" />
-                  {translate(
-                     "dashboard.routes.budgets.details.information.rollover",
-                  )}
-                  <Badge variant={budget.rollover ? "default" : "secondary"}>
-                     {budget.rollover
-                        ? translate(
-                             "dashboard.routes.budgets.details.information.rollover-enabled",
-                          )
-                        : translate(
-                             "dashboard.routes.budgets.details.information.rollover-disabled",
-                          )}
-                  </Badge>
-               </Button>
-
-               <Tooltip>
-                  <TooltipTrigger asChild>
-                     <Badge className="cursor-help gap-1" variant="outline">
-                        {regimeLabels[budget.regime] ?? budget.regime}
-                        <HelpCircle className="size-3" />
-                     </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                     {budget.regime === "cash"
-                        ? translate(
-                             "dashboard.routes.budgets.regime-tooltip.cash",
-                          )
-                        : translate(
-                             "dashboard.routes.budgets.regime-tooltip.accrual",
-                          )}
-                  </TooltipContent>
-               </Tooltip>
-            </div>
-         </div>
+         <BudgetActionButtons
+            budget={budget}
+            onDeleteSuccess={handleDeleteSuccess}
+         />
 
          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <TimePeriodChips
@@ -283,45 +164,64 @@ function BudgetContent() {
             />
          </div>
 
-         <BudgetProgressSection budget={budget} />
-         <BudgetDetailsStats budget={budget} />
-         <BudgetTransactionsSection
-            budget={budget}
-            endDate={dateRange.endDate}
-            startDate={dateRange.startDate}
-         />
-         <BudgetInformationSection budget={budget} />
+         {/* Bento Grid Layout */}
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1 space-y-6">
+               <BudgetMetadataCard budgetId={budgetId} />
+               <BudgetDetailsStats budget={budget} />
+            </div>
+            <div className="lg:col-span-2 space-y-6">
+               <BudgetProgressSection budget={budget} />
+            </div>
+            <div className="lg:col-span-full">
+               <BudgetTransactionsSection
+                  budget={budget}
+                  endDate={dateRange.endDate}
+                  startDate={dateRange.startDate}
+               />
+            </div>
+            <div className="lg:col-span-full">
+               <BudgetInformationSection budget={budget} />
+            </div>
+         </div>
       </main>
    );
 }
 
 function BudgetPageSkeleton() {
    return (
-      <main className="space-y-4">
+      <main className="space-y-6">
          <div className="flex flex-col gap-2">
             <Skeleton className="h-10 w-48" />
             <Skeleton className="h-6 w-72" />
          </div>
-         <div className="flex gap-2">
-            <Skeleton className="h-9 w-32" />
-            <Skeleton className="h-9 w-32" />
+         <div className="flex flex-wrap gap-2">
+            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-8 w-32" />
          </div>
          <div className="flex gap-2">
             <Skeleton className="h-7 w-24" />
             <Skeleton className="h-7 w-24" />
             <Skeleton className="h-7 w-24" />
-            <Skeleton className="h-7 w-24" />
-            <Skeleton className="h-7 w-24" />
          </div>
-         <Skeleton className="h-32 w-full" />
-         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
+         {/* Bento Grid Skeleton */}
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1 space-y-6">
+               <Skeleton className="h-48 w-full" />
+               <Skeleton className="h-32 w-full" />
+            </div>
+            <div className="lg:col-span-2 space-y-6">
+               <Skeleton className="h-[350px] w-full" />
+            </div>
+            <div className="lg:col-span-full">
+               <Skeleton className="h-64 w-full" />
+            </div>
+            <div className="lg:col-span-full">
+               <Skeleton className="h-32 w-full" />
+            </div>
          </div>
-         <Skeleton className="h-64 w-full" />
-         <Skeleton className="h-64 w-full" />
       </main>
    );
 }

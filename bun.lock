@@ -141,7 +141,7 @@
       "name": "@f-o-t/condition-evaluator",
       "version": "2.0.0",
       "dependencies": {
-        "zod": "4.2.1",
+        "zod": "4.3.4",
       },
       "devDependencies": {
         "@biomejs/biome": "2.3.10",
@@ -161,7 +161,7 @@
       "name": "@f-o-t/csv",
       "version": "1.2.0",
       "dependencies": {
-        "zod": "4.2.1",
+        "zod": "4.3.4",
       },
       "devDependencies": {
         "@biomejs/biome": "2.3.10",
@@ -182,7 +182,7 @@
       "version": "1.1.0",
       "dependencies": {
         "@f-o-t/condition-evaluator": "2.0.0",
-        "zod": "4.2.1",
+        "zod": "4.3.4",
       },
       "devDependencies": {
         "@biomejs/biome": "2.3.10",
@@ -202,7 +202,7 @@
       "name": "@f-o-t/ofx",
       "version": "2.4.0",
       "dependencies": {
-        "zod": "4.2.1",
+        "zod": "4.3.4",
       },
       "devDependencies": {
         "@biomejs/biome": "2.3.10",
@@ -223,7 +223,7 @@
       "version": "2.0.1",
       "dependencies": {
         "@f-o-t/condition-evaluator": "2.0.0",
-        "zod": "4.2.1",
+        "zod": "4.3.4",
       },
       "devDependencies": {
         "@biomejs/biome": "2.3.10",
@@ -438,6 +438,7 @@
       "dependencies": {
         "@packages/database": "workspace:*",
         "@packages/utils": "workspace:*",
+        "@packages/workflows": "workspace:*",
         "web-push": "^3.6.7",
       },
       "devDependencies": {
@@ -746,7 +747,7 @@
       "tailwindcss": "^4.1.16",
     },
     "validation": {
-      "zod": "4.2.1",
+      "zod": "4.3.4",
     },
     "vite": {
       "@tailwindcss/vite": "^4.1.8",
@@ -4035,7 +4036,7 @@
 
     "zlye": ["zlye@0.4.4", "", { "dependencies": { "picocolors": "^1.1.1" }, "peerDependencies": { "typescript": ">=4.5.0" }, "optionalPeers": ["typescript"] }, "sha512-fwpeC841X3ElOLYRMKXbwX29pitNrsm6nRNvEhDMrRXDl3BhR2i03Bkr0GNrpyYgZJuEzUsBylXAYzgGPXXOCQ=="],
 
-    "zod": ["zod@4.2.1", "", {}, "sha512-0wZ1IRqGGhMP76gLqz8EyfBXKk0J2qo2+H3fi4mcUP/KtTocoX08nmIAHl1Z2kJIZbZee8KOpBCSNPRgauucjw=="],
+    "zod": ["zod@4.3.4", "", {}, "sha512-Zw/uYiiyF6pUT1qmKbZziChgNPRu+ZRneAsMUDU6IwmXdWt5JwcUfy2bvLOCUtz5UniaN/Zx5aFttZYbYc7O/A=="],
 
     "zod-to-json-schema": ["zod-to-json-schema@3.25.0", "", { "peerDependencies": { "zod": "^3.25 || ^4" } }, "sha512-HvWtU2UG41LALjajJrML6uQejQhNJx+JBO9IflpSja4R03iNWfKXrj6W2h7ljuLyc1nKS+9yDyL/9tD1U/yBnQ=="],
 

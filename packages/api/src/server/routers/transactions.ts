@@ -39,7 +39,7 @@ import {
    streamFileForProxy,
    verifyFileExists,
 } from "@packages/files/client";
-import { checkBudgetAlertsAfterTransaction } from "@packages/notifications/budget-alerts";
+import { checkBudgetAlertsAfterTransaction, emitBudgetWorkflowEvents } from "@packages/notifications/budget-alerts";
 import { APIError } from "@packages/utils/errors";
 import { validateCategorySplits as validateSplits } from "@packages/utils/split";
 import { enqueueWorkflowEvent } from "@packages/workflows/queue/producer";
@@ -457,6 +457,14 @@ export const transactionRouter = router({
                   console.error("Error checking budget alerts:", err);
                });
             }
+
+            // Emit workflow events for budget thresholds
+            emitBudgetWorkflowEvents({
+               db: resolvedCtx.db,
+               organizationId,
+            }).catch((err: unknown) => {
+               console.error("Error emitting budget workflow events:", err);
+            });
          }
 
          if (createdTransaction) {

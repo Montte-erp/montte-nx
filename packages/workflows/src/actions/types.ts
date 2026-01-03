@@ -18,6 +18,7 @@ export type ActionHandlerContext = {
 	resendClient?: Resend;
 	vapidConfig?: VapidConfig;
 	previousResults?: ConsequenceExecutionResult[];
+	createdBy?: string | null;
 };
 
 export type ActionHandler = {

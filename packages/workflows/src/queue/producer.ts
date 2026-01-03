@@ -1,5 +1,6 @@
 import type { ConnectionOptions } from "@packages/queue/bullmq";
-import type { WorkflowEvent } from "../types/events";
+import { v4 as uuid } from "uuid";
+import type { BudgetEventData, WorkflowEvent } from "../types/events";
 import {
 	createWorkflowQueue,
 	getWorkflowQueue,
@@ -66,5 +67,88 @@ export async function enqueueManualWorkflowRun(
    return enqueueWorkflowEvent(event, {
       ...options,
       triggeredBy: "manual",
+   });
+}
+
+// Budget Event Emitters
+
+export type BudgetEventInput = {
+   budgetId: string;
+   organizationId: string;
+   budgetName: string;
+   threshold?: number;
+   spent: number;
+   limit: number;
+   percentUsed: number;
+   periodStart: string;
+   periodEnd: string;
+   periodId?: string;
+};
+
+function createBudgetEvent(
+   type: "budget.threshold_reached" | "budget.period_end" | "budget.overspent",
+   data: BudgetEventInput,
+): WorkflowEvent {
+   const eventData: BudgetEventData = {
+      budgetId: data.budgetId,
+      budgetName: data.budgetName,
+      limit: data.limit,
+      organizationId: data.organizationId,
+      percentUsed: data.percentUsed,
+      periodEnd: data.periodEnd,
+      periodId: data.periodId,
+      periodStart: data.periodStart,
+      spent: data.spent,
+      threshold: data.threshold,
+   };
+
+   return {
+      data: eventData,
+      id: uuid(),
+      organizationId: data.organizationId,
+      timestamp: new Date().toISOString(),
+      type,
+   } as WorkflowEvent;
+}
+
+/**
+ * Emit when a budget reaches a threshold (50%, 80%, 100%)
+ */
+export async function emitBudgetThresholdEvent(
+   data: BudgetEventInput,
+   options?: Omit<EnqueueOptions, "triggeredBy">,
+): Promise<string> {
+   const event = createBudgetEvent("budget.threshold_reached", data);
+   return enqueueWorkflowEvent(event, {
+      ...options,
+      triggeredBy: "event",
+   });
+}
+
+/**
+ * Emit when a budget period ends (for scheduled rollovers)
+ */
+export async function emitBudgetPeriodEndEvent(
+   data: BudgetEventInput,
+   options?: Omit<EnqueueOptions, "triggeredBy">,
+): Promise<string> {
+   const event = createBudgetEvent("budget.period_end", data);
+   return enqueueWorkflowEvent(event, {
+      ...options,
+      triggeredBy: "event",
+   });
+}
+
+/**
+ * Emit when a budget is overspent (exceeds 100%)
+ */
+export async function emitBudgetOverspentEvent(
+   data: BudgetEventInput,
+   options?: Omit<EnqueueOptions, "triggeredBy">,
+): Promise<string> {
+   const event = createBudgetEvent("budget.overspent", data);
+   return enqueueWorkflowEvent(event, {
+      ...options,
+      triggeredBy: "event",
    });
 }

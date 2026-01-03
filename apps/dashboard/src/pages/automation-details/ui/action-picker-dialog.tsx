@@ -15,13 +15,16 @@ import {
 } from "@packages/workflows/config/actions";
 import {
    ArrowLeftRight,
+   BarChart3,
    Bell,
    Building,
    ClipboardList,
    FileText,
    FolderTree,
+   Gauge,
    GitBranch,
    Mail,
+   PieChart,
    Play,
    Plus,
    StopCircle,
@@ -77,6 +80,9 @@ const ACTION_ICONS: Record<
    send_email: Mail,
    send_push_notification: Bell,
    stop_execution: StopCircle,
+   generate_custom_report: BarChart3,
+   fetch_budget_report: PieChart,
+   check_budget_status: Gauge,
 };
 
 const CATEGORY_META: Record<

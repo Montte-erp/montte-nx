@@ -11,6 +11,7 @@ export const dataSourceSchema = z.enum([
 	"bankAccounts",
 	"costCenters",
 	"members",
+	"budgets",
 ]);
 
 export type DataSource = z.infer<typeof dataSourceSchema>;

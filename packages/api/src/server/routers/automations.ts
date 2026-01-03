@@ -56,6 +56,9 @@ const triggerTypeSchema = z.enum([
    "schedule.weekly",
    "schedule.biweekly",
    "schedule.custom",
+   "budget.threshold_reached",
+   "budget.period_end",
+   "budget.overspent",
 ]);
 
 const scheduleTriggerConfigSchema = z.object({
@@ -97,6 +100,9 @@ const actionTypeSchema = z.enum([
    "fetch_bills_report",
    "format_data",
    "stop_execution",
+   "generate_custom_report",
+   "fetch_budget_report",
+   "check_budget_status",
 ]);
 
 const categorySplitConfigSchema = z.object({
@@ -167,6 +173,35 @@ const actionConfigSchema = z.object({
    pdfTemplate: z.enum(["bills_report", "custom"]).optional(),
    pdfPageSize: z.enum(["A4", "Letter"]).optional(),
    htmlTableStyle: z.enum(["default", "striped", "bordered"]).optional(),
+   // generate_custom_report config
+   reportType: z.enum([
+      "dre_gerencial",
+      "dre_fiscal",
+      "budget_vs_actual",
+      "spending_trends",
+      "cash_flow_forecast",
+      "counterparty_analysis",
+   ]).optional(),
+   periodType: z.enum(["previous_month", "previous_week", "current_month", "custom"]).optional(),
+   daysBack: z.number().optional(),
+   forecastDays: z.number().min(7).max(365).optional(),
+   filterConfig: z.object({
+      bankAccountIds: z.array(z.string()).optional(),
+      categoryIds: z.array(z.string()).optional(),
+      costCenterIds: z.array(z.string()).optional(),
+      tagIds: z.array(z.string()).optional(),
+      includeTransfers: z.boolean().optional(),
+   }).optional(),
+   saveReport: z.boolean().optional(),
+   reportName: z.string().optional(),
+   // fetch_budget_report config
+   includeOverBudget: z.boolean().optional(),
+   includeNearLimit: z.boolean().optional(),
+   budgetIds: z.array(z.string()).optional(),
+   includeInactive: z.boolean().optional(),
+   // check_budget_status config
+   alertThresholds: z.array(z.number()).optional(),
+   checkCurrentStatus: z.boolean().optional(),
 });
 
 const consequenceSchema = z.object({

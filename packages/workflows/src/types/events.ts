@@ -9,7 +9,12 @@ export type TransactionEventType =
 
 export type ScheduleEventType = ScheduleTriggerType;
 
-export type EventType = TransactionEventType | ScheduleEventType;
+export type BudgetEventType =
+	| "budget.threshold_reached"
+	| "budget.period_end"
+	| "budget.overspent";
+
+export type EventType = TransactionEventType | ScheduleEventType | BudgetEventType;
 
 export type TransactionEventData = {
 	id: string;
@@ -33,6 +38,19 @@ export type ScheduleEventData = {
 	automationRuleId: string;
 };
 
+export type BudgetEventData = {
+	budgetId: string;
+	organizationId: string;
+	budgetName: string;
+	threshold?: number;
+	spent: number;
+	limit: number;
+	percentUsed: number;
+	periodStart: string;
+	periodEnd: string;
+	periodId?: string;
+};
+
 export type BaseEvent<T extends EventType, D> = {
    id: string;
    type: T;
@@ -53,10 +71,16 @@ export type TransactionUpdatedEvent = BaseEvent<
 
 export type ScheduleTriggeredEvent = BaseEvent<ScheduleEventType, ScheduleEventData>;
 
+export type BudgetThresholdReachedEvent = BaseEvent<"budget.threshold_reached", BudgetEventData>;
+export type BudgetPeriodEndEvent = BaseEvent<"budget.period_end", BudgetEventData>;
+export type BudgetOverspentEvent = BaseEvent<"budget.overspent", BudgetEventData>;
+export type BudgetEvent = BudgetThresholdReachedEvent | BudgetPeriodEndEvent | BudgetOverspentEvent;
+
 export type WorkflowEvent =
 	| TransactionCreatedEvent
 	| TransactionUpdatedEvent
-	| ScheduleTriggeredEvent;
+	| ScheduleTriggeredEvent
+	| BudgetEvent;
 
 export function createTransactionCreatedEvent(
    organizationId: string,
@@ -97,6 +121,12 @@ export function isScheduleEvent(
 	event: WorkflowEvent,
 ): event is ScheduleTriggeredEvent {
 	return event.type.startsWith("schedule.");
+}
+
+export function isBudgetEvent(
+	event: WorkflowEvent,
+): event is BudgetEvent {
+	return event.type.startsWith("budget.");
 }
 
 export function createScheduleTriggeredEvent(
