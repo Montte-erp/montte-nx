@@ -644,6 +644,7 @@ function CategoryBreakdownSection({
    const expenseChartData = snapshotData.categoryBreakdown
       .filter((cat) => cat.expenses > 0)
       .map((cat) => ({
+         categoryId: cat.categoryId,
          category: cat.categoryName,
          color: cat.categoryColor,
          value: cat.expenses,
@@ -652,18 +653,19 @@ function CategoryBreakdownSection({
    const incomeChartData = snapshotData.categoryBreakdown
       .filter((cat) => cat.income > 0)
       .map((cat) => ({
+         categoryId: cat.categoryId,
          category: cat.categoryName,
          color: cat.categoryColor,
          value: cat.income,
       }));
 
    const expenseChartConfig = expenseChartData.reduce((acc, item) => {
-      acc[item.category] = { color: item.color, label: item.category };
+      acc[item.categoryId] = { color: item.color, label: item.category };
       return acc;
    }, {} as ChartConfig);
 
    const incomeChartConfig = incomeChartData.reduce((acc, item) => {
-      acc[item.category] = { color: item.color, label: item.category };
+      acc[item.categoryId] = { color: item.color, label: item.category };
       return acc;
    }, {} as ChartConfig);
 
@@ -703,7 +705,7 @@ function CategoryBreakdownSection({
                            strokeWidth={2}
                         >
                            {incomeChartData.map((entry) => (
-                              <Cell fill={entry.color} key={entry.category} />
+                              <Cell fill={entry.color} key={entry.categoryId} />
                            ))}
                         </Pie>
                      </PieChart>
@@ -767,7 +769,7 @@ function CategoryBreakdownSection({
                            strokeWidth={2}
                         >
                            {expenseChartData.map((entry) => (
-                              <Cell fill={entry.color} key={entry.category} />
+                              <Cell fill={entry.color} key={entry.categoryId} />
                            ))}
                         </Pie>
                      </PieChart>
@@ -1566,6 +1568,7 @@ function CategoryAnalysisContent({
 
    // Prepare chart data for income
    const incomeChartData = snapshotData.incomeBreakdown.map((cat) => ({
+      categoryId: cat.categoryId,
       category: cat.categoryName,
       color: cat.categoryColor,
       value: cat.amount,
@@ -1573,6 +1576,7 @@ function CategoryAnalysisContent({
 
    // Prepare chart data for expenses
    const expenseChartData = snapshotData.expenseBreakdown.map((cat) => ({
+      categoryId: cat.categoryId,
       category: cat.categoryName,
       color: cat.categoryColor,
       value: cat.amount,
@@ -1580,7 +1584,7 @@ function CategoryAnalysisContent({
 
    const incomeChartConfig = incomeChartData.reduce(
       (acc, item) => {
-         acc[item.category] = { color: item.color, label: item.category };
+         acc[item.categoryId] = { color: item.color, label: item.category };
          return acc;
       },
       {} as ChartConfig,
@@ -1588,7 +1592,7 @@ function CategoryAnalysisContent({
 
    const expenseChartConfig = expenseChartData.reduce(
       (acc, item) => {
-         acc[item.category] = { color: item.color, label: item.category };
+         acc[item.categoryId] = { color: item.color, label: item.category };
          return acc;
       },
       {} as ChartConfig,
@@ -1632,7 +1636,7 @@ function CategoryAnalysisContent({
                               strokeWidth={2}
                            >
                               {incomeChartData.map((entry) => (
-                                 <Cell fill={entry.color} key={entry.category} />
+                                 <Cell fill={entry.color} key={entry.categoryId} />
                               ))}
                            </Pie>
                         </PieChart>
@@ -1675,7 +1679,7 @@ function CategoryAnalysisContent({
                               strokeWidth={2}
                            >
                               {expenseChartData.map((entry) => (
-                                 <Cell fill={entry.color} key={entry.category} />
+                                 <Cell fill={entry.color} key={entry.categoryId} />
                               ))}
                            </Pie>
                         </PieChart>
