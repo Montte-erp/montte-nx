@@ -2,6 +2,7 @@ import {
 	createCustomReport,
 	generateBudgetVsActualData,
 	generateCashFlowForecastData,
+	generateCategoryAnalysisData,
 	generateCounterpartyAnalysisData,
 	generateDREFiscalData,
 	generateDREGerencialData,
@@ -34,6 +35,7 @@ function getReportTypeName(type: ReportType): string {
 	const names: Record<ReportType, string> = {
 		budget_vs_actual: "Orçamento vs Real",
 		cash_flow_forecast: "Previsão de Fluxo de Caixa",
+		category_analysis: "Análise por Categoria",
 		counterparty_analysis: "Análise de Contrapartes",
 		dre_fiscal: "DRE Fiscal",
 		dre_gerencial: "DRE Gerencial",
@@ -160,6 +162,15 @@ export const generateCustomReportHandler: ActionHandler = {
 					break;
 				case "counterparty_analysis":
 					reportData = await generateCounterpartyAnalysisData(
+						context.db,
+						context.organizationId,
+						startDate,
+						endDate,
+						filterConfig,
+					);
+					break;
+				case "category_analysis":
+					reportData = await generateCategoryAnalysisData(
 						context.db,
 						context.organizationId,
 						startDate,

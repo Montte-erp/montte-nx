@@ -7,6 +7,7 @@ import {
    findCustomReportsByOrganizationIdPaginated,
    generateBudgetVsActualData,
    generateCashFlowForecastData,
+   generateCategoryAnalysisData,
    generateCounterpartyAnalysisData,
    generateDREFiscalData,
    generateDREGerencialData,
@@ -25,6 +26,7 @@ const reportTypeSchema = z.enum([
    "spending_trends",
    "cash_flow_forecast",
    "counterparty_analysis",
+   "category_analysis",
 ]);
 
 const filterConfigSchema = z
@@ -126,6 +128,15 @@ export const customReportRouter = router({
                break;
             case "counterparty_analysis":
                snapshotData = await generateCounterpartyAnalysisData(
+                  resolvedCtx.db,
+                  organizationId,
+                  startDate,
+                  endDate,
+                  filterConfig,
+               );
+               break;
+            case "category_analysis":
+               snapshotData = await generateCategoryAnalysisData(
                   resolvedCtx.db,
                   organizationId,
                   startDate,
