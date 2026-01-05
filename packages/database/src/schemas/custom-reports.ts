@@ -92,7 +92,8 @@ export type ReportType =
    | "budget_vs_actual"
    | "spending_trends"
    | "cash_flow_forecast"
-   | "counterparty_analysis";
+   | "counterparty_analysis"
+   | "category_analysis";
 
 // Budget vs Actual snapshot data
 export type BudgetVsActualSnapshotData = {
@@ -235,13 +236,46 @@ export type CounterpartyAnalysisSnapshotData = {
    filterMetadata?: FilterMetadata;
 };
 
+// Category Analysis snapshot data
+export type CategoryAnalysisSnapshotData = {
+   type: "category_analysis";
+   summary: {
+      totalIncome: number;
+      totalExpenses: number;
+      totalTransactions: number;
+      incomeCategories: number;
+      expenseCategories: number;
+   };
+   incomeBreakdown: Array<{
+      categoryId: string;
+      categoryName: string;
+      categoryColor: string;
+      categoryIcon: string | null;
+      amount: number;
+      percentage: number;
+      transactionCount: number;
+   }>;
+   expenseBreakdown: Array<{
+      categoryId: string;
+      categoryName: string;
+      categoryColor: string;
+      categoryIcon: string | null;
+      amount: number;
+      percentage: number;
+      transactionCount: number;
+   }>;
+   generatedAt: string;
+   filterMetadata?: FilterMetadata;
+};
+
 // Union type for all snapshot data with discriminator
 export type ReportSnapshotData =
    | (DRESnapshotData & { type?: "dre_gerencial" | "dre_fiscal" })
    | BudgetVsActualSnapshotData
    | SpendingTrendsSnapshotData
    | CashFlowForecastSnapshotData
-   | CounterpartyAnalysisSnapshotData;
+   | CounterpartyAnalysisSnapshotData
+   | CategoryAnalysisSnapshotData;
 
 export const customReport = pgTable("custom_report", {
    createdAt: timestamp("created_at").defaultNow().notNull(),

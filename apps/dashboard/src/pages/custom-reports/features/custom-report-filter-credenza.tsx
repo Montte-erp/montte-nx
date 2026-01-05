@@ -14,6 +14,7 @@ import {
    BarChart3,
    Calculator,
    FileText,
+   PieChart,
    Target,
    TrendingUp,
    Users,
@@ -64,6 +65,11 @@ const REPORT_TYPES = [
       value: "counterparty_analysis" as ReportType,
       label: "Parceiros",
       icon: Users,
+   },
+   {
+      value: "category_analysis" as ReportType,
+      label: "Análise por Categoria",
+      icon: PieChart,
    },
 ] as const;
 

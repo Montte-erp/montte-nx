@@ -41,6 +41,7 @@ import {
    Calculator,
    Check,
    Info,
+   PieChart,
    Target,
    TrendingUp,
    Users,
@@ -67,6 +68,12 @@ const reportTypeConfig: Record<
          "Projeção de fluxo de caixa baseado em contas a pagar/receber",
       icon: Wallet,
       label: "Fluxo de Caixa",
+   },
+   category_analysis: {
+      description:
+         "Análise percentual de transações por categoria de receitas e despesas",
+      icon: PieChart,
+      label: "Análise por Categoria",
    },
    counterparty_analysis: {
       description: "Análise de vendas por cliente e compras por fornecedor",
@@ -163,6 +170,7 @@ export function ManageCustomReportForm({
          "spending_trends",
          "cash_flow_forecast",
          "counterparty_analysis",
+         "category_analysis",
       ]),
    });
 

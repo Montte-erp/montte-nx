@@ -10,6 +10,7 @@ import { counterparty } from "../schemas/counterparties";
 import {
    type BudgetVsActualSnapshotData,
    type CashFlowForecastSnapshotData,
+   type CategoryAnalysisSnapshotData,
    type CounterpartyAnalysisSnapshotData,
    type CustomReport,
    customReport,
@@ -29,6 +30,7 @@ import { transaction } from "../schemas/transactions";
 export type {
    BudgetVsActualSnapshotData,
    CashFlowForecastSnapshotData,
+   CategoryAnalysisSnapshotData,
    CounterpartyAnalysisSnapshotData,
    CustomReport,
    DRESnapshotData,
@@ -2173,6 +2175,222 @@ export async function generateCounterpartyAnalysisData(
       propagateError(err);
       throw AppError.database(
          `Failed to generate Counterparty Analysis data: ${(err as Error).message}`,
+      );
+   }
+}
+
+export async function generateCategoryAnalysisData(
+   dbClient: DatabaseInstance,
+   organizationId: string,
+   startDate: Date,
+   endDate: Date,
+   filterConfig?: ReportFilterConfig,
+): Promise<CategoryAnalysisSnapshotData> {
+   try {
+      const filterMetadata = await buildFilterMetadata(dbClient, filterConfig);
+
+      // Handle category and tag filters via join tables
+      const hasCategoryFilter =
+         filterConfig?.categoryIds && filterConfig.categoryIds.length > 0;
+      const hasTagFilter =
+         filterConfig?.tagIds && filterConfig.tagIds.length > 0;
+
+      let transactionIdsFromCategoryFilter: string[] | null = null;
+      if (hasCategoryFilter && filterConfig.categoryIds) {
+         const categoryTransactions = await dbClient
+            .select({ transactionId: transactionCategory.transactionId })
+            .from(transactionCategory)
+            .where(
+               inArray(transactionCategory.categoryId, filterConfig.categoryIds),
+            );
+         transactionIdsFromCategoryFilter = categoryTransactions.map(
+            (t) => t.transactionId,
+         );
+      }
+
+      let transactionIdsFromTagFilter: string[] | null = null;
+      if (hasTagFilter && filterConfig.tagIds) {
+         const tagTransactions = await dbClient
+            .select({ transactionId: transactionTag.transactionId })
+            .from(transactionTag)
+            .where(inArray(transactionTag.tagId, filterConfig.tagIds));
+         transactionIdsFromTagFilter = tagTransactions.map(
+            (t) => t.transactionId,
+         );
+      }
+
+      // Build base conditions
+      const baseConditions = [
+         eq(transaction.organizationId, organizationId),
+         gte(transaction.date, startDate),
+         lte(transaction.date, endDate),
+      ];
+
+      if (filterConfig?.bankAccountIds?.length) {
+         baseConditions.push(
+            inArray(transaction.bankAccountId, filterConfig.bankAccountIds),
+         );
+      }
+      if (filterConfig?.costCenterIds?.length) {
+         baseConditions.push(
+            inArray(transaction.costCenterId, filterConfig.costCenterIds),
+         );
+      }
+
+      if (transactionIdsFromCategoryFilter !== null) {
+         if (transactionIdsFromCategoryFilter.length === 0) {
+            // No transactions match category filter
+            return {
+               expenseBreakdown: [],
+               filterMetadata,
+               generatedAt: new Date().toISOString(),
+               incomeBreakdown: [],
+               summary: {
+                  expenseCategories: 0,
+                  incomeCategories: 0,
+                  totalExpenses: 0,
+                  totalIncome: 0,
+                  totalTransactions: 0,
+               },
+               type: "category_analysis",
+            };
+         }
+         baseConditions.push(
+            inArray(transaction.id, transactionIdsFromCategoryFilter),
+         );
+      }
+
+      if (transactionIdsFromTagFilter !== null) {
+         if (transactionIdsFromTagFilter.length === 0) {
+            return {
+               expenseBreakdown: [],
+               filterMetadata,
+               generatedAt: new Date().toISOString(),
+               incomeBreakdown: [],
+               summary: {
+                  expenseCategories: 0,
+                  incomeCategories: 0,
+                  totalExpenses: 0,
+                  totalIncome: 0,
+                  totalTransactions: 0,
+               },
+               type: "category_analysis",
+            };
+         }
+         baseConditions.push(
+            inArray(transaction.id, transactionIdsFromTagFilter),
+         );
+      }
+
+      const whereClause = and(...baseConditions);
+
+      // Get totals for income and expenses
+      const summaryResult = await dbClient
+         .select({
+            totalExpenses: sql<number>`COALESCE(SUM(CASE WHEN ${transaction.type} = 'expense' THEN CAST(${transaction.amount} AS REAL) ELSE 0 END), 0)`,
+            totalIncome: sql<number>`COALESCE(SUM(CASE WHEN ${transaction.type} = 'income' THEN CAST(${transaction.amount} AS REAL) ELSE 0 END), 0)`,
+            totalTransactions: sql<number>`COUNT(*)`,
+         })
+         .from(transaction)
+         .where(whereClause);
+
+      const totalIncome = summaryResult[0]?.totalIncome || 0;
+      const totalExpenses = summaryResult[0]?.totalExpenses || 0;
+      const totalTransactions = summaryResult[0]?.totalTransactions || 0;
+
+      // Build conditions for income breakdown
+      const incomeConditions = [...baseConditions, eq(transaction.type, "income")];
+      const incomeWhereClause = and(...incomeConditions);
+
+      // Get income breakdown by category
+      const incomeByCategory = await dbClient
+         .select({
+            amount: sql<number>`COALESCE(SUM(CAST(${transaction.amount} AS REAL)), 0)`,
+            categoryColor: category.color,
+            categoryIcon: category.icon,
+            categoryId: category.id,
+            categoryName: category.name,
+            transactionCount: sql<number>`COUNT(*)`,
+         })
+         .from(transaction)
+         .innerJoin(
+            transactionCategory,
+            eq(transaction.id, transactionCategory.transactionId),
+         )
+         .innerJoin(category, eq(transactionCategory.categoryId, category.id))
+         .where(incomeWhereClause)
+         .groupBy(category.id, category.name, category.color, category.icon);
+
+      // Build conditions for expense breakdown
+      const expenseConditions = [
+         ...baseConditions,
+         eq(transaction.type, "expense"),
+      ];
+      const expenseWhereClause = and(...expenseConditions);
+
+      // Get expense breakdown by category
+      const expenseByCategory = await dbClient
+         .select({
+            amount: sql<number>`COALESCE(SUM(CAST(${transaction.amount} AS REAL)), 0)`,
+            categoryColor: category.color,
+            categoryIcon: category.icon,
+            categoryId: category.id,
+            categoryName: category.name,
+            transactionCount: sql<number>`COUNT(*)`,
+         })
+         .from(transaction)
+         .innerJoin(
+            transactionCategory,
+            eq(transaction.id, transactionCategory.transactionId),
+         )
+         .innerJoin(category, eq(transactionCategory.categoryId, category.id))
+         .where(expenseWhereClause)
+         .groupBy(category.id, category.name, category.color, category.icon);
+
+      // Calculate percentages and sort by amount
+      const incomeBreakdown = incomeByCategory
+         .map((cat) => ({
+            amount: cat.amount,
+            categoryColor: cat.categoryColor || "#10b981",
+            categoryIcon: cat.categoryIcon,
+            categoryId: cat.categoryId,
+            categoryName: cat.categoryName,
+            percentage: totalIncome > 0 ? (cat.amount / totalIncome) * 100 : 0,
+            transactionCount: cat.transactionCount,
+         }))
+         .sort((a, b) => b.amount - a.amount);
+
+      const expenseBreakdown = expenseByCategory
+         .map((cat) => ({
+            amount: cat.amount,
+            categoryColor: cat.categoryColor || "#ef4444",
+            categoryIcon: cat.categoryIcon,
+            categoryId: cat.categoryId,
+            categoryName: cat.categoryName,
+            percentage:
+               totalExpenses > 0 ? (cat.amount / totalExpenses) * 100 : 0,
+            transactionCount: cat.transactionCount,
+         }))
+         .sort((a, b) => b.amount - a.amount);
+
+      return {
+         expenseBreakdown,
+         filterMetadata,
+         generatedAt: new Date().toISOString(),
+         incomeBreakdown,
+         summary: {
+            expenseCategories: expenseBreakdown.length,
+            incomeCategories: incomeBreakdown.length,
+            totalExpenses,
+            totalIncome,
+            totalTransactions,
+         },
+         type: "category_analysis",
+      };
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database(
+         `Failed to generate Category Analysis data: ${(err as Error).message}`,
       );
    }
 }

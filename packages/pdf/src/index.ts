@@ -52,6 +52,7 @@ export function getUnsupportedReportTypeError(type: ReportType): string | null {
    > = {
       budget_vs_actual: "Budget vs Actual",
       cash_flow_forecast: "Cash Flow Forecast",
+      category_analysis: "Category Analysis",
       counterparty_analysis: "Counterparty Analysis",
       spending_trends: "Spending Trends",
    };

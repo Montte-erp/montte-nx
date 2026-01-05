@@ -1,6 +1,7 @@
 import type {
    BudgetVsActualSnapshotData,
    CashFlowForecastSnapshotData,
+   CategoryAnalysisSnapshotData,
    CounterpartyAnalysisSnapshotData,
    DRESnapshotData,
    ReportSnapshotData,
@@ -119,6 +120,13 @@ function isCounterpartyAnalysisSnapshotData(
    type: ReportType,
 ): _data is CounterpartyAnalysisSnapshotData {
    return type === "counterparty_analysis";
+}
+
+function isCategoryAnalysisSnapshotData(
+   _data: ReportSnapshotData,
+   type: ReportType,
+): _data is CategoryAnalysisSnapshotData {
+   return type === "category_analysis";
 }
 
 // ============================================
@@ -298,6 +306,39 @@ function CounterpartyAnalysisStatsCards({
             description="Total pago a fornecedores"
             title="Total Pago"
             value={`-${formatDecimalCurrency(snapshotData.summary.totalPaid)}`}
+         />
+      </div>
+   );
+}
+
+function CategoryAnalysisStatsCards({
+   snapshotData,
+   periodLabel,
+}: {
+   snapshotData: CategoryAnalysisSnapshotData;
+   periodLabel: string;
+}) {
+   return (
+      <div className="grid gap-4 md:grid-cols-4">
+         <StatsCard
+            description={`Gerado em ${formatDate(new Date(snapshotData.generatedAt), "DD/MM/YYYY")}`}
+            title="Período"
+            value={periodLabel}
+         />
+         <StatsCard
+            description={`${snapshotData.summary.incomeCategories} categorias`}
+            title="Total Receitas"
+            value={`+${formatDecimalCurrency(snapshotData.summary.totalIncome)}`}
+         />
+         <StatsCard
+            description={`${snapshotData.summary.expenseCategories} categorias`}
+            title="Total Despesas"
+            value={`-${formatDecimalCurrency(snapshotData.summary.totalExpenses)}`}
+         />
+         <StatsCard
+            description="Transações no período"
+            title="Total Transações"
+            value={snapshotData.summary.totalTransactions.toString()}
          />
       </div>
    );
@@ -1495,6 +1536,269 @@ function CounterpartyAnalysisContent({
    );
 }
 
+function CategoryAnalysisContent({
+   snapshotData,
+}: {
+   snapshotData: CategoryAnalysisSnapshotData;
+}) {
+   const hasNoData =
+      snapshotData.incomeBreakdown.length === 0 &&
+      snapshotData.expenseBreakdown.length === 0;
+
+   if (hasNoData) {
+      return (
+         <Card>
+            <CardHeader>
+               <CardTitle>Análise por Categoria</CardTitle>
+               <CardDescription>
+                  Não foram encontradas transações no período selecionado
+               </CardDescription>
+            </CardHeader>
+            <CardContent>
+               <p className="text-sm text-muted-foreground">
+                  Para visualizar esta análise, certifique-se de que existem
+                  transações registradas no período do relatório.
+               </p>
+            </CardContent>
+         </Card>
+      );
+   }
+
+   // Prepare chart data for income
+   const incomeChartData = snapshotData.incomeBreakdown.map((cat) => ({
+      category: cat.categoryName,
+      color: cat.categoryColor,
+      value: cat.amount,
+   }));
+
+   // Prepare chart data for expenses
+   const expenseChartData = snapshotData.expenseBreakdown.map((cat) => ({
+      category: cat.categoryName,
+      color: cat.categoryColor,
+      value: cat.amount,
+   }));
+
+   const incomeChartConfig = incomeChartData.reduce(
+      (acc, item) => {
+         acc[item.category] = { color: item.color, label: item.category };
+         return acc;
+      },
+      {} as ChartConfig,
+   );
+
+   const expenseChartConfig = expenseChartData.reduce(
+      (acc, item) => {
+         acc[item.category] = { color: item.color, label: item.category };
+         return acc;
+      },
+      {} as ChartConfig,
+   );
+
+   return (
+      <>
+         {/* Pie Charts Section */}
+         <div className="grid gap-4 md:grid-cols-2">
+            {snapshotData.incomeBreakdown.length > 0 && (
+               <Card>
+                  <CardHeader className="pb-2">
+                     <CardTitle className="text-base">
+                        Receitas por Categoria
+                     </CardTitle>
+                     <CardDescription>
+                        Distribuição percentual das receitas
+                     </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                     <ChartContainer
+                        className="mx-auto aspect-square max-h-[250px]"
+                        config={incomeChartConfig}
+                     >
+                        <PieChart>
+                           <ChartTooltip
+                              content={
+                                 <ChartTooltipContent
+                                    formatter={(value) =>
+                                       formatDecimalCurrency(Number(value))
+                                    }
+                                    hideLabel
+                                 />
+                              }
+                           />
+                           <Pie
+                              data={incomeChartData}
+                              dataKey="value"
+                              innerRadius={50}
+                              nameKey="category"
+                              strokeWidth={2}
+                           >
+                              {incomeChartData.map((entry) => (
+                                 <Cell fill={entry.color} key={entry.category} />
+                              ))}
+                           </Pie>
+                        </PieChart>
+                     </ChartContainer>
+                  </CardContent>
+               </Card>
+            )}
+
+            {snapshotData.expenseBreakdown.length > 0 && (
+               <Card>
+                  <CardHeader className="pb-2">
+                     <CardTitle className="text-base">
+                        Despesas por Categoria
+                     </CardTitle>
+                     <CardDescription>
+                        Distribuição percentual das despesas
+                     </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                     <ChartContainer
+                        className="mx-auto aspect-square max-h-[250px]"
+                        config={expenseChartConfig}
+                     >
+                        <PieChart>
+                           <ChartTooltip
+                              content={
+                                 <ChartTooltipContent
+                                    formatter={(value) =>
+                                       formatDecimalCurrency(Number(value))
+                                    }
+                                    hideLabel
+                                 />
+                              }
+                           />
+                           <Pie
+                              data={expenseChartData}
+                              dataKey="value"
+                              innerRadius={50}
+                              nameKey="category"
+                              strokeWidth={2}
+                           >
+                              {expenseChartData.map((entry) => (
+                                 <Cell fill={entry.color} key={entry.category} />
+                              ))}
+                           </Pie>
+                        </PieChart>
+                     </ChartContainer>
+                  </CardContent>
+               </Card>
+            )}
+         </div>
+
+         {/* Tables with Progress Bars Section */}
+         <div className="grid gap-4 md:grid-cols-2">
+            {snapshotData.incomeBreakdown.length > 0 && (
+               <Card>
+                  <CardHeader>
+                     <CardTitle>Detalhamento de Receitas</CardTitle>
+                     <CardDescription>
+                        Análise detalhada por categoria
+                     </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                     <div className="space-y-4">
+                        {snapshotData.incomeBreakdown.map((cat) => (
+                           <div key={cat.categoryId} className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                 <div className="flex items-center gap-2">
+                                    <div
+                                       className="size-3 rounded-full"
+                                       style={{ backgroundColor: cat.categoryColor }}
+                                    />
+                                    <span className="text-sm font-medium truncate max-w-[150px]">
+                                       {cat.categoryName}
+                                    </span>
+                                 </div>
+                                 <div className="flex items-center gap-2 text-sm">
+                                    <span className="text-muted-foreground">
+                                       {cat.transactionCount} tx
+                                    </span>
+                                    <span className="font-medium text-emerald-600">
+                                       +{formatDecimalCurrency(cat.amount)}
+                                    </span>
+                                 </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                 <div
+                                    className="h-2 flex-1 rounded-full bg-muted overflow-hidden"
+                                 >
+                                    <div
+                                       className="h-full rounded-full"
+                                       style={{
+                                          width: `${cat.percentage}%`,
+                                          backgroundColor: cat.categoryColor,
+                                       }}
+                                    />
+                                 </div>
+                                 <span className="text-xs text-muted-foreground w-12 text-right">
+                                    {cat.percentage.toFixed(1)}%
+                                 </span>
+                              </div>
+                           </div>
+                        ))}
+                     </div>
+                  </CardContent>
+               </Card>
+            )}
+
+            {snapshotData.expenseBreakdown.length > 0 && (
+               <Card>
+                  <CardHeader>
+                     <CardTitle>Detalhamento de Despesas</CardTitle>
+                     <CardDescription>
+                        Análise detalhada por categoria
+                     </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                     <div className="space-y-4">
+                        {snapshotData.expenseBreakdown.map((cat) => (
+                           <div key={cat.categoryId} className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                 <div className="flex items-center gap-2">
+                                    <div
+                                       className="size-3 rounded-full"
+                                       style={{ backgroundColor: cat.categoryColor }}
+                                    />
+                                    <span className="text-sm font-medium truncate max-w-[150px]">
+                                       {cat.categoryName}
+                                    </span>
+                                 </div>
+                                 <div className="flex items-center gap-2 text-sm">
+                                    <span className="text-muted-foreground">
+                                       {cat.transactionCount} tx
+                                    </span>
+                                    <span className="font-medium text-destructive">
+                                       -{formatDecimalCurrency(cat.amount)}
+                                    </span>
+                                 </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                 <div
+                                    className="h-2 flex-1 rounded-full bg-muted overflow-hidden"
+                                 >
+                                    <div
+                                       className="h-full rounded-full"
+                                       style={{
+                                          width: `${cat.percentage}%`,
+                                          backgroundColor: cat.categoryColor,
+                                       }}
+                                    />
+                                 </div>
+                                 <span className="text-xs text-muted-foreground w-12 text-right">
+                                    {cat.percentage.toFixed(1)}%
+                                 </span>
+                              </div>
+                           </div>
+                        ))}
+                     </div>
+                  </CardContent>
+               </Card>
+            )}
+         </div>
+      </>
+   );
+}
+
 function CustomReportDetailsContent() {
    const { reportId } = routeApi.useParams();
    const { activeOrganization } = useActiveOrganization();
@@ -1572,6 +1876,12 @@ function CustomReportDetailsContent() {
          )}
          {isCounterpartyAnalysisSnapshotData(snapshotData, reportType) && (
             <CounterpartyAnalysisStatsCards
+               periodLabel={periodLabel}
+               snapshotData={snapshotData}
+            />
+         )}
+         {isCategoryAnalysisSnapshotData(snapshotData, reportType) && (
+            <CategoryAnalysisStatsCards
                periodLabel={periodLabel}
                snapshotData={snapshotData}
             />
@@ -1735,6 +2045,11 @@ function CustomReportDetailsContent() {
          {/* Counterparty Analysis content */}
          {isCounterpartyAnalysisSnapshotData(snapshotData, reportType) && (
             <CounterpartyAnalysisContent snapshotData={snapshotData} />
+         )}
+
+         {/* Category Analysis content */}
+         {isCategoryAnalysisSnapshotData(snapshotData, reportType) && (
+            <CategoryAnalysisContent snapshotData={snapshotData} />
          )}
       </div>
    );

@@ -32,6 +32,7 @@ import {
    Download,
    Edit,
    Eye,
+   PieChart,
    Target,
    Trash2,
    TrendingUp,
@@ -55,6 +56,11 @@ const reportTypeConfig = {
       color: "#06b6d4",
       icon: Wallet,
       label: "Fluxo de Caixa",
+   },
+   category_analysis: {
+      color: "#f97316",
+      icon: PieChart,
+      label: "Análise por Categoria",
    },
    counterparty_analysis: {
       color: "#f59e0b",
