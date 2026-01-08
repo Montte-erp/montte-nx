@@ -48,6 +48,10 @@
       },
       "organization": {
          "title": "Organização"
+      },
+      "project": {
+         "title": "Projeto",
+         "insights": "Insights"
       }
    },
    "nav-user": {

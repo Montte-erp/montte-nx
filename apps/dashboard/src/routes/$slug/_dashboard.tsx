@@ -1,6 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { CookieConsentBanner } from "@/features/cookie-consent/cookie-consent-banner";
-import { GlobalInsightPicker } from "@/features/dashboard/ui/insight-picker-dialog";
 import { getQueryClient, reservedRoutes, trpc } from "@/integrations/clients";
 import { DashboardLayout } from "@/layout/dashboard-layout";
 
@@ -78,7 +77,6 @@ function RouteComponent() {
    return (
       <DashboardLayout>
          <CookieConsentBanner />
-         <GlobalInsightPicker />
          <div className="h-full w-full [view-transition-name:main-content]">
             <Outlet />
          </div>

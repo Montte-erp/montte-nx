@@ -5,38 +5,22 @@ import {
 	CardDescription,
 	CardTitle,
 } from "@packages/ui/components/card";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@packages/ui/components/dropdown-menu";
-import { Input } from "@packages/ui/components/input";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import type { WidgetPosition, InsightConfig } from "@packages/database/schemas/dashboards";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-	CalendarDays,
-	Download,
-	FileImage,
-	FileSpreadsheet,
-	FileText,
-	Pencil,
-	Plus,
-} from "lucide-react";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Plus } from "lucide-react";
+import { Suspense, useEffect } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
+import { DefaultHeader } from "@/default/default-header";
 import { DashboardGrid } from "@/features/dashboard/ui/dashboard-grid";
-import { InsightBuilderWizard } from "@/features/dashboard/ui/insight-builder-wizard";
-import { WidgetConfigPanel } from "@/features/dashboard/ui/widget-config-panel";
-import { useDashboardTabs } from "@/features/dashboard/hooks/use-dashboard-tabs";
+import { AddWidgetCredenza } from "@/features/dashboard/ui/add-widget-credenza";
+import { InsightPickerCredenza, type DefaultInsightType } from "@/features/dashboard/ui/insight-picker-credenza";
+import { useDashboardTabs, setAppTabName } from "@/features/dashboard/hooks/use-dashboard-tabs";
 import { useInsightDrillDown, type DrillDownContext } from "@/features/dashboard/hooks/use-insight-drill-down";
-import { openWidgetConfigPanel } from "@/features/dashboard/hooks/use-widget-config-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useSheet } from "@/hooks/use-sheet";
+import { useCredenza, closeCredenza } from "@/hooks/use-credenza";
 import { useTRPC } from "@/integrations/clients";
-import { exportToCsv, exportToImage } from "@/features/dashboard/utils/export-utils";
 
 type DashboardPageProps = {
 	dashboardId: string;
@@ -89,6 +73,7 @@ type Widget = {
 	dashboardId: string;
 	type: "insight" | "text_card";
 	name: string;
+	description: string | null;
 	position: WidgetPosition;
 	config: unknown;
 };
@@ -96,102 +81,200 @@ type Widget = {
 function DashboardContent({ dashboardId }: { dashboardId: string }) {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
-	const { openSheet, closeSheet } = useSheet();
 	const { openAlertDialog } = useAlertDialog();
 	const { updateTabName } = useDashboardTabs();
 	const { drillDown } = useInsightDrillDown(dashboardId);
+	const { openCredenza } = useCredenza();
 
-	const [isEditingTitle, setIsEditingTitle] = useState(false);
-	const [editTitle, setEditTitle] = useState("");
-	const [isEditingDescription, setIsEditingDescription] = useState(false);
-	const [editDescription, setEditDescription] = useState("");
-	const titleInputRef = useRef<HTMLInputElement>(null);
-	const gridContainerRef = useRef<HTMLDivElement>(null);
+	const queryOptions = trpc.dashboards.getById.queryOptions({ id: dashboardId });
+	const { data: dashboard } = useQuery(queryOptions);
 
-	const { data: dashboard } = useQuery(
-		trpc.dashboards.getById.queryOptions({ id: dashboardId }),
-	);
+	type DashboardData = NonNullable<typeof dashboard>;
+
+	const queryKey = trpc.dashboards.getById.queryKey({ id: dashboardId });
 
 	const updateMutation = useMutation(
 		trpc.dashboards.update.mutationOptions({
+			onMutate: async (newData) => {
+				await queryClient.cancelQueries({ queryKey });
+				const previousData = queryClient.getQueryData<DashboardData>(queryKey);
+
+				queryClient.setQueryData<DashboardData>(queryKey, (old) => {
+					if (!old) return old;
+					return {
+						...old,
+						...(newData.name !== undefined && { name: newData.name }),
+						...(newData.description !== undefined && { description: newData.description }),
+						...(newData.isPinned !== undefined && { isPinned: newData.isPinned }),
+					};
+				});
+
+				// Optimistically update tab name
+				if (newData.name) {
+					updateTabName(dashboardId, newData.name);
+				}
+
+				return { previousData };
+			},
+			onError: (error, _vars, context) => {
+				// Rollback on error
+				if (context?.previousData) {
+					queryClient.setQueryData<DashboardData>(queryKey, context.previousData);
+					updateTabName(dashboardId, context.previousData.name);
+				}
+				toast.error(error.message || "Failed to update dashboard");
+			},
 			onSuccess: (data) => {
-				queryClient.invalidateQueries({
-					queryKey: trpc.dashboards.getById.queryKey({ id: dashboardId }),
+				// Sync with server data
+				queryClient.setQueryData<DashboardData>(queryKey, (old) => {
+					if (!old) return old;
+					return { ...old, ...data };
 				});
 				updateTabName(dashboardId, data.name);
-			},
-			onError: (error) => {
-				toast.error(error.message || "Failed to update dashboard");
+				if (data.isPinned) {
+					setAppTabName(data.name, data.id);
+				}
 			},
 		}),
 	);
 
 	const addWidgetMutation = useMutation(
 		trpc.dashboards.addWidget.mutationOptions({
-			onSuccess: () => {
-				queryClient.invalidateQueries({
-					queryKey: trpc.dashboards.getById.queryKey({ id: dashboardId }),
+			onMutate: async (newWidget) => {
+				await queryClient.cancelQueries({ queryKey });
+				const previousData = queryClient.getQueryData<DashboardData>(queryKey);
+
+				const tempId = `temp-${Date.now()}`;
+				queryClient.setQueryData<DashboardData>(queryKey, (old) => {
+					if (!old) return old;
+					return {
+						...old,
+						widgets: [
+							...old.widgets,
+							{
+								id: tempId,
+								dashboardId: newWidget.dashboardId,
+								type: newWidget.type,
+								name: newWidget.name,
+								description: newWidget.description ?? null,
+								position: newWidget.position,
+								config: newWidget.config,
+								createdAt: new Date(),
+								updatedAt: new Date(),
+							},
+						],
+					};
+				});
+
+				closeCredenza();
+				return { previousData, tempId };
+			},
+			onError: (error, _vars, context) => {
+				if (context?.previousData) {
+					queryClient.setQueryData<DashboardData>(queryKey, context.previousData);
+				}
+				toast.error(error.message || "Failed to add widget");
+			},
+			onSuccess: (data, _vars, context) => {
+				// Replace temp widget with real data from server
+				queryClient.setQueryData<DashboardData>(queryKey, (old) => {
+					if (!old) return old;
+					return {
+						...old,
+						widgets: old.widgets.map((w) =>
+							w.id === context?.tempId ? data : w
+						),
+					};
 				});
 				toast.success("Widget added");
-				closeSheet();
-			},
-			onError: (error) => {
-				toast.error(error.message || "Failed to add widget");
 			},
 		}),
 	);
 
 	const removeWidgetMutation = useMutation(
 		trpc.dashboards.removeWidget.mutationOptions({
-			onSuccess: () => {
-				queryClient.invalidateQueries({
-					queryKey: trpc.dashboards.getById.queryKey({ id: dashboardId }),
+			onMutate: async ({ widgetId }) => {
+				await queryClient.cancelQueries({ queryKey });
+				const previousData = queryClient.getQueryData<DashboardData>(queryKey);
+
+				queryClient.setQueryData<DashboardData>(queryKey, (old) => {
+					if (!old) return old;
+					return {
+						...old,
+						widgets: old.widgets.filter((w) => w.id !== widgetId),
+					};
 				});
-				toast.success("Widget removed");
+
+				return { previousData };
 			},
-			onError: (error) => {
+			onError: (error, _vars, context) => {
+				if (context?.previousData) {
+					queryClient.setQueryData<DashboardData>(queryKey, context.previousData);
+				}
 				toast.error(error.message || "Failed to remove widget");
+			},
+			onSuccess: () => {
+				toast.success("Widget removed");
 			},
 		}),
 	);
 
-	useEffect(() => {
-		if (dashboard) {
-			setEditTitle(dashboard.name);
-			setEditDescription(dashboard.description || "");
-		}
-	}, [dashboard]);
+	const updateWidgetMutation = useMutation(
+		trpc.dashboards.updateWidget.mutationOptions({
+			onMutate: async ({ widgetId, ...updates }) => {
+				await queryClient.cancelQueries({ queryKey });
+				const previousData = queryClient.getQueryData<DashboardData>(queryKey);
 
+				queryClient.setQueryData<DashboardData>(queryKey, (old) => {
+					if (!old) return old;
+					return {
+						...old,
+						widgets: old.widgets.map((w) =>
+							w.id === widgetId
+								? {
+										...w,
+										...(updates.name !== undefined && { name: updates.name }),
+										...(updates.position !== undefined && { position: updates.position }),
+										...(updates.config !== undefined && { config: updates.config }),
+									}
+								: w
+						),
+					};
+				});
+
+				return { previousData };
+			},
+			onError: (error, _vars, context) => {
+				if (context?.previousData) {
+					queryClient.setQueryData<DashboardData>(queryKey, context.previousData);
+				}
+				toast.error(error.message || "Failed to update widget");
+			},
+			onSuccess: (data) => {
+				// Sync with server data
+				queryClient.setQueryData<DashboardData>(queryKey, (old) => {
+					if (!old) return old;
+					return {
+						...old,
+						widgets: old.widgets.map((w) =>
+							w.id === data.id ? data : w
+						),
+					};
+				});
+			},
+		}),
+	);
+
+	// Sync app tab name when viewing the default (pinned) dashboard
 	useEffect(() => {
-		if (isEditingTitle && titleInputRef.current) {
-			titleInputRef.current.focus();
-			titleInputRef.current.select();
+		if (dashboard?.isPinned) {
+			setAppTabName(dashboard.name, dashboard.id);
 		}
-	}, [isEditingTitle]);
+	}, [dashboard?.isPinned, dashboard?.name, dashboard?.id]);
 
 	if (!dashboard) {
 		return <DashboardSkeleton />;
 	}
-
-	const handleSaveTitle = () => {
-		if (editTitle.trim() && editTitle !== dashboard.name) {
-			updateMutation.mutate({
-				id: dashboardId,
-				name: editTitle.trim(),
-			});
-		}
-		setIsEditingTitle(false);
-	};
-
-	const handleSaveDescription = () => {
-		if (editDescription !== (dashboard.description || "")) {
-			updateMutation.mutate({
-				id: dashboardId,
-				description: editDescription.trim() || null,
-			});
-		}
-		setIsEditingDescription(false);
-	};
 
 	const handleAddTextCard = () => {
 		// Find a free position
@@ -201,8 +284,9 @@ function DashboardContent({ dashboardId }: { dashboardId: string }) {
 		addWidgetMutation.mutate({
 			dashboardId,
 			name: "Text Card",
+			description: "Custom text and notes",
 			type: "text_card",
-			position: { x: 0, y: maxY, w: 4, h: 2 },
+			position: { x: 0, y: maxY, w: 1, h: 2 },
 			config: {
 				type: "text_card",
 				content: "# New Text Card\n\nAdd your content here...",
@@ -210,20 +294,115 @@ function DashboardContent({ dashboardId }: { dashboardId: string }) {
 		});
 	};
 
-	const handleAddInsight = () => {
-		openSheet({
+	const handleOpenAddWidget = () => {
+		openCredenza({
 			children: (
-				<InsightBuilderWizard
-					dashboardId={dashboardId}
-					onSuccess={() => {
-						queryClient.invalidateQueries({
-							queryKey: trpc.dashboards.getById.queryKey({ id: dashboardId }),
-						});
-						closeSheet();
+				<AddWidgetCredenza
+					onAddTextCard={() => {
+						closeCredenza();
+						handleAddTextCard();
 					}}
-					onCancel={closeSheet}
+					onAddInsight={() => {
+						closeCredenza();
+						handleOpenInsightPicker();
+					}}
 				/>
 			),
+		});
+	};
+
+	const handleOpenInsightPicker = () => {
+		openCredenza({
+			className: "md:max-w-3xl",
+			children: (
+				<InsightPickerCredenza
+					onSelectDefault={handleAddDefaultInsight}
+					onSelectSaved={handleAddSavedInsight}
+				/>
+			),
+		});
+	};
+
+	const handleAddDefaultInsight = (type: DefaultInsightType) => {
+		const widgets = dashboard.widgets || [];
+		const maxY = widgets.reduce((max, w) => Math.max(max, w.position.y + w.position.h), 0);
+
+		const defaultConfigs: Record<DefaultInsightType, InsightConfig> = {
+			transactions: {
+				type: "insight",
+				dataSource: "transactions",
+				aggregation: "sum",
+				aggregateField: "amount",
+				timeGrouping: "month",
+				breakdown: { field: "categoryId", limit: 10 },
+				filters: [],
+				chartType: "line",
+			},
+			bills: {
+				type: "insight",
+				dataSource: "bills",
+				aggregation: "sum",
+				aggregateField: "amount",
+				timeGrouping: "month",
+				breakdown: { field: "type", limit: 10 },
+				filters: [],
+				chartType: "bar",
+			},
+			budgets: {
+				type: "insight",
+				dataSource: "budgets",
+				aggregation: "sum",
+				aggregateField: "amount",
+				timeGrouping: "month",
+				filters: [],
+				chartType: "bar",
+			},
+			bank_accounts: {
+				type: "insight",
+				dataSource: "bank_accounts",
+				aggregation: "sum",
+				aggregateField: "balance",
+				breakdown: { field: "name", limit: 10 },
+				filters: [],
+				chartType: "stat_card",
+			},
+		};
+
+		const defaultNames: Record<DefaultInsightType, string> = {
+			transactions: "Transactions Overview",
+			bills: "Bills Summary",
+			budgets: "Budget Progress",
+			bank_accounts: "Account Balances",
+		};
+
+		const defaultDescriptions: Record<DefaultInsightType, string> = {
+			transactions: "Track your income and expenses over time",
+			bills: "Monitor upcoming and paid bills",
+			budgets: "View budget allocation and spending",
+			bank_accounts: "Current balance across all accounts",
+		};
+
+		addWidgetMutation.mutate({
+			dashboardId,
+			name: defaultNames[type],
+			description: defaultDescriptions[type],
+			type: "insight",
+			position: { x: 0, y: maxY, w: 2, h: 4 },
+			config: defaultConfigs[type],
+		});
+	};
+
+	const handleAddSavedInsight = (insight: { id: string; name: string; description?: string | null; config: InsightConfig }) => {
+		const widgets = dashboard.widgets || [];
+		const maxY = widgets.reduce((max, w) => Math.max(max, w.position.y + w.position.h), 0);
+
+		addWidgetMutation.mutate({
+			dashboardId,
+			name: insight.name,
+			description: insight.description || null,
+			type: "insight",
+			position: { x: 0, y: maxY, w: 2, h: 4 },
+			config: insight.config,
 		});
 	};
 
@@ -239,53 +418,43 @@ function DashboardContent({ dashboardId }: { dashboardId: string }) {
 		});
 	};
 
-	const handleEditWidget = (widget: Widget) => {
-		if (widget.type === "insight") {
-			// Open the config panel for insight widgets
-			openWidgetConfigPanel({
-				widgetId: widget.id,
-				dashboardId: dashboardId,
-				widgetName: widget.name,
-				widgetConfig: widget.config as InsightConfig,
-			});
-		} else {
-			// TODO: Text card editor
-			toast.info("Text card editor coming soon");
-		}
+	const handleUpdateWidgetConfig = (widgetId: string, updates: Partial<InsightConfig>) => {
+		const widget = widgets.find((w) => w.id === widgetId);
+		if (!widget || widget.type !== "insight") return;
+
+		const currentConfig = widget.config as InsightConfig;
+		updateWidgetMutation.mutate({
+			widgetId,
+			config: { ...currentConfig, ...updates },
+		});
+	};
+
+	const handleUpdateWidgetName = (widgetId: string, name: string) => {
+		updateWidgetMutation.mutate({
+			widgetId,
+			name,
+		});
+	};
+
+	const handleUpdateWidgetDescription = (widgetId: string, description: string | null) => {
+		updateWidgetMutation.mutate({
+			widgetId,
+			description,
+		});
+	};
+
+	const handleToggleWidgetWidth = (widgetId: string, newWidth: 1 | 2) => {
+		const widget = widgets.find((w) => w.id === widgetId);
+		if (!widget) return;
+
+		updateWidgetMutation.mutate({
+			widgetId,
+			position: { ...widget.position, w: newWidth },
+		});
 	};
 
 	const handleDrillDown = (config: InsightConfig, context: DrillDownContext) => {
 		drillDown(config, context);
-	};
-
-	const handleExportCsv = () => {
-		// For CSV export, we'll export a summary of all widgets
-		const widgetsSummary = widgets.map((widget) => ({
-			Name: widget.name,
-			Type: widget.type,
-			Position: `(${widget.position.x}, ${widget.position.y})`,
-			Size: `${widget.position.w}x${widget.position.h}`,
-		}));
-		exportToCsv(widgetsSummary, `${dashboard.name}-summary`);
-		toast.success("Dashboard exported as CSV");
-	};
-
-	const handleExportImage = async () => {
-		if (!gridContainerRef.current) {
-			toast.error("Unable to export dashboard");
-			return;
-		}
-		try {
-			await exportToImage(gridContainerRef.current, dashboard.name);
-			toast.success("Dashboard exported as image");
-		} catch {
-			toast.error("Failed to export as image");
-		}
-	};
-
-	const handleExportPdf = () => {
-		// PDF export requires server-side rendering
-		toast.info("PDF export coming soon");
 	};
 
 	const widgets = (dashboard.widgets || []) as Widget[];
@@ -293,122 +462,42 @@ function DashboardContent({ dashboardId }: { dashboardId: string }) {
 	return (
 		<div className="space-y-6">
 			{/* Header */}
-			<div className="flex items-start justify-between">
-				<div className="space-y-1 flex-1">
-					{isEditingTitle ? (
-						<Input
-							ref={titleInputRef}
-							value={editTitle}
-							onChange={(e) => setEditTitle(e.target.value)}
-							onBlur={handleSaveTitle}
-							onKeyDown={(e) => {
-								if (e.key === "Enter") handleSaveTitle();
-								if (e.key === "Escape") {
-									setEditTitle(dashboard.name);
-									setIsEditingTitle(false);
-								}
-							}}
-							className="text-2xl font-bold h-auto py-1 px-2 -ml-2"
-						/>
-					) : (
-						<h1
-							className="text-2xl font-bold cursor-pointer hover:bg-muted/50 rounded px-2 py-1 -ml-2 inline-flex items-center gap-2 group"
-							onClick={() => setIsEditingTitle(true)}
-						>
-							{dashboard.name}
-							<Pencil className="h-4 w-4 opacity-0 group-hover:opacity-100" />
-						</h1>
-					)}
-
-					{isEditingDescription ? (
-						<Input
-							value={editDescription}
-							onChange={(e) => setEditDescription(e.target.value)}
-							onBlur={handleSaveDescription}
-							onKeyDown={(e) => {
-								if (e.key === "Enter") handleSaveDescription();
-								if (e.key === "Escape") {
-									setEditDescription(dashboard.description || "");
-									setIsEditingDescription(false);
-								}
-							}}
-							placeholder="Add a description..."
-							className="text-sm text-muted-foreground"
-						/>
-					) : (
-						<p
-							className="text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 rounded px-2 py-1 -ml-2"
-							onClick={() => setIsEditingDescription(true)}
-						>
-							{dashboard.description || "Click to add description..."}
-						</p>
-					)}
-				</div>
-
-				<div className="flex items-center gap-2">
-					{/* Date Range Filter */}
-					<Button variant="outline" size="sm">
-						<CalendarDays className="h-4 w-4 mr-2" />
-						Last 30 days
+			<DefaultHeader
+				title={dashboard.name}
+				description={dashboard.description || ""}
+				onTitleChange={(newTitle) => {
+					updateMutation.mutate({
+						id: dashboardId,
+						name: newTitle,
+					});
+				}}
+				onDescriptionChange={(newDescription) => {
+					updateMutation.mutate({
+						id: dashboardId,
+						description: newDescription.trim() || null,
+					});
+				}}
+				descriptionPlaceholder="Click to add description..."
+				actions={
+					<Button size="sm" onClick={handleOpenAddWidget}>
+						<Plus className="h-4 w-4 mr-2" />
+						Add
 					</Button>
-
-					{/* Add Widget */}
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button size="sm">
-								<Plus className="h-4 w-4 mr-2" />
-								Add
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end">
-							<DropdownMenuItem onClick={handleAddInsight}>
-								<Plus className="h-4 w-4 mr-2" />
-								Add insight
-							</DropdownMenuItem>
-							<DropdownMenuItem onClick={handleAddTextCard}>
-								<FileText className="h-4 w-4 mr-2" />
-								Add text card
-							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
-
-					{/* Export */}
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button variant="outline" size="sm">
-								<Download className="h-4 w-4 mr-2" />
-								Export
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end">
-							<DropdownMenuItem onClick={handleExportPdf}>
-								<FileText className="h-4 w-4 mr-2" />
-								Export as PDF
-							</DropdownMenuItem>
-							<DropdownMenuItem onClick={handleExportCsv}>
-								<FileSpreadsheet className="h-4 w-4 mr-2" />
-								Export as CSV
-							</DropdownMenuItem>
-							<DropdownMenuItem onClick={handleExportImage}>
-								<FileImage className="h-4 w-4 mr-2" />
-								Export as Image
-							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
-				</div>
-			</div>
+				}
+			/>
 
 			{/* Widgets Grid */}
 			{widgets.length > 0 ? (
-				<div ref={gridContainerRef}>
-					<DashboardGrid
-						dashboardId={dashboardId}
-						widgets={widgets}
-						onRemoveWidget={handleRemoveWidget}
-						onEditWidget={handleEditWidget}
-						onDrillDown={handleDrillDown}
-					/>
-				</div>
+				<DashboardGrid
+					dashboardId={dashboardId}
+					widgets={widgets}
+					onRemoveWidget={handleRemoveWidget}
+					onUpdateWidgetConfig={handleUpdateWidgetConfig}
+					onUpdateWidgetName={handleUpdateWidgetName}
+					onUpdateWidgetDescription={handleUpdateWidgetDescription}
+					onToggleWidgetWidth={handleToggleWidgetWidth}
+					onDrillDown={handleDrillDown}
+				/>
 			) : (
 				<Card className="border-dashed">
 					<CardContent className="flex flex-col items-center justify-center py-12 text-center">
@@ -419,22 +508,13 @@ function DashboardContent({ dashboardId }: { dashboardId: string }) {
 						<CardDescription className="mb-4">
 							Add insights or text cards to customize your dashboard
 						</CardDescription>
-						<div className="flex gap-2">
-							<Button onClick={handleAddInsight}>
-								<Plus className="h-4 w-4 mr-2" />
-								Add insight
-							</Button>
-							<Button variant="outline" onClick={handleAddTextCard}>
-								<FileText className="h-4 w-4 mr-2" />
-								Add text card
-							</Button>
-						</div>
+						<Button onClick={handleOpenAddWidget}>
+							<Plus className="h-4 w-4 mr-2" />
+							Add
+						</Button>
 					</CardContent>
 				</Card>
 			)}
-
-			{/* Widget Config Panel */}
-			<WidgetConfigPanel />
 		</div>
 	);
 }

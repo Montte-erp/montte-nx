@@ -26,11 +26,16 @@ export const widgetTypeEnum = pgEnum("widget_type", [
 
 export const chartTypeEnum = pgEnum("chart_type", [
 	"line",
+	"area",
 	"bar",
+	"stacked_bar",
+	"line_cumulative",
 	"pie",
 	"donut",
 	"stat_card",
+	"bar_total",
 	"table",
+	"world_map",
 	"category_analysis",
 	"comparison",
 ]);
@@ -140,17 +145,29 @@ export type InsightConfig = {
 	filters: InsightFilter[];
 	chartType:
 		| "line"
+		| "area"
 		| "bar"
+		| "stacked_bar"
+		| "line_cumulative"
 		| "pie"
 		| "donut"
 		| "stat_card"
+		| "bar_total"
 		| "table"
+		| "world_map"
 		| "category_analysis"
 		| "comparison";
 	comparison?: InsightComparison;
 	showLegend?: boolean;
 	showLabels?: boolean;
 	showTrendLine?: boolean;
+	showAlertThresholdLines?: boolean;
+	showMultipleYAxes?: boolean;
+	showMovingAverage?: boolean;
+	showConfidenceIntervals?: boolean;
+	colorBy?: "name" | "rank";
+	yAxisUnit?: string;
+	yAxisScale?: "linear" | "logarithmic";
 	colorScheme?: string;
 	dateRangeOverride?: {
 		relativePeriod?:
@@ -240,7 +257,7 @@ export const dashboard = pgTable("dashboard", {
 		.notNull()
 		.references(() => user.id, { onDelete: "cascade" }),
 	layout: jsonb("layout").$type<DashboardLayout>().default({
-		gridColumns: 12,
+		gridColumns: 2,
 		gridRowHeight: 100,
 	}),
 	tabOrder: integer("tab_order").default(0).notNull(),
@@ -260,6 +277,7 @@ export const dashboardWidget = pgTable("dashboard_widget", {
 		.references(() => dashboard.id, { onDelete: "cascade" }),
 	type: widgetTypeEnum("type").notNull(),
 	name: text("name").notNull(),
+	description: text("description"),
 	position: jsonb("position").$type<WidgetPosition>().notNull(),
 	config: jsonb("config").$type<WidgetConfig>().notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),

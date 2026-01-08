@@ -22,6 +22,7 @@ export type AppTab = {
 	id: "app";
 	type: "app";
 	name: string;
+	dashboardId?: string;
 };
 
 export type SearchTab = {
@@ -59,12 +60,12 @@ export function useDashboardTabs() {
 			}));
 		},
 
-		setAppTabName: (name: string) => {
+		setAppTabName: (name: string, dashboardId?: string) => {
 			dashboardTabsStore.setState((s) => ({
 				...s,
 				appTabName: name,
 				tabs: s.tabs.map((tab) =>
-					tab.id === "app" ? { ...tab, name } : tab,
+					tab.id === "app" ? { ...tab, name, dashboardId } as AppTab : tab,
 				),
 			}));
 		},
@@ -320,10 +321,10 @@ export function setActiveTab(tabId: string) {
 	}));
 }
 
-export function setAppTabName(name: string) {
+export function setAppTabName(name: string, dashboardId?: string) {
 	dashboardTabsStore.setState((s) => ({
 		...s,
 		appTabName: name,
-		tabs: s.tabs.map((tab) => (tab.id === "app" ? { ...tab, name } : tab)),
+		tabs: s.tabs.map((tab) => (tab.id === "app" ? { ...tab, name, dashboardId } as AppTab : tab)),
 	}));
 }

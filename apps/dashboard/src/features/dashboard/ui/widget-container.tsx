@@ -1,3 +1,4 @@
+import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
 	Card,
@@ -12,6 +13,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@packages/ui/components/dropdown-menu";
+import { Input } from "@packages/ui/components/input";
 import type {
 	WidgetPosition,
 	InsightConfig,
@@ -20,20 +22,44 @@ import type {
 	BankAccountsConfig,
 	RecentTransactionsConfig,
 } from "@packages/database/schemas/dashboards";
-import { GripVertical, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import {
+	ChartLine,
+	Filter,
+	GripVertical,
+	Maximize2,
+	Minimize2,
+	MoreHorizontal,
+	Pencil,
+	Settings2,
+	Trash2,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@packages/ui/lib/utils";
 import { BalanceCardWidget } from "./balance-card-widget";
 import { BankAccountsWidget } from "./bank-accounts-widget";
+import { DisplayTypeCredenza } from "./display-type-credenza";
 import { InsightWidget } from "./insight-widget";
 import { QuickActionsWidget } from "./quick-actions-widget";
 import { RecentTransactionsWidget } from "./recent-transactions-widget";
 import { TextCardWidget } from "./text-card-widget";
+import { WidgetConfigToolbar } from "./widget-config-toolbar";
+import { WidgetFiltersCredenza } from "./widget-filters-credenza";
+import { WidgetOptionsCredenza } from "./widget-options-credenza";
 import type { DrillDownContext } from "../hooks/use-insight-drill-down";
+import { useCredenza } from "@/hooks/use-credenza";
 
 type Widget = {
 	id: string;
 	dashboardId: string;
-	type: "insight" | "text_card" | "balance_card" | "quick_actions" | "bank_accounts" | "recent_transactions";
+	type:
+	| "insight"
+	| "text_card"
+	| "balance_card"
+	| "quick_actions"
+	| "bank_accounts"
+	| "recent_transactions";
 	name: string;
+	description: string | null;
 	position: WidgetPosition;
 	config: unknown;
 };
@@ -41,7 +67,10 @@ type Widget = {
 type WidgetContainerProps = {
 	widget: Widget;
 	onRemove: () => void;
-	onEdit: () => void;
+	onUpdateConfig: (updates: Partial<InsightConfig>) => void;
+	onUpdateName: (name: string) => void;
+	onUpdateDescription: (description: string | null) => void;
+	onToggleWidth: (newWidth: 1 | 2) => void;
 	onDrillDown?: (config: InsightConfig, context: DrillDownContext) => void;
 };
 
@@ -57,11 +86,17 @@ function renderWidgetContent(
 				/>
 			);
 		case "balance_card":
-			return <BalanceCardWidget config={widget.config as BalanceCardConfig} />;
+			return (
+				<BalanceCardWidget config={widget.config as BalanceCardConfig} />
+			);
 		case "quick_actions":
-			return <QuickActionsWidget config={widget.config as QuickActionsConfig} />;
+			return (
+				<QuickActionsWidget config={widget.config as QuickActionsConfig} />
+			);
 		case "bank_accounts":
-			return <BankAccountsWidget config={widget.config as BankAccountsConfig} />;
+			return (
+				<BankAccountsWidget config={widget.config as BankAccountsConfig} />
+			);
 		case "recent_transactions":
 			return (
 				<RecentTransactionsWidget
@@ -83,48 +118,270 @@ function renderWidgetContent(
 export function WidgetContainer({
 	widget,
 	onRemove,
-	onEdit,
+	onUpdateConfig,
+	onUpdateName,
+	onUpdateDescription,
+	onToggleWidth,
 	onDrillDown,
 }: WidgetContainerProps) {
+	const { openCredenza } = useCredenza();
+	const isInsight = widget.type === "insight";
+	const insightConfig = isInsight ? (widget.config as InsightConfig) : null;
+	const isFullWidth = widget.position.w === 2;
+
+	// Inline title editing state
+	const [isEditingTitle, setIsEditingTitle] = useState(false);
+	const [editTitle, setEditTitle] = useState(widget.name);
+	const titleInputRef = useRef<HTMLInputElement>(null);
+
+	// Inline description editing state
+	const [isEditingDescription, setIsEditingDescription] = useState(false);
+	const [editDescription, setEditDescription] = useState(
+		widget.description || "",
+	);
+	const descriptionInputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		setEditTitle(widget.name);
+	}, [widget.name]);
+
+	useEffect(() => {
+		setEditDescription(widget.description || "");
+	}, [widget.description]);
+
+	useEffect(() => {
+		if (isEditingTitle && titleInputRef.current) {
+			titleInputRef.current.focus();
+			titleInputRef.current.select();
+		}
+	}, [isEditingTitle]);
+
+	useEffect(() => {
+		if (isEditingDescription && descriptionInputRef.current) {
+			descriptionInputRef.current.focus();
+			descriptionInputRef.current.select();
+		}
+	}, [isEditingDescription]);
+
+	const handleSaveTitle = () => {
+		if (editTitle.trim() && editTitle !== widget.name) {
+			onUpdateName(editTitle.trim());
+		}
+		setIsEditingTitle(false);
+	};
+
+	const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === "Enter") {
+			handleSaveTitle();
+		} else if (e.key === "Escape") {
+			setEditTitle(widget.name);
+			setIsEditingTitle(false);
+		}
+	};
+
+	const handleSaveDescription = () => {
+		const trimmed = editDescription.trim();
+		if (trimmed !== (widget.description || "")) {
+			onUpdateDescription(trimmed || null);
+		}
+		setIsEditingDescription(false);
+	};
+
+	const handleDescriptionKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === "Enter") {
+			handleSaveDescription();
+		} else if (e.key === "Escape") {
+			setEditDescription(widget.description || "");
+			setIsEditingDescription(false);
+		}
+	};
+
 	const handleDrillDown = (context: DrillDownContext) => {
-		if (onDrillDown && widget.type === "insight") {
+		if (onDrillDown && isInsight) {
 			onDrillDown(widget.config as InsightConfig, context);
 		}
 	};
 
+	const handleToggleWidth = () => {
+		onToggleWidth(isFullWidth ? 1 : 2);
+	};
+
+	const handleOpenDisplayType = () => {
+		if (!insightConfig) return;
+		openCredenza({
+			children: (
+				<DisplayTypeCredenza
+					currentType={insightConfig.chartType}
+					dataSource={insightConfig.dataSource}
+					onSelectType={(chartType) => onUpdateConfig({ chartType })}
+				/>
+			),
+		});
+	};
+
+	const handleOpenOptions = () => {
+		if (!insightConfig) return;
+		openCredenza({
+			children: (
+				<WidgetOptionsCredenza
+					config={insightConfig}
+					onApply={onUpdateConfig}
+				/>
+			),
+		});
+	};
+
+	const handleOpenFilters = () => {
+		if (!insightConfig) return;
+		openCredenza({
+			children: (
+				<WidgetFiltersCredenza
+					config={insightConfig}
+					onApply={onUpdateConfig}
+				/>
+			),
+		});
+	};
+
 	return (
 		<Card className="h-full flex flex-col">
-			<CardHeader className="flex flex-row items-center justify-between py-3 px-4 space-y-0">
-				<div className="flex items-center gap-2">
-					<div className="drag-handle cursor-grab active:cursor-grabbing p-1 -ml-1 hover:bg-muted rounded">
+			{/* Desktop: Config toolbar for insights (includes drag handle) */}
+			{isInsight && insightConfig && (
+				<WidgetConfigToolbar
+					config={insightConfig}
+					onUpdateConfig={onUpdateConfig}
+					onOpenOptions={handleOpenOptions}
+					isFullWidth={isFullWidth}
+					onToggleWidth={handleToggleWidth}
+					onRemove={onRemove}
+				/>
+			)}
+
+			{/* Card header with editable title and description */}
+			<CardHeader className="flex flex-row items-start justify-between py-3 px-4 space-y-0 gap-2">
+				<div className="flex items-start gap-2 flex-1 min-w-0">
+					{/* Drag handle - show for non-insights on desktop, and always on mobile */}
+					<div
+						className={cn(
+							"drag-handle cursor-grab active:cursor-grabbing p-1 -ml-1 hover:bg-muted rounded mt-0.5",
+							isInsight && "md:hidden",
+						)}
+					>
 						<GripVertical className="h-4 w-4 text-muted-foreground" />
 					</div>
-					<CardTitle className="text-sm font-medium">{widget.name}</CardTitle>
+					<div className="flex flex-col gap-1 flex-1 min-w-0">
+						{/* Editable Title */}
+						{isEditingTitle ? (
+							<Input
+								ref={titleInputRef}
+								value={editTitle}
+								onChange={(e) => setEditTitle(e.target.value)}
+								onBlur={handleSaveTitle}
+								onKeyDown={handleTitleKeyDown}
+								className="text-sm font-medium h-7 py-1 px-2"
+							/>
+						) : (
+							<CardTitle
+								className="text-sm font-medium cursor-pointer hover:bg-muted/50 rounded px-2 py-0.5 -ml-2 inline-flex items-center gap-2 truncate"
+								onClick={() => setIsEditingTitle(true)}
+							>
+								{widget.name}
+								<Pencil className="h-3 w-3 text-muted-foreground shrink-0" />
+							</CardTitle>
+						)}
+						{/* Editable Description */}
+						{isEditingDescription ? (
+							<Input
+								ref={descriptionInputRef}
+								value={editDescription}
+								onChange={(e) => setEditDescription(e.target.value)}
+								onBlur={handleSaveDescription}
+								onKeyDown={handleDescriptionKeyDown}
+								placeholder="Add a description..."
+								className="text-xs h-6 py-1 px-2 text-muted-foreground"
+							/>
+						) : (
+							<span
+								className="text-xs text-muted-foreground cursor-pointer hover:bg-muted/50 rounded px-2 py-0.5 -ml-2 inline-flex items-center gap-1.5 truncate"
+								onClick={() => setIsEditingDescription(true)}
+							>
+								{widget.description || (
+									<span className="italic text-muted-foreground/70">
+										Add description...
+									</span>
+								)}
+								<Pencil className="h-2.5 w-2.5 text-muted-foreground/70 shrink-0" />
+							</span>
+						)}
+					</div>
 				</div>
+				{/* Mobile: dropdown menu for insights, all platforms for non-insights */}
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
-						<Button variant="ghost" size="icon" className="h-8 w-8">
+						<Button
+							variant="ghost"
+							size="icon"
+							className={cn(
+								"h-8 w-8 shrink-0",
+								isInsight && "md:hidden",
+							)}
+						>
 							<MoreHorizontal className="h-4 w-4" />
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end">
-						<DropdownMenuItem onClick={onEdit}>
-							<Pencil className="h-4 w-4 mr-2" />
-							Edit
-						</DropdownMenuItem>
-						<DropdownMenuSeparator />
+						{/* Width toggle for non-insights on desktop */}
+						{!isInsight && (
+							<DropdownMenuItem
+								onClick={handleToggleWidth}
+								className="hidden md:flex"
+							>
+								{isFullWidth ? (
+									<>
+										<Minimize2 className="h-4 w-4 mr-2" />
+										{translate("dashboard.widgets.menu.half-width")}
+									</>
+								) : (
+									<>
+										<Maximize2 className="h-4 w-4 mr-2" />
+										{translate("dashboard.widgets.menu.full-width")}
+									</>
+								)}
+							</DropdownMenuItem>
+						)}
+						{/* Mobile: Show insight config options via credenzas */}
+						{isInsight && (
+							<>
+								<DropdownMenuItem onClick={handleOpenDisplayType}>
+									<ChartLine className="h-4 w-4 mr-2" />
+									{translate("dashboard.widgets.menu.display-type")}
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={handleOpenOptions}>
+									<Settings2 className="h-4 w-4 mr-2" />
+									{translate("dashboard.widgets.menu.options")}
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={handleOpenFilters}>
+									<Filter className="h-4 w-4 mr-2" />
+									{translate("dashboard.widgets.menu.filters")}
+								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+							</>
+						)}
 						<DropdownMenuItem
 							className="text-destructive focus:text-destructive"
 							onClick={onRemove}
 						>
 							<Trash2 className="h-4 w-4 mr-2" />
-							Remove
+							{translate("dashboard.widgets.menu.remove")}
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</CardHeader>
 			<CardContent className="flex-1 overflow-hidden p-4 pt-0">
-				{renderWidgetContent(widget, onDrillDown ? handleDrillDown : undefined)}
+				{renderWidgetContent(
+					widget,
+					onDrillDown ? handleDrillDown : undefined,
+				)}
 			</CardContent>
 		</Card>
 	);

@@ -45,9 +45,9 @@ import { protectedProcedure, router } from "../trpc";
 // ============================================
 
 const widgetPositionSchema = z.object({
-	x: z.number().min(0).max(11),
+	x: z.number().min(0).max(1),
 	y: z.number().min(0),
-	w: z.number().min(1).max(12),
+	w: z.number().min(1).max(2),
 	h: z.number().min(1),
 	minW: z.number().optional(),
 	minH: z.number().optional(),
@@ -91,11 +91,16 @@ const insightConfigSchema = z.object({
 	filters: z.array(insightFilterSchema),
 	chartType: z.enum([
 		"line",
+		"area",
 		"bar",
+		"stacked_bar",
+		"line_cumulative",
 		"pie",
 		"donut",
 		"stat_card",
+		"bar_total",
 		"table",
+		"world_map",
 		"category_analysis",
 		"comparison",
 	]),
@@ -106,7 +111,35 @@ const insightConfigSchema = z.object({
 		.optional(),
 	showLegend: z.boolean().optional(),
 	showLabels: z.boolean().optional(),
+	showTrendLine: z.boolean().optional(),
+	showAlertThresholdLines: z.boolean().optional(),
+	showMultipleYAxes: z.boolean().optional(),
+	showMovingAverage: z.boolean().optional(),
+	showConfidenceIntervals: z.boolean().optional(),
+	colorBy: z.enum(["name", "rank"]).optional(),
+	yAxisUnit: z.string().optional(),
+	yAxisScale: z.enum(["linear", "logarithmic"]).optional(),
 	colorScheme: z.string().optional(),
+	dateRangeOverride: z
+		.object({
+			relativePeriod: z
+				.enum([
+					"today",
+					"yesterday",
+					"last_7_days",
+					"last_30_days",
+					"last_90_days",
+					"this_month",
+					"last_month",
+					"this_quarter",
+					"this_year",
+					"last_year",
+				])
+				.optional(),
+			startDate: z.string().optional(),
+			endDate: z.string().optional(),
+		})
+		.optional(),
 });
 
 const textCardConfigSchema = z.object({
@@ -145,7 +178,7 @@ const widgetConfigSchema = z.discriminatedUnion("type", [
 ]);
 
 const dashboardLayoutSchema = z.object({
-	gridColumns: z.number().default(12),
+	gridColumns: z.number().default(2),
 	gridRowHeight: z.number().default(100),
 });
 
@@ -363,6 +396,7 @@ export const dashboardRouter = router({
 			z.object({
 				dashboardId: z.string().uuid(),
 				name: z.string().min(1).max(100),
+				description: z.string().max(500).nullish(),
 				type: z.enum(["insight", "text_card", "balance_card", "quick_actions", "bank_accounts", "recent_transactions"]),
 				position: widgetPositionSchema,
 				config: widgetConfigSchema,
@@ -384,6 +418,7 @@ export const dashboardRouter = router({
 				config: input.config as WidgetConfig,
 				dashboardId: input.dashboardId,
 				name: input.name,
+				description: input.description ?? null,
 				position: input.position as WidgetPosition,
 				type: input.type,
 			});
@@ -394,6 +429,7 @@ export const dashboardRouter = router({
 			z.object({
 				widgetId: z.string().uuid(),
 				name: z.string().min(1).max(100).optional(),
+				description: z.string().max(500).nullish(),
 				position: widgetPositionSchema.optional(),
 				config: widgetConfigSchema.optional(),
 			}),
@@ -404,6 +440,7 @@ export const dashboardRouter = router({
 			return updateWidget(resolvedCtx.db, input.widgetId, {
 				config: input.config as WidgetConfig | undefined,
 				name: input.name,
+				description: input.description,
 				position: input.position as WidgetPosition | undefined,
 			});
 		}),
@@ -817,8 +854,8 @@ async function queryTransactionInsight(
 		};
 	}
 
-	// Handle time series grouping
-	if (config.breakdown && (config.chartType === "pie" || config.chartType === "donut" || config.chartType === "bar")) {
+	// Handle breakdown (generate regardless of chart type for flexibility)
+	if (config.breakdown) {
 		if (config.breakdown.field === "categoryId") {
 			const breakdownResult = await db
 				.select({
@@ -876,6 +913,45 @@ async function queryTransactionInsight(
 				value: row.value,
 			}));
 		}
+	}
+
+	// Handle time series grouping
+	if (config.timeGrouping) {
+		let dateFormat: string;
+		switch (config.timeGrouping) {
+			case "day":
+				dateFormat = "YYYY-MM-DD";
+				break;
+			case "week":
+				dateFormat = "IYYY-IW";
+				break;
+			case "month":
+				dateFormat = "YYYY-MM";
+				break;
+			case "quarter":
+				dateFormat = 'YYYY-"Q"Q';
+				break;
+			case "year":
+				dateFormat = "YYYY";
+				break;
+			default:
+				dateFormat = "YYYY-MM";
+		}
+
+		const timeSeriesResult = await db
+			.select({
+				date: sql<string>`TO_CHAR(${transaction.date}, '${sql.raw(dateFormat)}')`,
+				value: aggregateSql,
+			})
+			.from(transaction)
+			.where(whereClause)
+			.groupBy(sql`TO_CHAR(${transaction.date}, '${sql.raw(dateFormat)}')`)
+			.orderBy(asc(sql`TO_CHAR(${transaction.date}, '${sql.raw(dateFormat)}')`));
+
+		result.timeSeries = timeSeriesResult.map((row: { date: string; value: number }) => ({
+			date: row.date,
+			value: row.value,
+		}));
 	}
 
 	// Handle table output
@@ -954,8 +1030,8 @@ async function queryBillInsight(
 		value: mainResult[0]?.value || 0,
 	};
 
-	// Handle time series
-	if (config.timeGrouping && (config.chartType === "line" || config.chartType === "bar")) {
+	// Handle time series (generate regardless of chart type for flexibility)
+	if (config.timeGrouping) {
 		let dateFormat: string;
 		switch (config.timeGrouping) {
 			case "day":
@@ -967,19 +1043,25 @@ async function queryBillInsight(
 			case "month":
 				dateFormat = "YYYY-MM";
 				break;
+			case "quarter":
+				dateFormat = 'YYYY-"Q"Q';
+				break;
+			case "year":
+				dateFormat = "YYYY";
+				break;
 			default:
 				dateFormat = "YYYY-MM";
 		}
 
 		const timeSeriesResult = await db
 			.select({
-				date: sql<string>`TO_CHAR(${bill.dueDate}, ${dateFormat})`,
+				date: sql<string>`TO_CHAR(${bill.dueDate}, '${sql.raw(dateFormat)}')`,
 				value: aggregateSql,
 			})
 			.from(bill)
 			.where(whereClause)
-			.groupBy(sql`TO_CHAR(${bill.dueDate}, ${dateFormat})`)
-			.orderBy(asc(sql`TO_CHAR(${bill.dueDate}, ${dateFormat})`));
+			.groupBy(sql`TO_CHAR(${bill.dueDate}, '${sql.raw(dateFormat)}')`)
+			.orderBy(asc(sql`TO_CHAR(${bill.dueDate}, '${sql.raw(dateFormat)}')`));
 
 		result.timeSeries = timeSeriesResult.map((row: { date: string; value: number }) => ({
 			date: row.date,
@@ -987,8 +1069,8 @@ async function queryBillInsight(
 		}));
 	}
 
-	// Handle breakdown by type
-	if (config.breakdown?.field === "type" && (config.chartType === "pie" || config.chartType === "donut")) {
+	// Handle breakdown by type (generate regardless of chart type for flexibility)
+	if (config.breakdown?.field === "type") {
 		const breakdownResult = await db
 			.select({
 				label: bill.type,
@@ -1041,15 +1123,63 @@ async function queryBudgetInsight(
 		value: config.aggregateField === "spent" ? totalSpent : totalBudgeted,
 	};
 
-	if (config.chartType === "pie" || config.chartType === "donut") {
-		result.breakdown = [
-			{ color: "#ef4444", label: "Spent", value: totalSpent },
-			{
-				color: "#10b981",
-				label: "Remaining",
-				value: Math.max(0, totalBudgeted - totalSpent),
-			},
-		];
+	// Always generate breakdown (spent vs remaining)
+	result.breakdown = [
+		{ color: "#ef4444", label: "Spent", value: totalSpent },
+		{
+			color: "#10b981",
+			label: "Remaining",
+			value: Math.max(0, totalBudgeted - totalSpent),
+		},
+	];
+
+	// Handle time series by grouping budget periods
+	if (config.timeGrouping) {
+		const periodsByTime = new Map<string, number>();
+
+		for (const b of budgets) {
+			for (const period of b.periods) {
+				const periodDate = new Date(period.periodStart);
+				let dateKey: string;
+
+				switch (config.timeGrouping) {
+					case "day":
+						dateKey = periodDate.toISOString().slice(0, 10);
+						break;
+					case "week": {
+						const year = periodDate.getFullYear();
+						const week = Math.ceil(
+							((periodDate.getTime() - new Date(year, 0, 1).getTime()) / 86400000 + 1) / 7
+						);
+						dateKey = `${year}-W${String(week).padStart(2, "0")}`;
+						break;
+					}
+					case "month":
+						dateKey = `${periodDate.getFullYear()}-${String(periodDate.getMonth() + 1).padStart(2, "0")}`;
+						break;
+					case "quarter": {
+						const quarter = Math.ceil((periodDate.getMonth() + 1) / 3);
+						dateKey = `${periodDate.getFullYear()}-Q${quarter}`;
+						break;
+					}
+					case "year":
+						dateKey = String(periodDate.getFullYear());
+						break;
+					default:
+						dateKey = `${periodDate.getFullYear()}-${String(periodDate.getMonth() + 1).padStart(2, "0")}`;
+				}
+
+				const value = config.aggregateField === "spent"
+					? Number(period.spentAmount || 0)
+					: Number(period.totalAmount);
+				const existing = periodsByTime.get(dateKey) || 0;
+				periodsByTime.set(dateKey, existing + value);
+			}
+		}
+
+		result.timeSeries = Array.from(periodsByTime.entries())
+			.sort(([a], [b]) => a.localeCompare(b))
+			.map(([date, value]) => ({ date, value }));
 	}
 
 	return result;
@@ -1058,7 +1188,7 @@ async function queryBudgetInsight(
 async function queryBankAccountInsight(
 	db: any,
 	organizationId: string,
-	config: InsightConfig,
+	_config: InsightConfig,
 	globalFilters?: DashboardFilterConfig,
 ): Promise<InsightResult> {
 	const baseConditions = [eq(bankAccount.organizationId, organizationId)];
@@ -1118,16 +1248,14 @@ async function queryBankAccountInsight(
 		value: totalBalance,
 	};
 
-	if (config.chartType === "pie" || config.chartType === "donut" || config.chartType === "bar") {
-		result.breakdown = accountBalances.map((acc) => ({
-			label: acc.name || acc.bank || "Unknown",
-			value: acc.balance,
-		}));
-	}
+	// Always generate breakdown by account (no time series for bank accounts - point-in-time data)
+	result.breakdown = accountBalances.map((acc) => ({
+		label: acc.name || acc.bank || "Unknown",
+		value: acc.balance,
+	}));
 
-	if (config.chartType === "table") {
-		result.tableData = accountBalances;
-	}
+	// Always generate table data
+	result.tableData = accountBalances;
 
 	return result;
 }

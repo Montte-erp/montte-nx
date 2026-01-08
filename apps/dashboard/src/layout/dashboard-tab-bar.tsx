@@ -76,7 +76,19 @@ export function DashboardTabBar() {
 		setActiveTab(tab.id);
 
 		if (tab.type === "app") {
-			// Don't navigate, just switch to app tab (content will show current page)
+			// Navigate to default dashboard if dashboardId is available
+			if (tab.dashboardId) {
+				navigate({
+					to: "/$slug/dashboards/$dashboardId",
+					params: { dashboardId: tab.dashboardId, slug },
+				});
+			} else {
+				// Fallback: navigate to home which redirects to default dashboard
+				navigate({
+					to: "/$slug/home",
+					params: { slug },
+				});
+			}
 		} else if (tab.type === "dashboard") {
 			// Navigate to dashboard
 			navigate({

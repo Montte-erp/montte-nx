@@ -13,6 +13,7 @@ import commonThemesPtBr from "./common/themes.json";
 import commonTimePtBr from "./common/time.json";
 import commonValidationPtBr from "./common/validation.json";
 import layoutPtBr from "./dashboard/layout.json";
+import widgetsPtBr from "./dashboard/widgets.json";
 import anonymousPtBr from "./dashboard/routes/anonymous.json";
 import authPtBr from "./dashboard/routes/auth.json";
 import bankAccountsPtBr from "./dashboard/routes/bank-accounts.json";
@@ -56,6 +57,7 @@ const resources = {
       },
       dashboard: {
          layout: layoutPtBr,
+         widgets: widgetsPtBr,
          routes: {
             anonymous: anonymousPtBr,
             auth: authPtBr,

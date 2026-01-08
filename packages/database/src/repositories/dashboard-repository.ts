@@ -482,7 +482,7 @@ export async function addWidget(
 export async function updateWidget(
 	dbClient: DatabaseInstance,
 	widgetId: string,
-	data: Partial<Pick<DashboardWidget, "name" | "config" | "position">>,
+	data: Partial<Pick<DashboardWidget, "name" | "description" | "config" | "position">>,
 ): Promise<DashboardWidget> {
 	try {
 		const result = await dbClient

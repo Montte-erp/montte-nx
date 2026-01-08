@@ -1,29 +1,42 @@
 import { translate } from "@packages/localization";
 import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@packages/ui/components/collapsible";
+import {
    SidebarGroup,
    SidebarGroupContent,
    SidebarGroupLabel,
    SidebarMenu,
    SidebarMenuButton,
    SidebarMenuItem,
+   SidebarMenuSub,
+   SidebarMenuSubButton,
+   SidebarMenuSubItem,
    useSidebar,
 } from "@packages/ui/components/sidebar";
+import { cn } from "@packages/ui/lib/utils";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
    BarChart3,
    Building2,
+   ChevronDown,
    CirclePlus,
    FileText,
+   FolderKanban,
    Home,
    Landmark,
    Percent,
    Receipt,
+   Sparkles,
    Tag,
    TrendingUp,
    Users,
    Wallet,
    Zap,
 } from "lucide-react";
+import { useState } from "react";
 import { ManageTransactionForm } from "@/features/transaction/ui/manage-transaction-form";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { useSheet } from "@/hooks/use-sheet";
@@ -32,6 +45,7 @@ export function NavMain() {
    const { openSheet } = useSheet();
    const { pathname, searchStr } = useLocation();
    const { setOpenMobile, state } = useSidebar();
+   const [projectOpen, setProjectOpen] = useState(true);
    const {
       canAccessTags,
       canAccessCostCenters,
@@ -40,10 +54,13 @@ export function NavMain() {
       canAccessAutomations,
    } = usePlanFeatures();
 
+   // Extract slug from pathname for navigation
+   const slug = pathname.split("/")[1] || "";
+
    const isActive = (url: string) => {
       if (!url) return false;
 
-      const resolvedUrl = url.replace("$slug", pathname.split("/")[1] || "");
+      const resolvedUrl = url.replace("$slug", slug);
 
       if (resolvedUrl.includes("?")) {
          const [path, params] = resolvedUrl.split("?");
@@ -70,12 +87,6 @@ export function NavMain() {
          id: "transactions",
          title: translate("dashboard.layout.nav-main.finance.overview"),
          url: "/$slug/transactions",
-      },
-      {
-         icon: BarChart3,
-         id: "dashboards",
-         title: translate("dashboard.layout.nav-main.finance.dashboards"),
-         url: "/$slug/dashboards",
       },
       {
          icon: Wallet,
@@ -231,6 +242,67 @@ export function NavMain() {
             {/* Top-level Navigation (Home) */}
             <SidebarMenu>
                {topItems.map((item) => renderNavItem(item))}
+            </SidebarMenu>
+
+            {/* Project Section - Collapsible with Dashboards and Insights */}
+            <SidebarMenu>
+               <Collapsible open={projectOpen} onOpenChange={setProjectOpen}>
+                  <SidebarMenuItem>
+                     <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                           tooltip={translate("dashboard.layout.nav-main.project.title")}
+                           className={cn(
+                              (isActive("/$slug/dashboards") || isActive("/$slug/insights"))
+                                 ? "bg-primary/10 text-primary rounded-lg"
+                                 : ""
+                           )}
+                        >
+                           <FolderKanban />
+                           <span>{translate("dashboard.layout.nav-main.project.title")}</span>
+                           <ChevronDown
+                              className={cn(
+                                 "ml-auto h-4 w-4 transition-transform",
+                                 projectOpen && "rotate-180"
+                              )}
+                           />
+                        </SidebarMenuButton>
+                     </CollapsibleTrigger>
+                     <CollapsibleContent>
+                        <SidebarMenuSub>
+                           <SidebarMenuSubItem>
+                              <SidebarMenuSubButton
+                                 asChild
+                                 isActive={isActive("/$slug/dashboards")}
+                              >
+                                 <Link
+                                    onClick={() => setOpenMobile(false)}
+                                    params={{ slug }}
+                                    to="/$slug/dashboards"
+                                 >
+                                    <BarChart3 className="size-4" />
+                                    <span>{translate("dashboard.layout.nav-main.finance.dashboards")}</span>
+                                 </Link>
+                              </SidebarMenuSubButton>
+                           </SidebarMenuSubItem>
+                           <SidebarMenuSubItem>
+                              <SidebarMenuSubButton
+                                 asChild
+                                 isActive={isActive("/$slug/insights")}
+                              >
+                                 <Link
+                                    onClick={() => setOpenMobile(false)}
+                                    params={{ slug }}
+                                    to="/$slug/insights"
+                                 >
+                                    <Sparkles className="size-4" />
+                                    <span>{translate("dashboard.layout.nav-main.project.insights")}</span>
+                                 </Link>
+                              </SidebarMenuSubButton>
+                           </SidebarMenuSubItem>
+                        </SidebarMenuSub>
+                     </CollapsibleContent>
+                  </SidebarMenuItem>
+               </Collapsible>
             </SidebarMenu>
 
             {/* Analytics Section */}

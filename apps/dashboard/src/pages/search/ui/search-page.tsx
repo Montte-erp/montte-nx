@@ -20,9 +20,7 @@ import {
 	openInsightTab,
 	useDashboardTabs,
 } from "@/features/dashboard/hooks/use-dashboard-tabs";
-import { InsightBuilderWizard } from "@/features/dashboard/ui/insight-builder-wizard";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
-import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";
 import type { InsightConfig } from "@packages/database/schemas/dashboards";
 
@@ -86,7 +84,6 @@ export function SearchPage() {
 	const slug = activeOrganization?.slug;
 	const navigate = useNavigate();
 	const trpc = useTRPC();
-	const { openSheet, closeSheet } = useSheet();
 	const { openDashboardTab: openDashboardTabHook } = useDashboardTabs();
 	const [search, setSearch] = useState("");
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -200,23 +197,12 @@ export function SearchPage() {
 	}, [createDashboardMutation]);
 
 	const handleSelectInsightType = useCallback(
-		(chartType: InsightConfig["chartType"]) => {
-			// Open the insight builder wizard in a sheet
-			// Since we don't have a dashboard context, we'll create a saved insight
-			openSheet({
-				children: (
-					<InsightBuilderWizard
-						initialChartType={chartType}
-						onSuccess={() => {
-							closeSheet();
-							toast.success("Insight created");
-						}}
-						onCancel={closeSheet}
-					/>
-				),
-			});
+		(_chartType: InsightConfig["chartType"]) => {
+			// Creating insights requires a dashboard context
+			// For now, show a message to create a dashboard first
+			toast.info("Create a dashboard first, then add insights from there");
 		},
-		[openSheet, closeSheet],
+		[],
 	);
 
 	const handleQuickCreate = useCallback(
