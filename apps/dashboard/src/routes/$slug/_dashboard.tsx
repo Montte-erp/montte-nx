@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { CookieConsentBanner } from "@/features/cookie-consent/cookie-consent-banner";
+import { GlobalInsightPicker } from "@/features/dashboard/ui/insight-picker-dialog";
 import { getQueryClient, reservedRoutes, trpc } from "@/integrations/clients";
 import { DashboardLayout } from "@/layout/dashboard-layout";
 
@@ -20,9 +21,9 @@ export const Route = createFileRoute("/$slug/_dashboard")({
             isOnboardingPage
                ? Promise.resolve(null)
                : queryClient.fetchQuery({
-                    ...trpc.onboarding.getOnboardingStatus.queryOptions(),
-                    staleTime: 30 * 1000, // Cache for 30s instead of always refetching
-                 }),
+                  ...trpc.onboarding.getOnboardingStatus.queryOptions(),
+                  staleTime: 30 * 1000, // Cache for 30s instead of always refetching
+               }),
          ]);
 
          // Validate session
@@ -77,6 +78,7 @@ function RouteComponent() {
    return (
       <DashboardLayout>
          <CookieConsentBanner />
+         <GlobalInsightPicker />
          <div className="h-full w-full [view-transition-name:main-content]">
             <Outlet />
          </div>
