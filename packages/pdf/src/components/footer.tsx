@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from "@react-pdf/renderer";
 
 type FooterProps = {
-   generatedAt: string;
+	generatedAt?: string;
 };
 
 const styles = StyleSheet.create({
@@ -22,13 +22,14 @@ const styles = StyleSheet.create({
 });
 
 export function Footer({ generatedAt }: FooterProps) {
-   const formattedDate = new Date(generatedAt).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-   });
+	const dateToFormat = generatedAt ?? new Date().toISOString();
+	const formattedDate = new Date(dateToFormat).toLocaleDateString("pt-BR", {
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		month: "2-digit",
+		year: "numeric",
+	});
 
    return (
       <View fixed style={styles.container}>

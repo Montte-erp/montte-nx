@@ -30,7 +30,14 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useRouter } from "@tanstack/react-router";
-import { BadgeCheck, Bell, CreditCard, LogOut, Sparkles } from "lucide-react";
+import {
+   BadgeCheck,
+   Bell,
+   ChevronRight,
+   CreditCard,
+   LogOut,
+   Sparkles,
+} from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
@@ -184,7 +191,7 @@ function NavUserSkeleton() {
       <SidebarMenu>
          <SidebarMenuItem>
             <SidebarMenuButton className="pointer-events-none" size="lg">
-               <Skeleton className="h-8 w-8 rounded-lg mr-3" />
+               <Skeleton className="h-8 w-8 rounded-lg" />
                <div className="grid flex-1 text-left text-sm leading-tight">
                   <Skeleton className="h-4 w-24 mb-1" />
                   <Skeleton className="h-3 w-32" />
@@ -292,30 +299,12 @@ function NavUserContent() {
       return (
          <SidebarMenu>
             <SidebarMenuItem>
-               <Avatar
-                  className="border-border border-2 cursor-pointer"
+               <SidebarMenuButton
                   onClick={handleOpenCredenza}
+                  size="lg"
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                >
-                  <AvatarImage
-                     alt={session?.user.name}
-                     src={session?.user.image ?? ""}
-                  />
-                  <AvatarFallback className="rounded-lg">
-                     {session?.user.name?.charAt(0) || "?"}
-                  </AvatarFallback>
-               </Avatar>
-            </SidebarMenuItem>
-         </SidebarMenu>
-      );
-   }
-
-   // Desktop: Use DropdownMenu
-   return (
-      <SidebarMenu>
-         <SidebarMenuItem>
-            <DropdownMenu>
-               <DropdownMenuTrigger asChild>
-                  <Avatar className="border-border border-2 cursor-pointer">
+                  <Avatar className="h-8 w-8 rounded-lg">
                      <AvatarImage
                         alt={session?.user.name}
                         src={session?.user.image ?? ""}
@@ -324,6 +313,50 @@ function NavUserContent() {
                         {session?.user.name?.charAt(0) || "?"}
                      </AvatarFallback>
                   </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                     <span className="truncate font-medium">
+                        {session?.user.name}
+                     </span>
+                     <span className="truncate text-xs text-muted-foreground">
+                        {session?.user.email}
+                     </span>
+                  </div>
+                  <ChevronRight className="ml-auto size-4" />
+               </SidebarMenuButton>
+            </SidebarMenuItem>
+         </SidebarMenu>
+      );
+   }
+
+   // Desktop: Use DropdownMenu in sidebar footer
+   return (
+      <SidebarMenu>
+         <SidebarMenuItem>
+            <DropdownMenu>
+               <DropdownMenuTrigger asChild>
+                  <SidebarMenuButton
+                     size="lg"
+                     className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                  >
+                     <Avatar className="h-8 w-8 rounded-lg">
+                        <AvatarImage
+                           alt={session?.user.name}
+                           src={session?.user.image ?? ""}
+                        />
+                        <AvatarFallback className="rounded-lg">
+                           {session?.user.name?.charAt(0) || "?"}
+                        </AvatarFallback>
+                     </Avatar>
+                     <div className="grid flex-1 text-left text-sm leading-tight">
+                        <span className="truncate font-medium">
+                           {session?.user.name}
+                        </span>
+                        <span className="truncate text-xs text-muted-foreground">
+                           {session?.user.email}
+                        </span>
+                     </div>
+                     <ChevronRight className="ml-auto size-4" />
+                  </SidebarMenuButton>
                </DropdownMenuTrigger>
                <DropdownMenuContent
                   align="end"

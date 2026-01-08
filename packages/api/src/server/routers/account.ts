@@ -154,7 +154,7 @@ export const accountRouter = router({
          costCenters,
          counterparties,
          automations,
-         customReports,
+         dashboards,
          notificationPreferences,
       ] = await Promise.all([
          // User profile
@@ -235,10 +235,13 @@ export const accountRouter = router({
             where: (rule, { eq }) => eq(rule.organizationId, organizationId),
          }),
 
-         // Custom reports
-         db.query.customReport.findMany({
-            where: (report, { eq }) =>
-               eq(report.organizationId, organizationId),
+         // Dashboards
+         db.query.dashboard.findMany({
+            where: (d, { eq }) =>
+               eq(d.organizationId, organizationId),
+            with: {
+               widgets: true,
+            },
          }),
 
          // Notification preferences
@@ -261,7 +264,7 @@ export const accountRouter = router({
             costCenters,
             counterparties,
             automations,
-            customReports,
+            dashboards,
             notificationPreferences,
          },
       };

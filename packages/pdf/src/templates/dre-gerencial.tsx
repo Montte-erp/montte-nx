@@ -1,4 +1,4 @@
-import type { DRESnapshotData } from "@packages/database/schemas/custom-reports";
+import type { DRESnapshotData } from "../types";
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { DRETable } from "../components/dre-table";
 import { FilterInfo } from "../components/filter-info";

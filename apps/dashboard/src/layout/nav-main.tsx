@@ -14,6 +14,7 @@ import {
    Building2,
    CirclePlus,
    FileText,
+   Home,
    Landmark,
    Percent,
    Receipt,
@@ -52,7 +53,18 @@ export function NavMain() {
       return pathname === resolvedUrl && !searchStr;
    };
 
-   const financeItems = [
+   // Top-level navigation (always visible)
+   const topItems = [
+      {
+         icon: Home,
+         id: "home",
+         title: translate("dashboard.layout.nav-main.home"),
+         url: "/$slug/home",
+      },
+   ];
+
+   // Analytics section
+   const analyticsItems = [
       {
          icon: TrendingUp,
          id: "transactions",
@@ -60,16 +72,10 @@ export function NavMain() {
          url: "/$slug/transactions",
       },
       {
-         icon: Building2,
-         id: "bank-accounts",
-         title: translate("dashboard.routes.bank-accounts.list-section.title"),
-         url: "/$slug/bank-accounts",
-      },
-      {
          icon: BarChart3,
-         id: "reports",
-         title: translate("dashboard.layout.nav-main.finance.reports"),
-         url: "/$slug/custom-reports",
+         id: "dashboards",
+         title: translate("dashboard.layout.nav-main.finance.dashboards"),
+         url: "/$slug/dashboards",
       },
       {
          icon: Wallet,
@@ -79,7 +85,14 @@ export function NavMain() {
       },
    ];
 
-   const billsItems = [
+   // Finance section
+   const financeItems = [
+      {
+         icon: Building2,
+         id: "bank-accounts",
+         title: translate("dashboard.routes.bank-accounts.list-section.title"),
+         url: "/$slug/bank-accounts",
+      },
       {
          icon: Receipt,
          id: "bills-overview",
@@ -112,7 +125,8 @@ export function NavMain() {
          : []),
    ];
 
-   const categorizationItems = [
+   // Organization section
+   const organizationItems = [
       {
          icon: FileText,
          id: "categories",
@@ -147,6 +161,7 @@ export function NavMain() {
          : []),
    ];
 
+   // Automation section
    const automationItems = canAccessAutomations
       ? [
            {
@@ -193,6 +208,7 @@ export function NavMain() {
    return (
       <SidebarGroup className="group-data-[collapsible=icon]">
          <SidebarGroupContent className="flex flex-col gap-2">
+            {/* Primary Action Button */}
             <SidebarMenu>
                <SidebarMenuButton
                   className="bg-primary text-primary-foreground cursor-pointer"
@@ -211,6 +227,23 @@ export function NavMain() {
                   </span>
                </SidebarMenuButton>
             </SidebarMenu>
+
+            {/* Top-level Navigation (Home) */}
+            <SidebarMenu>
+               {topItems.map((item) => renderNavItem(item))}
+            </SidebarMenu>
+
+            {/* Analytics Section */}
+            {state === "expanded" && (
+               <SidebarGroupLabel>
+                  {translate("dashboard.layout.nav-main.analytics.title")}
+               </SidebarGroupLabel>
+            )}
+            <SidebarMenu>
+               {analyticsItems.map((item) => renderNavItem(item))}
+            </SidebarMenu>
+
+            {/* Finance Section */}
             {state === "expanded" && (
                <SidebarGroupLabel>
                   {translate("dashboard.layout.nav-main.finance.title")}
@@ -219,24 +252,22 @@ export function NavMain() {
             <SidebarMenu>
                {financeItems.map((item) => renderNavItem(item))}
             </SidebarMenu>
+
+            {/* Organization Section */}
             {state === "expanded" && (
                <SidebarGroupLabel>
-                  {translate("dashboard.layout.nav-main.bills.title")}
+                  {translate("dashboard.layout.nav-main.organization.title")}
                </SidebarGroupLabel>
             )}
             <SidebarMenu>
-               {billsItems.map((item) => renderNavItem(item))}
+               {organizationItems.map((item) => renderNavItem(item))}
             </SidebarMenu>
-            {state === "expanded" && (
-               <SidebarGroupLabel>
-                  {translate("dashboard.layout.nav-main.categorization.title")}
-               </SidebarGroupLabel>
-            )}
-            <SidebarMenu>
-               {categorizationItems.map((item) => renderNavItem(item))}
-            </SidebarMenu>
+
+            {/* Automation Section */}
             {state === "expanded" && automationItems.length > 0 && (
-               <SidebarGroupLabel>Automação</SidebarGroupLabel>
+               <SidebarGroupLabel>
+                  {translate("dashboard.layout.nav-main.automation.title")}
+               </SidebarGroupLabel>
             )}
             {automationItems.length > 0 && (
                <SidebarMenu>

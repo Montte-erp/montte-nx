@@ -1,4 +1,4 @@
-import type { DRELineItem } from "@packages/database/schemas/custom-reports";
+import type { DRELineItem } from "../types";
 import { StyleSheet, Text, View } from "@react-pdf/renderer";
 
 type DRETableProps = {

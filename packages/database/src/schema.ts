@@ -8,7 +8,7 @@ export * from "./schemas/budgets";
 export * from "./schemas/categories";
 export * from "./schemas/cost-centers";
 export * from "./schemas/counterparties";
-export * from "./schemas/custom-reports";
+export * from "./schemas/dashboards";
 export * from "./schemas/encryption";
 export * from "./schemas/expense-splits";
 export * from "./schemas/interest-templates";

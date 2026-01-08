@@ -20,10 +20,10 @@ import { lazy, Suspense } from "react";
 const TanStackRouterDevtools = import.meta.env.PROD
    ? () => null
    : lazy(() =>
-        import("@tanstack/react-router-devtools").then((m) => ({
-           default: m.TanStackRouterDevtools,
-        })),
-     );
+      import("@tanstack/react-router-devtools").then((m) => ({
+         default: m.TanStackRouterDevtools,
+      })),
+   );
 
 import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
 import { GlobalCredenza } from "@/hooks/use-credenza";

@@ -1,16 +1,21 @@
+import { translate } from "@packages/localization";
 import { Separator } from "@packages/ui/components/separator";
 import {
    Sidebar,
    SidebarContent,
+   SidebarFooter,
    SidebarHeader,
    SidebarMenu,
    SidebarMenuButton,
    SidebarMenuItem,
+   useSidebar,
 } from "@packages/ui/components/sidebar";
 import { Link, useParams } from "@tanstack/react-router";
+import { PanelLeft } from "lucide-react";
 import type * as React from "react";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { NavMain } from "./nav-main";
+import { NavUser } from "./nav-user";
 import { OrganizationSwitcher } from "./organization-switcher";
 
 function MontteBranding() {
@@ -56,6 +61,26 @@ function MontteBranding() {
    );
 }
 
+function SidebarCollapseButton() {
+   const { toggleSidebar, state } = useSidebar();
+
+   const tooltipText =
+      state === "expanded"
+         ? translate("dashboard.layout.sidebar.collapse")
+         : translate("dashboard.layout.sidebar.expand");
+
+   return (
+      <SidebarMenu>
+         <SidebarMenuItem>
+            <SidebarMenuButton onClick={toggleSidebar} tooltip={tooltipText}>
+               <PanelLeft />
+               <span>{tooltipText}</span>
+            </SidebarMenuButton>
+         </SidebarMenuItem>
+      </SidebarMenu>
+   );
+}
+
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
    const { activeSubscription } = useActiveOrganization();
 
@@ -73,6 +98,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             <Separator />
             <NavMain />
          </SidebarContent>
+         <SidebarFooter>
+            <Separator />
+            <SidebarCollapseButton />
+            <NavUser />
+         </SidebarFooter>
       </Sidebar>
    );
 }

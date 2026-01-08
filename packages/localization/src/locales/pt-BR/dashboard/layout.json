@@ -15,6 +15,13 @@
       "search": "Pesquisar idiomas..."
    },
    "nav-main": {
+      "home": "Home",
+      "analytics": {
+         "title": "Análise"
+      },
+      "automation": {
+         "title": "Automação"
+      },
       "bills": {
          "counterparties": "Cadastros",
          "interest-templates": "Modelos de Juros",
@@ -32,11 +39,15 @@
       "finance": {
          "budgets": "Orçamentos",
          "categories": "Categorias",
+         "dashboards": "Dashboards",
          "overview": "Fluxo de caixa",
          "payables": "Contas a pagar",
          "receivables": "Contas a receber",
          "reports": "Relatórios",
-         "title": "Suas finanças"
+         "title": "Finanças"
+      },
+      "organization": {
+         "title": "Organização"
       }
    },
    "nav-user": {

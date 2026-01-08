@@ -21,7 +21,6 @@ import budgetsPtBr from "./dashboard/routes/budgets.json";
 import categoriesPtBr from "./dashboard/routes/categories.json";
 import costCentersPtBr from "./dashboard/routes/cost-centers.json";
 import counterpartiesPtBr from "./dashboard/routes/counterparties.json";
-import customReportsPtBr from "./dashboard/routes/custom-reports.json";
 import emailVerificationPtBr from "./dashboard/routes/email-verification.json";
 import forgotPasswordPtBr from "./dashboard/routes/forgot-password.json";
 import homePagePtBr from "./dashboard/routes/home.json";
@@ -66,7 +65,6 @@ const resources = {
             categories: categoriesPtBr,
             "cost-centers": costCentersPtBr,
             counterparties: counterpartiesPtBr,
-            "custom-reports": customReportsPtBr,
             "email-verification": emailVerificationPtBr,
             "forgot-password": forgotPasswordPtBr,
             home: homePagePtBr,
