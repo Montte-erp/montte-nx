@@ -1,5 +1,12 @@
 import { Button } from "@packages/ui/components/button";
 import {
+	ContextMenu,
+	ContextMenuContent,
+	ContextMenuItem,
+	ContextMenuSeparator,
+	ContextMenuTrigger,
+} from "@packages/ui/components/context-menu";
+import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
@@ -21,16 +28,19 @@ import {
 	LineChart,
 	MoreHorizontal,
 	Pencil,
+	Pin,
+	PinOff,
 	Plus,
 	Search,
 	Sparkles,
 	Trash2,
 	X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	type Tab,
 	openSearchTab,
+	togglePinTab,
 	useDashboardTabs,
 } from "@/features/dashboard/hooks/use-dashboard-tabs";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
@@ -62,8 +72,16 @@ const TAB_COLORS = {
 	},
 } as const;
 
-function getTabColors(type: "app" | "dashboard" | "insight" | "search") {
-	return TAB_COLORS[type];
+function getTabColors(tab: Tab) {
+	// For app tabs with routeInfo, use dynamic colors
+	if (tab.type === "app" && tab.routeInfo) {
+		return {
+			bg: tab.routeInfo.iconBg,
+			text: tab.routeInfo.iconColor,
+			icon: tab.routeInfo.icon,
+		};
+	}
+	return TAB_COLORS[tab.type];
 }
 
 export function DashboardTabBar() {
@@ -71,6 +89,19 @@ export function DashboardTabBar() {
 	const { activeOrganization } = useActiveOrganization();
 	const slug = activeOrganization.slug;
 	const navigate = useNavigate();
+
+	// Sort tabs: app tab first, then pinned tabs, then unpinned tabs
+	const sortedTabs = useMemo(() => {
+		const appTab = tabs.find((t) => t.type === "app");
+		const pinnedTabs = tabs.filter(
+			(t) => t.type !== "app" && "isPinned" in t && t.isPinned,
+		);
+		const unpinnedTabs = tabs.filter(
+			(t) => t.type !== "app" && !("isPinned" in t && t.isPinned),
+		);
+
+		return [appTab, ...pinnedTabs, ...unpinnedTabs].filter(Boolean) as Tab[];
+	}, [tabs]);
 
 	const handleTabClick = (tab: Tab) => {
 		setActiveTab(tab.id);
@@ -120,14 +151,18 @@ export function DashboardTabBar() {
 
 	return (
 		<div className="relative flex items-end gap-1 h-12 overflow-x-auto w-full">
-			{tabs.map((tab) => (
+			{sortedTabs.map((tab, index) => (
 				<TabItem
 					key={tab.id}
 					tab={tab}
+					tabIndex={index}
 					isActive={activeTabId === tab.id}
 					onClick={() => handleTabClick(tab)}
 					onClose={
-						tab.type !== "app" ? () => closeTab(tab.id) : undefined
+						tab.type !== "app" &&
+						!("isPinned" in tab && tab.isPinned)
+							? () => closeTab(tab.id)
+							: undefined
 					}
 				/>
 			))}
@@ -159,11 +194,13 @@ export function DashboardTabBar() {
 
 function TabItem({
 	tab,
+	tabIndex,
 	isActive,
 	onClick,
 	onClose,
 }: {
 	tab: Tab;
+	tabIndex: number;
 	isActive: boolean;
 	onClick: () => void;
 	onClose?: () => void;
@@ -174,6 +211,12 @@ function TabItem({
 	const trpc = useTRPC();
 	const { openAlertDialog } = useAlertDialog();
 	const { updateTabName } = useDashboardTabs();
+
+	const isPinned = "isPinned" in tab && tab.isPinned;
+	const canRename = tab.type === "dashboard" || tab.type === "insight";
+	const canDuplicate = tab.type === "dashboard";
+	const canDelete = tab.type !== "app" && !isPinned;
+	const canPin = tab.type !== "app";
 
 	const updateMutation = useMutation(
 		trpc.dashboards.update.mutationOptions({
@@ -260,10 +303,18 @@ function TabItem({
 		}
 	};
 
-	const colors = getTabColors(tab.type);
+	const handlePin = () => {
+		togglePinTab(tab.id);
+	};
+
+	const handleClose = () => {
+		onClose?.();
+	};
+
+	const colors = getTabColors(tab);
 	const Icon = colors.icon;
 
-	return (
+	const tabContent = (
 		<div
 			className={cn(
 				"group relative flex items-center gap-2 px-3 text-sm cursor-pointer transition-all shrink-0",
@@ -283,7 +334,7 @@ function TabItem({
 				<Icon className={cn("size-3", colors.text)} />
 			</div>
 
-			{isEditing && tab.type === "dashboard" ? (
+			{isEditing && canRename ? (
 				<Input
 					ref={inputRef}
 					value={editName}
@@ -297,8 +348,13 @@ function TabItem({
 				<span className="truncate max-w-32 text-[13px]">{tab.name}</span>
 			)}
 
-			{/* Close button - visible for closable tabs (dashboard, insight, search) */}
-			{tab.type !== "app" && onClose && (
+			{/* Pin indicator for pinned tabs */}
+			{isPinned && (
+				<Pin className="size-3 text-muted-foreground shrink-0" />
+			)}
+
+			{/* Close button - visible for closable tabs (not app, not pinned) */}
+			{tab.type !== "app" && !isPinned && onClose && (
 				<button
 					type="button"
 					className={cn(
@@ -314,7 +370,7 @@ function TabItem({
 				</button>
 			)}
 
-			{/* Context menu trigger - only for dashboard tabs */}
+			{/* Dropdown menu trigger - only for dashboard tabs */}
 			{tab.type === "dashboard" && (
 				<DropdownMenu>
 					<DropdownMenuTrigger
@@ -342,16 +398,102 @@ function TabItem({
 							Duplicate
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem
-							onClick={handleDelete}
-							className="text-destructive focus:text-destructive"
-						>
-							<Trash2 className="h-4 w-4 mr-2" />
-							Delete
+						<DropdownMenuItem onClick={handlePin}>
+							{isPinned ? (
+								<>
+									<PinOff className="h-4 w-4 mr-2" />
+									Unpin
+								</>
+							) : (
+								<>
+									<Pin className="h-4 w-4 mr-2" />
+									Pin
+								</>
+							)}
 						</DropdownMenuItem>
+						{!isPinned && (
+							<>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem
+									onClick={handleDelete}
+									className="text-destructive focus:text-destructive"
+								>
+									<Trash2 className="h-4 w-4 mr-2" />
+									Delete
+								</DropdownMenuItem>
+							</>
+						)}
 					</DropdownMenuContent>
 				</DropdownMenu>
 			)}
 		</div>
+	);
+
+	// Determine if context menu has any items
+	const hasContextMenuItems = canRename || canDuplicate || canPin || canDelete || (tab.type === "dashboard" && !isPinned);
+
+	// Only wrap in ContextMenu if there are items to show
+	if (!hasContextMenuItems) {
+		return tabContent;
+	}
+
+	// Wrap in ContextMenu for right-click functionality
+	return (
+		<ContextMenu>
+			<ContextMenuTrigger asChild>{tabContent}</ContextMenuTrigger>
+			<ContextMenuContent>
+				{canRename && (
+					<ContextMenuItem onClick={() => setIsEditing(true)}>
+						<Pencil className="h-4 w-4 mr-2" />
+						Rename
+					</ContextMenuItem>
+				)}
+				{canDuplicate && (
+					<ContextMenuItem onClick={handleDuplicate}>
+						<Copy className="h-4 w-4 mr-2" />
+						Duplicate
+					</ContextMenuItem>
+				)}
+				{canPin && (
+					<>
+						{(canRename || canDuplicate) && <ContextMenuSeparator />}
+						<ContextMenuItem onClick={handlePin}>
+							{isPinned ? (
+								<>
+									<PinOff className="h-4 w-4 mr-2" />
+									Unpin
+								</>
+							) : (
+								<>
+									<Pin className="h-4 w-4 mr-2" />
+									Pin
+								</>
+							)}
+						</ContextMenuItem>
+					</>
+				)}
+				{canDelete && (
+					<>
+						<ContextMenuSeparator />
+						<ContextMenuItem
+							onClick={handleClose}
+							variant="destructive"
+						>
+							<X className="h-4 w-4 mr-2" />
+							Close
+						</ContextMenuItem>
+					</>
+				)}
+				{tab.type === "dashboard" && !isPinned && (
+					<ContextMenuItem
+						onClick={handleDelete}
+						variant="destructive"
+					>
+						<Trash2 className="h-4 w-4 mr-2" />
+						Delete
+					</ContextMenuItem>
+				)}
+			</ContextMenuContent>
+		</ContextMenu>
 	);
 }

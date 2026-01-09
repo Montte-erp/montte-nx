@@ -1,4 +1,5 @@
 export * from "./schemas/account-deletion";
+export * from "./schemas/anomalies";
 export * from "./schemas/auth";
 export * from "./schemas/automation-templates";
 export * from "./schemas/automations";
@@ -11,6 +12,7 @@ export * from "./schemas/counterparties";
 export * from "./schemas/dashboards";
 export * from "./schemas/encryption";
 export * from "./schemas/expense-splits";
+export * from "./schemas/goals";
 export * from "./schemas/interest-templates";
 export * from "./schemas/notification-preferences";
 export * from "./schemas/notifications";

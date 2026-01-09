@@ -20,6 +20,7 @@ import { Link } from "@tanstack/react-router";
 import type { ColumnDef, Row } from "@tanstack/react-table";
 import {
    ArrowDownLeft,
+   ArrowLeftRight,
    ArrowUpRight,
    ChevronDown,
    Edit,

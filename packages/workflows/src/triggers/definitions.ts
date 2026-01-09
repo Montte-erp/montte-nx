@@ -143,6 +143,183 @@ const TRANSACTION_EVENT_DATA_SCHEMA: EventDataField[] = [
    { field: "metadata", label: "Metadata", type: "object" },
 ];
 
+const ANOMALY_EVENT_DATA_SCHEMA: EventDataField[] = [
+	{
+		field: "id",
+		label: "Anomaly ID",
+		required: true,
+		type: "string",
+	},
+	{
+		field: "organizationId",
+		label: "Organization ID",
+		required: true,
+		type: "string",
+	},
+	{
+		field: "type",
+		label: "Anomaly Type",
+		required: true,
+		type: "string",
+		description: "spending_spike, unusual_category, or large_transaction",
+	},
+	{
+		field: "severity",
+		label: "Severity",
+		required: true,
+		type: "string",
+		description: "low, medium, or high",
+	},
+	{
+		field: "title",
+		label: "Title",
+		required: true,
+		type: "string",
+	},
+	{
+		field: "description",
+		label: "Description",
+		type: "string",
+	},
+	{
+		field: "amount",
+		label: "Amount",
+		type: "number",
+	},
+	{
+		field: "transactionId",
+		label: "Transaction ID",
+		type: "string",
+	},
+	{
+		field: "metadata",
+		label: "Metadata",
+		type: "object",
+		description: "Additional anomaly data (zScore, mean, etc.)",
+	},
+];
+
+const ANOMALY_FIELDS: ConditionFieldDefinition[] = [
+	{
+		field: "severity",
+		label: "Severidade",
+		type: "string",
+		operators: ["eq", "neq", "in", "not_in"],
+		valueOptions: [
+			{ value: "low", label: "Baixa" },
+			{ value: "medium", label: "Média" },
+			{ value: "high", label: "Alta" },
+		],
+	},
+	{
+		field: "amount",
+		label: "Valor",
+		type: "number",
+		operators: ["eq", "neq", "gt", "lt", "gte", "lte", "between"],
+	},
+];
+
+const GOAL_EVENT_DATA_SCHEMA: EventDataField[] = [
+	{
+		field: "goalId",
+		label: "Goal ID",
+		required: true,
+		type: "string",
+	},
+	{
+		field: "organizationId",
+		label: "Organization ID",
+		required: true,
+		type: "string",
+	},
+	{
+		field: "goalName",
+		label: "Goal Name",
+		required: true,
+		type: "string",
+	},
+	{
+		field: "goalType",
+		label: "Goal Type",
+		required: true,
+		type: "string",
+		description: "savings, debt_payoff, spending_limit, or income_target",
+	},
+	{
+		field: "targetAmount",
+		label: "Target Amount",
+		required: true,
+		type: "number",
+	},
+	{
+		field: "currentAmount",
+		label: "Current Amount",
+		required: true,
+		type: "number",
+	},
+	{
+		field: "progressPercentage",
+		label: "Progress Percentage",
+		required: true,
+		type: "number",
+	},
+	{
+		field: "milestone",
+		label: "Milestone",
+		type: "number",
+		description: "Milestone reached (25, 50, 75, 100)",
+	},
+	{
+		field: "daysRemaining",
+		label: "Days Remaining",
+		type: "number",
+	},
+	{
+		field: "isOnTrack",
+		label: "Is On Track",
+		type: "boolean",
+	},
+];
+
+const GOAL_FIELDS: ConditionFieldDefinition[] = [
+	{
+		field: "goalType",
+		label: "Tipo de Meta",
+		type: "string",
+		operators: ["eq", "neq", "in", "not_in"],
+		valueOptions: [
+			{ value: "savings", label: "Poupanca" },
+			{ value: "debt_payoff", label: "Quitar Divida" },
+			{ value: "spending_limit", label: "Limite de Gastos" },
+			{ value: "income_target", label: "Meta de Receita" },
+		],
+	},
+	{
+		field: "progressPercentage",
+		label: "Progresso (%)",
+		type: "number",
+		operators: ["eq", "neq", "gt", "lt", "gte", "lte", "between"],
+	},
+	{
+		field: "targetAmount",
+		label: "Valor Alvo",
+		type: "number",
+		operators: ["eq", "neq", "gt", "lt", "gte", "lte", "between"],
+	},
+	{
+		field: "milestone",
+		label: "Marco",
+		type: "number",
+		operators: ["eq", "neq", "gt", "gte"],
+		valueOptions: [
+			{ value: "25", label: "25%" },
+			{ value: "50", label: "50%" },
+			{ value: "75", label: "75%" },
+			{ value: "100", label: "100%" },
+		],
+	},
+];
+
 export const TRIGGER_DEFINITIONS: TriggerDefinition[] = [
    {
       availableFields: TRANSACTION_FIELDS,
@@ -210,6 +387,62 @@ export const TRIGGER_DEFINITIONS: TriggerDefinition[] = [
       label: "Personalizado",
       supportsSimulation: true,
       type: "schedule.custom",
+   },
+   // Anomaly triggers
+   {
+      availableFields: ANOMALY_FIELDS,
+      category: "transaction",
+      description: "Acionado quando gastos do período estão significativamente acima da média",
+      eventDataSchema: ANOMALY_EVENT_DATA_SCHEMA,
+      label: "Pico de Gastos Detectado",
+      supportsSimulation: false,
+      type: "anomaly.spending_spike",
+   },
+   {
+      availableFields: ANOMALY_FIELDS,
+      category: "transaction",
+      description: "Acionado quando gastos em uma categoria estão fora do padrão",
+      eventDataSchema: ANOMALY_EVENT_DATA_SCHEMA,
+      label: "Gasto Incomum em Categoria",
+      supportsSimulation: false,
+      type: "anomaly.unusual_category",
+   },
+   {
+      availableFields: ANOMALY_FIELDS,
+      category: "transaction",
+      description: "Acionado quando uma transação de valor muito alto é detectada",
+      eventDataSchema: ANOMALY_EVENT_DATA_SCHEMA,
+      label: "Transação de Alto Valor",
+      supportsSimulation: false,
+      type: "anomaly.large_transaction",
+   },
+   // Goal triggers
+   {
+      availableFields: GOAL_FIELDS,
+      category: "transaction",
+      description: "Acionado quando uma meta atinge um marco (25%, 50%, 75%, 100%)",
+      eventDataSchema: GOAL_EVENT_DATA_SCHEMA,
+      label: "Marco de Meta Atingido",
+      supportsSimulation: false,
+      type: "goal.milestone_reached",
+   },
+   {
+      availableFields: GOAL_FIELDS,
+      category: "transaction",
+      description: "Acionado quando uma meta está em risco de não ser atingida no prazo",
+      eventDataSchema: GOAL_EVENT_DATA_SCHEMA,
+      label: "Meta em Risco",
+      supportsSimulation: false,
+      type: "goal.at_risk",
+   },
+   {
+      availableFields: GOAL_FIELDS,
+      category: "transaction",
+      description: "Acionado quando uma meta é concluída com sucesso",
+      eventDataSchema: GOAL_EVENT_DATA_SCHEMA,
+      label: "Meta Concluída",
+      supportsSimulation: false,
+      type: "goal.completed",
    },
 ];
 

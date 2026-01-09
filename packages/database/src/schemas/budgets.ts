@@ -46,6 +46,9 @@ export type AlertThreshold = {
 export type BudgetAlertConfig = {
    enabled: boolean;
    thresholds: AlertThreshold[];
+   // Predictive alerts
+   predictiveAlertSent?: boolean;
+   predictiveAlertSentAt?: Date;
 };
 
 export type ShadowBudgetConfig = {

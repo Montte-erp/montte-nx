@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@f-o-t/rules-engine": "workspace:*",
+    "@packages/analytics": "workspace:*",
     "@packages/api": "workspace:*",
     "@packages/authentication": "workspace:*",
     "@packages/environment": "workspace:*",

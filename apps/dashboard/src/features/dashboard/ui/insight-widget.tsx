@@ -6,7 +6,9 @@ import {
 	type ChartConfig,
 } from "@packages/ui/components/chart";
 import { Skeleton } from "@packages/ui/components/skeleton";
+import { TrendSparkline } from "@packages/ui/components/sparkline";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import {
 	Area,
 	AreaChart,
@@ -19,6 +21,7 @@ import {
 	LineChart,
 	Pie,
 	PieChart,
+	ReferenceLine,
 	XAxis,
 	YAxis,
 } from "recharts";
@@ -28,6 +31,9 @@ import { Globe, TrendingDown, TrendingUp } from "lucide-react";
 import type { DrillDownContext } from "../hooks/use-insight-drill-down";
 import { CategoryAnalysisChart } from "./category-analysis-chart";
 import { ComparisonChart } from "./comparison-chart";
+import { HeatmapChart, transformToHeatmapData } from "./heatmap-chart";
+import { SankeyChart, transformToSankeyData } from "./sankey-chart";
+import { forecast } from "@packages/analytics/forecasting";
 
 type InsightWidgetProps = {
 	widgetId: string;
@@ -112,6 +118,10 @@ export function InsightWidget({
 			return <CategoryAnalysisChart config={config} globalFilters={globalFilters} onDrillDown={onDrillDown} />;
 		case "comparison":
 			return <ComparisonChart config={config} globalFilters={globalFilters} onDrillDown={onDrillDown} />;
+		case "sankey":
+			return <SankeyChartWidget data={data} config={config} />;
+		case "heatmap":
+			return <HeatmapChartWidget data={data} config={config} />;
 		default:
 			return (
 				<div className="h-full flex items-center justify-center text-muted-foreground text-sm">
@@ -150,6 +160,10 @@ type InsightData = {
 		date: string;
 		value: number;
 	}>;
+	comparisonTimeSeries?: Array<{
+		date: string;
+		value: number;
+	}>;
 	tableData?: Array<Record<string, unknown>>;
 };
 
@@ -158,6 +172,36 @@ type ChartComponentProps = {
 	config: InsightConfig;
 	onDrillDown?: (context: DrillDownContext) => void;
 };
+
+/**
+ * Generate forecast data for time series charts
+ */
+function useForecastData(
+	timeSeries: Array<{ date: string; value: number }> | undefined,
+	forecastConfig: InsightConfig["forecast"],
+) {
+	return useMemo(() => {
+		if (!forecastConfig?.enabled || !timeSeries || timeSeries.length < 3) {
+			return { forecastData: [], lastDataDate: null };
+		}
+
+		const dataPoints = timeSeries.map((point) => ({
+			date: point.date,
+			value: point.value,
+		}));
+
+		const result = forecast(dataPoints, forecastConfig.model, forecastConfig.periods, {
+			confidenceLevel: 0.95,
+		});
+
+		const lastDataDate = timeSeries[timeSeries.length - 1]?.date;
+
+		return {
+			forecastData: result.forecasts,
+			lastDataDate,
+		};
+	}, [timeSeries, forecastConfig]);
+}
 
 function StatCardChart({
 	data,
@@ -183,6 +227,10 @@ function StatCardChart({
 		}
 	};
 
+	// Prepare sparkline data from timeSeries
+	const sparklineData = data.timeSeries?.map((point) => ({ value: point.value })) ?? [];
+	const showSparkline = config.miniChart && sparklineData.length > 1;
+
 	return (
 		<div
 			className={`h-full flex flex-col justify-center ${onDrillDown ? "cursor-pointer hover:bg-muted/30 transition-colors rounded-lg p-2 -m-2" : ""}`}
@@ -191,27 +239,40 @@ function StatCardChart({
 			role={onDrillDown ? "button" : undefined}
 			tabIndex={onDrillDown ? 0 : undefined}
 		>
-			<div className="text-3xl font-bold">{formattedValue}</div>
-			{hasComparison && data.comparison && (
-				<div
-					className={`flex items-center gap-1 text-sm ${
-						isPositive ? "text-green-600" : "text-red-600"
-					}`}
-				>
-					{isPositive ? (
-						<TrendingUp className="h-4 w-4" />
-					) : (
-						<TrendingDown className="h-4 w-4" />
+			<div className="flex items-end gap-4">
+				<div className="flex-1">
+					<div className="text-3xl font-bold">{formattedValue}</div>
+					{hasComparison && data.comparison && (
+						<div
+							className={`flex items-center gap-1 text-sm ${
+								isPositive ? "text-green-600" : "text-red-600"
+							}`}
+						>
+							{isPositive ? (
+								<TrendingUp className="h-4 w-4" />
+							) : (
+								<TrendingDown className="h-4 w-4" />
+							)}
+							<span>
+								{isPositive ? "+" : ""}
+								{data.comparison.changePercent.toFixed(1)}%
+							</span>
+							<span className="text-muted-foreground">
+								vs {config.comparison?.type === "previous_year" ? "last year" : "previous period"}
+							</span>
+						</div>
 					)}
-					<span>
-						{isPositive ? "+" : ""}
-						{data.comparison.changePercent.toFixed(1)}%
-					</span>
-					<span className="text-muted-foreground">
-						vs {config.comparison?.type === "previous_year" ? "last year" : "previous period"}
-					</span>
 				</div>
-			)}
+				{showSparkline && (
+					<div className="w-24 flex-shrink-0">
+						<TrendSparkline
+							data={sparklineData}
+							variant={config.miniChart?.type === "bar" ? "bar" : config.miniChart?.type === "area" ? "area" : "line"}
+							height={40}
+						/>
+					</div>
+				)}
+			</div>
 		</div>
 	);
 }
@@ -225,6 +286,9 @@ function LineChartWidget({
 	// Full click handling requires custom Recharts components
 	void onDrillDown; // Acknowledge prop for future use
 	
+	// Generate forecast data if enabled
+	const { forecastData, lastDataDate } = useForecastData(data.timeSeries, config.forecast);
+	
 	if (!data.timeSeries || data.timeSeries.length === 0) {
 		return (
 			<div className="h-full flex flex-col items-center justify-center text-muted-foreground text-sm gap-1">
@@ -236,16 +300,81 @@ function LineChartWidget({
 		);
 	}
 
+	// Merge time series with comparison data if overlay is enabled
+	const hasComparisonOverlay = config.comparisonOverlay?.enabled && data.comparisonTimeSeries;
+	const hasForecast = config.forecast?.enabled && forecastData.length > 0;
+	
+	// Build chart data with historical, comparison, and forecast values
+	const chartData = (() => {
+		// Start with historical data
+		const historical = data.timeSeries.map((point, index) => ({
+			date: point.date,
+			value: point.value,
+			comparisonValue: hasComparisonOverlay ? (data.comparisonTimeSeries?.[index]?.value ?? null) : null,
+			forecastValue: null as number | null,
+			forecastLower: null as number | null,
+			forecastUpper: null as number | null,
+		}));
+		
+		// Add forecast data points if enabled
+		if (hasForecast) {
+			for (const fp of forecastData) {
+				historical.push({
+					date: fp.date.toISOString().split("T")[0] ?? "",
+					value: null as unknown as number, // No actual value for forecast points
+					comparisonValue: null,
+					forecastValue: fp.value,
+					forecastLower: fp.lowerBound ?? null,
+					forecastUpper: fp.upperBound ?? null,
+				});
+			}
+			
+			// Connect forecast to last data point
+			if (historical.length > forecastData.length) {
+				const lastHistoricalIndex = historical.length - forecastData.length - 1;
+				const lastHistorical = historical[lastHistoricalIndex];
+				if (lastHistorical) {
+					lastHistorical.forecastValue = lastHistorical.value;
+				}
+			}
+		}
+		
+		return historical;
+	})();
+
 	const chartConfig: ChartConfig = {
 		value: {
 			color: "hsl(var(--chart-1))",
 			label: config.aggregateField,
 		},
+		...(hasComparisonOverlay && {
+			comparisonValue: {
+				color: "hsl(var(--muted-foreground))",
+				label: config.comparisonOverlay?.type === "previous_year" ? "Last Year" : "Previous Period",
+			},
+		}),
+		...(hasForecast && {
+			forecastValue: {
+				color: "hsl(var(--chart-2))",
+				label: "Forecast",
+			},
+		}),
+	};
+
+	const getStrokeDasharray = () => {
+		switch (config.comparisonOverlay?.style) {
+			case "dotted":
+				return "2 2";
+			case "dashed":
+				return "5 5";
+			default:
+				return undefined;
+		}
 	};
 
 	return (
 		<ChartContainer config={chartConfig} className="h-full w-full">
-			<LineChart data={data.timeSeries} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+			<LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
 				<CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
 				<XAxis
 					dataKey="date"
@@ -264,6 +393,17 @@ function LineChartWidget({
 					}
 				/>
 				<ChartTooltip content={<ChartTooltipContent />} />
+				{hasComparisonOverlay && (
+					<Line
+						type="monotone"
+						dataKey="comparisonValue"
+						stroke="var(--color-comparisonValue)"
+						strokeWidth={1.5}
+						strokeDasharray={getStrokeDasharray()}
+						dot={false}
+						connectNulls
+					/>
+				)}
 				<Line
 					type="monotone"
 					dataKey="value"
@@ -271,7 +411,43 @@ function LineChartWidget({
 					strokeWidth={2}
 					dot={false}
 					activeDot={onDrillDown ? { r: 6, cursor: "pointer" } : undefined}
+					connectNulls
 				/>
+				{hasForecast && (
+					<>
+						{/* Forecast confidence interval area */}
+						{config.forecast?.showConfidenceInterval && (
+							<Area
+								type="monotone"
+								dataKey="forecastUpper"
+								stroke="none"
+								fill="var(--color-forecastValue)"
+								fillOpacity={0.1}
+								connectNulls
+							/>
+						)}
+						{/* Forecast line */}
+						<Line
+							type="monotone"
+							dataKey="forecastValue"
+							stroke="var(--color-forecastValue)"
+							strokeWidth={2}
+							strokeDasharray="5 5"
+							dot={false}
+							connectNulls
+						/>
+						{/* Reference line at forecast start */}
+						{lastDataDate && (
+							<ReferenceLine
+								x={lastDataDate}
+								stroke="hsl(var(--muted-foreground))"
+								strokeDasharray="3 3"
+								strokeOpacity={0.5}
+							/>
+						)}
+					</>
+				)}
+				{(hasComparisonOverlay || hasForecast) && config.showLegend && <Legend />}
 			</LineChart>
 		</ChartContainer>
 	);
@@ -405,6 +581,7 @@ function PieChartWidget({
 					innerRadius={isDonut ? "50%" : 0}
 					outerRadius="80%"
 					paddingAngle={2}
+					stroke="none"
 					cursor={onDrillDown ? "pointer" : undefined}
 				>
 					{data.breakdown.map((entry, index) => (
@@ -491,6 +668,9 @@ function AreaChartWidget({
 }: ChartComponentProps) {
 	void onDrillDown;
 	
+	// Generate forecast data if enabled
+	const { forecastData, lastDataDate } = useForecastData(data.timeSeries, config.forecast);
+	
 	if (!data.timeSeries || data.timeSeries.length === 0) {
 		return (
 			<div className="h-full flex flex-col items-center justify-center text-muted-foreground text-sm gap-1">
@@ -502,16 +682,70 @@ function AreaChartWidget({
 		);
 	}
 
+	// Merge time series with comparison data if overlay is enabled
+	const hasComparisonOverlay = config.comparisonOverlay?.enabled && data.comparisonTimeSeries;
+	const hasForecast = config.forecast?.enabled && forecastData.length > 0;
+	
+	// Build chart data with historical, comparison, and forecast values
+	const chartData = (() => {
+		// Start with historical data
+		const historical = data.timeSeries.map((point, index) => ({
+			date: point.date,
+			value: point.value,
+			comparisonValue: hasComparisonOverlay ? (data.comparisonTimeSeries?.[index]?.value ?? null) : null,
+			forecastValue: null as number | null,
+			forecastLower: null as number | null,
+			forecastUpper: null as number | null,
+		}));
+		
+		// Add forecast data points if enabled
+		if (hasForecast) {
+			for (const fp of forecastData) {
+				historical.push({
+					date: fp.date.toISOString().split("T")[0] ?? "",
+					value: null as unknown as number,
+					comparisonValue: null,
+					forecastValue: fp.value,
+					forecastLower: fp.lowerBound ?? null,
+					forecastUpper: fp.upperBound ?? null,
+				});
+			}
+			
+			// Connect forecast to last data point
+			if (historical.length > forecastData.length) {
+				const lastHistoricalIndex = historical.length - forecastData.length - 1;
+				const lastHistorical = historical[lastHistoricalIndex];
+				if (lastHistorical) {
+					lastHistorical.forecastValue = lastHistorical.value;
+				}
+			}
+		}
+		
+		return historical;
+	})();
+
 	const chartConfig: ChartConfig = {
 		value: {
 			color: "hsl(var(--chart-1))",
 			label: config.aggregateField,
 		},
+		...(hasComparisonOverlay && {
+			comparisonValue: {
+				color: "hsl(var(--muted-foreground))",
+				label: config.comparisonOverlay?.type === "previous_year" ? "Last Year" : "Previous Period",
+			},
+		}),
+		...(hasForecast && {
+			forecastValue: {
+				color: "hsl(var(--chart-2))",
+				label: "Forecast",
+			},
+		}),
 	};
 
 	return (
 		<ChartContainer config={chartConfig} className="h-full w-full">
-			<AreaChart data={data.timeSeries} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+			<AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
 				<CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
 				<XAxis
 					dataKey="date"
@@ -530,6 +764,18 @@ function AreaChartWidget({
 					}
 				/>
 				<ChartTooltip content={<ChartTooltipContent />} />
+				{hasComparisonOverlay && (
+					<Area
+						type="monotone"
+						dataKey="comparisonValue"
+						stroke="var(--color-comparisonValue)"
+						fill="var(--color-comparisonValue)"
+						fillOpacity={0.1}
+						strokeWidth={1.5}
+						strokeDasharray="5 5"
+						connectNulls
+					/>
+				)}
 				<Area
 					type="monotone"
 					dataKey="value"
@@ -537,7 +783,44 @@ function AreaChartWidget({
 					fill="var(--color-value)"
 					fillOpacity={0.3}
 					strokeWidth={2}
+					connectNulls
 				/>
+				{hasForecast && (
+					<>
+						{/* Forecast confidence interval */}
+						{config.forecast?.showConfidenceInterval && (
+							<Area
+								type="monotone"
+								dataKey="forecastUpper"
+								stroke="none"
+								fill="var(--color-forecastValue)"
+								fillOpacity={0.1}
+								connectNulls
+							/>
+						)}
+						{/* Forecast area */}
+						<Area
+							type="monotone"
+							dataKey="forecastValue"
+							stroke="var(--color-forecastValue)"
+							fill="var(--color-forecastValue)"
+							fillOpacity={0.15}
+							strokeWidth={2}
+							strokeDasharray="5 5"
+							connectNulls
+						/>
+						{/* Reference line at forecast start */}
+						{lastDataDate && (
+							<ReferenceLine
+								x={lastDataDate}
+								stroke="hsl(var(--muted-foreground))"
+								strokeDasharray="3 3"
+								strokeOpacity={0.5}
+							/>
+						)}
+					</>
+				)}
+				{(hasComparisonOverlay || hasForecast) && config.showLegend && <Legend />}
 			</AreaChart>
 		</ChartContainer>
 	);
@@ -775,6 +1058,70 @@ function WorldMapWidget({
 			<Globe className="h-12 w-12 mb-3 opacity-50" />
 			<span className="text-sm font-medium">World Map</span>
 			<span className="text-xs mt-1">Coming soon</span>
+		</div>
+	);
+}
+
+function SankeyChartWidget({
+	data,
+	config,
+}: ChartComponentProps) {
+	void config; // Reserved for future configuration options
+	
+	// Transform breakdown data into Sankey format
+	// Source nodes: income sources (or bank accounts)
+	// Target nodes: expense categories
+	const sankeyData = (() => {
+		if (!data.breakdown?.length) {
+			return { nodes: [], links: [] };
+		}
+
+		// For simplicity, we'll assume breakdown contains category data
+		// and use a single "Income" source flowing to all categories
+		const incomeBySource = [{ name: "Receita", value: data.value }];
+		const expensesByCategory = data.breakdown.map((item) => ({
+			name: item.label,
+			value: item.value,
+		}));
+
+		return transformToSankeyData(incomeBySource, expensesByCategory);
+	})();
+
+	return (
+		<div className="h-full">
+			<SankeyChart data={sankeyData} height={300} />
+		</div>
+	);
+}
+
+function HeatmapChartWidget({
+	data,
+	config,
+}: ChartComponentProps) {
+	// Transform time series data into heatmap format
+	// Each data point should have a date and value
+	const heatmapData = (() => {
+		if (!data.timeSeries?.length) {
+			// If no time series, return empty heatmap
+			return { cells: [], maxValue: 0 };
+		}
+
+		// Transform time series to transaction-like format
+		const transactions = data.timeSeries.map((point) => ({
+			date: new Date(point.date),
+			amount: point.value,
+		}));
+
+		return transformToHeatmapData(transactions);
+	})();
+
+	return (
+		<div className="h-full">
+			<HeatmapChart
+				data={heatmapData}
+				height={300}
+				colorScale={config.dataSource === "transactions" ? "red" : "blue"}
+			/>
 		</div>
 	);
 }

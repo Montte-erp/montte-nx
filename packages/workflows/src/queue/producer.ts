@@ -1,6 +1,6 @@
 import type { ConnectionOptions } from "@packages/queue/bullmq";
 import { v4 as uuid } from "uuid";
-import type { BudgetEventData, WorkflowEvent } from "../types/events";
+import type { AnomalyEventData, AnomalyEventType, BudgetEventData, GoalEventData, GoalEventType, WorkflowEvent } from "../types/events";
 import {
 	createWorkflowQueue,
 	getWorkflowQueue,
@@ -147,6 +147,191 @@ export async function emitBudgetOverspentEvent(
    options?: Omit<EnqueueOptions, "triggeredBy">,
 ): Promise<string> {
    const event = createBudgetEvent("budget.overspent", data);
+   return enqueueWorkflowEvent(event, {
+      ...options,
+      triggeredBy: "event",
+   });
+}
+
+// Anomaly Event Emitters
+
+export type AnomalyEventInput = {
+   id: string;
+   organizationId: string;
+   type: "spending_spike" | "unusual_category" | "large_transaction";
+   severity: "low" | "medium" | "high";
+   title: string;
+   description?: string;
+   amount?: number;
+   transactionId?: string;
+   metadata?: Record<string, unknown>;
+};
+
+function createAnomalyEvent(
+   eventType: AnomalyEventType,
+   data: AnomalyEventInput,
+): WorkflowEvent {
+   const eventData: AnomalyEventData = {
+      id: data.id,
+      organizationId: data.organizationId,
+      type: data.type,
+      severity: data.severity,
+      title: data.title,
+      description: data.description,
+      amount: data.amount,
+      transactionId: data.transactionId,
+      metadata: data.metadata,
+   };
+
+   return {
+      data: eventData,
+      id: uuid(),
+      organizationId: data.organizationId,
+      timestamp: new Date().toISOString(),
+      type: eventType,
+   } as WorkflowEvent;
+}
+
+/**
+ * Emit when a spending spike is detected
+ */
+export async function emitAnomalySpendingSpikeEvent(
+   data: AnomalyEventInput,
+   options?: Omit<EnqueueOptions, "triggeredBy">,
+): Promise<string> {
+   const event = createAnomalyEvent("anomaly.spending_spike", data);
+   return enqueueWorkflowEvent(event, {
+      ...options,
+      triggeredBy: "event",
+   });
+}
+
+/**
+ * Emit when unusual category spending is detected
+ */
+export async function emitAnomalyUnusualCategoryEvent(
+   data: AnomalyEventInput,
+   options?: Omit<EnqueueOptions, "triggeredBy">,
+): Promise<string> {
+   const event = createAnomalyEvent("anomaly.unusual_category", data);
+   return enqueueWorkflowEvent(event, {
+      ...options,
+      triggeredBy: "event",
+   });
+}
+
+/**
+ * Emit when a large transaction is detected
+ */
+export async function emitAnomalyLargeTransactionEvent(
+   data: AnomalyEventInput,
+   options?: Omit<EnqueueOptions, "triggeredBy">,
+): Promise<string> {
+   const event = createAnomalyEvent("anomaly.large_transaction", data);
+   return enqueueWorkflowEvent(event, {
+      ...options,
+      triggeredBy: "event",
+   });
+}
+
+/**
+ * Generic anomaly event emitter - determines the correct event type based on anomaly type
+ */
+export async function emitAnomalyEvent(
+   data: AnomalyEventInput,
+   options?: Omit<EnqueueOptions, "triggeredBy">,
+): Promise<string> {
+   const eventTypeMap: Record<AnomalyEventInput["type"], AnomalyEventType> = {
+      spending_spike: "anomaly.spending_spike",
+      unusual_category: "anomaly.unusual_category",
+      large_transaction: "anomaly.large_transaction",
+   };
+   const event = createAnomalyEvent(eventTypeMap[data.type], data);
+   return enqueueWorkflowEvent(event, {
+      ...options,
+      triggeredBy: "event",
+   });
+}
+
+// Goal Event Emitters
+
+export type GoalEventInput = {
+   goalId: string;
+   organizationId: string;
+   goalName: string;
+   goalType: "savings" | "debt_payoff" | "spending_limit" | "income_target";
+   targetAmount: number;
+   currentAmount: number;
+   progressPercentage: number;
+   milestone?: number;
+   daysRemaining?: number;
+   isOnTrack?: boolean;
+   projectedCompletionDate?: string;
+};
+
+function createGoalEvent(
+   eventType: GoalEventType,
+   data: GoalEventInput,
+): WorkflowEvent {
+   const eventData: GoalEventData = {
+      goalId: data.goalId,
+      organizationId: data.organizationId,
+      goalName: data.goalName,
+      goalType: data.goalType,
+      targetAmount: data.targetAmount,
+      currentAmount: data.currentAmount,
+      progressPercentage: data.progressPercentage,
+      milestone: data.milestone,
+      daysRemaining: data.daysRemaining,
+      isOnTrack: data.isOnTrack,
+      projectedCompletionDate: data.projectedCompletionDate,
+   };
+
+   return {
+      data: eventData,
+      id: uuid(),
+      organizationId: data.organizationId,
+      timestamp: new Date().toISOString(),
+      type: eventType,
+   } as WorkflowEvent;
+}
+
+/**
+ * Emit when a goal reaches a milestone (25%, 50%, 75%, 100%)
+ */
+export async function emitGoalMilestoneEvent(
+   data: GoalEventInput,
+   options?: Omit<EnqueueOptions, "triggeredBy">,
+): Promise<string> {
+   const event = createGoalEvent("goal.milestone_reached", data);
+   return enqueueWorkflowEvent(event, {
+      ...options,
+      triggeredBy: "event",
+   });
+}
+
+/**
+ * Emit when a goal is at risk of not being completed on time
+ */
+export async function emitGoalAtRiskEvent(
+   data: GoalEventInput,
+   options?: Omit<EnqueueOptions, "triggeredBy">,
+): Promise<string> {
+   const event = createGoalEvent("goal.at_risk", data);
+   return enqueueWorkflowEvent(event, {
+      ...options,
+      triggeredBy: "event",
+   });
+}
+
+/**
+ * Emit when a goal is completed
+ */
+export async function emitGoalCompletedEvent(
+   data: GoalEventInput,
+   options?: Omit<EnqueueOptions, "triggeredBy">,
+): Promise<string> {
+   const event = createGoalEvent("goal.completed", data);
    return enqueueWorkflowEvent(event, {
       ...options,
       triggeredBy: "event",

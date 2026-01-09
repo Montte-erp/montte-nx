@@ -59,6 +59,12 @@ const triggerTypeSchema = z.enum([
    "budget.threshold_reached",
    "budget.period_end",
    "budget.overspent",
+   "anomaly.spending_spike",
+   "anomaly.unusual_category",
+   "anomaly.large_transaction",
+   "goal.milestone_reached",
+   "goal.at_risk",
+   "goal.completed",
 ]);
 
 const scheduleTriggerConfigSchema = z.object({

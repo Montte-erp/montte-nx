@@ -26,6 +26,8 @@ import {
 	Table2,
 	TrendingUp,
 	Check,
+	GitMerge,
+	Grid3X3,
 } from "lucide-react";
 import { useCredenza } from "@/hooks/use-credenza";
 import { useMemo } from "react";
@@ -124,6 +126,18 @@ const CHART_CATEGORIES: ChartCategory[] = [
 				description: "Valores por país em um mapa",
 				icon: Globe,
 			},
+			{
+				value: "sankey",
+				label: "Diagrama de Sankey",
+				description: "Fluxo de receitas para despesas por categoria",
+				icon: GitMerge,
+			},
+			{
+				value: "heatmap",
+				label: "Mapa de calor",
+				description: "Intensidade de gastos por dia e hora",
+				icon: Grid3X3,
+			},
 		],
 	},
 	{
@@ -151,7 +165,7 @@ const CHART_TYPE_COMPATIBILITY: Record<DataSource, ChartType[]> = {
 	transactions: [
 		"line", "area", "bar", "stacked_bar", "line_cumulative",
 		"pie", "donut", "stat_card", "bar_total", "table",
-		"category_analysis", "comparison",
+		"category_analysis", "comparison", "sankey", "heatmap",
 	],
 	bills: [
 		"line", "area", "bar", "stacked_bar", "line_cumulative",

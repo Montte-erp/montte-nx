@@ -14,7 +14,17 @@ export type BudgetEventType =
 	| "budget.period_end"
 	| "budget.overspent";
 
-export type EventType = TransactionEventType | ScheduleEventType | BudgetEventType;
+export type AnomalyEventType =
+	| "anomaly.spending_spike"
+	| "anomaly.unusual_category"
+	| "anomaly.large_transaction";
+
+export type GoalEventType =
+	| "goal.milestone_reached"
+	| "goal.at_risk"
+	| "goal.completed";
+
+export type EventType = TransactionEventType | ScheduleEventType | BudgetEventType | AnomalyEventType | GoalEventType;
 
 export type TransactionEventData = {
 	id: string;
@@ -51,6 +61,32 @@ export type BudgetEventData = {
 	periodId?: string;
 };
 
+export type AnomalyEventData = {
+	id: string;
+	organizationId: string;
+	type: "spending_spike" | "unusual_category" | "large_transaction";
+	severity: "low" | "medium" | "high";
+	title: string;
+	description?: string;
+	amount?: number;
+	transactionId?: string;
+	metadata?: Record<string, unknown>;
+};
+
+export type GoalEventData = {
+	goalId: string;
+	organizationId: string;
+	goalName: string;
+	goalType: "savings" | "debt_payoff" | "spending_limit" | "income_target";
+	targetAmount: number;
+	currentAmount: number;
+	progressPercentage: number;
+	milestone?: number; // 25, 50, 75, 100
+	daysRemaining?: number;
+	isOnTrack?: boolean;
+	projectedCompletionDate?: string;
+};
+
 export type BaseEvent<T extends EventType, D> = {
    id: string;
    type: T;
@@ -76,11 +112,23 @@ export type BudgetPeriodEndEvent = BaseEvent<"budget.period_end", BudgetEventDat
 export type BudgetOverspentEvent = BaseEvent<"budget.overspent", BudgetEventData>;
 export type BudgetEvent = BudgetThresholdReachedEvent | BudgetPeriodEndEvent | BudgetOverspentEvent;
 
+export type AnomalySpendingSpikeEvent = BaseEvent<"anomaly.spending_spike", AnomalyEventData>;
+export type AnomalyUnusualCategoryEvent = BaseEvent<"anomaly.unusual_category", AnomalyEventData>;
+export type AnomalyLargeTransactionEvent = BaseEvent<"anomaly.large_transaction", AnomalyEventData>;
+export type AnomalyEvent = AnomalySpendingSpikeEvent | AnomalyUnusualCategoryEvent | AnomalyLargeTransactionEvent;
+
+export type GoalMilestoneReachedEvent = BaseEvent<"goal.milestone_reached", GoalEventData>;
+export type GoalAtRiskEvent = BaseEvent<"goal.at_risk", GoalEventData>;
+export type GoalCompletedEvent = BaseEvent<"goal.completed", GoalEventData>;
+export type GoalEvent = GoalMilestoneReachedEvent | GoalAtRiskEvent | GoalCompletedEvent;
+
 export type WorkflowEvent =
 	| TransactionCreatedEvent
 	| TransactionUpdatedEvent
 	| ScheduleTriggeredEvent
-	| BudgetEvent;
+	| BudgetEvent
+	| AnomalyEvent
+	| GoalEvent;
 
 export function createTransactionCreatedEvent(
    organizationId: string,
@@ -127,6 +175,18 @@ export function isBudgetEvent(
 	event: WorkflowEvent,
 ): event is BudgetEvent {
 	return event.type.startsWith("budget.");
+}
+
+export function isAnomalyEvent(
+	event: WorkflowEvent,
+): event is AnomalyEvent {
+	return event.type.startsWith("anomaly.");
+}
+
+export function isGoalEvent(
+	event: WorkflowEvent,
+): event is GoalEvent {
+	return event.type.startsWith("goal.");
 }
 
 export function createScheduleTriggeredEvent(

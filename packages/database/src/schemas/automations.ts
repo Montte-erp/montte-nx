@@ -44,7 +44,13 @@ export type TriggerType =
    | "schedule.custom"
    | "budget.threshold_reached"
    | "budget.period_end"
-   | "budget.overspent";
+   | "budget.overspent"
+   | "anomaly.spending_spike"
+   | "anomaly.unusual_category"
+   | "anomaly.large_transaction"
+   | "goal.milestone_reached"
+   | "goal.at_risk"
+   | "goal.completed";
 
 export type ScheduleTriggerType =
    | "schedule.daily"

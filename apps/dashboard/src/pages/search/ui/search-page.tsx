@@ -4,17 +4,27 @@ import { cn } from "@packages/ui/lib/utils";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
-	BarChart3,
+	Building2,
+	FileText,
+	FolderKanban,
+	Home,
+	Landmark,
 	LayoutDashboard,
-	LineChart,
 	Loader2,
+	Percent,
+	Plus,
+	Receipt,
 	Search,
 	Sparkles,
+	Tag,
+	Target,
 	TrendingUp,
+	Users,
+	Wallet,
+	Zap,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { CreateNewCard } from "@/features/dashboard/ui/create-new-card";
 import {
 	openDashboardTab,
 	openInsightTab,
@@ -22,7 +32,6 @@ import {
 } from "@/features/dashboard/hooks/use-dashboard-tabs";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useTRPC } from "@/integrations/clients";
-import type { InsightConfig } from "@packages/database/schemas/dashboards";
 
 // Helper function to format relative timestamps like PostHog
 function formatRelativeTime(date: Date | string): string {
@@ -43,39 +52,123 @@ function formatRelativeTime(date: Date | string): string {
 	return d.toLocaleDateString();
 }
 
-// Quick create options for the grid layout
-const QUICK_CREATE_OPTIONS = [
+// Navigation items for all routes
+const NAVIGATION_ITEMS = [
+	// Main
 	{
-		value: "dashboard",
-		label: "New Dashboard",
-		description: "Create an empty dashboard",
-		icon: LayoutDashboard,
-		iconColor: "text-purple-600 dark:text-purple-400",
-		iconBg: "bg-purple-500/15",
-	},
-	{
-		value: "line",
-		label: "Line Chart",
-		description: "Track trends over time",
-		icon: LineChart,
-		iconColor: "text-blue-600 dark:text-blue-400",
+		id: "home",
+		name: "Home",
+		icon: Home,
+		route: "/$slug/home",
 		iconBg: "bg-blue-500/15",
+		iconColor: "text-blue-600 dark:text-blue-400",
 	},
 	{
-		value: "bar",
-		label: "Bar Chart",
-		description: "Compare categories",
-		icon: BarChart3,
-		iconColor: "text-green-600 dark:text-green-400",
-		iconBg: "bg-green-500/15",
-	},
-	{
-		value: "stat_card",
-		label: "Stat Card",
-		description: "Single metric with trend",
+		id: "transactions",
+		name: "Transacoes",
 		icon: TrendingUp,
-		iconColor: "text-orange-600 dark:text-orange-400",
+		route: "/$slug/transactions",
+		iconBg: "bg-emerald-500/15",
+		iconColor: "text-emerald-600 dark:text-emerald-400",
+	},
+	{
+		id: "bank-accounts",
+		name: "Contas Bancarias",
+		icon: Building2,
+		route: "/$slug/bank-accounts",
+		iconBg: "bg-indigo-500/15",
+		iconColor: "text-indigo-600 dark:text-indigo-400",
+	},
+	{
+		id: "bills",
+		name: "Contas a Pagar",
+		icon: Receipt,
+		route: "/$slug/bills",
 		iconBg: "bg-orange-500/15",
+		iconColor: "text-orange-600 dark:text-orange-400",
+	},
+	{
+		id: "counterparties",
+		name: "Cadastros",
+		icon: Users,
+		route: "/$slug/counterparties",
+		iconBg: "bg-pink-500/15",
+		iconColor: "text-pink-600 dark:text-pink-400",
+	},
+	// Reports
+	{
+		id: "dashboards",
+		name: "Dashboards",
+		icon: FolderKanban,
+		route: "/$slug/dashboards",
+		iconBg: "bg-purple-500/15",
+		iconColor: "text-purple-600 dark:text-purple-400",
+	},
+	{
+		id: "insights",
+		name: "Insights",
+		icon: Sparkles,
+		route: "/$slug/insights",
+		iconBg: "bg-blue-500/15",
+		iconColor: "text-blue-600 dark:text-blue-400",
+	},
+	// Planning
+	{
+		id: "goals",
+		name: "Metas",
+		icon: Target,
+		route: "/$slug/goals",
+		iconBg: "bg-cyan-500/15",
+		iconColor: "text-cyan-600 dark:text-cyan-400",
+	},
+	{
+		id: "budgets",
+		name: "Orcamentos",
+		icon: Wallet,
+		route: "/$slug/budgets",
+		iconBg: "bg-amber-500/15",
+		iconColor: "text-amber-600 dark:text-amber-400",
+	},
+	// Settings
+	{
+		id: "categories",
+		name: "Categorias",
+		icon: FileText,
+		route: "/$slug/categories",
+		iconBg: "bg-slate-500/15",
+		iconColor: "text-slate-600 dark:text-slate-400",
+	},
+	{
+		id: "cost-centers",
+		name: "Centros de Custo",
+		icon: Landmark,
+		route: "/$slug/cost-centers",
+		iconBg: "bg-teal-500/15",
+		iconColor: "text-teal-600 dark:text-teal-400",
+	},
+	{
+		id: "tags",
+		name: "Tags",
+		icon: Tag,
+		route: "/$slug/tags",
+		iconBg: "bg-violet-500/15",
+		iconColor: "text-violet-600 dark:text-violet-400",
+	},
+	{
+		id: "interest-templates",
+		name: "Modelos de Juros",
+		icon: Percent,
+		route: "/$slug/interest-templates",
+		iconBg: "bg-rose-500/15",
+		iconColor: "text-rose-600 dark:text-rose-400",
+	},
+	{
+		id: "automations",
+		name: "Automacoes",
+		icon: Zap,
+		route: "/$slug/automations",
+		iconBg: "bg-yellow-500/15",
+		iconColor: "text-yellow-600 dark:text-yellow-400",
 	},
 ] as const;
 
@@ -196,24 +289,14 @@ export function SearchPage() {
 		});
 	}, [createDashboardMutation]);
 
-	const handleSelectInsightType = useCallback(
-		(_chartType: InsightConfig["chartType"]) => {
-			// Creating insights requires a dashboard context
-			// For now, show a message to create a dashboard first
-			toast.info("Create a dashboard first, then add insights from there");
+	const handleNavigateTo = useCallback(
+		(route: string) => {
+			navigate({
+				to: route,
+				params: { slug: slug! },
+			});
 		},
-		[],
-	);
-
-	const handleQuickCreate = useCallback(
-		(value: string) => {
-			if (value === "dashboard") {
-				handleCreateDashboard();
-			} else {
-				handleSelectInsightType(value as InsightConfig["chartType"]);
-			}
-		},
-		[handleCreateDashboard, handleSelectInsightType],
+		[navigate, slug],
 	);
 
 	// Filter items based on search
@@ -225,7 +308,16 @@ export function SearchPage() {
 		insight.name.toLowerCase().includes(search.toLowerCase()),
 	);
 
-	const isLoading = isLoadingDashboards || isLoadingInsights || isLoadingRecents;
+	// Filter navigation items based on search
+	const filteredNavItems = useMemo(() => {
+		if (!search) return NAVIGATION_ITEMS;
+		return NAVIGATION_ITEMS.filter((item) =>
+			item.name.toLowerCase().includes(search.toLowerCase()),
+		);
+	}, [search]);
+
+	const isLoading =
+		isLoadingDashboards || isLoadingInsights || isLoadingRecents;
 
 	if (!slug) return null;
 
@@ -237,7 +329,7 @@ export function SearchPage() {
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
 					<Input
 						ref={inputRef}
-						placeholder="Search dashboards, insights, or create new..."
+						placeholder="Search or ask an AI question"
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
 						className="pl-10 h-11"
@@ -309,107 +401,178 @@ export function SearchPage() {
 								</section>
 							)}
 
-							{/* CREATE NEW Section */}
-							{!search && (
+							{/* NAVIGATE Section - All routes */}
+							{filteredNavItems.length > 0 && (
 								<section>
 									<h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
-										Create New
-									</h3>
-									<div className="grid grid-cols-2 gap-2">
-										{QUICK_CREATE_OPTIONS.map((option) => (
-											<CreateNewCard
-												key={option.value}
-												icon={option.icon}
-												title={option.label}
-												description={option.description}
-												onClick={() => handleQuickCreate(option.value)}
-												iconColor={option.iconColor}
-												iconBg={option.iconBg}
-											/>
-										))}
-									</div>
-									<Separator className="mt-4" />
-								</section>
-							)}
-
-							{/* SAVED INSIGHTS Section */}
-							{filteredSavedInsights && filteredSavedInsights.length > 0 && (
-								<section>
-									<h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
-										Saved Insights
+										Navigate
 									</h3>
 									<div className="space-y-1">
-										{filteredSavedInsights.slice(0, 10).map((insight) => (
-											<button
-												key={insight.id}
-												type="button"
-												onClick={() =>
-													handleOpenInsight(insight.id, insight.name)
-												}
-												className={cn(
-													"flex items-center gap-3 w-full p-2 rounded-lg text-left",
-													"hover:bg-accent transition-colors",
-												)}
-											>
-												<div className="flex items-center justify-center size-6 rounded bg-blue-500/15">
-													<Sparkles className="size-3.5 text-blue-600 dark:text-blue-400" />
-												</div>
-												<div className="flex-1 min-w-0">
-													<span className="text-sm truncate block">
-														{insight.name}
-													</span>
-													{insight.description && (
-														<span className="text-xs text-muted-foreground truncate block">
-															{insight.description}
-														</span>
+										{filteredNavItems.map((item) => {
+											const Icon = item.icon;
+											return (
+												<button
+													key={item.id}
+													type="button"
+													onClick={() => handleNavigateTo(item.route)}
+													className={cn(
+														"flex items-center gap-3 w-full p-2 rounded-lg text-left",
+														"hover:bg-accent transition-colors",
 													)}
-												</div>
-												<span className="text-xs text-muted-foreground shrink-0">
-													{formatRelativeTime(insight.updatedAt)}
-												</span>
-											</button>
-										))}
+												>
+													<div
+														className={cn(
+															"flex items-center justify-center size-6 rounded",
+															item.iconBg,
+														)}
+													>
+														<Icon className={cn("size-3.5", item.iconColor)} />
+													</div>
+													<span className="flex-1 text-sm">{item.name}</span>
+												</button>
+											);
+										})}
 									</div>
 									<Separator className="mt-4" />
 								</section>
 							)}
 
 							{/* DASHBOARDS Section */}
-							{filteredDashboards && filteredDashboards.length > 0 && (
-								<section>
-									<h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
-										Dashboards
-									</h3>
-									<div className="space-y-1">
-										{filteredDashboards.map((dashboard) => (
-											<button
-												key={dashboard.id}
-												type="button"
-												onClick={() =>
-													handleOpenDashboard(dashboard.id, dashboard.name)
-												}
-												className={cn(
-													"flex items-center gap-3 w-full p-2 rounded-lg text-left",
-													"hover:bg-accent transition-colors",
-												)}
-											>
-												<div className="flex items-center justify-center size-6 rounded bg-purple-500/15">
-													<LayoutDashboard className="size-3.5 text-purple-600 dark:text-purple-400" />
-												</div>
-												<span className="flex-1 text-sm truncate">
-													{dashboard.name}
-												</span>
-												<span className="text-xs text-muted-foreground shrink-0">
-													{formatRelativeTime(dashboard.updatedAt)}
-												</span>
-											</button>
-										))}
-									</div>
-								</section>
-							)}
+							<section>
+								<h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+									Dashboards
+								</h3>
+								<div className="space-y-1">
+									{/* New Dashboard option */}
+									{!search && (
+										<button
+											type="button"
+											onClick={handleCreateDashboard}
+											className={cn(
+												"flex items-center gap-3 w-full p-2 rounded-lg text-left",
+												"hover:bg-accent transition-colors",
+											)}
+										>
+											<div className="flex items-center justify-center size-6 rounded bg-purple-500/15">
+												<Plus className="size-3.5 text-purple-600 dark:text-purple-400" />
+											</div>
+											<span className="flex-1 text-sm text-muted-foreground">
+												New Dashboard
+											</span>
+										</button>
+									)}
 
-							{/* Empty state when searching */}
+									{/* Existing dashboards */}
+									{filteredDashboards?.map((dashboard) => (
+										<button
+											key={dashboard.id}
+											type="button"
+											onClick={() =>
+												handleOpenDashboard(dashboard.id, dashboard.name)
+											}
+											className={cn(
+												"flex items-center gap-3 w-full p-2 rounded-lg text-left",
+												"hover:bg-accent transition-colors",
+											)}
+										>
+											<div className="flex items-center justify-center size-6 rounded bg-purple-500/15">
+												<LayoutDashboard className="size-3.5 text-purple-600 dark:text-purple-400" />
+											</div>
+											<span className="flex-1 text-sm truncate">
+												{dashboard.name}
+											</span>
+											<span className="text-xs text-muted-foreground shrink-0">
+												{formatRelativeTime(dashboard.updatedAt)}
+											</span>
+										</button>
+									))}
+
+									{/* Empty state for dashboards */}
+									{(!filteredDashboards || filteredDashboards.length === 0) &&
+										search && (
+											<p className="text-sm text-muted-foreground py-2">
+												No dashboards found
+											</p>
+										)}
+								</div>
+								<Separator className="mt-4" />
+							</section>
+
+							{/* INSIGHTS Section */}
+							<section>
+								<h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+									Insights
+								</h3>
+								<div className="space-y-1">
+									{/* New Insight option */}
+									{!search && (
+										<button
+											type="button"
+											onClick={() =>
+												toast.info(
+													"Create a dashboard first, then add insights from there",
+												)
+											}
+											className={cn(
+												"flex items-center gap-3 w-full p-2 rounded-lg text-left",
+												"hover:bg-accent transition-colors",
+											)}
+										>
+											<div className="flex items-center justify-center size-6 rounded bg-blue-500/15">
+												<Plus className="size-3.5 text-blue-600 dark:text-blue-400" />
+											</div>
+											<span className="flex-1 text-sm text-muted-foreground">
+												New Insight
+											</span>
+										</button>
+									)}
+
+									{/* Existing insights */}
+									{filteredSavedInsights?.slice(0, 10).map((insight) => (
+										<button
+											key={insight.id}
+											type="button"
+											onClick={() =>
+												handleOpenInsight(insight.id, insight.name)
+											}
+											className={cn(
+												"flex items-center gap-3 w-full p-2 rounded-lg text-left",
+												"hover:bg-accent transition-colors",
+											)}
+										>
+											<div className="flex items-center justify-center size-6 rounded bg-blue-500/15">
+												<Sparkles className="size-3.5 text-blue-600 dark:text-blue-400" />
+											</div>
+											<div className="flex-1 min-w-0">
+												<span className="text-sm truncate block">
+													{insight.name}
+												</span>
+												{insight.description && (
+													<span className="text-xs text-muted-foreground truncate block">
+														{insight.description}
+													</span>
+												)}
+											</div>
+											<span className="text-xs text-muted-foreground shrink-0">
+												{formatRelativeTime(insight.updatedAt)}
+											</span>
+										</button>
+									))}
+
+									{/* Empty state for insights */}
+									{(!filteredSavedInsights ||
+										filteredSavedInsights.length === 0) &&
+										search && (
+											<p className="text-sm text-muted-foreground py-2">
+												No insights found
+											</p>
+										)}
+								</div>
+							</section>
+
+							{/* Empty state when searching and no results */}
 							{search &&
+								filteredNavItems.length === 0 &&
 								(!filteredDashboards || filteredDashboards.length === 0) &&
 								(!filteredSavedInsights ||
 									filteredSavedInsights.length === 0) && (

@@ -1389,6 +1389,297 @@ const SYSTEM_TEMPLATES: SystemTemplate[] = [
 			],
 		),
 	},
+
+	// ============================================
+	// Anomaly Detection Templates
+	// ============================================
+
+	// Spending Spike Alert
+	{
+		name: "Alerta de Pico de Gastos",
+		description:
+			"Envia notificacao quando um pico de gastos incomum e detectado no periodo",
+		category: "notifications",
+		icon: "TrendingUp",
+		tags: ["anomalia", "gastos", "pico", "alerta"],
+		triggerType: "anomaly.spending_spike",
+		triggerConfig: {} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [],
+		},
+		consequences: [
+			{
+				type: "send_push_notification",
+				payload: {
+					title: "Pico de Gastos Detectado",
+					body: "Seus gastos estao significativamente acima do normal. Verifique suas transacoes.",
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"anomaly.spending_spike" as TriggerType,
+			{} as TriggerConfig,
+			[
+				{
+					type: "send_push_notification",
+					label: "Enviar Notificacao",
+					config: {
+						title: "Pico de Gastos Detectado",
+						body: "Gastos acima do normal",
+					},
+				},
+			],
+		),
+	},
+
+	// Large Transaction Alert
+	{
+		name: "Alerta de Transacao de Alto Valor",
+		description:
+			"Envia notificacao quando uma transacao de valor muito alto e detectada",
+		category: "notifications",
+		icon: "Zap",
+		tags: ["anomalia", "transacao", "alto valor", "alerta"],
+		triggerType: "anomaly.large_transaction",
+		triggerConfig: {} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [],
+		},
+		consequences: [
+			{
+				type: "send_push_notification",
+				payload: {
+					title: "Transacao de Alto Valor",
+					body: "Uma transacao de valor incomum foi detectada.",
+				},
+			},
+			{
+				type: "send_email",
+				payload: {
+					to: "owner",
+					subject: "Alerta: Transacao de Alto Valor Detectada",
+					body: "<p>Uma transacao de valor significativamente acima do normal foi detectada em sua conta.</p><p>Verifique se essa transacao e legitima.</p>",
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"anomaly.large_transaction" as TriggerType,
+			{} as TriggerConfig,
+			[
+				{
+					type: "send_push_notification",
+					label: "Enviar Notificacao",
+					config: {
+						title: "Transacao de Alto Valor",
+					},
+				},
+				{
+					type: "send_email",
+					label: "Enviar E-mail de Alerta",
+					config: {
+						to: "owner",
+						subject: "Alerta: Transacao de Alto Valor",
+					},
+				},
+			],
+		),
+	},
+
+	// Unusual Category Spending Alert
+	{
+		name: "Alerta de Gasto Incomum em Categoria",
+		description:
+			"Envia notificacao quando gastos em uma categoria estao fora do padrao habitual",
+		category: "notifications",
+		icon: "Tag",
+		tags: ["anomalia", "categoria", "gastos", "alerta"],
+		triggerType: "anomaly.unusual_category",
+		triggerConfig: {} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [],
+		},
+		consequences: [
+			{
+				type: "send_push_notification",
+				payload: {
+					title: "Gasto Incomum em Categoria",
+					body: "Uma categoria apresenta gastos significativamente acima do normal.",
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"anomaly.unusual_category" as TriggerType,
+			{} as TriggerConfig,
+			[
+				{
+					type: "send_push_notification",
+					label: "Enviar Notificacao",
+					config: {
+						title: "Gasto Incomum em Categoria",
+					},
+				},
+			],
+		),
+	},
+
+	// ============================================
+	// Goal Tracking Templates
+	// ============================================
+
+	// Goal Milestone Reached
+	{
+		name: "Notificacao de Marco de Meta",
+		description:
+			"Envia notificacao quando uma meta atinge um marco importante (25%, 50%, 75%, 100%)",
+		category: "notifications",
+		icon: "Target",
+		tags: ["meta", "marco", "progresso", "celebracao"],
+		triggerType: "goal.milestone_reached",
+		triggerConfig: {} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [],
+		},
+		consequences: [
+			{
+				type: "send_push_notification",
+				payload: {
+					title: "Marco de Meta Atingido!",
+					body: "Parabens! Voce atingiu um marco importante em sua meta financeira.",
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"goal.milestone_reached" as TriggerType,
+			{} as TriggerConfig,
+			[
+				{
+					type: "send_push_notification",
+					label: "Enviar Notificacao de Celebracao",
+					config: {
+						title: "Marco de Meta Atingido!",
+					},
+				},
+			],
+		),
+	},
+
+	// Goal At Risk Alert
+	{
+		name: "Alerta de Meta em Risco",
+		description:
+			"Envia alerta quando uma meta esta em risco de nao ser atingida no prazo",
+		category: "notifications",
+		icon: "AlertTriangle",
+		tags: ["meta", "risco", "prazo", "alerta"],
+		triggerType: "goal.at_risk",
+		triggerConfig: {} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [],
+		},
+		consequences: [
+			{
+				type: "send_push_notification",
+				payload: {
+					title: "Meta em Risco",
+					body: "Sua meta pode nao ser atingida no prazo. Revise seu progresso.",
+				},
+			},
+			{
+				type: "send_email",
+				payload: {
+					to: "owner",
+					subject: "Alerta: Meta Financeira em Risco",
+					body: "<p>Uma de suas metas financeiras esta em risco de nao ser atingida no prazo estabelecido.</p><p>Acesse o sistema para revisar seu progresso e ajustar seu plano se necessario.</p>",
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"goal.at_risk" as TriggerType,
+			{} as TriggerConfig,
+			[
+				{
+					type: "send_push_notification",
+					label: "Enviar Notificacao de Alerta",
+					config: {
+						title: "Meta em Risco",
+					},
+				},
+				{
+					type: "send_email",
+					label: "Enviar E-mail de Alerta",
+					config: {
+						to: "owner",
+						subject: "Alerta: Meta Financeira em Risco",
+					},
+				},
+			],
+		),
+	},
+
+	// Goal Completed
+	{
+		name: "Celebracao de Meta Concluida",
+		description:
+			"Envia notificacao de celebracao quando uma meta e concluida com sucesso",
+		category: "notifications",
+		icon: "Trophy",
+		tags: ["meta", "concluida", "sucesso", "celebracao"],
+		triggerType: "goal.completed",
+		triggerConfig: {} as TriggerConfig,
+		conditions: {
+			id: "root",
+			operator: "AND",
+			conditions: [],
+		},
+		consequences: [
+			{
+				type: "send_push_notification",
+				payload: {
+					title: "Meta Concluida!",
+					body: "Parabens! Voce atingiu sua meta financeira. Continue assim!",
+				},
+			},
+			{
+				type: "send_email",
+				payload: {
+					to: "owner",
+					subject: "Parabens! Voce atingiu sua meta!",
+					body: "<p><strong>Parabens!</strong> Voce concluiu uma de suas metas financeiras com sucesso!</p><p>Continue acompanhando suas financas e definindo novas metas para manter o momentum.</p>",
+				},
+			},
+		],
+		flowData: generateFlowData(
+			"goal.completed" as TriggerType,
+			{} as TriggerConfig,
+			[
+				{
+					type: "send_push_notification",
+					label: "Enviar Notificacao de Celebracao",
+					config: {
+						title: "Meta Concluida!",
+					},
+				},
+				{
+					type: "send_email",
+					label: "Enviar E-mail de Parabens",
+					config: {
+						to: "owner",
+						subject: "Parabens! Voce atingiu sua meta!",
+					},
+				},
+			],
+		),
+	},
 ];
 
 // ============================================

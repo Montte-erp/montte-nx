@@ -1,4 +1,5 @@
 import { Store, useStore } from "@tanstack/react-store";
+import type { RouteTabInfo } from "../lib/route-tab-mapping";
 
 export type TabType = "app" | "dashboard" | "insight" | "search";
 
@@ -8,6 +9,7 @@ export type DashboardTab = {
 	dashboardId: string;
 	name: string;
 	isDirty?: boolean;
+	isPinned?: boolean;
 };
 
 export type InsightTab = {
@@ -16,6 +18,7 @@ export type InsightTab = {
 	insightId: string;
 	name: string;
 	isDirty?: boolean;
+	isPinned?: boolean;
 };
 
 export type AppTab = {
@@ -23,12 +26,15 @@ export type AppTab = {
 	type: "app";
 	name: string;
 	dashboardId?: string;
+	routeKey?: string;
+	routeInfo?: RouteTabInfo;
 };
 
 export type SearchTab = {
 	id: "search";
 	type: "search";
 	name: string;
+	isPinned?: boolean;
 };
 
 export type Tab = AppTab | DashboardTab | InsightTab | SearchTab;
@@ -128,6 +134,10 @@ export function useDashboardTabs() {
 			if (tabId === "app") return; // Can't close app tab
 
 			dashboardTabsStore.setState((s) => {
+				// Don't close pinned tabs
+				const tab = s.tabs.find((t) => t.id === tabId);
+				if (tab && "isPinned" in tab && tab.isPinned) return s;
+
 				const tabIndex = s.tabs.findIndex((t) => t.id === tabId);
 				const newTabs = s.tabs.filter((t) => t.id !== tabId);
 
@@ -214,6 +224,35 @@ export function useDashboardTabs() {
 				};
 			});
 		},
+
+		togglePinTab: (tabId: string) => {
+			if (tabId === "app") return; // Can't pin/unpin app tab
+			dashboardTabsStore.setState((s) => ({
+				...s,
+				tabs: s.tabs.map((tab) =>
+					tab.id === tabId && tab.type !== "app"
+						? { ...tab, isPinned: !("isPinned" in tab && tab.isPinned) }
+						: tab,
+				),
+			}));
+		},
+
+		updateActiveTabForRoute: (routeKey: string, routeInfo: RouteTabInfo) => {
+			dashboardTabsStore.setState((s) => {
+				const activeTab = s.tabs.find((t) => t.id === s.activeTabId);
+				if (!activeTab || activeTab.type !== "app") return s;
+
+				return {
+					...s,
+					appTabName: routeInfo.name,
+					tabs: s.tabs.map((tab) =>
+						tab.id === s.activeTabId && tab.type === "app"
+							? { ...tab, name: routeInfo.name, routeKey, routeInfo }
+							: tab,
+					),
+				};
+			});
+		},
 	};
 }
 
@@ -294,6 +333,10 @@ export function closeTab(tabId: string) {
 	if (tabId === "app") return;
 
 	dashboardTabsStore.setState((s) => {
+		// Don't close pinned tabs
+		const tab = s.tabs.find((t) => t.id === tabId);
+		if (tab && "isPinned" in tab && tab.isPinned) return s;
+
 		const tabIndex = s.tabs.findIndex((t) => t.id === tabId);
 		const newTabs = s.tabs.filter((t) => t.id !== tabId);
 
@@ -327,4 +370,33 @@ export function setAppTabName(name: string, dashboardId?: string) {
 		appTabName: name,
 		tabs: s.tabs.map((tab) => (tab.id === "app" ? { ...tab, name, dashboardId } as AppTab : tab)),
 	}));
+}
+
+export function togglePinTab(tabId: string) {
+	if (tabId === "app") return;
+	dashboardTabsStore.setState((s) => ({
+		...s,
+		tabs: s.tabs.map((tab) =>
+			tab.id === tabId && tab.type !== "app"
+				? { ...tab, isPinned: !("isPinned" in tab && tab.isPinned) }
+				: tab,
+		),
+	}));
+}
+
+export function updateActiveTabForRoute(routeKey: string, routeInfo: RouteTabInfo) {
+	dashboardTabsStore.setState((s) => {
+		const activeTab = s.tabs.find((t) => t.id === s.activeTabId);
+		if (!activeTab || activeTab.type !== "app") return s;
+
+		return {
+			...s,
+			appTabName: routeInfo.name,
+			tabs: s.tabs.map((tab) =>
+				tab.id === s.activeTabId && tab.type === "app"
+					? { ...tab, name: routeInfo.name, routeKey, routeInfo }
+					: tab,
+			),
+		};
+	});
 }

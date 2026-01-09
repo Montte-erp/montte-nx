@@ -52,15 +52,21 @@ export type AutomationFlowState = {
 };
 
 export const TRIGGER_TYPE_LABELS: Record<TriggerType, string> = {
-   "transaction.created": "Transação Criada",
-   "transaction.updated": "Transação Atualizada",
-   "schedule.daily": "Agendamento Diário",
+   "transaction.created": "Transacao Criada",
+   "transaction.updated": "Transacao Atualizada",
+   "schedule.daily": "Agendamento Diario",
    "schedule.weekly": "Agendamento Semanal",
    "schedule.biweekly": "Agendamento Quinzenal",
    "schedule.custom": "Agendamento Personalizado",
-   "budget.threshold_reached": "Limite de Orçamento Atingido",
-   "budget.period_end": "Fim de Período do Orçamento",
-   "budget.overspent": "Orçamento Excedido",
+   "budget.threshold_reached": "Limite de Orcamento Atingido",
+   "budget.period_end": "Fim de Periodo do Orcamento",
+   "budget.overspent": "Orcamento Excedido",
+   "anomaly.spending_spike": "Pico de Gastos Detectado",
+   "anomaly.unusual_category": "Gasto Incomum em Categoria",
+   "anomaly.large_transaction": "Transacao de Alto Valor",
+   "goal.milestone_reached": "Marco de Meta Alcancado",
+   "goal.at_risk": "Meta em Risco",
+   "goal.completed": "Meta Concluida",
 };
 
 export const isScheduleTrigger = (type: TriggerType): boolean =>
@@ -68,6 +74,12 @@ export const isScheduleTrigger = (type: TriggerType): boolean =>
 
 export const isBudgetTrigger = (type: TriggerType): boolean =>
    type.startsWith("budget.");
+
+export const isAnomalyTrigger = (type: TriggerType): boolean =>
+   type.startsWith("anomaly.");
+
+export const isGoalTrigger = (type: TriggerType): boolean =>
+   type.startsWith("goal.");
 
 export const DAYS_OF_WEEK = [
    { label: "Domingo", value: 0 },

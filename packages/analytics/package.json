@@ -1,0 +1,34 @@
+{
+   "name": "@packages/analytics",
+   "version": "0.1.0",
+   "type": "module",
+   "private": true,
+   "exports": {
+      "./anomaly-detection": {
+         "default": "./src/anomaly-detection.ts",
+         "types": "./dist/src/anomaly-detection.d.ts"
+      },
+      "./statistics": {
+         "default": "./src/statistics.ts",
+         "types": "./dist/src/statistics.d.ts"
+      },
+      "./forecasting": {
+         "default": "./src/forecasting.ts",
+         "types": "./dist/src/forecasting.d.ts"
+      }
+   },
+   "files": [
+      "dist"
+   ],
+   "scripts": {
+      "build": "tsc --build",
+      "typecheck": "tsc"
+   },
+   "dependencies": {
+      "@packages/database": "workspace:*"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development"
+   }
+}

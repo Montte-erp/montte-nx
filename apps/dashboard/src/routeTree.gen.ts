@@ -39,6 +39,7 @@ import { Route as SlugDashboardSettingsIndexRouteImport } from './routes/$slug/_
 import { Route as SlugDashboardOrganizationIndexRouteImport } from './routes/$slug/_dashboard/organization/index'
 import { Route as SlugDashboardInterestTemplatesIndexRouteImport } from './routes/$slug/_dashboard/interest-templates/index'
 import { Route as SlugDashboardInsightsIndexRouteImport } from './routes/$slug/_dashboard/insights.index'
+import { Route as SlugDashboardGoalsIndexRouteImport } from './routes/$slug/_dashboard/goals/index'
 import { Route as SlugDashboardDashboardsIndexRouteImport } from './routes/$slug/_dashboard/dashboards.index'
 import { Route as SlugDashboardCounterpartiesIndexRouteImport } from './routes/$slug/_dashboard/counterparties/index'
 import { Route as SlugDashboardCostCentersIndexRouteImport } from './routes/$slug/_dashboard/cost-centers/index'
@@ -226,6 +227,11 @@ const SlugDashboardInsightsIndexRoute =
     path: '/insights/',
     getParentRoute: () => SlugDashboardRoute,
   } as any)
+const SlugDashboardGoalsIndexRoute = SlugDashboardGoalsIndexRouteImport.update({
+  id: '/goals/',
+  path: '/goals/',
+  getParentRoute: () => SlugDashboardRoute,
+} as any)
 const SlugDashboardDashboardsIndexRoute =
   SlugDashboardDashboardsIndexRouteImport.update({
     id: '/dashboards/',
@@ -465,6 +471,7 @@ export interface FileRoutesByFullPath {
   '/$slug/cost-centers': typeof SlugDashboardCostCentersIndexRoute
   '/$slug/counterparties': typeof SlugDashboardCounterpartiesIndexRoute
   '/$slug/dashboards': typeof SlugDashboardDashboardsIndexRoute
+  '/$slug/goals': typeof SlugDashboardGoalsIndexRoute
   '/$slug/insights': typeof SlugDashboardInsightsIndexRoute
   '/$slug/interest-templates': typeof SlugDashboardInterestTemplatesIndexRoute
   '/$slug/organization/': typeof SlugDashboardOrganizationIndexRoute
@@ -524,6 +531,7 @@ export interface FileRoutesByTo {
   '/$slug/cost-centers': typeof SlugDashboardCostCentersIndexRoute
   '/$slug/counterparties': typeof SlugDashboardCounterpartiesIndexRoute
   '/$slug/dashboards': typeof SlugDashboardDashboardsIndexRoute
+  '/$slug/goals': typeof SlugDashboardGoalsIndexRoute
   '/$slug/insights': typeof SlugDashboardInsightsIndexRoute
   '/$slug/interest-templates': typeof SlugDashboardInterestTemplatesIndexRoute
   '/$slug/organization': typeof SlugDashboardOrganizationIndexRoute
@@ -588,6 +596,7 @@ export interface FileRoutesById {
   '/$slug/_dashboard/cost-centers/': typeof SlugDashboardCostCentersIndexRoute
   '/$slug/_dashboard/counterparties/': typeof SlugDashboardCounterpartiesIndexRoute
   '/$slug/_dashboard/dashboards/': typeof SlugDashboardDashboardsIndexRoute
+  '/$slug/_dashboard/goals/': typeof SlugDashboardGoalsIndexRoute
   '/$slug/_dashboard/insights/': typeof SlugDashboardInsightsIndexRoute
   '/$slug/_dashboard/interest-templates/': typeof SlugDashboardInterestTemplatesIndexRoute
   '/$slug/_dashboard/organization/': typeof SlugDashboardOrganizationIndexRoute
@@ -652,6 +661,7 @@ export interface FileRouteTypes {
     | '/$slug/cost-centers'
     | '/$slug/counterparties'
     | '/$slug/dashboards'
+    | '/$slug/goals'
     | '/$slug/insights'
     | '/$slug/interest-templates'
     | '/$slug/organization/'
@@ -711,6 +721,7 @@ export interface FileRouteTypes {
     | '/$slug/cost-centers'
     | '/$slug/counterparties'
     | '/$slug/dashboards'
+    | '/$slug/goals'
     | '/$slug/insights'
     | '/$slug/interest-templates'
     | '/$slug/organization'
@@ -774,6 +785,7 @@ export interface FileRouteTypes {
     | '/$slug/_dashboard/cost-centers/'
     | '/$slug/_dashboard/counterparties/'
     | '/$slug/_dashboard/dashboards/'
+    | '/$slug/_dashboard/goals/'
     | '/$slug/_dashboard/insights/'
     | '/$slug/_dashboard/interest-templates/'
     | '/$slug/_dashboard/organization/'
@@ -1002,6 +1014,13 @@ declare module '@tanstack/react-router' {
       path: '/insights'
       fullPath: '/$slug/insights'
       preLoaderRoute: typeof SlugDashboardInsightsIndexRouteImport
+      parentRoute: typeof SlugDashboardRoute
+    }
+    '/$slug/_dashboard/goals/': {
+      id: '/$slug/_dashboard/goals/'
+      path: '/goals'
+      fullPath: '/$slug/goals'
+      preLoaderRoute: typeof SlugDashboardGoalsIndexRouteImport
       parentRoute: typeof SlugDashboardRoute
     }
     '/$slug/_dashboard/dashboards/': {
@@ -1316,6 +1335,7 @@ interface SlugDashboardRouteChildren {
   SlugDashboardCostCentersIndexRoute: typeof SlugDashboardCostCentersIndexRoute
   SlugDashboardCounterpartiesIndexRoute: typeof SlugDashboardCounterpartiesIndexRoute
   SlugDashboardDashboardsIndexRoute: typeof SlugDashboardDashboardsIndexRoute
+  SlugDashboardGoalsIndexRoute: typeof SlugDashboardGoalsIndexRoute
   SlugDashboardInsightsIndexRoute: typeof SlugDashboardInsightsIndexRoute
   SlugDashboardInterestTemplatesIndexRoute: typeof SlugDashboardInterestTemplatesIndexRoute
   SlugDashboardTagsIndexRoute: typeof SlugDashboardTagsIndexRoute
@@ -1358,6 +1378,7 @@ const SlugDashboardRouteChildren: SlugDashboardRouteChildren = {
   SlugDashboardCostCentersIndexRoute: SlugDashboardCostCentersIndexRoute,
   SlugDashboardCounterpartiesIndexRoute: SlugDashboardCounterpartiesIndexRoute,
   SlugDashboardDashboardsIndexRoute: SlugDashboardDashboardsIndexRoute,
+  SlugDashboardGoalsIndexRoute: SlugDashboardGoalsIndexRoute,
   SlugDashboardInsightsIndexRoute: SlugDashboardInsightsIndexRoute,
   SlugDashboardInterestTemplatesIndexRoute:
     SlugDashboardInterestTemplatesIndexRoute,

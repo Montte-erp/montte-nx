@@ -10,6 +10,11 @@ import {
 	CommandItem,
 	CommandList,
 } from "@packages/ui/components/command";
+import {
+	Tooltip,
+	TooltipTrigger,
+	TooltipContent,
+} from "@packages/ui/components/tooltip";
 import { cn } from "@packages/ui/lib/utils";
 import type { InsightConfig } from "@packages/database/schemas/dashboards";
 import {
@@ -279,15 +284,19 @@ export function WidgetConfigToolbar({
 			{/* Right side: Options, Chart type, Width toggle, Remove */}
 			<div className="flex items-center gap-1">
 				{/* Options */}
-				<Button
-					variant="ghost"
-					size="sm"
-					className="h-7 gap-1 px-2 text-xs font-normal"
-					onClick={onOpenOptions}
-				>
-					<Settings2 className="h-3.5 w-3.5" />
-					Options
-				</Button>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-7 w-7"
+							onClick={onOpenOptions}
+						>
+							<Settings2 className="h-3.5 w-3.5" />
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Options</TooltipContent>
+				</Tooltip>
 
 				{/* Chart Type */}
 				<Popover open={chartTypeOpen} onOpenChange={setChartTypeOpen}>
@@ -332,30 +341,38 @@ export function WidgetConfigToolbar({
 				<div className="w-px h-4 bg-border mx-1" />
 
 				{/* Width Toggle */}
-				<Button
-					variant="ghost"
-					size="icon"
-					className="h-7 w-7"
-					onClick={onToggleWidth}
-					title={isFullWidth ? "Half width" : "Full width"}
-				>
-					{isFullWidth ? (
-						<Minimize2 className="h-3.5 w-3.5" />
-					) : (
-						<Maximize2 className="h-3.5 w-3.5" />
-					)}
-				</Button>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-7 w-7"
+							onClick={onToggleWidth}
+						>
+							{isFullWidth ? (
+								<Minimize2 className="h-3.5 w-3.5" />
+							) : (
+								<Maximize2 className="h-3.5 w-3.5" />
+							)}
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>{isFullWidth ? "Half width" : "Full width"}</TooltipContent>
+				</Tooltip>
 
 				{/* Remove */}
-				<Button
-					variant="ghost"
-					size="icon"
-					className="h-7 w-7 text-destructive hover:text-destructive"
-					onClick={onRemove}
-					title="Remove widget"
-				>
-					<Trash2 className="h-3.5 w-3.5" />
-				</Button>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-7 w-7 text-destructive hover:text-destructive"
+							onClick={onRemove}
+						>
+							<Trash2 className="h-3.5 w-3.5" />
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Remove widget</TooltipContent>
+				</Tooltip>
 			</div>
 		</div>
 	);

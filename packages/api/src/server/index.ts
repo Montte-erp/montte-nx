@@ -19,6 +19,7 @@ import { counterpartyRouter } from "./routers/counterparties";
 import { dashboardRouter } from "./routers/dashboards";
 import { encryptionRouter } from "./routers/encryption";
 import { expenseSplitsRouter } from "./routers/expense-splits";
+import { goalsRouter } from "./routers/goals";
 import { interestTemplateRouter } from "./routers/interest-templates";
 import { notificationRouter } from "./routers/notifications";
 import { onboardingRouter } from "./routers/onboarding";
@@ -50,6 +51,7 @@ export const appRouter = router({
    dashboards: dashboardRouter,
    encryption: encryptionRouter,
    expenseSplits: expenseSplitsRouter,
+   goals: goalsRouter,
    interestTemplates: interestTemplateRouter,
    notifications: notificationRouter,
    onboarding: onboardingRouter,

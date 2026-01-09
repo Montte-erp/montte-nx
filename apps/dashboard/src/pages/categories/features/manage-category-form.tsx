@@ -7,7 +7,7 @@ import {
    FieldGroup,
    FieldLabel,
 } from "@packages/ui/components/field";
-import { IconPicker } from "@packages/ui/components/icon-picker";
+import { IconSelector } from "@/features/icon-selector/icon-selector";
 import { Input } from "@packages/ui/components/input";
 import {
    Popover,
@@ -23,8 +23,8 @@ import {
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { ColorPicker } from "@/components/color-picker";
-import { TransactionTypesSelector } from "@/components/transaction-types-selector";
+import { ColorPicker } from "@packages/ui/components/color-picker";
+import { TransactionTypesSelector } from "@/features/category/ui/transaction-types-selector";
 import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";
 
@@ -238,8 +238,8 @@ export function ManageCategoryForm({ category }: ManageCategoryFormProps) {
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel>Ícone</FieldLabel>
-                           <IconPicker
-                              onChange={field.handleChange}
+                           <IconSelector
+                              onValueChange={field.handleChange}
                               value={field.state.value ?? undefined}
                            />
                            <FieldDescription>Opcional</FieldDescription>

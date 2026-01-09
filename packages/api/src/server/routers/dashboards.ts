@@ -25,6 +25,12 @@ import {
 	updateWidgetPositions,
 } from "@packages/database/repositories/dashboard-repository";
 import {
+	acknowledgeAnomaly,
+	countUnacknowledgedAnomalies,
+	findAnomaliesByOrganizationId,
+	findAnomalyById,
+} from "@packages/database/repositories/anomaly-repository";
+import {
 	type DashboardFilterConfig,
 	type DashboardLayout,
 	type WidgetConfig,
@@ -103,10 +109,27 @@ const insightConfigSchema = z.object({
 		"world_map",
 		"category_analysis",
 		"comparison",
+		"sankey",
+		"heatmap",
 	]),
 	comparison: z
 		.object({
 			type: z.enum(["previous_period", "previous_year"]),
+		})
+		.optional(),
+	comparisonOverlay: z
+		.object({
+			enabled: z.boolean(),
+			type: z.enum(["previous_period", "previous_year"]),
+			style: z.enum(["dashed", "dotted", "solid"]),
+		})
+		.optional(),
+	forecast: z
+		.object({
+			enabled: z.boolean(),
+			model: z.enum(["linear", "moving_average", "exponential_smoothing"]),
+			periods: z.number(),
+			showConfidenceInterval: z.boolean().optional(),
 		})
 		.optional(),
 	showLegend: z.boolean().optional(),
@@ -140,6 +163,12 @@ const insightConfigSchema = z.object({
 			endDate: z.string().optional(),
 		})
 		.optional(),
+	miniChart: z
+		.object({
+			type: z.enum(["sparkline", "area", "bar"]),
+			showTrend: z.boolean(),
+		})
+		.optional(),
 });
 
 const textCardConfigSchema = z.object({
@@ -168,6 +197,12 @@ const recentTransactionsConfigSchema = z.object({
 	limit: z.number().optional(),
 });
 
+const anomalyCardConfigSchema = z.object({
+	type: z.literal("anomaly_card"),
+	limit: z.number().optional(),
+	showAcknowledged: z.boolean().optional(),
+});
+
 const widgetConfigSchema = z.discriminatedUnion("type", [
 	insightConfigSchema,
 	textCardConfigSchema,
@@ -175,6 +210,7 @@ const widgetConfigSchema = z.discriminatedUnion("type", [
 	quickActionsConfigSchema,
 	bankAccountsConfigSchema,
 	recentTransactionsConfigSchema,
+	anomalyCardConfigSchema,
 ]);
 
 const dashboardLayoutSchema = z.object({
@@ -397,7 +433,7 @@ export const dashboardRouter = router({
 				dashboardId: z.string().uuid(),
 				name: z.string().min(1).max(100),
 				description: z.string().max(500).nullish(),
-				type: z.enum(["insight", "text_card", "balance_card", "quick_actions", "bank_accounts", "recent_transactions"]),
+				type: z.enum(["insight", "text_card", "balance_card", "quick_actions", "bank_accounts", "recent_transactions", "anomaly_card"]),
 				position: widgetPositionSchema,
 				config: widgetConfigSchema,
 			}),
@@ -721,6 +757,65 @@ export const dashboardRouter = router({
 				input?.limit ?? 10,
 			);
 		}),
+
+	// ============================================
+	// Anomaly Detection
+	// ============================================
+
+	getAnomalies: protectedProcedure
+		.input(
+			z.object({
+				includeAcknowledged: z.boolean().optional(),
+				limit: z.number().min(1).max(100).optional(),
+				offset: z.number().min(0).optional(),
+			}).optional(),
+		)
+		.query(async ({ ctx, input }) => {
+			const resolvedCtx = await ctx;
+			const organizationId = resolvedCtx.organizationId;
+
+			return findAnomaliesByOrganizationId(resolvedCtx.db, organizationId, {
+				includeAcknowledged: input?.includeAcknowledged,
+				limit: input?.limit,
+				offset: input?.offset,
+			});
+		}),
+
+	getAnomalyById: protectedProcedure
+		.input(z.object({ id: z.string().uuid() }))
+		.query(async ({ ctx, input }) => {
+			const resolvedCtx = await ctx;
+			const organizationId = resolvedCtx.organizationId;
+
+			const anomaly = await findAnomalyById(resolvedCtx.db, input.id);
+			if (!anomaly || anomaly.organizationId !== organizationId) {
+				throw APIError.notFound("Anomaly not found");
+			}
+
+			return anomaly;
+		}),
+
+	acknowledgeAnomaly: protectedProcedure
+		.input(z.object({ id: z.string().uuid() }))
+		.mutation(async ({ ctx, input }) => {
+			const resolvedCtx = await ctx;
+			const organizationId = resolvedCtx.organizationId;
+			const userId = resolvedCtx.userId;
+
+			const anomaly = await findAnomalyById(resolvedCtx.db, input.id);
+			if (!anomaly || anomaly.organizationId !== organizationId) {
+				throw APIError.notFound("Anomaly not found");
+			}
+
+			return acknowledgeAnomaly(resolvedCtx.db, input.id, userId);
+		}),
+
+	getAnomalyCount: protectedProcedure.query(async ({ ctx }) => {
+		const resolvedCtx = await ctx;
+		const organizationId = resolvedCtx.organizationId;
+
+		return countUnacknowledgedAnomalies(resolvedCtx.db, organizationId);
+	}),
 });
 
 // ============================================
@@ -740,6 +835,10 @@ type InsightResult = {
 		color?: string;
 	}>;
 	timeSeries?: Array<{
+		date: string;
+		value: number;
+	}>;
+	comparisonTimeSeries?: Array<{
 		date: string;
 		value: number;
 	}>;
@@ -952,6 +1051,53 @@ async function queryTransactionInsight(
 			date: row.date,
 			value: row.value,
 		}));
+
+		// Handle comparison overlay time series
+		if (config.comparisonOverlay?.enabled) {
+			const periodMs = endDate.getTime() - startDate.getTime();
+			let prevStartDate: Date;
+			let prevEndDate: Date;
+
+			if (config.comparisonOverlay.type === "previous_period") {
+				prevEndDate = new Date(startDate.getTime() - 1);
+				prevStartDate = new Date(prevEndDate.getTime() - periodMs);
+			} else {
+				// previous_year
+				prevStartDate = new Date(startDate);
+				prevStartDate.setFullYear(prevStartDate.getFullYear() - 1);
+				prevEndDate = new Date(endDate);
+				prevEndDate.setFullYear(prevEndDate.getFullYear() - 1);
+			}
+
+			const prevConditions = [
+				eq(transaction.organizationId, organizationId),
+				gte(transaction.date, prevStartDate),
+				lte(transaction.date, prevEndDate),
+			];
+
+			if (globalFilters?.bankAccountIds?.length) {
+				prevConditions.push(
+					inArray(transaction.bankAccountId, globalFilters.bankAccountIds),
+				);
+			}
+
+			const comparisonTimeSeriesResult = await db
+				.select({
+					date: sql<string>`TO_CHAR(${transaction.date}, '${sql.raw(dateFormat)}')`,
+					value: aggregateSql,
+				})
+				.from(transaction)
+				.where(and(...prevConditions))
+				.groupBy(sql`TO_CHAR(${transaction.date}, '${sql.raw(dateFormat)}')`)
+				.orderBy(asc(sql`TO_CHAR(${transaction.date}, '${sql.raw(dateFormat)}')`));
+
+			result.comparisonTimeSeries = comparisonTimeSeriesResult.map(
+				(row: { date: string; value: number }) => ({
+					date: row.date,
+					value: row.value,
+				}),
+			);
+		}
 	}
 
 	// Handle table output

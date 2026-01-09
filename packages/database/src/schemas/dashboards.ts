@@ -22,6 +22,7 @@ export const widgetTypeEnum = pgEnum("widget_type", [
 	"quick_actions",
 	"bank_accounts",
 	"recent_transactions",
+	"anomaly_card",
 ]);
 
 export const chartTypeEnum = pgEnum("chart_type", [
@@ -38,6 +39,8 @@ export const chartTypeEnum = pgEnum("chart_type", [
 	"world_map",
 	"category_analysis",
 	"comparison",
+	"sankey",
+	"heatmap",
 ]);
 
 export const dataSourceEnum = pgEnum("data_source", [
@@ -156,8 +159,21 @@ export type InsightConfig = {
 		| "table"
 		| "world_map"
 		| "category_analysis"
-		| "comparison";
+		| "comparison"
+		| "sankey"
+		| "heatmap";
 	comparison?: InsightComparison;
+	comparisonOverlay?: {
+		enabled: boolean;
+		type: "previous_period" | "previous_year";
+		style: "dashed" | "dotted" | "solid";
+	};
+	forecast?: {
+		enabled: boolean;
+		model: "linear" | "moving_average" | "exponential_smoothing";
+		periods: number;
+		showConfidenceInterval?: boolean;
+	};
 	showLegend?: boolean;
 	showLabels?: boolean;
 	showTrendLine?: boolean;
@@ -183,6 +199,10 @@ export type InsightConfig = {
 			| "last_year";
 		startDate?: string;
 		endDate?: string;
+	};
+	miniChart?: {
+		type: "sparkline" | "area" | "bar";
+		showTrend: boolean;
 	};
 };
 
@@ -212,13 +232,20 @@ export type RecentTransactionsConfig = {
 	limit?: number;
 };
 
+export type AnomalyCardConfig = {
+	type: "anomaly_card";
+	limit?: number;
+	showAcknowledged?: boolean;
+};
+
 export type WidgetConfig =
 	| InsightConfig
 	| TextCardConfig
 	| BalanceCardConfig
 	| QuickActionsConfig
 	| BankAccountsConfig
-	| RecentTransactionsConfig;
+	| RecentTransactionsConfig
+	| AnomalyCardConfig;
 
 export type DashboardFilterConfig = {
 	dateRange?: {

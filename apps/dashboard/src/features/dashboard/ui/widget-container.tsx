@@ -20,6 +20,7 @@ import type {
 	QuickActionsConfig,
 	BankAccountsConfig,
 	RecentTransactionsConfig,
+	AnomalyCardConfig,
 } from "@packages/database/schemas/dashboards";
 import {
 	ChartLine,
@@ -34,6 +35,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@packages/ui/lib/utils";
+import { AnomalyWidget } from "./anomaly-widget";
 import { BalanceCardWidget } from "./balance-card-widget";
 import { BankAccountsWidget } from "./bank-accounts-widget";
 import { DisplayTypeCredenza } from "./display-type-credenza";
@@ -56,7 +58,8 @@ type Widget = {
 	| "balance_card"
 	| "quick_actions"
 	| "bank_accounts"
-	| "recent_transactions";
+	| "recent_transactions"
+	| "anomaly_card";
 	name: string;
 	description: string | null;
 	position: WidgetPosition;
@@ -101,6 +104,10 @@ function renderWidgetContent(
 				<RecentTransactionsWidget
 					config={widget.config as RecentTransactionsConfig}
 				/>
+			);
+		case "anomaly_card":
+			return (
+				<AnomalyWidget config={widget.config as AnomalyCardConfig} />
 			);
 		case "insight":
 		default:
