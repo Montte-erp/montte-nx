@@ -1,12 +1,5 @@
 ---
-import type { SupportedLng } from "@packages/localization";
 import { FeatureCarousel } from "@/components/feature-carousel";
-
-interface Props {
-   lang?: SupportedLng;
-}
-
-const { lang: _lang = "pt-BR" } = Astro.props;
 
 // Rebranding: Foco em "Governança" e "Produtividade"
 const transactionFeatures = [

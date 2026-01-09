@@ -1,5 +1,4 @@
 import type { BillWithRelations } from "@packages/database/repositories/bill-repository";
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import {
    Alert,
@@ -68,18 +67,10 @@ export function CreateInstallmentsForm({
    }, [totalAmount, installmentCount]);
 
    const intervalLabels: Record<string, string> = {
-      biweekly: translate(
-         "dashboard.routes.bills.features.create-bill.installments.intervalOptions.biweekly",
-      ),
-      custom: translate(
-         "dashboard.routes.bills.features.create-bill.installments.intervalOptions.custom",
-      ),
-      monthly: translate(
-         "dashboard.routes.bills.features.create-bill.installments.intervalOptions.monthly",
-      ),
-      weekly: translate(
-         "dashboard.routes.bills.features.create-bill.installments.intervalOptions.weekly",
-      ),
+      biweekly: "Quinzenal (15 dias)",
+      custom: "Personalizado",
+      monthly: "Mensal (30 dias)",
+      weekly: "Semanal (7 dias)",
    };
 
    const createWithInstallmentsMutation = useMutation(
@@ -91,11 +82,7 @@ export function CreateInstallmentsForm({
             queryClient.invalidateQueries({
                queryKey: trpc.bills.getAllPaginated.queryKey(),
             });
-            toast.success(
-               translate(
-                  "dashboard.routes.bills.features.create-installments.success",
-               ),
-            );
+            toast.success("Parcelas criadas com sucesso");
             onSuccess?.();
          },
       }),
@@ -142,14 +129,10 @@ export function CreateInstallmentsForm({
       <>
          <SheetHeader>
             <SheetTitle>
-               {translate(
-                  "dashboard.routes.bills.features.create-installments.title",
-               )}
+               Criar Parcelas
             </SheetTitle>
             <SheetDescription>
-               {translate(
-                  "dashboard.routes.bills.features.create-installments.description",
-               )}
+               Divida esta conta em parcelas mensais
             </SheetDescription>
          </SheetHeader>
 
@@ -181,17 +164,13 @@ export function CreateInstallmentsForm({
                         </div>
                         <div className="text-left">
                            <div className="font-medium">
-                              {translate(
-                                 "dashboard.routes.bills.features.create-bill.installments.count",
-                              )}
+                              Número de parcelas
                            </div>
                            <div className="text-sm text-muted-foreground">
                               {activeSection !== "count" &&
                               installmentCount >= 2
                                  ? `${installmentCount}x`
-                                 : translate(
-                                      "dashboard.routes.bills.features.create-bill.recurrence-step.installment.count.description",
-                                   )}
+                                 : "Defina em quantas parcelas será dividido"}
                            </div>
                         </div>
                      </div>
@@ -319,18 +298,14 @@ export function CreateInstallmentsForm({
                         </div>
                         <div className="text-left">
                            <div className="font-medium">
-                              {translate(
-                                 "dashboard.routes.bills.features.create-bill.installments.interval",
-                              )}
+                              Intervalo entre parcelas
                            </div>
                            <div className="text-sm text-muted-foreground">
                               {intervalType && activeSection !== "interval"
                                  ? intervalType === "custom"
                                     ? `${customDays} dias`
                                     : intervalLabels[intervalType]
-                                 : translate(
-                                      "dashboard.routes.bills.features.create-bill.recurrence-step.installment.interval.description",
-                                   )}
+                                 : "Escolha o intervalo entre as parcelas"}
                            </div>
                         </div>
                      </div>
@@ -373,9 +348,7 @@ export function CreateInstallmentsForm({
                         {intervalType === "custom" && (
                            <div className="space-y-2">
                               <Label>
-                                 {translate(
-                                    "dashboard.routes.bills.features.create-bill.installments.customDays",
-                                 )}
+                                 Dias personalizados
                               </Label>
                               <Input
                                  max={365}
@@ -412,7 +385,7 @@ export function CreateInstallmentsForm({
                                  size="sm"
                                  type="button"
                               >
-                                 {translate("common.actions.confirm")}
+                                 Confirmar
                               </Button>
                            </div>
                         )}
@@ -427,20 +400,10 @@ export function CreateInstallmentsForm({
                      <Alert>
                         <CalendarCheck className="h-4 w-4" />
                         <AlertTitle>
-                           {translate(
-                              "dashboard.routes.bills.features.create-bill.recurrence-step.preview.title",
-                           )}
+                           Resumo
                         </AlertTitle>
                         <AlertDescription>
-                           {translate(
-                              "dashboard.routes.bills.features.create-bill.installments.preview",
-                              {
-                                 count: installmentCount,
-                                 value: formatDecimalCurrency(
-                                    amountPerInstallment,
-                                 ),
-                              },
-                           )}
+                           {`${installmentCount} parcelas de ${formatDecimalCurrency(amountPerInstallment)}`}
                         </AlertDescription>
                      </Alert>
                   )}
@@ -454,10 +417,8 @@ export function CreateInstallmentsForm({
                onClick={handleSubmit}
             >
                {createWithInstallmentsMutation.isPending
-                  ? translate("common.actions.loading")
-                  : translate(
-                       "dashboard.routes.bills.features.create-installments.submit",
-                    )}
+                  ? "Carregando..."
+                  : "Criar Parcelas"}
             </Button>
          </SheetFooter>
       </>

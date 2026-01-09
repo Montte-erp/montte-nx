@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import {
    Announcement,
@@ -50,17 +49,17 @@ import { useToggleBudgetStatus } from "../features/use-toggle-budget-status";
 type Budget = RouterOutput["budgets"]["getAllPaginated"]["budgets"][0];
 
 const periodLabels: Record<string, string> = {
-   custom: translate("dashboard.routes.budgets.form.period.custom"),
-   daily: translate("dashboard.routes.budgets.form.period.daily"),
-   monthly: translate("dashboard.routes.budgets.form.period.monthly"),
-   quarterly: translate("dashboard.routes.budgets.form.period.quarterly"),
-   weekly: translate("dashboard.routes.budgets.form.period.weekly"),
-   yearly: translate("dashboard.routes.budgets.form.period.yearly"),
+   custom: "Personalizado",
+   daily: "Diário",
+   monthly: "Mensal",
+   quarterly: "Trimestral",
+   weekly: "Semanal",
+   yearly: "Anual",
 };
 
 const regimeLabels: Record<string, string> = {
-   accrual: translate("dashboard.routes.budgets.form.regime.accrual"),
-   cash: translate("dashboard.routes.budgets.form.regime.cash"),
+   accrual: "Regime de competência",
+   cash: "Regime de caixa",
 };
 
 function BudgetActionsCell({ budget }: { budget: Budget }) {
@@ -84,11 +83,7 @@ function BudgetActionsCell({ budget }: { budget: Budget }) {
                   </Link>
                </Button>
             </TooltipTrigger>
-            <TooltipContent>
-               {translate(
-                  "dashboard.routes.budgets.list-section.actions.view-details",
-               )}
-            </TooltipContent>
+            <TooltipContent>Ver detalhes</TooltipContent>
          </Tooltip>
          <Tooltip>
             <TooltipTrigger asChild>
@@ -104,9 +99,7 @@ function BudgetActionsCell({ budget }: { budget: Budget }) {
                   <Edit className="size-4" />
                </Button>
             </TooltipTrigger>
-            <TooltipContent>
-               {translate("dashboard.routes.budgets.list-section.actions.edit")}
-            </TooltipContent>
+            <TooltipContent>Editar</TooltipContent>
          </Tooltip>
          <Tooltip>
             <TooltipTrigger asChild>
@@ -119,11 +112,7 @@ function BudgetActionsCell({ budget }: { budget: Budget }) {
                   <Trash2 className="size-4" />
                </Button>
             </TooltipTrigger>
-            <TooltipContent>
-               {translate(
-                  "dashboard.routes.budgets.list-section.actions.delete",
-               )}
-            </TooltipContent>
+            <TooltipContent>Excluir</TooltipContent>
          </Tooltip>
       </div>
    );
@@ -150,7 +139,7 @@ export function createBudgetColumns(): ColumnDef<Budget>[] {
             );
          },
          enableSorting: true,
-         header: translate("dashboard.routes.budgets.table.name"),
+         header: "Nome",
       },
       {
          accessorKey: "amount",
@@ -168,7 +157,7 @@ export function createBudgetColumns(): ColumnDef<Budget>[] {
             );
          },
          enableSorting: true,
-         header: translate("dashboard.routes.budgets.table.amount"),
+         header: "Valor",
       },
       {
          accessorKey: "progress",
@@ -208,7 +197,7 @@ export function createBudgetColumns(): ColumnDef<Budget>[] {
                </Announcement>
             );
          },
-         header: translate("dashboard.routes.budgets.table.progress"),
+         header: "Progresso",
       },
       {
          accessorKey: "isActive",
@@ -229,15 +218,13 @@ export function createBudgetColumns(): ColumnDef<Budget>[] {
                      <StatusIcon className="size-3.5" />
                   </AnnouncementTag>
                   <AnnouncementTitle>
-                     {isActive
-                        ? translate("dashboard.routes.budgets.status.active")
-                        : translate("dashboard.routes.budgets.status.inactive")}
+                     {isActive ? "Ativo" : "Inativo"}
                   </AnnouncementTitle>
                </Announcement>
             );
          },
          enableSorting: true,
-         header: translate("dashboard.routes.budgets.table.status"),
+         header: "Status",
       },
       {
          cell: ({ row }) => <BudgetActionsCell budget={row.original} />,
@@ -297,9 +284,7 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
          variant="outline"
       >
          <Power className="size-4" />
-         {budget.isActive
-            ? translate("dashboard.routes.budgets.status.active")
-            : translate("dashboard.routes.budgets.status.inactive")}
+         {budget.isActive ? "Ativo" : "Inativo"}
       </Button>
    );
 
@@ -347,7 +332,7 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
                   <Announcement>
                      <AnnouncementTag className="flex items-center gap-1.5">
                         <Target className="size-3.5" />
-                        {translate("dashboard.routes.budgets.stats.total")}
+                        Total
                      </AnnouncementTag>
                      <AnnouncementTitle>
                         {formatDecimalCurrency(totalAmount)}
@@ -363,7 +348,7 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
                         }}
                      >
                         <TrendingUp className="size-3.5" />
-                        {translate("dashboard.routes.budgets.stats.spent")}
+                        Gasto
                      </AnnouncementTag>
                      <AnnouncementTitle>
                         {formatDecimalCurrency(spent)} ({Math.round(percentage)}%)
@@ -379,7 +364,7 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
                         }}
                      >
                         <Wallet className="size-3.5" />
-                        {translate("dashboard.routes.budgets.stats.available")}
+                        Disponível
                      </AnnouncementTag>
                      <AnnouncementTitle>
                         {formatDecimalCurrency(available)}
@@ -407,9 +392,7 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
                      to="/$slug/budgets/$budgetId"
                   >
                      <Eye className="size-4" />
-                     {translate(
-                        "dashboard.routes.budgets.list-section.actions.view-details",
-                     )}
+                     Ver detalhes
                   </Link>
                </Button>
                <Button
@@ -419,9 +402,7 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
                   variant="outline"
                >
                   <Edit className="size-4" />
-                  {translate(
-                     "dashboard.routes.budgets.list-section.actions.edit",
-                  )}
+                  Editar
                </Button>
                <Button
                   className="w-full justify-start"
@@ -430,9 +411,7 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
                   variant="destructive"
                >
                   <Trash2 className="size-4" />
-                  {translate(
-                     "dashboard.routes.budgets.list-section.actions.delete",
-                  )}
+                  Excluir
                </Button>
             </div>
          </div>
@@ -481,7 +460,7 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
             <Announcement>
                <AnnouncementTag className="flex items-center gap-1.5">
                   <Target className="size-3.5" />
-                  {translate("dashboard.routes.budgets.stats.total")}
+                  Total
                </AnnouncementTag>
                <AnnouncementTitle>
                   {formatDecimalCurrency(totalAmount)}
@@ -497,7 +476,7 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
                   }}
                >
                   <TrendingUp className="size-3.5" />
-                  {translate("dashboard.routes.budgets.stats.spent")}
+                  Gasto
                </AnnouncementTag>
                <AnnouncementTitle>
                   {formatDecimalCurrency(spent)} ({Math.round(percentage)}%)
@@ -513,7 +492,7 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
                   }}
                >
                   <Wallet className="size-3.5" />
-                  {translate("dashboard.routes.budgets.stats.available")}
+                  Disponível
                </AnnouncementTag>
                <AnnouncementTitle>
                   {formatDecimalCurrency(available)}
@@ -535,20 +514,16 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
                   to="/$slug/budgets/$budgetId"
                >
                   <Eye className="size-4" />
-                  {translate(
-                     "dashboard.routes.budgets.list-section.actions.view-details",
-                  )}
+                  Ver detalhes
                </Link>
             </Button>
             <Button onClick={handleEditClick} size="sm" variant="outline">
                <Edit className="size-4" />
-               {translate("dashboard.routes.budgets.list-section.actions.edit")}
+               Editar
             </Button>
             <Button onClick={handleDeleteClick} size="sm" variant="destructive">
                <Trash2 className="size-4" />
-               {translate(
-                  "dashboard.routes.budgets.list-section.actions.delete",
-               )}
+               Excluir
             </Button>
          </div>
       </div>
@@ -605,9 +580,7 @@ export function BudgetMobileCard({
             </div>
             <div className="flex gap-2">
                <Badge variant={budget.isActive ? "default" : "secondary"}>
-                  {budget.isActive
-                     ? translate("dashboard.routes.budgets.status.active")
-                     : translate("dashboard.routes.budgets.status.inactive")}
+                  {budget.isActive ? "Ativo" : "Inativo"}
                </Badge>
             </div>
          </CardContent>
@@ -621,9 +594,7 @@ export function BudgetMobileCard({
                   }}
                   variant="outline"
                >
-                  {isExpanded
-                     ? translate("common.actions.less-info")
-                     : translate("common.actions.more-info")}
+                  {isExpanded ? "Menos info" : "Mais info"}
                   <ChevronDown
                      className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
                   />

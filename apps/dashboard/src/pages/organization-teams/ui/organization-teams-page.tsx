@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useCallback, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
@@ -72,7 +71,7 @@ function TeamsPageError({ error }: { error: Error }) {
    return (
       <div className="text-center py-8">
          <p className="text-muted-foreground">
-            {translate("common.errors.default")}
+            Ocorreu um erro. Por favor, tente novamente.
          </p>
          <p className="text-xs text-muted-foreground mt-1">{error.message}</p>
       </div>
@@ -84,13 +83,9 @@ export function OrganizationTeamsPage() {
       <main className="flex flex-col gap-4">
          <div className="flex items-center justify-between">
             <div>
-               <h1 className="text-2xl font-bold">
-                  {translate("dashboard.routes.organization.teams-table.title")}
-               </h1>
+               <h1 className="text-2xl font-bold">Equipes</h1>
                <p className="text-muted-foreground">
-                  {translate(
-                     "dashboard.routes.organization.teams-table.description",
-                  )}
+                  Gerencie as equipes da sua organização
                </p>
             </div>
             <TeamsQuickActionsToolbar />

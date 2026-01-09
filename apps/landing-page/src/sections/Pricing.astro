@@ -8,14 +8,7 @@ import {
    Sparkles,
    Users,
 } from "@lucide/astro";
-import type { SupportedLng } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
-
-interface Props {
-   lang?: SupportedLng;
-}
-
-const { lang: _lang = "pt-BR" } = Astro.props;
 
 const plans = [
    {

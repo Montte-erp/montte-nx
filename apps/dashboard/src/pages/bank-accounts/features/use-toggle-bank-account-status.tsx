@@ -1,5 +1,4 @@
 import type { BankAccount } from "@packages/database/repositories/bank-account-repository";
-import { translate } from "@packages/localization";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -18,19 +17,13 @@ export function useToggleBankAccountStatus({
    const updateStatusMutation = useMutation(
       trpc.bankAccounts.update.mutationOptions({
          onError: () => {
-            toast.error(
-               translate("dashboard.routes.bank-accounts.notifications.error"),
-            );
+            toast.error("Erro ao atualizar status da conta bancária");
          },
          onSuccess: () => {
             toast.success(
                bankAccount.status === "active"
-                  ? translate(
-                       "dashboard.routes.bank-accounts.notifications.deactivated",
-                    )
-                  : translate(
-                       "dashboard.routes.bank-accounts.notifications.activated",
-                    ),
+                  ? "Conta bancária desativada com sucesso"
+                  : "Conta bancária ativada com sucesso",
             );
             onSuccess?.();
          },
@@ -42,17 +35,11 @@ export function useToggleBankAccountStatus({
       const newStatus = isActive ? "inactive" : "active";
 
       openAlertDialog({
-         actionLabel: translate(
-            "dashboard.routes.bank-accounts.status-toggle.confirm",
-         ),
-         cancelLabel: translate("common.actions.cancel"),
+         actionLabel: "Confirmar",
+         cancelLabel: "Cancelar",
          description: isActive
-            ? translate(
-                 "dashboard.routes.bank-accounts.status-toggle.deactivate-description",
-              )
-            : translate(
-                 "dashboard.routes.bank-accounts.status-toggle.activate-description",
-              ),
+            ? "Ao desativar esta conta, ela não aparecerá mais nos relatórios e filtros. Você poderá reativá-la a qualquer momento."
+            : "Ao ativar esta conta, ela voltará a aparecer nos relatórios e filtros.",
          onAction: async () => {
             await updateStatusMutation.mutateAsync({
                data: { status: newStatus },
@@ -60,12 +47,8 @@ export function useToggleBankAccountStatus({
             });
          },
          title: isActive
-            ? translate(
-                 "dashboard.routes.bank-accounts.status-toggle.deactivate-title",
-              )
-            : translate(
-                 "dashboard.routes.bank-accounts.status-toggle.activate-title",
-              ),
+            ? "Desativar conta bancária"
+            : "Ativar conta bancária",
          variant: "default",
       });
    };

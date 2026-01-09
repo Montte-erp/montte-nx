@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTRPC } from "@/integrations/clients";
@@ -41,17 +40,10 @@ export function useBankAccountBulkActions(
             status: "active",
          });
          toast.success(
-            translate(
-               "dashboard.routes.bank-accounts.bulk-actions.activated-success",
-               { count: ids.length },
-            ),
+            `${ids.length} conta(s) ativada(s) com sucesso`,
          );
       } catch {
-         toast.error(
-            translate(
-               "dashboard.routes.bank-accounts.bulk-actions.activated-error",
-            ),
-         );
+         toast.error("Erro ao ativar contas");
       }
    };
 
@@ -64,17 +56,10 @@ export function useBankAccountBulkActions(
             status: "inactive",
          });
          toast.success(
-            translate(
-               "dashboard.routes.bank-accounts.bulk-actions.inactivated-success",
-               { count: ids.length },
-            ),
+            `${ids.length} conta(s) desativada(s) com sucesso`,
          );
       } catch {
-         toast.error(
-            translate(
-               "dashboard.routes.bank-accounts.bulk-actions.inactivated-error",
-            ),
-         );
+         toast.error("Erro ao desativar contas");
       }
    };
 
@@ -94,18 +79,13 @@ export function useBankAccountBulkActions(
       try {
          await deleteMutation.mutateAsync({ ids });
          toast.success(
-            translate(
-               "dashboard.routes.bank-accounts.bulk-actions.deleted-success",
-               { count: ids.length },
-            ),
+            `${ids.length} conta(s) excluída(s) com sucesso`,
          );
       } catch (error) {
          toast.error(
             error instanceof Error
                ? error.message
-               : translate(
-                    "dashboard.routes.bank-accounts.bulk-actions.deleted-error",
-                 ),
+               : "Erro ao excluir contas",
          );
       }
    };

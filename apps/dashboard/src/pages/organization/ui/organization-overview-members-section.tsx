@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Avatar,
    AvatarFallback,
@@ -36,13 +35,9 @@ import { useTRPC } from "@/integrations/clients";
 function MembersSectionCardHeader() {
    return (
       <CardHeader>
-         <CardTitle>
-            {translate("dashboard.routes.organization.recent-members.title")}
-         </CardTitle>
+         <CardTitle>Membros Recentes</CardTitle>
          <CardDescription>
-            {translate(
-               "dashboard.routes.organization.recent-members.description",
-            )}
+            Os membros mais recentes da organização
          </CardDescription>
       </CardHeader>
    );
@@ -54,13 +49,10 @@ function OrganizationMembersSectionErrorFallback(props: FallbackProps) {
          <MembersSectionCardHeader />
          <CardContent>
             {createErrorFallback({
-               errorDescription: translate(
-                  "dashboard.routes.organization.recent-members.state.error.description",
-               ),
-               errorTitle: translate(
-                  "dashboard.routes.organization.recent-members.state.error.title",
-               ),
-               retryText: translate("common.actions.retry"),
+               errorDescription:
+                  "Não foi possível carregar os membros recentes.",
+               errorTitle: "Erro ao Carregar Membros",
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>
@@ -125,15 +117,9 @@ function OrganizationMembersSectionContent() {
                      <EmptyMedia variant="icon">
                         <Users className="size-8" />
                      </EmptyMedia>
-                     <EmptyTitle>
-                        {translate(
-                           "dashboard.routes.organization.recent-members.state.empty.title",
-                        )}
-                     </EmptyTitle>
+                     <EmptyTitle>Nenhum membro</EmptyTitle>
                      <EmptyDescription>
-                        {translate(
-                           "dashboard.routes.organization.recent-members.state.empty.description",
-                        )}
+                        Convide membros para sua organização
                      </EmptyDescription>
                   </EmptyContent>
                </Empty>
@@ -156,9 +142,7 @@ function OrganizationMembersSectionContent() {
                                     {member.user.name}
                                  </p>
                                  <p className="text-sm text-muted-foreground truncate">
-                                    {translate(
-                                       "dashboard.routes.organization.recent-members.joined",
-                                    )}{" "}
+                                    Entrou em{" "}
                                     {formatDate(
                                        new Date(member.createdAt),
                                        "DD MMM YYYY",
@@ -180,9 +164,7 @@ function OrganizationMembersSectionContent() {
                         onClick={handleViewAll}
                         variant="outline"
                      >
-                        {translate(
-                           "dashboard.routes.organization.recent-members.view-all",
-                        )}
+                        Ver todos os membros
                         <ArrowRight className="size-4 ml-2" />
                      </Button>
                   )}

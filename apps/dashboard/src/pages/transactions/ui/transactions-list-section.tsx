@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Card,
    CardContent,
@@ -22,12 +21,10 @@ function TransactionsListErrorFallback(props: FallbackProps) {
       <Card>
          <CardHeader>
             <CardTitle>
-               {translate("dashboard.routes.transactions.list-section.title")}
+               Lista de Transações
             </CardTitle>
             <CardDescription>
-               {translate(
-                  "dashboard.routes.transactions.list-section.description",
-               )}
+               Veja todas as suas transações financeiras aqui.
             </CardDescription>
          </CardHeader>
          <CardContent>

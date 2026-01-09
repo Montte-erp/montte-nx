@@ -6,7 +6,6 @@
       "@astrojs/sitemap": "catalog:astro",
       "@astrojs/ts-plugin": "catalog:astro",
       "@lucide/astro": "catalog:astro",
-      "@packages/localization": "workspace:*",
       "@packages/money": "workspace:*",
       "@packages/posthog": "workspace:*",
       "@packages/ui": "workspace:*",

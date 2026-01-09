@@ -1,5 +1,4 @@
 import type { CostCenter } from "@packages/database/repositories/cost-center-repository";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Field,
@@ -34,21 +33,13 @@ export function ManageCostCenterForm({
 
    const modeTexts = useMemo(() => {
       const createTexts = {
-         description: translate(
-            "dashboard.routes.cost-centers.features.create-cost-center.description",
-         ),
-         title: translate(
-            "dashboard.routes.cost-centers.features.create-cost-center.title",
-         ),
+         description: "Adicione um novo centro de custo para organizar suas transações.",
+         title: "Criar Novo Centro de Custo",
       };
 
       const editTexts = {
-         description: translate(
-            "dashboard.routes.cost-centers.features.edit-cost-center.description",
-         ),
-         title: translate(
-            "dashboard.routes.cost-centers.features.edit-cost-center.title",
-         ),
+         description: "Atualize os detalhes do seu centro de custo.",
+         title: "Editar Centro de Custo",
       };
 
       return isEditMode ? editTexts : createTexts;
@@ -130,16 +121,14 @@ export function ManageCostCenterForm({
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel>
-                              {translate("common.form.name.label")}
+                              Nome
                            </FieldLabel>
                            <Input
                               onBlur={field.handleBlur}
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
                               }
-                              placeholder={translate(
-                                 "common.form.name.placeholder",
-                              )}
+                              placeholder="Digite seu nome completo"
                               value={field.state.value}
                            />
                            {isInvalid && (

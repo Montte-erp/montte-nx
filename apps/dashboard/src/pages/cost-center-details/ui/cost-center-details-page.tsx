@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Empty,
@@ -118,9 +117,7 @@ function CostCenterContent() {
                   }
                >
                   <Plus className="size-4" />
-                  {translate(
-                     "dashboard.routes.transactions.features.add-new.title",
-                  )}
+                  Adicionar Nova Transação
                </Button>
             }
             description="Visualize detalhes e estatísticas do centro de custo"

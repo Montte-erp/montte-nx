@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -40,34 +39,22 @@ import type { InterestTemplate } from "./interest-templates-page";
 function getPenaltyTypeLabel(type: string) {
    switch (type) {
       case "percentage":
-         return translate(
-            "dashboard.routes.interest-templates.form.penalty-type.percentage",
-         );
+         return "Percentual";
       case "fixed":
-         return translate(
-            "dashboard.routes.interest-templates.form.penalty-type.fixed",
-         );
+         return "Valor Fixo";
       default:
-         return translate(
-            "dashboard.routes.interest-templates.form.penalty-type.none",
-         );
+         return "Nenhuma";
    }
 }
 
 function getInterestTypeLabel(type: string) {
    switch (type) {
       case "daily":
-         return translate(
-            "dashboard.routes.interest-templates.form.interest-type.daily",
-         );
+         return "Diário";
       case "monthly":
-         return translate(
-            "dashboard.routes.interest-templates.form.interest-type.monthly",
-         );
+         return "Mensal";
       default:
-         return translate(
-            "dashboard.routes.interest-templates.form.interest-type.none",
-         );
+         return "Nenhum";
    }
 }
 
@@ -95,11 +82,7 @@ function InterestTemplateActionsCell({
                   </Link>
                </Button>
             </TooltipTrigger>
-            <TooltipContent>
-               {translate(
-                  "dashboard.routes.interest-templates.list-section.actions.view-details",
-               )}
-            </TooltipContent>
+            <TooltipContent>Ver detalhes</TooltipContent>
          </Tooltip>
          <Tooltip>
             <TooltipTrigger asChild>
@@ -117,11 +100,7 @@ function InterestTemplateActionsCell({
                   <Edit className="size-4" />
                </Button>
             </TooltipTrigger>
-            <TooltipContent>
-               {translate(
-                  "dashboard.routes.interest-templates.list-section.actions.edit-template",
-               )}
-            </TooltipContent>
+            <TooltipContent>Editar template</TooltipContent>
          </Tooltip>
          <Tooltip>
             <TooltipTrigger asChild>
@@ -134,11 +113,7 @@ function InterestTemplateActionsCell({
                   <Trash2 className="size-4" />
                </Button>
             </TooltipTrigger>
-            <TooltipContent>
-               {translate(
-                  "dashboard.routes.interest-templates.list-section.actions.delete-template",
-               )}
-            </TooltipContent>
+            <TooltipContent>Excluir template</TooltipContent>
          </Tooltip>
       </div>
    );
@@ -167,18 +142,14 @@ export function createInterestTemplateColumns(
                      <span className="text-xs text-muted-foreground">
                         {template.monetaryCorrectionIndex !== "none"
                            ? template.monetaryCorrectionIndex.toUpperCase()
-                           : translate(
-                                "dashboard.routes.interest-templates.form.monetary-correction.none",
-                             )}
+                           : "Nenhum"}
                      </span>
                   </div>
                </div>
             );
          },
          enableSorting: true,
-         header: translate(
-            "dashboard.routes.interest-templates.table.columns.name",
-         ),
+         header: "Nome",
       },
       {
          accessorKey: "penaltyType",
@@ -200,9 +171,7 @@ export function createInterestTemplateColumns(
             );
          },
          enableSorting: false,
-         header: translate(
-            "dashboard.routes.interest-templates.table.columns.penalty",
-         ),
+         header: "Multa",
       },
       {
          accessorKey: "interestType",
@@ -215,13 +184,7 @@ export function createInterestTemplateColumns(
                   {hasValue ? (
                      <>
                         {template.interestValue}%/{" "}
-                        {template.interestType === "daily"
-                           ? translate(
-                                "dashboard.routes.interest-templates.form.interest-type.daily",
-                             )
-                           : translate(
-                                "dashboard.routes.interest-templates.form.interest-type.monthly",
-                             )}
+                        {template.interestType === "daily" ? "Diário" : "Mensal"}
                      </>
                   ) : (
                      "-"
@@ -230,9 +193,7 @@ export function createInterestTemplateColumns(
             );
          },
          enableSorting: false,
-         header: translate(
-            "dashboard.routes.interest-templates.table.columns.interest",
-         ),
+         header: "Juros",
       },
       {
          accessorKey: "createdAt",
@@ -245,9 +206,7 @@ export function createInterestTemplateColumns(
             );
          },
          enableSorting: true,
-         header: translate(
-            "dashboard.routes.interest-templates.table.columns.created-at",
-         ),
+         header: "Criado em",
       },
       {
          cell: ({ row }) => (
@@ -280,9 +239,7 @@ export function InterestTemplateExpandedContent({
                   <Percent className="size-4 text-muted-foreground" />
                   <div>
                      <p className="text-xs text-muted-foreground">
-                        {translate(
-                           "dashboard.routes.interest-templates.form.penalty-type.label",
-                        )}
+                        Tipo de Multa
                      </p>
                      <p className="text-sm font-medium">
                         {getPenaltyTypeLabel(template.penaltyType)}
@@ -295,9 +252,7 @@ export function InterestTemplateExpandedContent({
                   <TrendingUp className="size-4 text-muted-foreground" />
                   <div>
                      <p className="text-xs text-muted-foreground">
-                        {translate(
-                           "dashboard.routes.interest-templates.form.interest-type.label",
-                        )}
+                        Tipo de Juros
                      </p>
                      <p className="text-sm font-medium">
                         {getInterestTypeLabel(template.interestType)}
@@ -311,15 +266,10 @@ export function InterestTemplateExpandedContent({
                   <Clock className="size-4 text-muted-foreground" />
                   <div>
                      <p className="text-xs text-muted-foreground">
-                        {translate(
-                           "dashboard.routes.interest-templates.form.grace-period.label",
-                        )}
+                        Período de Carência
                      </p>
                      <p className="text-sm font-medium">
-                        {template.gracePeriodDays}{" "}
-                        {translate(
-                           "dashboard.routes.interest-templates.form.grace-period.days",
-                        )}
+                        {template.gracePeriodDays} dias
                      </p>
                   </div>
                </div>
@@ -327,11 +277,7 @@ export function InterestTemplateExpandedContent({
                <div className="flex items-center gap-2">
                   <Calendar className="size-4 text-muted-foreground" />
                   <div>
-                     <p className="text-xs text-muted-foreground">
-                        {translate(
-                           "dashboard.routes.interest-templates.table.columns.created-at",
-                        )}
-                     </p>
+                     <p className="text-xs text-muted-foreground">Criado em</p>
                      <p className="text-sm font-medium">
                         {formatDate(
                            new Date(template.createdAt),
@@ -359,9 +305,7 @@ export function InterestTemplateExpandedContent({
                      to="/$slug/interest-templates/$interestTemplateId"
                   >
                      <Eye className="size-4" />
-                     {translate(
-                        "dashboard.routes.interest-templates.list-section.actions.view-details",
-                     )}
+                     Ver detalhes
                   </Link>
                </Button>
                <Button
@@ -378,9 +322,7 @@ export function InterestTemplateExpandedContent({
                   variant="outline"
                >
                   <Edit className="size-4" />
-                  {translate(
-                     "dashboard.routes.interest-templates.list-section.actions.edit-template",
-                  )}
+                  Editar template
                </Button>
                <Button
                   className="w-full justify-start"
@@ -392,9 +334,7 @@ export function InterestTemplateExpandedContent({
                   variant="destructive"
                >
                   <Trash2 className="size-4" />
-                  {translate(
-                     "dashboard.routes.interest-templates.list-section.actions.delete-template",
-                  )}
+                  Excluir template
                </Button>
             </div>
          </div>
@@ -407,11 +347,7 @@ export function InterestTemplateExpandedContent({
             <div className="flex items-center gap-2">
                <Percent className="size-4 text-muted-foreground" />
                <div>
-                  <p className="text-xs text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.interest-templates.form.penalty-type.label",
-                     )}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Tipo de Multa</p>
                   <p className="text-sm font-medium">
                      {getPenaltyTypeLabel(template.penaltyType)}
                      {template.penaltyValue && ` (${template.penaltyValue})`}
@@ -422,11 +358,7 @@ export function InterestTemplateExpandedContent({
             <div className="flex items-center gap-2">
                <TrendingUp className="size-4 text-muted-foreground" />
                <div>
-                  <p className="text-xs text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.interest-templates.form.interest-type.label",
-                     )}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Tipo de Juros</p>
                   <p className="text-sm font-medium">
                      {getInterestTypeLabel(template.interestType)}
                      {template.interestValue && ` (${template.interestValue}%)`}
@@ -438,15 +370,10 @@ export function InterestTemplateExpandedContent({
                <Clock className="size-4 text-muted-foreground" />
                <div>
                   <p className="text-xs text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.interest-templates.form.grace-period.label",
-                     )}
+                     Período de Carência
                   </p>
                   <p className="text-sm font-medium">
-                     {template.gracePeriodDays}{" "}
-                     {translate(
-                        "dashboard.routes.interest-templates.form.grace-period.days",
-                     )}
+                     {template.gracePeriodDays} dias
                   </p>
                </div>
             </div>
@@ -454,11 +381,7 @@ export function InterestTemplateExpandedContent({
             <div className="flex items-center gap-2">
                <Calendar className="size-4 text-muted-foreground" />
                <div>
-                  <p className="text-xs text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.interest-templates.table.columns.created-at",
-                     )}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Criado em</p>
                   <p className="text-sm font-medium">
                      {formatDate(new Date(template.createdAt), "DD MMM YYYY")}
                   </p>
@@ -476,9 +399,7 @@ export function InterestTemplateExpandedContent({
                   to="/$slug/interest-templates/$interestTemplateId"
                >
                   <Eye className="size-4" />
-                  {translate(
-                     "dashboard.routes.interest-templates.list-section.actions.view-details",
-                  )}
+                  Ver detalhes
                </Link>
             </Button>
             <Button
@@ -494,9 +415,7 @@ export function InterestTemplateExpandedContent({
                variant="outline"
             >
                <Edit className="size-4" />
-               {translate(
-                  "dashboard.routes.interest-templates.list-section.actions.edit-template",
-               )}
+               Editar template
             </Button>
             <Button
                onClick={(e) => {
@@ -507,9 +426,7 @@ export function InterestTemplateExpandedContent({
                variant="destructive"
             >
                <Trash2 className="size-4" />
-               {translate(
-                  "dashboard.routes.interest-templates.list-section.actions.delete-template",
-               )}
+               Excluir template
             </Button>
          </div>
       </div>
@@ -553,11 +470,7 @@ export function InterestTemplateMobileCard({
                   </CardDescription>
                </div>
                {template.isDefault && (
-                  <Badge variant="secondary">
-                     {translate(
-                        "dashboard.routes.interest-templates.form.is-default.label",
-                     )}
-                  </Badge>
+                  <Badge variant="secondary">Template Padrão</Badge>
                )}
             </div>
          </CardHeader>
@@ -572,9 +485,7 @@ export function InterestTemplateMobileCard({
                   }}
                   variant="outline"
                >
-                  {isExpanded
-                     ? translate("common.actions.less-info")
-                     : translate("common.actions.more-info")}
+                  {isExpanded ? "Menos info" : "Mais info"}
                   <ChevronDown
                      className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
                   />

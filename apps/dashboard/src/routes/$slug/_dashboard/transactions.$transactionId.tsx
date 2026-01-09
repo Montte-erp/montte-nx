@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { createFileRoute } from "@tanstack/react-router";
 import { TransactionDetailsPage } from "@/pages/transaction-details/ui/transaction-details-page";
 
@@ -7,7 +6,7 @@ export const Route = createFileRoute(
 )({
    component: RouteComponent,
    staticData: {
-      breadcrumb: translate("dashboard.routes.transactions.details.breadcrumb"),
+      breadcrumb: "Detalhes da Transação",
    },
 });
 

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Alert,
    AlertDescription,
@@ -163,9 +162,7 @@ export function RecurrenceTransactionSheet({
             untilDate && { occurrenceUntilDate: untilDate }),
       });
 
-      toast.success(
-         translate("dashboard.routes.transactions.features.recurrence.success"),
-      );
+      toast.success("Recorrencia criada com sucesso");
       closeSheet();
    };
 
@@ -183,15 +180,9 @@ export function RecurrenceTransactionSheet({
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               {translate(
-                  "dashboard.routes.transactions.features.recurrence.title",
-               )}
-            </SheetTitle>
+            <SheetTitle>Criar Recorrencia</SheetTitle>
             <SheetDescription>
-               {translate(
-                  "dashboard.routes.transactions.features.recurrence.description",
-               )}
+               Configure a frequencia e duracao da recorrencia para criar contas futuras automaticamente.
             </SheetDescription>
          </SheetHeader>
 
@@ -199,11 +190,7 @@ export function RecurrenceTransactionSheet({
             <div className="space-y-4 py-4">
                {/* Start Date - Always visible */}
                <div className="space-y-2">
-                  <Label>
-                     {translate(
-                        "dashboard.routes.transactions.features.recurrence.start-date",
-                     )}
-                  </Label>
+                  <Label>Data Inicial</Label>
                   <DatePicker
                      className="w-full"
                      date={startDate}
@@ -234,11 +221,7 @@ export function RecurrenceTransactionSheet({
                            {frequency ? <Check className="h-3.5 w-3.5" /> : "1"}
                         </div>
                         <div className="text-left">
-                           <div className="font-medium">
-                              {translate(
-                                 "dashboard.routes.transactions.features.recurrence.frequency.title",
-                              )}
-                           </div>
+                           <div className="font-medium">Frequencia</div>
                            <div className="text-sm text-muted-foreground">
                               {frequency && currentStep !== "frequency"
                                  ? frequencyLabels[frequency]
@@ -266,14 +249,10 @@ export function RecurrenceTransactionSheet({
                               >
                                  <ChoiceboxItemHeader>
                                     <ChoiceboxItemTitle>
-                                       {translate(
-                                          `dashboard.routes.transactions.features.recurrence.frequency.${option}.title`,
-                                       )}
+                                       {frequencyLabels[option]}
                                     </ChoiceboxItemTitle>
                                     <ChoiceboxItemDescription>
-                                       {translate(
-                                          `dashboard.routes.transactions.features.recurrence.frequency.${option}.description`,
-                                       )}
+                                       {getFrequencyDescription(option)}
                                     </ChoiceboxItemDescription>
                                  </ChoiceboxItemHeader>
                                  <ChoiceboxIndicator id={`freq-${option}`} />
@@ -320,11 +299,7 @@ export function RecurrenceTransactionSheet({
                            )}
                         </div>
                         <div className="text-left">
-                           <div className="font-medium">
-                              {translate(
-                                 "dashboard.routes.transactions.features.recurrence.occurrence.title",
-                              )}
-                           </div>
+                           <div className="font-medium">Duracao</div>
                            <div className="text-sm text-muted-foreground">
                               {occurrenceOption &&
                               currentStep !== "occurrence" ? (
@@ -362,14 +337,10 @@ export function RecurrenceTransactionSheet({
                               >
                                  <ChoiceboxItemHeader>
                                     <ChoiceboxItemTitle>
-                                       {translate(
-                                          `dashboard.routes.transactions.features.recurrence.occurrence.${option}.title`,
-                                       )}
+                                       {occurrenceLabels[option]}
                                     </ChoiceboxItemTitle>
                                     <ChoiceboxItemDescription>
-                                       {translate(
-                                          `dashboard.routes.transactions.features.recurrence.occurrence.${option}.description`,
-                                       )}
+                                       {getOccurrenceDescription(option)}
                                     </ChoiceboxItemDescription>
                                  </ChoiceboxItemHeader>
                                  <ChoiceboxIndicator id={`occ-${option}`} />
@@ -379,11 +350,7 @@ export function RecurrenceTransactionSheet({
 
                         {occurrenceOption === "count" && (
                            <div className="space-y-2">
-                              <Label>
-                                 {translate(
-                                    "dashboard.routes.transactions.features.recurrence.occurrence.count.input-label",
-                                 )}
-                              </Label>
+                              <Label>Numero de repeticoes</Label>
                               <Input
                                  max={365}
                                  min={1}
@@ -446,12 +413,36 @@ export function RecurrenceTransactionSheet({
                onClick={handleSubmit}
             >
                {createBillMutation.isPending
-                  ? translate("common.actions.loading")
-                  : translate(
-                       "dashboard.routes.transactions.features.recurrence.submit",
-                    )}
+                  ? "Carregando..."
+                  : "Criar Recorrencia"}
             </Button>
          </SheetFooter>
       </>
    );
+}
+
+function getFrequencyDescription(option: FrequencyOption): string {
+   switch (option) {
+      case "daily":
+         return "Repete todos os dias";
+      case "weekly":
+         return "Repete toda semana";
+      case "biweekly":
+         return "Repete a cada duas semanas";
+      case "monthly":
+         return "Repete todo mes";
+      case "yearly":
+         return "Repete todo ano";
+   }
+}
+
+function getOccurrenceDescription(option: OccurrenceOption): string {
+   switch (option) {
+      case "auto":
+         return "O sistema define automaticamente baseado na frequencia";
+      case "count":
+         return "Defina quantas vezes a conta sera criada";
+      case "until-date":
+         return "Cria contas ate uma data especifica";
+   }
 }

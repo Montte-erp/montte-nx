@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -42,34 +41,22 @@ import { useDeleteInterestTemplate } from "../../interest-templates/features/use
 function getPenaltyTypeLabel(type: string) {
    switch (type) {
       case "percentage":
-         return translate(
-            "dashboard.routes.interest-templates.form.penalty-type.percentage",
-         );
+         return "Percentual";
       case "fixed":
-         return translate(
-            "dashboard.routes.interest-templates.form.penalty-type.fixed",
-         );
+         return "Valor Fixo";
       default:
-         return translate(
-            "dashboard.routes.interest-templates.form.penalty-type.none",
-         );
+         return "Nenhuma";
    }
 }
 
 function getInterestTypeLabel(type: string) {
    switch (type) {
       case "daily":
-         return translate(
-            "dashboard.routes.interest-templates.form.interest-type.daily",
-         );
+         return "Diário";
       case "monthly":
-         return translate(
-            "dashboard.routes.interest-templates.form.interest-type.monthly",
-         );
+         return "Mensal";
       default:
-         return translate(
-            "dashboard.routes.interest-templates.form.interest-type.none",
-         );
+         return "Nenhum";
    }
 }
 
@@ -114,9 +101,7 @@ function InterestTemplateContent() {
    return (
       <main className="space-y-4">
          <DefaultHeader
-            description={translate(
-               "dashboard.routes.interest-templates.description",
-            )}
+            description="Gerencie templates de juros e multas para suas contas"
             title={template.name}
          />
 
@@ -124,9 +109,7 @@ function InterestTemplateContent() {
             {template.isDefault && (
                <Badge className="gap-1" variant="default">
                   <Star className="size-4 fill-current" />
-                  {translate(
-                     "dashboard.routes.interest-templates.form.is-default.label",
-                  )}
+                  Template Padrão
                </Badge>
             )}
             {template.monetaryCorrectionIndex !== "none" && (
@@ -146,9 +129,7 @@ function InterestTemplateContent() {
                variant="outline"
             >
                <Edit className="size-4" />
-               {translate(
-                  "dashboard.routes.interest-templates.list-section.actions.edit-template",
-               )}
+               Editar template
             </Button>
             <Button
                className="text-destructive hover:text-destructive"
@@ -157,20 +138,14 @@ function InterestTemplateContent() {
                variant="outline"
             >
                <Trash2 className="size-4" />
-               {translate(
-                  "dashboard.routes.interest-templates.list-section.actions.delete-template",
-               )}
+               Excluir template
             </Button>
          </div>
 
          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
                <CardHeader>
-                  <CardTitle>
-                     {translate(
-                        "dashboard.routes.interest-templates.form.penalty-type.label",
-                     )}
-                  </CardTitle>
+                  <CardTitle>Tipo de Multa</CardTitle>
                   <CardDescription>Configuracao de multa</CardDescription>
                </CardHeader>
                <CardContent className="space-y-4">
@@ -178,9 +153,7 @@ function InterestTemplateContent() {
                      <Percent className="size-4 text-muted-foreground" />
                      <div>
                         <p className="text-xs text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.interest-templates.form.penalty-type.label",
-                           )}
+                           Tipo de Multa
                         </p>
                         <p className="text-sm font-medium">
                            {getPenaltyTypeLabel(template.penaltyType)}
@@ -192,9 +165,7 @@ function InterestTemplateContent() {
                         <Percent className="size-4 text-muted-foreground" />
                         <div>
                            <p className="text-xs text-muted-foreground">
-                              {translate(
-                                 "dashboard.routes.interest-templates.form.penalty-value.label",
-                              )}
+                              Valor da Multa
                            </p>
                            <p className="text-sm font-medium">
                               {template.penaltyValue}
@@ -210,11 +181,7 @@ function InterestTemplateContent() {
 
             <Card>
                <CardHeader>
-                  <CardTitle>
-                     {translate(
-                        "dashboard.routes.interest-templates.form.interest-type.label",
-                     )}
-                  </CardTitle>
+                  <CardTitle>Tipo de Juros</CardTitle>
                   <CardDescription>Configuracao de juros</CardDescription>
                </CardHeader>
                <CardContent className="space-y-4">
@@ -222,9 +189,7 @@ function InterestTemplateContent() {
                      <TrendingUp className="size-4 text-muted-foreground" />
                      <div>
                         <p className="text-xs text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.interest-templates.form.interest-type.label",
-                           )}
+                           Tipo de Juros
                         </p>
                         <p className="text-sm font-medium">
                            {getInterestTypeLabel(template.interestType)}
@@ -236,9 +201,7 @@ function InterestTemplateContent() {
                         <TrendingUp className="size-4 text-muted-foreground" />
                         <div>
                            <p className="text-xs text-muted-foreground">
-                              {translate(
-                                 "dashboard.routes.interest-templates.form.interest-value.label",
-                              )}
+                              Valor dos Juros (%)
                            </p>
                            <p className="text-sm font-medium">
                               {template.interestValue}%
@@ -261,15 +224,10 @@ function InterestTemplateContent() {
                      <Clock className="size-4 text-muted-foreground" />
                      <div>
                         <p className="text-xs text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.interest-templates.form.grace-period.label",
-                           )}
+                           Período de Carência
                         </p>
                         <p className="text-sm font-medium">
-                           {template.gracePeriodDays}{" "}
-                           {translate(
-                              "dashboard.routes.interest-templates.form.grace-period.days",
-                           )}
+                           {template.gracePeriodDays} dias
                         </p>
                      </div>
                   </div>
@@ -277,16 +235,12 @@ function InterestTemplateContent() {
                      <TrendingUp className="size-4 text-muted-foreground" />
                      <div>
                         <p className="text-xs text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.interest-templates.form.monetary-correction.label",
-                           )}
+                           Índice de Correção Monetária
                         </p>
                         <p className="text-sm font-medium">
                            {template.monetaryCorrectionIndex !== "none"
                               ? template.monetaryCorrectionIndex.toUpperCase()
-                              : translate(
-                                   "dashboard.routes.interest-templates.form.monetary-correction.none",
-                                )}
+                              : "Nenhum"}
                         </p>
                      </div>
                   </div>
@@ -303,9 +257,7 @@ function InterestTemplateContent() {
                      <Calendar className="size-4 text-muted-foreground" />
                      <div>
                         <p className="text-xs text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.interest-templates.table.columns.created-at",
-                           )}
+                           Criado em
                         </p>
                         <p className="text-sm font-medium">
                            {formatDate(
@@ -358,11 +310,7 @@ function InterestTemplatePageError({
                   <EmptyMedia variant="icon">
                      <FileText className="size-12 text-destructive" />
                   </EmptyMedia>
-                  <EmptyTitle>
-                     {translate(
-                        "dashboard.routes.interest-templates.list-section.state.error.title",
-                     )}
-                  </EmptyTitle>
+                  <EmptyTitle>Erro ao carregar templates</EmptyTitle>
                   <EmptyDescription>{error?.message}</EmptyDescription>
                   <div className="mt-6 flex gap-2 justify-center">
                      <Button
@@ -376,14 +324,14 @@ function InterestTemplatePageError({
                         variant="outline"
                      >
                         <Home className="size-4 mr-2" />
-                        {translate("dashboard.routes.interest-templates.title")}
+                        Templates de Juros
                      </Button>
                      <Button
                         onClick={resetErrorBoundary}
                         size="default"
                         variant="default"
                      >
-                        {translate("common.actions.retry")}
+                        Tentar novamente
                      </Button>
                   </div>
                </EmptyContent>

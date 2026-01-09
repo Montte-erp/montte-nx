@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -35,29 +34,27 @@ export function BillsQuickActionsToolbar({
 
    const badgeText = useMemo(() => {
       if (type === "payable") {
-         return translate("dashboard.routes.bills.views.payables.title");
+         return "Contas a Pagar";
       }
-      return translate("dashboard.routes.bills.views.receivables.title");
+      return "Contas a Receber";
    }, [type]);
 
    return (
       <Item variant="outline">
          <ItemContent>
             <ItemTitle className="flex items-center gap-2">
-               {translate("common.headers.actions-toolbar.title")}
+               Barra de ações
                {type && <Badge variant="secondary">{badgeText}</Badge>}
             </ItemTitle>
             <ItemDescription>
-               {translate("common.headers.actions-toolbar.description")}
+               A barra de ações fornece acesso rápido às ações mais comuns.
             </ItemDescription>
          </ItemContent>
          <ItemActions>
             <Tooltip>
                <TooltipTrigger asChild>
                   <Button
-                     aria-label={translate(
-                        "dashboard.routes.bills.actions-toolbar.actions.add-new",
-                     )}
+                     aria-label="Nova Conta"
                      onClick={() =>
                         openSheet({
                            children: <ManageBillForm />,
@@ -71,9 +68,7 @@ export function BillsQuickActionsToolbar({
                </TooltipTrigger>
                <TooltipContent>
                   <p>
-                     {translate(
-                        "dashboard.routes.bills.actions-toolbar.actions.add-new",
-                     )}
+                     Nova Conta
                   </p>
                </TooltipContent>
             </Tooltip>

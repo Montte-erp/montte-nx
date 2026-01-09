@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Empty,
@@ -58,9 +57,7 @@ function BillDetailsContent() {
    return (
       <main className="space-y-6">
          <DefaultHeader
-            description={translate(
-               "dashboard.routes.bills.details.description",
-            )}
+            description="Visualize e gerencie os detalhes desta conta"
             title={bill.description}
          />
 
@@ -126,7 +123,7 @@ function BillDetailsPageError({ error, resetErrorBoundary }: FallbackProps) {
                      <Receipt className="size-12 text-destructive" />
                   </EmptyMedia>
                   <EmptyTitle>
-                     {translate("dashboard.routes.bills.details.error.title")}
+                     Conta Não Encontrada
                   </EmptyTitle>
                   <EmptyDescription>{error?.message}</EmptyDescription>
                   <div className="mt-6 flex gap-2 justify-center">
@@ -141,16 +138,14 @@ function BillDetailsPageError({ error, resetErrorBoundary }: FallbackProps) {
                         variant="outline"
                      >
                         <ArrowLeft className="size-4 mr-2" />
-                        {translate("dashboard.routes.bills.details.error.back")}
+                        Voltar para contas
                      </Button>
                      <Button
                         onClick={resetErrorBoundary}
                         size="default"
                         variant="default"
                      >
-                        {translate(
-                           "dashboard.routes.bills.details.error.retry",
-                        )}
+                        Tentar novamente
                      </Button>
                   </div>
                </EmptyContent>

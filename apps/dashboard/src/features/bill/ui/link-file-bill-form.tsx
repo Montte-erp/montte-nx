@@ -1,5 +1,4 @@
 import type { BillWithRelations } from "@packages/database/repositories/bill-repository";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Dropzone,
@@ -245,10 +244,10 @@ export function LinkFileBillForm({ bill, onSuccess }: LinkFileBillFormProps) {
       <>
          <SheetHeader>
             <SheetTitle>
-               {translate("dashboard.routes.bills.link-file.sheet.title")}
+               Anexar Arquivo
             </SheetTitle>
             <SheetDescription>
-               {translate("dashboard.routes.bills.link-file.sheet.description")}
+               Anexe documentos relacionados a esta conta
             </SheetDescription>
          </SheetHeader>
 
@@ -346,9 +345,7 @@ export function LinkFileBillForm({ bill, onSuccess }: LinkFileBillFormProps) {
                   <Upload className="size-4" />
                   {hasExistingAttachments
                      ? "Adicionar mais arquivos"
-                     : translate(
-                          "dashboard.routes.bills.link-file.select-file",
-                       )}
+                     : "Selecione um arquivo"}
                </p>
                <Dropzone
                   accept={ACCEPTED_FILE_TYPES}
@@ -437,12 +434,12 @@ export function LinkFileBillForm({ bill, onSuccess }: LinkFileBillFormProps) {
                {isUploading ? (
                   <>
                      <Loader2 className="size-4 animate-spin" />
-                     {translate("dashboard.routes.bills.link-file.uploading")}
+                     Enviando...
                   </>
                ) : (
                   <>
                      <Upload className="size-4" />
-                     {translate("dashboard.routes.bills.link-file.upload")}
+                     Enviar
                      {hasPendingFiles && ` (${pendingFiles.length})`}
                   </>
                )}

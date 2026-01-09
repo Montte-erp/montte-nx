@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { DateRangePickerPopover } from "@packages/ui/components/date-range-picker-popover";
@@ -134,7 +133,7 @@ export function TagFilterBar({
                variant={hasActiveFilters ? "default" : "outline"}
             >
                <Filter className="size-4" />
-               {translate("common.form.filter.title")}
+               Filtros
                {activeFilterCount > 0 && (
                   <Badge
                      className="size-5 p-0 justify-center"
@@ -162,7 +161,7 @@ export function TagFilterBar({
             <DateRangePickerPopover
                endDate={customDateRange.endDate}
                onRangeChange={handleCustomDateChange}
-               placeholder={translate("common.form.date-range.custom")}
+               placeholder="Personalizado"
                startDate={customDateRange.startDate}
             />
          </div>
@@ -182,27 +181,21 @@ export function TagFilterBar({
                   value="income"
                >
                   <ArrowDownLeft className="size-3.5" />
-                  {translate(
-                     "dashboard.routes.transactions.list-section.types.income",
-                  )}
+                  Receita
                </ToggleGroupItem>
                <ToggleGroupItem
                   className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-red-500 data-[state=on]:text-red-600"
                   value="expense"
                >
                   <ArrowUpRight className="size-3.5" />
-                  {translate(
-                     "dashboard.routes.transactions.list-section.types.expense",
-                  )}
+                  Despesa
                </ToggleGroupItem>
                <ToggleGroupItem
                   className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-blue-500 data-[state=on]:text-blue-600"
                   value="transfer"
                >
                   <ArrowLeftRight className="size-3.5" />
-                  {translate(
-                     "dashboard.routes.transactions.list-section.types.transfer",
-                  )}
+                  Transferência
                </ToggleGroupItem>
             </ToggleGroup>
 
@@ -210,7 +203,7 @@ export function TagFilterBar({
 
             <div className="flex items-center gap-2">
                <span className="text-sm text-muted-foreground">
-                  {translate("common.form.sort-by.label")}:
+                  Ordenar por:
                </span>
                <ToggleGroup
                   onValueChange={(value) => {
@@ -249,7 +242,7 @@ export function TagFilterBar({
                   variant="outline"
                >
                   <X className="size-3" />
-                  {translate("common.actions.clear-filters")}
+                  Limpar filtros
                </Button>
             )}
          </div>

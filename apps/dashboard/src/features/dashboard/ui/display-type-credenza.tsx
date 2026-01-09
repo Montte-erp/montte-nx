@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
 	CredenzaBody,
 	CredenzaDescription,
@@ -48,98 +47,98 @@ type ChartCategory = {
 
 const CHART_CATEGORIES: ChartCategory[] = [
 	{
-		name: translate("dashboard.widgets.display-type.categories.time-series"),
+		name: "Séries Temporais",
 		types: [
 			{
 				value: "line",
-				label: translate("dashboard.widgets.display-type.types.line.name"),
-				description: translate("dashboard.widgets.display-type.types.line.description"),
+				label: "Gráfico de linhas",
+				description: "Tendências ao longo do tempo como uma linha contínua",
 				icon: LineChart,
 			},
 			{
 				value: "area",
-				label: translate("dashboard.widgets.display-type.types.area.name"),
-				description: translate("dashboard.widgets.display-type.types.area.description"),
+				label: "Gráfico de área",
+				description: "Tendências ao longo do tempo como uma área sombreada",
 				icon: AreaChart,
 			},
 			{
 				value: "bar",
-				label: translate("dashboard.widgets.display-type.types.bar.name"),
-				description: translate("dashboard.widgets.display-type.types.bar.description"),
+				label: "Gráfico de barras",
+				description: "Tendências ao longo do tempo como barras verticais lado a lado",
 				icon: BarChart3,
 			},
 			{
 				value: "stacked_bar",
-				label: translate("dashboard.widgets.display-type.types.stacked-bar.name"),
-				description: translate("dashboard.widgets.display-type.types.stacked-bar.description"),
+				label: "Gráfico de barras empilhadas",
+				description: "Tendências ao longo do tempo como barras verticais empilhadas",
 				icon: Layers,
 			},
 		],
 	},
 	{
-		name: translate("dashboard.widgets.display-type.categories.cumulative"),
+		name: "Séries Cumulativas",
 		types: [
 			{
 				value: "line_cumulative",
-				label: translate("dashboard.widgets.display-type.types.line-cumulative.name"),
-				description: translate("dashboard.widgets.display-type.types.line-cumulative.description"),
+				label: "Linha (cumulativa)",
+				description: "Acumulando valores ao longo do tempo",
 				icon: TrendingUp,
 			},
 		],
 	},
 	{
-		name: translate("dashboard.widgets.display-type.categories.total-value"),
+		name: "Valor Total",
 		types: [
 			{
 				value: "stat_card",
-				label: translate("dashboard.widgets.display-type.types.number.name"),
-				description: translate("dashboard.widgets.display-type.types.number.description"),
+				label: "Número",
+				description: "Um número grande mostrando o valor total",
 				icon: Hash,
 			},
 			{
 				value: "pie",
-				label: translate("dashboard.widgets.display-type.types.pie.name"),
-				description: translate("dashboard.widgets.display-type.types.pie.description"),
+				label: "Gráfico de pizza",
+				description: "Proporções de um todo como fatias",
 				icon: PieChart,
 			},
 			{
 				value: "bar_total",
-				label: translate("dashboard.widgets.display-type.types.bar-total.name"),
-				description: translate("dashboard.widgets.display-type.types.bar-total.description"),
+				label: "Gráfico de barras (total)",
+				description: "Valores totais como barras horizontais",
 				icon: BarChart3,
 			},
 			{
 				value: "table",
-				label: translate("dashboard.widgets.display-type.types.table.name"),
-				description: translate("dashboard.widgets.display-type.types.table.description"),
+				label: "Tabela",
+				description: "Valores totais em uma visualização de tabela",
 				icon: Table2,
 			},
 		],
 	},
 	{
-		name: translate("dashboard.widgets.display-type.categories.visualizations"),
+		name: "Visualizações",
 		types: [
 			{
 				value: "world_map",
-				label: translate("dashboard.widgets.display-type.types.world-map.name"),
-				description: translate("dashboard.widgets.display-type.types.world-map.description"),
+				label: "Mapa mundial",
+				description: "Valores por país em um mapa",
 				icon: Globe,
 			},
 		],
 	},
 	{
-		name: translate("dashboard.widgets.display-type.categories.analysis"),
+		name: "Análise",
 		types: [
 			{
 				value: "category_analysis",
-				label: translate("dashboard.widgets.display-type.types.category-analysis.name"),
-				description: translate("dashboard.widgets.display-type.types.category-analysis.description"),
+				label: "Análise por categoria",
+				description: "Comparação entre categorias",
 				icon: Layers,
 			},
 			{
 				value: "comparison",
-				label: translate("dashboard.widgets.display-type.types.comparison.name"),
-				description: translate("dashboard.widgets.display-type.types.comparison.description"),
+				label: "Comparação",
+				description: "Comparar valores entre períodos",
 				icon: Scale,
 			},
 		],
@@ -203,23 +202,23 @@ export function DisplayTypeCredenza({
 			<CredenzaHeader>
 				<CredenzaTitle className="flex items-center gap-2">
 					<BarChart3 className="h-5 w-5" />
-					{translate("dashboard.widgets.display-type.title")}
+					Tipo de Exibição
 				</CredenzaTitle>
 				<CredenzaDescription>
-					{translate("dashboard.widgets.display-type.description")}
+					Escolha como visualizar seus dados
 				</CredenzaDescription>
 			</CredenzaHeader>
 			<CredenzaBody className="p-0">
 				<Command className="rounded-none border-none">
 					<div className="border-b px-3 pb-3">
 						<CommandInput
-							placeholder={translate("dashboard.widgets.display-type.search")}
+							placeholder="Buscar tipos de gráfico..."
 							className="h-10"
 						/>
 					</div>
 					<CommandList className="max-h-[400px] p-2">
 						<CommandEmpty>
-							{translate("common.form.search.no-results")}
+							Nenhum resultado encontrado
 						</CommandEmpty>
 						{filteredCategories.map((category) => (
 							<CommandGroup 

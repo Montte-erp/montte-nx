@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import {
    Announcement,
    AnnouncementTag,
@@ -35,21 +34,19 @@ export function BudgetInformationSection({
    budget,
 }: BudgetInformationSectionProps) {
    const periodLabels: Record<string, string> = {
-      custom: translate("dashboard.routes.budgets.form.period.custom"),
-      daily: translate("dashboard.routes.budgets.form.period.daily"),
-      monthly: translate("dashboard.routes.budgets.form.period.monthly"),
-      quarterly: translate("dashboard.routes.budgets.form.period.quarterly"),
-      weekly: translate("dashboard.routes.budgets.form.period.weekly"),
-      yearly: translate("dashboard.routes.budgets.form.period.yearly"),
+      custom: "Personalizado",
+      daily: "Diário",
+      monthly: "Mensal",
+      quarterly: "Trimestral",
+      weekly: "Semanal",
+      yearly: "Anual",
    };
 
    const targetTypeLabels: Record<string, string> = {
-      categories: translate("dashboard.routes.budgets.form.target.categories"),
-      category: translate("dashboard.routes.budgets.form.target.category"),
-      cost_center: translate(
-         "dashboard.routes.budgets.form.target.cost_center",
-      ),
-      tag: translate("dashboard.routes.budgets.form.target.tag"),
+      categories: "Múltiplas categorias",
+      category: "Categoria única",
+      cost_center: "Centro de custo",
+      tag: "Tag",
    };
 
    const target = budget.target as BudgetTarget;
@@ -68,9 +65,7 @@ export function BudgetInformationSection({
                <Announcement>
                   <AnnouncementTag className="flex items-center gap-1.5">
                      <Target className="size-3.5" />
-                     {translate(
-                        "dashboard.routes.budgets.details.information.target",
-                     )}
+                     Alvo
                   </AnnouncementTag>
                   <AnnouncementTitle>{targetLabel}</AnnouncementTitle>
                </Announcement>
@@ -78,9 +73,7 @@ export function BudgetInformationSection({
                <Announcement>
                   <AnnouncementTag className="flex items-center gap-1.5">
                      <Calendar className="size-3.5" />
-                     {translate(
-                        "dashboard.routes.budgets.details.information.period",
-                     )}
+                     Período
                   </AnnouncementTag>
                   <AnnouncementTitle>{periodLabel}</AnnouncementTitle>
                </Announcement>
@@ -90,9 +83,7 @@ export function BudgetInformationSection({
                <Announcement>
                   <AnnouncementTag className="flex items-center gap-1.5">
                      <Clock className="size-3.5" />
-                     {translate(
-                        "dashboard.routes.budgets.details.information.created-at",
-                     )}
+                     Criado em
                   </AnnouncementTag>
                   <AnnouncementTitle>
                      {formatBudgetDate(budget.createdAt)}
@@ -102,9 +93,7 @@ export function BudgetInformationSection({
                <Announcement>
                   <AnnouncementTag className="flex items-center gap-1.5">
                      <FolderOpen className="size-3.5" />
-                     {translate(
-                        "dashboard.routes.budgets.details.information.updated-at",
-                     )}
+                     Atualizado em
                   </AnnouncementTag>
                   <AnnouncementTitle>
                      {formatBudgetDate(budget.updatedAt)}

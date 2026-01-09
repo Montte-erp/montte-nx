@@ -1,10 +1,5 @@
 ---
-import type { SupportedLng } from "@packages/localization";
 import { FAQTabs } from "@/components/faq-tabs";
-
-interface Props {
-   lang?: SupportedLng;
-}
 
 const categories = [
    { id: "pricing", label: "Preços e Planos" },
@@ -71,7 +66,6 @@ const faqItems = [
       question: "Qual é o nível de suporte oferecido?",
    },
 ];
-const { lang: _lang = "pt-BR" } = Astro.props;
 ---
 
 <section id="faq" class="py-16 md:py-24 bg-muted">

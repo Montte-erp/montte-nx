@@ -1,26 +1,14 @@
 ---
 export const prerender = true;
 
-import type { SupportedLng } from "@packages/localization";
 import StickyNavbar from "@/components/StickyNavbar.astro";
-import { supportedLanguages } from "@/i18n/config";
 import Layout from "@/layouts/Landing.astro";
 import Footer from "@/sections/Footer.astro";
-
-export function getStaticPaths() {
-   return supportedLanguages.map((locale) => ({
-      params: { locale: locale === "pt-BR" ? undefined : locale },
-   }));
-}
-
-const { locale } = Astro.params;
-// biome-ignore lint/correctness/noUnusedVariables: Used in Astro template
-const lang = (locale || "pt-BR") as SupportedLng;
 ---
 
-<Layout lang={lang}>
+<Layout>
    <div class="flex flex-col">
-      <StickyNavbar lang={lang}/>
+      <StickyNavbar />
       <main class="py-36">
          <div class="mx-auto max-w-4xl px-6 prose dark:prose-invert">
             <h1>Termos de Uso do Montte</h1>
@@ -211,6 +199,6 @@ const lang = (locale || "pt-BR") as SupportedLng;
             </ul>
          </div>
       </main>
-      <Footer lang={lang}/>
+      <Footer />
    </div>
 </Layout>

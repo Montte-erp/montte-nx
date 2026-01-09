@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Card,
@@ -58,10 +57,7 @@ export function MembersMobileCard({
                   />
                </CardTitle>
                <CardDescription className="mt-1">
-                  {translate(
-                     "dashboard.routes.organization.members-table.columns.joined",
-                  )}
-                  : {formatDate(new Date(member.createdAt), "DD MMM YYYY")}
+                  Entrou em: {formatDate(new Date(member.createdAt), "DD MMM YYYY")}
                </CardDescription>
             </div>
             <CardAction>
@@ -89,9 +85,7 @@ export function MembersMobileCard({
                               onClick={() => onChangeRole(member)}
                            >
                               <Shield className="size-4 mr-2" />
-                              {translate(
-                                 "dashboard.routes.organization.members-table.actions.change-role",
-                              )}
+                              Alterar cargo
                            </DropdownMenuItem>
                         )}
                         {onRemove && (
@@ -102,9 +96,7 @@ export function MembersMobileCard({
                                  onClick={() => onRemove(member)}
                               >
                                  <Trash2 className="size-4 mr-2" />
-                                 {translate(
-                                    "dashboard.routes.organization.members-table.actions.remove",
-                                 )}
+                                 Remover
                               </DropdownMenuItem>
                            </>
                         )}
@@ -116,7 +108,7 @@ export function MembersMobileCard({
                      <ChevronDown
                         className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
                      />
-                     {translate("common.actions.more")}
+                     Mais
                   </Button>
                </CollapsibleTrigger>
             </CardFooter>

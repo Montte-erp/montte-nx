@@ -1,6 +1,5 @@
 "use client";
 
-import { translate } from "@packages/localization";
 import {
    type ColumnDef,
    type ColumnFiltersState,
@@ -115,28 +114,17 @@ function DataTablePagination({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
          <div className="flex items-center gap-4">
             <div className="text-sm text-muted-foreground hidden md:block">
-               {translate(
-                  "dashboard.routes.transactions.list-section.showing",
-                  {
-                     count: showingCount,
-                     total: totalCount,
-                  },
-               )}
+               {`Mostrando ${showingCount} de ${totalCount} transações`}
             </div>
             <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-               {translate("dashboard.routes.transactions.list-section.page", {
-                  current: currentPage,
-                  total: Math.max(1, totalPages),
-               })}
+               {`Página ${currentPage} de ${Math.max(1, totalPages)}`}
             </div>
          </div>
          <div className="flex items-center gap-4">
             {onPageSizeChange && (
                <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground hidden sm:inline">
-                     {translate(
-                        "dashboard.routes.transactions.list-section.rows-per-page",
-                     )}
+                     Linhas por página
                   </span>
                   <Select
                      onValueChange={(value) => onPageSizeChange(Number(value))}

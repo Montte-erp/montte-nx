@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Field,
@@ -36,22 +35,16 @@ export function ForgotPasswordPage() {
    const schema = z
       .object({
          confirmPassword: z.string(),
-         email: z.email(translate("common.validation.email")),
+         email: z.email("Insira um endereço de email válido."),
          otp: z
             .string()
-            .min(
-               6,
-               translate("common.validation.min-length").replace("{min}", "6"),
-            ),
+            .min(6, "O campo deve ter no mínimo 6 caracteres."),
          password: z
             .string()
-            .min(
-               8,
-               translate("common.validation.min-length").replace("{min}", "8"),
-            ),
+            .min(8, "O campo deve ter no mínimo 8 caracteres."),
       })
       .refine((data) => data.password === data.confirmPassword, {
-         message: translate("common.validation.password-mismatch"),
+         message: "As senhas não coincidem.",
          path: ["confirmPassword"],
       });
 
@@ -66,18 +59,10 @@ export function ForgotPasswordPage() {
                toast.error(error.message);
             },
             onRequest: () => {
-               toast.loading(
-                  translate(
-                     "dashboard.routes.forgot-password.messages.requesting",
-                  ),
-               );
+               toast.loading("Enviando código...");
             },
             onSuccess: () => {
-               toast.success(
-                  translate(
-                     "dashboard.routes.forgot-password.messages.send-success",
-                  ),
-               );
+               toast.success("Código enviado para seu email!");
             },
          },
       );
@@ -96,18 +81,10 @@ export function ForgotPasswordPage() {
                   toast.error(error.message);
                },
                onRequest: () => {
-                  toast.loading(
-                     translate(
-                        "dashboard.routes.forgot-password.messages.resetting",
-                     ),
-                  );
+                  toast.loading("Redefinindo senha...");
                },
                onSuccess: () => {
-                  toast.success(
-                     translate(
-                        "dashboard.routes.forgot-password.messages.reset-success",
-                     ),
-                  );
+                  toast.success("Senha redefinida com sucesso!");
                   router.navigate({
                      to: "/auth/sign-in",
                   });
@@ -152,7 +129,7 @@ export function ForgotPasswordPage() {
                   return (
                      <Field data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>
-                           {translate("common.form.email.label")}
+                           Email
                         </FieldLabel>
                         <Input
                            aria-invalid={isInvalid}
@@ -161,9 +138,7 @@ export function ForgotPasswordPage() {
                            name={field.name}
                            onBlur={field.handleBlur}
                            onChange={(e) => field.handleChange(e.target.value)}
-                           placeholder={translate(
-                              "common.form.email.placeholder",
-                           )}
+                           placeholder="Digite seu email"
                            type="email"
                            value={field.state.value}
                         />
@@ -188,7 +163,7 @@ export function ForgotPasswordPage() {
                   return (
                      <Field data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>
-                           {translate("common.form.otp.label")}
+                           Código de verificação
                         </FieldLabel>
                         <InputOTP
                            aria-invalid={isInvalid}
@@ -239,7 +214,7 @@ export function ForgotPasswordPage() {
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.password.label")}
+                              Senha
                            </FieldLabel>
                            <PasswordInput
                               aria-invalid={isInvalid}
@@ -250,9 +225,7 @@ export function ForgotPasswordPage() {
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
                               }
-                              placeholder={translate(
-                                 "common.form.password.placeholder",
-                              )}
+                              placeholder="Digite sua nova senha"
                               value={field.state.value}
                            />
                            {isInvalid && (
@@ -271,7 +244,7 @@ export function ForgotPasswordPage() {
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.confirm-password.label")}
+                              Confirmar senha
                            </FieldLabel>
                            <PasswordInput
                               aria-invalid={isInvalid}
@@ -282,9 +255,7 @@ export function ForgotPasswordPage() {
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
                               }
-                              placeholder={translate(
-                                 "common.form.confirm-password.placeholder",
-                              )}
+                              placeholder="Confirme sua nova senha"
                               value={field.state.value}
                            />
                            {isInvalid && (
@@ -306,29 +277,21 @@ export function ForgotPasswordPage() {
                <Button asChild className="gap-2 px-0" variant="link">
                   <Link to="/auth/sign-in">
                      <ArrowLeft className="size-4" />
-                     {translate(
-                        "dashboard.routes.forgot-password.actions.back-to-sign-in",
-                     )}
+                     Voltar para login
                   </Link>
                </Button>
 
                {/* Header */}
                <div className="text-center space-y-2">
                   <h1 className="text-3xl font-semibold font-serif">
-                     {translate("dashboard.routes.forgot-password.title")}
+                     Esqueceu a senha?
                   </h1>
                   <p className="text-muted-foreground text-sm">
                      {methods.current.id === "enter-email"
-                        ? translate(
-                             "dashboard.routes.forgot-password.descriptions.enter-email",
-                          )
+                        ? "Digite seu email para receber um código de verificação"
                         : methods.current.id === "enter-otp"
-                          ? translate(
-                               "dashboard.routes.forgot-password.descriptions.enter-otp",
-                            )
-                          : translate(
-                               "dashboard.routes.forgot-password.descriptions.enter-password",
-                            )}
+                          ? "Digite o código de verificação enviado para seu email"
+                          : "Digite sua nova senha"}
                   </p>
                </div>
 
@@ -351,7 +314,7 @@ export function ForgotPasswordPage() {
                            type="button"
                            variant="outline"
                         >
-                           {translate("common.actions.previous")}
+                           Anterior
                         </Button>
                         {methods.isLast ? (
                            <form.Subscribe>
@@ -365,9 +328,7 @@ export function ForgotPasswordPage() {
                                     type="submit"
                                     variant="default"
                                  >
-                                    {translate(
-                                       "dashboard.routes.forgot-password.actions.reset-password",
-                                    )}
+                                    Redefinir senha
                                  </Button>
                               )}
                            </form.Subscribe>
@@ -387,13 +348,13 @@ export function ForgotPasswordPage() {
                                     }}
                                     type="button"
                                  >
-                                    {translate("common.actions.next")}
+                                    Próximo
                                  </Button>
                               )}
                            </form.Subscribe>
                         ) : (
                            <Button onClick={methods.next} type="button">
-                              {translate("common.actions.next")}
+                              Próximo
                            </Button>
                         )}
                      </Stepper.Controls>
@@ -402,18 +363,12 @@ export function ForgotPasswordPage() {
 
                <div className="text-sm text-center">
                   <div className="flex gap-1 justify-center items-center">
-                     <span>
-                        {translate(
-                           "dashboard.routes.forgot-password.texts.remembered-password",
-                        )}
-                     </span>
+                     <span>Lembrou a senha?</span>
                      <Link
                         className="text-primary hover:underline"
                         to="/auth/sign-in"
                      >
-                        {translate(
-                           "dashboard.routes.forgot-password.actions.sign-in",
-                        )}
+                        Entrar
                      </Link>
                   </div>
                </div>

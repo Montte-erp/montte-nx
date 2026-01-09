@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { DateRangePickerPopover } from "@packages/ui/components/date-range-picker-popover";
 import {
@@ -110,14 +109,10 @@ function TagContent() {
                   }
                >
                   <Plus className="size-4" />
-                  {translate(
-                     "dashboard.routes.transactions.features.add-new.title",
-                  )}
+                  Adicionar Nova Transação
                </Button>
             }
-            description={translate(
-               "dashboard.routes.tags.list-section.description",
-            )}
+            description="Visualize e gerencie suas tags aqui."
             title={tag.name}
          />
 
@@ -133,7 +128,7 @@ function TagContent() {
             <DateRangePickerPopover
                endDate={customDateRange.endDate}
                onRangeChange={handleCustomDateChange}
-               placeholder={translate("common.form.date-range.custom")}
+               placeholder="Personalizado"
                startDate={customDateRange.startDate}
             />
          </div>

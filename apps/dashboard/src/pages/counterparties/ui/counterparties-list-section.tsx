@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Card, CardContent } from "@packages/ui/components/card";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
@@ -41,13 +40,9 @@ function CounterpartiesListErrorFallback(props: FallbackProps) {
       <Card>
          <CardContent className="pt-6">
             {createErrorFallback({
-               errorDescription: translate(
-                  "dashboard.routes.counterparties.list-section.state.error.description",
-               ),
-               errorTitle: translate(
-                  "dashboard.routes.counterparties.list-section.state.error.title",
-               ),
-               retryText: translate("common.actions.retry"),
+               errorDescription: "Falha ao carregar parceiros. Tente novamente mais tarde.",
+               errorTitle: "Erro ao carregar parceiros",
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>
@@ -168,7 +163,7 @@ function CounterpartiesListContent() {
                <InputGroup className="sm:max-w-md">
                   <InputGroupInput
                      onChange={(e) => setSearchTerm(e.target.value)}
-                     placeholder={translate("common.form.search.placeholder")}
+                     placeholder="Buscar parceiros..."
                      value={searchTerm}
                   />
                   <InputGroupAddon>
@@ -182,15 +177,9 @@ function CounterpartiesListContent() {
                         <EmptyMedia variant="icon">
                            <Inbox className="size-6" />
                         </EmptyMedia>
-                        <EmptyTitle>
-                           {translate(
-                              "dashboard.routes.counterparties.list-section.state.empty.title",
-                           )}
-                        </EmptyTitle>
+                        <EmptyTitle>Nenhum parceiro encontrado</EmptyTitle>
                         <EmptyDescription>
-                           {translate(
-                              "dashboard.routes.counterparties.list-section.state.empty.description",
-                           )}
+                           Adicione um novo parceiro comercial para comecar
                         </EmptyDescription>
                      </EmptyContent>
                   </Empty>
@@ -246,27 +235,17 @@ function CounterpartiesListContent() {
                icon={<Trash2 className="size-3.5" />}
                onClick={() =>
                   openAlertDialog({
-                     actionLabel: translate(
-                        "dashboard.routes.counterparties.bulk-actions.delete",
-                     ),
-                     cancelLabel: translate("common.actions.cancel"),
-                     description: translate(
-                        "dashboard.routes.counterparties.bulk-actions.delete-confirm-description",
-                        { count: selectedIds.length },
-                     ),
+                     actionLabel: "Excluir",
+                     cancelLabel: "Cancelar",
+                     description: `Tem certeza que deseja excluir ${selectedIds.length} parceiro(s)? Esta acao nao pode ser desfeita.`,
                      onAction: () => deleteSelected(selectedIds),
-                     title: translate(
-                        "dashboard.routes.counterparties.bulk-actions.delete-confirm-title",
-                        { count: selectedIds.length },
-                     ),
+                     title: `Excluir ${selectedIds.length} parceiro(s)`,
                      variant: "destructive",
                   })
                }
                variant="destructive"
             >
-               {translate(
-                  "dashboard.routes.counterparties.bulk-actions.delete",
-               )}
+               Excluir
             </SelectionActionButton>
          </SelectionActionBar>
       </>

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTRPC } from "@/integrations/clients";
@@ -26,15 +25,10 @@ export function useCategoryBulkActions(
       try {
          await deleteMutation.mutateAsync({ ids });
          toast.success(
-            translate(
-               "dashboard.routes.categories.bulk-actions.deleted-success",
-               { count: ids.length },
-            ),
+            `${ids.length} ${ids.length === 1 ? "categoria excluída" : "categorias excluídas"} com sucesso`,
          );
       } catch {
-         toast.error(
-            translate("dashboard.routes.categories.bulk-actions.deleted-error"),
-         );
+         toast.error("Falha ao excluir categorias");
       }
    };
 

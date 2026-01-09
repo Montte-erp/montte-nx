@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Empty,
@@ -133,9 +132,7 @@ function TransactionPageError({ error, resetErrorBoundary }: FallbackProps) {
                      <Receipt className="size-12 text-destructive" />
                   </EmptyMedia>
                   <EmptyTitle>
-                     {translate(
-                        "dashboard.routes.transactions.details.error.title",
-                     )}
+                     Falha ao carregar transação
                   </EmptyTitle>
                   <EmptyDescription>{error?.message}</EmptyDescription>
                   <div className="mt-6 flex gap-2 justify-center">
@@ -150,16 +147,14 @@ function TransactionPageError({ error, resetErrorBoundary }: FallbackProps) {
                         variant="outline"
                      >
                         <Home className="size-4 mr-2" />
-                        {translate(
-                           "dashboard.routes.transactions.details.error.back",
-                        )}
+                        Voltar para Transações
                      </Button>
                      <Button
                         onClick={resetErrorBoundary}
                         size="default"
                         variant="default"
                      >
-                        {translate("common.actions.retry")}
+                        Tentar novamente
                      </Button>
                   </div>
                </EmptyContent>

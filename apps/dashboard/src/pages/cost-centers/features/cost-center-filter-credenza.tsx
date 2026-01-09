@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    CredenzaBody,
@@ -40,30 +39,30 @@ export function CostCenterFilterCredenza({
 
    const orderByOptions = [
       {
-         label: translate("common.form.name.label"),
+         label: "Nome",
          value: "name" as const,
       },
       {
-         label: translate("dashboard.routes.cost-centers.table.columns.code"),
+         label: "Código",
          value: "code" as const,
       },
       {
-         label: translate("common.form.created-at.label"),
+         label: "Data de Criação",
          value: "createdAt" as const,
       },
       {
-         label: translate("common.form.updated-at.label"),
+         label: "Data de Atualização",
          value: "updatedAt" as const,
       },
    ];
 
    const orderDirectionOptions = [
       {
-         label: translate("common.form.sort-ascending.label"),
+         label: "Crescente",
          value: "asc" as const,
       },
       {
-         label: translate("common.form.sort-descending.label"),
+         label: "Decrescente",
          value: "desc" as const,
       },
    ];
@@ -80,14 +79,10 @@ export function CostCenterFilterCredenza({
       <>
          <CredenzaHeader>
             <CredenzaTitle>
-               {translate(
-                  "dashboard.routes.cost-centers.features.filter.title",
-               )}
+               Filtrar Centros de Custo
             </CredenzaTitle>
             <CredenzaDescription>
-               {translate(
-                  "dashboard.routes.cost-centers.features.filter.description",
-               )}
+               Refine a lista de centros de custo com base em critérios específicos.
             </CredenzaDescription>
          </CredenzaHeader>
          <CredenzaBody>
@@ -99,16 +94,14 @@ export function CostCenterFilterCredenza({
                         onClick={clearFilters}
                      >
                         <X className="size-4" />
-                        {translate(
-                           "dashboard.routes.cost-centers.features.filter.actions.clear-filters",
-                        )}
+                        Limpar Filtros
                      </Button>
                   </div>
                )}
                <FieldGroup>
                   <Field>
                      <FieldLabel>
-                        {translate("common.form.sort-by.label")}
+                        Ordenar por
                      </FieldLabel>
                      <Select
                         onValueChange={(
@@ -118,9 +111,7 @@ export function CostCenterFilterCredenza({
                      >
                         <SelectTrigger>
                            <SelectValue
-                              placeholder={translate(
-                                 "common.form.sort-by.placeholder",
-                              )}
+                              placeholder="Selecione o campo"
                            />
                         </SelectTrigger>
                         <SelectContent>
@@ -140,7 +131,7 @@ export function CostCenterFilterCredenza({
                <FieldGroup>
                   <Field>
                      <FieldLabel>
-                        {translate("common.form.order-direction.label")}
+                        Direção da Ordenação
                      </FieldLabel>
                      <Select
                         onValueChange={(value: "asc" | "desc") =>
@@ -150,9 +141,7 @@ export function CostCenterFilterCredenza({
                      >
                         <SelectTrigger>
                            <SelectValue
-                              placeholder={translate(
-                                 "common.form.order-direction.placeholder",
-                              )}
+                              placeholder="Selecione a direção"
                            />
                         </SelectTrigger>
                         <SelectContent>
@@ -171,9 +160,7 @@ export function CostCenterFilterCredenza({
                <FieldGroup>
                   <Field>
                      <FieldLabel>
-                        {translate(
-                           "dashboard.routes.transactions.features.filter.page-size.label",
-                        )}
+                        Itens por Página
                      </FieldLabel>
                      <Select
                         onValueChange={(value) =>

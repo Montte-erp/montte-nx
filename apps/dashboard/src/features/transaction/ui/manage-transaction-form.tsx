@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import {
    Alert,
    AlertDescription,
@@ -132,22 +131,14 @@ export function ManageTransactionForm({
    const modeTexts = useMemo(() => {
       if (isEditMode) {
          return {
-            description: translate(
-               "dashboard.routes.transactions.features.edit.description",
-            ),
-            title: translate(
-               "dashboard.routes.transactions.features.edit.title",
-            ),
+            description: "Modifique os detalhes da transação selecionada.",
+            title: "Editar Transação",
          };
       }
 
       return {
-         description: translate(
-            "dashboard.routes.transactions.features.add-new.description",
-         ),
-         title: translate(
-            "dashboard.routes.transactions.features.add-new.title",
-         ),
+         description: "Adicione uma nova transação ao seu registro financeiro.",
+         title: "Adicionar Nova Transação",
       };
    }, [isEditMode]);
 
@@ -206,12 +197,12 @@ export function ManageTransactionForm({
       updateTransactionMutation.isPending;
 
    const transactionSchema = z.object({
-      amount: z.number().min(1, translate("common.validation.required")),
-      bankAccountId: z.string().min(1, translate("common.validation.required")),
+      amount: z.number().min(1, "Este campo é obrigatório."),
+      bankAccountId: z.string().min(1, "Este campo é obrigatório."),
       categoryIds: z.array(z.string()),
       costCenterId: z.string(),
-      date: z.date({ message: translate("common.validation.required") }),
-      description: z.string().min(1, translate("common.validation.required")),
+      date: z.date({ message: "Este campo é obrigatório." }),
+      description: z.string().min(1, "Este campo é obrigatório."),
       tagIds: z.array(z.string()),
       type: z.enum(["expense", "income"]),
    });
@@ -231,11 +222,7 @@ export function ManageTransactionForm({
             type: values.type,
          });
 
-         toast.success(
-            translate(
-               "dashboard.routes.transactions.notifications.create-success",
-            ),
-         );
+         toast.success("Transação criada com sucesso");
          resetForm();
          setBudgetImpactParams(null);
          closeSheet();
@@ -264,11 +251,7 @@ export function ManageTransactionForm({
             id: transaction.id,
          });
 
-         toast.success(
-            translate(
-               "dashboard.routes.transactions.notifications.update-success",
-            ),
-         );
+         toast.success("Transação atualizada com sucesso");
          closeSheet();
       },
       [transaction, updateTransactionMutation, closeSheet],
@@ -310,11 +293,9 @@ export function ManageTransactionForm({
                error,
             );
             toast.error(
-               translate(
-                  isEditMode
-                     ? "dashboard.routes.transactions.notifications.update-error"
-                     : "dashboard.routes.transactions.notifications.create-error",
-               ),
+               isEditMode
+                  ? "Falha ao atualizar transação"
+                  : "Falha ao criar transação",
             );
          }
       },
@@ -448,7 +429,7 @@ export function ManageTransactionForm({
 
    const costCenterOptions = useMemo(
       () => [
-         { label: translate("common.form.cost-center.none"), value: "" },
+         { label: "Nenhum", value: "" },
          ...costCenters.map((cc) => ({
             label: cc.code ? `${cc.name} (${cc.code})` : cc.name,
             value: cc.id,
@@ -468,7 +449,7 @@ export function ManageTransactionForm({
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.description.label")}
+                              Descrição
                            </FieldLabel>
                            <Textarea
                               id={field.name}
@@ -476,9 +457,7 @@ export function ManageTransactionForm({
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
                               }
-                              placeholder={translate(
-                                 "common.form.description.placeholder",
-                              )}
+                              placeholder="Digite a descrição"
                               value={field.state.value}
                            />
                            {isInvalid && (
@@ -498,7 +477,7 @@ export function ManageTransactionForm({
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.amount.label")}
+                              Valor
                            </FieldLabel>
                            <MoneyInput
                               id={field.name}
@@ -527,7 +506,7 @@ export function ManageTransactionForm({
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.bank.label")}
+                              Banco
                            </FieldLabel>
                            <Select
                               onOpenChange={(open) => {
@@ -540,9 +519,7 @@ export function ManageTransactionForm({
                            >
                               <SelectTrigger id={field.name}>
                                  <SelectValue
-                                    placeholder={translate(
-                                       "common.form.bank.placeholder",
-                                    )}
+                                    placeholder="Selecione seu banco"
                                  />
                               </SelectTrigger>
                               <SelectContent>
@@ -573,7 +550,7 @@ export function ManageTransactionForm({
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.type.label")}
+                              Tipo
                            </FieldLabel>
                            <Select
                               onValueChange={(value) => {
@@ -590,14 +567,10 @@ export function ManageTransactionForm({
                               </SelectTrigger>
                               <SelectContent>
                                  <SelectItem value="expense">
-                                    {translate(
-                                       "dashboard.routes.transactions.list-section.types.expense",
-                                    )}
+                                    Despesa
                                  </SelectItem>
                                  <SelectItem value="income">
-                                    {translate(
-                                       "dashboard.routes.transactions.list-section.types.income",
-                                    )}
+                                    Receita
                                  </SelectItem>
                               </SelectContent>
                            </Select>
@@ -618,16 +591,14 @@ export function ManageTransactionForm({
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.date.label")}
+                              Data
                            </FieldLabel>
                            <DatePicker
                               date={field.state.value}
                               onSelect={(date) =>
                                  field.handleChange(date || new Date())
                               }
-                              placeholder={translate(
-                                 "common.form.date.placeholder",
-                              )}
+                              placeholder="Selecione uma data"
                            />
                            {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
@@ -652,26 +623,20 @@ export function ManageTransactionForm({
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.category.label")}
+                              Categoria
                            </FieldLabel>
                            <MultiSelect
                               className="flex-1"
-                              createLabel={translate(
-                                 "common.form.category.create",
-                              )}
-                              emptyMessage={translate(
-                                 "common.form.search.no-results",
-                              )}
+                              createLabel="Criar categoria"
+                              emptyMessage="Nenhum resultado encontrado"
                               onChange={(val) => field.handleChange(val)}
                               onCreate={handleCreateCategory}
                               options={categoryOptions}
-                              placeholder={translate(
-                                 "common.form.category.placeholder",
-                              )}
+                              placeholder="Selecione uma categoria"
                               selected={field.state.value || []}
                            />
                            <FieldDescription>
-                              {translate("common.form.category.description")}
+                              Agrupe suas transações por tipo de gasto ou receita para análises detalhadas
                            </FieldDescription>
                            {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
@@ -687,30 +652,22 @@ export function ManageTransactionForm({
                   {(field) => (
                      <Field>
                         <FieldLabel htmlFor={field.name}>
-                           {translate("common.form.cost-center.label")}
+                           Centro de Custo
                         </FieldLabel>
                         <Combobox
                            className="w-full justify-between"
-                           createLabel={translate(
-                              "common.form.cost-center.create",
-                           )}
+                           createLabel="Criar centro de custo "
                            disabled={isCreating}
-                           emptyMessage={translate(
-                              "common.form.search.no-results",
-                           )}
+                           emptyMessage="Nenhum resultado encontrado"
                            onCreate={handleCreateCostCenter}
                            onValueChange={(value) => field.handleChange(value)}
                            options={costCenterOptions}
-                           placeholder={translate(
-                              "common.form.cost-center.placeholder",
-                           )}
-                           searchPlaceholder={translate(
-                              "common.form.search.label",
-                           )}
+                           placeholder="Selecione um centro de custo"
+                           searchPlaceholder="Pesquisar"
                            value={field.state.value}
                         />
                         <FieldDescription>
-                           {translate("common.form.cost-center.description")}
+                           Associe a departamentos, projetos ou áreas para controle orçamentário
                         </FieldDescription>
                      </Field>
                   )}
@@ -722,24 +679,20 @@ export function ManageTransactionForm({
                   {(field) => (
                      <Field>
                         <FieldLabel htmlFor={field.name}>
-                           {translate("common.form.tags.label")}
+                           Tags
                         </FieldLabel>
                         <MultiSelect
                            className="flex-1"
-                           createLabel={translate("common.form.tags.create")}
-                           emptyMessage={translate(
-                              "common.form.search.no-results",
-                           )}
+                           createLabel="Criar tag "
+                           emptyMessage="Nenhum resultado encontrado"
                            onChange={(val) => field.handleChange(val)}
                            onCreate={handleCreateTag}
                            options={tagOptions}
-                           placeholder={translate(
-                              "common.form.tags.placeholder",
-                           )}
+                           placeholder="Selecione as tags"
                            selected={field.state.value || []}
                         />
                         <FieldDescription>
-                           {translate("common.form.tags.description")}
+                           Adicione marcadores personalizados para filtrar e organizar suas transações
                         </FieldDescription>
                      </Field>
                   )}
@@ -855,7 +808,7 @@ export function ManageTransactionForm({
                                  }}
                                  type="button"
                               >
-                                 {translate("common.actions.next")}
+                                 Próximo
                               </Button>
                            )}
                         </form.Subscribe>
@@ -893,7 +846,7 @@ export function ManageTransactionForm({
                                        type="button"
                                        variant="ghost"
                                     >
-                                       {translate("common.actions.previous")}
+                                       Voltar
                                     </Button>
                                     {hasAnyCategorization ? (
                                        <Button
@@ -906,7 +859,7 @@ export function ManageTransactionForm({
                                           }
                                           type="submit"
                                        >
-                                          {translate("common.actions.submit")}
+                                          Enviar
                                        </Button>
                                     ) : (
                                        <Button
@@ -919,7 +872,7 @@ export function ManageTransactionForm({
                                           type="submit"
                                           variant="outline"
                                        >
-                                          {translate("common.actions.skip")}
+                                          Pular
                                        </Button>
                                     )}
                                  </>

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -58,9 +57,7 @@ function CostCenterActionsCell({ costCenter }: { costCenter: CostCenter }) {
                </Button>
             </TooltipTrigger>
             <TooltipContent>
-               {translate(
-                  "dashboard.routes.cost-centers.list-section.actions.view-details",
-               )}
+               Ver detalhes
             </TooltipContent>
          </Tooltip>
          <Tooltip>
@@ -80,9 +77,7 @@ function CostCenterActionsCell({ costCenter }: { costCenter: CostCenter }) {
                </Button>
             </TooltipTrigger>
             <TooltipContent>
-               {translate(
-                  "dashboard.routes.cost-centers.list-section.actions.edit-cost-center",
-               )}
+               Editar centro de custo
             </TooltipContent>
          </Tooltip>
          <Tooltip>
@@ -97,9 +92,7 @@ function CostCenterActionsCell({ costCenter }: { costCenter: CostCenter }) {
                </Button>
             </TooltipTrigger>
             <TooltipContent>
-               {translate(
-                  "dashboard.routes.cost-centers.list-section.actions.delete-cost-center",
-               )}
+               Excluir centro de custo
             </TooltipContent>
          </Tooltip>
       </div>
@@ -131,7 +124,7 @@ export function createCostCenterColumns(
             );
          },
          enableSorting: true,
-         header: translate("dashboard.routes.cost-centers.table.columns.name"),
+         header: "Nome",
       },
       {
          accessorKey: "code",
@@ -144,7 +137,7 @@ export function createCostCenterColumns(
             );
          },
          enableSorting: true,
-         header: translate("dashboard.routes.cost-centers.table.columns.code"),
+         header: "Código",
       },
       {
          cell: ({ row }) => <CostCenterActionsCell costCenter={row.original} />,
@@ -179,9 +172,7 @@ export function CostCenterExpandedContent({
                   <ArrowDownLeft className="size-4 text-emerald-500" />
                   <div>
                      <p className="text-xs text-muted-foreground">
-                        {translate(
-                           "dashboard.routes.bank-accounts.stats-section.total-income.title",
-                        )}
+                        Receita
                      </p>
                      <p className="text-sm font-medium text-emerald-500">
                         +{formatDecimalCurrency(income)}
@@ -193,9 +184,7 @@ export function CostCenterExpandedContent({
                   <ArrowUpRight className="size-4 text-destructive" />
                   <div>
                      <p className="text-xs text-muted-foreground">
-                        {translate(
-                           "dashboard.routes.bank-accounts.stats-section.total-expenses.title",
-                        )}
+                        Despesas
                      </p>
                      <p className="text-sm font-medium text-destructive">
                         -{formatDecimalCurrency(expenses)}
@@ -209,9 +198,7 @@ export function CostCenterExpandedContent({
                         <Hash className="size-4 text-muted-foreground" />
                         <div>
                            <p className="text-xs text-muted-foreground">
-                              {translate(
-                                 "dashboard.routes.cost-centers.table.columns.code",
-                              )}
+                              Código
                            </p>
                            <p className="text-sm font-medium">
                               {costCenter.code}
@@ -239,9 +226,7 @@ export function CostCenterExpandedContent({
                      to="/$slug/cost-centers/$costCenterId"
                   >
                      <Eye className="size-4" />
-                     {translate(
-                        "dashboard.routes.cost-centers.list-section.actions.view-details",
-                     )}
+                     Ver detalhes
                   </Link>
                </Button>
                <Button
@@ -258,9 +243,7 @@ export function CostCenterExpandedContent({
                   variant="outline"
                >
                   <Edit className="size-4" />
-                  {translate(
-                     "dashboard.routes.cost-centers.list-section.actions.edit-cost-center",
-                  )}
+                  Editar centro de custo
                </Button>
                <Button
                   className="w-full justify-start text-destructive hover:text-destructive"
@@ -269,9 +252,7 @@ export function CostCenterExpandedContent({
                   variant="outline"
                >
                   <Trash2 className="size-4" />
-                  {translate(
-                     "dashboard.routes.cost-centers.list-section.actions.delete-cost-center",
-                  )}
+                  Excluir centro de custo
                </Button>
             </div>
          </div>
@@ -285,9 +266,7 @@ export function CostCenterExpandedContent({
                <ArrowDownLeft className="size-4 text-emerald-500" />
                <div>
                   <p className="text-xs text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.bank-accounts.stats-section.total-income.title",
-                     )}
+                     Receita
                   </p>
                   <p className="text-sm font-medium text-emerald-500">
                      +{formatDecimalCurrency(income)}
@@ -299,9 +278,7 @@ export function CostCenterExpandedContent({
                <ArrowUpRight className="size-4 text-destructive" />
                <div>
                   <p className="text-xs text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.bank-accounts.stats-section.total-expenses.title",
-                     )}
+                     Despesas
                   </p>
                   <p className="text-sm font-medium text-destructive">
                      -{formatDecimalCurrency(expenses)}
@@ -315,9 +292,7 @@ export function CostCenterExpandedContent({
                      <Hash className="size-4 text-muted-foreground" />
                      <div>
                         <p className="text-xs text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.cost-centers.table.columns.code",
-                           )}
+                           Código
                         </p>
                         <p className="text-sm font-medium">{costCenter.code}</p>
                      </div>
@@ -336,9 +311,7 @@ export function CostCenterExpandedContent({
                   to="/$slug/cost-centers/$costCenterId"
                >
                   <Eye className="size-4" />
-                  {translate(
-                     "dashboard.routes.cost-centers.list-section.actions.view-details",
-                  )}
+                  Ver detalhes
                </Link>
             </Button>
             <Button
@@ -352,15 +325,11 @@ export function CostCenterExpandedContent({
                variant="outline"
             >
                <Edit className="size-4" />
-               {translate(
-                  "dashboard.routes.cost-centers.list-section.actions.edit-cost-center",
-               )}
+               Editar centro de custo
             </Button>
             <Button onClick={deleteCostCenter} size="sm" variant="destructive">
                <Trash2 className="size-4" />
-               {translate(
-                  "dashboard.routes.cost-centers.list-section.actions.delete-cost-center",
-               )}
+               Excluir centro de custo
             </Button>
          </div>
       </div>
@@ -408,9 +377,7 @@ export function CostCenterMobileCard({
                   }}
                   variant="outline"
                >
-                  {isExpanded
-                     ? translate("common.actions.less-info")
-                     : translate("common.actions.more-info")}
+                  {isExpanded ? "Menos info" : "Mais info"}
                   <ChevronDown
                      className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
                   />

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Avatar,
    AvatarFallback,
@@ -73,15 +72,10 @@ function LogoErrorFallback() {
 function ContentErrorFallback() {
    return (
       <ItemContent>
-         <ItemTitle>
-            {translate(
-               "dashboard.routes.organization.information-section.state.error.title",
-            )}
-         </ItemTitle>
+         <ItemTitle>Erro ao Carregar Informações</ItemTitle>
          <ItemDescription>
-            {translate(
-               "dashboard.routes.organization.information-section.state.error.description",
-            )}
+            Ocorreu um erro ao carregar as informações da organização. Tente
+            novamente mais tarde.
          </ItemDescription>
       </ItemContent>
    );

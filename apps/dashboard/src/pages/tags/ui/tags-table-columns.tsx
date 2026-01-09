@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import {
    Announcement,
@@ -59,9 +58,7 @@ function TagActionsCell({ tag }: { tag: TagType }) {
                </Button>
             </TooltipTrigger>
             <TooltipContent>
-               {translate(
-                  "dashboard.routes.tags.list-section.actions.view-details",
-               )}
+               Ver detalhes
             </TooltipContent>
          </Tooltip>
       </div>
@@ -91,7 +88,7 @@ export function createTagColumns(_slug: string): ColumnDef<TagType>[] {
             );
          },
          enableSorting: true,
-         header: translate("dashboard.routes.tags.table.columns.name"),
+         header: "Nome",
       },
       {
          accessorKey: "createdAt",
@@ -109,7 +106,7 @@ export function createTagColumns(_slug: string): ColumnDef<TagType>[] {
             );
          },
          enableSorting: true,
-         header: translate("dashboard.routes.tags.table.columns.created-at"),
+         header: "Criado em",
       },
       {
          cell: ({ row }) => <TagActionsCell tag={row.original} />,
@@ -140,9 +137,7 @@ export function TagExpandedContent({
          <Announcement>
             <AnnouncementTag className="flex items-center gap-1.5">
                <ArrowDownLeft className="size-3.5 text-emerald-500" />
-               {translate(
-                  "dashboard.routes.bank-accounts.stats-section.total-income.title",
-               )}
+               Receita
             </AnnouncementTag>
             <AnnouncementTitle className="text-emerald-500">
                +{formatDecimalCurrency(income)}
@@ -154,9 +149,7 @@ export function TagExpandedContent({
          <Announcement>
             <AnnouncementTag className="flex items-center gap-1.5">
                <ArrowUpRight className="size-3.5 text-destructive" />
-               {translate(
-                  "dashboard.routes.bank-accounts.stats-section.total-expenses.title",
-               )}
+               Despesas
             </AnnouncementTag>
             <AnnouncementTitle className="text-destructive">
                -{formatDecimalCurrency(expenses)}
@@ -176,9 +169,7 @@ export function TagExpandedContent({
                to="/$slug/tags/$tagId"
             >
                <Eye className="size-4" />
-               {translate(
-                  "dashboard.routes.tags.list-section.actions.view-details",
-               )}
+               Ver detalhes
             </Link>
          </Button>
          <Button
@@ -192,7 +183,7 @@ export function TagExpandedContent({
             variant="outline"
          >
             <Edit className="size-4" />
-            {translate("dashboard.routes.tags.list-section.actions.edit-tag")}
+            Editar tag
          </Button>
          <Button
             onClick={(e) => {
@@ -203,7 +194,7 @@ export function TagExpandedContent({
             variant="destructive"
          >
             <Trash2 className="size-4" />
-            {translate("dashboard.routes.tags.list-section.actions.delete-tag")}
+            Excluir tag
          </Button>
       </div>
    );
@@ -285,8 +276,8 @@ export function TagMobileCard({
                   variant="outline"
                >
                   {isExpanded
-                     ? translate("common.actions.less-info")
-                     : translate("common.actions.more-info")}
+                     ? "Menos info"
+                     : "Mais info"}
                   <ChevronDown
                      className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
                   />
@@ -308,9 +299,7 @@ export function TagMobileCard({
                         to="/$slug/tags/$tagId"
                      >
                         <Eye className="size-4" />
-                        {translate(
-                           "dashboard.routes.tags.list-section.actions.view-details",
-                        )}
+                        Ver detalhes
                      </Link>
                   </Button>
                   <Button
@@ -325,9 +314,7 @@ export function TagMobileCard({
                      variant="outline"
                   >
                      <Edit className="size-4" />
-                     {translate(
-                        "dashboard.routes.tags.list-section.actions.edit-tag",
-                     )}
+                     Editar tag
                   </Button>
                   <Button
                      className="w-full justify-start"
@@ -339,9 +326,7 @@ export function TagMobileCard({
                      variant="destructive"
                   >
                      <Trash2 className="size-4" />
-                     {translate(
-                        "dashboard.routes.tags.list-section.actions.delete-tag",
-                     )}
+                     Excluir tag
                   </Button>
                </div>
             )}

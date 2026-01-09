@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import type { BankAccountsConfig } from "@packages/database/schemas/dashboards";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -32,7 +31,7 @@ function BankAccountsWidgetSkeleton() {
 function BankAccountsWidgetError() {
 	return (
 		<div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-			{translate("dashboard.routes.bank-accounts.list-section.state.empty.title")}
+			Nenhuma Conta Bancária Encontrada
 		</div>
 	);
 }

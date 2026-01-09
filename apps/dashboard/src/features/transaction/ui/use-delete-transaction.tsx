@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -22,10 +21,10 @@ export function useDeleteTransaction({
    const deleteTransactionMutation = useMutation(
       trpc.transactions.delete.mutationOptions({
          onError: (error) => {
-            toast.error(error.message || "Failed to delete transaction");
+            toast.error(error.message || "Falha ao excluir transacao");
          },
          onSuccess: () => {
-            toast.success("Transaction deleted successfully");
+            toast.success("Transacao excluida com sucesso");
             onSuccess?.();
          },
       }),
@@ -33,17 +32,14 @@ export function useDeleteTransaction({
 
    const deleteTransaction = () => {
       openAlertDialog({
-         actionLabel: translate(
-            "dashboard.routes.transactions.list-section.actions.delete",
-         ),
-         cancelLabel: translate("common.actions.cancel"),
-         description: translate(
-            "common.headers.delete-confirmation.description",
-         ),
+         actionLabel: "Excluir",
+         cancelLabel: "Cancelar",
+         description:
+            "Esta acao nao pode ser desfeita. Tem certeza que deseja continuar?",
          onAction: async () => {
             await deleteTransactionMutation.mutateAsync({ id: transaction.id });
          },
-         title: translate("common.headers.delete-confirmation.title"),
+         title: "Confirmar exclusao",
          variant: "destructive",
       });
    };

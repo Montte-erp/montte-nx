@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import { Alert, AlertDescription } from "@packages/ui/components/alert";
 import {
@@ -48,9 +47,7 @@ function CategorizationErrorFallback() {
    return (
       <Alert variant="destructive">
          <AlertDescription>
-            {translate(
-               "dashboard.routes.transactions.details.error.load-categories",
-            )}
+            Falha ao carregar categorias
          </AlertDescription>
       </Alert>
    );

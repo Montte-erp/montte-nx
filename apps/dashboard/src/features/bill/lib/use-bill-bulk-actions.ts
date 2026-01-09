@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTRPC } from "@/integrations/clients";
@@ -45,15 +44,9 @@ export function useBillBulkActions(options?: UseBillBulkActionsOptions) {
       try {
          const completionDate = new Date().toISOString();
          await completeMutation.mutateAsync({ completionDate, ids });
-         toast.success(
-            translate("dashboard.routes.bills.bulk-actions.completed-success", {
-               count: ids.length,
-            }),
-         );
+         toast.success(`${ids.length} conta(s) marcada(s) como paga(s)`);
       } catch {
-         toast.error(
-            translate("dashboard.routes.bills.bulk-actions.completed-error"),
-         );
+         toast.error("Erro ao marcar contas como pagas");
       }
    };
 
@@ -67,15 +60,9 @@ export function useBillBulkActions(options?: UseBillBulkActionsOptions) {
                completionDate: item.completionDate,
             })),
          });
-         toast.success(
-            translate("dashboard.routes.bills.bulk-actions.completed-success", {
-               count: items.length,
-            }),
-         );
+         toast.success(`${items.length} conta(s) marcada(s) como paga(s)`);
       } catch {
-         toast.error(
-            translate("dashboard.routes.bills.bulk-actions.completed-error"),
-         );
+         toast.error("Erro ao marcar contas como pagas");
       }
    };
 
@@ -84,15 +71,9 @@ export function useBillBulkActions(options?: UseBillBulkActionsOptions) {
 
       try {
          await deleteMutation.mutateAsync({ ids });
-         toast.success(
-            translate("dashboard.routes.bills.bulk-actions.deleted-success", {
-               count: ids.length,
-            }),
-         );
+         toast.success(`${ids.length} conta(s) excluída(s) com sucesso`);
       } catch {
-         toast.error(
-            translate("dashboard.routes.bills.bulk-actions.deleted-error"),
-         );
+         toast.error("Erro ao excluir contas");
       }
    };
 

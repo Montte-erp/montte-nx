@@ -1,13 +1,10 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    CredenzaBody,
    CredenzaDescription,
-   CredenzaFooter,
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
-import { DatePicker } from "@packages/ui/components/date-picker";
 import { Field, FieldGroup, FieldLabel } from "@packages/ui/components/field";
 import {
    Select,
@@ -17,17 +14,10 @@ import {
    SelectValue,
 } from "@packages/ui/components/select";
 import {
-   getDateRangeForPeriod,
-   TIME_PERIODS,
    type TimePeriod,
    type TimePeriodDateRange,
 } from "@packages/ui/components/time-period-chips";
-import {
-   ToggleGroup,
-   ToggleGroupItem,
-} from "@packages/ui/components/toggle-group";
-import { cn } from "@packages/ui/lib/utils";
-import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useCredenza } from "@/hooks/use-credenza";
 
 type CategoryFilterCredenzaProps = {
@@ -74,26 +64,26 @@ export function CategoryFilterCredenza({
 
    const orderByOptions = [
       {
-         label: translate("common.form.name.label"),
+         label: "Nome",
          value: "name" as const,
       },
       {
-         label: translate("common.form.created-at.label"),
+         label: "Data de Criação",
          value: "createdAt" as const,
       },
       {
-         label: translate("common.form.updated-at.label"),
+         label: "Data de Atualização",
          value: "updatedAt" as const,
       },
    ];
 
    const orderDirectionOptions = [
       {
-         label: translate("common.form.sort-ascending.label"),
+         label: "Crescente",
          value: "asc" as const,
       },
       {
-         label: translate("common.form.sort-descending.label"),
+         label: "Decrescente",
          value: "desc" as const,
       },
    ];
@@ -108,156 +98,29 @@ export function CategoryFilterCredenza({
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               {translate("dashboard.routes.categories.features.filter.title")}
-            </CredenzaTitle>
+            <CredenzaTitle>Filtrar Categorias</CredenzaTitle>
             <CredenzaDescription>
-               {translate(
-                  "dashboard.routes.categories.features.filter.description",
-               )}
+               Refine a lista de categorias com base em critérios específicos.
             </CredenzaDescription>
          </CredenzaHeader>
 
          <CredenzaBody>
             <div className="grid gap-4">
                {hasActiveFilters && (
-                  <Button
-                     className="w-full flex items-center justify-center gap-2"
-                     onClick={onClearFilters}
-                     variant="outline"
-                  >
-                     <X className="size-4" />
-                     {translate("common.form.filter.clear-all")}
-                  </Button>
-               )}
-
-               <FieldGroup>
-                  <Field>
-                     <FieldLabel>
-                        {translate("common.form.period.label")}
-                     </FieldLabel>
-                     <div className="grid grid-cols-2 gap-2">
-                        {TIME_PERIODS.map((period) => {
-                           const Icon = period.icon;
-                           const isSelected = timePeriod === period.value;
-                           return (
-                              <Button
-                                 className={cn(
-                                    "justify-start gap-2",
-                                    isSelected &&
-                                       "bg-primary/10 border-primary text-primary",
-                                 )}
-                                 key={period.value}
-                                 onClick={() => handlePeriodClick(period.value)}
-                                 size="sm"
-                                 variant="outline"
-                              >
-                                 <Icon className="size-3.5" />
-                                 {period.label}
-                              </Button>
-                           );
-                        })}
-                        <Button
-                           className={cn(
-                              "justify-start gap-2 col-span-2",
-                              isCustomMode &&
-                                 "bg-primary/10 border-primary text-primary",
-                           )}
-                           onClick={() =>
-                              onTimePeriodChange("custom", {
-                                 endDate: customEndDate || null,
-                                 selectedMonth: new Date(),
-                                 startDate: customStartDate || null,
-                              })
-                           }
-                           size="sm"
-                           variant="outline"
-                        >
-                           {translate("common.form.date-range.custom")}
-                        </Button>
-                     </div>
-                  </Field>
-               </FieldGroup>
-
-               {isCustomMode && (
-                  <FieldGroup>
-                     <Field>
-                        <FieldLabel>
-                           {translate("common.form.date-range.start")}
-                        </FieldLabel>
-                        <DatePicker
-                           date={customStartDate || undefined}
-                           onSelect={onCustomStartDateChange}
-                           placeholder={translate(
-                              "common.form.date.placeholder",
-                           )}
-                        />
-                     </Field>
-                     <Field>
-                        <FieldLabel>
-                           {translate("common.form.date-range.end")}
-                        </FieldLabel>
-                        <DatePicker
-                           date={customEndDate || undefined}
-                           onSelect={onCustomEndDateChange}
-                           placeholder={translate(
-                              "common.form.date.placeholder",
-                           )}
-                        />
-                     </Field>
-                  </FieldGroup>
-               )}
-
-               <FieldGroup>
-                  <Field>
-                     <FieldLabel>
-                        {translate("common.form.type.label")}
-                     </FieldLabel>
-                     <ToggleGroup
-                        className="justify-start"
-                        onValueChange={onTypeFilterChange}
-                        size="sm"
-                        spacing={2}
-                        type="single"
-                        value={typeFilter}
-                        variant="outline"
+                  <div className="flex justify-end">
+                     <Button
+                        className="w-full flex items-center justify-center gap-2"
+                        onClick={onClearFilters}
                      >
-                        <ToggleGroupItem
-                           className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-emerald-500 data-[state=on]:text-emerald-600"
-                           value="income"
-                        >
-                           <ArrowDownLeft className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.transactions.list-section.types.income",
-                           )}
-                        </ToggleGroupItem>
-                        <ToggleGroupItem
-                           className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-red-500 data-[state=on]:text-red-600"
-                           value="expense"
-                        >
-                           <ArrowUpRight className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.transactions.list-section.types.expense",
-                           )}
-                        </ToggleGroupItem>
-                        <ToggleGroupItem
-                           className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-blue-500 data-[state=on]:text-blue-600"
-                           value="transfer"
-                        >
-                           <ArrowLeftRight className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.transactions.list-section.types.transfer",
-                           )}
-                        </ToggleGroupItem>
-                     </ToggleGroup>
-                  </Field>
-               </FieldGroup>
+                        <X className="size-4" />
+                        Limpar Filtros
+                     </Button>
+                  </div>
+               )}
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        {translate("common.form.sort-by.label")}
-                     </FieldLabel>
+                     <FieldLabel>Ordenar por</FieldLabel>
                      <Select
                         onValueChange={(
                            value: "name" | "createdAt" | "updatedAt",
@@ -265,11 +128,7 @@ export function CategoryFilterCredenza({
                         value={orderBy}
                      >
                         <SelectTrigger>
-                           <SelectValue
-                              placeholder={translate(
-                                 "common.form.sort-by.placeholder",
-                              )}
-                           />
+                           <SelectValue placeholder="Selecione o campo" />
                         </SelectTrigger>
                         <SelectContent>
                            {orderByOptions.map((option) => (
@@ -287,9 +146,7 @@ export function CategoryFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        {translate("common.form.order-direction.label")}
-                     </FieldLabel>
+                     <FieldLabel>Direção da Ordenação</FieldLabel>
                      <Select
                         onValueChange={(value: "asc" | "desc") =>
                            onOrderDirectionChange(value)
@@ -297,11 +154,7 @@ export function CategoryFilterCredenza({
                         value={orderDirection}
                      >
                         <SelectTrigger>
-                           <SelectValue
-                              placeholder={translate(
-                                 "common.form.order-direction.placeholder",
-                              )}
-                           />
+                           <SelectValue placeholder="Selecione a direção" />
                         </SelectTrigger>
                         <SelectContent>
                            {orderDirectionOptions.map((option) => (
@@ -320,14 +173,10 @@ export function CategoryFilterCredenza({
                {onPageSizeChange && (
                   <FieldGroup>
                      <Field>
-                        <FieldLabel>
-                           {translate(
-                              "dashboard.routes.transactions.features.filter.page-size.label",
-                           )}
-                        </FieldLabel>
+                        <FieldLabel>Itens por Página</FieldLabel>
                         <Select
                            onValueChange={(value) =>
-                              onPageSizeChange(Number(value))
+                              onPageSizeChange?.(Number(value))
                            }
                            value={pageSize?.toString()}
                         >
@@ -347,12 +196,6 @@ export function CategoryFilterCredenza({
                )}
             </div>
          </CredenzaBody>
-
-         <CredenzaFooter>
-            <Button onClick={() => closeCredenza()} variant="outline">
-               {translate("common.actions.close")}
-            </Button>
-         </CredenzaFooter>
       </>
    );
 }

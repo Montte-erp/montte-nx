@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import {
    Card,
@@ -106,8 +105,8 @@ function BudgetProgressContent({ budget }: BudgetProgressSectionProps) {
    );
 
    const { chartData, chartConfig } = useMemo(() => {
-      const limitLabel = translate("dashboard.routes.budgets.table.amount");
-      const spentLabel = translate("dashboard.routes.budgets.progress.spent");
+      const limitLabel = "Valor";
+      const spentLabel = "Gasto";
 
       const sortedPeriods = [...periods].sort(
          (a, b) =>
@@ -142,12 +141,10 @@ function BudgetProgressContent({ budget }: BudgetProgressSectionProps) {
       <Card className="flex flex-col">
          <CardHeader>
             <CardTitle>
-               {translate("dashboard.routes.budgets.details.progress.title")}
+               Progresso do Período
             </CardTitle>
             <CardDescription>
-               {translate(
-                  "dashboard.routes.budgets.details.progress.description",
-               )}
+               Acompanhe quanto foi gasto em relação ao limite definido
             </CardDescription>
          </CardHeader>
          <CardContent>
@@ -202,9 +199,7 @@ function BudgetProgressContent({ budget }: BudgetProgressSectionProps) {
             ) : (
                <div className="flex h-[300px] items-center justify-center">
                   <p className="text-muted-foreground text-sm">
-                     {translate(
-                        "dashboard.routes.budgets.details.progress.empty",
-                     )}
+                     Nenhum período encontrado para este orçamento
                   </p>
                </div>
             )}

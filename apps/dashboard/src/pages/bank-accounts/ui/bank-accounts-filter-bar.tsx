@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Separator } from "@packages/ui/components/separator";
@@ -68,7 +67,7 @@ export function BankAccountsFilterBar({
                variant={hasActiveFilters ? "default" : "outline"}
             >
                <Filter className="size-4" />
-               {translate("common.form.filter.title")}
+               Filtros
                {activeFilterCount > 0 && (
                   <Badge
                      className="size-5 p-0 justify-center"
@@ -97,14 +96,14 @@ export function BankAccountsFilterBar({
                value="active"
             >
                <CheckCircle className="size-3.5" />
-               {translate("dashboard.routes.bank-accounts.status.active")}
+               Ativa
             </ToggleGroupItem>
             <ToggleGroupItem
                className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-muted-foreground data-[state=on]:text-muted-foreground"
                value="inactive"
             >
                <CircleDashed className="size-3.5" />
-               {translate("dashboard.routes.bank-accounts.status.inactive")}
+               Inativa
             </ToggleGroupItem>
          </ToggleGroup>
 
@@ -123,21 +122,21 @@ export function BankAccountsFilterBar({
                value="checking"
             >
                <CreditCard className="size-3.5" />
-               {translate("dashboard.routes.bank-accounts.types.checking")}
+               Conta corrente
             </ToggleGroupItem>
             <ToggleGroupItem
                className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                value="savings"
             >
                <PiggyBank className="size-3.5" />
-               {translate("dashboard.routes.bank-accounts.types.savings")}
+               Conta poupança
             </ToggleGroupItem>
             <ToggleGroupItem
                className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                value="investment"
             >
                <TrendingUp className="size-3.5" />
-               {translate("dashboard.routes.bank-accounts.types.investment")}
+               Conta de investimento
             </ToggleGroupItem>
          </ToggleGroup>
 
@@ -152,7 +151,7 @@ export function BankAccountsFilterBar({
                   variant="outline"
                >
                   <X className="size-3" />
-                  {translate("common.actions.clear-filters")}
+                  Limpar filtros
                </Button>
             </>
          )}

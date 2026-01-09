@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Separator } from "@packages/ui/components/separator";
 import {
    Sidebar,
@@ -64,10 +63,7 @@ function MontteBranding() {
 function SidebarCollapseButton() {
    const { toggleSidebar, state } = useSidebar();
 
-   const tooltipText =
-      state === "expanded"
-         ? translate("dashboard.layout.sidebar.collapse")
-         : translate("dashboard.layout.sidebar.expand");
+   const tooltipText = state === "expanded" ? "Ocultar" : "Abrir";
 
    return (
       <SidebarMenu>

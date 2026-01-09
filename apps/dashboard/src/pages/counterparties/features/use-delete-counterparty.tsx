@@ -1,5 +1,4 @@
 import type { Counterparty } from "@packages/database/repositories/counterparty-repository";
-import { translate } from "@packages/localization";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -18,14 +17,10 @@ export function useDeleteCounterparty({
    const deleteCounterpartyMutation = useMutation(
       trpc.counterparties.delete.mutationOptions({
          onError: () => {
-            toast.error(
-               translate("dashboard.routes.counterparties.delete.error"),
-            );
+            toast.error("Erro ao excluir cadastro");
          },
          onSuccess: () => {
-            toast.success(
-               translate("dashboard.routes.counterparties.delete.success"),
-            );
+            toast.success("Cadastro excluído com sucesso");
             onSuccess?.();
          },
       }),
@@ -33,21 +28,15 @@ export function useDeleteCounterparty({
 
    const deleteCounterparty = () => {
       openAlertDialog({
-         actionLabel: translate(
-            "dashboard.routes.counterparties.bulk-actions.delete",
-         ),
-         cancelLabel: translate("common.actions.cancel"),
-         description: translate(
-            "dashboard.routes.counterparties.delete.confirm-description",
-         ),
+         actionLabel: "Excluir",
+         cancelLabel: "Cancelar",
+         description: "Tem certeza que deseja excluir este cadastro? Esta ação não pode ser desfeita.",
          onAction: async () => {
             await deleteCounterpartyMutation.mutateAsync({
                id: counterparty.id,
             });
          },
-         title: translate(
-            "dashboard.routes.counterparties.delete.confirm-title",
-         ),
+         title: "Excluir cadastro",
          variant: "destructive",
       });
    };

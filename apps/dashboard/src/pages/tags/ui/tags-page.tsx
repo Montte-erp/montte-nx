@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Plus } from "lucide-react";
@@ -94,15 +93,11 @@ function TagsPageContent() {
                   }
                >
                   <Plus className="size-4" />
-                  {translate(
-                     "dashboard.routes.tags.actions-toolbar.actions.add-new",
-                  )}
+                  Adicionar nova tag
                </Button>
             }
-            description={translate(
-               "dashboard.routes.tags.list-section.description",
-            )}
-            title={translate("dashboard.routes.tags.list-section.title")}
+            description="Visualize e gerencie suas tags aqui."
+            title="Suas tags"
          />
 
          <Suspense fallback={<TagFilterBarSkeleton />}>

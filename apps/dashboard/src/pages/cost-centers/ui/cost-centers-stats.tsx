@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Card,
    CardContent,
@@ -64,21 +63,13 @@ function CostCentersStatsContent() {
       <div className="grid gap-4 h-min">
          <div className="grid grid-cols-2 gap-4">
             <StatsCard
-               description={translate(
-                  "dashboard.routes.cost-centers.stats.total-cost-centers.description",
-               )}
-               title={translate(
-                  "dashboard.routes.cost-centers.stats.total-cost-centers.title",
-               )}
+               description="Número total de centros de custo que você criou."
+               title="Total de centros de custo"
                value={stats.totalCostCenters}
             />
             <StatsCard
-               description={translate(
-                  "dashboard.routes.cost-centers.stats.most-used.description",
-               )}
-               title={translate(
-                  "dashboard.routes.cost-centers.stats.most-used.title",
-               )}
+               description="O centro de custo com mais transações este mês."
+               title="Centro de custo mais utilizado"
                value={stats.costCenterWithMostTransactions || "N/A"}
             />
          </div>

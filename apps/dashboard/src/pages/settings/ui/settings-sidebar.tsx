@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    SidebarGroup,
    SidebarGroupContent,
@@ -15,37 +14,37 @@ const settingsNavItems = [
       href: "/$slug/settings/profile",
       icon: User,
       id: "profile",
-      title: translate("dashboard.routes.settings.nav.profile"),
+      title: "Perfil",
    },
    {
       href: "/$slug/settings/security",
       icon: Shield,
       id: "security",
-      title: translate("dashboard.routes.settings.nav.security"),
+      title: "Segurança",
    },
    {
       href: "/$slug/settings/preferences",
       icon: Settings2,
       id: "preferences",
-      title: translate("dashboard.routes.settings.nav.preferences"),
+      title: "Preferências",
    },
    {
       href: "/$slug/settings/encryption",
       icon: Lock,
       id: "encryption",
-      title: translate("dashboard.routes.settings.nav.encryption"),
+      title: "Criptografia",
    },
    {
       href: "/$slug/settings/notifications",
       icon: Bell,
       id: "notifications",
-      title: translate("dashboard.routes.settings.nav.notifications"),
+      title: "Notificações",
    },
    {
       href: "/$slug/settings/billing",
       icon: CreditCard,
       id: "billing",
-      title: translate("dashboard.routes.settings.nav.billing"),
+      title: "Assinatura",
    },
 ];
 

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Card,
    CardContent,
@@ -59,17 +58,13 @@ function TagsStatsContent() {
    return (
       <div className="grid grid-cols-2 gap-4">
          <StatsCard
-            description={translate(
-               "dashboard.routes.tags.stats.total-tags.description",
-            )}
-            title={translate("dashboard.routes.tags.stats.total-tags.title")}
+            description="Número total de tags que você criou."
+            title="Total de tags"
             value={stats.totalTags}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.tags.stats.most-used.description",
-            )}
-            title={translate("dashboard.routes.tags.stats.most-used.title")}
+            description="A tag com mais transações este mês."
+            title="Tag mais utilizada"
             value={stats.tagWithMostTransactions || "N/A"}
          />
       </div>

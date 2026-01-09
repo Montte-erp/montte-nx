@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    CredenzaBody,
@@ -107,15 +106,9 @@ export function InterestTemplateFilterCredenza({
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               {translate(
-                  "dashboard.routes.interest-templates.features.filter.title",
-               )}
-            </CredenzaTitle>
+            <CredenzaTitle>Filtros</CredenzaTitle>
             <CredenzaDescription>
-               {translate(
-                  "dashboard.routes.interest-templates.features.filter.description",
-               )}
+               Filtre os modelos de juros por status, tipo e configuracoes
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -126,9 +119,7 @@ export function InterestTemplateFilterCredenza({
                   <Field>
                      <FieldLabel className="flex items-center gap-2">
                         <CheckCircle2 className="size-4" />
-                        {translate(
-                           "dashboard.routes.interest-templates.features.filter.status.label",
-                        )}
+                        Status
                      </FieldLabel>
                      <ToggleGroup
                         className="justify-start flex-wrap"
@@ -145,27 +136,21 @@ export function InterestTemplateFilterCredenza({
                            className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="all"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.features.filter.status.all",
-                           )}
+                           Todos
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-emerald-500 data-[state=on]:text-emerald-600"
                            value="active"
                         >
                            <CheckCircle2 className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.interest-templates.features.filter.status.active",
-                           )}
+                           Ativos
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-destructive data-[state=on]:text-destructive"
                            value="inactive"
                         >
                            <XCircle className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.interest-templates.features.filter.status.inactive",
-                           )}
+                           Inativos
                         </ToggleGroupItem>
                      </ToggleGroup>
                   </Field>
@@ -176,9 +161,7 @@ export function InterestTemplateFilterCredenza({
                   <Field>
                      <FieldLabel className="flex items-center gap-2">
                         <TrendingUp className="size-4" />
-                        {translate(
-                           "dashboard.routes.interest-templates.features.filter.monetary-correction.label",
-                        )}
+                        Correcao Monetaria
                      </FieldLabel>
                      <ToggleGroup
                         className="justify-start flex-wrap"
@@ -197,9 +180,7 @@ export function InterestTemplateFilterCredenza({
                            className="data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="all"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.features.filter.monetary-correction.all",
-                           )}
+                           Todos
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="data-[state=on]:bg-transparent data-[state=on]:border-blue-500 data-[state=on]:text-blue-600"
@@ -223,9 +204,7 @@ export function InterestTemplateFilterCredenza({
                            className="data-[state=on]:bg-transparent data-[state=on]:border-muted-foreground data-[state=on]:text-muted-foreground"
                            value="none"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.features.filter.monetary-correction.none",
-                           )}
+                           Nenhum
                         </ToggleGroupItem>
                      </ToggleGroup>
                   </Field>
@@ -236,9 +215,7 @@ export function InterestTemplateFilterCredenza({
                   <Field>
                      <FieldLabel className="flex items-center gap-2">
                         <Percent className="size-4" />
-                        {translate(
-                           "dashboard.routes.interest-templates.features.filter.interest-type.label",
-                        )}
+                        Tipo de Juros
                      </FieldLabel>
                      <ToggleGroup
                         className="justify-start flex-wrap"
@@ -257,33 +234,25 @@ export function InterestTemplateFilterCredenza({
                            className="data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="all"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.features.filter.interest-type.all",
-                           )}
+                           Todos
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="daily"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.form.interest-type.daily",
-                           )}
+                           Diario
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="monthly"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.form.interest-type.monthly",
-                           )}
+                           Mensal
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="none"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.form.interest-type.none",
-                           )}
+                           Nenhum
                         </ToggleGroupItem>
                      </ToggleGroup>
                   </Field>
@@ -294,9 +263,7 @@ export function InterestTemplateFilterCredenza({
                   <Field>
                      <FieldLabel className="flex items-center gap-2">
                         <AlertTriangle className="size-4" />
-                        {translate(
-                           "dashboard.routes.interest-templates.features.filter.penalty-type.label",
-                        )}
+                        Tipo de Multa
                      </FieldLabel>
                      <ToggleGroup
                         className="justify-start flex-wrap"
@@ -315,33 +282,25 @@ export function InterestTemplateFilterCredenza({
                            className="data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="all"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.features.filter.penalty-type.all",
-                           )}
+                           Todos
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="percentage"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.form.penalty-type.percentage",
-                           )}
+                           Percentual
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="fixed"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.form.penalty-type.fixed",
-                           )}
+                           Fixo
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="none"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.form.penalty-type.none",
-                           )}
+                           Nenhum
                         </ToggleGroupItem>
                      </ToggleGroup>
                   </Field>
@@ -353,9 +312,7 @@ export function InterestTemplateFilterCredenza({
                      <div className="flex items-center justify-between">
                         <FieldLabel className="flex items-center gap-2 mb-0">
                            <Star className="size-4" />
-                           {translate(
-                              "dashboard.routes.interest-templates.features.filter.is-default.label",
-                           )}
+                           Modelo Padrao
                         </FieldLabel>
                         <Switch
                            checked={isDefaultFilter === true}
@@ -370,17 +327,11 @@ export function InterestTemplateFilterCredenza({
                {/* Date Range */}
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        {translate(
-                           "dashboard.routes.interest-templates.features.filter.date-range.label",
-                        )}
-                     </FieldLabel>
+                     <FieldLabel>Periodo de Criacao</FieldLabel>
                      <DateRangePickerPopover
                         endDate={endDate}
                         onRangeChange={onDateRangeChange}
-                        placeholder={translate(
-                           "dashboard.routes.interest-templates.features.filter.date-range.placeholder",
-                        )}
+                        placeholder="Selecione um periodo"
                         startDate={startDate}
                      />
                   </Field>
@@ -389,9 +340,7 @@ export function InterestTemplateFilterCredenza({
                {/* Sort Order */}
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        {translate("common.form.sort-by.label")}
-                     </FieldLabel>
+                     <FieldLabel>Ordenar por</FieldLabel>
                      <ToggleGroup
                         className="justify-start"
                         onValueChange={(value) => {
@@ -424,9 +373,7 @@ export function InterestTemplateFilterCredenza({
                {/* Items per page */}
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        {translate("common.form.items-per-page.label")}
-                     </FieldLabel>
+                     <FieldLabel>Itens por pagina</FieldLabel>
                      <Select
                         onValueChange={(value) =>
                            onPageSizeChange(Number(value))
@@ -458,9 +405,7 @@ export function InterestTemplateFilterCredenza({
                   variant="outline"
                >
                   <X className="size-4 mr-2" />
-                  {translate(
-                     "dashboard.routes.interest-templates.features.filter.actions.clear-filters",
-                  )}
+                  Limpar Filtros
                </Button>
             )}
             <Button
@@ -468,7 +413,7 @@ export function InterestTemplateFilterCredenza({
                onClick={() => closeCredenza()}
                variant={hasActiveFilters ? "default" : "outline"}
             >
-               {translate("common.actions.close")}
+               Fechar
             </Button>
          </CredenzaFooter>
       </>

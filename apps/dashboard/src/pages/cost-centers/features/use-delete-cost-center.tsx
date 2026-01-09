@@ -1,5 +1,4 @@
 import type { CostCenter } from "@packages/database/repositories/cost-center-repository";
-import { translate } from "@packages/localization";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -29,17 +28,13 @@ export function useDeleteCostCenter({
 
    const deleteCostCenter = () => {
       openAlertDialog({
-         actionLabel: translate(
-            "dashboard.routes.cost-centers.list-section.actions.delete-cost-center",
-         ),
-         cancelLabel: translate("common.actions.cancel"),
-         description: translate(
-            "common.headers.delete-confirmation.description",
-         ),
+         actionLabel: "Excluir centro de custo",
+         cancelLabel: "Cancelar",
+         description: "Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.",
          onAction: async () => {
             await deleteCostCenterMutation.mutateAsync({ id: costCenter.id });
          },
-         title: translate("common.headers.delete-confirmation.title"),
+         title: "Confirmar Exclusão",
          variant: "destructive",
       });
    };

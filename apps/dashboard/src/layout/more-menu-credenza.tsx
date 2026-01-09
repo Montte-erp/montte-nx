@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Avatar,
    AvatarFallback,
@@ -43,7 +42,6 @@ import { useCredenza } from "@/hooks/use-credenza";
 import { useHaptic } from "@/hooks/use-haptic";
 import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { betterAuthClient, useTRPC } from "@/integrations/clients";
-import { LanguageCommand } from "./language-command";
 import { ThemeSwitcher } from "./theme-provider";
 
 interface NavItem {
@@ -83,10 +81,7 @@ function MoreMenuContent() {
                toast.error(error.message, { id: "logout" });
             },
             onRequest: () => {
-               toast.loading(
-                  translate("dashboard.layout.nav-user.messages.logging-out"),
-                  { id: "logout" },
-               );
+               toast.loading("Saindo...", { id: "logout" });
             },
             onSuccess: async () => {
                await queryClient.invalidateQueries({
@@ -95,12 +90,7 @@ function MoreMenuContent() {
                router.navigate({
                   to: "/auth/sign-in",
                });
-               toast.success(
-                  translate(
-                     "dashboard.layout.nav-user.messages.logout-success",
-                  ),
-                  { id: "logout" },
-               );
+               toast.success("Desconectado com sucesso", { id: "logout" });
             },
          },
       });
@@ -110,15 +100,11 @@ function MoreMenuContent() {
    const handleLogoutClick = useCallback(() => {
       closeCredenza();
       openAlertDialog({
-         actionLabel: translate("dashboard.layout.nav-user.actions.logout"),
-         cancelLabel: translate("common.actions.cancel"),
-         description: translate(
-            "dashboard.layout.nav-user.logout-confirmation.description",
-         ),
+         actionLabel: "Sair",
+         cancelLabel: "Cancelar",
+         description: "Tem certeza de que deseja sair da sua conta?",
          onAction: handleLogout,
-         title: translate(
-            "dashboard.layout.nav-user.logout-confirmation.title",
-         ),
+         title: "Confirmar saída",
          variant: "destructive",
       });
    }, [closeCredenza, openAlertDialog, handleLogout]);
@@ -127,19 +113,19 @@ function MoreMenuContent() {
       {
          icon: BadgeCheck,
          id: "account",
-         label: translate("dashboard.layout.nav-user.main.account"),
+         label: "Conta",
          url: "/$slug/settings/profile",
       },
       {
          icon: CreditCard,
          id: "billing",
-         label: translate("dashboard.layout.nav-user.main.billing"),
+         label: "Cobrança",
          url: "/$slug/settings/billing",
       },
       {
          icon: Bell,
          id: "notifications",
-         label: translate("dashboard.layout.nav-user.main.notifications"),
+         label: "Notificações",
          url: "/$slug/settings/notifications",
       },
    ];
@@ -365,20 +351,12 @@ function MoreMenuContent() {
                {/* Preferences */}
                <div>
                   <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                     {translate("dashboard.layout.nav-user.preferences.label")}
+                     Preferências
                   </h3>
                   <div className="space-y-3 rounded-xl border bg-card p-4">
                      <div className="flex items-center justify-between">
-                        <span className="text-sm">
-                           {translate("dashboard.layout.nav-user.preferences.theme")}
-                        </span>
+                        <span className="text-sm">Tema</span>
                         <ThemeSwitcher />
-                     </div>
-                     <div className="flex items-center justify-between">
-                        <span className="text-sm">
-                           {translate("dashboard.layout.nav-user.preferences.language")}
-                        </span>
-                        <LanguageCommand />
                      </div>
                   </div>
                </div>
@@ -391,7 +369,7 @@ function MoreMenuContent() {
                variant="destructive"
             >
                <LogOut className="size-4" />
-               {translate("dashboard.layout.nav-user.actions.logout")}
+               Sair
             </Button>
          </CredenzaFooter>
       </>

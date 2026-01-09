@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Choicebox,
@@ -46,16 +45,12 @@ export function DuplicateBillSheet({ bill }: DuplicateBillSheetProps) {
    const createBillMutation = useMutation(
       trpc.bills.create.mutationOptions({
          onSuccess: () => {
-            toast.success(
-               translate("dashboard.routes.bills.features.create-bill.success"),
-            );
+            toast.success("Conta duplicada com sucesso");
             closeSheet();
          },
          onError: (error) => {
             console.error("Failed to duplicate bill:", error);
-            toast.error(
-               translate("dashboard.routes.bills.features.create-bill.error"),
-            );
+            toast.error("Erro ao duplicar conta");
          },
       }),
    );
@@ -98,21 +93,15 @@ export function DuplicateBillSheet({ bill }: DuplicateBillSheetProps) {
       { title: string; description: string }
    > = {
       "same-day": {
-         title: translate(
-            "dashboard.routes.bills.features.duplicate-bill.date-options.same-day",
-         ),
+         title: "Mesma data",
          description: "",
       },
       today: {
-         title: translate(
-            "dashboard.routes.bills.features.duplicate-bill.date-options.today",
-         ),
+         title: "Hoje",
          description: "",
       },
       custom: {
-         title: translate(
-            "dashboard.routes.bills.features.duplicate-bill.date-options.custom",
-         ),
+         title: "Data personalizada",
          description: "",
       },
    };
@@ -121,14 +110,10 @@ export function DuplicateBillSheet({ bill }: DuplicateBillSheetProps) {
       <>
          <SheetHeader>
             <SheetTitle>
-               {translate(
-                  "dashboard.routes.bills.features.duplicate-bill.title",
-               )}
+               Duplicar Conta
             </SheetTitle>
             <SheetDescription>
-               {translate(
-                  "dashboard.routes.bills.features.duplicate-bill.description",
-               )}
+               Escolha a data de vencimento para a conta duplicada
             </SheetDescription>
          </SheetHeader>
 
@@ -162,9 +147,7 @@ export function DuplicateBillSheet({ bill }: DuplicateBillSheetProps) {
                      className="w-full"
                      date={customDate}
                      onSelect={setCustomDate}
-                     placeholder={translate(
-                        "dashboard.routes.bills.features.duplicate-bill.date-options.custom",
-                     )}
+                     placeholder="Data personalizada"
                   />
                )}
             </div>
@@ -173,10 +156,8 @@ export function DuplicateBillSheet({ bill }: DuplicateBillSheetProps) {
          <SheetFooter>
             <Button disabled={isSubmitDisabled} onClick={handleSubmit}>
                {createBillMutation.isPending
-                  ? translate("common.actions.loading")
-                  : translate(
-                       "dashboard.routes.bills.features.duplicate-bill.submit",
-                    )}
+                  ? "Carregando..."
+                  : "Duplicar Conta"}
             </Button>
          </SheetFooter>
       </>

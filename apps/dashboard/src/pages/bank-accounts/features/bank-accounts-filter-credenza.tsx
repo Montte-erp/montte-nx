@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    CredenzaBody,
@@ -44,11 +43,9 @@ export function BankAccountsFilterCredenza({
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               {translate("common.form.filter.title")}
-            </CredenzaTitle>
+            <CredenzaTitle>Filtros</CredenzaTitle>
             <CredenzaDescription>
-               {translate("common.form.filter.description")}
+               Filtre as contas bancárias por status e tipo.
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -61,7 +58,7 @@ export function BankAccountsFilterCredenza({
                      variant="outline"
                   >
                      <X className="size-4" />
-                     {translate("common.form.filter.clear-all")}
+                     Limpar todos
                   </Button>
                )}
 
@@ -82,18 +79,14 @@ export function BankAccountsFilterCredenza({
                            value="active"
                         >
                            <CheckCircle className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.bank-accounts.status.active",
-                           )}
+                           Ativa
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-muted-foreground data-[state=on]:text-muted-foreground"
                            value="inactive"
                         >
                            <CircleDashed className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.bank-accounts.status.inactive",
-                           )}
+                           Inativa
                         </ToggleGroupItem>
                      </ToggleGroup>
                   </Field>
@@ -101,9 +94,7 @@ export function BankAccountsFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        {translate("common.form.type.label")}
-                     </FieldLabel>
+                     <FieldLabel>Tipo</FieldLabel>
                      <ToggleGroup
                         className="justify-start"
                         onValueChange={onTypeFilterChange}
@@ -118,27 +109,21 @@ export function BankAccountsFilterCredenza({
                            value="checking"
                         >
                            <CreditCard className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.bank-accounts.types.checking",
-                           )}
+                           Conta corrente
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="savings"
                         >
                            <PiggyBank className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.bank-accounts.types.savings",
-                           )}
+                           Conta poupança
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="investment"
                         >
                            <TrendingUp className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.bank-accounts.types.investment",
-                           )}
+                           Conta de investimento
                         </ToggleGroupItem>
                      </ToggleGroup>
                   </Field>
@@ -148,7 +133,7 @@ export function BankAccountsFilterCredenza({
 
          <CredenzaFooter>
             <Button onClick={() => closeCredenza()} variant="outline">
-               {translate("common.actions.close")}
+               Fechar
             </Button>
          </CredenzaFooter>
       </>

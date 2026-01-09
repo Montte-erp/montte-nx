@@ -1,17 +1,10 @@
 ---
 import { Github } from "@lucide/astro";
-import type { SupportedLng } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    fetchGitHubContributors,
    fetchGitHubRepoStats,
 } from "@/services/github";
-
-interface Props {
-   lang?: SupportedLng;
-}
-
-const { lang: _lang = "pt-BR" } = Astro.props;
 
 const contributors = await fetchGitHubContributors(10);
 const githubStats = await fetchGitHubRepoStats();

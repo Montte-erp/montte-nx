@@ -70,7 +70,6 @@ finance-tracker/
 │   ├── encryption/      # NaCl-based encryption
 │   ├── environment/     # Zod-validated env vars
 │   ├── files/           # MinIO & file utilities
-│   ├── localization/    # i18next translations (en-US, pt-BR)
 │   ├── notifications/   # Push notifications
 │   ├── posthog/         # Analytics client
 │   ├── queue/           # BullMQ abstractions
@@ -550,7 +549,7 @@ const form = useForm({
 <form.Field name="description">
    {(field) => (
       <Field>
-         <FieldLabel>{translate("common.form.description.label")}</FieldLabel>
+         <FieldLabel>Descrição</FieldLabel>
          <Input
             value={field.state.value}
             onChange={(e) => field.handleChange(e.target.value)}
@@ -669,7 +668,6 @@ import { useSheet } from "@/hooks/use-sheet";
 import { TransactionForm } from "@/features/transaction/ui/transaction-form";
 
 // Cross-package imports
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { serverEnv } from "@packages/environment/server";
 ```
@@ -843,36 +841,6 @@ export async function createTransaction(db: DatabaseInstance, data: NewTransacti
 - Toast notifications for recoverable errors (via Sonner)
 - Error modals for critical/repeated failures
 - Error tracking with PostHog telemetry
-
----
-
-## Localization
-
-### Usage Pattern
-```typescript
-import { translate } from "@packages/localization";
-
-translate("common.actions.save");
-translate("dashboard.routes.settings.profile.title");
-```
-
-### Supported Languages
-- `en-US` (English)
-- `pt-BR` (Portuguese - Brazil)
-
-### File Organization
-```
-packages/localization/src/locales/
-├── en-US/
-│   ├── common/
-│   │   ├── actions.json
-│   │   └── form.json
-│   └── dashboard/
-│       └── routes/
-│           └── settings.json
-└── pt-BR/
-    └── (same structure)
-```
 
 ---
 

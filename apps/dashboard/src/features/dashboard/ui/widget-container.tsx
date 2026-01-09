@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
 	Card,
@@ -339,12 +338,12 @@ export function WidgetContainer({
 								{isFullWidth ? (
 									<>
 										<Minimize2 className="h-4 w-4 mr-2" />
-										{translate("dashboard.widgets.menu.half-width")}
+										Meia largura
 									</>
 								) : (
 									<>
 										<Maximize2 className="h-4 w-4 mr-2" />
-										{translate("dashboard.widgets.menu.full-width")}
+										Largura total
 									</>
 								)}
 							</DropdownMenuItem>
@@ -354,15 +353,15 @@ export function WidgetContainer({
 							<>
 								<DropdownMenuItem onClick={handleOpenDisplayType}>
 									<ChartLine className="h-4 w-4 mr-2" />
-									{translate("dashboard.widgets.menu.display-type")}
+									Tipo de exibição
 								</DropdownMenuItem>
 								<DropdownMenuItem onClick={handleOpenOptions}>
 									<Settings2 className="h-4 w-4 mr-2" />
-									{translate("dashboard.widgets.menu.options")}
+									Opções
 								</DropdownMenuItem>
 								<DropdownMenuItem onClick={handleOpenFilters}>
 									<Filter className="h-4 w-4 mr-2" />
-									{translate("dashboard.widgets.menu.filters")}
+									Filtros
 								</DropdownMenuItem>
 								<DropdownMenuSeparator />
 							</>
@@ -372,7 +371,7 @@ export function WidgetContainer({
 							onClick={onRemove}
 						>
 							<Trash2 className="h-4 w-4 mr-2" />
-							{translate("dashboard.widgets.menu.remove")}
+							Remover
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>

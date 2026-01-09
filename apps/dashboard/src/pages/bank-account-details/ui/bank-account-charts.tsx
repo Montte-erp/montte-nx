@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import {
    Card,
@@ -220,8 +219,8 @@ function BankAccountTypeDistributionChart({
          }
       }
 
-      const incomeLabel = translate("common.charts.labels.income");
-      const expensesLabel = translate("common.charts.labels.expenses");
+      const incomeLabel = "Receita";
+      const expensesLabel = "Despesas";
 
       const chartData = [
          {
@@ -374,8 +373,8 @@ function BankAccountEvolutionChart({
             };
          }
 
-         const incomeLabel = translate("common.charts.labels.income");
-         const expensesLabel = translate("common.charts.labels.expenses");
+         const incomeLabel = "Receita";
+         const expensesLabel = "Despesas";
 
          if (granularity === "monthly") {
             const monthlyData = new Map<

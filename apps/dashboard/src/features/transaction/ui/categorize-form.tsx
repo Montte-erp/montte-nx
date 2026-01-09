@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Combobox } from "@packages/ui/components/combobox";
@@ -431,26 +430,20 @@ export function CategorizeForm({
                         return (
                            <Field data-invalid={isInvalid}>
                               <FieldLabel htmlFor={field.name}>
-                                 {translate("common.form.category.label")}
+                                 Categoria
                               </FieldLabel>
                               <MultiSelect
                                  className="flex-1"
-                                 createLabel={translate(
-                                    "common.form.category.create",
-                                 )}
-                                 emptyMessage={translate(
-                                    "common.form.search.no-results",
-                                 )}
+                                 createLabel="Criar categoria"
+                                 emptyMessage="Nenhum resultado encontrado"
                                  onChange={(val) => field.handleChange(val)}
                                  onCreate={handleCreateCategory}
                                  options={categoryOptions}
-                                 placeholder={translate(
-                                    "common.form.category.placeholder",
-                                 )}
+                                 placeholder="Selecione uma categoria"
                                  selected={field.state.value || []}
                               />
                               <FieldDescription>
-                                 {translate("common.form.category.description")}
+                                 Agrupe suas transações por tipo de gasto ou receita para análises detalhadas
                               </FieldDescription>
                               {isInvalid && (
                                  <FieldError errors={field.state.meta.errors} />
@@ -470,34 +463,24 @@ export function CategorizeForm({
                         return (
                            <Field data-invalid={isInvalid}>
                               <FieldLabel htmlFor={field.name}>
-                                 {translate("common.form.cost-center.label")}
+                                 Centro de Custo
                               </FieldLabel>
                               <Combobox
                                  className="w-full justify-between"
-                                 createLabel={translate(
-                                    "common.form.cost-center.create",
-                                 )}
+                                 createLabel="Criar centro de custo "
                                  disabled={isCreating}
-                                 emptyMessage={translate(
-                                    "common.form.search.no-results",
-                                 )}
+                                 emptyMessage="Nenhum resultado encontrado"
                                  onCreate={handleCreateCostCenter}
                                  onValueChange={(value) =>
                                     field.handleChange(value || "")
                                  }
                                  options={costCenterOptions}
-                                 placeholder={translate(
-                                    "common.form.cost-center.placeholder",
-                                 )}
-                                 searchPlaceholder={translate(
-                                    "common.form.search.label",
-                                 )}
+                                 placeholder="Selecione um centro de custo"
+                                 searchPlaceholder="Pesquisar"
                                  value={field.state.value}
                               />
                               <FieldDescription>
-                                 {translate(
-                                    "common.form.cost-center.description",
-                                 )}
+                                 Associe a departamentos, projetos ou áreas para controle orçamentário
                               </FieldDescription>
                               {isInvalid && (
                                  <FieldError errors={field.state.meta.errors} />
@@ -517,7 +500,7 @@ export function CategorizeForm({
                         return (
                            <Field data-invalid={isInvalid}>
                               <FieldLabel htmlFor={field.name}>
-                                 {translate("common.form.tags.label")}
+                                 Tags
                               </FieldLabel>
                               {(field.state.value || []).length > 0 && (
                                  <div className="flex flex-wrap gap-1.5 mb-2">
@@ -557,22 +540,16 @@ export function CategorizeForm({
                               )}
                               <MultiSelect
                                  className="flex-1"
-                                 createLabel={translate(
-                                    "common.form.tags.create",
-                                 )}
-                                 emptyMessage={translate(
-                                    "common.form.search.no-results",
-                                 )}
+                                 createLabel="Criar tag "
+                                 emptyMessage="Nenhum resultado encontrado"
                                  onChange={(val) => field.handleChange(val)}
                                  onCreate={handleCreateTag}
                                  options={tagOptions}
-                                 placeholder={translate(
-                                    "common.form.tags.placeholder",
-                                 )}
+                                 placeholder="Selecione as tags"
                                  selected={field.state.value || []}
                               />
                               <FieldDescription>
-                                 {translate("common.form.tags.description")}
+                                 Adicione marcadores personalizados para filtrar e organizar suas transações
                               </FieldDescription>
                               {isInvalid && (
                                  <FieldError errors={field.state.meta.errors} />

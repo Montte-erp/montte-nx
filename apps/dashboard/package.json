@@ -16,7 +16,6 @@
     "@packages/api": "workspace:*",
     "@packages/authentication": "workspace:*",
     "@packages/environment": "workspace:*",
-    "@packages/localization": "workspace:*",
     "@packages/money": "workspace:*",
     "@packages/posthog": "workspace:*",
     "@packages/stripe": "workspace:*",

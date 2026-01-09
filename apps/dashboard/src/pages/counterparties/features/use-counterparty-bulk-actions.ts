@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTRPC } from "@/integrations/clients";
@@ -25,18 +24,10 @@ export function useCounterpartyBulkActions(
    const deleteMutation = useMutation(
       trpc.counterparties.deleteMany.mutationOptions({
          onError: () => {
-            toast.error(
-               translate(
-                  "dashboard.routes.counterparties.bulk-actions.deleted-error",
-               ),
-            );
+            toast.error("Erro ao excluir cadastros selecionados");
          },
          onSuccess: () => {
-            toast.success(
-               translate(
-                  "dashboard.routes.counterparties.bulk-actions.deleted-success",
-               ),
-            );
+            toast.success("Cadastros excluídos com sucesso");
             invalidateQueries();
             options?.onSuccess?.();
          },

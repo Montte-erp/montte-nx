@@ -1,6 +1,5 @@
 ---
 import { ChevronRight, Lock, Table } from "@lucide/astro";
-import type { SupportedLng } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Card,
@@ -19,12 +18,6 @@ import {
    ItemTitle,
 } from "@packages/ui/components/item";
 import { Separator } from "@packages/ui/components/separator";
-
-interface Props {
-   lang?: SupportedLng;
-}
-
-const { lang: _lang = "pt-BR" } = Astro.props;
 
 const competitors = [
    {

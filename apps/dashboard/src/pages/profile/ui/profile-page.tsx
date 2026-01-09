@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Card,
    CardAction,
@@ -22,26 +21,18 @@ import { ProfilePageSessionsSection } from "./profile-page-sessions-section";
 function QuickAccessCardsErrorFallback() {
    const errorCards = [
       {
-         description: translate(
-            "dashboard.routes.profile.quick-access.state.error.description",
-         ),
+         description: "Ocorreu um erro ao carregar seus atalhos.",
          disabled: true,
          icon: <AlertCircle className="w-4 h-4" />,
          onClick: () => {},
-         title: translate(
-            "dashboard.routes.profile.quick-access.state.error.title",
-         ),
+         title: "Erro ao carregar",
       },
       {
-         description: translate(
-            "dashboard.routes.profile.quick-access.state.error.description",
-         ),
+         description: "Ocorreu um erro ao carregar seus atalhos.",
          disabled: true,
          icon: <AlertCircle className="w-4 h-4" />,
          onClick: () => {},
-         title: translate(
-            "dashboard.routes.profile.quick-access.state.error.title",
-         ),
+         title: "Erro ao carregar",
       },
    ];
 
@@ -90,9 +81,7 @@ function QuickAccessCards() {
 
    const quickAccessCards = [
       {
-         description: translate(
-            "dashboard.routes.profile.quick-access.categories.description",
-         ),
+         description: "Gerencie suas categorias.",
          disabled: false,
          icon: <FolderOpen className="size-4 text-primary" />,
          onClick: () =>
@@ -100,14 +89,10 @@ function QuickAccessCards() {
                params: { slug: activeOrganization.slug },
                to: "/$slug/categories",
             }),
-         title: translate(
-            "dashboard.routes.profile.quick-access.categories.title",
-         ),
+         title: "Categorias",
       },
       {
-         description: translate(
-            "dashboard.routes.profile.quick-access.organization.description",
-         ),
+         description: "Visualize a organização associada à sua conta.",
          disabled: false,
          icon: <Building2 className="size-4 text-primary" />,
          onClick: () =>
@@ -115,9 +100,7 @@ function QuickAccessCards() {
                params: { slug: activeOrganization.slug },
                to: "/$slug/organization",
             }),
-         title: translate(
-            "dashboard.routes.profile.quick-access.organization.title",
-         ),
+         title: "Organização",
       },
    ];
 

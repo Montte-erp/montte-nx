@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import {
    Card,
@@ -77,39 +76,23 @@ function BankAccountsStatsContent({
    return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-min">
          <StatsCard
-            description={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-balance.description",
-            )}
-            title={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-balance.title",
-            )}
+            description="Soma de todas as contas"
+            title="Saldo Total"
             value={formatDecimalCurrency(stats.totalBalance)}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-accounts.description",
-            )}
-            title={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-accounts.title",
-            )}
+            description="Quantidade de contas cadastradas"
+            title="Total de Contas"
             value={stats.totalAccounts}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-income.description",
-            )}
-            title={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-income.title",
-            )}
+            description="Soma de todas as receitas"
+            title="Total de Receitas"
             value={formatDecimalCurrency(stats.totalIncome)}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-expenses.description",
-            )}
-            title={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-expenses.title",
-            )}
+            description="Soma de todas as despesas"
+            title="Total de Despesas"
             value={formatDecimalCurrency(stats.totalExpenses)}
          />
       </div>

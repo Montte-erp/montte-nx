@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { Skeleton } from "@packages/ui/components/skeleton";
@@ -20,9 +19,9 @@ function TagActionButtonsErrorFallback(props: FallbackProps) {
    return (
       <div className="flex gap-2">
          {createErrorFallback({
-            errorDescription: "Failed to load action buttons",
-            errorTitle: "Error",
-            retryText: translate("common.actions.retry"),
+            errorDescription: "Falha ao carregar botões de ação",
+            errorTitle: "Erro",
+            retryText: "Tentar novamente",
          })(props)}
       </div>
    );
@@ -77,9 +76,7 @@ function TagActionButtonsContent() {
             variant="outline"
          >
             <Edit className="size-4" />
-            {translate(
-               "dashboard.routes.tags.list-section.actions.edit-tag",
-            )}
+            Editar tag
          </Button>
          <Button
             className="text-destructive hover:text-destructive"
@@ -88,9 +85,7 @@ function TagActionButtonsContent() {
             variant="outline"
          >
             <Trash2 className="size-4" />
-            {translate(
-               "dashboard.routes.tags.list-section.actions.delete-tag",
-            )}
+            Excluir tag
          </Button>
       </div>
    );

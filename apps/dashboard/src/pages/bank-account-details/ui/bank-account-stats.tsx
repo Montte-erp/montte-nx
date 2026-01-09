@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Card,
    CardContent,
@@ -102,36 +101,24 @@ function BankAccountStatsContent({
    return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
          <StatsCard
-            description={translate(
-               "dashboard.routes.bank-accounts.stats-section.current-balance.description",
-            )}
-            title={translate(
-               "dashboard.routes.bank-accounts.stats-section.current-balance.title",
-            )}
+            description="Saldo calculado atual"
+            title="Saldo"
             value={new Intl.NumberFormat("pt-BR", {
                currency: "BRL",
                style: "currency",
             }).format(balance)}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-income.description",
-            )}
-            title={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-income.title",
-            )}
+            description="Receita total"
+            title="Receita"
             value={new Intl.NumberFormat("pt-BR", {
                currency: "BRL",
                style: "currency",
             }).format(income)}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-expenses.description",
-            )}
-            title={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-expenses.title",
-            )}
+            description="Despesas totais"
+            title="Despesas"
             value={new Intl.NumberFormat("pt-BR", {
                currency: "BRL",
                style: "currency",

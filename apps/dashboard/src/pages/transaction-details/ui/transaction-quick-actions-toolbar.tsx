@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Item,
@@ -50,13 +49,13 @@ export function TransactionQuickActionsToolbar({
    const quickActions = [
       {
          icon: <ArrowLeft className="size-4" />,
-         label: translate("common.actions.back"),
+         label: "Voltar",
          onClick: handleBack,
          variant: "outline" as const,
       },
       {
          icon: <Edit className="size-4" />,
-         label: translate("dashboard.routes.transactions.features.edit.title"),
+         label: "Editar Transação",
          onClick: () =>
             openSheet({
                children: <ManageTransactionForm transaction={transaction} />,
@@ -65,9 +64,7 @@ export function TransactionQuickActionsToolbar({
       },
       {
          icon: <Trash2 className="size-4" />,
-         label: translate(
-            "dashboard.routes.transactions.list-section.actions.delete",
-         ),
+         label: "Excluir transação",
          onClick: deleteTransaction,
          variant: "destructive" as const,
       },
@@ -77,14 +74,10 @@ export function TransactionQuickActionsToolbar({
       <Item variant="outline">
          <ItemContent className="hidden md:block">
             <ItemTitle>
-               {translate(
-                  "dashboard.routes.transactions.details.toolbar.title",
-               )}
+               Barra de Ações
             </ItemTitle>
             <ItemDescription>
-               {translate(
-                  "dashboard.routes.transactions.details.toolbar.description",
-               )}
+               Ações e operações comuns
             </ItemDescription>
          </ItemContent>
          <ItemActions className="w-full md:w-auto">

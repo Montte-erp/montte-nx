@@ -5,7 +5,6 @@ import {
    createAuthClient,
 } from "@packages/authentication/client";
 import { clientEnv } from "@packages/environment/client";
-import { getCurrentLanguage } from "@packages/localization";
 import { captureClientEvent } from "@packages/posthog/client";
 import {
    MutationCache,
@@ -18,10 +17,10 @@ import { lazy, Suspense } from "react";
 const ReactQueryDevtools = import.meta.env.PROD
    ? () => null
    : lazy(() =>
-        import("@tanstack/react-query-devtools").then((m) => ({
-           default: m.ReactQueryDevtools,
-        })),
-     );
+      import("@tanstack/react-query-devtools").then((m) => ({
+         default: m.ReactQueryDevtools,
+      })),
+   );
 
 import { TRPCClientError } from "@trpc/client";
 import {
@@ -53,7 +52,6 @@ export function makeTrpcClient(headers?: Headers) {
    return createTrpcClient({
       getOrganizationSlug: getOrganizationSlugFromUrl,
       headers,
-      language: getCurrentLanguage(),
       serverUrl: clientEnv.VITE_SERVER_URL,
    });
 }
@@ -212,7 +210,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
          <TRPCProvider queryClient={queryClient} trpcClient={trpcClient}>
             <Suspense fallback={null}>
-               <ReactQueryDevtools buttonPosition="bottom-left" />
+               {/* <ReactQueryDevtools buttonPosition="bottom-left" /> */}
             </Suspense>
             {children}
          </TRPCProvider>

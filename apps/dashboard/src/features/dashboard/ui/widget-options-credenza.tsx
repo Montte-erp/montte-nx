@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
 	CredenzaBody,
@@ -87,10 +86,10 @@ export function WidgetOptionsCredenza({
 			<CredenzaHeader>
 				<CredenzaTitle className="flex items-center gap-2">
 					<Settings2 className="h-5 w-5" />
-					{translate("dashboard.widgets.options.title")}
+					Opções do Widget
 				</CredenzaTitle>
 				<CredenzaDescription>
-					{translate("dashboard.widgets.options.description")}
+					Configure a exibição do widget
 				</CredenzaDescription>
 			</CredenzaHeader>
 			<CredenzaBody className="max-h-[60vh] overflow-y-auto">
@@ -100,37 +99,37 @@ export function WidgetOptionsCredenza({
 						<div className="flex items-center gap-2 pb-2 border-b">
 							<Eye className="h-4 w-4 text-muted-foreground" />
 							<h4 className="text-sm font-medium">
-								{translate("dashboard.widgets.options.display.title")}
+								Configurações de Exibição
 							</h4>
 						</div>
 						<div className="space-y-4 pl-6">
 							<SwitchField
 								id="show-labels"
-								label={translate("dashboard.widgets.options.display.show-values")}
+								label="Mostrar valores na série"
 								checked={showLabels}
 								onCheckedChange={setShowLabels}
 							/>
 							<SwitchField
 								id="show-legend"
-								label={translate("dashboard.widgets.options.display.show-legend")}
+								label="Mostrar legenda"
 								checked={showLegend}
 								onCheckedChange={setShowLegend}
 							/>
 							<SwitchField
 								id="show-threshold"
-								label={translate("dashboard.widgets.options.display.show-threshold")}
+								label="Mostrar linhas de limite de alerta"
 								checked={showAlertThresholdLines}
 								onCheckedChange={setShowAlertThresholdLines}
 							/>
 							<SwitchField
 								id="show-multi-y-axis"
-								label={translate("dashboard.widgets.options.display.show-multi-y-axis")}
+								label="Mostrar múltiplos eixos Y"
 								checked={showMultipleYAxes}
 								onCheckedChange={setShowMultipleYAxes}
 							/>
 							<SwitchField
 								id="show-trend-line"
-								label={translate("dashboard.widgets.options.display.show-trend-line")}
+								label="Mostrar linha de tendência"
 								checked={showTrendLine}
 								onCheckedChange={setShowTrendLine}
 							/>
@@ -142,7 +141,7 @@ export function WidgetOptionsCredenza({
 						<div className="flex items-center gap-2 pb-2 border-b">
 							<Palette className="h-4 w-4 text-muted-foreground" />
 							<h4 className="text-sm font-medium">
-								{translate("dashboard.widgets.options.color.title")}
+								Personalização de Cores
 							</h4>
 						</div>
 						<ToggleGroup
@@ -154,11 +153,11 @@ export function WidgetOptionsCredenza({
 						>
 							<ToggleGroupItem value="name" className="flex items-center gap-2">
 								<Tag className="h-4 w-4" />
-								{translate("dashboard.widgets.options.color.by-name")}
+								Por nome
 							</ToggleGroupItem>
 							<ToggleGroupItem value="rank" className="flex items-center gap-2">
 								<Trophy className="h-4 w-4" />
-								{translate("dashboard.widgets.options.color.by-rank")}
+								Por classificação
 							</ToggleGroupItem>
 						</ToggleGroup>
 					</section>
@@ -168,13 +167,13 @@ export function WidgetOptionsCredenza({
 						<div className="flex items-center gap-2 pb-2 border-b">
 							<BarChart className="h-4 w-4 text-muted-foreground" />
 							<h4 className="text-sm font-medium">
-								{translate("dashboard.widgets.options.y-axis.title")}
+								Eixo Y
 							</h4>
 						</div>
 						<div className="space-y-4">
 							<Field>
 								<Label className="text-sm font-normal">
-									{translate("dashboard.widgets.options.y-axis.unit")}
+									Unidade do eixo Y
 								</Label>
 								<Select value={yAxisUnit} onValueChange={setYAxisUnit}>
 									<SelectTrigger className="h-10">
@@ -191,7 +190,7 @@ export function WidgetOptionsCredenza({
 							</Field>
 							<div>
 								<Label className="text-sm font-normal mb-2 block">
-									{translate("dashboard.widgets.options.y-axis.scale")}
+									Escala do eixo Y
 								</Label>
 								<ToggleGroup
 									type="single"
@@ -203,10 +202,10 @@ export function WidgetOptionsCredenza({
 									className="w-full grid grid-cols-2"
 								>
 									<ToggleGroupItem value="linear">
-										{translate("dashboard.widgets.options.y-axis.linear")}
+										Linear
 									</ToggleGroupItem>
 									<ToggleGroupItem value="logarithmic">
-										{translate("dashboard.widgets.options.y-axis.logarithmic")}
+										Logarítmica
 									</ToggleGroupItem>
 								</ToggleGroup>
 							</div>
@@ -218,19 +217,19 @@ export function WidgetOptionsCredenza({
 						<div className="flex items-center gap-2 pb-2 border-b">
 							<BarChart className="h-4 w-4 text-muted-foreground" />
 							<h4 className="text-sm font-medium">
-								{translate("dashboard.widgets.options.statistics.title")}
+								Análise Estatística
 							</h4>
 						</div>
 						<div className="space-y-4 pl-6">
 							<SwitchField
 								id="show-confidence"
-								label={translate("dashboard.widgets.options.statistics.confidence")}
+								label="Mostrar intervalos de confiança"
 								checked={showConfidenceIntervals}
 								onCheckedChange={setShowConfidenceIntervals}
 							/>
 							<SwitchField
 								id="show-moving-avg"
-								label={translate("dashboard.widgets.options.statistics.moving-average")}
+								label="Mostrar média móvel"
 								checked={showMovingAverage}
 								onCheckedChange={setShowMovingAverage}
 							/>
@@ -240,10 +239,10 @@ export function WidgetOptionsCredenza({
 			</CredenzaBody>
 			<CredenzaFooter>
 				<Button variant="outline" onClick={handleCancel}>
-					{translate("common.actions.cancel")}
+					Cancelar
 				</Button>
 				<Button onClick={handleApply}>
-					{translate("common.actions.apply")}
+					Aplicar
 				</Button>
 			</CredenzaFooter>
 		</>

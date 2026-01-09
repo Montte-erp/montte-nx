@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Alert,
    AlertDescription,
@@ -85,22 +84,23 @@ const defaultCategoriesConfig: Record<
    },
 };
 
+const defaultCategoryLabels: Record<DefaultCategoryKey, string> = {
+   food: "Alimentacao",
+   health: "Saude",
+   housing: "Moradia",
+   leisure: "Lazer",
+   shopping: "Compras gerais",
+   transport: "Transporte",
+};
+
 const bankAccountSchema = z.object({
    bank: z
       .string()
-      .min(
-         1,
-         translate("dashboard.routes.onboarding.validation.bank-required"),
-      ),
+      .min(1, "Banco e obrigatorio"),
    bankAccountName: z.string().optional(),
    bankAccountType: z
       .string()
-      .min(
-         1,
-         translate(
-            "dashboard.routes.onboarding.validation.account-type-required",
-         ),
-      ),
+      .min(1, "Tipo de conta e obrigatorio"),
 });
 
 type StepId =
@@ -185,11 +185,7 @@ function RouteComponent() {
             toast.error(error.message);
          },
          onSuccess: () => {
-            toast.success(
-               translate(
-                  "dashboard.routes.onboarding.bank-account.toast.success",
-               ),
-            );
+            toast.success("Conta bancaria criada com sucesso");
             navigate({
                params: { slug },
                search: { step: "categories" },
@@ -222,21 +218,14 @@ function RouteComponent() {
          return betterAuthClient.updateUser({ name });
       },
       onError: () => {
-         toast.error(
-            translate("dashboard.routes.onboarding.profile.toast.error"),
-         );
+         toast.error("Erro ao salvar o nome. Tente novamente.");
       },
       onSuccess: () => {
          // After saving name, create default account and navigate
          const isBusinessContext =
             onboardingStatus?.organizationContext === "business";
-         const accountType = isBusinessContext ? "business" : "personal";
-         const defaultName = translate(
-            `dashboard.routes.onboarding.default-account.${accountType}.name`,
-         );
-         const defaultBank = translate(
-            `dashboard.routes.onboarding.default-account.${accountType}.bank`,
-         );
+         const defaultName = isBusinessContext ? "Caixa" : "Carteira";
+         const defaultBank = isBusinessContext ? "Caixa" : "Padrao";
          createDefaultPersonalAccount.mutate({
             name: defaultName,
             bank: defaultBank,
@@ -247,9 +236,7 @@ function RouteComponent() {
    const createSelectedCategories = useCallback(async () => {
       await Promise.all(
          selectedDefaultCategories.map((key) => {
-            const label = translate(
-               `dashboard.routes.onboarding.category.defaults.${key}`,
-            );
+            const label = defaultCategoryLabels[key];
             const config = defaultCategoriesConfig[key];
 
             return createCategory.mutateAsync({
@@ -280,13 +267,8 @@ function RouteComponent() {
          // User already has a name, create default account directly
          const isBusinessContext =
             onboardingStatus?.organizationContext === "business";
-         const accountType = isBusinessContext ? "business" : "personal";
-         const defaultName = translate(
-            `dashboard.routes.onboarding.default-account.${accountType}.name`,
-         );
-         const defaultBank = translate(
-            `dashboard.routes.onboarding.default-account.${accountType}.bank`,
-         );
+         const defaultName = isBusinessContext ? "Caixa" : "Carteira";
+         const defaultBank = isBusinessContext ? "Caixa" : "Padrao";
          createDefaultPersonalAccount.mutate({
             name: defaultName,
             bank: defaultBank,
@@ -362,19 +344,15 @@ function RouteComponent() {
    const getStepTitle = () => {
       switch (step) {
          case "welcome":
-            return translate("dashboard.routes.onboarding.welcome.title");
+            return "Bem-vindo ao Montte";
          case "profile":
-            return translate("dashboard.routes.onboarding.profile.title");
+            return "Como podemos te chamar?";
          case "account-created":
-            return translate(
-               "dashboard.routes.onboarding.default-account-created.title",
-            );
+            return "Conta Criada";
          case "additional-account":
-            return translate(
-               "dashboard.routes.onboarding.optional-bank-account.title",
-            );
+            return "Adicionar Outra Conta Bancaria";
          case "categories":
-            return translate("dashboard.routes.onboarding.category.title");
+            return "Categorias iniciais";
          default:
             return "";
       }
@@ -383,21 +361,15 @@ function RouteComponent() {
    const getStepDescription = () => {
       switch (step) {
          case "welcome":
-            return translate("dashboard.routes.onboarding.welcome.description");
+            return "Gerencie suas financas pessoais de forma simples e eficiente.";
          case "profile":
-            return translate("dashboard.routes.onboarding.profile.description");
+            return "Nos diga seu nome para personalizar sua experiencia.";
          case "account-created":
-            return translate(
-               "dashboard.routes.onboarding.default-account-created.description",
-            );
+            return "Sua conta padrao foi criada com sucesso.";
          case "additional-account":
-            return translate(
-               "dashboard.routes.onboarding.optional-bank-account.description",
-            );
+            return "Voce pode adicionar outra conta bancaria agora ou pular esta etapa.";
          case "categories":
-            return translate(
-               "dashboard.routes.onboarding.category.description",
-            );
+            return "Selecione algumas categorias padrao para comecar.";
          default:
             return "";
       }
@@ -414,14 +386,10 @@ function RouteComponent() {
                      </div>
                      <div className="text-center space-y-1">
                         <p className="font-medium font-serif">
-                           {translate(
-                              "dashboard.routes.onboarding.welcome.features.wallet.title",
-                           )}
+                           Carteira Digital
                         </p>
                         <p className="text-sm text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.onboarding.welcome.features.wallet.description",
-                           )}
+                           Organize suas contas e transacoes em um so lugar.
                         </p>
                      </div>
                   </div>
@@ -431,14 +399,10 @@ function RouteComponent() {
                      </div>
                      <div className="text-center space-y-1">
                         <p className="font-medium font-serif">
-                           {translate(
-                              "dashboard.routes.onboarding.welcome.features.budgets.title",
-                           )}
+                           Orcamentos
                         </p>
                         <p className="text-sm text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.onboarding.welcome.features.budgets.description",
-                           )}
+                           Defina orcamentos mensais e acompanhe seus gastos.
                         </p>
                      </div>
                   </div>
@@ -448,14 +412,10 @@ function RouteComponent() {
                      </div>
                      <div className="text-center space-y-1">
                         <p className="font-medium font-serif">
-                           {translate(
-                              "dashboard.routes.onboarding.welcome.features.insights.title",
-                           )}
+                           Relatorios
                         </p>
                         <p className="text-sm text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.onboarding.welcome.features.insights.description",
-                           )}
+                           Visualize relatorios detalhados das suas financas.
                         </p>
                      </div>
                   </div>
@@ -465,14 +425,10 @@ function RouteComponent() {
                      </div>
                      <div className="text-center space-y-1">
                         <p className="font-medium font-serif">
-                           {translate(
-                              "dashboard.routes.onboarding.welcome.features.security.title",
-                           )}
+                           Seguranca
                         </p>
                         <p className="text-sm text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.onboarding.welcome.features.security.description",
-                           )}
+                           Seus dados protegidos com criptografia de ponta.
                         </p>
                      </div>
                   </div>
@@ -488,33 +444,25 @@ function RouteComponent() {
                      </div>
                      <div className="text-center space-y-1">
                         <p className="text-sm text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.onboarding.profile.form.description",
-                           )}
+                           Este nome sera usado para identifica-lo na plataforma.
                         </p>
                      </div>
                   </div>
                   <FieldGroup>
                      <Field>
                         <FieldLabel htmlFor="profile-name">
-                           {translate(
-                              "dashboard.routes.onboarding.profile.form.name.label",
-                           )}
+                           Seu nome
                         </FieldLabel>
                         <Input
                            autoFocus
                            id="profile-name"
                            name="profile-name"
                            onChange={(e) => setProfileName(e.target.value)}
-                           placeholder={translate(
-                              "dashboard.routes.onboarding.profile.form.name.placeholder",
-                           )}
+                           placeholder="Digite seu nome"
                            value={profileName}
                         />
                         <FieldDescription>
-                           {translate(
-                              "dashboard.routes.onboarding.profile.form.name.description",
-                           )}
+                           Voce pode alterar isso depois nas configuracoes.
                         </FieldDescription>
                      </Field>
                   </FieldGroup>
@@ -522,22 +470,22 @@ function RouteComponent() {
             );
 
          case "account-created": {
-            const titleKey =
-               onboardingStatus?.organizationContext === "business"
-                  ? "dashboard.routes.onboarding.default-account-created.business.title"
-                  : "dashboard.routes.onboarding.default-account-created.personal.title";
-            const descriptionKey =
-               onboardingStatus?.organizationContext === "business"
-                  ? "dashboard.routes.onboarding.default-account-created.business.description"
-                  : "dashboard.routes.onboarding.default-account-created.personal.description";
+            const isBusinessContext =
+               onboardingStatus?.organizationContext === "business";
+            const title = isBusinessContext
+               ? "Conta 'Caixa' criada com sucesso"
+               : "Conta 'Carteira' criada com sucesso";
+            const description = isBusinessContext
+               ? "A conta 'Caixa' foi criada e esta pronta para uso. Voce pode adicionar mais contas a qualquer momento."
+               : "A conta 'Carteira' foi criada e esta pronta para uso. Voce pode adicionar mais contas a qualquer momento.";
 
             return (
                <div className="max-w-md mx-auto">
                   <Alert>
                      <CheckCircle2Icon className="size-4" />
-                     <AlertTitle>{translate(titleKey)}</AlertTitle>
+                     <AlertTitle>{title}</AlertTitle>
                      <AlertDescription>
-                        {translate(descriptionKey)}
+                        {description}
                      </AlertDescription>
                   </Alert>
                </div>
@@ -558,9 +506,7 @@ function RouteComponent() {
                         {(field) => (
                            <Field>
                               <FieldLabel htmlFor={field.name}>
-                                 {translate(
-                                    "common.form.bank-account-nickname.label",
-                                 )}
+                                 Apelido da Conta
                               </FieldLabel>
                               <Input
                                  id={field.name}
@@ -569,15 +515,11 @@ function RouteComponent() {
                                  onChange={(e) =>
                                     field.handleChange(e.target.value)
                                  }
-                                 placeholder={translate(
-                                    "common.form.bank-account-nickname.placeholder",
-                                 )}
+                                 placeholder="Ex: Conta Salario, Banco Principal"
                                  value={field.state.value}
                               />
                               <FieldDescription>
-                                 {translate(
-                                    "common.form.bank-account-nickname.description",
-                                 )}
+                                 Opcional. Use para identificar facilmente esta conta, como 'Conta Salario' ou 'Banco Principal'
                               </FieldDescription>
                            </Field>
                         )}
@@ -593,9 +535,7 @@ function RouteComponent() {
                            return (
                               <Field data-invalid={isInvalid}>
                                  <FieldLabel htmlFor={field.name}>
-                                    {translate(
-                                       "dashboard.routes.onboarding.optional-bank-account.form.bank.label",
-                                    )}
+                                    Banco
                                  </FieldLabel>
                                  <BankAccountCombobox
                                     onBlur={field.handleBlur}
@@ -618,9 +558,7 @@ function RouteComponent() {
                         {(field) => (
                            <Field>
                               <FieldLabel>
-                                 {translate(
-                                    "dashboard.routes.onboarding.optional-bank-account.form.type.label",
-                                 )}
+                                 Tipo de Conta
                               </FieldLabel>
                               <Select
                                  onValueChange={(value) =>
@@ -630,26 +568,18 @@ function RouteComponent() {
                               >
                                  <SelectTrigger>
                                     <SelectValue
-                                       placeholder={translate(
-                                          "dashboard.routes.onboarding.optional-bank-account.form.type.placeholder",
-                                       )}
+                                       placeholder="Selecione o tipo de conta"
                                     />
                                  </SelectTrigger>
                                  <SelectContent>
                                     <SelectItem value="checking">
-                                       {translate(
-                                          "dashboard.routes.onboarding.optional-bank-account.form.type.options.checking",
-                                       )}
+                                       Corrente
                                     </SelectItem>
                                     <SelectItem value="savings">
-                                       {translate(
-                                          "dashboard.routes.onboarding.optional-bank-account.form.type.options.savings",
-                                       )}
+                                       Poupanca
                                     </SelectItem>
                                     <SelectItem value="investment">
-                                       {translate(
-                                          "dashboard.routes.onboarding.optional-bank-account.form.type.options.investment",
-                                       )}
+                                       Investimento
                                     </SelectItem>
                                  </SelectContent>
                               </Select>
@@ -665,17 +595,13 @@ function RouteComponent() {
                <FieldGroup>
                   <Field>
                      <FieldLabel>
-                        {translate(
-                           "dashboard.routes.onboarding.category.form.defaults.label",
-                        )}
+                        Categorias sugeridas
                      </FieldLabel>
                      <div className="flex flex-wrap gap-2 justify-center">
                         {defaultCategoryKeys.map((key) => {
                            const isSelected =
                               selectedDefaultCategories.includes(key);
-                           const label = translate(
-                              `dashboard.routes.onboarding.category.defaults.${key}`,
-                           );
+                           const label = defaultCategoryLabels[key];
                            const config = defaultCategoriesConfig[key];
                            const Icon = getIconComponent(config.icon);
 
@@ -741,10 +667,7 @@ function RouteComponent() {
             ))}
          </div>
          <span className="text-sm text-muted-foreground whitespace-nowrap">
-            {translate("dashboard.routes.onboarding.step-indicator", {
-               current: currentStepIndex + 1,
-               total: totalSteps,
-            })}
+            {`Passo ${currentStepIndex + 1} de ${totalSteps}`}
          </span>
       </div>
    );
@@ -783,7 +706,7 @@ function RouteComponent() {
                   variant="ghost"
                >
                   <ChevronLeftIcon className="size-4" />
-                  {translate("common.actions.previous")}
+                  Voltar
                </Button>
 
                <div className="flex items-center gap-2">
@@ -794,8 +717,8 @@ function RouteComponent() {
                         onClick={handleWelcomeNext}
                      >
                         {createDefaultPersonalAccount.isPending
-                           ? translate("common.actions.loading")
-                           : translate("common.actions.next")}
+                           ? "Carregando..."
+                           : "Proximo"}
                         <ChevronRightIcon className="size-4" />
                      </Button>
                   )}
@@ -809,14 +732,14 @@ function RouteComponent() {
                         onClick={handleProfileNext}
                      >
                         {updateUserName.isPending
-                           ? translate("common.actions.loading")
-                           : translate("common.actions.next")}
+                           ? "Carregando..."
+                           : "Proximo"}
                         <ChevronRightIcon className="size-4" />
                      </Button>
                   )}
                   {step === "account-created" && (
                      <Button className="gap-2" onClick={goToNextStep}>
-                        {translate("common.actions.next")}
+                        Proximo
                         <ChevronRightIcon className="size-4" />
                      </Button>
                   )}
@@ -831,7 +754,7 @@ function RouteComponent() {
                            }
                            variant="outline"
                         >
-                           {translate("common.actions.skip")}
+                           Pular
                         </Button>
                         <bankAccountForm.Subscribe
                            selector={(state) => ({
@@ -849,7 +772,7 @@ function RouteComponent() {
                                  }
                                  onClick={() => bankAccountForm.handleSubmit()}
                               >
-                                 {translate("common.actions.next")}
+                                 Proximo
                                  <ChevronRightIcon className="size-4" />
                               </Button>
                            )}
@@ -866,7 +789,7 @@ function RouteComponent() {
                         }
                         onClick={handleFinishOnboarding}
                      >
-                        {translate("common.actions.submit")}
+                        Enviar
                         <ChevronRightIcon className="size-4" />
                      </Button>
                   )}

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Empty,
@@ -148,14 +147,10 @@ function BankAccountContent() {
                   }
                >
                   <Plus className="size-4" />
-                  {translate(
-                     "dashboard.routes.transactions.features.add-new.title",
-                  )}
+                  Adicionar Nova Transação
                </Button>
             }
-            description={translate(
-               "dashboard.routes.transactions.list-section.description",
-            )}
+            description="Veja todas as suas transações financeiras aqui."
             title={bankAccount.name || "Conta Bancária"}
          />
 
@@ -210,9 +205,7 @@ function BankAccountContent() {
                {!canDelete && (
                   <TooltipContent>
                      <p>
-                        {translate(
-                           "dashboard.routes.bank-accounts.delete.error-last-account",
-                        )}
+                        Você deve ter pelo menos uma conta bancária.
                      </p>
                   </TooltipContent>
                )}

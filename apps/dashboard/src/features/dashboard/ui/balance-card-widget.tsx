@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import type { BalanceCardConfig } from "@packages/database/schemas/dashboards";
 import {
@@ -43,7 +42,7 @@ function BalanceCardWidgetSkeleton() {
 function BalanceCardWidgetError() {
 	return (
 		<div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-			{translate("dashboard.routes.home.balance-card.state.error.title")}
+			Erro ao carregar saldo
 		</div>
 	);
 }
@@ -65,7 +64,7 @@ function BalanceCardWidgetContent({ config: _config }: BalanceCardWidgetProps) {
 		<div className="h-full flex flex-col justify-center">
 			<div className="text-center mb-4">
 				<p className="text-sm text-muted-foreground">
-					{translate("dashboard.routes.home.balance-card.title")}
+					Saldo Líquido
 				</p>
 				<p className="text-3xl font-bold">{formatDecimalCurrency(netBalance)}</p>
 			</div>
@@ -77,7 +76,7 @@ function BalanceCardWidgetContent({ config: _config }: BalanceCardWidgetProps) {
 								<ArrowUpRight className="size-3 text-green-500" />
 							</div>
 							<CardDescription className="text-xs">
-								{translate("dashboard.routes.home.balance-card.income")}
+								Receita Total
 							</CardDescription>
 						</div>
 						<CardTitle className="text-base text-green-500">
@@ -93,7 +92,7 @@ function BalanceCardWidgetContent({ config: _config }: BalanceCardWidgetProps) {
 								<ArrowDownRight className="size-3 text-red-500" />
 							</div>
 							<CardDescription className="text-xs">
-								{translate("dashboard.routes.home.balance-card.expenses")}
+								Despesas Totais
 							</CardDescription>
 						</div>
 						<CardTitle className="text-base text-red-500">

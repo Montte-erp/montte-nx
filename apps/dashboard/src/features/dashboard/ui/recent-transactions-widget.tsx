@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import type { RecentTransactionsConfig } from "@packages/database/schemas/dashboards";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
@@ -48,7 +47,7 @@ function RecentTransactionsWidgetSkeleton() {
 function RecentTransactionsWidgetError() {
 	return (
 		<div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-			{translate("dashboard.routes.home.recent-transactions.state.error.title")}
+			Erro ao carregar transações
 		</div>
 	);
 }
@@ -83,10 +82,10 @@ function RecentTransactionsWidgetContent({ config }: RecentTransactionsWidgetPro
 							<Wallet />
 						</EmptyMedia>
 						<EmptyTitle>
-							{translate("dashboard.routes.home.recent-transactions.state.empty.title")}
+							Nenhuma transação ainda
 						</EmptyTitle>
 						<EmptyDescription>
-							{translate("dashboard.routes.home.recent-transactions.state.empty.description")}
+							Comece adicionando sua primeira transação.
 						</EmptyDescription>
 					</EmptyContent>
 				</Empty>

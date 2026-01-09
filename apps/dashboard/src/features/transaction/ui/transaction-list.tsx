@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import { Card, CardContent } from "@packages/ui/components/card";
 import { DataTable } from "@packages/ui/components/data-table";
@@ -158,16 +157,11 @@ export function TransactionList({
                         <Wallet className="size-12 text-muted-foreground" />
                      </EmptyMedia>
                      <EmptyTitle>
-                        {emptyStateTitle ??
-                           translate(
-                              "dashboard.routes.transactions.list-section.state.empty.title",
-                           )}
+                        {emptyStateTitle ?? "Nenhuma Transação Encontrada"}
                      </EmptyTitle>
                      <EmptyDescription>
                         {emptyStateDescription ??
-                           translate(
-                              "dashboard.routes.transactions.list-section.state.empty.description",
-                           )}
+                           "Tente ajustar seus filtros ou adicionar uma nova transação."}
                      </EmptyDescription>
                   </EmptyContent>
                </Empty>
@@ -183,7 +177,7 @@ export function TransactionList({
                <InputGroup className="sm:max-w-md">
                   <InputGroupInput
                      onChange={(e) => filters.onSearchChange(e.target.value)}
-                     placeholder={translate("common.form.search.placeholder")}
+                     placeholder="Digite para pesquisar"
                      value={filters.searchTerm}
                   />
                   <InputGroupAddon>
@@ -193,9 +187,7 @@ export function TransactionList({
 
                {transactions.length === 0 ? (
                   <div className="py-8 text-center text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.transactions.list-section.state.empty.title",
-                     )}
+                     Nenhuma Transação Encontrada
                   </div>
                ) : (
                   <DataTable
@@ -273,18 +265,11 @@ export function TransactionList({
                icon={<Trash2 className="size-3.5" />}
                onClick={() =>
                   openAlertDialog({
-                     actionLabel: translate(
-                        "dashboard.routes.transactions.list-section.actions.delete",
-                     ),
-                     cancelLabel: translate("common.actions.cancel"),
-                     description: translate(
-                        "common.headers.delete-confirmation.description-bulk",
-                        { count: selectedIds.length },
-                     ),
+                     actionLabel: "Excluir transação",
+                     cancelLabel: "Cancelar",
+                     description: `Tem certeza que deseja excluir ${selectedIds.length} itens? Esta ação não pode ser desfeita.`,
                      onAction: () => deleteSelected(selectedIds),
-                     title: translate(
-                        "common.headers.delete-confirmation.title",
-                     ),
+                     title: "Confirmar Exclusão",
                      variant: "destructive",
                   })
                }

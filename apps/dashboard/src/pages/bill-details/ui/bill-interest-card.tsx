@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import { Alert, AlertDescription } from "@packages/ui/components/alert";
 import {
@@ -115,7 +114,7 @@ function InterestCardContent({ billId }: { billId: string }) {
          <CardHeader>
             <CardTitle className="flex items-center gap-2">
                <TrendingUp className="size-5" />
-               {translate("dashboard.routes.bills.details.interest.title")}
+               Cálculo de Juros
             </CardTitle>
          </CardHeader>
          <CardContent className="space-y-4">
@@ -136,10 +135,7 @@ function InterestCardContent({ billId }: { billId: string }) {
                <div className="flex items-center gap-2">
                   <FileText className="size-4 text-muted-foreground" />
                   <span className="text-sm">
-                     {translate(
-                        "dashboard.routes.bills.details.interest.template",
-                     )}
-                     :
+                     Template de Juros:
                   </span>
                </div>
                <Link
@@ -157,9 +153,7 @@ function InterestCardContent({ billId }: { billId: string }) {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                <div className="flex flex-col gap-1 p-3 border rounded-lg">
                   <span className="text-xs text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.bills.details.interest.daysOverdue",
-                     )}
+                     Dias em Atraso
                   </span>
                   <span className="text-lg font-semibold text-destructive">
                      {result.daysOverdue}
@@ -168,9 +162,7 @@ function InterestCardContent({ billId }: { billId: string }) {
 
                <div className="flex flex-col gap-1 p-3 border rounded-lg">
                   <span className="text-xs text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.bills.details.interest.originalAmount",
-                     )}
+                     Valor Original
                   </span>
                   <span className="text-lg font-semibold">
                      {formatDecimalCurrency(Number(bill.amount))}
@@ -181,9 +173,7 @@ function InterestCardContent({ billId }: { billId: string }) {
                   <div className="flex flex-col gap-1 p-3 border rounded-lg">
                      <span className="text-xs text-muted-foreground flex items-center gap-1">
                         <Percent className="size-3" />
-                        {translate(
-                           "dashboard.routes.bills.details.interest.penalty",
-                        )}
+                        Multa
                      </span>
                      <span className="text-lg font-semibold text-orange-500">
                         + {formatDecimalCurrency(result.penaltyAmount)}
@@ -195,9 +185,7 @@ function InterestCardContent({ billId }: { billId: string }) {
                   <div className="flex flex-col gap-1 p-3 border rounded-lg">
                      <span className="text-xs text-muted-foreground flex items-center gap-1">
                         <TrendingUp className="size-3" />
-                        {translate(
-                           "dashboard.routes.bills.details.interest.interest",
-                        )}
+                        Juros
                      </span>
                      <span className="text-lg font-semibold text-orange-500">
                         + {formatDecimalCurrency(result.interestAmount)}
@@ -209,9 +197,7 @@ function InterestCardContent({ billId }: { billId: string }) {
                   <div className="flex flex-col gap-1 p-3 border rounded-lg">
                      <span className="text-xs text-muted-foreground flex items-center gap-1">
                         <TrendingUp className="size-3" />
-                        {translate(
-                           "dashboard.routes.bills.details.interest.correction",
-                        )}
+                        Correção Monetária
                      </span>
                      <span className="text-lg font-semibold text-orange-500">
                         + {formatDecimalCurrency(result.correctionAmount)}
@@ -224,9 +210,7 @@ function InterestCardContent({ billId }: { billId: string }) {
 
             <div className="flex items-center justify-between p-4 bg-primary/5 border border-primary/20 rounded-lg">
                <span className="text-sm font-medium">
-                  {translate(
-                     "dashboard.routes.bills.details.interest.updatedAmount",
-                  )}
+                  Valor Atualizado
                </span>
                <span className="text-xl font-bold text-primary">
                   {formatDecimalCurrency(result.updatedAmount)}

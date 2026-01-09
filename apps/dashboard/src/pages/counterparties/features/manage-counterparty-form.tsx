@@ -1,5 +1,4 @@
 import type { Counterparty } from "@packages/database/repositories/counterparty-repository";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Choicebox,
@@ -274,22 +273,13 @@ export function ManageCounterpartyForm({
 
    const modeTexts = useMemo(() => {
       const createTexts = {
-         description: translate(
-            "dashboard.routes.counterparties.features.create-counterparty.description",
-         ),
-         title: translate(
-            "dashboard.routes.counterparties.features.create-counterparty.title",
-         ),
+         description: "Preencha os dados para cadastrar um novo parceiro comercial",
+         title: "Novo Cadastro",
       };
 
       const editTexts = {
-         description: translate(
-            "dashboard.routes.counterparties.features.edit-counterparty.description",
-            { name: counterparty?.name || "" },
-         ),
-         title: translate(
-            "dashboard.routes.counterparties.features.edit-counterparty.title",
-         ),
+         description: `Editando o cadastro de ${counterparty?.name || ""}`,
+         title: "Editar Cadastro",
       };
 
       return isEditMode ? editTexts : createTexts;
@@ -1229,15 +1219,13 @@ export function ManageCounterpartyForm({
                   {(field) => (
                      <Field>
                         <FieldLabel htmlFor={field.name}>
-                           {translate("common.form.notes.label")}
+                           Observações
                         </FieldLabel>
                         <Textarea
                            id={field.name}
                            onBlur={field.handleBlur}
                            onChange={(e) => field.handleChange(e.target.value)}
-                           placeholder={translate(
-                              "common.form.notes.placeholder",
-                           )}
+                           placeholder="Adicione observações sobre este parceiro"
                            rows={3}
                            value={field.state.value || ""}
                         />
@@ -1473,9 +1461,7 @@ export function ManageCounterpartyForm({
                                                 </div>
                                              ) : (
                                                 <span className="text-muted-foreground">
-                                                   {translate(
-                                                      "common.form.category.placeholder",
-                                                   )}
+                                                   Selecione uma categoria
                                                 </span>
                                              )}
                                              <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -1595,7 +1581,7 @@ export function ManageCounterpartyForm({
                                  }}
                                  type="button"
                               >
-                                 {translate("common.actions.next")}
+                                 Próximo
                               </Button>
                            )}
                         </form.Subscribe>
@@ -1619,7 +1605,7 @@ export function ManageCounterpartyForm({
                                     type="button"
                                     variant="ghost"
                                  >
-                                    {translate("common.actions.previous")}
+                                    Anterior
                                  </Button>
                                  <Button
                                     className="w-full"
@@ -1631,7 +1617,7 @@ export function ManageCounterpartyForm({
                                     }
                                     type="submit"
                                  >
-                                    {translate("common.actions.submit")}
+                                    Salvar
                                  </Button>
                               </>
                            )}
@@ -1649,7 +1635,7 @@ export function ManageCounterpartyForm({
                                  type="button"
                                  variant="ghost"
                               >
-                                 {translate("common.actions.previous")}
+                                 Anterior
                               </Button>
                            )}
                            <Button
@@ -1661,7 +1647,7 @@ export function ManageCounterpartyForm({
                               }}
                               type="button"
                            >
-                              {translate("common.actions.next")}
+                              Próximo
                            </Button>
                         </>
                      )}

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import type { QuickActionsConfig } from "@packages/database/schemas/dashboards";
 import { QuickAccessCard } from "@packages/ui/components/quick-access-card";
 import { useRouter } from "@tanstack/react-router";
@@ -18,24 +17,24 @@ type QuickActionsWidgetProps = {
 
 const ACTION_CONFIG = {
 	new_transaction: {
-		description: "dashboard.routes.home.quick-actions.new-transaction.description",
+		description: "Registre uma nova transação",
 		icon: <CirclePlus className="size-5" />,
-		title: "dashboard.routes.home.quick-actions.new-transaction.title",
+		title: "Nova Transação",
 	},
 	payables: {
-		description: "dashboard.routes.home.quick-actions.payables.description",
+		description: "Gerencie suas contas a pagar",
 		icon: <ArrowDownRight className="size-5" />,
-		title: "dashboard.routes.home.quick-actions.payables.title",
+		title: "Contas a Pagar",
 	},
 	receivables: {
-		description: "dashboard.routes.home.quick-actions.receivables.description",
+		description: "Gerencie suas contas a receber",
 		icon: <ArrowUpRight className="size-5" />,
-		title: "dashboard.routes.home.quick-actions.receivables.title",
+		title: "Contas a Receber",
 	},
 	reports: {
-		description: "dashboard.routes.home.quick-actions.reports.description",
+		description: "Visualize seus relatórios financeiros",
 		icon: <BarChart3 className="size-5" />,
-		title: "dashboard.routes.home.quick-actions.reports.title",
+		title: "Ver Relatórios",
 	},
 } as const;
 
@@ -82,11 +81,11 @@ export function QuickActionsWidget({ config }: QuickActionsWidgetProps) {
 
 				return (
 					<QuickAccessCard
-						description={translate(actionConfig.description)}
+						description={actionConfig.description}
 						icon={actionConfig.icon}
 						key={`quick-action-${index + 1}`}
 						onClick={() => handleAction(action)}
-						title={translate(actionConfig.title)}
+						title={actionConfig.title}
 					/>
 				);
 			})}

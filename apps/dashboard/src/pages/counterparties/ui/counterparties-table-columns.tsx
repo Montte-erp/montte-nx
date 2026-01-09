@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -69,6 +68,19 @@ function getTypeColor(type: string): string {
    }
 }
 
+function getTypeLabel(type: string): string {
+   switch (type) {
+      case "client":
+         return "Cliente";
+      case "supplier":
+         return "Fornecedor";
+      case "both":
+         return "Ambos";
+      default:
+         return type;
+   }
+}
+
 function copyToClipboard(text: string) {
    navigator.clipboard.writeText(text);
    toast.success("Copiado para a área de transferência");
@@ -98,11 +110,7 @@ function CounterpartyActionsCell({
                   </Link>
                </Button>
             </TooltipTrigger>
-            <TooltipContent>
-               {translate(
-                  "dashboard.routes.counterparties.list-section.actions.view-details",
-               )}
-            </TooltipContent>
+            <TooltipContent>Ver detalhes</TooltipContent>
          </Tooltip>
          <Tooltip>
             <TooltipTrigger asChild>
@@ -122,11 +130,7 @@ function CounterpartyActionsCell({
                   <Edit className="size-4" />
                </Button>
             </TooltipTrigger>
-            <TooltipContent>
-               {translate(
-                  "dashboard.routes.counterparties.list-section.actions.edit-counterparty",
-               )}
-            </TooltipContent>
+            <TooltipContent>Editar cadastro</TooltipContent>
          </Tooltip>
          <Tooltip>
             <TooltipTrigger asChild>
@@ -139,11 +143,7 @@ function CounterpartyActionsCell({
                   <Trash2 className="size-4" />
                </Button>
             </TooltipTrigger>
-            <TooltipContent>
-               {translate(
-                  "dashboard.routes.counterparties.list-section.actions.delete-counterparty",
-               )}
-            </TooltipContent>
+            <TooltipContent>Excluir cadastro</TooltipContent>
          </Tooltip>
       </div>
    );
@@ -189,9 +189,7 @@ export function createCounterpartyColumns(
             );
          },
          enableSorting: true,
-         header: translate(
-            "dashboard.routes.counterparties.table.columns.name",
-         ),
+         header: "Nome",
       },
       {
          accessorKey: "document",
@@ -224,9 +222,7 @@ export function createCounterpartyColumns(
                </div>
             );
          },
-         header: translate(
-            "dashboard.routes.counterparties.form.document.label",
-         ),
+         header: "Documento",
       },
       {
          accessorKey: "type",
@@ -241,18 +237,12 @@ export function createCounterpartyColumns(
                   variant="outline"
                >
                   {getTypeIcon(counterparty.type)}
-                  {translate(
-                     `dashboard.routes.counterparties.form.type.${counterparty.type}` as Parameters<
-                        typeof translate
-                     >[0],
-                  )}
+                  {getTypeLabel(counterparty.type)}
                </Badge>
             );
          },
          enableSorting: true,
-         header: translate(
-            "dashboard.routes.counterparties.table.columns.type",
-         ),
+         header: "Tipo",
       },
       {
          accessorKey: "isActive",
@@ -289,9 +279,7 @@ export function createCounterpartyColumns(
             );
          },
          enableSorting: true,
-         header: translate(
-            "dashboard.routes.counterparties.table.columns.created-at",
-         ),
+         header: "Criado em",
       },
       {
          cell: ({ row }) => (
@@ -325,9 +313,7 @@ export function CounterpartyExpandedContent({
                         <Mail className="size-4 text-muted-foreground" />
                         <div>
                            <p className="text-xs text-muted-foreground">
-                              {translate(
-                                 "dashboard.routes.counterparties.form.email.label",
-                              )}
+                              E-mail
                            </p>
                            <p className="text-sm font-medium">
                               {counterparty.email}
@@ -343,9 +329,7 @@ export function CounterpartyExpandedContent({
                         <Phone className="size-4 text-muted-foreground" />
                         <div>
                            <p className="text-xs text-muted-foreground">
-                              {translate(
-                                 "dashboard.routes.counterparties.form.phone.label",
-                              )}
+                              Telefone
                            </p>
                            <p className="text-sm font-medium">
                               {counterparty.phone}
@@ -361,9 +345,7 @@ export function CounterpartyExpandedContent({
                         <User className="size-4 text-muted-foreground" />
                         <div>
                            <p className="text-xs text-muted-foreground">
-                              {translate(
-                                 "dashboard.routes.counterparties.form.document.label",
-                              )}
+                              Documento
                            </p>
                            <p className="text-sm font-medium">
                               {counterparty.document}
@@ -377,9 +359,7 @@ export function CounterpartyExpandedContent({
                   <Calendar className="size-4 text-muted-foreground" />
                   <div>
                      <p className="text-xs text-muted-foreground">
-                        {translate(
-                           "dashboard.routes.counterparties.table.columns.created-at",
-                        )}
+                        Criado em
                      </p>
                      <p className="text-sm font-medium">
                         {formatDate(
@@ -408,9 +388,7 @@ export function CounterpartyExpandedContent({
                      to="/$slug/counterparties/$counterpartyId"
                   >
                      <Eye className="size-4" />
-                     {translate(
-                        "dashboard.routes.counterparties.list-section.actions.view-details",
-                     )}
+                     Ver detalhes
                   </Link>
                </Button>
                <Button
@@ -429,9 +407,7 @@ export function CounterpartyExpandedContent({
                   variant="outline"
                >
                   <Edit className="size-4" />
-                  {translate(
-                     "dashboard.routes.counterparties.list-section.actions.edit-counterparty",
-                  )}
+                  Editar cadastro
                </Button>
                <Button
                   className="w-full justify-start"
@@ -443,9 +419,7 @@ export function CounterpartyExpandedContent({
                   variant="destructive"
                >
                   <Trash2 className="size-4" />
-                  {translate(
-                     "dashboard.routes.counterparties.list-section.actions.delete-counterparty",
-                  )}
+                  Excluir cadastro
                </Button>
             </div>
          </div>
@@ -461,9 +435,7 @@ export function CounterpartyExpandedContent({
                      <Mail className="size-4 text-muted-foreground" />
                      <div>
                         <p className="text-xs text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.counterparties.form.email.label",
-                           )}
+                           E-mail
                         </p>
                         <p className="text-sm font-medium">
                            {counterparty.email}
@@ -479,9 +451,7 @@ export function CounterpartyExpandedContent({
                      <Phone className="size-4 text-muted-foreground" />
                      <div>
                         <p className="text-xs text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.counterparties.form.phone.label",
-                           )}
+                           Telefone
                         </p>
                         <p className="text-sm font-medium">
                            {counterparty.phone}
@@ -497,9 +467,7 @@ export function CounterpartyExpandedContent({
                      <User className="size-4 text-muted-foreground" />
                      <div>
                         <p className="text-xs text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.counterparties.form.document.label",
-                           )}
+                           Documento
                         </p>
                         <p className="text-sm font-medium">
                            {counterparty.document}
@@ -513,9 +481,7 @@ export function CounterpartyExpandedContent({
                <Calendar className="size-4 text-muted-foreground" />
                <div>
                   <p className="text-xs text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.counterparties.table.columns.created-at",
-                     )}
+                     Criado em
                   </p>
                   <p className="text-sm font-medium">
                      {formatDate(
@@ -537,9 +503,7 @@ export function CounterpartyExpandedContent({
                   to="/$slug/counterparties/$counterpartyId"
                >
                   <Eye className="size-4" />
-                  {translate(
-                     "dashboard.routes.counterparties.list-section.actions.view-details",
-                  )}
+                  Ver detalhes
                </Link>
             </Button>
             <Button
@@ -555,9 +519,7 @@ export function CounterpartyExpandedContent({
                variant="outline"
             >
                <Edit className="size-4" />
-               {translate(
-                  "dashboard.routes.counterparties.list-section.actions.edit-counterparty",
-               )}
+               Editar cadastro
             </Button>
             <Button
                onClick={(e) => {
@@ -568,9 +530,7 @@ export function CounterpartyExpandedContent({
                variant="destructive"
             >
                <Trash2 className="size-4" />
-               {translate(
-                  "dashboard.routes.counterparties.list-section.actions.delete-counterparty",
-               )}
+               Excluir cadastro
             </Button>
          </div>
       </div>
@@ -633,11 +593,7 @@ export function CounterpartyMobileCard({
                   variant="outline"
                >
                   {getTypeIcon(counterparty.type)}
-                  {translate(
-                     `dashboard.routes.counterparties.form.type.${counterparty.type}` as Parameters<
-                        typeof translate
-                     >[0],
-                  )}
+                  {getTypeLabel(counterparty.type)}
                </Badge>
             </div>
          </CardHeader>
@@ -652,9 +608,7 @@ export function CounterpartyMobileCard({
                   }}
                   variant="outline"
                >
-                  {isExpanded
-                     ? translate("common.actions.less-info")
-                     : translate("common.actions.more-info")}
+                  {isExpanded ? "Menos detalhes" : "Mais detalhes"}
                   <ChevronDown
                      className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
                   />

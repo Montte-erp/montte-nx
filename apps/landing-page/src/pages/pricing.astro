@@ -14,15 +14,6 @@ import PricingPlanning from "@/sections/pricing-page/PricingPlanning.astro";
 import PricingPlansGrid from "@/sections/pricing-page/PricingPlansGrid.astro";
 import PricingSidebar from "@/sections/pricing-page/PricingSidebar.astro";
 import PricingTeam from "@/sections/pricing-page/PricingTeam.astro";
-
-export function getStaticPaths() {
-   return [
-      { params: { locale: undefined } },
-      { params: { locale: "en" } },
-      { params: { locale: "de" } },
-      { params: { locale: "es" } },
-   ];
-}
 ---
 
 <Landing>

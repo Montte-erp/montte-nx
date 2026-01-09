@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -75,7 +74,7 @@ export function NavMain() {
       {
          icon: Home,
          id: "home",
-         title: translate("dashboard.layout.nav-main.home"),
+         title: "Home",
          url: "/$slug/home",
       },
    ];
@@ -85,13 +84,13 @@ export function NavMain() {
       {
          icon: TrendingUp,
          id: "transactions",
-         title: translate("dashboard.layout.nav-main.finance.overview"),
+         title: "Fluxo de caixa",
          url: "/$slug/transactions",
       },
       {
          icon: Wallet,
          id: "budgets",
-         title: translate("dashboard.layout.nav-main.finance.budgets"),
+         title: "Orçamentos",
          url: "/$slug/budgets",
       },
    ];
@@ -101,13 +100,13 @@ export function NavMain() {
       {
          icon: Building2,
          id: "bank-accounts",
-         title: translate("dashboard.routes.bank-accounts.list-section.title"),
+         title: "Contas Bancárias",
          url: "/$slug/bank-accounts",
       },
       {
          icon: Receipt,
          id: "bills-overview",
-         title: translate("dashboard.layout.nav-main.bills.overview"),
+         title: "Gestão de Contas",
          url: "/$slug/bills",
       },
       ...(canAccessCounterparties
@@ -115,9 +114,7 @@ export function NavMain() {
               {
                  icon: Users,
                  id: "counterparties",
-                 title: translate(
-                    "dashboard.layout.nav-main.bills.counterparties",
-                 ),
+                 title: "Cadastros",
                  url: "/$slug/counterparties",
               },
            ]
@@ -127,9 +124,7 @@ export function NavMain() {
               {
                  icon: Percent,
                  id: "interest-templates",
-                 title: translate(
-                    "dashboard.layout.nav-main.bills.interest-templates",
-                 ),
+                 title: "Modelos de Juros",
                  url: "/$slug/interest-templates",
               },
            ]
@@ -141,9 +136,7 @@ export function NavMain() {
       {
          icon: FileText,
          id: "categories",
-         title: translate(
-            "dashboard.layout.nav-main.categorization.categories",
-         ),
+         title: "Categorias",
          url: "/$slug/categories",
       },
       ...(canAccessCostCenters
@@ -151,9 +144,7 @@ export function NavMain() {
               {
                  icon: Landmark,
                  id: "cost-centers",
-                 title: translate(
-                    "dashboard.layout.nav-main.categorization.cost-centers",
-                 ),
+                 title: "Centros de Custo",
                  url: "/$slug/cost-centers",
               },
            ]
@@ -163,9 +154,7 @@ export function NavMain() {
               {
                  icon: Tag,
                  id: "tags",
-                 title: translate(
-                    "dashboard.layout.nav-main.categorization.tags",
-                 ),
+                 title: "Tags",
                  url: "/$slug/tags",
               },
            ]
@@ -226,16 +215,10 @@ export function NavMain() {
                   onClick={() =>
                      openSheet({ children: <ManageTransactionForm /> })
                   }
-                  tooltip={translate(
-                     "dashboard.routes.transactions.features.add-new.title",
-                  )}
+                  tooltip="Adicionar Nova Transação"
                >
                   <CirclePlus />
-                  <span>
-                     {translate(
-                        "dashboard.routes.transactions.features.add-new.title",
-                     )}
-                  </span>
+                  <span>Adicionar Nova Transação</span>
                </SidebarMenuButton>
             </SidebarMenu>
 
@@ -250,7 +233,7 @@ export function NavMain() {
                   <SidebarMenuItem>
                      <CollapsibleTrigger asChild>
                         <SidebarMenuButton
-                           tooltip={translate("dashboard.layout.nav-main.project.title")}
+                           tooltip="Projeto"
                            className={cn(
                               (isActive("/$slug/dashboards") || isActive("/$slug/insights"))
                                  ? "bg-primary/10 text-primary rounded-lg"
@@ -258,7 +241,7 @@ export function NavMain() {
                            )}
                         >
                            <FolderKanban />
-                           <span>{translate("dashboard.layout.nav-main.project.title")}</span>
+                           <span>Projeto</span>
                            <ChevronDown
                               className={cn(
                                  "ml-auto h-4 w-4 transition-transform",
@@ -280,7 +263,7 @@ export function NavMain() {
                                     to="/$slug/dashboards"
                                  >
                                     <BarChart3 className="size-4" />
-                                    <span>{translate("dashboard.layout.nav-main.finance.dashboards")}</span>
+                                    <span>Dashboards</span>
                                  </Link>
                               </SidebarMenuSubButton>
                            </SidebarMenuSubItem>
@@ -295,7 +278,7 @@ export function NavMain() {
                                     to="/$slug/insights"
                                  >
                                     <Sparkles className="size-4" />
-                                    <span>{translate("dashboard.layout.nav-main.project.insights")}</span>
+                                    <span>Insights</span>
                                  </Link>
                               </SidebarMenuSubButton>
                            </SidebarMenuSubItem>
@@ -307,9 +290,7 @@ export function NavMain() {
 
             {/* Analytics Section */}
             {state === "expanded" && (
-               <SidebarGroupLabel>
-                  {translate("dashboard.layout.nav-main.analytics.title")}
-               </SidebarGroupLabel>
+               <SidebarGroupLabel>Análise</SidebarGroupLabel>
             )}
             <SidebarMenu>
                {analyticsItems.map((item) => renderNavItem(item))}
@@ -317,9 +298,7 @@ export function NavMain() {
 
             {/* Finance Section */}
             {state === "expanded" && (
-               <SidebarGroupLabel>
-                  {translate("dashboard.layout.nav-main.finance.title")}
-               </SidebarGroupLabel>
+               <SidebarGroupLabel>Finanças</SidebarGroupLabel>
             )}
             <SidebarMenu>
                {financeItems.map((item) => renderNavItem(item))}
@@ -327,9 +306,7 @@ export function NavMain() {
 
             {/* Organization Section */}
             {state === "expanded" && (
-               <SidebarGroupLabel>
-                  {translate("dashboard.layout.nav-main.organization.title")}
-               </SidebarGroupLabel>
+               <SidebarGroupLabel>Organização</SidebarGroupLabel>
             )}
             <SidebarMenu>
                {organizationItems.map((item) => renderNavItem(item))}
@@ -337,9 +314,7 @@ export function NavMain() {
 
             {/* Automation Section */}
             {state === "expanded" && automationItems.length > 0 && (
-               <SidebarGroupLabel>
-                  {translate("dashboard.layout.nav-main.automation.title")}
-               </SidebarGroupLabel>
+               <SidebarGroupLabel>Automação</SidebarGroupLabel>
             )}
             {automationItems.length > 0 && (
                <SidebarMenu>

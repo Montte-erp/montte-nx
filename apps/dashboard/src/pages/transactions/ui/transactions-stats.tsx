@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import {
    Card,
@@ -70,39 +69,23 @@ function TransactionsStatsContent() {
    return (
       <div className="grid grid-cols-2  md:grid-cols-4 gap-4 h-min">
          <StatsCard
-            description={translate(
-               "dashboard.routes.transactions.stats-section.total.description",
-            )}
-            title={translate(
-               "dashboard.routes.transactions.stats-section.total.title",
-            )}
+            description="Veja o total acumulado de todas as suas transações."
+            title="Total de Transações"
             value={stats.totalTransactions}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.transactions.stats-section.income.description",
-            )}
-            title={translate(
-               "dashboard.routes.transactions.stats-section.income.title",
-            )}
+            description="Veja o total acumulado de todas as suas receitas."
+            title="Total de Receitas"
             value={formatDecimalCurrency(stats.totalIncome)}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.transactions.stats-section.expense.description",
-            )}
-            title={translate(
-               "dashboard.routes.transactions.stats-section.expense.title",
-            )}
+            description="Veja o total acumulado de todas as suas despesas."
+            title="Total de Despesas"
             value={formatDecimalCurrency(stats.totalExpenses)}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.transactions.stats-section.transfer.description",
-            )}
-            title={translate(
-               "dashboard.routes.transactions.stats-section.transfer.title",
-            )}
+            description="Veja o total acumulado de todas as suas transferências."
+            title="Total de Transferências"
             value={formatDecimalCurrency(stats.totalTransfers)}
          />
       </div>

@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { Plus } from "lucide-react";
 import { UpgradeRequired } from "@/components/upgrade-required";
@@ -37,15 +36,11 @@ export function CostCentersPage() {
                         }
                      >
                         <Plus className="size-4" />
-                        {translate("common.actions.add")}
+                        Adicionar
                      </Button>
                   }
-                  description={translate(
-                     "dashboard.routes.cost-centers.list-section.description",
-                  )}
-                  title={translate(
-                     "dashboard.routes.cost-centers.list-section.title",
-                  )}
+                  description="Visualize e gerencie seus centros de custo aqui."
+                  title="Seus centros de custo"
                />
                <CostCentersStats />
                <CostCentersListSection />

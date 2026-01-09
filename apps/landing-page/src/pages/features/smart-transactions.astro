@@ -2,27 +2,16 @@
 export const prerender = true;
 
 import { ArrowRight, ChevronRight, Github } from "@lucide/astro";
-import type { SupportedLng } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import LogoCloud from "@/components/LogoCloud.astro";
 import StickyNavbar from "@/components/StickyNavbar.astro";
-import { supportedLanguages } from "@/i18n/config";
 import Layout from "@/layouts/Landing.astro";
 import Footer from "@/sections/Footer.astro";
-
-export function getStaticPaths() {
-   return supportedLanguages.map((locale) => ({
-      params: { locale: locale === "pt-BR" ? undefined : locale },
-   }));
-}
-
-const { locale } = Astro.params;
-const lang = (locale || "pt-BR") as SupportedLng;
 ---
 
-<Layout lang={lang}>
+<Layout>
    <div class="flex flex-col">
-      <StickyNavbar lang={lang}/>
+      <StickyNavbar />
 
       <!-- Hero Section -->
       <section class="relative mx-auto mb-24 max-w-[1888px]">
@@ -590,6 +579,6 @@ const lang = (locale || "pt-BR") as SupportedLng;
          </div>
       </section>
 
-      <Footer lang={lang}/>
+      <Footer />
    </div>
 </Layout>

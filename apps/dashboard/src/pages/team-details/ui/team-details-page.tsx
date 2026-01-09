@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -172,7 +171,7 @@ function TeamDetailsPageError({ error, resetErrorBoundary }: FallbackProps) {
                         size="default"
                         variant="default"
                      >
-                        {translate("common.actions.retry")}
+                        Tentar novamente
                      </Button>
                   </div>
                </EmptyContent>

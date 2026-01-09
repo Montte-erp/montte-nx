@@ -4,7 +4,6 @@
  * Multi-step wizard for setting up E2E encryption.
  */
 
-import { translate } from "@packages/localization";
 import {
    Alert,
    AlertDescription,
@@ -58,16 +57,12 @@ export function EncryptionSetupCredenza({
             .string()
             .min(
                8,
-               translate(
-                  "dashboard.routes.settings.encryption.errors.passphrase-too-short",
-               ),
+               "A frase secreta deve ter pelo menos 8 caracteres",
             ),
          confirmPassphrase: z.string(),
       })
       .refine((data) => data.passphrase === data.confirmPassphrase, {
-         message: translate(
-            "dashboard.routes.settings.encryption.errors.passphrase-mismatch",
-         ),
+         message: "As frases secretas não coincidem",
          path: ["confirmPassphrase"],
       });
 
@@ -87,16 +82,12 @@ export function EncryptionSetupCredenza({
                setStep("success");
             } else {
                toast.error(
-                  translate(
-                     "dashboard.routes.settings.encryption.errors.setup-failed",
-                  ),
+                  "Falha ao configurar criptografia",
                );
             }
          } catch (_error) {
             toast.error(
-               translate(
-                  "dashboard.routes.settings.encryption.errors.setup-failed",
-               ),
+               "Falha ao configurar criptografia",
             );
          } finally {
             setIsSubmitting(false);
@@ -123,14 +114,10 @@ export function EncryptionSetupCredenza({
             <CredenzaHeader>
                <CredenzaTitle className="flex items-center gap-2">
                   <Shield className="size-5" />
-                  {translate(
-                     "dashboard.routes.settings.encryption.setup.title",
-                  )}
+                  Configurar Criptografia E2E
                </CredenzaTitle>
                <CredenzaDescription>
-                  {translate(
-                     "dashboard.routes.settings.encryption.setup.description",
-                  )}
+                  Proteja seus dados financeiros com criptografia de ponta a ponta.
                </CredenzaDescription>
             </CredenzaHeader>
 
@@ -138,15 +125,11 @@ export function EncryptionSetupCredenza({
                <Alert>
                   <Lock className="size-4" />
                   <AlertTitle>
-                     {translate(
-                        "dashboard.routes.settings.encryption.setup.how-it-works",
-                     )}
+                     Como funciona
                   </AlertTitle>
                   <AlertDescription className="space-y-2">
                      <p>
-                        {translate(
-                           "dashboard.routes.settings.encryption.setup.how-it-works-description",
-                        )}
+                        Sua frase secreta será usada para criptografar seus dados no navegador antes de enviar ao servidor. O servidor nunca verá seus dados descriptografados.
                      </p>
                   </AlertDescription>
                </Alert>
@@ -154,26 +137,18 @@ export function EncryptionSetupCredenza({
                <Alert>
                   <AlertTriangle className="size-4" />
                   <AlertTitle>
-                     {translate(
-                        "dashboard.routes.settings.encryption.setup.warning-title",
-                     )}
+                     Importante
                   </AlertTitle>
                   <AlertDescription>
                      <ul className="list-disc pl-4 space-y-1 mt-2">
                         <li>
-                           {translate(
-                              "dashboard.routes.settings.encryption.setup.warning-1",
-                           )}
+                           Não podemos recuperar dados se você esquecer sua frase secreta
                         </li>
                         <li>
-                           {translate(
-                              "dashboard.routes.settings.encryption.setup.warning-2",
-                           )}
+                           A pesquisa no servidor não funcionará para dados criptografados
                         </li>
                         <li>
-                           {translate(
-                              "dashboard.routes.settings.encryption.setup.warning-3",
-                           )}
+                           Automações não poderão ler dados criptografados
                         </li>
                      </ul>
                   </AlertDescription>
@@ -182,10 +157,10 @@ export function EncryptionSetupCredenza({
 
             <CredenzaFooter>
                <Button onClick={() => closeCredenza()} variant="outline">
-                  {translate("common.actions.cancel")}
+                  Cancelar
                </Button>
                <Button onClick={() => setStep("passphrase")}>
-                  {translate("common.actions.continue")}
+                  Continuar
                </Button>
             </CredenzaFooter>
          </>
@@ -197,14 +172,10 @@ export function EncryptionSetupCredenza({
          <>
             <CredenzaHeader>
                <CredenzaTitle>
-                  {translate(
-                     "dashboard.routes.settings.encryption.setup.create-passphrase",
-                  )}
+                  Criar Frase Secreta
                </CredenzaTitle>
                <CredenzaDescription>
-                  {translate(
-                     "dashboard.routes.settings.encryption.setup.create-passphrase-description",
-                  )}
+                  Escolha uma frase secreta forte que você vai lembrar.
                </CredenzaDescription>
             </CredenzaHeader>
 
@@ -219,9 +190,7 @@ export function EncryptionSetupCredenza({
                            <FieldGroup>
                               <Field data-invalid={isInvalid}>
                                  <FieldLabel htmlFor={field.name}>
-                                    {translate(
-                                       "dashboard.routes.settings.encryption.passphrase",
-                                    )}
+                                    Frase secreta
                                  </FieldLabel>
                                  <Input
                                     aria-invalid={isInvalid}
@@ -232,16 +201,12 @@ export function EncryptionSetupCredenza({
                                     onChange={(e) =>
                                        field.handleChange(e.target.value)
                                     }
-                                    placeholder={translate(
-                                       "dashboard.routes.settings.encryption.passphrase-placeholder",
-                                    )}
+                                    placeholder="Digite sua frase secreta"
                                     type="password"
                                     value={field.state.value}
                                  />
                                  <FieldDescription>
-                                    {translate(
-                                       "dashboard.routes.settings.encryption.passphrase-hint",
-                                    )}
+                                    Mínimo de 8 caracteres. Use uma frase fácil de lembrar.
                                  </FieldDescription>
                                  {isInvalid && (
                                     <FieldError
@@ -263,9 +228,7 @@ export function EncryptionSetupCredenza({
                            <FieldGroup>
                               <Field data-invalid={isInvalid}>
                                  <FieldLabel htmlFor={field.name}>
-                                    {translate(
-                                       "dashboard.routes.settings.encryption.confirm-passphrase",
-                                    )}
+                                    Confirmar frase secreta
                                  </FieldLabel>
                                  <Input
                                     aria-invalid={isInvalid}
@@ -276,9 +239,7 @@ export function EncryptionSetupCredenza({
                                     onChange={(e) =>
                                        field.handleChange(e.target.value)
                                     }
-                                    placeholder={translate(
-                                       "dashboard.routes.settings.encryption.confirm-passphrase-placeholder",
-                                    )}
+                                    placeholder="Digite novamente sua frase secreta"
                                     type="password"
                                     value={field.state.value}
                                  />
@@ -297,7 +258,7 @@ export function EncryptionSetupCredenza({
 
             <CredenzaFooter>
                <Button onClick={() => setStep("intro")} variant="outline">
-                  {translate("common.actions.back")}
+                  Voltar
                </Button>
                <form.Subscribe>
                   {(formState) => (
@@ -307,7 +268,7 @@ export function EncryptionSetupCredenza({
                         }
                         onClick={handleContinueToConfirm}
                      >
-                        {translate("common.actions.continue")}
+                        Continuar
                      </Button>
                   )}
                </form.Subscribe>
@@ -321,14 +282,10 @@ export function EncryptionSetupCredenza({
          <>
             <CredenzaHeader>
                <CredenzaTitle>
-                  {translate(
-                     "dashboard.routes.settings.encryption.setup.confirm-title",
-                  )}
+                  Confirmar Configuração
                </CredenzaTitle>
                <CredenzaDescription>
-                  {translate(
-                     "dashboard.routes.settings.encryption.setup.confirm-description",
-                  )}
+                  Revise antes de ativar a criptografia.
                </CredenzaDescription>
             </CredenzaHeader>
 
@@ -336,21 +293,17 @@ export function EncryptionSetupCredenza({
                <Alert variant="destructive">
                   <AlertTriangle className="size-4" />
                   <AlertTitle>
-                     {translate(
-                        "dashboard.routes.settings.encryption.setup.final-warning-title",
-                     )}
+                     Última chance
                   </AlertTitle>
                   <AlertDescription>
-                     {translate(
-                        "dashboard.routes.settings.encryption.setup.final-warning-description",
-                     )}
+                     Depois de ativar, você precisará da frase secreta para acessar seus dados. Não há como recuperar se esquecê-la.
                   </AlertDescription>
                </Alert>
             </CredenzaBody>
 
             <CredenzaFooter>
                <Button onClick={() => setStep("passphrase")} variant="outline">
-                  {translate("common.actions.back")}
+                  Voltar
                </Button>
                <Button
                   disabled={isSubmitting}
@@ -359,9 +312,7 @@ export function EncryptionSetupCredenza({
                   {isSubmitting && (
                      <Loader2 className="size-4 mr-2 animate-spin" />
                   )}
-                  {translate(
-                     "dashboard.routes.settings.encryption.setup.enable-button",
-                  )}
+                  Ativar Criptografia E2E
                </Button>
             </CredenzaFooter>
          </>
@@ -374,14 +325,10 @@ export function EncryptionSetupCredenza({
             <CredenzaHeader>
                <CredenzaTitle className="flex items-center gap-2">
                   <CheckCircle2 className="size-5 text-green-500" />
-                  {translate(
-                     "dashboard.routes.settings.encryption.setup.success-title",
-                  )}
+                  Criptografia Ativada!
                </CredenzaTitle>
                <CredenzaDescription>
-                  {translate(
-                     "dashboard.routes.settings.encryption.setup.success-description",
-                  )}
+                  Seus dados agora estão protegidos com criptografia de ponta a ponta.
                </CredenzaDescription>
             </CredenzaHeader>
 
@@ -389,21 +336,15 @@ export function EncryptionSetupCredenza({
                <Alert>
                   <Shield className="size-4" />
                   <AlertTitle>
-                     {translate(
-                        "dashboard.routes.settings.encryption.setup.next-steps-title",
-                     )}
+                     Próximos passos
                   </AlertTitle>
                   <AlertDescription>
                      <ul className="list-disc pl-4 space-y-1 mt-2">
                         <li>
-                           {translate(
-                              "dashboard.routes.settings.encryption.setup.next-step-1",
-                           )}
+                           Anote sua frase secreta em um local seguro
                         </li>
                         <li>
-                           {translate(
-                              "dashboard.routes.settings.encryption.setup.next-step-2",
-                           )}
+                           Você precisará dela para desbloquear seus dados em novos dispositivos
                         </li>
                      </ul>
                   </AlertDescription>
@@ -412,7 +353,7 @@ export function EncryptionSetupCredenza({
 
             <CredenzaFooter>
                <Button onClick={() => closeCredenza()}>
-                  {translate("common.actions.done")}
+                  Concluir
                </Button>
             </CredenzaFooter>
          </>

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    CredenzaBody,
@@ -27,9 +26,7 @@ import { useTRPC } from "@/integrations/clients";
 function OrganizationSwitcherErrorFallback() {
    return (
       <div className="p-4 text-center text-destructive text-sm">
-         {translate(
-            "dashboard.layout.organization-switcher.error.failed-to-load-active",
-         )}
+         Falha ao carregar organização ativa
       </div>
    );
 }
@@ -111,11 +108,7 @@ function OrganizationTeamsList({
                variant="ghost"
             >
                <Plus className="size-4" />
-               <span>
-                  {translate(
-                     "dashboard.layout.organization-switcher.create-team",
-                  )}
-               </span>
+               <span>Criar equipe</span>
             </Button>
          </div>
       );
@@ -152,9 +145,7 @@ function OrganizationTeamsList({
             variant="ghost"
          >
             <Plus className="size-4" />
-            <span>
-               {translate("dashboard.layout.organization-switcher.create-team")}
-            </span>
+            <span>Criar equipe</span>
          </Button>
       </div>
    );
@@ -332,19 +323,13 @@ function OrganizationSwitcherContent() {
                   onClick={handleCreateOrganization}
                   title={
                      hasReachedLimit
-                        ? translate(
-                             "dashboard.layout.organization-switcher.limit-reached",
-                          )
+                        ? "Limite de organizações atingido"
                         : undefined
                   }
                   variant="outline"
                >
                   <Building2 className="size-4" />
-                  <span>
-                     {translate(
-                        "dashboard.layout.organization-switcher.add-organization",
-                     )}
-                  </span>
+                  <span>Adicionar organização</span>
                </Button>
             </div>
          </CredenzaBody>

@@ -1,4 +1,3 @@
-import type { SupportedLng } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Sheet,
@@ -19,10 +18,6 @@ import {
 import { useState } from "react";
 import { menuItems, productItems } from "../data/menu-items";
 
-interface MobileMenuProps {
-   lang?: SupportedLng;
-}
-
 const productIcons: Record<string, typeof Receipt> = {
    "/features/analytics": BarChart3,
    "/features/bill-tracking": CalendarCheck,
@@ -32,7 +27,7 @@ const productIcons: Record<string, typeof Receipt> = {
    "/features/smart-transactions": Receipt,
 };
 
-export function MobileMenu({ lang: _lang = "pt-BR" }: MobileMenuProps) {
+export function MobileMenu() {
    const [open, setOpen] = useState(false);
 
    return (

@@ -1,4 +1,3 @@
-import type { SupportedLng } from "@packages/localization";
 import {
    NavigationMenu,
    NavigationMenuContent,
@@ -22,7 +21,6 @@ import { menuItems, productItems } from "../data/menu-items";
 
 interface NavMenuProps extends ComponentProps<"nav"> {
    orientation?: "horizontal" | "vertical";
-   lang?: SupportedLng;
 }
 
 const productIcons: Record<string, typeof Receipt> = {
@@ -77,7 +75,6 @@ function ListItem({
 
 export const NavMenu = ({
    orientation = "horizontal",
-   lang: _lang = "pt-BR",
 }: NavMenuProps) => {
    return (
       <NavigationMenu

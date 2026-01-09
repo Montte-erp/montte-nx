@@ -1,5 +1,4 @@
 import type { SplitType } from "@packages/database/schemas/expense-splits";
-import { translate } from "@packages/localization";
 import { of, toDecimal } from "@packages/money";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -247,7 +246,7 @@ export function CreateExpenseSplitForm({
                   {(field) => (
                      <Field>
                         <FieldLabel>
-                           {translate("common.form.description.label")}
+                           Descrição
                         </FieldLabel>
                         <Textarea
                            onBlur={field.handleBlur}

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Card,
    CardContent,
@@ -17,8 +16,8 @@ import { useTRPC } from "@/integrations/clients";
 function StatErrorFallback() {
    return (
       <StatsCard
-         description="Failed to load statistic"
-         title="Failed to load"
+         description="Falha ao carregar estatística"
+         title="Falha ao carregar"
          value="0"
       />
    );
@@ -52,12 +51,8 @@ function MembersStat() {
 
    return (
       <StatsCard
-         description={translate(
-            "dashboard.routes.organization.stats-section.members-count.description",
-         )}
-         title={translate(
-            "dashboard.routes.organization.stats-section.members-count.title",
-         )}
+         description="O número total de membros na organização."
+         title="Total de Membros"
          value={String(members?.length || 0)}
       />
    );
@@ -72,12 +67,8 @@ function TeamsStat() {
 
    return (
       <StatsCard
-         description={translate(
-            "dashboard.routes.organization.stats-section.teams-count.description",
-         )}
-         title={translate(
-            "dashboard.routes.organization.stats-section.teams-count.title",
-         )}
+         description="O número total de equipes dentro da organização."
+         title="Total de Equipes"
          value={String(teams?.length || 0)}
       />
    );

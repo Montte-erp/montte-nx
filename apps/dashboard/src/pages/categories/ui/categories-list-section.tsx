@@ -1,4 +1,4 @@
-import { translate } from "@packages/localization";
+import { Button } from "@packages/ui/components/button";
 import { Card, CardContent } from "@packages/ui/components/card";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
@@ -20,14 +20,29 @@ import {
    SelectionActionButton,
 } from "@packages/ui/components/selection-action-bar";
 import { Skeleton } from "@packages/ui/components/skeleton";
+import {
+   ToggleGroup,
+   ToggleGroupItem,
+} from "@packages/ui/components/toggle-group";
+import { useIsMobile } from "@packages/ui/hooks/use-mobile";
 import { keepPreviousData, useSuspenseQuery } from "@tanstack/react-query";
 import type { RowSelectionState } from "@tanstack/react-table";
-import { Inbox, Search, Trash2 } from "lucide-react";
-import { Fragment, Suspense, useEffect, useMemo, useState } from "react";
+import {
+   ArrowDownAZ,
+   ArrowUpAZ,
+   Filter,
+   Inbox,
+   Search,
+   Trash2,
+   X,
+} from "lucide-react";
+import { Fragment, Suspense, useEffect, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { useCredenza } from "@/hooks/use-credenza";
 import { useTRPC } from "@/integrations/clients";
+import { CategoryFilterCredenza } from "../features/category-filter-credenza";
 import { useCategoryList } from "../features/category-list-context";
 import { useCategoryBulkActions } from "../features/use-category-bulk-actions";
 import {
@@ -41,13 +56,10 @@ function CategoriesListErrorFallback(props: FallbackProps) {
       <Card>
          <CardContent className="pt-6">
             {createErrorFallback({
-               errorDescription: translate(
-                  "dashboard.routes.categories.list-section.state.error.description",
-               ),
-               errorTitle: translate(
-                  "dashboard.routes.categories.list-section.state.error.title",
-               ),
-               retryText: translate("common.actions.retry"),
+               errorDescription:
+                  "Falha ao carregar categorias. Tente novamente mais tarde.",
+               errorTitle: "Erro ao carregar categorias",
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>
@@ -184,7 +196,7 @@ function CategoriesListContent() {
                      onChange={(e) => {
                         setSearchTerm(e.target.value);
                      }}
-                     placeholder={translate("common.form.search.placeholder")}
+                     placeholder="Digite para pesquisar"
                      value={searchTerm}
                   />
                   <InputGroupAddon>
@@ -199,15 +211,9 @@ function CategoriesListContent() {
                         <EmptyMedia variant="icon">
                            <Inbox className="size-6" />
                         </EmptyMedia>
-                        <EmptyTitle>
-                           {translate(
-                              "dashboard.routes.categories.list-section.state.empty.title",
-                           )}
-                        </EmptyTitle>
+                        <EmptyTitle>Nenhuma categoria ainda</EmptyTitle>
                         <EmptyDescription>
-                           {translate(
-                              "dashboard.routes.categories.list-section.state.empty.description",
-                           )}
+                           Crie sua primeira categoria usando a barra de ações rápidas acima para começar a organizar suas transações.
                         </EmptyDescription>
                      </EmptyContent>
                   </Empty>
@@ -275,25 +281,17 @@ function CategoriesListContent() {
                icon={<Trash2 className="size-3.5" />}
                onClick={() =>
                   openAlertDialog({
-                     actionLabel: translate(
-                        "dashboard.routes.categories.bulk-actions.delete",
-                     ),
-                     cancelLabel: translate("common.actions.cancel"),
-                     description: translate(
-                        "dashboard.routes.categories.bulk-actions.delete-confirm-description",
-                        { count: selectedIds.length },
-                     ),
+                     actionLabel: "Excluir",
+                     cancelLabel: "Cancelar",
+                     description: `Esta ação não pode ser desfeita. Isso excluirá permanentemente ${selectedIds.length} ${selectedIds.length === 1 ? "categoria" : "categorias"} e removerá a associação de todas as transações vinculadas.`,
                      onAction: () => deleteSelected(selectedIds),
-                     title: translate(
-                        "dashboard.routes.categories.bulk-actions.delete-confirm-title",
-                        { count: selectedIds.length },
-                     ),
+                     title: `Excluir ${selectedIds.length} ${selectedIds.length === 1 ? "categoria" : "categorias"}?`,
                      variant: "destructive",
                   })
                }
                variant="destructive"
             >
-               {translate("dashboard.routes.categories.bulk-actions.delete")}
+               Excluir
             </SelectionActionButton>
          </SelectionActionBar>
       </>

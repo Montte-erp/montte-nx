@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTRPC } from "@/integrations/clients";
@@ -26,17 +25,12 @@ export function useCostCenterBulkActions(
       try {
          await deleteMutation.mutateAsync({ ids });
          toast.success(
-            translate(
-               "dashboard.routes.cost-centers.bulk-actions.deleted-success",
-               { count: ids.length },
-            ),
+            ids.length === 1
+               ? "1 centro de custo excluído com sucesso"
+               : `${ids.length} centros de custo excluídos com sucesso`,
          );
       } catch {
-         toast.error(
-            translate(
-               "dashboard.routes.cost-centers.bulk-actions.deleted-error",
-            ),
-         );
+         toast.error("Falha ao excluir centros de custo");
       }
    };
 

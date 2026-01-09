@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { FieldDescription } from "@packages/ui/components/field";
@@ -35,42 +34,34 @@ export function SignInPage({ redirectUrl }: SignInPageProps) {
             },
             onRequest: () => {
                setIsGoogleLoading(true);
-               toast.loading(
-                  translate(
-                     "dashboard.routes.sign-in.messages.google-requesting",
-                  ),
-               );
+               toast.loading("Conectando com o Google...");
             },
          },
       );
    }, [callbackURL]);
 
    const TermsAndPrivacyText = () => {
-      const text = translate(
-         "dashboard.routes.sign-in.texts.terms-and-privacy",
-      ).split("{split}");
-
       return (
          <>
-            <span>{text[0]}</span>
+            <span>Ao continuar, você concorda com os </span>
             <a
                className="underline text-muted-foreground hover:text-primary"
                href="https://montte.co/terms-of-service"
                rel="noopener noreferrer"
                target="_blank"
             >
-               {translate("dashboard.routes.sign-in.texts.terms-of-service")}
+               Termos de Serviço
             </a>
-            <span>{text[1]}</span>
+            <span> e </span>
             <a
                className="underline text-muted-foreground hover:text-primary"
                href="https://montte.co/privacy-policy"
                rel="noopener noreferrer"
                target="_blank"
             >
-               {translate("dashboard.routes.sign-in.texts.privacy-policy")}
+               Política de Privacidade
             </a>
-            <span>{text[2]}</span>
+            <span>.</span>
          </>
       );
    };
@@ -80,10 +71,10 @@ export function SignInPage({ redirectUrl }: SignInPageProps) {
          {/* Header */}
          <div className="text-center space-y-2">
             <h1 className="text-3xl font-semibold font-serif">
-               {translate("dashboard.routes.sign-in.title")}
+               Bem-vindo de volta
             </h1>
             <p className="text-muted-foreground text-sm">
-               {translate("dashboard.routes.sign-in.description")}
+               Escolha como deseja entrar
             </p>
          </div>
 
@@ -111,12 +102,10 @@ export function SignInPage({ redirectUrl }: SignInPageProps) {
                      />
                   </svg>
                )}
-               <span>
-                  {translate("dashboard.routes.sign-in.actions.google-sign-in")}
-               </span>
+               <span>Continuar com Google</span>
                {lastMethod === "google" && (
                   <Badge className="absolute -top-2 -right-2" variant="default">
-                     {translate("dashboard.routes.sign-in.last-used")}
+                     Último usado
                   </Badge>
                )}
             </Button>
@@ -129,17 +118,13 @@ export function SignInPage({ redirectUrl }: SignInPageProps) {
             >
                <Link to="/auth/anonymous">
                   <User className="size-5" />
-                  <span>
-                     {translate(
-                        "dashboard.routes.sign-in.actions.try-without-account",
-                     )}
-                  </span>
+                  <span>Testar sem conta</span>
                   {lastMethod === "anonymous" && (
                      <Badge
                         className="absolute -top-2 -right-2"
                         variant="default"
                      >
-                        {translate("dashboard.routes.sign-in.last-used")}
+                        Último usado
                      </Badge>
                   )}
                </Link>
@@ -153,7 +138,7 @@ export function SignInPage({ redirectUrl }: SignInPageProps) {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
                <span className="bg-background px-2 text-muted-foreground">
-                  {translate("dashboard.routes.sign-in.texts.or-continue-with")}
+                  Ou continue com
                </span>
             </div>
          </div>
@@ -167,20 +152,16 @@ export function SignInPage({ redirectUrl }: SignInPageProps) {
             >
                {lastMethod === "email" && (
                   <Badge className="absolute -top-2 -right-2" variant="default">
-                     {translate("dashboard.routes.sign-in.last-used")}
+                     Último usado
                   </Badge>
                )}
                <div className="flex items-center justify-center size-10 rounded-full bg-muted group-hover:bg-primary/10 transition-colors">
                   <KeyRound className="size-5 text-muted-foreground group-hover:text-primary transition-colors" />
                </div>
                <div className="text-center">
-                  <p className="text-sm font-medium">
-                     {translate("dashboard.routes.sign-in.methods.email")}
-                  </p>
+                  <p className="text-sm font-medium">Email e senha</p>
                   <p className="text-xs text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.sign-in.methods.email-description",
-                     )}
+                     Login tradicional
                   </p>
                </div>
             </Link>
@@ -192,20 +173,16 @@ export function SignInPage({ redirectUrl }: SignInPageProps) {
             >
                {lastMethod === "magicLink" && (
                   <Badge className="absolute -top-2 -right-2" variant="default">
-                     {translate("dashboard.routes.sign-in.last-used")}
+                     Último usado
                   </Badge>
                )}
                <div className="flex items-center justify-center size-10 rounded-full bg-muted group-hover:bg-primary/10 transition-colors">
                   <Sparkles className="size-5 text-muted-foreground group-hover:text-primary transition-colors" />
                </div>
                <div className="text-center">
-                  <p className="text-sm font-medium">
-                     {translate("dashboard.routes.sign-in.methods.magic-link")}
-                  </p>
+                  <p className="text-sm font-medium">Link mágico</p>
                   <p className="text-xs text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.sign-in.methods.magic-link-description",
-                     )}
+                     Sem senha
                   </p>
                </div>
             </Link>
@@ -214,14 +191,12 @@ export function SignInPage({ redirectUrl }: SignInPageProps) {
          {/* Footer */}
          <div className="text-sm text-center space-y-4">
             <div className="flex gap-1 justify-center items-center">
-               <span>
-                  {translate("dashboard.routes.sign-in.texts.no-account")}
-               </span>
+               <span>Não tem uma conta?</span>
                <Link
                   className="text-primary font-medium hover:underline"
                   to="/auth/sign-up"
                >
-                  {translate("dashboard.routes.sign-in.actions.sign-up")}
+                  Criar conta
                </Link>
             </div>
             <FieldDescription className="text-center">

@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { Skeleton } from "@packages/ui/components/skeleton";
@@ -22,7 +21,7 @@ function CategoryActionButtonsErrorFallback(props: FallbackProps) {
          {createErrorFallback({
             errorDescription: "Failed to load action buttons",
             errorTitle: "Error",
-            retryText: translate("common.actions.retry"),
+            retryText: "Tentar novamente",
          })(props)}
       </div>
    );
@@ -79,9 +78,7 @@ function CategoryActionButtonsContent() {
             variant="outline"
          >
             <Edit className="size-4" />
-            {translate(
-               "dashboard.routes.categories.list-section.actions.edit-category",
-            )}
+            Editar categoria
          </Button>
          <Button
             className="text-destructive hover:text-destructive"
@@ -90,9 +87,7 @@ function CategoryActionButtonsContent() {
             variant="outline"
          >
             <Trash2 className="size-4" />
-            {translate(
-               "dashboard.routes.categories.list-section.actions.delete-category",
-            )}
+            Excluir categoria
          </Button>
       </div>
    );

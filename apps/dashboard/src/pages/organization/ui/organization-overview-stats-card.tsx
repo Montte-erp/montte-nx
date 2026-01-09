@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Card,
    CardContent,
@@ -20,13 +19,10 @@ function OrganizationStatsCardErrorFallback(props: FallbackProps) {
       <Card>
          <CardContent className="pt-6">
             {createErrorFallback({
-               errorDescription: translate(
-                  "dashboard.routes.organization.stats-card.state.error.description",
-               ),
-               errorTitle: translate(
-                  "dashboard.routes.organization.stats-card.state.error.title",
-               ),
-               retryText: translate("common.actions.retry"),
+               errorDescription:
+                  "Não foi possível carregar as estatísticas da organização.",
+               errorTitle: "Erro ao Carregar Estatísticas",
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>
@@ -81,9 +77,7 @@ function OrganizationStatsCardContent() {
    return (
       <Card>
          <CardHeader className="text-center pb-2">
-            <CardDescription>
-               {translate("dashboard.routes.organization.stats-card.title")}
-            </CardDescription>
+            <CardDescription>Estatísticas da Organização</CardDescription>
             <CardTitle className="text-2xl font-bold">
                {activeOrganization.name}
             </CardTitle>
@@ -96,11 +90,7 @@ function OrganizationStatsCardContent() {
                         <div className="rounded-full bg-blue-500/10 p-2">
                            <Users className="size-4 text-blue-500" />
                         </div>
-                        <CardDescription>
-                           {translate(
-                              "dashboard.routes.organization.stats-card.members",
-                           )}
-                        </CardDescription>
+                        <CardDescription>Membros</CardDescription>
                      </div>
                      <CardTitle className="text-xl">{members.length}</CardTitle>
                   </CardHeader>
@@ -112,11 +102,7 @@ function OrganizationStatsCardContent() {
                         <div className="rounded-full bg-purple-500/10 p-2">
                            <Shield className="size-4 text-purple-500" />
                         </div>
-                        <CardDescription>
-                           {translate(
-                              "dashboard.routes.organization.stats-card.admins",
-                           )}
-                        </CardDescription>
+                        <CardDescription>Admins</CardDescription>
                      </div>
                      <CardTitle className="text-xl">{adminCount}</CardTitle>
                   </CardHeader>
@@ -128,11 +114,7 @@ function OrganizationStatsCardContent() {
                         <div className="rounded-full bg-green-500/10 p-2">
                            <Users className="size-4 text-green-500" />
                         </div>
-                        <CardDescription>
-                           {translate(
-                              "dashboard.routes.organization.stats-card.teams",
-                           )}
-                        </CardDescription>
+                        <CardDescription>Equipes</CardDescription>
                      </div>
                      <CardTitle className="text-xl">{teams.length}</CardTitle>
                   </CardHeader>
@@ -144,11 +126,7 @@ function OrganizationStatsCardContent() {
                         <div className="rounded-full bg-amber-500/10 p-2">
                            <Mail className="size-4 text-amber-500" />
                         </div>
-                        <CardDescription>
-                           {translate(
-                              "dashboard.routes.organization.stats-card.pending-invites",
-                           )}
-                        </CardDescription>
+                        <CardDescription>Pendentes</CardDescription>
                      </div>
                      <CardTitle className="text-xl">
                         {pendingInvites.length}

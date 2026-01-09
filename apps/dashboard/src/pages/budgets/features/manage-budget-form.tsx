@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Field,
@@ -46,22 +45,13 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
 
    const modeTexts = useMemo(() => {
       const createTexts = {
-         description: translate(
-            "dashboard.routes.budgets.features.create-budget.description",
-         ),
-         title: translate(
-            "dashboard.routes.budgets.features.create-budget.title",
-         ),
+         description: "Crie um novo orçamento para controlar seus gastos",
+         title: "Novo orçamento",
       };
 
       const editTexts = {
-         description: translate(
-            "dashboard.routes.budgets.features.edit-budget.description",
-            { name: budget?.name || "" },
-         ),
-         title: translate(
-            "dashboard.routes.budgets.features.edit-budget.title",
-         ),
+         description: `Editando o orçamento ${budget?.name || ""}`,
+         title: "Editar orçamento",
       };
 
       return isEditMode ? editTexts : createTexts;
@@ -201,42 +191,42 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
 
    const periodOptions = [
       {
-         label: translate("dashboard.routes.budgets.form.period.daily"),
+         label: "Diário",
          value: "daily",
       },
       {
-         label: translate("dashboard.routes.budgets.form.period.weekly"),
+         label: "Semanal",
          value: "weekly",
       },
       {
-         label: translate("dashboard.routes.budgets.form.period.monthly"),
+         label: "Mensal",
          value: "monthly",
       },
       {
-         label: translate("dashboard.routes.budgets.form.period.quarterly"),
+         label: "Trimestral",
          value: "quarterly",
       },
       {
-         label: translate("dashboard.routes.budgets.form.period.yearly"),
+         label: "Anual",
          value: "yearly",
       },
    ];
 
    const targetTypeOptions = [
       {
-         label: translate("dashboard.routes.budgets.form.target.category"),
+         label: "Categoria única",
          value: "category",
       },
       {
-         label: translate("dashboard.routes.budgets.form.target.categories"),
+         label: "Múltiplas categorias",
          value: "categories",
       },
       {
-         label: translate("dashboard.routes.budgets.form.target.tag"),
+         label: "Tag",
          value: "tag",
       },
       {
-         label: translate("dashboard.routes.budgets.form.target.cost_center"),
+         label: "Centro de custo",
          value: "cost_center",
       },
    ];
@@ -263,18 +253,14 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel>
-                              {translate(
-                                 "dashboard.routes.budgets.form.name.label",
-                              )}
+                              Nome
                            </FieldLabel>
                            <Input
                               onBlur={field.handleBlur}
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
                               }
-                              placeholder={translate(
-                                 "dashboard.routes.budgets.form.name.placeholder",
-                              )}
+                              placeholder="Ex: Alimentação, Lazer, Marketing..."
                               value={field.state.value}
                            />
                            {isInvalid && (
@@ -294,18 +280,14 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel>
-                              {translate(
-                                 "dashboard.routes.budgets.form.amount.label",
-                              )}
+                              Valor limite
                            </FieldLabel>
                            <MoneyInput
                               onBlur={field.handleBlur}
                               onChange={(value) =>
                                  field.handleChange(value ?? 0)
                               }
-                              placeholder={translate(
-                                 "dashboard.routes.budgets.form.amount.placeholder",
-                              )}
+                              placeholder="0,00"
                               value={field.state.value}
                               valueInCents={false}
                            />
@@ -323,9 +305,7 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                   {(field) => (
                      <Field>
                         <FieldLabel>
-                           {translate(
-                              "dashboard.routes.budgets.form.period.label",
-                           )}
+                           Período
                         </FieldLabel>
                         <Select
                            onValueChange={(value) =>
@@ -365,9 +345,7 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                   {(field) => (
                      <Field>
                         <FieldLabel>
-                           {translate(
-                              "dashboard.routes.budgets.form.target.label",
-                           )}
+                           Alvo do orçamento
                         </FieldLabel>
                         <Select
                            onValueChange={(value) => field.handleChange(value)}
@@ -401,7 +379,7 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                               {(field) => (
                                  <Field>
                                     <FieldLabel>
-                                       {translate("common.form.category.label")}
+                                       Categoria
                                     </FieldLabel>
                                     <Select
                                        onValueChange={(value) =>
@@ -411,9 +389,7 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                                     >
                                        <SelectTrigger className="w-full">
                                           <SelectValue
-                                             placeholder={translate(
-                                                "common.form.category.placeholder",
-                                             )}
+                                             placeholder="Selecione uma categoria"
                                           />
                                        </SelectTrigger>
                                        <SelectContent>
@@ -439,7 +415,7 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                               {(field) => (
                                  <Field>
                                     <FieldLabel>
-                                       {translate("common.form.category.label")}
+                                       Categoria
                                     </FieldLabel>
                                     <MultiSelect
                                        onChange={(selected) =>
@@ -449,9 +425,7 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                                           label: cat.name,
                                           value: cat.id,
                                        }))}
-                                       placeholder={translate(
-                                          "common.form.category.placeholder",
-                                       )}
+                                       placeholder="Selecione uma categoria"
                                        selected={field.state.value}
                                     />
                                  </Field>
@@ -466,7 +440,7 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                               {(field) => (
                                  <Field>
                                     <FieldLabel>
-                                       {translate("common.form.tags.label")}
+                                       Tags
                                     </FieldLabel>
                                     <Select
                                        onValueChange={(value) =>
@@ -476,9 +450,7 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                                     >
                                        <SelectTrigger className="w-full">
                                           <SelectValue
-                                             placeholder={translate(
-                                                "common.form.tags.placeholder",
-                                             )}
+                                             placeholder="Selecione as tags"
                                           />
                                        </SelectTrigger>
                                        <SelectContent>
@@ -504,9 +476,7 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                               {(field) => (
                                  <Field>
                                     <FieldLabel>
-                                       {translate(
-                                          "common.form.cost-center.label",
-                                       )}
+                                       Centro de Custo
                                     </FieldLabel>
                                     <Select
                                        onValueChange={(value) =>
@@ -516,9 +486,7 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                                     >
                                        <SelectTrigger className="w-full">
                                           <SelectValue
-                                             placeholder={translate(
-                                                "common.form.cost-center.placeholder",
-                                             )}
+                                             placeholder="Selecione um centro de custo"
                                           />
                                        </SelectTrigger>
                                        <SelectContent>
@@ -556,12 +524,8 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                      type="submit"
                   >
                      {isEditMode
-                        ? translate(
-                             "dashboard.routes.budgets.features.edit-budget.title",
-                          )
-                        : translate(
-                             "dashboard.routes.budgets.features.create-budget.title",
-                          )}
+                        ? "Editar orçamento"
+                        : "Novo orçamento"}
                   </Button>
                )}
             </form.Subscribe>

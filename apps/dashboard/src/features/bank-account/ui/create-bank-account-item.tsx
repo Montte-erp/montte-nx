@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Item,
    ItemActions,
@@ -31,14 +30,10 @@ export function CreateBankAccountItem({
          </ItemMedia>
          <ItemContent>
             <ItemTitle>
-               {translate(
-                  "dashboard.routes.profile.bank-accounts.actions.add-account.title",
-               )}
+               Adicionar conta bancária
             </ItemTitle>
             <ItemDescription>
-               {translate(
-                  "dashboard.routes.profile.bank-accounts.actions.add-account.description",
-               )}
+               Clique para adicionar uma nova conta bancária.
             </ItemDescription>
          </ItemContent>
          <ItemActions>

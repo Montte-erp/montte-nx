@@ -5,7 +5,6 @@
  * Prompts the user to enter their passphrase to unlock encrypted data.
  */
 
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import {
@@ -59,20 +58,16 @@ export function EncryptionUnlockDialog({
             if (success) {
                onOpenChange(false);
                toast.success(
-                  translate(
-                     "dashboard.routes.settings.encryption.unlock.success",
-                  ),
+                  "Dados desbloqueados com sucesso",
                );
             } else {
                setError(
-                  translate(
-                     "dashboard.routes.settings.encryption.unlock.invalid-passphrase",
-                  ),
+                  "Frase secreta incorreta",
                );
             }
          } catch (_err) {
             setError(
-               translate("dashboard.routes.settings.encryption.unlock.error"),
+               "Erro ao desbloquear",
             );
          } finally {
             setIsSubmitting(false);
@@ -92,14 +87,10 @@ export function EncryptionUnlockDialog({
             <DialogHeader>
                <DialogTitle className="flex items-center gap-2">
                   <Lock className="size-5" />
-                  {translate(
-                     "dashboard.routes.settings.encryption.unlock.title",
-                  )}
+                  Desbloquear Criptografia
                </DialogTitle>
                <DialogDescription>
-                  {translate(
-                     "dashboard.routes.settings.encryption.unlock.description",
-                  )}
+                  Digite sua frase secreta para acessar seus dados criptografados.
                </DialogDescription>
             </DialogHeader>
 
@@ -109,9 +100,7 @@ export function EncryptionUnlockDialog({
                      <FieldGroup>
                         <Field>
                            <FieldLabel>
-                              {translate(
-                                 "dashboard.routes.settings.encryption.passphrase",
-                              )}
+                              Frase secreta
                            </FieldLabel>
                            <Input
                               autoComplete="current-password"
@@ -123,9 +112,7 @@ export function EncryptionUnlockDialog({
                                  field.handleChange(e.target.value);
                                  setError(null);
                               }}
-                              placeholder={translate(
-                                 "dashboard.routes.settings.encryption.passphrase-placeholder",
-                              )}
+                              placeholder="Digite sua frase secreta"
                               type="password"
                               value={field.state.value}
                            />
@@ -153,9 +140,7 @@ export function EncryptionUnlockDialog({
                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                            htmlFor={field.name}
                         >
-                           {translate(
-                              "dashboard.routes.settings.encryption.unlock.remember-device",
-                           )}
+                           Lembrar neste dispositivo (30 dias)
                         </label>
                      </div>
                   )}
@@ -164,7 +149,7 @@ export function EncryptionUnlockDialog({
 
             <DialogFooter>
                <Button onClick={() => onOpenChange(false)} variant="outline">
-                  {translate("common.actions.cancel")}
+                  Cancelar
                </Button>
                <form.Subscribe>
                   {(formState) => (
@@ -175,9 +160,7 @@ export function EncryptionUnlockDialog({
                         {isSubmitting && (
                            <Loader2 className="size-4 mr-2 animate-spin" />
                         )}
-                        {translate(
-                           "dashboard.routes.settings.encryption.unlock.button",
-                        )}
+                        Desbloquear
                      </Button>
                   )}
                </form.Subscribe>

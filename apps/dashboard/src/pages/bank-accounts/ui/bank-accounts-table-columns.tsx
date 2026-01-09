@@ -1,5 +1,4 @@
 import type { BankAccount } from "@packages/database/repositories/bank-account-repository";
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import {
    Announcement,
@@ -78,11 +77,7 @@ function BankAccountActionsCell({ account }: { account: BankAccount }) {
                   </Link>
                </Button>
             </TooltipTrigger>
-            <TooltipContent>
-               {translate(
-                  "dashboard.routes.bank-accounts.list-section.actions.view-details",
-               )}
-            </TooltipContent>
+            <TooltipContent>Ver detalhes</TooltipContent>
          </Tooltip>
       </div>
    );
@@ -149,13 +144,7 @@ export function createBankAccountColumns(): ColumnDef<BankAccount>[] {
                      <StatusIcon className="size-3.5" />
                   </AnnouncementTag>
                   <AnnouncementTitle style={{ color }}>
-                     {isActive
-                        ? translate(
-                             "dashboard.routes.bank-accounts.status.active",
-                          )
-                        : translate(
-                             "dashboard.routes.bank-accounts.status.inactive",
-                          )}
+                     {isActive ? "Ativa" : "Inativa"}
                   </AnnouncementTitle>
                </Announcement>
             );
@@ -183,9 +172,9 @@ export function createBankAccountColumns(): ColumnDef<BankAccount>[] {
 }
 
 const typeMap: Record<string, string> = {
-   checking: translate("dashboard.routes.bank-accounts.types.checking"),
-   investment: translate("dashboard.routes.bank-accounts.types.investment"),
-   savings: translate("dashboard.routes.bank-accounts.types.savings"),
+   checking: "Conta corrente",
+   investment: "Conta de investimento",
+   savings: "Conta poupança",
 };
 
 interface BankAccountExpandedContentProps {
@@ -229,9 +218,7 @@ export function BankAccountExpandedContent({
          <Announcement>
             <AnnouncementTag className="flex items-center gap-1.5">
                <Wallet className="size-3.5" />
-               {translate(
-                  "dashboard.routes.bank-accounts.stats-section.current-balance.title",
-               )}
+               Saldo Atual
             </AnnouncementTag>
             <AnnouncementTitle>
                {formatDecimalCurrency(balance)}
@@ -243,9 +230,7 @@ export function BankAccountExpandedContent({
          <Announcement>
             <AnnouncementTag className="flex items-center gap-1.5">
                <ArrowDownLeft className="size-3.5 text-emerald-500" />
-               {translate(
-                  "dashboard.routes.bank-accounts.stats-section.total-income.title",
-               )}
+               Total de Receitas
             </AnnouncementTag>
             <AnnouncementTitle className="text-emerald-500">
                +{formatDecimalCurrency(income)}
@@ -257,9 +242,7 @@ export function BankAccountExpandedContent({
          <Announcement>
             <AnnouncementTag className="flex items-center gap-1.5">
                <ArrowUpRight className="size-3.5 text-destructive" />
-               {translate(
-                  "dashboard.routes.bank-accounts.stats-section.total-expenses.title",
-               )}
+               Total de Despesas
             </AnnouncementTag>
             <AnnouncementTitle className="text-destructive">
                -{formatDecimalCurrency(expenses)}
@@ -292,9 +275,7 @@ export function BankAccountExpandedContent({
                to="/$slug/bank-accounts/$bankAccountId"
             >
                <Eye className="size-4" />
-               {translate(
-                  "dashboard.routes.bank-accounts.list-section.actions.view-details",
-               )}
+               Ver detalhes
             </Link>
          </Button>
          <Button asChild size="sm" variant="outline">
@@ -323,9 +304,7 @@ export function BankAccountExpandedContent({
          </Button>
          <Button onClick={handleEdit} size="sm" variant="outline">
             <Edit className="size-4" />
-            {translate(
-               "dashboard.routes.bank-accounts.list-section.actions.edit",
-            )}
+            Editar
          </Button>
          <Button
             disabled={!canDelete}
@@ -334,9 +313,7 @@ export function BankAccountExpandedContent({
             variant="destructive"
          >
             <Trash2 className="size-4" />
-            {translate(
-               "dashboard.routes.bank-accounts.list-section.actions.delete",
-            )}
+            Excluir
          </Button>
       </div>
    );
@@ -390,11 +367,7 @@ export function BankAccountMobileCard({
                   <StatusIcon className="size-3.5" />
                </AnnouncementTag>
                <AnnouncementTitle style={{ color: statusColor }}>
-                  {isActive
-                     ? translate("dashboard.routes.bank-accounts.status.active")
-                     : translate(
-                          "dashboard.routes.bank-accounts.status.inactive",
-                       )}
+                  {isActive ? "Ativa" : "Inativa"}
                </AnnouncementTitle>
             </Announcement>
             <Announcement>
@@ -416,9 +389,7 @@ export function BankAccountMobileCard({
                   }}
                   variant="outline"
                >
-                  {isExpanded
-                     ? translate("common.actions.less-info")
-                     : translate("common.actions.more-info")}
+                  {isExpanded ? "Menos informações" : "Mais informações"}
                   <ChevronDown
                      className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
                   />

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatCurrency, formatDecimalCurrency } from "@packages/money";
 import { Button } from "@packages/ui/components/button";
 import { Field, FieldGroup, FieldLabel } from "@packages/ui/components/field";
@@ -163,13 +162,13 @@ export function CategorySplitForm({
             <FieldGroup>
                <Field>
                   <FieldLabel>
-                     {translate("common.form.category.label")}
+                     Categoria
                   </FieldLabel>
                   <MultiSelect
-                     emptyMessage={translate("common.form.search.no-results")}
+                     emptyMessage="Nenhum resultado encontrado"
                      onChange={handleCategoryChange}
                      options={categoryOptions}
-                     placeholder={translate("common.form.category.placeholder")}
+                     placeholder="Selecione uma categoria"
                      selected={selectedCategoryIds}
                   />
                </Field>

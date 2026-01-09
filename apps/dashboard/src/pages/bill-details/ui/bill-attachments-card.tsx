@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Alert, AlertDescription } from "@packages/ui/components/alert";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -202,8 +201,7 @@ function AttachmentsCardContent({ billId }: { billId: string }) {
          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
                <Paperclip className="size-5" />
-               {translate("dashboard.routes.bills.details.attachments.title")} (
-               {attachments.length})
+               Anexos ({attachments.length})
             </CardTitle>
             <div>
                <input
@@ -222,16 +220,12 @@ function AttachmentsCardContent({ billId }: { billId: string }) {
                   {uploadingFile ? (
                      <>
                         <Loader2 className="size-4 animate-spin" />
-                        {translate(
-                           "dashboard.routes.bills.details.attachments.uploading",
-                        )}
+                        Enviando...
                      </>
                   ) : (
                      <>
                         <Upload className="size-4" />
-                        {translate(
-                           "dashboard.routes.bills.details.attachments.upload",
-                        )}
+                        Enviar
                      </>
                   )}
                </Button>
@@ -240,9 +234,7 @@ function AttachmentsCardContent({ billId }: { billId: string }) {
          <CardContent>
             {attachments.length === 0 ? (
                <p className="text-sm text-muted-foreground text-center py-4">
-                  {translate(
-                     "dashboard.routes.bills.details.attachments.empty",
-                  )}
+                  Nenhum anexo disponível
                </p>
             ) : (
                <div className="space-y-2">

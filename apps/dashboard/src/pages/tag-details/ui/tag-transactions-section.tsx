@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import { Button } from "@packages/ui/components/button";
 import { Card, CardContent } from "@packages/ui/components/card";
@@ -225,14 +224,10 @@ function TagTransactionsContent({
                         <Tag className="size-12 text-muted-foreground" />
                      </EmptyMedia>
                      <EmptyTitle>
-                        {translate(
-                           "dashboard.routes.transactions.list-section.state.empty.title",
-                        )}
+                        Nenhuma Transação Encontrada
                      </EmptyTitle>
                      <EmptyDescription>
-                        {translate(
-                           "dashboard.routes.transactions.list-section.state.empty.description",
-                        )}
+                        Tente ajustar seus filtros ou adicionar uma nova transação.
                      </EmptyDescription>
                   </EmptyContent>
                </Empty>
@@ -249,9 +244,7 @@ function TagTransactionsContent({
                   <InputGroup className="flex-1 sm:max-w-md">
                      <InputGroupInput
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder={translate(
-                           "common.form.search.placeholder",
-                        )}
+                        placeholder="Digite para pesquisar"
                         value={searchTerm}
                      />
                      <InputGroupAddon>
@@ -278,27 +271,21 @@ function TagTransactionsContent({
                            value="income"
                         >
                            <ArrowDownLeft className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.transactions.list-section.types.income",
-                           )}
+                           Receita
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-red-500 data-[state=on]:text-red-600"
                            value="expense"
                         >
                            <ArrowUpRight className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.transactions.list-section.types.expense",
-                           )}
+                           Despesa
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-blue-500 data-[state=on]:text-blue-600"
                            value="transfer"
                         >
                            <ArrowLeftRight className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.transactions.list-section.types.transfer",
-                           )}
+                           Transferência
                         </ToggleGroupItem>
                      </ToggleGroup>
                   </div>
@@ -313,7 +300,7 @@ function TagTransactionsContent({
                            variant="outline"
                         >
                            <X className="size-3" />
-                           {translate("common.actions.clear-filters")}
+                           Limpar filtros
                         </Button>
                      </>
                   )}
@@ -321,9 +308,7 @@ function TagTransactionsContent({
 
                {transactions.length === 0 ? (
                   <div className="py-8 text-center text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.transactions.list-section.state.empty.title",
-                     )}
+                     Nenhuma transação encontrada
                   </div>
                ) : (
                   <DataTable
@@ -382,18 +367,11 @@ function TagTransactionsContent({
                icon={<Trash2 className="size-3.5" />}
                onClick={() =>
                   openAlertDialog({
-                     actionLabel: translate(
-                        "dashboard.routes.transactions.list-section.actions.delete",
-                     ),
-                     cancelLabel: translate("common.actions.cancel"),
-                     description: translate(
-                        "common.headers.delete-confirmation.description-bulk",
-                        { count: selectedIds.length },
-                     ),
+                     actionLabel: "Excluir transação",
+                     cancelLabel: "Cancelar",
+                     description: `Tem certeza que deseja excluir ${selectedIds.length} itens? Esta ação não pode ser desfeita.`,
                      onAction: () => deleteSelected(selectedIds),
-                     title: translate(
-                        "common.headers.delete-confirmation.title",
-                     ),
+                     title: "Confirmar Exclusão",
                      variant: "destructive",
                   })
                }

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    CredenzaBody,
@@ -74,26 +73,26 @@ export function TagFilterCredenza({
 
    const orderByOptions = [
       {
-         label: translate("common.form.name.label"),
+         label: "Nome",
          value: "name" as const,
       },
       {
-         label: translate("common.form.created-at.label"),
+         label: "Data de Criação",
          value: "createdAt" as const,
       },
       {
-         label: translate("common.form.updated-at.label"),
+         label: "Data de Atualização",
          value: "updatedAt" as const,
       },
    ];
 
    const orderDirectionOptions = [
       {
-         label: translate("common.form.sort-ascending.label"),
+         label: "Crescente",
          value: "asc" as const,
       },
       {
-         label: translate("common.form.sort-descending.label"),
+         label: "Decrescente",
          value: "desc" as const,
       },
    ];
@@ -109,10 +108,10 @@ export function TagFilterCredenza({
       <>
          <CredenzaHeader>
             <CredenzaTitle>
-               {translate("dashboard.routes.tags.features.filter.title")}
+               Filtrar Tags
             </CredenzaTitle>
             <CredenzaDescription>
-               {translate("dashboard.routes.tags.features.filter.description")}
+               Refine a lista de tags com base em critérios específicos.
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -125,14 +124,14 @@ export function TagFilterCredenza({
                      variant="outline"
                   >
                      <X className="size-4" />
-                     {translate("common.form.filter.clear-all")}
+                     Limpar Filtros
                   </Button>
                )}
 
                <FieldGroup>
                   <Field>
                      <FieldLabel>
-                        {translate("common.form.period.label")}
+                        Período
                      </FieldLabel>
                      <div className="grid grid-cols-2 gap-2">
                         {TIME_PERIODS.map((period) => {
@@ -171,7 +170,7 @@ export function TagFilterCredenza({
                            size="sm"
                            variant="outline"
                         >
-                           {translate("common.form.date-range.custom")}
+                           Personalizado
                         </Button>
                      </div>
                   </Field>
@@ -181,26 +180,22 @@ export function TagFilterCredenza({
                   <FieldGroup>
                      <Field>
                         <FieldLabel>
-                           {translate("common.form.date-range.start")}
+                           Data Inicial
                         </FieldLabel>
                         <DatePicker
                            date={customStartDate || undefined}
                            onSelect={onCustomStartDateChange}
-                           placeholder={translate(
-                              "common.form.date.placeholder",
-                           )}
+                           placeholder="Selecione uma data"
                         />
                      </Field>
                      <Field>
                         <FieldLabel>
-                           {translate("common.form.date-range.end")}
+                           Data Final
                         </FieldLabel>
                         <DatePicker
                            date={customEndDate || undefined}
                            onSelect={onCustomEndDateChange}
-                           placeholder={translate(
-                              "common.form.date.placeholder",
-                           )}
+                           placeholder="Selecione uma data"
                         />
                      </Field>
                   </FieldGroup>
@@ -209,7 +204,7 @@ export function TagFilterCredenza({
                <FieldGroup>
                   <Field>
                      <FieldLabel>
-                        {translate("common.form.type.label")}
+                        Tipo
                      </FieldLabel>
                      <ToggleGroup
                         className="justify-start"
@@ -225,27 +220,21 @@ export function TagFilterCredenza({
                            value="income"
                         >
                            <ArrowDownLeft className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.transactions.list-section.types.income",
-                           )}
+                           Receita
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-red-500 data-[state=on]:text-red-600"
                            value="expense"
                         >
                            <ArrowUpRight className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.transactions.list-section.types.expense",
-                           )}
+                           Despesa
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-blue-500 data-[state=on]:text-blue-600"
                            value="transfer"
                         >
                            <ArrowLeftRight className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.transactions.list-section.types.transfer",
-                           )}
+                           Transferência
                         </ToggleGroupItem>
                      </ToggleGroup>
                   </Field>
@@ -254,7 +243,7 @@ export function TagFilterCredenza({
                <FieldGroup>
                   <Field>
                      <FieldLabel>
-                        {translate("common.form.sort-by.label")}
+                        Ordenar por
                      </FieldLabel>
                      <Select
                         onValueChange={(
@@ -264,9 +253,7 @@ export function TagFilterCredenza({
                      >
                         <SelectTrigger>
                            <SelectValue
-                              placeholder={translate(
-                                 "common.form.sort-by.placeholder",
-                              )}
+                              placeholder="Selecione o campo"
                            />
                         </SelectTrigger>
                         <SelectContent>
@@ -286,7 +273,7 @@ export function TagFilterCredenza({
                <FieldGroup>
                   <Field>
                      <FieldLabel>
-                        {translate("common.form.order-direction.label")}
+                        Direção da Ordenação
                      </FieldLabel>
                      <Select
                         onValueChange={(value: "asc" | "desc") =>
@@ -296,9 +283,7 @@ export function TagFilterCredenza({
                      >
                         <SelectTrigger>
                            <SelectValue
-                              placeholder={translate(
-                                 "common.form.order-direction.placeholder",
-                              )}
+                              placeholder="Selecione a direção"
                            />
                         </SelectTrigger>
                         <SelectContent>
@@ -319,9 +304,7 @@ export function TagFilterCredenza({
                   <FieldGroup>
                      <Field>
                         <FieldLabel>
-                           {translate(
-                              "dashboard.routes.transactions.features.filter.page-size.label",
-                           )}
+                           Itens por Página
                         </FieldLabel>
                         <Select
                            onValueChange={(value) =>
@@ -348,7 +331,7 @@ export function TagFilterCredenza({
 
          <CredenzaFooter>
             <Button onClick={() => closeCredenza()} variant="outline">
-               {translate("common.actions.close")}
+               Fechar
             </Button>
          </CredenzaFooter>
       </>

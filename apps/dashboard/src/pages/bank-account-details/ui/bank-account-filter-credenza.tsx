@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { Combobox } from "@packages/ui/components/combobox";
 import {
@@ -67,9 +66,7 @@ export function BankAccountFilterCredenza({
 
    const categoryOptions = [
       {
-         label: translate(
-            "dashboard.routes.transactions.features.filter.items.all-categories",
-         ),
+         label: "Todas as Categorias",
          value: "all",
       },
       ...categories.map((category) => ({
@@ -89,10 +86,10 @@ export function BankAccountFilterCredenza({
       <>
          <CredenzaHeader>
             <CredenzaTitle>
-               {translate("common.form.filter.title")}
+               Filtros
             </CredenzaTitle>
             <CredenzaDescription>
-               {translate("common.form.filter.description")}
+               Refine os resultados com filtros
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -105,7 +102,7 @@ export function BankAccountFilterCredenza({
                      variant="outline"
                   >
                      <X className="size-4" />
-                     {translate("common.form.filter.clear-all")}
+                     Limpar Filtros
                   </Button>
                )}
 
@@ -159,26 +156,22 @@ export function BankAccountFilterCredenza({
                   <FieldGroup>
                      <Field>
                         <FieldLabel>
-                           {translate("common.form.date-range.start")}
+                           Data Inicial
                         </FieldLabel>
                         <DatePicker
                            date={customStartDate || undefined}
                            onSelect={onCustomStartDateChange}
-                           placeholder={translate(
-                              "common.form.date.placeholder",
-                           )}
+                           placeholder="Selecione uma data"
                         />
                      </Field>
                      <Field>
                         <FieldLabel>
-                           {translate("common.form.date-range.end")}
+                           Data Final
                         </FieldLabel>
                         <DatePicker
                            date={customEndDate || undefined}
                            onSelect={onCustomEndDateChange}
-                           placeholder={translate(
-                              "common.form.date.placeholder",
-                           )}
+                           placeholder="Selecione uma data"
                         />
                      </Field>
                   </FieldGroup>
@@ -187,7 +180,7 @@ export function BankAccountFilterCredenza({
                <FieldGroup>
                   <Field>
                      <FieldLabel>
-                        {translate("common.form.type.label")}
+                        Tipo
                      </FieldLabel>
                      <ToggleGroup
                         className="justify-start"
@@ -203,27 +196,21 @@ export function BankAccountFilterCredenza({
                            value="income"
                         >
                            <ArrowDownLeft className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.transactions.list-section.types.income",
-                           )}
+                           Receita
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-red-500 data-[state=on]:text-red-600"
                            value="expense"
                         >
                            <ArrowUpRight className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.transactions.list-section.types.expense",
-                           )}
+                           Despesa
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-blue-500 data-[state=on]:text-blue-600"
                            value="transfer"
                         >
                            <ArrowLeftRight className="size-3.5" />
-                           {translate(
-                              "dashboard.routes.transactions.list-section.types.transfer",
-                           )}
+                           Transferência
                         </ToggleGroupItem>
                      </ToggleGroup>
                   </Field>
@@ -232,20 +219,14 @@ export function BankAccountFilterCredenza({
                <FieldGroup>
                   <Field>
                      <FieldLabel>
-                        {translate("common.form.category.label")}
+                        Categoria
                      </FieldLabel>
                      <Combobox
-                        emptyMessage={translate(
-                           "common.form.search.no-results",
-                        )}
+                        emptyMessage="Nenhum resultado encontrado"
                         onValueChange={onCategoryFilterChange}
                         options={categoryOptions}
-                        placeholder={translate(
-                           "common.form.category.placeholder",
-                        )}
-                        searchPlaceholder={translate(
-                           "common.form.search.label",
-                        )}
+                        placeholder="Selecione uma categoria"
+                        searchPlaceholder="Pesquisar"
                         value={categoryFilter}
                      />
                   </Field>
@@ -255,7 +236,7 @@ export function BankAccountFilterCredenza({
 
          <CredenzaFooter>
             <Button onClick={() => closeCredenza()} variant="outline">
-               {translate("common.actions.close")}
+               Fechar
             </Button>
          </CredenzaFooter>
       </>

@@ -9,7 +9,6 @@
       "@packages/csv": "workspace:*",
       "@packages/database": "workspace:*",
       "@packages/files": "workspace:*",
-      "@packages/localization": "workspace:*",
       "@packages/notifications": "workspace:*",
       "@packages/ofx": "workspace:*",
       "@packages/pdf": "workspace:*",

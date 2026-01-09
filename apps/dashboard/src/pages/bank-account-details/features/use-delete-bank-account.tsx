@@ -1,5 +1,4 @@
 import type { BankAccount } from "@packages/database/repositories/bank-account-repository";
-import { translate } from "@packages/localization";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -36,25 +35,19 @@ export function useDeleteBankAccount({
    const deleteBankAccount = () => {
       if (allBankAccounts.length < 2) {
          toast.error(
-            translate(
-               "dashboard.routes.bank-accounts.delete.error-last-account",
-            ),
+            "Você deve ter pelo menos uma conta bancária.",
          );
          return;
       }
 
       openAlertDialog({
-         actionLabel: translate(
-            "dashboard.routes.profile.bank-accounts.actions.delete",
-         ),
-         cancelLabel: translate("common.actions.cancel"),
-         description: translate(
-            "common.headers.delete-confirmation.description",
-         ),
+         actionLabel: "Excluir conta",
+         cancelLabel: "Cancelar",
+         description: "Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.",
          onAction: async () => {
             await deleteBankAccountMutation.mutateAsync({ id: bankAccount.id });
          },
-         title: translate("common.headers.delete-confirmation.title"),
+         title: "Confirmar Exclusão",
          variant: "destructive",
       });
    };

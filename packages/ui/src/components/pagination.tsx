@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { type Button, buttonVariants } from "@packages/ui/components/button";
 import { cn } from "@packages/ui/lib/utils";
 import {
@@ -76,9 +75,7 @@ function PaginationPrevious({
          {...props}
       >
          <ChevronLeftIcon />
-         <span className="hidden sm:block">
-            {translate("common.actions.previous")}
-         </span>
+         <span className="hidden sm:block">Voltar</span>
       </PaginationLink>
    );
 }
@@ -94,9 +91,7 @@ function PaginationNext({
          size="default"
          {...props}
       >
-         <span className="hidden sm:block">
-            {translate("common.actions.next")}
-         </span>
+         <span className="hidden sm:block">Próximo</span>
          <ChevronRightIcon />
       </PaginationLink>
    );

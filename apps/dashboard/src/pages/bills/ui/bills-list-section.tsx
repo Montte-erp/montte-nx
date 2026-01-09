@@ -1,5 +1,4 @@
 import type { BillWithRelations } from "@packages/database/repositories/bill-repository";
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import { Card, CardContent } from "@packages/ui/components/card";
 import { DataTable } from "@packages/ui/components/data-table";
@@ -225,7 +224,7 @@ function BillsListContent({ type }: BillsListSectionProps) {
                <InputGroup className="sm:max-w-md">
                   <InputGroupInput
                      onChange={(e) => setSearchTerm(e.target.value)}
-                     placeholder={translate("common.form.search.placeholder")}
+                     placeholder="Digite para pesquisar"
                      value={searchTerm}
                   />
                   <InputGroupAddon>
@@ -240,18 +239,14 @@ function BillsListContent({ type }: BillsListSectionProps) {
                            <Receipt className="size-12 text-muted-foreground" />
                         </EmptyMedia>
                         <EmptyTitle>
-                           {translate(
-                              "dashboard.routes.bills.list-section.state.empty.title",
-                           )}
+                           Nenhuma conta encontrada
                         </EmptyTitle>
                         <EmptyDescription>
                            {debouncedSearchTerm ||
                            categoryFilter !== "all" ||
                            statusFilter !== "all"
                               ? "Nenhuma conta encontrada com os filtros aplicados"
-                              : translate(
-                                   "dashboard.routes.bills.list-section.state.empty.description",
-                                )}
+                              : "Crie sua primeira conta usando a barra de ações rápidas acima para começar a gerenciar suas contas."}
                         </EmptyDescription>
                      </EmptyContent>
                   </Empty>
@@ -305,7 +300,7 @@ function BillsListContent({ type }: BillsListSectionProps) {
                      })
                   }
                >
-                  {translate("dashboard.routes.bills.bulk-actions.complete")}
+                  Pagar/Receber
                </SelectionActionButton>
             )}
             <SelectionActionButton
@@ -313,26 +308,18 @@ function BillsListContent({ type }: BillsListSectionProps) {
                icon={<Trash2 className="size-3.5" />}
                onClick={() =>
                   openAlertDialog({
-                     actionLabel: translate(
-                        "dashboard.routes.bills.bulk-actions.delete",
-                     ),
-                     description: translate(
-                        "dashboard.routes.bills.bulk-actions.delete-confirm-description",
-                        { count: selectedIds.length },
-                     ),
+                     actionLabel: "Excluir",
+                     description: `Tem certeza que deseja excluir ${selectedIds.length} conta(s)? Esta ação não pode ser desfeita.`,
                      onAction: async () => {
                         await deleteSelected(selectedIds);
                      },
-                     title: translate(
-                        "dashboard.routes.bills.bulk-actions.delete-confirm-title",
-                        { count: selectedIds.length },
-                     ),
+                     title: `Excluir ${selectedIds.length} conta(s)`,
                      variant: "destructive",
                   })
                }
                variant="destructive"
             >
-               {translate("dashboard.routes.bills.bulk-actions.delete")}
+               Excluir
             </SelectionActionButton>
          </SelectionActionBar>
       </>

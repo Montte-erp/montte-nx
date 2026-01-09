@@ -1,18 +1,11 @@
 ---
-import type { SupportedLng } from "@packages/localization";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import Logo from "./Logo.astro";
 import { MobileMenu } from "./mobile-menu";
 import { NavMenu } from "./nav-menu";
 import ThemeToggler from "./ThemeToggler.astro";
 
-interface Props {
-   lang?: SupportedLng;
-}
-
-const { lang = "pt-BR" } = Astro.props;
-const brandName = translate("common.brand.name", { lng: lang });
+const brandName = "Montte";
 ---
 
 <nav
@@ -31,7 +24,7 @@ const brandName = translate("common.brand.name", { lng: lang });
       </a>
 
       <div class="hidden md:block">
-         <NavMenu lang={lang} client:load/>
+         <NavMenu client:load/>
       </div>
 
       <div class="flex items-center gap-3">
@@ -53,7 +46,7 @@ const brandName = translate("common.brand.name", { lng: lang });
          <div
             class="md:hidden transition-transform duration-300 hover:scale-110"
          >
-            <MobileMenu lang={lang} client:load/>
+            <MobileMenu client:load/>
          </div>
       </div>
    </div>

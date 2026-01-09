@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Combobox } from "@packages/ui/components/combobox";
@@ -126,9 +125,7 @@ export function TransactionFilterBar({
 
    const categoryOptions = [
       {
-         label: translate(
-            "dashboard.routes.transactions.features.filter.items.all-categories",
-         ),
+         label: "Todas as Categorias",
          value: "all",
       },
       ...categories.map((category) => ({
@@ -182,7 +179,7 @@ export function TransactionFilterBar({
                variant={hasActiveFilters ? "default" : "outline"}
             >
                <Filter className="size-4" />
-               {translate("common.form.filter.title")}
+               Filtros
                {activeFilterCount > 0 && (
                   <Badge
                      className="size-5 p-0 justify-center"
@@ -210,7 +207,7 @@ export function TransactionFilterBar({
             <DateRangePickerPopover
                endDate={customDateRange.endDate}
                onRangeChange={handleCustomDateChange}
-               placeholder={translate("common.form.date-range.custom")}
+               placeholder="Personalizado"
                startDate={customDateRange.startDate}
             />
          </div>
@@ -230,27 +227,21 @@ export function TransactionFilterBar({
                   value="income"
                >
                   <ArrowDownLeft className="size-3.5" />
-                  {translate(
-                     "dashboard.routes.transactions.list-section.types.income",
-                  )}
+                  Receita
                </ToggleGroupItem>
                <ToggleGroupItem
                   className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-red-500 data-[state=on]:text-red-600"
                   value="expense"
                >
                   <ArrowUpRight className="size-3.5" />
-                  {translate(
-                     "dashboard.routes.transactions.list-section.types.expense",
-                  )}
+                  Despesa
                </ToggleGroupItem>
                <ToggleGroupItem
                   className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-blue-500 data-[state=on]:text-blue-600"
                   value="transfer"
                >
                   <ArrowLeftRight className="size-3.5" />
-                  {translate(
-                     "dashboard.routes.transactions.list-section.types.transfer",
-                  )}
+                  Transferência
                </ToggleGroupItem>
             </ToggleGroup>
 
@@ -267,7 +258,7 @@ export function TransactionFilterBar({
                      variant="outline"
                   >
                      <Filter className="size-3.5" />
-                     {translate("common.form.filter.more")}
+                     Mais Filtros
                      <ChevronDown
                         className={cn(
                            "size-3.5 transition-transform",
@@ -279,10 +270,10 @@ export function TransactionFilterBar({
                <PopoverContent align="start" className="w-80 p-0">
                   <div className="border-b px-4 py-3">
                      <h4 className="font-medium text-sm">
-                        {translate("common.form.filter.more")}
+                        Mais Filtros
                      </h4>
                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {translate("common.form.filter.description")}
+                        Refine os resultados com filtros
                      </p>
                   </div>
 
@@ -291,7 +282,7 @@ export function TransactionFilterBar({
                         <div className="flex items-center gap-2">
                            <Building2 className="size-4 text-muted-foreground" />
                            <label className="text-sm font-medium">
-                              {translate("common.form.bank-account.label")}
+                              Conta Bancária
                            </label>
                         </div>
                         <Select
@@ -300,16 +291,12 @@ export function TransactionFilterBar({
                         >
                            <SelectTrigger className="h-9">
                               <SelectValue
-                                 placeholder={translate(
-                                    "common.form.bank-account.placeholder",
-                                 )}
+                                 placeholder="Selecione uma conta"
                               />
                            </SelectTrigger>
                            <SelectContent>
                               <SelectItem value="all">
-                                 {translate(
-                                    "dashboard.routes.transactions.features.filter.items.all-accounts",
-                                 )}
+                                 Todas as Contas
                               </SelectItem>
                               {bankAccounts.map((account) => (
                                  <SelectItem
@@ -327,22 +314,16 @@ export function TransactionFilterBar({
                         <div className="flex items-center gap-2">
                            <FolderOpen className="size-4 text-muted-foreground" />
                            <label className="text-sm font-medium">
-                              {translate("common.form.category.label")}
+                              Categoria
                            </label>
                         </div>
                         <Combobox
                            className="h-9"
-                           emptyMessage={translate(
-                              "common.form.search.no-results",
-                           )}
+                           emptyMessage="Nenhum resultado encontrado"
                            onValueChange={onCategoryFilterChange}
                            options={categoryOptions}
-                           placeholder={translate(
-                              "common.form.category.placeholder",
-                           )}
-                           searchPlaceholder={translate(
-                              "common.form.search.label",
-                           )}
+                           placeholder="Selecione uma categoria"
+                           searchPlaceholder="Pesquisar"
                            value={categoryFilter}
                         />
                      </div>
@@ -360,7 +341,7 @@ export function TransactionFilterBar({
                            variant="ghost"
                         >
                            <X className="size-3.5 mr-2" />
-                           {translate("common.form.filter.clear-all")}
+                           Limpar Filtros
                         </Button>
                      </div>
                   )}
@@ -403,7 +384,7 @@ export function TransactionFilterBar({
                   variant="outline"
                >
                   <X className="size-3" />
-                  {translate("common.actions.clear-filters")}
+                  Limpar filtros
                </Button>
             )}
          </div>

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import { Alert, AlertDescription } from "@packages/ui/components/alert";
 import { Badge } from "@packages/ui/components/badge";
@@ -22,7 +21,7 @@ function InfoErrorFallback() {
    return (
       <Alert variant="destructive">
          <AlertDescription>
-            {translate("dashboard.routes.transactions.details.error.load-info")}
+            Falha ao carregar informações da transação
          </AlertDescription>
       </Alert>
    );
@@ -63,15 +62,9 @@ function TransactionContent({ transactionId }: { transactionId: string }) {
    const formattedDate = formatDate(new Date(data.date), "DD MMMM YYYY");
 
    const typeLabels: Record<string, string> = {
-      expense: translate(
-         "dashboard.routes.transactions.list-section.types.expense",
-      ),
-      income: translate(
-         "dashboard.routes.transactions.list-section.types.income",
-      ),
-      transfer: translate(
-         "dashboard.routes.transactions.list-section.types.transfer",
-      ),
+      expense: "Despesa",
+      income: "Receita",
+      transfer: "Transferência",
    };
 
    return (

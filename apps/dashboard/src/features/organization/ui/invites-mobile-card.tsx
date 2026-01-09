@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Card,
@@ -45,10 +44,7 @@ export function InvitesMobileCard({
                <CardDescription
                   className={isExpired ? "text-destructive" : undefined}
                >
-                  {translate(
-                     "dashboard.routes.organization.invites-table.columns.expires",
-                  )}
-                  : {formatDate(new Date(invite.expiresAt), "DD MMM YYYY")}
+                  Expira em: {formatDate(new Date(invite.expiresAt), "DD MMM YYYY")}
                </CardDescription>
             </div>
             <CardAction>
@@ -71,9 +67,7 @@ export function InvitesMobileCard({
                      variant="outline"
                   >
                      <RefreshCw className="size-4 mr-2" />
-                     {translate(
-                        "dashboard.routes.organization.invites-table.actions.resend",
-                     )}
+                     Reenviar
                   </Button>
                )}
                {onRevoke && (
@@ -83,9 +77,7 @@ export function InvitesMobileCard({
                      variant="destructive"
                   >
                      <Trash2 className="size-4 mr-2" />
-                     {translate(
-                        "dashboard.routes.organization.invites-table.actions.revoke",
-                     )}
+                     Revogar
                   </Button>
                )}
             </CardFooter>

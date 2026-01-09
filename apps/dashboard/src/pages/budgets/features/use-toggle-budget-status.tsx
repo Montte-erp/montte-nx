@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -18,19 +17,13 @@ export function useToggleBudgetStatus({
    const updateMutation = useMutation(
       trpc.budgets.update.mutationOptions({
          onError: () => {
-            toast.error(
-               translate("dashboard.routes.budgets.notifications.error"),
-            );
+            toast.error("Erro ao atualizar orçamento");
          },
          onSuccess: () => {
             toast.success(
                budget.isActive
-                  ? translate(
-                       "dashboard.routes.budgets.notifications.deactivated",
-                    )
-                  : translate(
-                       "dashboard.routes.budgets.notifications.activated",
-                    ),
+                  ? "Orçamento desativado com sucesso"
+                  : "Orçamento ativado com sucesso",
             );
             onSuccess?.();
          },
@@ -39,17 +32,11 @@ export function useToggleBudgetStatus({
 
    const toggleStatus = () => {
       openAlertDialog({
-         actionLabel: translate(
-            "dashboard.routes.budgets.status-toggle.confirm",
-         ),
-         cancelLabel: translate("common.actions.cancel"),
+         actionLabel: "Confirmar",
+         cancelLabel: "Cancelar",
          description: budget.isActive
-            ? translate(
-                 "dashboard.routes.budgets.status-toggle.deactivate-description",
-              )
-            : translate(
-                 "dashboard.routes.budgets.status-toggle.activate-description",
-              ),
+            ? "Ao desativar, este orçamento não será mais considerado no controle de gastos."
+            : "Ao ativar, este orçamento voltará a ser considerado no controle de gastos.",
          onAction: async () => {
             await updateMutation.mutateAsync({
                data: { isActive: !budget.isActive },
@@ -57,12 +44,8 @@ export function useToggleBudgetStatus({
             });
          },
          title: budget.isActive
-            ? translate(
-                 "dashboard.routes.budgets.status-toggle.deactivate-title",
-              )
-            : translate(
-                 "dashboard.routes.budgets.status-toggle.activate-title",
-              ),
+            ? "Desativar orçamento"
+            : "Ativar orçamento",
       });
    };
 

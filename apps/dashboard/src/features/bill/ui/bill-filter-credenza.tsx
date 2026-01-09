@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { Combobox } from "@packages/ui/components/combobox";
 import {
@@ -87,9 +86,7 @@ export function BillFilterCredenza({
 
    const categoryOptions = [
       {
-         label: translate(
-            "dashboard.routes.bills.features.filter.items.all-categories",
-         ),
+         label: "Todas as categorias",
          value: "all",
       },
       ...categories.map((category) => ({
@@ -100,48 +97,34 @@ export function BillFilterCredenza({
 
    const statusOptions = [
       {
-         label: translate(
-            "dashboard.routes.bills.features.filter.items.all-statuses",
-         ),
+         label: "Todos os status",
          value: "all",
       },
       {
-         label: translate(
-            "dashboard.routes.bills.features.filter.items.status-pending",
-         ),
+         label: "Pendente",
          value: "pending",
       },
       {
-         label: translate(
-            "dashboard.routes.bills.features.filter.items.status-overdue",
-         ),
+         label: "Vencida",
          value: "overdue",
       },
       {
-         label: translate(
-            "dashboard.routes.bills.features.filter.items.status-completed",
-         ),
+         label: "Concluída",
          value: "completed",
       },
    ];
 
    const typeOptions = [
       {
-         label: translate(
-            "dashboard.routes.bills.features.filter.items.all-types",
-         ),
+         label: "Todos os tipos",
          value: "all",
       },
       {
-         label: translate(
-            "dashboard.routes.bills.features.filter.items.type-payable",
-         ),
+         label: "A Pagar",
          value: "expense",
       },
       {
-         label: translate(
-            "dashboard.routes.bills.features.filter.items.type-receivable",
-         ),
+         label: "A Receber",
          value: "income",
       },
    ];
@@ -160,10 +143,10 @@ export function BillFilterCredenza({
       <>
          <CredenzaHeader>
             <CredenzaTitle>
-               {translate("dashboard.routes.bills.features.filter.title")}
+               Filtrar Contas
             </CredenzaTitle>
             <CredenzaDescription>
-               {translate("dashboard.routes.bills.features.filter.description")}
+               Use os filtros abaixo para encontrar contas específicas
             </CredenzaDescription>
          </CredenzaHeader>
          <CredenzaBody>
@@ -176,9 +159,7 @@ export function BillFilterCredenza({
                         variant="outline"
                      >
                         <X className="size-4" />
-                        {translate(
-                           "dashboard.routes.bills.features.filter.actions.clear-filters",
-                        )}
+                        Limpar Filtros
                      </Button>
                   </div>
                )}
@@ -186,7 +167,7 @@ export function BillFilterCredenza({
                {/* Time Period Grid */}
                <FieldGroup>
                   <FieldLabel>
-                     {translate("common.form.period.label")}
+                     Período
                   </FieldLabel>
                   <div className="grid grid-cols-3 gap-2">
                      {TIME_PERIODS.map((period) => (
@@ -210,7 +191,7 @@ export function BillFilterCredenza({
                <FieldGroup>
                   <Field>
                      <FieldLabel>
-                        {translate("common.form.status.label")}
+                        Status
                      </FieldLabel>
                      <Select
                         onValueChange={onStatusFilterChange}
@@ -218,9 +199,7 @@ export function BillFilterCredenza({
                      >
                         <SelectTrigger>
                            <SelectValue
-                              placeholder={translate(
-                                 "common.form.status.placeholder",
-                              )}
+                              placeholder="Selecione um status"
                            />
                         </SelectTrigger>
                         <SelectContent>
@@ -240,7 +219,7 @@ export function BillFilterCredenza({
                <FieldGroup>
                   <Field>
                      <FieldLabel>
-                        {translate("common.form.type.label")}
+                        Tipo
                      </FieldLabel>
                      <Select
                         onValueChange={onTypeFilterChange}
@@ -248,9 +227,7 @@ export function BillFilterCredenza({
                      >
                         <SelectTrigger>
                            <SelectValue
-                              placeholder={translate(
-                                 "common.form.type.placeholder",
-                              )}
+                              placeholder="Selecione um tipo"
                            />
                         </SelectTrigger>
                         <SelectContent>
@@ -270,20 +247,14 @@ export function BillFilterCredenza({
                <FieldGroup>
                   <Field>
                      <FieldLabel>
-                        {translate("common.form.category.label")}
+                        Categoria
                      </FieldLabel>
                      <Combobox
-                        emptyMessage={translate(
-                           "common.form.search.no-results",
-                        )}
+                        emptyMessage="Nenhum resultado encontrado"
                         onValueChange={onCategoryFilterChange}
                         options={categoryOptions}
-                        placeholder={translate(
-                           "common.form.category.placeholder",
-                        )}
-                        searchPlaceholder={translate(
-                           "common.form.search.label",
-                        )}
+                        placeholder="Selecione uma categoria"
+                        searchPlaceholder="Pesquisar"
                         value={categoryFilter}
                      />
                   </Field>
@@ -292,7 +263,7 @@ export function BillFilterCredenza({
                <FieldGroup>
                   <Field>
                      <FieldLabel>
-                        {translate("common.form.bank-account.label")}
+                        Conta Bancária
                      </FieldLabel>
                      <Select
                         onValueChange={onBankAccountFilterChange}
@@ -300,16 +271,12 @@ export function BillFilterCredenza({
                      >
                         <SelectTrigger>
                            <SelectValue
-                              placeholder={translate(
-                                 "common.form.bank-account.placeholder",
-                              )}
+                              placeholder="Selecione uma conta"
                            />
                         </SelectTrigger>
                         <SelectContent>
                            <SelectItem value="all">
-                              {translate(
-                                 "dashboard.routes.transactions.features.filter.items.all-accounts",
-                              )}
+                              Todas as contas
                            </SelectItem>
                            {bankAccounts.map((account) => (
                               <SelectItem key={account.id} value={account.id}>
@@ -324,16 +291,12 @@ export function BillFilterCredenza({
                <FieldGroup>
                   <Field>
                      <FieldLabel>
-                        {translate(
-                           "dashboard.routes.transactions.features.filter.start-date.label",
-                        )}
+                        Data Inicial
                      </FieldLabel>
                      <DatePicker
                         date={customStartDate ?? undefined}
                         onSelect={onCustomStartDateChange}
-                        placeholder={translate(
-                           "dashboard.routes.transactions.features.filter.start-date.placeholder",
-                        )}
+                        placeholder="Selecione a data inicial"
                      />
                   </Field>
                </FieldGroup>
@@ -341,16 +304,12 @@ export function BillFilterCredenza({
                <FieldGroup>
                   <Field>
                      <FieldLabel>
-                        {translate(
-                           "dashboard.routes.transactions.features.filter.end-date.label",
-                        )}
+                        Data Final
                      </FieldLabel>
                      <DatePicker
                         date={customEndDate ?? undefined}
                         onSelect={onCustomEndDateChange}
-                        placeholder={translate(
-                           "dashboard.routes.transactions.features.filter.end-date.placeholder",
-                        )}
+                        placeholder="Selecione a data final"
                      />
                   </Field>
                </FieldGroup>
@@ -358,9 +317,7 @@ export function BillFilterCredenza({
                <FieldGroup>
                   <Field>
                      <FieldLabel>
-                        {translate(
-                           "dashboard.routes.transactions.features.filter.page-size.label",
-                        )}
+                        Itens por página
                      </FieldLabel>
                      <Select
                         onValueChange={(value) =>

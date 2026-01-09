@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Alert, AlertDescription } from "@packages/ui/components/alert";
 import {
    Card,
@@ -16,7 +15,7 @@ import { useTRPC } from "@/integrations/clients";
 function NotesCardErrorFallback() {
    return (
       <Alert variant="destructive">
-         <AlertDescription>Falha ao carregar observações</AlertDescription>
+         <AlertDescription>Falha ao carregar observacoes</AlertDescription>
       </Alert>
    );
 }
@@ -49,8 +48,8 @@ function NotesCardContent({ counterpartyId }: { counterpartyId: string }) {
    return (
       <Card className="h-fit">
          <CardHeader>
-            <CardTitle>{translate("common.form.notes.label")}</CardTitle>
-            <CardDescription>Observações sobre o parceiro</CardDescription>
+            <CardTitle>Observacoes</CardTitle>
+            <CardDescription>Observacoes sobre o parceiro</CardDescription>
          </CardHeader>
          <CardContent>
             <p className="text-sm text-muted-foreground whitespace-pre-wrap">

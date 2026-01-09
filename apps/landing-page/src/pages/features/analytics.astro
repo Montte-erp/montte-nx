@@ -13,22 +13,11 @@ import {
    TrendingUp,
    Wallet,
 } from "@lucide/astro";
-import type { SupportedLng } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import LogoCloud from "@/components/LogoCloud.astro";
 import StickyNavbar from "@/components/StickyNavbar.astro";
-import { supportedLanguages } from "@/i18n/config";
 import Layout from "@/layouts/Landing.astro";
 import Footer from "@/sections/Footer.astro";
-
-export function getStaticPaths() {
-   return supportedLanguages.map((locale) => ({
-      params: { locale: locale === "pt-BR" ? undefined : locale },
-   }));
-}
-
-const { locale } = Astro.params;
-const lang = (locale || "pt-BR") as SupportedLng;
 
 const testimonials = [
    {
@@ -116,9 +105,9 @@ const relatedFeatures = [
 ];
 ---
 
-<Layout lang={lang}>
+<Layout>
    <div class="flex flex-col">
-      <StickyNavbar lang={lang}/>
+      <StickyNavbar />
 
       <!-- Hero Section -->
       <section class="pt-16 md:pt-32 pb-10 md:pb-0">
@@ -624,6 +613,6 @@ const relatedFeatures = [
          </section>
       </div>
 
-      <Footer lang={lang}/>
+      <Footer/>
    </div>
 </Layout>

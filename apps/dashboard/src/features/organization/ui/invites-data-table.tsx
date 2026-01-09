@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Card, CardContent } from "@packages/ui/components/card";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
@@ -105,13 +104,11 @@ export function InvitesDataTable({
       if (!onRevoke) return;
 
       openAlertDialog({
-         actionLabel: translate(
-            "dashboard.routes.organization.invites-table.actions.revoke",
-         ),
-         cancelLabel: translate("common.actions.cancel"),
-         description: `${translate("common.headers.delete-confirmation.description")} ${invite.email}?`,
+         actionLabel: "Revogar",
+         cancelLabel: "Cancelar",
+         description: `Tem certeza que deseja excluir ${invite.email}?`,
          onAction: () => onRevoke(invite.id),
-         title: translate("common.headers.delete-confirmation.title"),
+         title: "Confirmar exclusão",
          variant: "destructive",
       });
    };
@@ -120,19 +117,14 @@ export function InvitesDataTable({
       if (!onBulkRevoke || selectedIds.length === 0) return;
 
       openAlertDialog({
-         actionLabel: translate(
-            "dashboard.routes.organization.invites-table.bulk-actions.revoke",
-         ),
-         cancelLabel: translate("common.actions.cancel"),
-         description: translate(
-            "common.headers.delete-confirmation.description-bulk",
-            { count: selectedIds.length },
-         ),
+         actionLabel: "Revogar selecionados",
+         cancelLabel: "Cancelar",
+         description: `Tem certeza que deseja excluir ${selectedIds.length} itens selecionados?`,
          onAction: () => {
             onBulkRevoke(selectedIds);
             setRowSelection({});
          },
-         title: translate("common.headers.delete-confirmation.title"),
+         title: "Confirmar exclusão",
          variant: "destructive",
       });
    };
@@ -164,14 +156,10 @@ export function InvitesDataTable({
                         <Mail className="size-12 text-muted-foreground" />
                      </EmptyMedia>
                      <EmptyTitle>
-                        {translate(
-                           "dashboard.routes.organization.invites-table.empty",
-                        )}
+                        Nenhum convite encontrado
                      </EmptyTitle>
                      <EmptyDescription>
-                        {translate(
-                           "dashboard.routes.organization.invites-table.description",
-                        )}
+                        Convide membros para sua organização para começar a colaborar.
                      </EmptyDescription>
                   </EmptyContent>
                </Empty>
@@ -188,9 +176,7 @@ export function InvitesDataTable({
                   <InputGroup className="sm:max-w-md">
                      <InputGroupInput
                         onChange={(e) => filters.onSearchChange(e.target.value)}
-                        placeholder={translate(
-                           "dashboard.routes.organization.invites-table.filters.search",
-                        )}
+                        placeholder="Buscar por email..."
                         value={filters.searchTerm}
                      />
                      <InputGroupAddon>
@@ -210,9 +196,7 @@ export function InvitesDataTable({
 
                {filteredInvites.length === 0 ? (
                   <div className="py-8 text-center text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.organization.invites-table.empty",
-                     )}
+                     Nenhum convite encontrado
                   </div>
                ) : (
                   <DataTable
@@ -247,9 +231,7 @@ export function InvitesDataTable({
                      setRowSelection({});
                   }}
                >
-                  {translate(
-                     "dashboard.routes.organization.invites-table.bulk-actions.resend",
-                  )}
+                  Reenviar selecionados
                </SelectionActionButton>
             )}
             {onBulkRevoke && (
@@ -258,9 +240,7 @@ export function InvitesDataTable({
                   onClick={handleBulkRevoke}
                   variant="destructive"
                >
-                  {translate(
-                     "dashboard.routes.organization.invites-table.bulk-actions.revoke",
-                  )}
+                  Revogar selecionados
                </SelectionActionButton>
             )}
          </SelectionActionBar>

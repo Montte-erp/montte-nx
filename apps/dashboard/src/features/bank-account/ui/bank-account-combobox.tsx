@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Autocomplete,
    type AutocompleteOption,
@@ -49,11 +48,11 @@ function BankAccountComboboxContent({
 
    return (
       <Autocomplete
-         emptyMessage={translate("common.form.search.no-results")}
+         emptyMessage="Nenhum resultado encontrado"
          onBlur={handleBlur}
          onValueChange={handleValueChange}
          options={formattedBanks}
-         placeholder={translate("common.form.bank.placeholder")}
+         placeholder="Selecione seu banco"
          value={selectedOption}
       />
    );

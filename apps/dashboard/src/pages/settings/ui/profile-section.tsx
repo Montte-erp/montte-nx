@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Alert,
    AlertDescription,
@@ -130,13 +129,11 @@ function ChangeNameSheetContent({
          return betterAuthClient.updateUser({ name });
       },
       onSuccess: () => {
-         toast.success(
-            translate("dashboard.routes.settings.profile.name.success"),
-         );
+         toast.success("Nome atualizado com sucesso!");
          onClose();
       },
       onError: () => {
-         toast.error(translate("dashboard.routes.settings.profile.name.error"));
+         toast.error("Erro ao atualizar nome");
       },
    });
 
@@ -145,39 +142,25 @@ function ChangeNameSheetContent({
    return (
       <div className="flex flex-col h-full">
          <SheetHeader>
-            <SheetTitle>
-               {translate("dashboard.routes.settings.profile.name.title")}
-            </SheetTitle>
-            <SheetDescription>
-               {translate("dashboard.routes.settings.profile.name.description")}
-            </SheetDescription>
+            <SheetTitle>Alterar Nome</SheetTitle>
+            <SheetDescription>Atualize seu nome de exibição</SheetDescription>
          </SheetHeader>
 
          <div className="flex-1 p-4 space-y-4 overflow-y-auto">
             <Alert>
                <Info className="size-4" />
-               <AlertTitle>
-                  {translate(
-                     "dashboard.routes.settings.profile.name.display-name",
-                  )}
-               </AlertTitle>
+               <AlertTitle>Nome de exibição</AlertTitle>
                <AlertDescription>
-                  {translate(
-                     "dashboard.routes.settings.profile.name.display-name-info",
-                  )}
+                  Este é o nome que será exibido para outros usuários e em seu perfil.
                </AlertDescription>
             </Alert>
 
             <div className="space-y-2">
-               <Label htmlFor="new-name">
-                  {translate("dashboard.routes.settings.profile.name.label")}
-               </Label>
+               <Label htmlFor="new-name">Nome</Label>
                <Input
                   id="new-name"
                   onChange={(e) => setName(e.target.value)}
-                  placeholder={translate(
-                     "dashboard.routes.settings.profile.name.placeholder",
-                  )}
+                  placeholder="Seu nome"
                   value={name}
                />
             </div>
@@ -185,9 +168,7 @@ function ChangeNameSheetContent({
 
          <SheetFooter>
             <SheetClose asChild>
-               <Button variant="outline">
-                  {translate("common.actions.cancel")}
-               </Button>
+               <Button variant="outline">Cancelar</Button>
             </SheetClose>
             <Button
                disabled={!isValid || updateMutation.isPending}
@@ -196,7 +177,7 @@ function ChangeNameSheetContent({
                {updateMutation.isPending && (
                   <Loader2 className="size-4 mr-2 animate-spin" />
                )}
-               {translate("common.actions.save")}
+               Salvar
             </Button>
          </SheetFooter>
       </div>
@@ -225,16 +206,14 @@ function ChangeEmailSheetContent({
          });
       },
       onSuccess: () => {
-         toast.success(
-            translate("dashboard.routes.settings.profile.email.success"),
-         );
+         toast.success("Email de verificação enviado para o novo endereço!");
          onClose();
       },
       onError: (error) => {
          const errorMessage =
             error instanceof Error
                ? error.message
-               : translate("dashboard.routes.settings.profile.email.error");
+               : "Erro ao alterar email";
          toast.error(errorMessage);
       },
    });
@@ -245,18 +224,13 @@ function ChangeEmailSheetContent({
 
    const handleSubmit = () => {
       openAlertDialog({
-         title: translate(
-            "dashboard.routes.settings.profile.email.confirm-title",
-         ),
-         description: translate(
-            "dashboard.routes.settings.profile.email.confirm-description",
-            { email },
-         ),
+         title: "Confirmar alteração de email",
+         description: `Um email de verificação será enviado para ${email}. Você precisará clicar no link para confirmar a alteração.`,
          onAction: async () => {
             await changeMutation.mutateAsync();
          },
-         actionLabel: translate("common.actions.confirm"),
-         cancelLabel: translate("common.actions.cancel"),
+         actionLabel: "Confirmar",
+         cancelLabel: "Cancelar",
          variant: "default",
       });
    };
@@ -264,60 +238,40 @@ function ChangeEmailSheetContent({
    return (
       <div className="flex flex-col h-full">
          <SheetHeader>
-            <SheetTitle>
-               {translate("dashboard.routes.settings.profile.email.title")}
-            </SheetTitle>
+            <SheetTitle>Alterar Email</SheetTitle>
             <SheetDescription>
-               {translate(
-                  "dashboard.routes.settings.profile.email.description",
-               )}
+               Atualize o endereço de email da sua conta
             </SheetDescription>
          </SheetHeader>
 
          <div className="flex-1 p-4 space-y-4 overflow-y-auto">
             <Alert>
                <Info className="size-4" />
-               <AlertTitle>
-                  {translate(
-                     "dashboard.routes.settings.profile.email.verification-required",
-                  )}
-               </AlertTitle>
+               <AlertTitle>Verificação necessária</AlertTitle>
                <AlertDescription>
-                  {translate(
-                     "dashboard.routes.settings.profile.email.verification-info",
-                  )}
+                  Um email de verificação será enviado para o novo endereço. Seu email só será alterado após você clicar no link de confirmação.
                </AlertDescription>
             </Alert>
 
             <div className="p-4 bg-secondary/50 rounded-lg">
                <p className="text-sm text-muted-foreground">
-                  {translate(
-                     "dashboard.routes.settings.profile.email.current-email",
-                  )}{" "}
+                  Email atual:{" "}
                   <span className="font-medium">{currentEmail}</span>
                </p>
             </div>
 
             <div className="space-y-2">
-               <Label htmlFor="new-email">
-                  {translate(
-                     "dashboard.routes.settings.profile.email.new-email",
-                  )}
-               </Label>
+               <Label htmlFor="new-email">Novo email</Label>
                <Input
                   id="new-email"
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={translate(
-                     "dashboard.routes.settings.profile.email.placeholder",
-                  )}
+                  placeholder="novo@email.com"
                   type="email"
                   value={email}
                />
                {email && !isValidEmail && (
                   <p className="text-sm text-destructive">
-                     {translate(
-                        "dashboard.routes.settings.profile.email.invalid-email",
-                     )}
+                     Digite um email válido
                   </p>
                )}
             </div>
@@ -325,17 +279,13 @@ function ChangeEmailSheetContent({
 
          <SheetFooter>
             <SheetClose asChild>
-               <Button variant="outline">
-                  {translate("common.actions.cancel")}
-               </Button>
+               <Button variant="outline">Cancelar</Button>
             </SheetClose>
             <Button
                disabled={!isValid || changeMutation.isPending}
                onClick={handleSubmit}
             >
-               {translate(
-                  "dashboard.routes.settings.profile.email.send-verification",
-               )}
+               Enviar verificação
             </Button>
          </SheetFooter>
       </div>
@@ -368,15 +318,11 @@ function ChangeAvatarCredenzaContent({
    const confirmUploadMutation = useMutation(
       trpc.account.confirmAvatarUpload.mutationOptions({
          onSuccess: () => {
-            toast.success(
-               translate("dashboard.routes.settings.profile.avatar.success"),
-            );
+            toast.success("Avatar atualizado com sucesso!");
             onClose();
          },
          onError: () => {
-            toast.error(
-               translate("dashboard.routes.settings.profile.avatar.error"),
-            );
+            toast.error("Erro ao atualizar avatar");
          },
       }),
    );
@@ -431,9 +377,7 @@ function ChangeAvatarCredenzaContent({
          if (storageKey) {
             await cancelUploadMutation.mutateAsync({ storageKey });
          }
-         toast.error(
-            translate("dashboard.routes.settings.profile.avatar.upload-error"),
-         );
+         toast.error("Erro ao fazer upload do avatar");
       } finally {
          fileUpload.setUploading(false);
       }
@@ -448,13 +392,9 @@ function ChangeAvatarCredenzaContent({
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               {translate("dashboard.routes.settings.profile.avatar.title")}
-            </CredenzaTitle>
+            <CredenzaTitle>Alterar Avatar</CredenzaTitle>
             <CredenzaDescription>
-               {translate(
-                  "dashboard.routes.settings.profile.avatar.description",
-               )}
+               Escolha uma nova imagem de perfil
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -489,9 +429,7 @@ function ChangeAvatarCredenzaContent({
                variant="outline"
             >
                <Upload className="size-4 mr-2" />
-               {translate(
-                  "dashboard.routes.settings.profile.avatar.choose-image",
-               )}
+               Escolher imagem
             </Button>
 
             {fileUpload.selectedFile && (
@@ -503,16 +441,14 @@ function ChangeAvatarCredenzaContent({
 
          <CredenzaFooter>
             <CredenzaClose asChild>
-               <Button variant="outline">
-                  {translate("common.actions.cancel")}
-               </Button>
+               <Button variant="outline">Cancelar</Button>
             </CredenzaClose>
             <Button
                disabled={!fileUpload.selectedFile || isUploading}
                onClick={handleUpload}
             >
                {isUploading && <Loader2 className="size-4 mr-2 animate-spin" />}
-               {translate("common.actions.save")}
+               Salvar
             </Button>
          </CredenzaFooter>
       </>
@@ -582,16 +518,14 @@ function ChangePasswordStepperContent({
          });
       },
       onSuccess: () => {
-         toast.success(
-            translate("dashboard.routes.settings.profile.password.success"),
-         );
+         toast.success("Senha alterada com sucesso!");
          onClose();
       },
       onError: (error) => {
          const errorMessage =
             error instanceof Error
                ? error.message
-               : translate("dashboard.routes.settings.profile.password.error");
+               : "Erro ao alterar senha";
          toast.error(errorMessage);
       },
    });
@@ -603,17 +537,13 @@ function ChangePasswordStepperContent({
 
    const handleSubmit = () => {
       openAlertDialog({
-         title: translate(
-            "dashboard.routes.settings.profile.password.confirm-title",
-         ),
-         description: translate(
-            "dashboard.routes.settings.profile.password.confirm-description",
-         ),
+         title: "Confirmar alteração de senha",
+         description: "Tem certeza que deseja alterar sua senha? Todas as outras sessões ativas serão encerradas por segurança.",
          onAction: async () => {
             await changeMutation.mutateAsync();
          },
-         actionLabel: translate("common.actions.confirm"),
-         cancelLabel: translate("common.actions.cancel"),
+         actionLabel: "Confirmar",
+         cancelLabel: "Cancelar",
          variant: "default",
       });
    };
@@ -632,17 +562,11 @@ function ChangePasswordStepperContent({
    return (
       <div className="flex flex-col h-full">
          <SheetHeader>
-            <SheetTitle>
-               {translate("dashboard.routes.settings.profile.password.title")}
-            </SheetTitle>
+            <SheetTitle>Alterar Senha</SheetTitle>
             <SheetDescription>
                {isVerifyStep
-                  ? translate(
-                       "dashboard.routes.settings.profile.password.step-verify",
-                    )
-                  : translate(
-                       "dashboard.routes.settings.profile.password.step-change",
-                    )}
+                  ? "Primeiro, confirme sua senha atual"
+                  : "Agora, escolha sua nova senha"}
             </SheetDescription>
          </SheetHeader>
 
@@ -661,33 +585,21 @@ function ChangePasswordStepperContent({
                   <>
                      <Alert>
                         <Info className="size-4" />
-                        <AlertTitle>
-                           {translate(
-                              "dashboard.routes.settings.profile.password.identity-verification",
-                           )}
-                        </AlertTitle>
+                        <AlertTitle>Verificação de identidade</AlertTitle>
                         <AlertDescription>
-                           {translate(
-                              "dashboard.routes.settings.profile.password.identity-verification-info",
-                           )}
+                           Por segurança, confirme sua senha atual antes de alterá-la.
                         </AlertDescription>
                      </Alert>
 
                      <div className="space-y-2">
-                        <Label htmlFor="current-password">
-                           {translate(
-                              "dashboard.routes.settings.profile.password.current-password",
-                           )}
-                        </Label>
+                        <Label htmlFor="current-password">Senha atual</Label>
                         <Input
                            id="current-password"
                            onChange={(e) => {
                               setCurrentPassword(e.target.value);
                               setPasswordError(false);
                            }}
-                           placeholder={translate(
-                              "dashboard.routes.settings.profile.password.current-password-placeholder",
-                           )}
+                           placeholder="Digite sua senha atual"
                            type="password"
                            value={currentPassword}
                         />
@@ -696,15 +608,9 @@ function ChangePasswordStepperContent({
                      {passwordError && (
                         <Alert variant="destructive">
                            <AlertTriangle className="size-4" />
-                           <AlertTitle>
-                              {translate(
-                                 "dashboard.routes.settings.profile.password.incorrect-password",
-                              )}
-                           </AlertTitle>
+                           <AlertTitle>Senha incorreta</AlertTitle>
                            <AlertDescription>
-                              {translate(
-                                 "dashboard.routes.settings.profile.password.incorrect-password-info",
-                              )}
+                              A senha informada não está correta. Por favor, tente novamente.
                            </AlertDescription>
                         </Alert>
                      )}
@@ -714,54 +620,34 @@ function ChangePasswordStepperContent({
                   <>
                      <Alert>
                         <Info className="size-4" />
-                        <AlertTitle>
-                           {translate(
-                              "dashboard.routes.settings.profile.password.account-security",
-                           )}
-                        </AlertTitle>
+                        <AlertTitle>Segurança da conta</AlertTitle>
                         <AlertDescription>
-                           {translate(
-                              "dashboard.routes.settings.profile.password.account-security-info",
-                           )}
+                           Ao alterar sua senha, todas as outras sessões serão encerradas automaticamente por segurança.
                         </AlertDescription>
                      </Alert>
 
                      <div className="space-y-2">
-                        <Label htmlFor="new-password">
-                           {translate(
-                              "dashboard.routes.settings.profile.password.new-password",
-                           )}
-                        </Label>
+                        <Label htmlFor="new-password">Nova senha</Label>
                         <Input
                            id="new-password"
                            onChange={(e) => setNewPassword(e.target.value)}
-                           placeholder={translate(
-                              "dashboard.routes.settings.profile.password.new-password-placeholder",
-                           )}
+                           placeholder="Mínimo 8 caracteres"
                            type="password"
                            value={newPassword}
                         />
                         {newPassword && newPassword.length < 8 && (
                            <p className="text-sm text-destructive">
-                              {translate(
-                                 "dashboard.routes.settings.profile.password.min-length-error",
-                              )}
+                              A senha deve ter no mínimo 8 caracteres
                            </p>
                         )}
                      </div>
 
                      <div className="space-y-2">
-                        <Label htmlFor="confirm-new-password">
-                           {translate(
-                              "dashboard.routes.settings.profile.password.confirm-password",
-                           )}
-                        </Label>
+                        <Label htmlFor="confirm-new-password">Confirmar nova senha</Label>
                         <Input
                            id="confirm-new-password"
                            onChange={(e) => setConfirmPassword(e.target.value)}
-                           placeholder={translate(
-                              "dashboard.routes.settings.profile.password.confirm-password-placeholder",
-                           )}
+                           placeholder="Digite novamente"
                            type="password"
                            value={confirmPassword}
                         />
@@ -769,9 +655,7 @@ function ChangePasswordStepperContent({
                            confirmPassword &&
                            newPassword !== confirmPassword && (
                               <p className="text-sm text-destructive">
-                                 {translate(
-                                    "dashboard.routes.settings.profile.password.passwords-not-match",
-                                 )}
+                                 As senhas não coincidem
                               </p>
                            )}
                      </div>
@@ -784,9 +668,7 @@ function ChangePasswordStepperContent({
             {isVerifyStep ? (
                <>
                   <SheetClose asChild>
-                     <Button variant="outline">
-                        {translate("common.actions.cancel")}
-                     </Button>
+                     <Button variant="outline">Cancelar</Button>
                   </SheetClose>
                   <Button
                      disabled={!currentPassword || verifyMutation.isPending}
@@ -795,23 +677,19 @@ function ChangePasswordStepperContent({
                      {verifyMutation.isPending && (
                         <Loader2 className="size-4 mr-2 animate-spin" />
                      )}
-                     {translate(
-                        "dashboard.routes.settings.profile.password.verify-and-continue",
-                     )}
+                     Verificar e continuar
                   </Button>
                </>
             ) : (
                <>
                   <Button onClick={handleBack} variant="outline">
-                     {translate("common.actions.back")}
+                     Voltar
                   </Button>
                   <Button
                      disabled={!isNewPasswordValid || changeMutation.isPending}
                      onClick={handleSubmit}
                   >
-                     {translate(
-                        "dashboard.routes.settings.profile.password.title",
-                     )}
+                     Alterar Senha
                   </Button>
                </>
             )}
@@ -824,22 +702,14 @@ function ProfileSectionErrorFallback(props: FallbackProps) {
    return (
       <Card className="h-full">
          <CardHeader>
-            <CardTitle>
-               {translate("dashboard.routes.settings.profile.title")}
-            </CardTitle>
-            <CardDescription>
-               {translate("dashboard.routes.settings.profile.description")}
-            </CardDescription>
+            <CardTitle>Perfil</CardTitle>
+            <CardDescription>Suas informações pessoais.</CardDescription>
          </CardHeader>
          <CardContent>
             {createErrorFallback({
-               errorDescription: translate(
-                  "dashboard.routes.profile.information.state.error.description",
-               ),
-               errorTitle: translate(
-                  "dashboard.routes.profile.information.state.error.title",
-               ),
-               retryText: translate("common.actions.retry"),
+               errorDescription: "Ocorreu um erro ao carregar suas informações de perfil.",
+               errorTitle: "Erro ao carregar",
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>
@@ -994,11 +864,9 @@ function ProfileCard({
    return (
       <Card className="h-full">
          <CardHeader>
-            <CardTitle>
-               {translate("dashboard.routes.settings.profile.title")}
-            </CardTitle>
+            <CardTitle>Perfil</CardTitle>
             <CardDescription>
-               {translate("dashboard.routes.settings.profile.card-description")}
+               Visualize e gerencie as informações do seu perfil pessoal
             </CardDescription>
          </CardHeader>
          <CardContent className="space-y-4 md:space-y-6">
@@ -1034,11 +902,7 @@ function ProfileCard({
                      <User className="size-4" />
                   </ItemMedia>
                   <ItemContent>
-                     <ItemTitle>
-                        {translate(
-                           "dashboard.routes.settings.profile.items.name",
-                        )}
-                     </ItemTitle>
+                     <ItemTitle>Nome</ItemTitle>
                      <ItemDescription>
                         {session?.user?.name || "-"}
                      </ItemDescription>
@@ -1054,11 +918,7 @@ function ProfileCard({
                               <Pencil className="size-4" />
                            </Button>
                         </TooltipTrigger>
-                        <TooltipContent>
-                           {translate(
-                              "dashboard.routes.settings.profile.name.edit-tooltip",
-                           )}
-                        </TooltipContent>
+                        <TooltipContent>Editar nome</TooltipContent>
                      </Tooltip>
                   </ItemActions>
                </Item>
@@ -1070,11 +930,7 @@ function ProfileCard({
                      <Mail className="size-4" />
                   </ItemMedia>
                   <ItemContent>
-                     <ItemTitle>
-                        {translate(
-                           "dashboard.routes.settings.profile.items.email",
-                        )}
-                     </ItemTitle>
+                     <ItemTitle>Email</ItemTitle>
                      <ItemDescription>
                         {session?.user?.email || "-"}
                      </ItemDescription>
@@ -1090,11 +946,7 @@ function ProfileCard({
                               <Pencil className="size-4" />
                            </Button>
                         </TooltipTrigger>
-                        <TooltipContent>
-                           {translate(
-                              "dashboard.routes.settings.profile.email.edit-tooltip",
-                           )}
-                        </TooltipContent>
+                        <TooltipContent>Alterar email</TooltipContent>
                      </Tooltip>
                   </ItemActions>
                </Item>
@@ -1106,19 +958,11 @@ function ProfileCard({
                      <Lock className="size-4" />
                   </ItemMedia>
                   <ItemContent>
-                     <ItemTitle>
-                        {translate(
-                           "dashboard.routes.settings.profile.password.label",
-                        )}
-                     </ItemTitle>
+                     <ItemTitle>Senha</ItemTitle>
                      <ItemDescription>
                         {hasPassword
-                           ? translate(
-                                "dashboard.routes.settings.profile.password.description-has-password",
-                             )
-                           : translate(
-                                "dashboard.routes.settings.profile.password.description-no-password",
-                             )}
+                           ? "Alterar sua senha de acesso"
+                           : "Defina uma senha para sua conta"}
                      </ItemDescription>
                   </ItemContent>
                   <ItemActions>
@@ -1128,7 +972,7 @@ function ProfileCard({
                            size="sm"
                            variant="outline"
                         >
-                           {translate("common.actions.change")}
+                           Alterar
                         </Button>
                      ) : (
                         <Button
@@ -1136,7 +980,7 @@ function ProfileCard({
                            size="sm"
                            variant="outline"
                         >
-                           {translate("common.actions.define")}
+                           Definir
                         </Button>
                      )}
                   </ItemActions>
@@ -1167,15 +1011,9 @@ function AccountSummaryCard({
    return (
       <Card className="h-full">
          <CardHeader>
-            <CardTitle>
-               {translate(
-                  "dashboard.routes.settings.profile.account-summary.title",
-               )}
-            </CardTitle>
+            <CardTitle>Resumo da Conta</CardTitle>
             <CardDescription>
-               {translate(
-                  "dashboard.routes.settings.profile.account-summary.description",
-               )}
+               Informações gerais sobre sua conta
             </CardDescription>
          </CardHeader>
          <CardContent className="space-y-4">
@@ -1185,11 +1023,7 @@ function AccountSummaryCard({
                      <Calendar className="size-4" />
                   </ItemMedia>
                   <ItemContent>
-                     <ItemTitle>
-                        {translate(
-                           "dashboard.routes.settings.profile.account-summary.member-since",
-                        )}
-                     </ItemTitle>
+                     <ItemTitle>Membro desde</ItemTitle>
                      <ItemDescription>
                         {formatDate(createdAt ?? null)}
                      </ItemDescription>
@@ -1199,27 +1033,21 @@ function AccountSummaryCard({
 
             <div className="rounded-lg bg-secondary/50 p-4 text-center">
                <p className="text-xs md:text-sm text-muted-foreground mb-1">
-                  {translate(
-                     "dashboard.routes.settings.profile.account-summary.account-status",
-                  )}
+                  Status da conta
                </p>
                <div className="flex items-center justify-center gap-2">
                   {isEmailVerified ? (
                      <>
                         <Shield className="size-5 text-green-500" />
                         <span className="text-lg font-semibold text-green-500">
-                           {translate(
-                              "dashboard.routes.settings.profile.account-summary.verified",
-                           )}
+                           Verificada
                         </span>
                      </>
                   ) : (
                      <>
                         <Shield className="size-5 text-muted-foreground" />
                         <span className="text-lg font-semibold text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.settings.profile.account-summary.not-verified",
-                           )}
+                           Não verificada
                         </span>
                      </>
                   )}
@@ -1261,11 +1089,7 @@ function TwoFactorSetupCredenzaContent({ onClose }: { onClose: () => void }) {
          }
       },
       onError: () => {
-         toast.error(
-            translate(
-               "dashboard.routes.settings.profile.two-factor.setup.incorrect-password",
-            ),
-         );
+         toast.error("Senha incorreta");
       },
    });
 
@@ -1286,55 +1110,27 @@ function TwoFactorSetupCredenzaContent({ onClose }: { onClose: () => void }) {
             setBackupCodes(codesResult.data.backupCodes);
             setStep("backup");
          }
-         toast.success(
-            translate(
-               "dashboard.routes.settings.profile.two-factor.setup.success",
-            ),
-         );
+         toast.success("Autenticação em duas etapas ativada!");
       },
       onError: () => {
-         toast.error(
-            translate(
-               "dashboard.routes.settings.profile.two-factor.setup.invalid-code",
-            ),
-         );
+         toast.error("Código inválido");
       },
    });
 
    const copyBackupCodes = () => {
       navigator.clipboard.writeText(backupCodes.join("\n"));
-      toast.success(
-         translate(
-            "dashboard.routes.settings.profile.two-factor.setup.codes-copied",
-         ),
-      );
+      toast.success("Códigos copiados!");
    };
 
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               {translate(
-                  "dashboard.routes.settings.profile.two-factor.setup.title",
-               )}
-            </CredenzaTitle>
+            <CredenzaTitle>Configurar Autenticação em Duas Etapas</CredenzaTitle>
             <CredenzaDescription>
-               {step === "password" &&
-                  translate(
-                     "dashboard.routes.settings.profile.two-factor.setup.step-password",
-                  )}
-               {step === "qrcode" &&
-                  translate(
-                     "dashboard.routes.settings.profile.two-factor.setup.step-qrcode",
-                  )}
-               {step === "verify" &&
-                  translate(
-                     "dashboard.routes.settings.profile.two-factor.setup.step-verify",
-                  )}
-               {step === "backup" &&
-                  translate(
-                     "dashboard.routes.settings.profile.two-factor.setup.step-backup",
-                  )}
+               {step === "password" && "Digite sua senha para continuar"}
+               {step === "qrcode" && "Escaneie o QR code com seu aplicativo autenticador"}
+               {step === "verify" && "Digite o código do seu aplicativo autenticador"}
+               {step === "backup" && "Guarde seus códigos de recuperação em um local seguro"}
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -1342,17 +1138,11 @@ function TwoFactorSetupCredenzaContent({ onClose }: { onClose: () => void }) {
             {step === "password" && (
                <div className="space-y-4">
                   <div className="space-y-2">
-                     <Label htmlFor="2fa-password">
-                        {translate(
-                           "dashboard.routes.settings.profile.two-factor.setup.password-label",
-                        )}
-                     </Label>
+                     <Label htmlFor="2fa-password">Senha</Label>
                      <Input
                         id="2fa-password"
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder={translate(
-                           "dashboard.routes.settings.profile.two-factor.setup.password-placeholder",
-                        )}
+                        placeholder="Digite sua senha"
                         type="password"
                         value={password}
                      />
@@ -1369,20 +1159,16 @@ function TwoFactorSetupCredenzaContent({ onClose }: { onClose: () => void }) {
                      </div>
                   </div>
                   <p className="text-sm text-muted-foreground text-center">
-                     {translate(
-                        "dashboard.routes.settings.profile.two-factor.setup.qr-instruction",
-                     )}
+                     Use Google Authenticator, Authy ou outro app compatível
                   </p>
                   <div className="p-3 bg-secondary rounded-lg">
                      <p className="text-xs text-muted-foreground mb-1">
-                        {translate(
-                           "dashboard.routes.settings.profile.two-factor.setup.manual-entry",
-                        )}
+                        Ou digite manualmente:
                      </p>
                      <code className="text-xs break-all">{totpUri}</code>
                   </div>
                   <Button className="w-full" onClick={() => setStep("verify")}>
-                     {translate("common.actions.continue")}
+                     Continuar
                   </Button>
                </div>
             )}
@@ -1428,14 +1214,10 @@ function TwoFactorSetupCredenzaContent({ onClose }: { onClose: () => void }) {
                      variant="outline"
                   >
                      <Copy className="size-4 mr-2" />
-                     {translate(
-                        "dashboard.routes.settings.profile.two-factor.setup.copy-codes",
-                     )}
+                     Copiar códigos
                   </Button>
                   <p className="text-xs text-muted-foreground text-center">
-                     {translate(
-                        "dashboard.routes.settings.profile.two-factor.setup.codes-info",
-                     )}
+                     Guarde estes códigos em um local seguro. Cada código pode ser usado apenas uma vez.
                   </p>
                </div>
             )}
@@ -1445,9 +1227,7 @@ function TwoFactorSetupCredenzaContent({ onClose }: { onClose: () => void }) {
             {step === "password" && (
                <>
                   <CredenzaClose asChild>
-                     <Button variant="outline">
-                        {translate("common.actions.cancel")}
-                     </Button>
+                     <Button variant="outline">Cancelar</Button>
                   </CredenzaClose>
                   <Button
                      disabled={!password || enableMutation.isPending}
@@ -1456,7 +1236,7 @@ function TwoFactorSetupCredenzaContent({ onClose }: { onClose: () => void }) {
                      {enableMutation.isPending && (
                         <Loader2 className="size-4 mr-2 animate-spin" />
                      )}
-                     {translate("common.actions.continue")}
+                     Continuar
                   </Button>
                </>
             )}
@@ -1464,7 +1244,7 @@ function TwoFactorSetupCredenzaContent({ onClose }: { onClose: () => void }) {
             {step === "verify" && (
                <>
                   <Button onClick={() => setStep("qrcode")} variant="outline">
-                     {translate("common.actions.back")}
+                     Voltar
                   </Button>
                   <Button
                      disabled={
@@ -1475,14 +1255,14 @@ function TwoFactorSetupCredenzaContent({ onClose }: { onClose: () => void }) {
                      {verifyMutation.isPending && (
                         <Loader2 className="size-4 mr-2 animate-spin" />
                      )}
-                     {translate("common.actions.verify")}
+                     Verificar
                   </Button>
                </>
             )}
 
             {step === "backup" && (
                <Button className="w-full" onClick={onClose}>
-                  {translate("common.actions.done")}
+                  Concluir
                </Button>
             )}
          </CredenzaFooter>
@@ -1502,19 +1282,11 @@ function SetPasswordCredenzaContent({ onSuccess }: { onSuccess: () => void }) {
    const setPasswordMutation = useMutation(
       trpc.account.setPassword.mutationOptions({
          onSuccess: () => {
-            toast.success(
-               translate(
-                  "dashboard.routes.settings.profile.set-password.success",
-               ),
-            );
+            toast.success("Senha definida com sucesso!");
             onSuccess();
          },
          onError: () => {
-            toast.error(
-               translate(
-                  "dashboard.routes.settings.profile.set-password.error",
-               ),
-            );
+            toast.error("Erro ao definir senha");
          },
       }),
    );
@@ -1524,56 +1296,36 @@ function SetPasswordCredenzaContent({ onSuccess }: { onSuccess: () => void }) {
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               {translate(
-                  "dashboard.routes.settings.profile.set-password.title",
-               )}
-            </CredenzaTitle>
+            <CredenzaTitle>Definir Senha</CredenzaTitle>
             <CredenzaDescription>
-               {translate(
-                  "dashboard.routes.settings.profile.set-password.description",
-               )}
+               Para ativar a autenticação em duas etapas, você precisa definir uma senha para sua conta.
             </CredenzaDescription>
          </CredenzaHeader>
 
          <CredenzaBody className="space-y-4">
             <div className="p-4 bg-secondary/50 rounded-lg">
                <p className="text-sm text-muted-foreground">
-                  {translate(
-                     "dashboard.routes.settings.profile.set-password.oauth-info",
-                  )}
+                  Você entrou usando o Google. Para usar recursos de segurança avançados como 2FA, é necessário criar uma senha.
                </p>
             </div>
 
             <div className="space-y-2">
-               <Label htmlFor="new-password">
-                  {translate(
-                     "dashboard.routes.settings.profile.password.new-password",
-                  )}
-               </Label>
+               <Label htmlFor="new-password">Nova senha</Label>
                <Input
                   id="new-password"
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={translate(
-                     "dashboard.routes.settings.profile.password.new-password-placeholder",
-                  )}
+                  placeholder="Mínimo 8 caracteres"
                   type="password"
                   value={password}
                />
             </div>
 
             <div className="space-y-2">
-               <Label htmlFor="confirm-password">
-                  {translate(
-                     "dashboard.routes.settings.profile.password.confirm-password",
-                  )}
-               </Label>
+               <Label htmlFor="confirm-password">Confirmar nova senha</Label>
                <Input
                   id="confirm-password"
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder={translate(
-                     "dashboard.routes.settings.profile.password.confirm-password-placeholder",
-                  )}
+                  placeholder="Digite novamente"
                   type="password"
                   value={confirmPassword}
                />
@@ -1581,18 +1333,14 @@ function SetPasswordCredenzaContent({ onSuccess }: { onSuccess: () => void }) {
 
             {password && confirmPassword && password !== confirmPassword && (
                <p className="text-sm text-destructive">
-                  {translate(
-                     "dashboard.routes.settings.profile.password.passwords-not-match",
-                  )}
+                  As senhas não coincidem
                </p>
             )}
          </CredenzaBody>
 
          <CredenzaFooter>
             <CredenzaClose asChild>
-               <Button variant="outline">
-                  {translate("common.actions.cancel")}
-               </Button>
+               <Button variant="outline">Cancelar</Button>
             </CredenzaClose>
             <Button
                disabled={!isValid || setPasswordMutation.isPending}
@@ -1603,9 +1351,7 @@ function SetPasswordCredenzaContent({ onSuccess }: { onSuccess: () => void }) {
                {setPasswordMutation.isPending && (
                   <Loader2 className="size-4 mr-2 animate-spin" />
                )}
-               {translate(
-                  "dashboard.routes.settings.profile.set-password.title",
-               )}
+               Definir Senha
             </Button>
          </CredenzaFooter>
       </>
@@ -1637,19 +1383,11 @@ function TwoFactorCard({
          return betterAuthClient.twoFactor.disable({ password });
       },
       onSuccess: () => {
-         toast.success(
-            translate(
-               "dashboard.routes.settings.profile.two-factor.disable.success",
-            ),
-         );
+         toast.success("Autenticação em duas etapas desativada");
          closeCredenza();
       },
       onError: () => {
-         toast.error(
-            translate(
-               "dashboard.routes.settings.profile.two-factor.disable.error",
-            ),
-         );
+         toast.error("Erro ao desativar 2FA");
       },
    });
 
@@ -1692,13 +1430,9 @@ function TwoFactorCard({
    return (
       <Card className="h-full">
          <CardHeader>
-            <CardTitle>
-               {translate("dashboard.routes.settings.profile.two-factor.title")}
-            </CardTitle>
+            <CardTitle>Autenticação em Duas Etapas</CardTitle>
             <CardDescription>
-               {translate(
-                  "dashboard.routes.settings.profile.two-factor.description",
-               )}
+               Adicione uma camada extra de segurança à sua conta
             </CardDescription>
          </CardHeader>
          <CardContent>
@@ -1712,32 +1446,18 @@ function TwoFactorCard({
                      )}
                   </ItemMedia>
                   <ItemContent>
-                     <ItemTitle>
-                        {translate(
-                           "dashboard.routes.settings.profile.two-factor.status",
-                        )}
-                     </ItemTitle>
+                     <ItemTitle>Status do 2FA</ItemTitle>
                      <ItemDescription>
                         {isTwoFactorEnabled
-                           ? translate(
-                                "dashboard.routes.settings.profile.two-factor.enabled-description",
-                             )
-                           : translate(
-                                "dashboard.routes.settings.profile.two-factor.disabled-description",
-                             )}
+                           ? "Ativado - Sua conta está protegida"
+                           : "Desativado - Recomendamos ativar"}
                      </ItemDescription>
                   </ItemContent>
                   <ItemActions>
                      <Badge
                         variant={isTwoFactorEnabled ? "default" : "secondary"}
                      >
-                        {isTwoFactorEnabled
-                           ? translate(
-                                "dashboard.routes.settings.profile.two-factor.active",
-                             )
-                           : translate(
-                                "dashboard.routes.settings.profile.two-factor.inactive",
-                             )}
+                        {isTwoFactorEnabled ? "Ativo" : "Inativo"}
                      </Badge>
                   </ItemActions>
                </Item>
@@ -1751,14 +1471,10 @@ function TwoFactorCard({
                         <AlertTriangle className="size-5 text-amber-500 shrink-0 mt-0.5" />
                         <div className="space-y-2">
                            <p className="text-sm font-medium">
-                              {translate(
-                                 "dashboard.routes.settings.profile.two-factor.oauth-warning-title",
-                              )}
+                              Você entrou com o Google
                            </p>
                            <p className="text-sm text-muted-foreground">
-                              {translate(
-                                 "dashboard.routes.settings.profile.two-factor.oauth-warning-description",
-                              )}
+                              Para ativar o 2FA, você precisa definir uma senha para sua conta primeiro.
                            </p>
                            <Button
                               onClick={handleSetPassword}
@@ -1766,9 +1482,7 @@ function TwoFactorCard({
                               variant="outline"
                            >
                               <Key className="size-4 mr-2" />
-                              {translate(
-                                 "dashboard.routes.settings.profile.set-password.title",
-                              )}
+                              Definir Senha
                            </Button>
                         </div>
                      </div>
@@ -1786,15 +1500,9 @@ function TwoFactorCard({
                            <Key className="size-4" />
                         </ItemMedia>
                         <ItemContent>
-                           <ItemTitle>
-                              {translate(
-                                 "dashboard.routes.settings.profile.two-factor.backup-codes.title",
-                              )}
-                           </ItemTitle>
+                           <ItemTitle>Códigos de Recuperação</ItemTitle>
                            <ItemDescription>
-                              {translate(
-                                 "dashboard.routes.settings.profile.two-factor.backup-codes.description",
-                              )}
+                              Ver ou regenerar códigos de backup
                            </ItemDescription>
                         </ItemContent>
                         <ItemActions>
@@ -1814,14 +1522,10 @@ function TwoFactorCard({
                         </ItemMedia>
                         <ItemContent>
                            <ItemTitle className="text-destructive">
-                              {translate(
-                                 "dashboard.routes.settings.profile.two-factor.remove-title",
-                              )}
+                              Desativar 2FA
                            </ItemTitle>
                            <ItemDescription>
-                              {translate(
-                                 "dashboard.routes.settings.profile.two-factor.remove-description",
-                              )}
+                              Remover autenticação em duas etapas
                            </ItemDescription>
                         </ItemContent>
                         <ItemActions>
@@ -1840,15 +1544,9 @@ function TwoFactorCard({
                            <Smartphone className="size-4" />
                         </ItemMedia>
                         <ItemContent>
-                           <ItemTitle>
-                              {translate(
-                                 "dashboard.routes.settings.profile.two-factor.configure",
-                              )}
-                           </ItemTitle>
+                           <ItemTitle>Configurar 2FA</ItemTitle>
                            <ItemDescription>
-                              {translate(
-                                 "dashboard.routes.settings.profile.two-factor.configure-description",
-                              )}
+                              Use Google Authenticator ou Authy
                            </ItemDescription>
                         </ItemContent>
                         <ItemActions>
@@ -1886,64 +1584,44 @@ function ViewBackupCodesCredenzaContent({ onClose }: { onClose: () => void }) {
          }
       },
       onError: () => {
-         toast.error(
-            translate(
-               "dashboard.routes.settings.profile.two-factor.setup.incorrect-password",
-            ),
-         );
+         toast.error("Senha incorreta");
       },
    });
 
    const copyBackupCodes = () => {
       navigator.clipboard.writeText(codes.join("\n"));
-      toast.success(
-         translate(
-            "dashboard.routes.settings.profile.two-factor.setup.codes-copied",
-         ),
-      );
+      toast.success("Códigos copiados!");
    };
 
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               {translate(
-                  "dashboard.routes.settings.profile.two-factor.backup-codes.title",
-               )}
-            </CredenzaTitle>
+            <CredenzaTitle>Códigos de Recuperação</CredenzaTitle>
             <CredenzaDescription>
                {step === "password"
-                  ? translate(
-                       "dashboard.routes.settings.profile.two-factor.backup-codes.step-password",
-                    )
-                  : translate(
-                       "dashboard.routes.settings.profile.two-factor.backup-codes.step-codes",
-                    )}
+                  ? "Digite sua senha para ver os códigos"
+                  : "Estes são seus novos códigos de recuperação"}
             </CredenzaDescription>
          </CredenzaHeader>
 
          <CredenzaBody className="space-y-4">
             {step === "password" && (
-               <div className="space-y-2">
-                  <Label htmlFor="backup-password">
-                     {translate(
-                        "dashboard.routes.settings.profile.two-factor.setup.password-label",
-                     )}
-                  </Label>
-                  <Input
-                     id="backup-password"
-                     onChange={(e) => setPassword(e.target.value)}
-                     placeholder={translate(
-                        "dashboard.routes.settings.profile.two-factor.setup.password-placeholder",
-                     )}
-                     type="password"
-                     value={password}
-                  />
+               <div className="space-y-4">
+                  <div className="space-y-2">
+                     <Label htmlFor="backup-password">Senha</Label>
+                     <Input
+                        id="backup-password"
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Digite sua senha"
+                        type="password"
+                        value={password}
+                     />
+                  </div>
                </div>
             )}
 
             {step === "codes" && (
-               <>
+               <div className="space-y-4">
                   <div className="p-4 bg-secondary rounded-lg">
                      <div className="grid grid-cols-2 gap-2">
                         {codes.map((code) => (
@@ -1962,16 +1640,12 @@ function ViewBackupCodesCredenzaContent({ onClose }: { onClose: () => void }) {
                      variant="outline"
                   >
                      <Copy className="size-4 mr-2" />
-                     {translate(
-                        "dashboard.routes.settings.profile.two-factor.setup.copy-codes",
-                     )}
+                     Copiar códigos
                   </Button>
                   <p className="text-xs text-muted-foreground text-center">
-                     {translate(
-                        "dashboard.routes.settings.profile.two-factor.backup-codes.codes-invalidated",
-                     )}
+                     Guarde estes códigos em um local seguro. Os códigos anteriores foram invalidados.
                   </p>
-               </>
+               </div>
             )}
          </CredenzaBody>
 
@@ -1979,9 +1653,7 @@ function ViewBackupCodesCredenzaContent({ onClose }: { onClose: () => void }) {
             {step === "password" && (
                <>
                   <CredenzaClose asChild>
-                     <Button variant="outline">
-                        {translate("common.actions.cancel")}
-                     </Button>
+                     <Button variant="outline">Cancelar</Button>
                   </CredenzaClose>
                   <Button
                      disabled={!password || viewMutation.isPending}
@@ -1990,16 +1662,13 @@ function ViewBackupCodesCredenzaContent({ onClose }: { onClose: () => void }) {
                      {viewMutation.isPending && (
                         <Loader2 className="size-4 mr-2 animate-spin" />
                      )}
-                     {translate(
-                        "dashboard.routes.settings.profile.two-factor.backup-codes.view-codes",
-                     )}
+                     Ver códigos
                   </Button>
                </>
             )}
-
             {step === "codes" && (
                <Button className="w-full" onClick={onClose}>
-                  {translate("common.actions.done")}
+                  Concluir
                </Button>
             )}
          </CredenzaFooter>
@@ -2023,15 +1692,9 @@ function DisableTwoFactorCredenzaContent({
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               {translate(
-                  "dashboard.routes.settings.profile.two-factor.disable.title",
-               )}
-            </CredenzaTitle>
+            <CredenzaTitle>Desativar Autenticação em Duas Etapas</CredenzaTitle>
             <CredenzaDescription>
-               {translate(
-                  "dashboard.routes.settings.profile.two-factor.disable.description",
-               )}
+               Isso tornará sua conta menos segura. Digite sua senha para confirmar.
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -2039,23 +1702,15 @@ function DisableTwoFactorCredenzaContent({
             <div className="p-4 bg-destructive/10 rounded-lg flex items-start gap-3">
                <AlertTriangle className="size-5 text-destructive shrink-0 mt-0.5" />
                <p className="text-sm text-destructive">
-                  {translate(
-                     "dashboard.routes.settings.profile.two-factor.disable.warning",
-                  )}
+                  Ao desativar o 2FA, sua conta ficará protegida apenas pela senha. Recomendamos manter ativo para maior segurança.
                </p>
             </div>
             <div className="space-y-2">
-               <Label htmlFor="disable-password">
-                  {translate(
-                     "dashboard.routes.settings.profile.two-factor.setup.password-label",
-                  )}
-               </Label>
+               <Label htmlFor="disable-password">Senha</Label>
                <Input
                   id="disable-password"
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={translate(
-                     "dashboard.routes.settings.profile.two-factor.setup.password-placeholder",
-                  )}
+                  placeholder="Digite sua senha"
                   type="password"
                   value={password}
                />
@@ -2064,9 +1719,7 @@ function DisableTwoFactorCredenzaContent({
 
          <CredenzaFooter>
             <CredenzaClose asChild>
-               <Button variant="outline">
-                  {translate("common.actions.cancel")}
-               </Button>
+               <Button variant="outline">Cancelar</Button>
             </CredenzaClose>
             <Button
                disabled={!password || isPending}
@@ -2074,9 +1727,7 @@ function DisableTwoFactorCredenzaContent({
                variant="destructive"
             >
                {isPending && <Loader2 className="size-4 mr-2 animate-spin" />}
-               {translate(
-                  "dashboard.routes.settings.profile.two-factor.disable.button",
-               )}
+               Desativar 2FA
             </Button>
          </CredenzaFooter>
       </>
@@ -2109,17 +1760,9 @@ function DataAccountCard() {
          a.click();
          document.body.removeChild(a);
          URL.revokeObjectURL(url);
-         toast.success(
-            translate(
-               "dashboard.routes.settings.profile.data-account.export-success",
-            ),
-         );
+         toast.success("Dados exportados com sucesso!");
       } catch {
-         toast.error(
-            translate(
-               "dashboard.routes.settings.profile.data-account.export-error",
-            ),
-         );
+         toast.error("Erro ao exportar dados");
       }
    };
 
@@ -2132,15 +1775,9 @@ function DataAccountCard() {
    return (
       <Card className="h-full">
          <CardHeader>
-            <CardTitle>
-               {translate(
-                  "dashboard.routes.settings.profile.data-account.title",
-               )}
-            </CardTitle>
+            <CardTitle>Dados e Conta</CardTitle>
             <CardDescription>
-               {translate(
-                  "dashboard.routes.settings.profile.data-account.description",
-               )}
+               Exporte seus dados ou exclua sua conta
             </CardDescription>
          </CardHeader>
          <CardContent className="space-y-4">
@@ -2155,9 +1792,7 @@ function DataAccountCard() {
                ) : (
                   <Download className="size-4 mr-2" />
                )}
-               {translate(
-                  "dashboard.routes.settings.profile.data-account.export-button",
-               )}
+               Exportar meus dados
             </Button>
 
             <Button
@@ -2166,9 +1801,7 @@ function DataAccountCard() {
                variant="destructive"
             >
                <Trash2 className="size-4 mr-2" />
-               {translate(
-                  "dashboard.routes.settings.profile.data-account.delete-button",
-               )}
+               Excluir conta
             </Button>
          </CardContent>
       </Card>
@@ -2190,38 +1823,21 @@ function DeleteAccountCredenzaContent({ onClose }: { onClose: () => void }) {
       trpc.accountDeletion.requestDeletion.mutationOptions({
          onSuccess: (data) => {
             if (data.type === "immediate") {
-               toast.success(
-                  translate(
-                     "dashboard.routes.settings.profile.delete-account.success-immediate",
-                  ),
-               );
+               toast.success("Conta excluída com sucesso");
                window.location.href = "/auth/sign-in";
             } else if (data.scheduledDeletionAt) {
                const scheduledDate = new Date(data.scheduledDeletionAt);
                toast.success(
-                  translate(
-                     "dashboard.routes.settings.profile.delete-account.success-scheduled",
-                     {
-                        date: scheduledDate.toLocaleDateString("pt-BR"),
-                     },
-                  ),
+                  `Exclusão agendada para ${scheduledDate.toLocaleDateString("pt-BR")}`,
                );
                onClose();
             }
          },
          onError: (error) => {
             if (error.message === "Invalid password") {
-               toast.error(
-                  translate(
-                     "dashboard.routes.settings.profile.delete-account.error-invalid-password",
-                  ),
-               );
+               toast.error("Senha incorreta");
             } else {
-               toast.error(
-                  translate(
-                     "dashboard.routes.settings.profile.delete-account.error-generic",
-                  ),
-               );
+               toast.error("Erro ao excluir conta");
             }
          },
       }),
@@ -2230,19 +1846,11 @@ function DeleteAccountCredenzaContent({ onClose }: { onClose: () => void }) {
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               {translate(
-                  "dashboard.routes.settings.profile.delete-account.title",
-               )}
-            </CredenzaTitle>
+            <CredenzaTitle>Excluir Conta</CredenzaTitle>
             <CredenzaDescription>
                {step === "options"
-                  ? translate(
-                       "dashboard.routes.settings.profile.delete-account.options-description",
-                    )
-                  : translate(
-                       "dashboard.routes.settings.profile.delete-account.confirm-description",
-                    )}
+                  ? "Escolha como deseja excluir sua conta"
+                  : "Confirme a exclusão da sua conta"}
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -2252,9 +1860,7 @@ function DeleteAccountCredenzaContent({ onClose }: { onClose: () => void }) {
                   <div className="p-4 bg-destructive/10 rounded-lg flex items-start gap-3">
                      <AlertTriangle className="size-5 text-destructive shrink-0 mt-0.5" />
                      <p className="text-sm text-destructive">
-                        {translate(
-                           "dashboard.routes.settings.profile.delete-account.warning",
-                        )}
+                        Esta ação é irreversível. Todos os seus dados serão permanentemente excluídos.
                      </p>
                   </div>
 
@@ -2271,14 +1877,10 @@ function DeleteAccountCredenzaContent({ onClose }: { onClose: () => void }) {
                         />
                         <div className="space-y-1">
                            <Label htmlFor="grace_period">
-                              {translate(
-                                 "dashboard.routes.settings.profile.delete-account.grace-period-title",
-                              )}
+                              Excluir em 30 dias (Recomendado)
                            </Label>
                            <p className="text-sm text-muted-foreground">
-                              {translate(
-                                 "dashboard.routes.settings.profile.delete-account.grace-period-description",
-                              )}
+                              Você terá 30 dias para mudar de ideia antes da exclusão permanente
                            </p>
                         </div>
                      </div>
@@ -2289,14 +1891,10 @@ function DeleteAccountCredenzaContent({ onClose }: { onClose: () => void }) {
                               className="text-destructive"
                               htmlFor="immediate"
                            >
-                              {translate(
-                                 "dashboard.routes.settings.profile.delete-account.immediate-title",
-                              )}
+                              Excluir imediatamente
                            </Label>
                            <p className="text-sm text-muted-foreground">
-                              {translate(
-                                 "dashboard.routes.settings.profile.delete-account.immediate-description",
-                              )}
+                              Sua conta será excluída imediatamente e não poderá ser recuperada
                            </p>
                         </div>
                      </div>
@@ -2308,25 +1906,15 @@ function DeleteAccountCredenzaContent({ onClose }: { onClose: () => void }) {
                <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
                      {deletionType === "immediate"
-                        ? translate(
-                             "dashboard.routes.settings.profile.delete-account.password-prompt-immediate",
-                          )
-                        : translate(
-                             "dashboard.routes.settings.profile.delete-account.password-prompt-grace",
-                          )}
+                        ? "Digite sua senha para confirmar a exclusão imediata da conta."
+                        : "Digite sua senha para agendar a exclusão da conta em 30 dias."}
                   </p>
                   <div className="space-y-2">
-                     <Label htmlFor="delete-password">
-                        {translate(
-                           "dashboard.routes.settings.profile.delete-account.password-label",
-                        )}
-                     </Label>
+                     <Label htmlFor="delete-password">Senha</Label>
                      <Input
                         id="delete-password"
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder={translate(
-                           "dashboard.routes.settings.profile.delete-account.password-placeholder",
-                        )}
+                        placeholder="Digite sua senha"
                         type="password"
                         value={password}
                      />
@@ -2339,15 +1927,13 @@ function DeleteAccountCredenzaContent({ onClose }: { onClose: () => void }) {
             {step === "options" && (
                <>
                   <CredenzaClose asChild>
-                     <Button variant="outline">
-                        {translate("common.actions.cancel")}
-                     </Button>
+                     <Button variant="outline">Cancelar</Button>
                   </CredenzaClose>
                   <Button
                      onClick={() => setStep("confirm")}
                      variant="destructive"
                   >
-                     {translate("common.actions.continue")}
+                     Continuar
                   </Button>
                </>
             )}
@@ -2355,7 +1941,7 @@ function DeleteAccountCredenzaContent({ onClose }: { onClose: () => void }) {
             {step === "confirm" && (
                <>
                   <Button onClick={() => setStep("options")} variant="outline">
-                     {translate("common.actions.back")}
+                     Voltar
                   </Button>
                   <Button
                      disabled={!password || deleteMutation.isPending}
@@ -2368,12 +1954,8 @@ function DeleteAccountCredenzaContent({ onClose }: { onClose: () => void }) {
                         <Loader2 className="size-4 mr-2 animate-spin" />
                      )}
                      {deletionType === "immediate"
-                        ? translate(
-                             "dashboard.routes.settings.profile.delete-account.delete-now",
-                          )
-                        : translate(
-                             "dashboard.routes.settings.profile.delete-account.schedule-deletion",
-                          )}
+                        ? "Excluir agora"
+                        : "Agendar exclusão"}
                   </Button>
                </>
             )}
@@ -2407,19 +1989,11 @@ function LinkedAccountsCard({
          return betterAuthClient.unlinkAccount({ providerId });
       },
       onSuccess: () => {
-         toast.success(
-            translate(
-               "dashboard.routes.settings.profile.linked-accounts.unlink-success",
-            ),
-         );
+         toast.success("Conta desvinculada com sucesso");
          onRefetch();
       },
       onError: () => {
-         toast.error(
-            translate(
-               "dashboard.routes.settings.profile.linked-accounts.unlink-error",
-            ),
-         );
+         toast.error("Erro ao desvincular conta");
       },
    });
 
@@ -2430,11 +2004,7 @@ function LinkedAccountsCard({
             callbackURL: window.location.href,
          });
       } catch {
-         toast.error(
-            translate(
-               "dashboard.routes.settings.profile.linked-accounts.link-google-error",
-            ),
-         );
+         toast.error("Erro ao vincular conta do Google");
       }
    };
 
@@ -2457,15 +2027,9 @@ function LinkedAccountsCard({
    return (
       <Card className="h-full">
          <CardHeader>
-            <CardTitle>
-               {translate(
-                  "dashboard.routes.settings.profile.linked-accounts.title",
-               )}
-            </CardTitle>
+            <CardTitle>Contas Vinculadas</CardTitle>
             <CardDescription>
-               {translate(
-                  "dashboard.routes.settings.profile.linked-accounts.description",
-               )}
+               Gerencie as formas de acesso à sua conta
             </CardDescription>
          </CardHeader>
          <CardContent className="space-y-4">
@@ -2476,35 +2040,23 @@ function LinkedAccountsCard({
                      <Key className="size-4" />
                   </ItemMedia>
                   <ItemContent>
-                     <ItemTitle>
-                        {translate(
-                           "dashboard.routes.settings.profile.password.label",
-                        )}
-                     </ItemTitle>
+                     <ItemTitle>Senha</ItemTitle>
                      <ItemDescription>
                         {hasPassword
-                           ? translate(
-                                "dashboard.routes.settings.profile.linked-accounts.password-configured",
-                             )
-                           : translate(
-                                "dashboard.routes.settings.profile.linked-accounts.password-not-configured",
-                             )}
+                           ? "Configurada"
+                           : "Não configurada"}
                      </ItemDescription>
                   </ItemContent>
                   <ItemActions>
                      {hasPassword ? (
-                        <Badge variant="default">
-                           {translate(
-                              "dashboard.routes.settings.profile.linked-accounts.active",
-                           )}
-                        </Badge>
+                        <Badge variant="default">Ativo</Badge>
                      ) : (
                         <Button
                            onClick={handleSetPassword}
                            size="sm"
                            variant="outline"
                         >
-                           {translate("common.actions.define")}
+                           Definir
                         </Button>
                      )}
                   </ItemActions>
@@ -2521,22 +2073,14 @@ function LinkedAccountsCard({
                      <ItemTitle>Google</ItemTitle>
                      <ItemDescription>
                         {hasGoogleLinked
-                           ? translate(
-                                "dashboard.routes.settings.profile.linked-accounts.google-linked",
-                             )
-                           : translate(
-                                "dashboard.routes.settings.profile.linked-accounts.google-not-linked",
-                             )}
+                           ? "Vinculado"
+                           : "Não vinculado"}
                      </ItemDescription>
                   </ItemContent>
                   <ItemActions>
                      {hasGoogleLinked ? (
                         <div className="flex items-center gap-2">
-                           <Badge variant="default">
-                              {translate(
-                                 "dashboard.routes.settings.profile.linked-accounts.active",
-                              )}
-                           </Badge>
+                           <Badge variant="default">Ativo</Badge>
                            {canUnlink && (
                               <Tooltip>
                                  <TooltipTrigger asChild>
@@ -2555,9 +2099,7 @@ function LinkedAccountsCard({
                                        )}
                                     </Button>
                                  </TooltipTrigger>
-                                 <TooltipContent>
-                                    {translate("common.actions.unlink")}
-                                 </TooltipContent>
+                                 <TooltipContent>Desvincular</TooltipContent>
                               </Tooltip>
                            )}
                         </div>
@@ -2568,7 +2110,7 @@ function LinkedAccountsCard({
                            variant="outline"
                         >
                            <Link2 className="size-4 mr-2" />
-                           {translate("common.actions.link")}
+                           Vincular
                         </Button>
                      )}
                   </ItemActions>
@@ -2577,9 +2119,7 @@ function LinkedAccountsCard({
 
             {!canUnlink && (
                <p className="text-xs text-muted-foreground text-center">
-                  {translate(
-                     "dashboard.routes.settings.profile.linked-accounts.min-one-access",
-                  )}
+                  Você precisa ter pelo menos uma forma de acesso configurada.
                </p>
             )}
          </CardContent>

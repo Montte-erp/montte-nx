@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import {
    Card,
    CardContent,
@@ -65,9 +64,7 @@ function BudgetTransactionsErrorFallback({ error }: FallbackProps) {
       <Card>
          <CardHeader>
             <CardTitle>
-               {translate(
-                  "dashboard.routes.budgets.details.transactions.title",
-               )}
+               Transações do Orçamento
             </CardTitle>
          </CardHeader>
          <CardContent>
@@ -77,9 +74,7 @@ function BudgetTransactionsErrorFallback({ error }: FallbackProps) {
                      <Receipt className="size-12 text-destructive" />
                   </EmptyMedia>
                   <EmptyTitle>
-                     {translate(
-                        "dashboard.routes.budgets.details.transactions.error.title",
-                     )}
+                     Erro ao carregar transações
                   </EmptyTitle>
                   <EmptyDescription>{error?.message}</EmptyDescription>
                </EmptyContent>
@@ -182,14 +177,10 @@ function BudgetTransactionsContent({
          <Card>
             <CardHeader>
                <CardTitle>
-                  {translate(
-                     "dashboard.routes.budgets.details.transactions.title",
-                  )}
+                  Transações do Orçamento
                </CardTitle>
                <CardDescription>
-                  {translate(
-                     "dashboard.routes.budgets.details.transactions.description",
-                  )}
+                  Transações que afetam este orçamento no período selecionado
                </CardDescription>
             </CardHeader>
             <CardContent>
@@ -199,14 +190,10 @@ function BudgetTransactionsContent({
                         <Receipt className="size-12 text-muted-foreground" />
                      </EmptyMedia>
                      <EmptyTitle>
-                        {translate(
-                           "dashboard.routes.budgets.details.transactions.empty.title",
-                        )}
+                        Nenhuma transação encontrada
                      </EmptyTitle>
                      <EmptyDescription>
-                        {translate(
-                           "dashboard.routes.budgets.details.transactions.empty.description",
-                        )}
+                        Não há transações que afetam este orçamento no período selecionado
                      </EmptyDescription>
                   </EmptyContent>
                </Empty>
@@ -218,12 +205,8 @@ function BudgetTransactionsContent({
    return (
       <TransactionList
          categories={categories}
-         emptyStateDescription={translate(
-            "dashboard.routes.budgets.details.transactions.empty.description",
-         )}
-         emptyStateTitle={translate(
-            "dashboard.routes.budgets.details.transactions.empty.title",
-         )}
+         emptyStateDescription="Não há transações que afetam este orçamento no período selecionado"
+         emptyStateTitle="Nenhuma transação encontrada"
          filters={{
             onSearchChange: setSearchTerm,
             searchTerm,

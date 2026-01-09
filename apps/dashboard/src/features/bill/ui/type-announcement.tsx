@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Announcement,
    AnnouncementTag,
@@ -16,13 +15,13 @@ type TypeAnnouncementProps = {
 export function TypeAnnouncement({ type, subtitle }: TypeAnnouncementProps) {
    const typeConfig = {
       expense: {
-         label: translate("dashboard.routes.bills.type.payable"),
+         label: "A Pagar",
          icon: ArrowUpRight,
          bg: "#ef444420",
          text: "#ef4444",
       },
       income: {
-         label: translate("dashboard.routes.bills.type.receivable"),
+         label: "A Receber",
          icon: ArrowDownLeft,
          bg: "#10b98120",
          text: "#10b981",

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -46,6 +45,19 @@ function getTypeColor(type: string): string {
          return "bg-purple-500/10 text-purple-600 border-purple-500/20";
       default:
          return "";
+   }
+}
+
+function getTypeLabel(type: string): string {
+   switch (type) {
+      case "client":
+         return "Cliente";
+      case "supplier":
+         return "Fornecedor";
+      case "both":
+         return "Cliente e Fornecedor";
+      default:
+         return type;
    }
 }
 
@@ -112,11 +124,7 @@ function CounterpartyContent() {
                         variant="outline"
                      >
                         {getTypeIcon(counterparty.type)}
-                        {translate(
-                           `dashboard.routes.counterparties.form.type.${counterparty.type}` as Parameters<
-                              typeof translate
-                           >[0],
-                        )}
+                        {getTypeLabel(counterparty.type)}
                      </Badge>
                      {!counterparty.isActive && (
                         <Badge variant="secondary">Inativo</Badge>
@@ -201,11 +209,7 @@ function CounterpartyPageError({ error, resetErrorBoundary }: FallbackProps) {
                   <EmptyMedia variant="icon">
                      <FileText className="size-12 text-destructive" />
                   </EmptyMedia>
-                  <EmptyTitle>
-                     {translate(
-                        "dashboard.routes.counterparties.list-section.state.error.title",
-                     )}
-                  </EmptyTitle>
+                  <EmptyTitle>Erro ao carregar parceiro</EmptyTitle>
                   <EmptyDescription>{error?.message}</EmptyDescription>
                   <div className="mt-6 flex gap-2 justify-center">
                      <Button
@@ -226,7 +230,7 @@ function CounterpartyPageError({ error, resetErrorBoundary }: FallbackProps) {
                         size="default"
                         variant="default"
                      >
-                        {translate("common.actions.retry")}
+                        Tentar novamente
                      </Button>
                   </div>
                </EmptyContent>

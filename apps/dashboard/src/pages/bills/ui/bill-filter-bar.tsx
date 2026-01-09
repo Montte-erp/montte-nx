@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Combobox } from "@packages/ui/components/combobox";
@@ -137,9 +136,7 @@ export function BillFilterBar({
 
    const categoryOptions = [
       {
-         label: translate(
-            "dashboard.routes.bills.features.filter.items.all-categories",
-         ),
+         label: "Todas as Categorias",
          value: "all",
       },
       ...categories.map((category) => ({
@@ -197,7 +194,7 @@ export function BillFilterBar({
                variant={hasActiveFilters ? "default" : "outline"}
             >
                <Filter className="size-4" />
-               {translate("common.form.filter.title")}
+               Filtros
                {activeFilterCount > 0 && (
                   <Badge
                      className="size-5 p-0 justify-center"
@@ -225,7 +222,7 @@ export function BillFilterBar({
             <DateRangePickerPopover
                endDate={customDateRange.endDate}
                onRangeChange={handleCustomDateChange}
-               placeholder={translate("common.form.date-range.custom")}
+               placeholder="Personalizado"
                startDate={customDateRange.startDate}
             />
          </div>
@@ -246,27 +243,21 @@ export function BillFilterBar({
                   value="pending"
                >
                   <Clock className="size-3.5" />
-                  {translate(
-                     "dashboard.routes.bills.features.filter.items.status-pending",
-                  )}
+                  Pendente
                </ToggleGroupItem>
                <ToggleGroupItem
                   className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-destructive data-[state=on]:text-destructive"
                   value="overdue"
                >
                   <AlertCircle className="size-3.5" />
-                  {translate(
-                     "dashboard.routes.bills.features.filter.items.status-overdue",
-                  )}
+                  Vencida
                </ToggleGroupItem>
                <ToggleGroupItem
                   className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-emerald-500 data-[state=on]:text-emerald-600"
                   value="completed"
                >
                   <CheckCircle2 className="size-3.5" />
-                  {translate(
-                     "dashboard.routes.bills.features.filter.items.status-completed",
-                  )}
+                  Concluída
                </ToggleGroupItem>
             </ToggleGroup>
 
@@ -289,17 +280,13 @@ export function BillFilterBar({
                         className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-destructive data-[state=on]:text-destructive"
                         value="expense"
                      >
-                        {translate(
-                           "dashboard.routes.bills.features.filter.items.type-payable",
-                        )}
+                        A Pagar
                      </ToggleGroupItem>
                      <ToggleGroupItem
                         className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-emerald-500 data-[state=on]:text-emerald-600"
                         value="income"
                      >
-                        {translate(
-                           "dashboard.routes.bills.features.filter.items.type-receivable",
-                        )}
+                        A Receber
                      </ToggleGroupItem>
                   </ToggleGroup>
                </>
@@ -319,7 +306,7 @@ export function BillFilterBar({
                      variant="outline"
                   >
                      <Filter className="size-3.5" />
-                     {translate("common.form.filter.more")}
+                     Mais Filtros
                      <ChevronDown
                         className={cn(
                            "size-3.5 transition-transform",
@@ -331,10 +318,10 @@ export function BillFilterBar({
                <PopoverContent align="start" className="w-80 p-0">
                   <div className="border-b px-4 py-3">
                      <h4 className="font-medium text-sm">
-                        {translate("common.form.filter.more")}
+                        Mais Filtros
                      </h4>
                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {translate("common.form.filter.description")}
+                        Refine os resultados com filtros
                      </p>
                   </div>
 
@@ -343,7 +330,7 @@ export function BillFilterBar({
                         <div className="flex items-center gap-2">
                            <Building2 className="size-4 text-muted-foreground" />
                            <label className="text-sm font-medium">
-                              {translate("common.form.bank-account.label")}
+                              Conta Bancária
                            </label>
                         </div>
                         <Select
@@ -352,16 +339,12 @@ export function BillFilterBar({
                         >
                            <SelectTrigger className="h-9">
                               <SelectValue
-                                 placeholder={translate(
-                                    "common.form.bank-account.placeholder",
-                                 )}
+                                 placeholder="Selecione uma conta"
                               />
                            </SelectTrigger>
                            <SelectContent>
                               <SelectItem value="all">
-                                 {translate(
-                                    "dashboard.routes.transactions.features.filter.items.all-accounts",
-                                 )}
+                                 Todas as Contas
                               </SelectItem>
                               {bankAccounts.map((account) => (
                                  <SelectItem
@@ -379,22 +362,16 @@ export function BillFilterBar({
                         <div className="flex items-center gap-2">
                            <FolderOpen className="size-4 text-muted-foreground" />
                            <label className="text-sm font-medium">
-                              {translate("common.form.category.label")}
+                              Categoria
                            </label>
                         </div>
                         <Combobox
                            className="h-9"
-                           emptyMessage={translate(
-                              "common.form.search.no-results",
-                           )}
+                           emptyMessage="Nenhum resultado encontrado"
                            onValueChange={onCategoryFilterChange}
                            options={categoryOptions}
-                           placeholder={translate(
-                              "common.form.category.placeholder",
-                           )}
-                           searchPlaceholder={translate(
-                              "common.form.search.label",
-                           )}
+                           placeholder="Selecione uma categoria"
+                           searchPlaceholder="Pesquisar"
                            value={categoryFilter}
                         />
                      </div>
@@ -412,7 +389,7 @@ export function BillFilterBar({
                            variant="ghost"
                         >
                            <X className="size-3.5 mr-2" />
-                           {translate("common.form.filter.clear-all")}
+                           Limpar Filtros
                         </Button>
                      </div>
                   )}
@@ -456,7 +433,7 @@ export function BillFilterBar({
                   variant="outline"
                >
                   <X className="size-3" />
-                  {translate("common.actions.clear-filters")}
+                  Limpar filtros
                </Button>
             )}
          </div>

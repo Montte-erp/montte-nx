@@ -1,5 +1,4 @@
 import type { InterestTemplate } from "@packages/database/repositories/interest-template-repository";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Field,
@@ -54,22 +53,13 @@ export function ManageInterestTemplateForm({
 
    const modeTexts = useMemo(() => {
       const createTexts = {
-         description: translate(
-            "dashboard.routes.interest-templates.features.create-template.description",
-         ),
-         title: translate(
-            "dashboard.routes.interest-templates.features.create-template.title",
-         ),
+         description: "Adicione um novo template de juros e multas.",
+         title: "Criar Template",
       };
 
       const editTexts = {
-         description: translate(
-            "dashboard.routes.interest-templates.features.edit-template.description",
-            { name: template?.name || "" },
-         ),
-         title: translate(
-            "dashboard.routes.interest-templates.features.edit-template.title",
-         ),
+         description: `Atualize os detalhes de ${template?.name || ""}.`,
+         title: "Editar Template",
       };
 
       return isEditMode ? editTexts : createTexts;
@@ -178,7 +168,7 @@ export function ManageInterestTemplateForm({
                </form.Subscribe>
             ) : (
                <Button className="w-full" onClick={next} type="button">
-                  {translate("common.actions.next")}
+                  Próximo
                   <ArrowRight className="size-4 ml-2" />
                </Button>
             )}
@@ -190,7 +180,7 @@ export function ManageInterestTemplateForm({
                   variant="outline"
                >
                   <ArrowLeft className="size-4 mr-2" />
-                  {translate("common.actions.previous")}
+                  Voltar
                </Button>
             )}
          </Stepper.Controls>
@@ -201,15 +191,9 @@ export function ManageInterestTemplateForm({
       return (
          <div className="grid gap-4 py-4">
             <div className="space-y-2">
-               <h3 className="font-medium text-base">
-                  {translate(
-                     "dashboard.routes.interest-templates.features.stepper.steps.basic-info.title",
-                  )}
-               </h3>
+               <h3 className="font-medium text-base">Informações Básicas</h3>
                <p className="text-sm text-muted-foreground">
-                  {translate(
-                     "dashboard.routes.interest-templates.features.stepper.steps.basic-info.description",
-                  )}
+                  Defina o nome e configurações básicas
                </p>
             </div>
 
@@ -220,19 +204,13 @@ export function ManageInterestTemplateForm({
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel>
-                              {translate(
-                                 "dashboard.routes.interest-templates.form.name.label",
-                              )}
-                           </FieldLabel>
+                           <FieldLabel>Nome</FieldLabel>
                            <Input
                               onBlur={field.handleBlur}
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
                               }
-                              placeholder={translate(
-                                 "dashboard.routes.interest-templates.form.name.placeholder",
-                              )}
+                              placeholder="Digite o nome do template"
                               value={field.state.value}
                            />
                            {isInvalid && (
@@ -251,14 +229,11 @@ export function ManageInterestTemplateForm({
                         <div className="flex items-center justify-between">
                            <div className="space-y-0.5">
                               <FieldLabel className="mb-0">
-                                 {translate(
-                                    "dashboard.routes.interest-templates.form.is-default.label",
-                                 )}
+                                 Template Padrão
                               </FieldLabel>
                               <FieldDescription>
-                                 {translate(
-                                    "dashboard.routes.interest-templates.form.is-default.description",
-                                 )}
+                                 Este template será aplicado automaticamente a
+                                 novas contas
                               </FieldDescription>
                            </div>
                            <Switch
@@ -278,15 +253,9 @@ export function ManageInterestTemplateForm({
       return (
          <div className="grid gap-4 py-4">
             <div className="space-y-2">
-               <h3 className="font-medium text-base">
-                  {translate(
-                     "dashboard.routes.interest-templates.features.stepper.steps.interest-penalty.title",
-                  )}
-               </h3>
+               <h3 className="font-medium text-base">Juros e Multa</h3>
                <p className="text-sm text-muted-foreground">
-                  {translate(
-                     "dashboard.routes.interest-templates.features.stepper.steps.interest-penalty.description",
-                  )}
+                  Configure juros e multa
                </p>
             </div>
 
@@ -295,11 +264,7 @@ export function ManageInterestTemplateForm({
                <form.Field name="penaltyType">
                   {(field) => (
                      <Field>
-                        <FieldLabel>
-                           {translate(
-                              "dashboard.routes.interest-templates.form.penalty-type.label",
-                           )}
-                        </FieldLabel>
+                        <FieldLabel>Tipo de Multa</FieldLabel>
                         <Select
                            onValueChange={(value) =>
                               field.handleChange(
@@ -312,21 +277,11 @@ export function ManageInterestTemplateForm({
                               <SelectValue />
                            </SelectTrigger>
                            <SelectContent>
-                              <SelectItem value="none">
-                                 {translate(
-                                    "dashboard.routes.interest-templates.form.penalty-type.none",
-                                 )}
-                              </SelectItem>
+                              <SelectItem value="none">Nenhuma</SelectItem>
                               <SelectItem value="percentage">
-                                 {translate(
-                                    "dashboard.routes.interest-templates.form.penalty-type.percentage",
-                                 )}
+                                 Percentual
                               </SelectItem>
-                              <SelectItem value="fixed">
-                                 {translate(
-                                    "dashboard.routes.interest-templates.form.penalty-type.fixed",
-                                 )}
-                              </SelectItem>
+                              <SelectItem value="fixed">Valor Fixo</SelectItem>
                            </SelectContent>
                         </Select>
                      </Field>
@@ -341,11 +296,7 @@ export function ManageInterestTemplateForm({
                         <form.Field name="penaltyValue">
                            {(field) => (
                               <Field>
-                                 <FieldLabel>
-                                    {translate(
-                                       "dashboard.routes.interest-templates.form.penalty-value.label",
-                                    )}
-                                 </FieldLabel>
+                                 <FieldLabel>Valor da Multa</FieldLabel>
                                  <Input
                                     onBlur={field.handleBlur}
                                     onChange={(e) =>
@@ -372,11 +323,7 @@ export function ManageInterestTemplateForm({
                <form.Field name="interestType">
                   {(field) => (
                      <Field>
-                        <FieldLabel>
-                           {translate(
-                              "dashboard.routes.interest-templates.form.interest-type.label",
-                           )}
-                        </FieldLabel>
+                        <FieldLabel>Tipo de Juros</FieldLabel>
                         <Select
                            onValueChange={(value) =>
                               field.handleChange(
@@ -389,21 +336,9 @@ export function ManageInterestTemplateForm({
                               <SelectValue />
                            </SelectTrigger>
                            <SelectContent>
-                              <SelectItem value="none">
-                                 {translate(
-                                    "dashboard.routes.interest-templates.form.interest-type.none",
-                                 )}
-                              </SelectItem>
-                              <SelectItem value="daily">
-                                 {translate(
-                                    "dashboard.routes.interest-templates.form.interest-type.daily",
-                                 )}
-                              </SelectItem>
-                              <SelectItem value="monthly">
-                                 {translate(
-                                    "dashboard.routes.interest-templates.form.interest-type.monthly",
-                                 )}
-                              </SelectItem>
+                              <SelectItem value="none">Nenhum</SelectItem>
+                              <SelectItem value="daily">Diário</SelectItem>
+                              <SelectItem value="monthly">Mensal</SelectItem>
                            </SelectContent>
                         </Select>
                      </Field>
@@ -418,11 +353,7 @@ export function ManageInterestTemplateForm({
                         <form.Field name="interestValue">
                            {(field) => (
                               <Field>
-                                 <FieldLabel>
-                                    {translate(
-                                       "dashboard.routes.interest-templates.form.interest-value.label",
-                                    )}
-                                 </FieldLabel>
+                                 <FieldLabel>Valor dos Juros (%)</FieldLabel>
                                  <Input
                                     onBlur={field.handleBlur}
                                     onChange={(e) =>
@@ -447,15 +378,9 @@ export function ManageInterestTemplateForm({
       return (
          <div className="grid gap-4 py-4">
             <div className="space-y-2">
-               <h3 className="font-medium text-base">
-                  {translate(
-                     "dashboard.routes.interest-templates.features.stepper.steps.advanced.title",
-                  )}
-               </h3>
+               <h3 className="font-medium text-base">Configurações Avançadas</h3>
                <p className="text-sm text-muted-foreground">
-                  {translate(
-                     "dashboard.routes.interest-templates.features.stepper.steps.advanced.description",
-                  )}
+                  Configure correção monetária e carência
                </p>
             </div>
 
@@ -463,11 +388,7 @@ export function ManageInterestTemplateForm({
                <form.Field name="monetaryCorrectionIndex">
                   {(field) => (
                      <Field>
-                        <FieldLabel>
-                           {translate(
-                              "dashboard.routes.interest-templates.form.monetary-correction.label",
-                           )}
-                        </FieldLabel>
+                        <FieldLabel>Índice de Correção Monetária</FieldLabel>
                         <Select
                            onValueChange={(value) =>
                               field.handleChange(
@@ -480,20 +401,14 @@ export function ManageInterestTemplateForm({
                               <SelectValue />
                            </SelectTrigger>
                            <SelectContent>
-                              <SelectItem value="none">
-                                 {translate(
-                                    "dashboard.routes.interest-templates.form.monetary-correction.none",
-                                 )}
-                              </SelectItem>
+                              <SelectItem value="none">Nenhum</SelectItem>
                               <SelectItem value="ipca">IPCA</SelectItem>
                               <SelectItem value="selic">SELIC</SelectItem>
                               <SelectItem value="cdi">CDI</SelectItem>
                            </SelectContent>
                         </Select>
                         <FieldDescription>
-                           {translate(
-                              "dashboard.routes.interest-templates.form.monetary-correction.description",
-                           )}
+                           Índice utilizado para correção monetária do valor
                         </FieldDescription>
                      </Field>
                   )}
@@ -504,11 +419,7 @@ export function ManageInterestTemplateForm({
                <form.Field name="gracePeriodDays">
                   {(field) => (
                      <Field>
-                        <FieldLabel>
-                           {translate(
-                              "dashboard.routes.interest-templates.form.grace-period.label",
-                           )}
-                        </FieldLabel>
+                        <FieldLabel>Período de Carência</FieldLabel>
                         <Input
                            min={0}
                            onBlur={field.handleBlur}
@@ -520,9 +431,7 @@ export function ManageInterestTemplateForm({
                            value={field.state.value}
                         />
                         <FieldDescription>
-                           {translate(
-                              "dashboard.routes.interest-templates.form.grace-period.description",
-                           )}
+                           Número de dias antes de iniciar a cobrança de juros
                         </FieldDescription>
                      </Field>
                   )}

@@ -1,5 +1,4 @@
 import type { BillWithRelations } from "@packages/database/repositories/bill-repository";
-import { translate } from "@packages/localization";
 import {
    Alert,
    AlertDescription,
@@ -54,18 +53,17 @@ export function ManageRecurrenceForm({
    >(bill.recurrencePattern as RecurrencePattern | undefined);
 
    const frequencyLabels: Record<string, string> = {
-      annual: translate(
-         "dashboard.routes.bills.features.create-bill.recurrence.annual",
-      ),
-      monthly: translate(
-         "dashboard.routes.bills.features.create-bill.recurrence.monthly",
-      ),
-      quarterly: translate(
-         "dashboard.routes.bills.features.create-bill.recurrence.quarterly",
-      ),
-      semiannual: translate(
-         "dashboard.routes.bills.features.create-bill.recurrence.semiannual",
-      ),
+      annual: "Anual",
+      monthly: "Mensal",
+      quarterly: "Trimestral",
+      semiannual: "Semestral",
+   };
+
+   const frequencyOptionLabels: Record<string, { title: string; description: string }> = {
+      monthly: { title: "Mensal", description: "Repete todo mês" },
+      quarterly: { title: "Trimestral", description: "Repete a cada 3 meses" },
+      semiannual: { title: "Semestral", description: "Repete a cada 6 meses" },
+      annual: { title: "Anual", description: "Repete todo ano" },
    };
 
    const updateBillMutation = useMutation(
@@ -77,11 +75,7 @@ export function ManageRecurrenceForm({
             queryClient.invalidateQueries({
                queryKey: trpc.bills.getAllPaginated.queryKey(),
             });
-            toast.success(
-               translate(
-                  "dashboard.routes.bills.features.manage-recurrence.success",
-               ),
-            );
+            toast.success("Recorrência atualizada com sucesso");
             onSuccess?.();
          },
       }),
@@ -115,14 +109,10 @@ export function ManageRecurrenceForm({
       <>
          <SheetHeader>
             <SheetTitle>
-               {translate(
-                  "dashboard.routes.bills.features.manage-recurrence.title",
-               )}
+               Gerenciar Recorrência
             </SheetTitle>
             <SheetDescription>
-               {translate(
-                  "dashboard.routes.bills.features.manage-recurrence.description",
-               )}
+               Altere ou desative a recorrência desta conta
             </SheetDescription>
          </SheetHeader>
 
@@ -132,25 +122,19 @@ export function ManageRecurrenceForm({
                <Alert>
                   <CalendarCheck className="h-4 w-4" />
                   <AlertTitle>
-                     {translate(
-                        "dashboard.routes.bills.features.manage-recurrence.current-pattern",
-                     )}
+                     Padrão Atual
                   </AlertTitle>
                   <AlertDescription>
                      {bill.recurrencePattern
                         ? frequencyLabels[bill.recurrencePattern]
-                        : translate(
-                             "dashboard.routes.bills.features.manage-recurrence.no-pattern",
-                          )}
+                        : "Sem padrão definido"}
                   </AlertDescription>
                </Alert>
 
                {/* Frequency selection */}
                <div className="space-y-2">
                   <span className="text-sm font-medium">
-                     {translate(
-                        "dashboard.routes.bills.features.create-bill.recurrence-step.frequency.title",
-                     )}
+                     Frequência
                   </span>
                   <Choicebox
                      onValueChange={(value) => {
@@ -166,14 +150,10 @@ export function ManageRecurrenceForm({
                         >
                            <ChoiceboxItemHeader>
                               <ChoiceboxItemTitle>
-                                 {translate(
-                                    `dashboard.routes.bills.features.create-bill.recurrence-step.frequency.options.${option}.title`,
-                                 )}
+                                 {frequencyOptionLabels[option].title}
                               </ChoiceboxItemTitle>
                               <ChoiceboxItemDescription>
-                                 {translate(
-                                    `dashboard.routes.bills.features.create-bill.recurrence-step.frequency.options.${option}.description`,
-                                 )}
+                                 {frequencyOptionLabels[option].description}
                               </ChoiceboxItemDescription>
                            </ChoiceboxItemHeader>
                            <ChoiceboxIndicator id={`freq-${option}`} />
@@ -191,9 +171,7 @@ export function ManageRecurrenceForm({
                      variant="outline"
                   >
                      <CalendarX className="size-4 mr-2" />
-                     {translate(
-                        "dashboard.routes.bills.features.manage-recurrence.disable",
-                     )}
+                     Desativar Recorrência
                   </Button>
                </div>
             </div>
@@ -206,8 +184,8 @@ export function ManageRecurrenceForm({
                onClick={handleUpdatePattern}
             >
                {updateBillMutation.isPending
-                  ? translate("common.actions.loading")
-                  : translate("common.actions.save")}
+                  ? "Carregando..."
+                  : "Salvar"}
             </Button>
          </SheetFooter>
       </>

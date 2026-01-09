@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Empty,
@@ -134,14 +133,10 @@ function BudgetContent() {
                   }
                >
                   <Plus className="size-4" />
-                  {translate(
-                     "dashboard.routes.transactions.features.add-new.title",
-                  )}
+                  Adicionar Nova Transação
                </Button>
             }
-            description={translate(
-               "dashboard.routes.budgets.details.page.description",
-            )}
+            description="Acompanhe o progresso e detalhes deste orçamento"
             title={budget.name}
          />
 
@@ -238,7 +233,7 @@ function BudgetPageError({ error, resetErrorBoundary }: FallbackProps) {
                      <FileText className="size-12 text-destructive" />
                   </EmptyMedia>
                   <EmptyTitle>
-                     {translate("dashboard.routes.budgets.details.error.title")}
+                     Erro ao carregar orçamento
                   </EmptyTitle>
                   <EmptyDescription>{error?.message}</EmptyDescription>
                   <div className="mt-6 flex gap-2 justify-center">
@@ -253,16 +248,14 @@ function BudgetPageError({ error, resetErrorBoundary }: FallbackProps) {
                         variant="outline"
                      >
                         <Home className="size-4 mr-2" />
-                        {translate(
-                           "dashboard.routes.budgets.details.error.back",
-                        )}
+                        Voltar para Orçamentos
                      </Button>
                      <Button
                         onClick={resetErrorBoundary}
                         size="default"
                         variant="default"
                      >
-                        {translate("common.actions.retry")}
+                        Tentar novamente
                      </Button>
                   </div>
                </EmptyContent>

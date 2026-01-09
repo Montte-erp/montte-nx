@@ -5,7 +5,6 @@
  * and E2E encryption in the settings page.
  */
 
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -57,22 +56,17 @@ function EncryptionSectionErrorFallback(props: FallbackProps) {
    return (
       <Card className="h-full">
          <CardHeader>
-            <CardTitle>
-               {translate("dashboard.routes.settings.encryption.title")}
-            </CardTitle>
+            <CardTitle>Criptografia</CardTitle>
             <CardDescription>
-               {translate("dashboard.routes.settings.encryption.description")}
+               Proteja seus dados com criptografia de ponta a ponta.
             </CardDescription>
          </CardHeader>
          <CardContent>
             {createErrorFallback({
-               errorDescription: translate(
-                  "dashboard.routes.settings.encryption.state.error.description",
-               ),
-               errorTitle: translate(
-                  "dashboard.routes.settings.encryption.state.error.title",
-               ),
-               retryText: translate("common.actions.retry"),
+               errorDescription:
+                  "Não foi possível carregar as configurações de criptografia.",
+               errorTitle: "Erro ao carregar",
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>
@@ -108,48 +102,38 @@ function EncryptionSectionContent() {
             <CardHeader>
                <CardTitle className="flex items-center gap-2">
                   <Shield className="size-5" />
-                  {translate("dashboard.routes.settings.encryption.title")}
+                  Criptografia
                </CardTitle>
                <CardDescription>
-                  {translate(
-                     "dashboard.routes.settings.encryption.description",
-                  )}
+                  Proteja seus dados com criptografia de ponta a ponta.
                </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                {/* Encryption Status Summary */}
                <div className="rounded-lg bg-secondary/50 p-4 text-center">
                   <p className="text-xs md:text-sm text-muted-foreground mb-1">
-                     {translate(
-                        "dashboard.routes.settings.encryption.status-label",
-                     )}
+                     Status da criptografia
                   </p>
                   <div className="flex items-center justify-center gap-2">
                      {e2eEnabled ? (
                         <>
                            <ShieldCheck className="size-5 text-green-500" />
                            <span className="text-lg font-semibold text-green-500">
-                              {translate(
-                                 "dashboard.routes.settings.encryption.status.e2e-enabled",
-                              )}
+                              Criptografia E2E Ativada
                            </span>
                         </>
                      ) : serverEncryptionEnabled ? (
                         <>
                            <Server className="size-5 text-blue-500" />
                            <span className="text-lg font-semibold text-blue-500">
-                              {translate(
-                                 "dashboard.routes.settings.encryption.status.server-only",
-                              )}
+                              Criptografia do Servidor
                            </span>
                         </>
                      ) : (
                         <>
                            <Shield className="size-5 text-muted-foreground" />
                            <span className="text-lg font-semibold text-muted-foreground">
-                              {translate(
-                                 "dashboard.routes.settings.encryption.status.disabled",
-                              )}
+                              Sem Criptografia
                            </span>
                         </>
                      )}
@@ -159,13 +143,7 @@ function EncryptionSectionContent() {
                         className="mt-2"
                         variant={isUnlocked ? "default" : "secondary"}
                      >
-                        {isUnlocked
-                           ? translate(
-                                "dashboard.routes.settings.encryption.unlocked",
-                             )
-                           : translate(
-                                "dashboard.routes.settings.encryption.locked",
-                             )}
+                        {isUnlocked ? "Desbloqueado" : "Bloqueado"}
                      </Badge>
                   )}
                </div>
@@ -177,15 +155,10 @@ function EncryptionSectionContent() {
                         <Server className="size-4" />
                      </ItemMedia>
                      <ItemContent className="min-w-0">
-                        <ItemTitle>
-                           {translate(
-                              "dashboard.routes.settings.encryption.server-encryption.title",
-                           )}
-                        </ItemTitle>
+                        <ItemTitle>Criptografia do Servidor</ItemTitle>
                         <ItemDescription className="line-clamp-2">
-                           {translate(
-                              "dashboard.routes.settings.encryption.server-encryption.description",
-                           )}
+                           Seus dados são criptografados automaticamente no
+                           servidor.
                         </ItemDescription>
                      </ItemContent>
                      <ItemActions>
@@ -194,9 +167,7 @@ function EncryptionSectionContent() {
                               serverEncryptionEnabled ? "default" : "secondary"
                            }
                         >
-                           {serverEncryptionEnabled
-                              ? translate("common.status.enabled")
-                              : translate("common.status.disabled")}
+                           {serverEncryptionEnabled ? "Ativado" : "Desativado"}
                         </Badge>
                      </ItemActions>
                   </Item>
@@ -209,15 +180,10 @@ function EncryptionSectionContent() {
                         <Lock className="size-4" />
                      </ItemMedia>
                      <ItemContent className="min-w-0">
-                        <ItemTitle>
-                           {translate(
-                              "dashboard.routes.settings.encryption.e2e-encryption.title",
-                           )}
-                        </ItemTitle>
+                        <ItemTitle>Criptografia de Ponta a Ponta</ItemTitle>
                         <ItemDescription className="line-clamp-2">
-                           {translate(
-                              "dashboard.routes.settings.encryption.e2e-encryption.description",
-                           )}
+                           Criptografia adicional onde só você pode ler seus
+                           dados.
                         </ItemDescription>
                      </ItemContent>
                      <ItemActions>
@@ -230,9 +196,7 @@ function EncryptionSectionContent() {
                                     variant="outline"
                                  >
                                     <Unlock className="size-4 mr-2" />
-                                    {translate(
-                                       "dashboard.routes.settings.encryption.unlock.button",
-                                    )}
+                                    Desbloquear
                                  </Button>
                               ) : (
                                  <Button
@@ -241,17 +205,13 @@ function EncryptionSectionContent() {
                                     variant="outline"
                                  >
                                     <Lock className="size-4 mr-2" />
-                                    {translate(
-                                       "dashboard.routes.settings.encryption.lock.button",
-                                    )}
+                                    Bloquear
                                  </Button>
                               )}
                            </div>
                         ) : (
                            <Button onClick={handleSetupE2E} size="sm">
-                              {translate(
-                                 "dashboard.routes.settings.encryption.setup.button",
-                              )}
+                              Configurar E2E
                            </Button>
                         )}
                      </ItemActions>
@@ -262,25 +222,19 @@ function EncryptionSectionContent() {
                {e2eEnabled && (
                   <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
                      <p className="font-medium mb-1">
-                        {translate(
-                           "dashboard.routes.settings.encryption.limitations.title",
-                        )}
+                        Limitações da criptografia E2E:
                      </p>
                      <ul className="list-disc pl-4 space-y-0.5">
                         <li>
-                           {translate(
-                              "dashboard.routes.settings.encryption.limitations.item-1",
-                           )}
+                           Pesquisa no servidor não funciona para dados
+                           criptografados
                         </li>
                         <li>
-                           {translate(
-                              "dashboard.routes.settings.encryption.limitations.item-2",
-                           )}
+                           Relatórios mostram valores criptografados até
+                           desbloquear
                         </li>
                         <li>
-                           {translate(
-                              "dashboard.routes.settings.encryption.limitations.item-3",
-                           )}
+                           Automações não podem ler campos criptografados
                         </li>
                      </ul>
                   </div>

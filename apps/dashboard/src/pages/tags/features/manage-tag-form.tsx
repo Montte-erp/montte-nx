@@ -1,5 +1,4 @@
 import type { Tag } from "@packages/database/repositories/tag-repository";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    ColorPicker,
@@ -46,17 +45,13 @@ export function ManageTagForm({ tag }: ManageTagFormProps) {
 
    const modeTexts = useMemo(() => {
       const createTexts = {
-         description: translate(
-            "dashboard.routes.tags.features.create-tag.description",
-         ),
-         title: translate("dashboard.routes.tags.features.create-tag.title"),
+         description: "Adicione uma nova tag para organizar suas transações.",
+         title: "Criar Nova Tag",
       };
 
       const editTexts = {
-         description: translate(
-            "dashboard.routes.tags.features.edit-tag.description",
-         ),
-         title: translate("dashboard.routes.tags.features.edit-tag.title"),
+         description: "Atualize os detalhes da sua tag.",
+         title: "Editar Tag",
       };
 
       return isEditMode ? editTexts : createTexts;
@@ -137,16 +132,14 @@ export function ManageTagForm({ tag }: ManageTagFormProps) {
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel>
-                              {translate("common.form.name.label")}
+                              Nome
                            </FieldLabel>
                            <Input
                               onBlur={field.handleBlur}
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
                               }
-                              placeholder={translate(
-                                 "common.form.name.placeholder",
-                              )}
+                              placeholder="Digite seu nome completo"
                               value={field.state.value}
                            />
                            {isInvalid && (
@@ -166,7 +159,7 @@ export function ManageTagForm({ tag }: ManageTagFormProps) {
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel>
-                              {translate("common.form.color.label")}
+                              Cor
                            </FieldLabel>
 
                            <Popover>

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
 
 export type BillStatus = "paid" | "pending" | "overdue";
@@ -24,7 +23,7 @@ export function getStatusConfig(status: BillStatus) {
             className: "border-green-500 text-green-500",
             color: "text-green-600",
             icon: CheckCircle2,
-            label: translate("dashboard.routes.bills.status.paid"),
+            label: "Paga",
             variant: "outline" as const,
          };
       case "pending":
@@ -32,7 +31,7 @@ export function getStatusConfig(status: BillStatus) {
             className: "",
             color: "text-yellow-600",
             icon: Clock,
-            label: translate("dashboard.routes.bills.status.pending"),
+            label: "Pendente",
             variant: "secondary" as const,
          };
       case "overdue":
@@ -40,7 +39,7 @@ export function getStatusConfig(status: BillStatus) {
             className: "",
             color: "text-red-600",
             icon: AlertCircle,
-            label: translate("dashboard.routes.bills.status.overdue"),
+            label: "Vencida",
             variant: "destructive" as const,
          };
    }

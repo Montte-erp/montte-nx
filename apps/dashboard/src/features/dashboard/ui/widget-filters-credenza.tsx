@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
 	CredenzaBody,
@@ -27,22 +26,22 @@ type TimeGrouping = NonNullable<InsightConfig["timeGrouping"]>;
 type ComparisonType = NonNullable<InsightConfig["comparison"]>["type"] | "none";
 
 const DATE_RANGE_OPTIONS = [
-	{ value: "last_7_days", label: translate("dashboard.widgets.filters.date-range.last-7-days") },
-	{ value: "last_30_days", label: translate("dashboard.widgets.filters.date-range.last-30-days") },
-	{ value: "last_90_days", label: translate("dashboard.widgets.filters.date-range.last-90-days") },
-	{ value: "this_month", label: translate("dashboard.widgets.filters.date-range.this-month") },
-	{ value: "last_month", label: translate("dashboard.widgets.filters.date-range.last-month") },
-	{ value: "this_quarter", label: translate("dashboard.widgets.filters.date-range.this-quarter") },
-	{ value: "this_year", label: translate("dashboard.widgets.filters.date-range.this-year") },
-	{ value: "last_year", label: translate("dashboard.widgets.filters.date-range.last-year") },
+	{ value: "last_7_days", label: "Últimos 7 dias" },
+	{ value: "last_30_days", label: "Últimos 30 dias" },
+	{ value: "last_90_days", label: "Últimos 90 dias" },
+	{ value: "this_month", label: "Este mês" },
+	{ value: "last_month", label: "Mês passado" },
+	{ value: "this_quarter", label: "Este trimestre" },
+	{ value: "this_year", label: "Este ano" },
+	{ value: "last_year", label: "Ano passado" },
 ] as const;
 
 const GROUPING_OPTIONS: Array<{ value: TimeGrouping; label: string }> = [
-	{ value: "day", label: translate("dashboard.widgets.filters.grouped-by.day") },
-	{ value: "week", label: translate("dashboard.widgets.filters.grouped-by.week") },
-	{ value: "month", label: translate("dashboard.widgets.filters.grouped-by.month") },
-	{ value: "quarter", label: translate("dashboard.widgets.filters.grouped-by.quarter") },
-	{ value: "year", label: translate("dashboard.widgets.filters.grouped-by.year") },
+	{ value: "day", label: "Dia" },
+	{ value: "week", label: "Semana" },
+	{ value: "month", label: "Mês" },
+	{ value: "quarter", label: "Trimestre" },
+	{ value: "year", label: "Ano" },
 ];
 
 type WidgetFiltersCredenzaProps = {
@@ -97,10 +96,10 @@ export function WidgetFiltersCredenza({
 			<CredenzaHeader>
 				<CredenzaTitle className="flex items-center gap-2">
 					<Filter className="h-5 w-5" />
-					{translate("dashboard.widgets.filters.title")}
+					Filtros do Widget
 				</CredenzaTitle>
 				<CredenzaDescription>
-					{translate("dashboard.widgets.filters.description")}
+					Configure o período e comparações
 				</CredenzaDescription>
 			</CredenzaHeader>
 			<CredenzaBody className="max-h-[60vh] overflow-y-auto">
@@ -112,7 +111,7 @@ export function WidgetFiltersCredenza({
 							variant="outline"
 						>
 							<RotateCcw className="size-4" />
-							{translate("dashboard.widgets.filters.clear")}
+							Limpar filtros
 						</Button>
 					)}
 
@@ -121,7 +120,7 @@ export function WidgetFiltersCredenza({
 						<div className="flex items-center gap-2">
 							<Calendar className="h-4 w-4 text-muted-foreground" />
 							<FieldLabel className="text-sm font-medium m-0">
-								{translate("dashboard.widgets.filters.date-range.title")}
+								Período
 							</FieldLabel>
 						</div>
 						<Select
@@ -130,7 +129,7 @@ export function WidgetFiltersCredenza({
 						>
 							<SelectTrigger className="w-full h-11">
 								<SelectValue
-									placeholder={translate("dashboard.widgets.filters.date-range.placeholder")}
+									placeholder="Selecione um período"
 								/>
 							</SelectTrigger>
 							<SelectContent>
@@ -148,7 +147,7 @@ export function WidgetFiltersCredenza({
 						<div className="flex items-center gap-2">
 							<Layers className="h-4 w-4 text-muted-foreground" />
 							<FieldLabel className="text-sm font-medium m-0">
-								{translate("dashboard.widgets.filters.grouped-by.title")}
+								Agrupado por
 							</FieldLabel>
 						</div>
 						<ToggleGroup
@@ -178,27 +177,27 @@ export function WidgetFiltersCredenza({
 						<div className="flex items-center gap-2">
 							<TrendingUp className="h-4 w-4 text-muted-foreground" />
 							<FieldLabel className="text-sm font-medium m-0">
-								{translate("dashboard.widgets.filters.comparison.title")}
+								Comparação
 							</FieldLabel>
 						</div>
 						<div className="space-y-2">
 							<ComparisonOption
 								value="none"
-								label={translate("dashboard.widgets.filters.comparison.none")}
+								label="Sem comparação entre períodos"
 								icon={X}
 								isSelected={comparison === "none"}
 								onClick={() => setComparison("none")}
 							/>
 							<ComparisonOption
 								value="previous_period"
-								label={translate("dashboard.widgets.filters.comparison.previous-period")}
+								label="Comparar com período anterior"
 								icon={ArrowLeftRight}
 								isSelected={comparison === "previous_period"}
 								onClick={() => setComparison("previous_period")}
 							/>
 							<ComparisonOption
 								value="previous_year"
-								label={translate("dashboard.widgets.filters.comparison.previous-year")}
+								label="Comparar com mesmo período do ano anterior"
 								icon={CalendarCheck}
 								isSelected={comparison === "previous_year"}
 								onClick={() => setComparison("previous_year")}
@@ -209,10 +208,10 @@ export function WidgetFiltersCredenza({
 			</CredenzaBody>
 			<CredenzaFooter>
 				<Button variant="outline" onClick={handleCancel}>
-					{translate("common.actions.cancel")}
+					Cancelar
 				</Button>
 				<Button onClick={handleApply}>
-					{translate("common.actions.apply")}
+					Aplicar
 				</Button>
 			</CredenzaFooter>
 		</>
