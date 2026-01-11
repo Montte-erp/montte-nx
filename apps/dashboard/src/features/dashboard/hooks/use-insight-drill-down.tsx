@@ -1,6 +1,4 @@
 import type { InsightConfig } from "@packages/database/schemas/dashboards";
-import { useSheet } from "@/hooks/use-sheet";
-import { InsightBuilderWizard } from "../ui/insight-builder-wizard";
 
 export type DrillDownContext = {
 	dimension: string;
@@ -41,30 +39,12 @@ export function createDrillDownConfig(
 	};
 }
 
-export function useInsightDrillDown(dashboardId?: string) {
-	const { openSheet, closeSheet } = useSheet();
-
+export function useInsightDrillDown() {
 	const drillDown = (
 		currentConfig: InsightConfig,
 		context: DrillDownContext,
 	) => {
-		const drillDownConfig = createDrillDownConfig(currentConfig, context);
-
-		if (dashboardId) {
-			// Open InsightBuilderWizard with the drilled-down config as initial state
-			openSheet({
-				children: (
-					<InsightBuilderWizard
-						dashboardId={dashboardId}
-						initialChartType={drillDownConfig.chartType}
-						onSuccess={closeSheet}
-						onCancel={closeSheet}
-					/>
-				),
-			});
-		}
-
-		return drillDownConfig;
+		return createDrillDownConfig(currentConfig, context);
 	};
 
 	return { drillDown };

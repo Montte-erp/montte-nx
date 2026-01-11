@@ -204,6 +204,10 @@ export type InsightConfig = {
 		type: "sparkline" | "area" | "bar";
 		showTrend: boolean;
 	};
+	tableColumns?: {
+		visibleColumns?: string[];
+		columnOrder?: string[];
+	};
 };
 
 export type TextCardConfig = {

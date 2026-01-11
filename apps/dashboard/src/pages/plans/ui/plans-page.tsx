@@ -152,8 +152,6 @@ const getIconForPlan = (planName: string) => {
          return <User className="size-6" />;
       case PlanName.BASIC:
          return <Zap className="size-6" />;
-      case PlanName.SHARED:
-         return <Users className="size-6" />;
       case PlanName.ERP:
          return <Building2 className="size-6" />;
       default:
@@ -164,7 +162,6 @@ const getIconForPlan = (planName: string) => {
 const getTrialDaysForPlan = (planName: string) => {
    switch (planName) {
       case PlanName.BASIC:
-      case PlanName.SHARED:
          return 14;
       case PlanName.ERP:
          return 7;

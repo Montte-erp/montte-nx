@@ -32,6 +32,7 @@ import {
 	Pencil,
 	Settings2,
 	Trash2,
+	Bookmark,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@packages/ui/lib/utils";
@@ -46,6 +47,7 @@ import { TextCardWidget } from "./text-card-widget";
 import { WidgetConfigToolbar } from "./widget-config-toolbar";
 import { WidgetFiltersCredenza } from "./widget-filters-credenza";
 import { WidgetOptionsCredenza } from "./widget-options-credenza";
+import { SaveAsInsightCredenza } from "./save-as-insight-credenza";
 import type { DrillDownContext } from "../hooks/use-insight-drill-down";
 import { useCredenza } from "@/hooks/use-credenza";
 
@@ -249,6 +251,19 @@ export function WidgetContainer({
 		});
 	};
 
+	const handleSaveAsInsight = () => {
+		if (!insightConfig) return;
+		openCredenza({
+			children: (
+				<SaveAsInsightCredenza
+					config={insightConfig}
+					defaultName={widget.name}
+					defaultDescription={widget.description || ""}
+				/>
+			),
+		});
+	};
+
 	return (
 		<Card className="h-full flex flex-col">
 			{/* Desktop: Config toolbar for insights (includes drag handle) */}
@@ -257,6 +272,8 @@ export function WidgetContainer({
 					config={insightConfig}
 					onUpdateConfig={onUpdateConfig}
 					onOpenOptions={handleOpenOptions}
+					onOpenFilters={handleOpenFilters}
+					onSaveAsInsight={handleSaveAsInsight}
 					isFullWidth={isFullWidth}
 					onToggleWidth={handleToggleWidth}
 					onRemove={onRemove}
@@ -369,6 +386,10 @@ export function WidgetContainer({
 								<DropdownMenuItem onClick={handleOpenFilters}>
 									<Filter className="h-4 w-4 mr-2" />
 									Filtros
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={handleSaveAsInsight}>
+									<Bookmark className="h-4 w-4 mr-2" />
+									Salvar como Insight
 								</DropdownMenuItem>
 								<DropdownMenuSeparator />
 							</>

@@ -1,580 +1,171 @@
 ---
 export const prerender = true;
 
-import { ArrowRight, ChevronRight, Github } from "@lucide/astro";
+import {
+   ArrowRight,
+   ChevronRight,
+   Zap,
+   Split,
+   Paperclip,
+   FileUp,
+   Filter,
+} from "@lucide/astro";
 import { Button } from "@packages/ui/components/button";
-import LogoCloud from "@/components/LogoCloud.astro";
 import StickyNavbar from "@/components/StickyNavbar.astro";
 import Layout from "@/layouts/Landing.astro";
-import Footer from "@/sections/Footer.astro";
+import Footer from "@/components/Footer.astro";
+
+const features = [
+   {
+      title: "Lancamento Rapido",
+      description: "Adicione transacoes em segundos pelo celular ou desktop. Interface otimizada para entrada de dados com categorias e tags inteligentes.",
+      icon: Zap,
+   },
+   {
+      title: "Rateio de Categorias",
+      description: "Divida uma unica transacao entre multiplas categorias. Perfeito para compras com itens de diferentes naturezas ou centros de custo.",
+      icon: Split,
+   },
+   {
+      title: "Anexos e Comprovantes",
+      description: "Anexe notas fiscais, recibos e comprovantes diretamente nas transacoes. Mantenha tudo organizado e acessivel para auditorias.",
+      icon: Paperclip,
+   },
+   {
+      title: "Importacao CSV e OFX",
+      description: "Importe extratos de qualquer banco brasileiro via arquivos CSV ou OFX. Mapeamento inteligente de colunas e deteccao de duplicatas.",
+      icon: FileUp,
+   },
+   {
+      title: "Filtros e Estatisticas",
+      description: "Filtre transacoes por periodo, tipo, categoria ou conta bancaria. Visualize estatisticas de receitas e despesas em tempo real.",
+      icon: Filter,
+   },
+];
+
+const relatedFeatures = [
+   {
+      title: "Insights e Analises",
+      description: "Dashboards e graficos interativos",
+      href: "/features/analytics",
+   },
+   {
+      title: "Contas a Pagar",
+      description: "Controle seu fluxo de caixa",
+      href: "/features/bill-tracking",
+   },
+   {
+      title: "Orcamentos",
+      description: "Planeje e acompanhe metas",
+      href: "/features/budgeting",
+   },
+   {
+      title: "Colaboracao",
+      description: "Trabalhe em equipe",
+      href: "/features/collaboration",
+   },
+];
 ---
 
 <Layout>
-   <div class="flex flex-col">
+   <div class="flex flex-col bg-background">
       <StickyNavbar />
 
       <!-- Hero Section -->
-      <section class="relative mx-auto mb-24 max-w-[1888px]">
-         <div class="container px-4 sm:px-5 pt-32 mx-auto flex flex-col items-center relative z-10">
-            <div class="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,oklch(0.7227_0.192_149.5793_/_0.15),transparent)] dark:bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,oklch(0.7729_0.1535_163.2231_/_0.12),transparent)]" />
-            
-            <h1 class="relative mt-5 md:mt-8 font-medium text-center text-[36px] md:text-[66px] max-w-[360px] md:max-w-[800px] leading-[110%] pb-2">
-               <span class="bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-transparent">
-                  Transações reimaginadas com
-               </span>
-               <span class="bg-linear-to-r from-primary via-chart-2 to-chart-3 bg-clip-text text-transparent">
-                  {" "}IA & Automação
-               </span>
+      <section class="pt-32 pb-16 container mx-auto px-4 sm:px-6">
+         <div class="flex flex-col items-center text-center">
+            <span class="text-primary text-sm font-bold uppercase tracking-widest">
+               Gestao de Transacoes
+            </span>
+            <h1 class="mt-4 text-4xl md:text-5xl lg:text-6xl font-medium leading-[1.1] bg-gradient-to-b from-foreground to-foreground/60 bg-clip-text text-transparent max-w-[700px]">
+               Controle total das suas movimentacoes.
             </h1>
-
-            <p class="text-center text-muted-foreground md:mt-4 md:text-[20px] leading-[140%] max-w-[516px]">
-               Capture transações sem entrada manual. Importe tudo por uma fração do esforço.
+            <p class="mt-5 text-lg md:text-xl text-muted-foreground max-w-[510px]">
+               Registre, categorize e acompanhe todas as suas transacoes financeiras com ferramentas pensadas para agilidade e precisao.
             </p>
+            <div class="mt-10 flex flex-col sm:flex-row gap-3 items-center">
+               <a href="/signup">
+                  <Button size="lg" className="h-12 px-6 rounded-xl group">
+                     Comece Gratis
+                     <ArrowRight class="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Button>
+               </a>
+               <a href="/book-demo">
+                  <Button variant="outline" size="lg" className="h-12 px-6 rounded-xl">
+                     Agendar Demo
+                  </Button>
+               </a>
+            </div>
+         </div>
+      </section>
 
-            <div class="px-3 sm:px-0">
-               <div class="mt-10 w-full sm:w-auto">
-                  <div class="flex flex-col sm:flex-row gap-3 items-center">
-                     <a href="/signup" class="w-full max-w-[316px] sm:max-w-none sm:w-auto">
-                        <Button size="lg" className="group relative overflow-hidden rounded-xl h-12 px-8 w-full sm:w-[200px] font-medium">
-                           <span>Comece Grátis</span>
-                           <ArrowRight class="size-4 transition-transform duration-300 group-hover:translate-x-1" />
-                        </Button>
-                     </a>
-                     <a href="https://github.com/montte/montte" target="_blank" rel="noopener noreferrer" class="w-full max-w-[316px] sm:max-w-none sm:w-auto">
-                        <Button variant="outline" size="lg" className="rounded-xl h-12 px-6 gap-2 w-full sm:w-auto border-border/20 bg-muted/10 backdrop-blur-2xl">
-                           <Github class="size-5" />
-                           Auto-Hospedagem
-                        </Button>
-                     </a>
+      <!-- Features Grid -->
+      <section class="py-16 md:py-24 container mx-auto px-4 sm:px-6">
+         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[1000px] mx-auto">
+            {features.map((feature, index) => (
+               <div class={`relative rounded-xl border overflow-hidden border-border/20 bg-card p-6 ${index >= 3 ? 'lg:col-span-1' : ''}`}>
+                  <div class="flex items-center gap-3 mb-4">
+                     <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <feature.icon class="w-5 h-5 text-primary" />
+                     </div>
                   </div>
-
-                  <p class="mt-5 pb-2 text-muted-foreground text-sm sm:text-base text-center">
-                     Precisa de uma solução empresarial?{" "}
-                     <a class="text-foreground underline underline-offset-4 transition decoration-primary/20 hover:decoration-primary" href="/enterprise">
-                        Agende uma demonstração
-                     </a>
+                  <h3 class="text-foreground font-semibold text-lg">{feature.title}</h3>
+                  <p class="mt-2 text-muted-foreground">
+                     {feature.description}
                   </p>
                </div>
-            </div>
+            ))}
          </div>
+      </section>
 
-         <!-- Hero Video/Image Showcase -->
-         <div class="mt-12 mx-auto flex justify-center container max-w-[1700px] relative px-4">
-            <div class="absolute hidden md:block -top-16 left-1/2 -translate-x-1/2 w-[1750px] h-[679px] bg-[radial-gradient(ellipse_at_center,oklch(0.7227_0.192_149.5793_/_0.08),transparent_70%)]" />
-            <div class="w-full max-w-[946px] border border-border/50 rounded-[21px] px-2 md:px-2.5 py-2.5 md:py-3 bg-card/80 backdrop-blur-sm relative z-10">
-               <div class="w-full aspect-video border border-border/30 overflow-hidden rounded-[11px] shadow-xl">
-                  <img
-                     src="https://placehold.co/1200x675/0f0f23/22c55e?text=Smart+Transactions+Demo"
-                     alt="Demonstração do sistema de transações inteligentes"
-                     class="w-full h-full object-cover"
-                     loading="eager"
-                  />
-               </div>
+      <!-- Related Features -->
+      <section class="py-16 md:py-24 border-t border-border/20">
+         <div class="container mx-auto px-4 sm:px-6">
+            <div class="text-center mb-12">
+               <span class="text-primary text-sm font-medium uppercase tracking-wider">
+                  Funciona Com
+               </span>
+               <h2 class="mt-4 text-2xl font-semibold md:text-3xl text-foreground">
+                  Melhor Juntos
+               </h2>
+            </div>
+
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-[1000px] mx-auto">
+               {relatedFeatures.map((feature) => (
+                  <a
+                     href={feature.href}
+                     class="group p-6 rounded-2xl bg-card border border-border/20 hover:border-primary/30 transition-all"
+                  >
+                     <h3 class="font-semibold text-foreground group-hover:text-primary transition-colors">
+                        {feature.title}
+                     </h3>
+                     <p class="mt-2 text-sm text-muted-foreground">{feature.description}</p>
+                     <div class="mt-4 flex items-center gap-1 text-sm text-primary">
+                        Saiba mais
+                        <ChevronRight class="w-4 h-4" />
+                     </div>
+                  </a>
+               ))}
             </div>
          </div>
       </section>
 
-      <!-- Customer Logo Cloud -->
-      <section class="relative mt-4 -mb-20 flex flex-col items-center overflow-hidden">
-         <div class="mx-auto max-w-[1684px]">
-            <p class="mb-4 md:mb-10 text-muted-foreground text-center text-base md:text-lg max-w-[200px] sm:max-w-none">
-               Usado pelas melhores equipes de finanças
-            </p>
-         </div>
-         <div class="w-full max-w-[600px] mx-auto px-4">
-            <LogoCloud client:load />
-         </div>
-      </section>
-
-      <!-- Feature 1: Instant Transaction Entry -->
-      <hr class="container mt-20 md:mt-32 mx-auto relative z-10 border-border/30" id="instant-entry" />
-      <section class="mt-16 md:mt-32 pb-16 relative z-10 container mx-auto px-4">
-         <div class="mx-auto flex flex-col items-center">
-            <h2 class="mt-2 pb-2 bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-transparent font-bold text-center text-[28px] md:text-[40px] leading-[108%] max-w-[629px]">
-               Registre transações em segundos com IA
+      <!-- Final CTA -->
+      <section class="py-24 md:py-32 border-t border-border/20">
+         <div class="container mx-auto px-4 sm:px-6 flex flex-col items-center text-center">
+            <h2 class="text-2xl md:text-4xl font-medium bg-gradient-to-b from-foreground to-foreground/60 bg-clip-text text-transparent">
+               Comece a registrar suas transacoes
             </h2>
-            <p class="mt-3 text-muted-foreground text-center max-w-[546px] tracking-tight">
-               Formulário inteligente que entende o contexto. Digite o valor e deixe a IA sugerir categoria, tags e descrição automaticamente.
+            <p class="mt-5 text-muted-foreground max-w-[400px]">
+               Gratis para sempre. Open source. Sem cartao de credito.
             </p>
-         </div>
-
-         <div class="md:mt-10 mx-auto relative flex flex-col md:flex-row max-w-[960px]">
-            <div class="flex-1 md:w-1/2">
-               <img 
-                  width="550" 
-                  height="189" 
-                  alt="Interface de lançamento rápido" 
-                  class="relative md:absolute -z-10 -left-12 md:-left-20 lg:-left-16 md:m-0 -mt-8 md:mt-16 w-[calc(130%+80px)] max-md:max-w-[500px] md:w-[550px]"
-                  src="https://placehold.co/550x350/0f0f23/22c55e?text=Quick+Entry+UI"
-               />
-               <div class="h-24 md:h-[450px]"></div>
-               <div class="ml-3 md:ml-0 lg:ml-4 -mt-48 md:mt-0">
-                  <h3 class="text-foreground font-bold text-[18px] md:text-[28px] leading-[117%] max-w-[377px]">
-                     Detecção inteligente de valor e categoria
-                  </h3>
-                  <p class="mt-3 text-muted-foreground text-base md:text-lg max-w-[375px]">
-                     Digite "café" → sugere "Alimentação". Digite "2000" → lembra seu salário. A IA aprende seus padrões e preenche automaticamente.
-                  </p>
-               </div>
-            </div>
-
-            <div class="flex-1 mt-12 md:mt-0 md:w-1/2">
-               <div class="relative mt-4 px-5 md:px-8 py-6 rounded-xl border overflow-hidden border-border/20 bg-card">
-                  <div class="absolute inset-0">
-                     <img 
-                        width="490" 
-                        height="300" 
-                        alt="Sugestões de categoria" 
-                        src="https://placehold.co/490x300/0f0f23/22c55e?text=Category+Suggestions"
-                        class="w-full"
-                     />
-                  </div>
-                  <div class="relative mt-[41.5%]">
-                     <h4 class="text-foreground font-medium">
-                        Categorias sugeridas automaticamente
-                     </h4>
-                     <p class="mt-2 text-muted-foreground">
-                        O sistema reconhece padrões de gastos e sugere a categoria correta. Aprende com cada transação para ficar mais preciso.
-                     </p>
-                  </div>
-               </div>
-
-               <div class="relative px-5 md:px-8 py-6 rounded-xl border bg-card border-border/20 mt-7">
-                  <div class="relative">
-                     <h4 class="text-foreground font-medium">
-                        Suporte a múltiplas moedas
-                     </h4>
-                     <p class="mt-2 text-muted-foreground">
-                        Especifique a moeda da transação. Conversão de câmbio em tempo real. Rastreamento automático para relatórios.
-                     </p>
-                  </div>
-               </div>
-
-               <div class="relative px-5 md:px-8 py-6 rounded-xl border bg-card border-border/20 mt-7">
-                  <div class="relative">
-                     <h4 class="text-foreground font-medium">
-                        Tags e notas instantâneas
-                     </h4>
-                     <p class="mt-2 text-muted-foreground">
-                        Adicione tags rapidamente. Filtre por "projeto-X" ou "dedutível-IR". Campo de notas com suporte a markdown.
-                     </p>
-                  </div>
-               </div>
-            </div>
-         </div>
-      </section>
-
-      <!-- Feature 2: Split Transactions -->
-      <hr class="container mt-6 md:mt-10 lg:mt-20 mx-auto relative z-10 border-border/30" id="split" />
-      <section class="mt-16 md:mt-32 pb-16 relative z-10 container mx-auto px-4">
-         <div class="mx-auto flex flex-col items-center">
-            <h2 class="mt-2 pb-2 bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-transparent font-bold text-center text-[28px] md:text-[40px] leading-[108%] max-w-[629px]">
-               Uma transação. Múltiplas categorias.
-            </h2>
-            <p class="mt-3 text-muted-foreground text-center max-w-[441px] tracking-tight">
-               Divida despesas entre categorias, projetos ou pessoas. Perfeito para contas compartilhadas e alocação por centro de custo.
-            </p>
-         </div>
-
-         <div class="mt-14 mx-auto relative flex flex-col max-w-[960px]">
-            <div class="mx-auto relative flex flex-col md:flex-row gap-x-[18px]">
-               <div class="flex-1 md:w-1/2">
-                  <div class="relative pl-5 md:pl-10 pr-5 py-6 rounded-xl border overflow-hidden border-border/20 bg-card h-full flex flex-col justify-end min-h-[555px] sm:min-h-[645px] lg:min-h-[600px]">
-                     <div class="absolute inset-0 -left-4 -top-4">
-                        <img 
-                           width="520" 
-                           height="600" 
-                           alt="Interface de divisão de transação" 
-                           src="https://placehold.co/520x600/0f0f23/22c55e?text=Split+Transaction+UI"
-                           class="w-full"
-                        />
-                     </div>
-                     <div class="z-10 mt-6">
-                        <h3 class="text-foreground font-bold text-[18px] md:text-[28px] leading-[117%]">
-                           Divisões ilimitadas por transação
-                        </h3>
-                        <p class="mt-3 text-muted-foreground text-base md:text-lg max-w-[342px]">
-                           Divida R$ 100 em 3 categorias. Defina valores ou porcentagens. O sistema lembra seus padrões de divisão.
-                        </p>
-                     </div>
-                  </div>
-               </div>
-
-               <div class="flex-1 mt-6 md:mt-0 md:w-1/2">
-                  <div class="relative pl-6 py-6 rounded-xl border overflow-hidden md:pl-[32px] pr-5 border-border/20 bg-card">
-                     <div class="absolute inset-0">
-                        <img 
-                           width="470" 
-                           height="350" 
-                           alt="Despesas compartilhadas" 
-                           src="https://placehold.co/470x280/0f0f23/22c55e?text=Shared+Expenses"
-                           class="w-full"
-                        />
-                     </div>
-                     <div class="relative mt-[48%]">
-                        <h4 class="text-foreground font-medium">
-                           Rastreamento de despesas compartilhadas
-                        </h4>
-                        <p class="mt-2 text-muted-foreground">
-                           Pague uma refeição compartilhada → divida o custo automaticamente. Veja quem deve para quem com acerto de contas integrado.
-                        </p>
-                     </div>
-                  </div>
-
-                  <div class="relative mt-6 pl-6 md:pl-8 pr-6 py-6 rounded-xl border overflow-hidden border-border/20 bg-card">
-                     <div class="absolute inset-0 overflow-hidden w-full">
-                        <img 
-                           width="490" 
-                           height="280" 
-                           alt="Alocação por projeto" 
-                           src="https://placehold.co/490x280/0f0f23/22c55e?text=Project+Allocation"
-                           class="w-full"
-                        />
-                     </div>
-                     <div class="relative mt-[38%]">
-                        <h4 class="text-foreground font-medium">
-                           Alocação por projeto e centro de custo
-                        </h4>
-                        <p class="mt-2 text-muted-foreground md:max-w-[380px]">
-                           Aloque despesas entre projetos. Acompanhe faturável vs não faturável. Relatórios mensais por projeto.
-                        </p>
-                     </div>
-                  </div>
-               </div>
-            </div>
-         </div>
-      </section>
-
-      <!-- Feature 3: Bank Imports (OFX) -->
-      <hr class="container mt-6 md:mt-10 lg:mt-20 mx-auto relative z-10 border-border/30" id="bank-import" />
-      <section class="mt-16 md:mt-32 pb-16 md:pb-32 relative z-10 container mx-auto px-4">
-         <div class="mx-auto flex flex-col items-center">
-            <h2 class="mt-2 pb-2 bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-transparent font-bold text-center text-[28px] md:text-[40px] leading-[108%] max-w-[629px]">
-               Importe extratos bancários em tempo real
-            </h2>
-            <p class="mt-3 text-muted-foreground text-center max-w-[601px] tracking-tight">
-               Conecte sua conta bancária uma vez. O Montte importa transações automaticamente todos os dias via protocolo OFX. Sem mais planilhas manuais.
-            </p>
-         </div>
-
-         <div class="md:mt-10 mx-auto relative flex flex-col md:flex-row max-w-[1000px]">
-            <div class="flex-1 pr-10 md:w-1/2 md:overflow-hidden">
-               <img 
-                  width="623" 
-                  height="500" 
-                  alt="Conexão bancária" 
-                  class="relative md:absolute -z-10 -left-8 md:-left-14 md:-top-5 md:m-0 w-[calc(130%+80px)] max-w-none md:w-[623px]"
-                  src="https://placehold.co/623x500/0f0f23/22c55e?text=Bank+Connection"
-               />
-               <div class="h-[120px] md:h-[430px]"></div>
-               <div class="ml-3 md:ml-24 -mt-48 md:mt-0">
-                  <h3 class="text-foreground font-bold text-[18px] md:text-[28px] leading-[117%] tracking-tight">
-                     Integração com 1000+ bancos
-                  </h3>
-                  <p class="mt-3 text-muted-foreground text-base md:text-lg max-w-[350px]">
-                     Sincronização diária automática via padrão OFX. Detecção de duplicatas. Rastreamento de transações pendentes vs compensadas.
-                  </p>
-                  <div class="mt-6">
-                     <a class="inline-flex items-center justify-center bg-muted/50 border border-border/30 rounded-full text-muted-foreground px-4 text-sm h-[37px] hover:text-foreground group transition-colors" href="/docs/bank-import">
-                        <span class="leading-[100%]">Ver bancos suportados</span>
-                        <ChevronRight class="ml-1.5 mt-px size-3 group-hover:text-foreground transition-colors" />
-                     </a>
-                  </div>
-               </div>
-            </div>
-
-            <div class="flex-1 mt-12 md:mt-0 md:w-1/2">
-               <div class="relative mt-4 px-5 md:px-8 py-6 rounded-xl border overflow-hidden border-border/20 bg-card">
-                  <div class="absolute inset-0">
-                     <img 
-                        width="490" 
-                        height="295" 
-                        alt="Correspondência inteligente" 
-                        src="https://placehold.co/490x295/0f0f23/22c55e?text=Smart+Matching"
-                        class="w-full"
-                     />
-                  </div>
-                  <div class="relative mt-[41%]">
-                     <h4 class="text-foreground font-medium">
-                        Correspondência inteligente de transações
-                     </h4>
-                     <p class="mt-2 text-muted-foreground">
-                        IA combina importações com lançamentos manuais. Previne duplicatas automaticamente. Lida com variações de nomes.
-                     </p>
-                  </div>
-               </div>
-
-               <div class="relative mt-6 px-5 md:px-8 py-6 rounded-xl border overflow-hidden border-border/20 bg-card">
-                  <div class="absolute inset-0">
-                     <img 
-                        width="490" 
-                        height="295" 
-                        alt="Múltiplas contas" 
-                        src="https://placehold.co/490x295/0f0f23/22c55e?text=Multiple+Accounts"
-                        class="w-full"
-                     />
-                  </div>
-                  <div class="relative mt-[48%]">
-                     <h4 class="text-foreground font-medium">
-                        Suporte a múltiplas contas
-                     </h4>
-                     <p class="mt-2 text-muted-foreground">
-                        Importe de todas as suas contas. Veja saldos consolidados. Painel unificado com relatórios de conciliação.
-                     </p>
-                  </div>
-               </div>
-            </div>
-         </div>
-      </section>
-
-      <!-- Feature 4: Receipt Attachments -->
-      <hr class="container mt-6 md:mt-10 lg:mt-20 mx-auto relative z-10 border-border/30" id="receipts" />
-      <section class="mt-16 pb-16 md:mt-32 relative z-10 container mx-auto px-4">
-         <div class="mx-auto flex flex-col items-center">
-            <p class="text-primary leading-[140%] text-sm font-medium">
-               Em breve: OCR
-            </p>
-            <h2 class="mt-3 pb-2 bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-transparent font-bold text-center text-[28px] md:text-[40px] leading-[108%] max-w-[629px]">
-               Anexe comprovantes. Esteja pronto para auditoria.
-            </h2>
-            <p class="mt-3 text-muted-foreground text-center max-w-[508px] tracking-tight">
-               PDF ou imagem? O Montte armazena junto com sua transação. Em breve: leitura OCR automática que extrai valores e categoriza.
-            </p>
-         </div>
-
-         <div class="mx-auto relative flex flex-col md:mt-10 md:flex-row max-w-[1000px]">
-            <div class="flex-1 md:w-1/2">
-               <img 
-                  width="544" 
-                  height="430" 
-                  alt="Anexo de comprovantes" 
-                  class="block md:hidden relative -z-10 w-[calc(110%+80px)] -left-[14%] max-w-none"
-                  src="https://placehold.co/400x300/0f0f23/22c55e?text=Receipt+Attachment"
-               />
-               <img 
-                  width="544" 
-                  height="430" 
-                  alt="Anexo de comprovantes" 
-                  class="hidden md:block absolute top-10 -z-10 w-[544px] max-lg:-left-[10%]"
-                  src="https://placehold.co/544x430/0f0f23/22c55e?text=Receipt+Attachment"
-               />
-               <div class="h-[140px] md:h-[400px]"></div>
-               <div class="ml-3 -mt-48 md:mt-0 lg:ml-[100px]">
-                  <h3 class="text-foreground font-bold text-[18px] md:text-[28px] leading-[117%]">
-                     Nunca mais perca um comprovante
-                  </h3>
-                  <p class="mt-3 text-muted-foreground text-base md:text-lg max-w-[360px]">
-                     Envie PDF, imagem ou captura de tela. Vincule automaticamente às transações. Acesso com um clique quando precisar.
-                  </p>
-               </div>
-            </div>
-
-            <div class="flex-1 mt-12 md:mt-0 md:w-1/2 relative">
-               <div class="relative mt-4 pl-5 md:pl-8 pr-5 py-6 rounded-xl border overflow-hidden border-border/20 bg-card">
-                  <div class="absolute inset-0">
-                     <img 
-                        width="550" 
-                        height="250" 
-                        alt="Busca de comprovantes" 
-                        src="https://placehold.co/550x250/0f0f23/22c55e?text=Receipt+Search"
-                        class="w-full"
-                     />
-                  </div>
-                  <div class="h-[155px]"></div>
-                  <div class="relative">
-                     <h4 class="text-foreground font-medium">
-                        Busca e organização de comprovantes
-                     </h4>
-                     <p class="mt-2 text-muted-foreground max-w-[408px]">
-                        Busque por estabelecimento, valor ou data. Organize por categoria. Exporte em lote para contabilidade.
-                     </p>
-                  </div>
-               </div>
-
-               <div class="relative mt-6 pl-5 md:pl-8 pb-4 rounded-xl border overflow-hidden border-border/20 bg-card h-[310px] sm:h-[294px]">
-                  <div class="absolute inset-0 w-full md:-top-1.5">
-                     <img 
-                        width="552" 
-                        height="294" 
-                        alt="OCR de comprovantes" 
-                        src="https://placehold.co/552x294/0f0f23/22c55e?text=OCR+Coming+Soon"
-                        class="w-full"
-                     />
-                  </div>
-                  <div class="w-full absolute bottom-4 md:bottom-5 pr-4">
-                     <h4 class="text-foreground font-medium">
-                        Em breve: Leitura OCR automática
-                     </h4>
-                     <p class="mt-2 text-muted-foreground max-w-[434px]">
-                        Extração automática de estabelecimento, valor e itens. Categorização inteligente a partir do conteúdo.
-                     </p>
-                  </div>
-               </div>
-            </div>
-         </div>
-      </section>
-
-      <!-- Cost/Time Savings Comparison -->
-      <hr class="container mt-6 md:mt-10 lg:mt-20 mx-auto relative z-10 border-border/30" id="savings" />
-      <section class="mt-16 md:mt-32 pb-16 md:pb-32 relative z-10 container mx-auto max-w-[1097px] px-4">
-         <div class="mx-auto flex gap-x-16 xl:gap-x-20 flex-col lg:flex-row md:items-center md:justify-between gap-y-10">
-            <div class="max-lg:w-full max-lg:max-w-[629px]">
-               <div class="flex flex-col max-w-[356px] left-left max-lg:pl-4">
-                  <h2 class="mt-2 pb-2 bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-transparent font-bold text-[28px] md:text-[40px] leading-[108%] max-w-[629px]">
-                     Economize horas
-                     <br />
-                     toda semana
-                  </h2>
-                  <p class="mt-3 text-muted-foreground max-w-[441px] tracking-tight leading-[145%]">
-                     Pare de digitar transações manualmente. Automatize importações bancárias e deixe a IA categorizar. Ganhe tempo para o que importa.
-                  </p>
-                  <div class="mt-6">
-                     <a class="inline-flex items-center justify-center bg-muted/50 border border-border/30 rounded-full text-muted-foreground px-4 text-sm h-[37px] hover:text-foreground group transition-colors" href="/pricing">
-                        <span class="leading-[100%]">Ver planos</span>
-                        <ChevronRight class="ml-1.5 mt-px size-3 group-hover:text-foreground transition-colors" />
-                     </a>
-                  </div>
-                  <div class="mt-10 flex gap-x-14 md:gap-x-16">
-                     <div class="flex flex-col gap-y-1">
-                        <p class="text-muted-foreground text-sm leading-[145%]">
-                           Economize até
-                        </p>
-                        <p class="text-[28px] text-foreground font-bold leading-[117%]">
-                           2h/semana
-                        </p>
-                        <p class="text-muted-foreground text-sm leading-[145%]">
-                           em entrada de dados
-                        </p>
-                     </div>
-                     <div class="flex flex-col gap-y-1">
-                        <p class="text-muted-foreground text-sm leading-[145%]">
-                           Precisão de
-                        </p>
-                        <p class="text-[28px] text-foreground font-bold leading-[117%]">
-                           95%+
-                        </p>
-                        <p class="text-muted-foreground text-sm leading-[145%]">
-                           na categorização
-                        </p>
-                     </div>
-                  </div>
-               </div>
-            </div>
-
-            <div class="border flex-1 border-border/30 rounded-[26px] p-4 w-full md:max-w-[641px] md:w-full md:min-w-[540px] xl:min-w-[641px]">
-               <div class="border rounded-t-xl bg-card border-border/30 w-full overflow-hidden">
-                  <div class="px-4 md:px-10 bg-muted/30 flex flex-col md:flex-row md:items-center py-6 md:justify-between text-base leading-[145%]">
-                     <div class="flex flex-col w-full md:w-auto max-md:border-b max-md:border-dashed max-md:pb-3 border-border/30">
-                        <span class="font-bold text-foreground text-[28px] leading-[145%]">100</span>
-                        <span class="text-muted-foreground">transações/mês</span>
-                     </div>
-                     <div class="border-dashed border-border/30 h-[61px] border-l hidden md:block w-px"></div>
-                     <div class="flex flex-col w-full md:w-auto max-md:border-b max-md:border-dashed max-md:py-3 border-border/30">
-                        <span class="font-bold text-foreground text-[28px] leading-[145%]">3</span>
-                        <span class="text-muted-foreground">contas bancárias</span>
-                     </div>
-                     <div class="border-dashed border-border/30 h-[61px] border-l hidden md:block w-px"></div>
-                     <div class="flex flex-col w-full md:w-auto max-md:pt-3">
-                        <span class="font-bold text-foreground text-[28px] leading-[145%]">∞</span>
-                        <span class="text-muted-foreground">comprovantes</span>
-                     </div>
-                  </div>
-               </div>
-               <div class="rounded-b-xl px-6 border border-border/30 bg-card border-t-0 flex flex-col">
-                  <div class="py-6 border-b border-dashed border-border/30 flex flex-col md:flex-row md:items-center gap-y-4">
-                     <div class="flex items-center gap-x-2 w-[247px]">
-                        <div class="w-6 h-6 rounded-full flex items-center justify-center bg-muted">
-                           <span class="text-xs">📊</span>
-                        </div>
-                        <span class="font-medium text-foreground leading-[145%] tracking-tight">
-                           Planilha manual
-                        </span>
-                     </div>
-                     <div class="w-full">
-                        <div class="w-full h-[13px] rounded-full border border-border/20 bg-muted/50"></div>
-                        <div class="mt-2 leading-[145%] tracking-tight text-muted-foreground text-base">
-                           aprox.
-                           <span class="text-foreground">2+ horas</span>
-                           por semana
-                        </div>
-                     </div>
-                  </div>
-                  <div class="py-6 border-border/30 flex flex-col md:flex-row md:items-center gap-y-4">
-                     <div class="flex items-center gap-x-2 w-[247px]">
-                        <div class="w-6 h-6 rounded-full flex items-center justify-center bg-linear-to-r from-primary to-chart-2">
-                           <span class="text-xs text-primary-foreground font-bold">M</span>
-                        </div>
-                        <span class="font-medium text-foreground leading-[145%] tracking-tight">
-                           Montte
-                        </span>
-                     </div>
-                     <div class="w-full">
-                        <div class="bg-linear-to-r h-[13px] w-[13px] rounded-full from-primary to-chart-2"></div>
-                        <div class="mt-2 leading-[145%] tracking-tight text-muted-foreground text-base">
-                           <span class="text-foreground">~5 minutos</span>
-                           por semana
-                        </div>
-                     </div>
-                  </div>
-               </div>
-               <div class="mt-4 w-full flex items-center justify-center">
-                  <p class="text-muted-foreground/70 text-center text-[10px] leading-[145%] tracking-tight max-w-[610px]">
-                     Estimativa baseada em 100 transações mensais. Tempo real pode variar de acordo com complexidade das transações e configuração inicial.
-                  </p>
-               </div>
-            </div>
-         </div>
-      </section>
-
-      <!-- Second Customer Logo Cloud -->
-      <section class="relative mt-4 -mb-20 flex flex-col items-center overflow-hidden">
-         <div class="mx-auto max-w-[1684px]">
-            <p class="mb-4 md:mb-10 text-muted-foreground text-center text-base md:text-lg max-w-[200px] sm:max-w-none">
-               Usado pelas melhores equipes de finanças
-            </p>
-         </div>
-         <div class="w-full max-w-[600px] mx-auto px-4">
-            <LogoCloud client:load />
-         </div>
-      </section>
-
-      <!-- Final CTA Section -->
-      <div class="mt-16 md:mt-44 container mx-auto border-t border-border/30"></div>
-      <section class="py-20 lg:pb-36 lg:pt-[130px]">
-         <div class="container mx-auto mt-0 max-w-[1000px] px-4">
-            <div class="mt-14 md:mt-0 md:max-w-[350px] lg:max-w-none mx-auto">
-               <div class="flex flex-col items-center">
-                  <h2 class="text-foreground font-bold text-center text-[24px] lg:text-[36px] leading-[117%] max-w-[320px] md:max-w-[500px]">
-                     Pare de lançar transações manualmente
-                  </h2>
-                  <p class="mx-auto mt-3 px-5 text-muted-foreground text-base md:text-lg max-w-[400px] text-center">
-                     Junte-se às equipes que automatizaram o rastreamento de despesas. Teste grátis por 14 dias.
-                  </p>
-               </div>
-
-               <div class="w-full lg:max-w-[480px] mx-auto mt-8">
-                  <div class="flex flex-col sm:flex-row gap-3 items-center justify-center">
-                     <a href="/signup" class="w-full max-w-[316px] sm:max-w-none sm:w-auto">
-                        <Button size="lg" className="group relative overflow-hidden rounded-xl h-12 px-8 w-full sm:w-[200px] font-medium">
-                           <span>Comece Grátis</span>
-                           <ArrowRight class="size-4 transition-transform duration-300 group-hover:translate-x-1" />
-                        </Button>
-                     </a>
-                     <a href="https://github.com/montte/montte" target="_blank" rel="noopener noreferrer" class="w-full max-w-[316px] sm:max-w-none sm:w-auto">
-                        <Button variant="outline" size="lg" className="rounded-xl h-12 px-6 gap-2 w-full sm:w-auto border-border/20 bg-muted/10 backdrop-blur-2xl">
-                           <Github class="size-5" />
-                           Auto-Hospedagem
-                        </Button>
-                     </a>
-                  </div>
-
-                  <p class="mt-4 pb-2 text-muted-foreground text-center text-sm lg:text-base">
-                     Precisa de uma solução empresarial?{" "}
-                     <a class="text-foreground underline underline-offset-4 transition decoration-primary/20 hover:decoration-primary" href="/enterprise">
-                        Agende uma demonstração
-                     </a>
-                  </p>
-               </div>
+            <div class="mt-10 flex flex-col sm:flex-row gap-3 items-center">
+               <a href="/signup">
+                  <Button size="lg" className="h-12 px-8 rounded-xl group">
+                     Comece Gratis
+                     <ArrowRight class="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Button>
+               </a>
             </div>
          </div>
       </section>

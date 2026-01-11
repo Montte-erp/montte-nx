@@ -41,6 +41,7 @@ import { category, transactionCategory } from "@packages/database/schema";
 import { transaction } from "@packages/database/schema";
 import { bill } from "@packages/database/schema";
 // budget table is accessed via db.query.budget in queryBudgetInsight
+import { decryptTransactionFields } from "@packages/encryption/service";
 import { APIError } from "@packages/utils/errors";
 import { and, eq, gte, inArray, lte, sql, desc, asc } from "drizzle-orm";
 import { z } from "zod";
@@ -1115,7 +1116,10 @@ async function queryTransactionInsight(
 			.orderBy(desc(transaction.date))
 			.limit(100);
 
-		result.tableData = tableResult;
+		// Decrypt sensitive fields before returning
+		result.tableData = tableResult.map((row: { description?: string | null; notes?: string | null }) =>
+			decryptTransactionFields(row),
+		);
 	}
 
 	return result;

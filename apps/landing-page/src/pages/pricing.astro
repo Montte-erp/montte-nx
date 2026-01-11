@@ -3,8 +3,7 @@ export const prerender = true;
 
 import StickyNavbar from "@/components/StickyNavbar.astro";
 import Landing from "@/layouts/Landing.astro";
-import Footer from "@/sections/Footer.astro";
-import PricingAddons from "@/sections/pricing-page/PricingAddons.astro";
+import Footer from "@/components/Footer.astro";
 import PricingAnalytics from "@/sections/pricing-page/PricingAnalytics.astro";
 import PricingAutomation from "@/sections/pricing-page/PricingAutomation.astro";
 import PricingCoreFeatures from "@/sections/pricing-page/PricingCoreFeatures.astro";
@@ -31,7 +30,6 @@ import PricingTeam from "@/sections/pricing-page/PricingTeam.astro";
             <main class="flex-1 space-y-16">
                <PricingFreeTier />
                <PricingPlansGrid />
-               <PricingAddons />
                <PricingCoreFeatures />
                <PricingPlanning />
                <PricingAutomation />

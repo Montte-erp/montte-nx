@@ -1,0 +1,29 @@
+---
+import Logo from "./Logo.astro";
+
+export interface Props {
+   size?: "sm" | "md" | "lg";
+   showText?: boolean;
+   class?: string;
+}
+
+const { size = "md", showText = true, class: className = "" } = Astro.props;
+
+const sizeConfig = {
+   sm: { logo: 24, text: "text-lg" },
+   md: { logo: 32, text: "text-xl" },
+   lg: { logo: 40, text: "text-2xl" },
+};
+
+const config = sizeConfig[size];
+const brandName = "Montte";
+---
+
+<span class:list={["flex items-center gap-2", className]}>
+   <Logo size={config.logo} class="text-primary" />
+   {showText && (
+      <span class:list={["font-bold tracking-tight text-foreground", config.text]}>
+         {brandName}
+      </span>
+   )}
+</span>

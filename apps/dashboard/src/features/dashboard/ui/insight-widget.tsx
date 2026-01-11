@@ -1,4 +1,5 @@
 import { formatDecimalCurrency } from "@packages/money";
+import { formatDate } from "@packages/utils/date";
 import {
 	ChartContainer,
 	ChartTooltip,
@@ -7,8 +8,20 @@ import {
 } from "@packages/ui/components/chart";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { TrendSparkline } from "@packages/ui/components/sparkline";
+import { DataTable } from "@packages/ui/components/data-table";
+import { Button } from "@packages/ui/components/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from "@packages/ui/components/card";
+import { CollapsibleTrigger } from "@packages/ui/components/collapsible";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import type { ColumnDef, Row } from "@tanstack/react-table";
+import { useMemo, useState } from "react";
 import {
 	Area,
 	AreaChart,
@@ -27,12 +40,13 @@ import {
 } from "recharts";
 import { useTRPC } from "@/integrations/clients";
 import type { InsightConfig } from "@packages/database/schemas/dashboards";
-import { Globe, TrendingDown, TrendingUp } from "lucide-react";
+import { ChevronDown, Globe, TrendingDown, TrendingUp } from "lucide-react";
 import type { DrillDownContext } from "../hooks/use-insight-drill-down";
 import { CategoryAnalysisChart } from "./category-analysis-chart";
 import { ComparisonChart } from "./comparison-chart";
 import { HeatmapChart, transformToHeatmapData } from "./heatmap-chart";
 import { SankeyChart, transformToSankeyData } from "./sankey-chart";
+import { getItemColor } from "./chart-colors";
 import { forecast } from "@packages/analytics/forecasting";
 
 type InsightWidgetProps = {
@@ -46,17 +60,6 @@ type InsightWidgetProps = {
 	};
 	onDrillDown?: (context: DrillDownContext) => void;
 };
-
-const COLORS = [
-	"#8884d8",
-	"#82ca9d",
-	"#ffc658",
-	"#ff7300",
-	"#0088fe",
-	"#00c49f",
-	"#ffbb28",
-	"#ff8042",
-];
 
 export function InsightWidget({
 	config,
@@ -525,7 +528,7 @@ function BarChartWidget({
 					{chartData.map((entry, index) => (
 						<Cell
 							key={`cell-${index + 1}`}
-							fill={(entry as { color?: string }).color || COLORS[index % COLORS.length]}
+							fill={getItemColor((entry as { color?: string }).color, index)}
 							onClick={() => handleBarClick(entry as { label?: string; date?: string; id?: string; value: number })}
 						/>
 					))}
@@ -555,7 +558,7 @@ function PieChartWidget({
 	const chartConfig: ChartConfig = {};
 	data.breakdown.forEach((item, index) => {
 		chartConfig[item.label] = {
-			color: item.color || COLORS[index % COLORS.length],
+			color: getItemColor(item.color, index),
 			label: item.label,
 		};
 	});
@@ -587,7 +590,7 @@ function PieChartWidget({
 					{data.breakdown.map((entry, index) => (
 						<Cell
 							key={`cell-${index + 1}`}
-							fill={entry.color || COLORS[index % COLORS.length]}
+							fill={getItemColor(entry.color, index)}
 							onClick={() => handleSliceClick(entry)}
 						/>
 					))}
@@ -597,12 +600,205 @@ function PieChartWidget({
 	);
 }
 
+type TableRow = Record<string, unknown>;
+
+/**
+ * Utility function to format cell values based on column type
+ */
+function formatCellValue(
+	col: string,
+	value: unknown,
+	decryptE2E?: (value: string) => string,
+): string {
+	// Handle null/undefined
+	if (value === null || value === undefined) {
+		return "-";
+	}
+
+	// Date formatting
+	const colLower = col.toLowerCase();
+	if (
+		colLower.includes("date") ||
+		colLower === "createdat" ||
+		colLower === "updatedat"
+	) {
+		if (value instanceof Date) {
+			return formatDate(value, "DD/MM/YYYY");
+		}
+		if (typeof value === "string") {
+			const date = new Date(value);
+			if (!Number.isNaN(date.getTime())) {
+				return formatDate(date, "DD/MM/YYYY");
+			}
+		}
+	}
+
+	// Amount/currency formatting
+	if (
+		colLower.includes("amount") ||
+		colLower.includes("value") ||
+		colLower.includes("total") ||
+		colLower.includes("balance")
+	) {
+		if (typeof value === "number") {
+			return formatDecimalCurrency(value);
+		}
+		if (typeof value === "string") {
+			const num = Number.parseFloat(value);
+			if (!Number.isNaN(num)) {
+				return formatDecimalCurrency(num);
+			}
+		}
+	}
+
+	// E2E encrypted value handling (fallback for any remaining encrypted data)
+	if (typeof value === "string" && decryptE2E) {
+		try {
+			const parsed = JSON.parse(value);
+			// Check for E2E encryption format
+			if (parsed.encrypted && parsed.nonce && parsed.version) {
+				return decryptE2E(value);
+			}
+		} catch {
+			// Not encrypted JSON, continue with normal formatting
+		}
+	}
+
+	return String(value);
+}
+
+function createTableColumns(
+	allColumns: string[],
+	config: InsightConfig,
+	decryptE2E?: (value: string) => string,
+): ColumnDef<TableRow>[] {
+	const visibleColumns = config.tableColumns?.visibleColumns;
+	const columnOrder = config.tableColumns?.columnOrder;
+
+	// Determine which columns to show
+	let columnsToShow = allColumns;
+	if (visibleColumns && visibleColumns.length > 0) {
+		columnsToShow = visibleColumns.filter((col) => allColumns.includes(col));
+	}
+
+	// Apply column order if specified
+	if (columnOrder && columnOrder.length > 0) {
+		columnsToShow = columnOrder.filter((col) => columnsToShow.includes(col));
+		// Add any remaining columns not in the order
+		const remainingCols = columnsToShow.filter((col) => !columnOrder.includes(col));
+		columnsToShow = [...columnsToShow, ...remainingCols];
+	}
+
+	return columnsToShow.map((col) => ({
+		accessorKey: col,
+		header: col.charAt(0).toUpperCase() + col.slice(1).replace(/_/g, " "),
+		cell: ({ row }) => {
+			const value = row.original[col];
+			return formatCellValue(col, value, decryptE2E);
+		},
+		enableSorting: true,
+	}));
+}
+
+function TableExpandedContent({
+	row,
+	allColumns,
+	decryptE2E,
+}: {
+	row: Row<TableRow>;
+	allColumns: string[];
+	decryptE2E?: (value: string) => string;
+}) {
+	const data = row.original;
+
+	return (
+		<div className="p-4 space-y-3">
+			<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+				{allColumns.map((col) => {
+					const value = data[col];
+					const formattedValue = formatCellValue(col, value, decryptE2E);
+
+					return (
+						<div key={col} className="flex flex-col gap-0.5">
+							<span className="text-xs text-muted-foreground">
+								{col.charAt(0).toUpperCase() + col.slice(1).replace(/_/g, " ")}
+							</span>
+							<span className="text-sm font-medium truncate">{formattedValue}</span>
+						</div>
+					);
+				})}
+			</div>
+		</div>
+	);
+}
+
+function TableMobileCard({
+	row,
+	isExpanded,
+	toggleExpanded,
+	allColumns,
+	decryptE2E,
+}: {
+	row: Row<TableRow>;
+	isExpanded: boolean;
+	toggleExpanded: () => void;
+	allColumns: string[];
+	decryptE2E?: (value: string) => string;
+}) {
+	const data = row.original;
+	// Show first 3 columns as key info
+	const keyColumns = allColumns.slice(0, 3);
+
+	const getDisplayValue = (col: string) => {
+		const value = data[col];
+		return formatCellValue(col, value, decryptE2E);
+	};
+
+	return (
+		<Card className={isExpanded ? "rounded-b-none py-4" : "py-4"}>
+			<CardHeader className="flex items-center gap-2">
+				<div className="min-w-0 flex-1">
+					<CardTitle className="text-sm truncate">
+						{getDisplayValue(keyColumns[0] ?? "")}
+					</CardTitle>
+					{keyColumns[1] && (
+						<CardDescription>
+							{keyColumns[1].charAt(0).toUpperCase() + keyColumns[1].slice(1).replace(/_/g, " ")}: {getDisplayValue(keyColumns[1])}
+						</CardDescription>
+					)}
+				</div>
+			</CardHeader>
+			{keyColumns[2] && (
+				<CardContent className="flex flex-wrap items-center gap-2">
+					<span className="text-sm text-muted-foreground">
+						{keyColumns[2].charAt(0).toUpperCase() + keyColumns[2].slice(1).replace(/_/g, " ")}: {getDisplayValue(keyColumns[2])}
+					</span>
+				</CardContent>
+			)}
+			<CardFooter>
+				<CollapsibleTrigger asChild onClick={toggleExpanded}>
+					<Button className="w-full" variant="outline">
+						<ChevronDown
+							className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+						/>
+						{isExpanded ? "Less" : "More"}
+					</Button>
+				</CollapsibleTrigger>
+			</CardFooter>
+		</Card>
+	);
+}
+
 function TableWidget({
 	data,
 	config,
 	onDrillDown,
 }: ChartComponentProps) {
+	void onDrillDown; // Reserved for future drill-down support
 	const firstRow = data.tableData?.[0];
+	const [page, setPage] = useState(1);
+	const pageSize = 20;
+
 	if (!data.tableData || data.tableData.length === 0 || !firstRow) {
 		return (
 			<div className="h-full flex items-center justify-center text-muted-foreground text-sm">
@@ -611,52 +807,43 @@ function TableWidget({
 		);
 	}
 
-	const columns = Object.keys(firstRow);
+	// Note: E2E decryption fallback removed for now - server-side decryption handles most cases
+	const decryptE2E = undefined;
 
-	const handleRowClick = (row: Record<string, unknown>) => {
-		if (!onDrillDown || !config.breakdown?.field) return;
+	const allColumns = Object.keys(firstRow);
+	const columns = createTableColumns(allColumns, config, decryptE2E);
 
-		const idValue = row.id || row[config.breakdown.field];
-		const labelValue = row.label || row.name || row[config.breakdown.field];
-
-		onDrillDown({
-			dimension: config.breakdown.field,
-			value: String(idValue ?? ""),
-			label: String(labelValue ?? ""),
-		});
-	};
+	// Paginate data
+	const totalCount = data.tableData.length;
+	const totalPages = Math.ceil(totalCount / pageSize);
+	const paginatedData = data.tableData.slice(
+		(page - 1) * pageSize,
+		page * pageSize,
+	);
 
 	return (
 		<div className="h-full overflow-auto">
-			<table className="w-full text-sm">
-				<thead className="bg-muted/50 sticky top-0">
-					<tr>
-						{columns.map((col) => (
-							<th key={col} className="text-left p-2 font-medium">
-								{col}
-							</th>
-						))}
-					</tr>
-				</thead>
-				<tbody>
-					{data.tableData.slice(0, 50).map((row, index) => (
-						<tr
-							key={`row-${index + 1}`}
-							className={`border-b border-muted ${onDrillDown ? "cursor-pointer hover:bg-muted/30 transition-colors" : ""}`}
-							onClick={() => handleRowClick(row)}
-							onKeyDown={(e) => e.key === "Enter" && handleRowClick(row)}
-							role={onDrillDown ? "button" : undefined}
-							tabIndex={onDrillDown ? 0 : undefined}
-						>
-							{columns.map((col) => (
-								<td key={`${col}-${index + 1}`} className="p-2">
-									{String(row[col] ?? "")}
-								</td>
-							))}
-						</tr>
-					))}
-				</tbody>
-			</table>
+			<DataTable
+				columns={columns}
+				data={paginatedData}
+				pagination={
+					totalCount > pageSize
+						? {
+								currentPage: page,
+								totalPages,
+								totalCount,
+								pageSize,
+								onPageChange: setPage,
+							}
+						: undefined
+				}
+				renderSubComponent={({ row }) => (
+					<TableExpandedContent row={row} allColumns={allColumns} decryptE2E={decryptE2E} />
+				)}
+				renderMobileCard={(props) => (
+					<TableMobileCard {...props} allColumns={allColumns} decryptE2E={decryptE2E} />
+				)}
+			/>
 		</div>
 	);
 }
@@ -885,7 +1072,7 @@ function StackedBarChartWidget({
 							key={label}
 							dataKey={label}
 							stackId="stack"
-							fill={COLORS[index % COLORS.length]}
+							fill={getItemColor(undefined, index)}
 							radius={index === breakdownLabels.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
 						/>
 					))
@@ -1038,7 +1225,7 @@ function BarTotalWidget({
 					{data.breakdown.map((entry, index) => (
 						<Cell
 							key={`cell-${index + 1}`}
-							fill={entry.color || COLORS[index % COLORS.length]}
+							fill={getItemColor(entry.color, index)}
 							onClick={() => handleBarClick(entry)}
 						/>
 					))}

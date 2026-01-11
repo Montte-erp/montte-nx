@@ -9,9 +9,9 @@ import { useCallback, useEffect, useState } from "react";
 const carouselItems = [
    {
       id: "dashboard",
-      label: "Dashboard de Financas",
-      image: "https://placehold.co/875x609/1a1a2e/939DB8?text=Dashboard",
-      imageSm: "https://placehold.co/390x448/1a1a2e/939DB8?text=Dashboard",
+      label: "Dashboards Personalizados",
+      image: "https://placehold.co/875x609/1a1a2e/939DB8?text=Dashboards",
+      imageSm: "https://placehold.co/390x448/1a1a2e/939DB8?text=Dashboards",
    },
    {
       id: "transactions",
@@ -20,22 +20,22 @@ const carouselItems = [
       imageSm: "https://placehold.co/390x448/1a1a2e/939DB8?text=Transacoes",
    },
    {
-      id: "reports",
-      label: "Relatorios Inteligentes",
-      image: "https://placehold.co/875x609/1a1a2e/939DB8?text=Relatorios",
-      imageSm: "https://placehold.co/390x448/1a1a2e/939DB8?text=Relatorios",
+      id: "bills",
+      label: "Contas a Pagar e Receber",
+      image: "https://placehold.co/875x609/1a1a2e/939DB8?text=Contas",
+      imageSm: "https://placehold.co/390x448/1a1a2e/939DB8?text=Contas",
    },
    {
-      id: "workspaces",
-      label: "Workspaces Colaborativos",
-      image: "https://placehold.co/875x609/1a1a2e/939DB8?text=Workspaces",
-      imageSm: "https://placehold.co/390x448/1a1a2e/939DB8?text=Workspaces",
+      id: "budgets",
+      label: "Orcamentos e Metas",
+      image: "https://placehold.co/875x609/1a1a2e/939DB8?text=Orcamentos",
+      imageSm: "https://placehold.co/390x448/1a1a2e/939DB8?text=Orcamentos",
    },
    {
-      id: "categories",
-      label: "Categorizacao Automatica",
-      image: "https://placehold.co/875x609/1a1a2e/939DB8?text=Categorias",
-      imageSm: "https://placehold.co/390x448/1a1a2e/939DB8?text=Categorias",
+      id: "insights",
+      label: "Insights e Analises",
+      image: "https://placehold.co/875x609/1a1a2e/939DB8?text=Insights",
+      imageSm: "https://placehold.co/390x448/1a1a2e/939DB8?text=Insights",
    },
 ];
 
@@ -76,7 +76,7 @@ export default function HeroCarousel() {
          onMouseEnter={() => setIsPaused(true)}
          onMouseLeave={() => setIsPaused(false)}
       >
-         <div className="relative w-full h-[370px] sm:h-[550px] md:h-[610px]">
+         <div className="relative w-auto  h-96">
             <AnimatePresence mode="wait">
                {carouselItems.map(
                   (item, index) =>

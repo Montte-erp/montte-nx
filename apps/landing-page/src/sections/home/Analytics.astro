@@ -1,0 +1,54 @@
+---
+import { FeatureCarousel } from "@/components/feature-carousel";
+
+const analyticsFeatures = [
+   {
+      title: "Dashboards Personalizados",
+      description:
+         "Crie dashboards sob medida com widgets arrastaveis. Organize suas informacoes mais importantes em uma unica tela.",
+      image: "https://placehold.co/350x478/151925/22c55e?text=Dashboards",
+      width: "narrow" as const,
+   },
+   {
+      title: "Graficos Interativos",
+      description:
+         "Visualize seus dados em graficos de linha, barra, pizza, Sankey e heatmaps. Clique para fazer drill-down e explorar detalhes.",
+      image: "https://placehold.co/725x478/151925/22c55e?text=Graficos+Interativos",
+      width: "wide" as const,
+   },
+   {
+      title: "Deteccao de Anomalias",
+      description:
+         "O sistema identifica automaticamente gastos fora do padrao. Receba alertas sobre transacoes incomuns antes que virem problema.",
+      image: "https://placehold.co/350x478/151925/22c55e?text=Anomalias",
+      width: "narrow" as const,
+   },
+   {
+      title: "Insights Salvos",
+      description:
+         "Salve configuracoes de relatorios que voce usa com frequencia. Acesse seus insights favoritos com um clique.",
+      image: "https://placehold.co/725x478/151925/22c55e?text=Insights+Salvos",
+      width: "wide" as const,
+   },
+   {
+      title: "Drill-Down por Categoria",
+      description:
+         "Clique em qualquer ponto do grafico para aprofundar a analise. Va do resumo ate a transacao individual em segundos.",
+      image: "https://placehold.co/350x478/151925/22c55e?text=Drill-Down",
+      width: "narrow" as const,
+   },
+];
+---
+
+<section id="analytics" class="py-16 md:py-24 overflow-hidden relative">
+   <FeatureCarousel
+      client:load
+      label="Insights e Analises"
+      title="Visualize. Entenda. Decida."
+      description="Transforme seus dados financeiros em insights acionaveis com dashboards personalizados e graficos interativos."
+      ctaText="Ver todos os relatorios"
+      ctaHref="/features/analytics"
+      benefitStatement="Tome decisoes baseadas em dados, nao em intuicao."
+      items={analyticsFeatures as any}
+   />
+</section>

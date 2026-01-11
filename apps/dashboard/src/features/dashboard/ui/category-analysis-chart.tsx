@@ -17,17 +17,7 @@ import {
 } from "recharts";
 import { useTRPC } from "@/integrations/clients";
 import type { DrillDownContext } from "../hooks/use-insight-drill-down";
-
-const COLORS = [
-	"#8884d8",
-	"#82ca9d",
-	"#ffc658",
-	"#ff7300",
-	"#0088fe",
-	"#00c49f",
-	"#ffbb28",
-	"#ff8042",
-];
+import { getItemColor } from "./chart-colors";
 
 type CategoryAnalysisChartProps = {
 	config: InsightConfig;
@@ -81,7 +71,7 @@ export function CategoryAnalysisChart({
 	const categories = data.breakdown.map((item, index) => ({
 		id: (item as { id?: string }).id || item.label,
 		name: item.label,
-		color: item.color || COLORS[index % COLORS.length],
+		color: getItemColor(item.color, index),
 		value: item.value,
 	}));
 

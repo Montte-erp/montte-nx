@@ -19,14 +19,11 @@ import {
 	Download,
 	FileSpreadsheet,
 	FileImage,
-	Pencil,
 	Save,
 	X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { InsightWidget } from "./insight-widget";
-import { InsightBuilderWizard } from "./insight-builder-wizard";
-import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";
 import type { DrillDownContext } from "../hooks/use-insight-drill-down";
 
@@ -48,7 +45,6 @@ type InsightViewerProps = {
 export function InsightViewer({
 	config,
 	title,
-	dashboardId,
 	breadcrumbs = [],
 	onBack,
 	onClose,
@@ -56,7 +52,6 @@ export function InsightViewer({
 }: InsightViewerProps) {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
-	const { openSheet, closeSheet } = useSheet();
 
 	const saveInsightMutation = useMutation(
 		trpc.dashboards.createSavedInsight.mutationOptions({
@@ -77,23 +72,6 @@ export function InsightViewer({
 			name: title,
 			config,
 		});
-	};
-
-	const handleEdit = () => {
-		if (dashboardId) {
-			openSheet({
-				children: (
-					<InsightBuilderWizard
-						dashboardId={dashboardId}
-						initialChartType={config.chartType}
-						onSuccess={() => {
-							closeSheet();
-						}}
-						onCancel={closeSheet}
-					/>
-				),
-			});
-		}
 	};
 
 	const handleExportCsv = () => {
@@ -142,14 +120,6 @@ export function InsightViewer({
 						<Save className="h-4 w-4 mr-2" />
 						Save
 					</Button>
-
-					{/* Edit */}
-					{dashboardId && (
-						<Button variant="outline" size="sm" onClick={handleEdit}>
-							<Pencil className="h-4 w-4 mr-2" />
-							Edit
-						</Button>
-					)}
 
 					{/* Export */}
 					<DropdownMenu>

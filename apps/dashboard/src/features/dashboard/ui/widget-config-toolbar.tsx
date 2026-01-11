@@ -1,32 +1,30 @@
 import { Button } from "@packages/ui/components/button";
 import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@packages/ui/components/popover";
-import {
-	Command,
-	CommandGroup,
-	CommandItem,
-	CommandList,
-} from "@packages/ui/components/command";
-import {
 	Tooltip,
 	TooltipTrigger,
 	TooltipContent,
 } from "@packages/ui/components/tooltip";
-import { cn } from "@packages/ui/lib/utils";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@packages/ui/components/dropdown-menu";
+import { Badge } from "@packages/ui/components/badge";
 import type { InsightConfig } from "@packages/database/schemas/dashboards";
 import {
 	AreaChart,
 	BarChart3,
-	Calendar,
-	Check,
 	ChevronDown,
-	Clock,
+	Filter,
 	Globe,
+	Grid3X3,
 	GripVertical,
 	Hash,
+	GitMerge,
 	Layers,
 	LineChart,
 	Maximize2,
@@ -36,68 +34,140 @@ import {
 	Settings2,
 	Table2,
 	Trash2,
+	Bookmark,
 	TrendingUp,
+	Check,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo } from "react";
+import { cn } from "@packages/ui/lib/utils";
 
 type ChartType = InsightConfig["chartType"];
-type TimeGrouping = InsightConfig["timeGrouping"];
 type DataSource = InsightConfig["dataSource"];
 
-const CHART_TYPE_OPTIONS: Array<{
+type ChartTypeOption = {
 	value: ChartType;
 	label: string;
+	description: string;
 	icon: typeof LineChart;
-}> = [
-	{ value: "line", label: "Line chart", icon: LineChart },
-	{ value: "area", label: "Area chart", icon: AreaChart },
-	{ value: "bar", label: "Bar chart", icon: BarChart3 },
-	{ value: "stacked_bar", label: "Stacked bar", icon: Layers },
-	{ value: "line_cumulative", label: "Cumulative", icon: TrendingUp },
-	{ value: "pie", label: "Pie chart", icon: PieChart },
-	{ value: "donut", label: "Donut chart", icon: PieChart },
-	{ value: "stat_card", label: "Number", icon: Hash },
-	{ value: "bar_total", label: "Bar total", icon: BarChart3 },
-	{ value: "table", label: "Table", icon: Table2 },
-	{ value: "world_map", label: "World map", icon: Globe },
-	{ value: "category_analysis", label: "Categories", icon: Layers },
-	{ value: "comparison", label: "Comparison", icon: Scale },
+};
+
+type ChartCategory = {
+	name: string;
+	types: ChartTypeOption[];
+};
+
+const CHART_CATEGORIES: ChartCategory[] = [
+	{
+		name: "Series Temporais",
+		types: [
+			{
+				value: "line",
+				label: "Grafico de linhas",
+				description: "Tendencias ao longo do tempo",
+				icon: LineChart,
+			},
+			{
+				value: "area",
+				label: "Grafico de area",
+				description: "Area sombreada ao longo do tempo",
+				icon: AreaChart,
+			},
+			{
+				value: "bar",
+				label: "Grafico de barras",
+				description: "Barras verticais lado a lado",
+				icon: BarChart3,
+			},
+			{
+				value: "stacked_bar",
+				label: "Barras empilhadas",
+				description: "Barras verticais empilhadas",
+				icon: Layers,
+			},
+			{
+				value: "line_cumulative",
+				label: "Linha cumulativa",
+				description: "Valores acumulados",
+				icon: TrendingUp,
+			},
+		],
+	},
+	{
+		name: "Valor Total",
+		types: [
+			{
+				value: "stat_card",
+				label: "Numero",
+				description: "Valor total em destaque",
+				icon: Hash,
+			},
+			{
+				value: "pie",
+				label: "Grafico de pizza",
+				description: "Proporcoes como fatias",
+				icon: PieChart,
+			},
+			{
+				value: "bar_total",
+				label: "Barras horizontais",
+				description: "Totais como barras",
+				icon: BarChart3,
+			},
+			{
+				value: "table",
+				label: "Tabela",
+				description: "Dados em tabela",
+				icon: Table2,
+			},
+		],
+	},
+	{
+		name: "Visualizacoes",
+		types: [
+			{
+				value: "world_map",
+				label: "Mapa mundial",
+				description: "Valores por pais",
+				icon: Globe,
+			},
+			{
+				value: "sankey",
+				label: "Diagrama Sankey",
+				description: "Fluxo de valores",
+				icon: GitMerge,
+			},
+			{
+				value: "heatmap",
+				label: "Mapa de calor",
+				description: "Intensidade por periodo",
+				icon: Grid3X3,
+			},
+		],
+	},
+	{
+		name: "Analise",
+		types: [
+			{
+				value: "category_analysis",
+				label: "Por categoria",
+				description: "Comparacao entre categorias",
+				icon: Layers,
+			},
+			{
+				value: "comparison",
+				label: "Comparacao",
+				description: "Comparar periodos",
+				icon: Scale,
+			},
+		],
+	},
 ];
 
-const TIME_GROUPING_OPTIONS: Array<{
-	value: TimeGrouping;
-	label: string;
-}> = [
-	{ value: "day", label: "day" },
-	{ value: "week", label: "week" },
-	{ value: "month", label: "month" },
-	{ value: "quarter", label: "quarter" },
-	{ value: "year", label: "year" },
-];
-
-const DATE_RANGE_OPTIONS = [
-	{ value: "last_7_days", label: "Last 7 days" },
-	{ value: "last_30_days", label: "Last 30 days" },
-	{ value: "last_90_days", label: "Last 90 days" },
-	{ value: "this_month", label: "This month" },
-	{ value: "last_month", label: "Last month" },
-	{ value: "this_quarter", label: "This quarter" },
-	{ value: "this_year", label: "This year" },
-	{ value: "last_year", label: "Last year" },
-];
-
-const COMPARISON_OPTIONS = [
-	{ value: undefined, label: "No comparison" },
-	{ value: "previous_period", label: "vs previous period" },
-	{ value: "previous_year", label: "vs previous year" },
-];
-
-// Chart types available for each data source
 const CHART_TYPE_COMPATIBILITY: Record<DataSource, ChartType[]> = {
 	transactions: [
 		"line", "area", "bar", "stacked_bar", "line_cumulative",
 		"pie", "donut", "stat_card", "bar_total", "table",
-		"category_analysis", "comparison",
+		"category_analysis", "comparison", "sankey", "heatmap",
 	],
 	bills: [
 		"line", "area", "bar", "stacked_bar", "line_cumulative",
@@ -112,10 +182,30 @@ const CHART_TYPE_COMPATIBILITY: Record<DataSource, ChartType[]> = {
 	],
 };
 
+// Get icon for current chart type
+function getChartTypeIcon(chartType: ChartType) {
+	for (const category of CHART_CATEGORIES) {
+		const found = category.types.find((t) => t.value === chartType);
+		if (found) return found.icon;
+	}
+	return LineChart;
+}
+
+// Get label for current chart type
+function getChartTypeLabel(chartType: ChartType) {
+	for (const category of CHART_CATEGORIES) {
+		const found = category.types.find((t) => t.value === chartType);
+		if (found) return found.label;
+	}
+	return "Exibicao";
+}
+
 type WidgetConfigToolbarProps = {
 	config: InsightConfig;
 	onUpdateConfig: (updates: Partial<InsightConfig>) => void;
 	onOpenOptions: () => void;
+	onOpenFilters: () => void;
+	onSaveAsInsight: () => void;
 	isFullWidth: boolean;
 	onToggleWidth: () => void;
 	onRemove: () => void;
@@ -125,164 +215,119 @@ export function WidgetConfigToolbar({
 	config,
 	onUpdateConfig,
 	onOpenOptions,
+	onOpenFilters,
+	onSaveAsInsight,
 	isFullWidth,
 	onToggleWidth,
 	onRemove,
 }: WidgetConfigToolbarProps) {
-	const [dateRangeOpen, setDateRangeOpen] = useState(false);
-	const [timeGroupingOpen, setTimeGroupingOpen] = useState(false);
-	const [comparisonOpen, setComparisonOpen] = useState(false);
-	const [chartTypeOpen, setChartTypeOpen] = useState(false);
+	// Count active data filters
+	const activeFilterCount = config.filters?.length || 0;
 
-	const currentChartType = CHART_TYPE_OPTIONS.find((opt) => opt.value === config.chartType);
-	const currentTimeGrouping = TIME_GROUPING_OPTIONS.find((opt) => opt.value === config.timeGrouping);
-	const currentDateRange = DATE_RANGE_OPTIONS.find((opt) => opt.value === config.dateRangeOverride?.relativePeriod);
-	const currentComparison = COMPARISON_OPTIONS.find((opt) => opt.value === config.comparison?.type);
+	// Filter chart categories based on data source compatibility
+	const filteredCategories = useMemo(() => {
+		const dataSource = config.dataSource;
+		if (!dataSource) return CHART_CATEGORIES;
 
-	const allowedChartTypes = CHART_TYPE_COMPATIBILITY[config.dataSource] || [];
-	const filteredChartOptions = CHART_TYPE_OPTIONS.filter((opt) => allowedChartTypes.includes(opt.value));
+		const allowedTypes = CHART_TYPE_COMPATIBILITY[dataSource] || [];
+		return CHART_CATEGORIES
+			.map((category) => ({
+				...category,
+				types: category.types.filter((type) => allowedTypes.includes(type.value)),
+			}))
+			.filter((category) => category.types.length > 0);
+	}, [config.dataSource]);
 
-	// Check if time-based charts are available for this data source
-	const supportsTimeSeries = config.dataSource !== "bank_accounts";
+	const handleSelectChartType = (chartType: ChartType) => {
+		onUpdateConfig({ chartType });
+	};
+
+	const CurrentIcon = getChartTypeIcon(config.chartType);
 
 	return (
-		<div className="hidden md:flex items-center justify-between gap-2 px-4 py-2 border-b bg-muted/30">
-			{/* Left side: Drag handle, Date range, Time grouping, Comparison */}
+		<div className="hidden md:flex items-center justify-between gap-1.5 px-3 py-1.5 border-b bg-muted/30">
+			{/* Left side: Drag handle */}
 			<div className="flex items-center gap-1">
-				{/* Drag handle */}
-				<div className="drag-handle cursor-grab active:cursor-grabbing p-1 -ml-1 hover:bg-muted rounded">
+				<div className="drag-handle cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded">
 					<GripVertical className="h-4 w-4 text-muted-foreground" />
 				</div>
-
-				<div className="w-px h-4 bg-border mx-1" />
-
-				{/* Date Range */}
-				<Popover open={dateRangeOpen} onOpenChange={setDateRangeOpen}>
-					<PopoverTrigger asChild>
-						<Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs font-normal">
-							<Calendar className="h-3.5 w-3.5" />
-							{currentDateRange?.label || "Last 30 days"}
-							<ChevronDown className="h-3 w-3 opacity-50" />
-						</Button>
-					</PopoverTrigger>
-					<PopoverContent className="w-[200px] p-0" align="start">
-						<Command>
-							<CommandList>
-								<CommandGroup>
-									{DATE_RANGE_OPTIONS.map((option) => (
-										<CommandItem
-											key={option.value}
-											value={option.value}
-											onSelect={() => {
-												onUpdateConfig({
-													dateRangeOverride: { relativePeriod: option.value as NonNullable<InsightConfig["dateRangeOverride"]>["relativePeriod"] },
-												});
-												setDateRangeOpen(false);
-											}}
-										>
-											<Check
-												className={cn(
-													"mr-2 h-4 w-4",
-													config.dateRangeOverride?.relativePeriod === option.value
-														? "opacity-100"
-														: "opacity-0"
-												)}
-											/>
-											{option.label}
-										</CommandItem>
-									))}
-								</CommandGroup>
-							</CommandList>
-						</Command>
-					</PopoverContent>
-				</Popover>
-
-				{/* Time Grouping */}
-				{supportsTimeSeries && (
-					<Popover open={timeGroupingOpen} onOpenChange={setTimeGroupingOpen}>
-						<PopoverTrigger asChild>
-							<Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs font-normal">
-								<Clock className="h-3.5 w-3.5" />
-								<span className="text-muted-foreground">grouped by</span>
-								{currentTimeGrouping?.label || "month"}
-								<ChevronDown className="h-3 w-3 opacity-50" />
-							</Button>
-						</PopoverTrigger>
-						<PopoverContent className="w-[150px] p-0" align="start">
-							<Command>
-								<CommandList>
-									<CommandGroup>
-										{TIME_GROUPING_OPTIONS.map((option) => (
-											<CommandItem
-												key={option.value}
-												value={option.value}
-												onSelect={() => {
-													onUpdateConfig({ timeGrouping: option.value });
-													setTimeGroupingOpen(false);
-												}}
-											>
-												<Check
-													className={cn(
-														"mr-2 h-4 w-4",
-														config.timeGrouping === option.value
-															? "opacity-100"
-															: "opacity-0"
-													)}
-												/>
-												{option.label}
-											</CommandItem>
-										))}
-									</CommandGroup>
-								</CommandList>
-							</Command>
-						</PopoverContent>
-					</Popover>
-				)}
-
-				{/* Comparison */}
-				<Popover open={comparisonOpen} onOpenChange={setComparisonOpen}>
-					<PopoverTrigger asChild>
-						<Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs font-normal">
-							<Scale className="h-3.5 w-3.5" />
-							{currentComparison?.label || "No comparison"}
-							<ChevronDown className="h-3 w-3 opacity-50" />
-						</Button>
-					</PopoverTrigger>
-					<PopoverContent className="w-[200px] p-0" align="start">
-						<Command>
-							<CommandList>
-								<CommandGroup>
-									{COMPARISON_OPTIONS.map((option) => (
-										<CommandItem
-											key={option.value || "none"}
-											value={option.value || "none"}
-											onSelect={() => {
-												onUpdateConfig({
-													comparison: option.value ? { type: option.value as "previous_period" | "previous_year" } : undefined,
-												});
-												setComparisonOpen(false);
-											}}
-										>
-											<Check
-												className={cn(
-													"mr-2 h-4 w-4",
-													config.comparison?.type === option.value
-														? "opacity-100"
-														: "opacity-0"
-												)}
-											/>
-											{option.label}
-										</CommandItem>
-									))}
-								</CommandGroup>
-							</CommandList>
-						</Command>
-					</PopoverContent>
-				</Popover>
 			</div>
 
-			{/* Right side: Options, Chart type, Width toggle, Remove */}
+			{/* Right side: Display Type, Filters, Options, Save, Expand, Remove */}
 			<div className="flex items-center gap-1">
+				{/* Display Type Dropdown */}
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button
+							variant="ghost"
+							size="sm"
+							className="h-7 gap-1.5 px-2 text-xs"
+						>
+							<CurrentIcon className="h-3.5 w-3.5" />
+							<span className="max-w-24 truncate">{getChartTypeLabel(config.chartType)}</span>
+							<ChevronDown className="h-3 w-3 opacity-50" />
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="start" className="w-64">
+						{filteredCategories.map((category, categoryIndex) => (
+							<div key={category.name}>
+								{categoryIndex > 0 && <DropdownMenuSeparator />}
+								<DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">
+									{category.name}
+								</DropdownMenuLabel>
+								<DropdownMenuGroup>
+									{category.types.map((type) => {
+										const Icon = type.icon;
+										const isSelected = config.chartType === type.value;
+										return (
+											<DropdownMenuItem
+												key={type.value}
+												onClick={() => handleSelectChartType(type.value)}
+												className={cn(
+													"flex items-center gap-3 py-2 cursor-pointer",
+													isSelected && "bg-accent"
+												)}
+											>
+												<Icon className="h-4 w-4 shrink-0" />
+												<div className="flex flex-col flex-1 min-w-0">
+													<span className="text-sm font-medium">{type.label}</span>
+													<span className="text-xs text-muted-foreground truncate">
+														{type.description}
+													</span>
+												</div>
+												{isSelected && (
+													<Check className="h-4 w-4 text-primary shrink-0" />
+												)}
+											</DropdownMenuItem>
+										);
+									})}
+								</DropdownMenuGroup>
+							</div>
+						))}
+					</DropdownMenuContent>
+				</DropdownMenu>
+
+				{/* Filters */}
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							variant="ghost"
+							size="sm"
+							className="h-7 gap-1 px-2 text-xs"
+							onClick={onOpenFilters}
+						>
+							<Filter className="h-3.5 w-3.5" />
+							Filtros
+							{activeFilterCount > 0 && (
+								<Badge variant="secondary" className="h-4 min-w-4 px-1 text-[10px]">
+									{activeFilterCount}
+								</Badge>
+							)}
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Filtrar dados</TooltipContent>
+				</Tooltip>
+
 				{/* Options */}
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -295,52 +340,27 @@ export function WidgetConfigToolbar({
 							<Settings2 className="h-3.5 w-3.5" />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>Options</TooltipContent>
+					<TooltipContent>Opcoes</TooltipContent>
 				</Tooltip>
 
-				{/* Chart Type */}
-				<Popover open={chartTypeOpen} onOpenChange={setChartTypeOpen}>
-					<PopoverTrigger asChild>
-						<Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs font-normal">
-							{currentChartType && <currentChartType.icon className="h-3.5 w-3.5" />}
-							{currentChartType?.label || "Chart"}
-							<ChevronDown className="h-3 w-3 opacity-50" />
+				{/* Save as Insight */}
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-7 w-7"
+							onClick={onSaveAsInsight}
+						>
+							<Bookmark className="h-3.5 w-3.5" />
 						</Button>
-					</PopoverTrigger>
-					<PopoverContent className="w-[180px] p-0" align="end">
-						<Command>
-							<CommandList>
-								<CommandGroup>
-									{filteredChartOptions.map((option) => (
-										<CommandItem
-											key={option.value}
-											value={option.value}
-											onSelect={() => {
-												onUpdateConfig({ chartType: option.value });
-												setChartTypeOpen(false);
-											}}
-										>
-											<Check
-												className={cn(
-													"mr-2 h-4 w-4",
-													config.chartType === option.value
-														? "opacity-100"
-														: "opacity-0"
-												)}
-											/>
-											<option.icon className="mr-2 h-4 w-4" />
-											{option.label}
-										</CommandItem>
-									))}
-								</CommandGroup>
-							</CommandList>
-						</Command>
-					</PopoverContent>
-				</Popover>
+					</TooltipTrigger>
+					<TooltipContent>Salvar como Insight</TooltipContent>
+				</Tooltip>
 
-				<div className="w-px h-4 bg-border mx-1" />
+				<div className="w-px h-4 bg-border mx-0.5" />
 
-				{/* Width Toggle */}
+				{/* Expand/Collapse */}
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
@@ -356,7 +376,7 @@ export function WidgetConfigToolbar({
 							)}
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>{isFullWidth ? "Half width" : "Full width"}</TooltipContent>
+					<TooltipContent>{isFullWidth ? "Meia largura" : "Largura total"}</TooltipContent>
 				</Tooltip>
 
 				{/* Remove */}
@@ -371,7 +391,7 @@ export function WidgetConfigToolbar({
 							<Trash2 className="h-3.5 w-3.5" />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>Remove widget</TooltipContent>
+					<TooltipContent>Remover widget</TooltipContent>
 				</Tooltip>
 			</div>
 		</div>

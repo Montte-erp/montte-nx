@@ -83,7 +83,7 @@ function DashboardContent({ dashboardId }: { dashboardId: string }) {
 	const queryClient = useQueryClient();
 	const { openAlertDialog } = useAlertDialog();
 	const { updateTabName } = useDashboardTabs();
-	const { drillDown } = useInsightDrillDown(dashboardId);
+	const { drillDown } = useInsightDrillDown();
 	const { openCredenza } = useCredenza();
 
 	const queryOptions = trpc.dashboards.getById.queryOptions({ id: dashboardId });

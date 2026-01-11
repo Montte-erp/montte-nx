@@ -188,13 +188,13 @@ export function ComparisonChart({
 							<Bar
 								dataKey="current"
 								name="Current Period"
-								fill="#8884d8"
+								fill="hsl(var(--chart-1))"
 								radius={[4, 4, 0, 0]}
 							/>
 							<Bar
 								dataKey="previous"
 								name={comparisonLabel}
-								fill="#82ca9d"
+								fill="hsl(var(--chart-2))"
 								radius={[4, 4, 0, 0]}
 							/>
 						</BarChart>
@@ -225,7 +225,7 @@ export function ComparisonChart({
 								{chartData.map((_, index) => (
 									<Cell
 										key={`cell-${index + 1}`}
-										fill={index === 0 ? "#8884d8" : "#82ca9d"}
+										fill={index === 0 ? "hsl(var(--chart-1))" : "hsl(var(--chart-2))"}
 									/>
 								))}
 							</Bar>

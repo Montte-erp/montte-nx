@@ -9,7 +9,6 @@ import {
 import {
    BarChart3,
    CalendarCheck,
-   Code,
    Menu,
    PiggyBank,
    Receipt,
@@ -23,7 +22,6 @@ const productIcons: Record<string, typeof Receipt> = {
    "/features/bill-tracking": CalendarCheck,
    "/features/budgeting": PiggyBank,
    "/features/collaboration": Users,
-   "/features/open-source": Code,
    "/features/smart-transactions": Receipt,
 };
 

@@ -11,7 +11,6 @@ import { cn } from "@packages/ui/lib/utils";
 import {
    BarChart3,
    CalendarCheck,
-   Code,
    PiggyBank,
    Receipt,
    Users,
@@ -28,7 +27,6 @@ const productIcons: Record<string, typeof Receipt> = {
    "/features/bill-tracking": CalendarCheck,
    "/features/budgeting": PiggyBank,
    "/features/collaboration": Users,
-   "/features/open-source": Code,
    "/features/smart-transactions": Receipt,
 };
 
@@ -73,9 +71,7 @@ function ListItem({
    );
 }
 
-export const NavMenu = ({
-   orientation = "horizontal",
-}: NavMenuProps) => {
+export const NavMenu = ({ orientation = "horizontal" }: NavMenuProps) => {
    return (
       <NavigationMenu
          className={orientation === "vertical" ? "flex-col items-start" : ""}

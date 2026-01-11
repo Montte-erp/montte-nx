@@ -2,18 +2,16 @@
 export const prerender = true;
 
 import StickyNavbar from "@/components/StickyNavbar.astro";
-import SocialProof from "@/components/social-proof";
 import Layout from "@/layouts/Landing.astro";
-import Analytics from "@/sections/Analytics.astro";
-import BillTracking from "@/sections/BillTracking.astro";
-import Budgeting from "@/sections/Budgeting.astro";
-import Comparison from "@/sections/Comparison.astro";
-import CTA from "@/sections/CTA.astro";
-import Footer from "@/sections/Footer.astro";
-import Hero from "@/sections/Hero.astro";
-import OpenSourceShowcase from "@/sections/OpenSourceShowcase.astro";
-import Showcase from "@/sections/Showcase.astro";
-import Workspaces from "@/sections/Workspaces.astro";
+import Analytics from "@/sections/home/Analytics.astro";
+import BillTracking from "@/sections/home/BillTracking.astro";
+import Budgeting from "@/sections/home/Budgeting.astro";
+import CTA from "@/components/CTA.astro";
+import Footer from "@/components/Footer.astro";
+import Hero from "@/sections/home/HomeHero.astro";
+import Showcase from "@/sections/home/Showcase.astro";
+import Workspaces from "@/sections/home/Workspaces.astro";
+import { Separator } from "@packages/ui/components/separator";
 ---
 
 <Layout>
@@ -21,14 +19,15 @@ import Workspaces from "@/sections/Workspaces.astro";
       <StickyNavbar />
       <Hero />
       <Showcase />
+<Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
       <BillTracking />
+<Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
       <Workspaces />
+<Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
       <Budgeting />
+<Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
       <Analytics />
-      <OpenSourceShowcase />
-      <Comparison />
-      <CTA />
-      <SocialProof client:visible />
+      <CTA title={["Suas finanças", "Sob controle total"]} buttonText="Começar Grátis" />
       <Footer />
    </div>
 </Layout>

@@ -173,15 +173,6 @@ export const getAuthOptions = (
                   },
                   {
                      annualDiscountPriceId:
-                        serverEnv.STRIPE_SHARED_ANNUAL_PRICE_ID,
-                     freeTrial: {
-                        days: 14,
-                     },
-                     name: PlanName.SHARED,
-                     priceId: serverEnv.STRIPE_SHARED_PRICE_ID,
-                  },
-                  {
-                     annualDiscountPriceId:
                         serverEnv.STRIPE_ERP_ANNUAL_PRICE_ID,
                      freeTrial: {
                         days: 7,

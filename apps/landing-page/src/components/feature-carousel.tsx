@@ -2,6 +2,7 @@
 
 import { Button } from "@packages/ui/components/button";
 import { cn } from "@packages/ui/lib/utils";
+import Autoplay from "embla-carousel-autoplay";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -33,11 +34,14 @@ export function FeatureCarousel({
    benefitStatement,
    items,
 }: FeatureCarouselProps) {
-   const [emblaRef, emblaApi] = useEmblaCarousel({
-      align: "start",
-      containScroll: "trimSnaps",
-      dragFree: true,
-   });
+   const [emblaRef, emblaApi] = useEmblaCarousel(
+      {
+         align: "start",
+         containScroll: "trimSnaps",
+         dragFree: true,
+      },
+      [Autoplay({ delay: 4000, stopOnInteraction: false })],
+   );
 
    const [canScrollPrev, setCanScrollPrev] = useState(false);
    const [canScrollNext, setCanScrollNext] = useState(true);
@@ -73,15 +77,19 @@ export function FeatureCarousel({
             <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                <div className="space-y-4">
                   {label && (
-                     <span className="text-sm font-medium uppercase tracking-wider text-primary">
+                     <span className=" text-primary text-sm  uppercase font-bold text-center tracking-widest">
                         {label}
                      </span>
                   )}
-                  <h2 className="text-2xl font-semibold md:text-3xl lg:text-4xl">
+                  <h2 className="font-medium text-3xl md:text-4xl leading-tight tracking-tight">
                      {title}
                   </h2>
                   {description && (
-                     <p className="max-w-2xl text-lg text-muted-foreground">
+                     <p
+                        className="
+      sm:text-xl  max-w-sm sm:max-w-xl text-foreground/70
+"
+                     >
                         {description}
                      </p>
                   )}

@@ -3,116 +3,67 @@ export const prerender = true;
 
 import {
    ArrowRight,
-   BarChart3,
-   Bell,
    Calendar,
-   Check,
-   ChevronDown,
    ChevronRight,
-   Github,
-   Layers,
-   LineChart,
-   PiggyBank,
-   RefreshCw,
-   Shield,
-   Smartphone,
-   Target,
    TrendingUp,
-   Users,
-   Wallet,
-   Zap,
+   PiggyBank,
+   Gauge,
+   CreditCard,
 } from "@lucide/astro";
 import { Button } from "@packages/ui/components/button";
-import LogoCloud from "@/components/LogoCloud.astro";
 import StickyNavbar from "@/components/StickyNavbar.astro";
 import Layout from "@/layouts/Landing.astro";
-import Footer from "@/sections/Footer.astro";
+import Footer from "@/components/Footer.astro";
+
+const features = [
+   {
+      title: "Orcamentos por Periodo",
+      description: "Crie orcamentos diarios, semanais, mensais, trimestrais ou anuais. Defina limites de gastos por categoria e acompanhe o progresso.",
+      icon: Calendar,
+   },
+   {
+      title: "Progresso em Tempo Real",
+      description: "Visualize quanto ja gastou versus o planejado. Barras de progresso coloridas indicam quando voce esta proximo do limite.",
+      icon: TrendingUp,
+   },
+   {
+      title: "Metas de Poupanca",
+      description: "Defina metas de economia e acompanhe sua evolucao. Veja quanto falta para atingir seu objetivo financeiro.",
+      icon: PiggyBank,
+   },
+   {
+      title: "Limite de Gastos",
+      description: "Estabeleca tetos de despesas por categoria. Receba alertas visuais quando estiver proximo de estourar o orcamento.",
+      icon: Gauge,
+   },
+   {
+      title: "Quitacao de Dividas",
+      description: "Crie metas para quitar dividas e acompanhe o progresso. Visualize quanto ja pagou e quanto falta para ficar livre.",
+      icon: CreditCard,
+   },
+];
 
 const relatedFeatures = [
    {
-      description: "Capture transacoes com IA e automacao",
-      href: "/features/smart-transactions",
-      title: "Transacoes Inteligentes",
-   },
-   {
-      description: "Acompanhe contas a pagar e receber",
-      href: "/features/bill-tracking",
-      title: "Gestao de Contas",
-   },
-   {
-      description: "Paineis e relatorios em tempo real",
+      title: "Insights e Analises",
+      description: "Dashboards e graficos interativos",
       href: "/features/analytics",
-      title: "Analises Financeiras",
    },
    {
-      description: "Gerencie financas em equipe",
-      href: "/features/collaboration",
+      title: "Gestao de Transacoes",
+      description: "Registre e categorize transacoes",
+      href: "/features/smart-transactions",
+   },
+   {
+      title: "Contas a Pagar",
+      description: "Controle seu fluxo de caixa",
+      href: "/features/bill-tracking",
+   },
+   {
       title: "Colaboracao",
+      description: "Trabalhe em equipe",
+      href: "/features/collaboration",
    },
-];
-
-const testimonials = [
-   {
-      avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Juliana",
-      name: "Juliana K.",
-      quote: "Ja testei 5 apps de orcamento. Nenhum funcionou ate o Montte. As barras de progresso sao satisfatorias, e adoro ver as previsoes. Finalmente estou batendo minhas metas.",
-      role: "Usuaria Individual",
-      tag: "Financas Pessoais",
-   },
-   {
-      avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Andre",
-      name: "Andre & Marina",
-      quote: "Meu parceiro e eu conseguimos ver o mesmo orcamento e trabalhar juntos nas nossas metas. Acabaram os gastos 'surpresa'. Transparencia total.",
-      role: "Casal",
-      tag: "Compartilhado",
-   },
-   {
-      avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Carlos",
-      name: "Carlos L.",
-      quote: "Fazemos orcamento por projeto. O Montte facilita ver quais sao lucrativos e quais estao comendo a margem. Mudou nossa precificacao.",
-      role: "Dono de Estudio",
-      tag: "Pequena Empresa",
-   },
-];
-
-const faqs = [
-   {
-      question: "Posso ajustar um orcamento no meio do mes?",
-      answer:
-         "Sim. Altere a meta a qualquer momento. O Montte recalcula instantaneamente e atualiza suas previsoes.",
-   },
-   {
-      question: "O que acontece se eu estourar o orcamento?",
-      answer:
-         "Voce recebe um alerta, mas nao fica bloqueado. O Montte rastreia a variacao e mostra o motivo do estouro.",
-   },
-   {
-      question: "Posso ter multiplos orcamentos para a mesma categoria?",
-      answer:
-         "Sim. Crie orcamentos separados como 'Mercado: R$ 300' e 'Restaurantes: R$ 150' dentro de Alimentacao.",
-   },
-   {
-      question: "Como funciona o saldo acumulado?",
-      answer:
-         "No fim do mes, se voce tiver R$ 50 de orcamento nao usado, ele passa para o proximo mes (se ativado). Voce tera R$ 350 para gastar no proximo mes.",
-   },
-   {
-      question: "Posso ver orcamentos de meses anteriores?",
-      answer:
-         "Sim. Veja orcado vs realizado de qualquer mes passado. Compare tendencias e evolucao ao longo do tempo.",
-   },
-   {
-      question: "O Montte preve variacoes sazonais?",
-      answer:
-         "Sim. Se seus gastos de dezembro sao historicamente maiores, a previsao considera isso automaticamente.",
-   },
-];
-
-const comparisonData = [
-   { name: "Montte", price: "Gratis", highlight: true, width: "10%" },
-   { name: "YNAB", price: "R$ 75/mes", width: "45%" },
-   { name: "Mobills", price: "R$ 30/mes", width: "25%" },
-   { name: "Organizze", price: "R$ 25/mes", width: "22%" },
 ];
 ---
 
@@ -121,574 +72,55 @@ const comparisonData = [
       <StickyNavbar />
 
       <!-- Hero Section -->
-      <section class="relative mx-auto max-w-[1888px] w-full">
-         <div class="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
-
-         <div class="container px-4 sm:px-6 pt-32 pb-10 md:pb-0 mx-auto flex flex-col items-center relative z-10">
-            <h1 class="mt-5 md:mt-8 font-medium text-center text-[36px] md:text-[66px] max-w-[360px] md:max-w-[700px] leading-[110%] pb-2">
-               <span class="bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-transparent">
-                  Orcamentos que
-               </span>
-               <span class="bg-linear-to-r from-primary via-chart-2 to-chart-3 bg-clip-text text-transparent">
-                  {" "}realmente funcionam
-               </span>
-            </h1>
-            <p class="mt-3 md:mt-5 text-center text-muted-foreground md:text-[20px] leading-[140%] max-w-[500px]">
-               Defina metas. Acompanhe progresso em tempo real. Receba alertas antes de estourar. Open source e gratis para sempre.
-            </p>
-
-            <div class="px-3 sm:px-0">
-               <div class="mt-10 w-full sm:w-auto">
-                  <div class="flex flex-col sm:flex-row gap-3 items-center">
-                     <a href="/signup" class="w-full max-w-[316px] sm:max-w-none sm:w-auto">
-                        <Button size="lg" className="group relative overflow-hidden rounded-xl h-12 px-8 w-full sm:w-[220px] font-medium">
-                           <span>Comece em 2 minutos</span>
-                           <ArrowRight class="size-4 transition-transform duration-300 group-hover:translate-x-1" />
-                        </Button>
-                     </a>
-                     <a href="https://github.com/montte/montte" target="_blank" rel="noopener noreferrer" class="w-full max-w-[316px] sm:max-w-none sm:w-auto">
-                        <Button variant="outline" size="lg" className="rounded-xl h-12 px-6 gap-2 w-full sm:w-auto border-border/20 bg-muted/10 backdrop-blur-2xl">
-                           <Github class="size-5" />
-                           Auto-Hospedagem
-                        </Button>
-                     </a>
-                  </div>
-
-                  <p class="mt-5 pb-2 text-muted-foreground text-sm sm:text-base text-center">
-                     Precisa de ajuda para configurar?{" "}
-                     <a class="text-foreground underline underline-offset-4 transition decoration-primary/20 hover:decoration-primary" href="/book-demo">
-                        Agende uma demonstracao
-                     </a>
-                  </p>
-               </div>
-            </div>
-         </div>
-
-         <!-- Hero Image -->
-         <div class="mt-10 mx-auto flex justify-center max-w-[1700px] sm:-mb-10">
-            <img
-               width="393"
-               height="596"
-               class="w-full sm:hidden -mt-14 -mb-24"
-               alt="Dashboard de orcamentos no mobile"
-               src="https://placehold.co/393x596/0f0f23/22c55e?text=Budget+Mobile"
-               loading="eager"
-            />
-            <img
-               width="1730"
-               height="662"
-               class="hidden sm:block max-w-[800px] md:max-w-[1200px] lg:max-w-none"
-               alt="Dashboard de orcamentos do Montte"
-               src="https://placehold.co/1730x662/0f0f23/22c55e?text=Budget+Dashboard"
-               loading="eager"
-            />
-         </div>
-      </section>
-
-      <!-- Logo Cloud -->
-      <section class="relative mt-4 -mb-20 flex flex-col items-center overflow-hidden">
-         <div class="mx-auto max-w-[1684px]">
-            <p class="mb-4 md:mb-10 text-muted-foreground text-center text-base md:text-lg max-w-[200px] sm:max-w-none">
-               Utilizado por familias e equipes em todo Brasil
-            </p>
-         </div>
-         <div class="w-full max-w-[600px] mx-auto px-4">
-            <LogoCloud client:load />
-         </div>
-      </section>
-
-      <!-- Feature 1: Smart Budget Creation -->
-      <section class="mt-32 relative z-10 container mx-auto scroll-mt-32 px-4 sm:px-6" id="create-budget">
-         <div class="mx-auto flex flex-col items-center">
-            <h2 class="mt-2 pb-2 bg-linear-to-r from-foreground to-foreground/70 bg-clip-text text-transparent font-bold text-center text-[28px] md:text-[40px] leading-[108%] max-w-[600px]">
-               Crie orcamentos em segundos. Ajuste a qualquer momento.
-            </h2>
-            <p class="mt-3 text-muted-foreground text-center max-w-[450px] tracking-[-0.01em]">
-               Configure por categoria, tag ou projeto. Defina valores fixos ou percentuais da renda. Tudo visual e intuitivo.
-            </p>
-            <a class="mt-5 px-4 py-2 flex items-center gap-2 text-sm rounded-full border border-border/20 bg-card text-muted-foreground hover:text-foreground hover:border-border/40 transition-colors" href="#progress-tracking">
-               Ver acompanhamento em tempo real
-               <ChevronRight class="w-3 h-3" />
-            </a>
-         </div>
-
-         <div class="mt-12 mx-auto relative flex flex-col md:flex-row max-w-[900px] gap-6">
-            <!-- Left Column -->
-            <div class="flex-1 mt-10 md:mt-0 sm:w-[470px]">
-               <div class="relative rounded-xl border border-border/20 bg-card overflow-hidden">
-                  <img
-                     width="687"
-                     height="500"
-                     alt="Interface de criacao de orcamentos"
-                     class="w-full"
-                     src="https://placehold.co/687x500/0f0f23/22c55e?text=Budget+Creation+UI"
-                     loading="lazy"
-                  />
-               </div>
-               <div class="mt-8 md:mt-12">
-                  <h3 class="text-foreground font-bold text-[18px] md:text-[28px] leading-[117%]">
-                     Multiplas dimensoes de orcamento
-                  </h3>
-                  <p class="mt-3 text-base text-muted-foreground md:text-lg max-w-[380px]">
-                     Orcamentos por categoria, tag, projeto ou combinacoes aninhadas. Flexibilidade total para seu estilo de vida.
-                  </p>
-               </div>
-            </div>
-
-            <!-- Right Column -->
-            <div class="flex-1 mt-8 md:mt-0 sm:w-[470px] space-y-6">
-               <div class="relative p-6 md:p-8 rounded-xl border overflow-hidden border-border/20 bg-card">
-                  <div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-                  <div class="relative z-10">
-                     <div class="flex items-center gap-3 mb-4">
-                        <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
-                           <Calendar class="w-5 h-5 text-primary" />
-                        </div>
-                        <h4 class="text-foreground font-medium">Periodos flexiveis</h4>
-                     </div>
-                     <p class="text-muted-foreground">
-                        Mensal, trimestral, anual ou personalizado. O Montte se adapta ao seu ciclo financeiro.
-                     </p>
-                  </div>
-               </div>
-
-               <div class="relative p-6 md:p-8 rounded-xl border overflow-hidden border-border/20 bg-card">
-                  <div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-                  <div class="relative z-10">
-                     <div class="flex items-center gap-3 mb-4">
-                        <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
-                           <Target class="w-5 h-5 text-primary" />
-                        </div>
-                        <h4 class="text-foreground font-medium">Metas dinamicas</h4>
-                     </div>
-                     <p class="text-muted-foreground">
-                        Defina metas em reais ou percentuais. Se sua renda mudar, o orcamento ajusta automaticamente.
-                     </p>
-                  </div>
-               </div>
-            </div>
-         </div>
-
-         <!-- Feature Points Grid -->
-         <div class="container mx-auto mt-16 md:mt-28 flex flex-col md:flex-row justify-center items-center md:items-start gap-12 md:gap-16">
-            <div class="flex-1 max-w-[290px] text-center md:text-left">
-               <div class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 mb-4">
-                  <Layers class="w-5 h-5 text-primary" />
-               </div>
-               <p class="text-foreground font-medium">Categorias aninhadas</p>
-               <p class="mt-2 text-base text-muted-foreground">
-                  Alimentacao > Mercado > Hortifruti. Organize seus gastos com a granularidade que precisar.
-               </p>
-            </div>
-            <div class="flex-1 max-w-[290px] text-center md:text-left">
-               <div class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 mb-4">
-                  <RefreshCw class="w-5 h-5 text-primary" />
-               </div>
-               <p class="text-foreground font-medium">Saldo acumulado</p>
-               <p class="mt-2 text-base text-muted-foreground">
-                  Orcamento nao usado passa para o proximo mes. Economize em fevereiro, gaste mais em marco.
-               </p>
-            </div>
-            <div class="flex-1 max-w-[290px] text-center md:text-left">
-               <div class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 mb-4">
-                  <Users class="w-5 h-5 text-primary" />
-               </div>
-               <p class="text-foreground font-medium">Orcamentos compartilhados</p>
-               <p class="mt-2 text-base text-muted-foreground">
-                  Casais e familias veem o mesmo orcamento. Transparencia total, sem surpresas.
-               </p>
-            </div>
-         </div>
-
-         <hr class="mt-24 md:mt-36 border-t border-border/20" />
-      </section>
-
-      <!-- Feature 2: Real-time Progress Tracking -->
-      <section class="mt-24 md:mt-32 relative z-10 container mx-auto px-4 sm:px-6" id="progress-tracking">
-         <div class="mx-auto flex flex-col items-center">
-            <h2 class="mt-2 pb-2 bg-linear-to-r from-foreground to-foreground/70 bg-clip-text text-transparent font-bold text-center text-[28px] md:text-[40px] leading-[108%] max-w-[650px]">
-               Acompanhe seu progresso visualmente. Em tempo real.
-            </h2>
-            <p class="mt-3 text-muted-foreground text-center max-w-[480px] tracking-[-0.01em]">
-               Barras de progresso satisfatorias, dias restantes e projecoes automaticas. Saiba exatamente onde voce esta.
-            </p>
-            <a class="mt-5 px-4 py-2 flex items-center gap-2 text-sm rounded-full border border-border/20 bg-card text-muted-foreground hover:text-foreground hover:border-border/40 transition-colors" href="#alerts">
-               Ver alertas inteligentes
-               <ChevronRight class="w-3 h-3" />
-            </a>
-         </div>
-
-         <div class="mt-12 mx-auto relative flex flex-col md:flex-row max-w-[900px] gap-6">
-            <!-- Left Column -->
-            <div class="flex-1 sm:w-[470px]">
-               <div class="relative rounded-xl border border-border/20 bg-card overflow-hidden">
-                  <img
-                     width="687"
-                     height="500"
-                     alt="Barras de progresso de orcamento"
-                     class="w-full"
-                     src="https://placehold.co/687x500/0f0f23/22c55e?text=Progress+Bars"
-                     loading="lazy"
-                  />
-               </div>
-               <div class="mt-8 md:mt-12">
-                  <h3 class="text-foreground font-bold text-[18px] md:text-[28px] leading-[117%]">
-                     Visualizacao que motiva
-                  </h3>
-                  <p class="mt-3 text-base text-muted-foreground md:text-lg max-w-[380px]">
-                     Barras coloridas mostram quanto voce gastou vs quanto pode gastar. Verde quando esta bem, amarelo quando precisa cuidar.
-                  </p>
-               </div>
-            </div>
-
-            <!-- Right Column -->
-            <div class="flex-1 mt-8 md:mt-0 sm:w-[470px] space-y-6">
-               <div class="relative p-6 md:p-8 rounded-xl border overflow-hidden border-border/20 bg-card">
-                  <div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-                  <div class="relative z-10">
-                     <div class="flex items-center gap-3 mb-4">
-                        <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
-                           <LineChart class="w-5 h-5 text-primary" />
-                        </div>
-                        <h4 class="text-foreground font-medium">Previsoes precisas</h4>
-                     </div>
-                     <p class="text-muted-foreground">
-                        Com base no seu ritmo de gastos, o Montte projeta se voce vai estourar ou sobrar no fim do mes.
-                     </p>
-                  </div>
-               </div>
-
-               <div class="relative p-6 md:p-8 rounded-xl border overflow-hidden border-border/20 bg-card">
-                  <div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-                  <div class="relative z-10">
-                     <div class="flex items-center gap-3 mb-4">
-                        <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
-                           <TrendingUp class="w-5 h-5 text-primary" />
-                        </div>
-                        <h4 class="text-foreground font-medium">Analise de tendencias</h4>
-                     </div>
-                     <p class="text-muted-foreground">
-                        Media movel, padroes sazonais e comparacao ano a ano. Entenda como seus gastos evoluem.
-                     </p>
-                  </div>
-               </div>
-            </div>
-         </div>
-      </section>
-
-      <!-- Feature 3: Smart Alerts -->
-      <div class="container mx-auto mt-24 md:mt-32 px-4 border-t border-border/20"></div>
-      <section class="mt-24 md:mt-32 relative z-10 container mx-auto px-4 sm:px-6" id="alerts">
-         <div class="mx-auto flex flex-col items-center">
-            <h2 class="mt-2 pb-2 bg-linear-to-r from-foreground to-foreground/70 bg-clip-text text-transparent font-bold text-center text-[28px] md:text-[40px] leading-[108%]">
-               Alertas antes de estourar
-            </h2>
-            <p class="mt-3 text-muted-foreground text-center max-w-[480px] tracking-[-0.01em]">
-               Receba notificacoes em 75%, 90% e quando atingir 100%. Nunca mais seja pego de surpresa.
-            </p>
-         </div>
-
-         <div class="mt-12 mx-auto relative flex flex-col md:flex-row max-w-[900px] gap-6">
-            <!-- Left Column -->
-            <div class="flex-1 sm:w-[470px]">
-               <div class="relative rounded-xl border border-border/20 bg-card overflow-hidden">
-                  <img
-                     width="687"
-                     height="500"
-                     alt="Sistema de alertas de orcamento"
-                     class="w-full"
-                     src="https://placehold.co/687x500/0f0f23/22c55e?text=Budget+Alerts"
-                     loading="lazy"
-                  />
-               </div>
-               <div class="mt-8 md:mt-12">
-                  <h3 class="text-foreground font-bold text-[18px] md:text-[28px] leading-[117%]">
-                     Limiares personalizaveis
-                  </h3>
-                  <p class="mt-3 text-base text-muted-foreground md:text-lg max-w-[380px]">
-                     Configure alertas em 50%, 80% ou qualquer valor. Escolha receber por email, push ou ambos.
-                  </p>
-               </div>
-            </div>
-
-            <!-- Right Column -->
-            <div class="flex-1 mt-8 md:mt-0 sm:w-[470px] space-y-6">
-               <div class="relative p-6 md:p-8 rounded-xl border overflow-hidden border-border/20 bg-card">
-                  <div class="absolute inset-0 bg-gradient-to-br from-chart-4/10 to-transparent pointer-events-none" />
-                  <div class="relative z-10">
-                     <div class="flex items-center gap-3 mb-4">
-                        <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-chart-4/20">
-                           <Bell class="w-5 h-5 text-chart-4" />
-                        </div>
-                        <h4 class="text-foreground font-medium">Notificacoes multicanal</h4>
-                     </div>
-                     <p class="text-muted-foreground">
-                        E-mail, push no celular ou notificacao no app. Voce escolhe como quer ser avisado.
-                     </p>
-                  </div>
-               </div>
-
-               <div class="relative p-6 md:p-8 rounded-xl border overflow-hidden border-border/20 bg-card">
-                  <div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-                  <div class="relative z-10">
-                     <div class="flex items-center gap-3 mb-4">
-                        <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
-                           <BarChart3 class="w-5 h-5 text-primary" />
-                        </div>
-                        <h4 class="text-foreground font-medium">Detalhamento do estouro</h4>
-                     </div>
-                     <p class="text-muted-foreground">
-                        Quando estourar, veja exatamente quais transacoes causaram. Entenda o motivo e ajuste.
-                     </p>
-                  </div>
-               </div>
-            </div>
-         </div>
-      </section>
-
-      <!-- Cost Comparison Section -->
-      <section class="mt-32 md:mt-48 pb-16 md:pb-32 relative z-10 container mx-auto px-4 max-w-[1097px]">
-         <div class="mx-auto flex gap-x-16 xl:gap-x-20 flex-col lg:flex-row md:items-start md:justify-between gap-y-10">
-            <div class="max-lg:w-full">
-               <div class="flex flex-col max-lg:text-center max-lg:items-center">
-                  <h2 class="mt-2 lg:mt-10 pb-2 bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-transparent font-bold text-[28px] md:text-[36px] leading-[108%] sm:max-w-[300px]">
-                     Economize muito mais do que imagina
-                  </h2>
-                  <p class="mt-3 text-muted-foreground sm:max-w-[314px] tracking-[-0.01em] leading-[145%]">
-                     O Montte e 100% gratuito e open source. Sem assinaturas. Sem custos ocultos. Para sempre.
-                  </p>
-                  <div class="mt-6">
-                     <a class="inline-flex items-center justify-center bg-card border border-border/30 rounded-full text-muted-foreground px-3 text-sm h-9 hover:text-foreground group" href="/pricing">
-                        <span class="leading-[100%]">Ver comparativo completo</span>
-                        <ChevronRight class="ml-1.5 mt-px w-3 h-3 group-hover:text-foreground" />
-                     </a>
-                  </div>
-                  <div class="mt-10 flex gap-x-14 gap-x-16 border-t pt-4 w-full border-border/30 max-lg:max-w-[400px] text-start max-lg:justify-center">
-                     <div class="flex flex-col gap-y-1">
-                        <p class="text-muted-foreground text-sm leading-[145%]">Economize ate</p>
-                        <p class="text-[28px] text-foreground font-bold leading-[117%]">R$ 900/ano</p>
-                        <p class="text-muted-foreground text-sm leading-[145%]">vs apps pagos</p>
-                     </div>
-                     <div class="flex flex-col gap-y-1">
-                        <p class="text-muted-foreground text-sm leading-[145%]">ou</p>
-                        <p class="text-[28px] text-foreground font-bold leading-[117%]">100%</p>
-                        <p class="text-muted-foreground text-sm leading-[145%]">dos custos</p>
-                     </div>
-                  </div>
-               </div>
-            </div>
-
-            <div class="border flex-1 border-border/30 rounded-[26px] p-2.5 w-full lg:max-w-[550px]">
-               <div class="border rounded-t-xl bg-card border-border/30 w-full overflow-hidden">
-                  <div class="px-5 py-4 bg-muted/30 text-base leading-[145%] text-foreground font-medium">
-                     <p>Custo anual para gerenciar orcamentos pessoais</p>
-                  </div>
-               </div>
-               <div class="rounded-b-xl border border-border/30 bg-card border-t-0 flex flex-col">
-                  {comparisonData.map((item) => (
-                     <div class="py-4 not-last:border-b border-border/30">
-                        <div class="px-6 space-y-3">
-                           <div class="flex items-center w-full justify-between">
-                              <div class="flex items-center gap-x-2">
-                                 {item.highlight ? (
-                                    <div class="w-5 h-5 rounded-full flex items-center justify-center bg-linear-to-r from-primary to-chart-2 shrink-0">
-                                       <Check class="w-3 h-3 text-primary-foreground" />
-                                    </div>
-                                 ) : (
-                                    <div class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-muted">
-                                       <Wallet class="w-3 h-3 text-muted-foreground" />
-                                    </div>
-                                 )}
-                                 <span class="font-medium text-foreground leading-[145%] tracking-[-0.16px]">{item.name}</span>
-                              </div>
-                              <div class="text-muted-foreground flex gap-x-1 items-center max-md:hidden">
-                                 <p class={`font-bold text-base tracking-[-0.16px] ${item.highlight ? 'text-primary' : 'text-foreground'}`}>{item.price}</p>
-                              </div>
-                           </div>
-                           <div class={`h-3 rounded-sm ${item.highlight ? 'bg-linear-to-r from-primary to-chart-2' : 'border bg-muted/30 border-border/30'}`} style={`width: ${item.width}`}></div>
-                           <div class="text-muted-foreground flex gap-x-1 items-center md:hidden -mt-1.5">
-                              <p class={`font-bold text-base tracking-[-0.16px] ${item.highlight ? 'text-primary' : 'text-foreground'}`}>{item.price}</p>
-                           </div>
-                        </div>
-                     </div>
-                  ))}
-               </div>
-            </div>
-         </div>
-      </section>
-
-      <!-- Use Cases Section -->
-      <div class="container mx-auto px-4 border-t border-border/20"></div>
-      <section class="mt-16 md:mt-24 pb-16 relative z-10 container mx-auto px-4" id="use-cases">
-         <div class="mx-auto flex flex-col items-center">
-            <h2 class="mt-2 pb-2 bg-gradient-to-b from-foreground to-muted-foreground bg-clip-text text-transparent font-bold text-center text-[28px] md:text-[36px] leading-[108%]">
-               Perfeito para diferentes perfis
-            </h2>
-            <p class="mt-3 text-muted-foreground text-center max-w-[500px]">
-               De financas pessoais a pequenos negocios, o Montte se adapta ao seu contexto.
-            </p>
-         </div>
-
-         <div class="mt-14 grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-[1000px] mx-auto">
-            <div class="relative rounded-xl border overflow-hidden border-border/20 bg-card p-6">
-               <div class="flex items-center gap-2 mb-3">
-                  <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                     <Wallet class="w-5 h-5 text-primary" />
-                  </div>
-               </div>
-               <h4 class="text-foreground font-semibold">Financas pessoais</h4>
-               <p class="mt-2 text-muted-foreground text-sm">
-                  Controle individual com metas de economia e investimento.
-               </p>
-               <div class="mt-4 flex flex-wrap gap-2">
-                  <span class="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground">Assalariados</span>
-                  <span class="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground">Freelancers</span>
-               </div>
-            </div>
-
-            <div class="relative rounded-xl border overflow-hidden border-border/20 bg-card p-6">
-               <div class="flex items-center gap-2 mb-3">
-                  <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                     <Users class="w-5 h-5 text-primary" />
-                  </div>
-               </div>
-               <h4 class="text-foreground font-semibold">Familias</h4>
-               <p class="mt-2 text-muted-foreground text-sm">
-                  Orcamentos compartilhados com visibilidade total para todos.
-               </p>
-               <div class="mt-4 flex flex-wrap gap-2">
-                  <span class="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground">Casais</span>
-                  <span class="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground">Roommates</span>
-               </div>
-            </div>
-
-            <div class="relative rounded-xl border overflow-hidden border-border/20 bg-card p-6">
-               <div class="flex items-center gap-2 mb-3">
-                  <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                     <BarChart3 class="w-5 h-5 text-primary" />
-                  </div>
-               </div>
-               <h4 class="text-foreground font-semibold">Pequenos negocios</h4>
-               <p class="mt-2 text-muted-foreground text-sm">
-                  Orcamento por projeto para entender lucratividade.
-               </p>
-               <div class="mt-4 flex flex-wrap gap-2">
-                  <span class="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground">MEIs</span>
-                  <span class="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground">Startups</span>
-               </div>
-            </div>
-
-            <div class="relative rounded-xl border overflow-hidden border-border/20 bg-card p-6">
-               <div class="flex items-center gap-2 mb-3">
-                  <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                     <PiggyBank class="w-5 h-5 text-primary" />
-                  </div>
-               </div>
-               <h4 class="text-foreground font-semibold">Metas financeiras</h4>
-               <p class="mt-2 text-muted-foreground text-sm">
-                  Acompanhe progresso para viagens, emergencia ou aposentadoria.
-               </p>
-               <div class="mt-4 flex flex-wrap gap-2">
-                  <span class="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground">Viagens</span>
-                  <span class="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground">Investimentos</span>
-               </div>
-            </div>
-         </div>
-      </section>
-
-      <!-- Testimonials Section -->
-      <div class="container mx-auto px-4 border-t border-border/20"></div>
-      <section class="container mx-auto pt-16 md:pt-24 px-4 sm:px-6">
+      <section class="pt-32 pb-16 container mx-auto px-4 sm:px-6">
          <div class="flex flex-col items-center text-center">
-            <h2 class="bg-linear-to-r from-foreground to-foreground/70 bg-clip-text text-transparent text-[24px] md:text-[36px] lg:text-[44px] leading-[108%] font-bold">
-               Pessoas reais, resultados reais
-            </h2>
-            <p class="mt-4 text-muted-foreground max-w-[624px]">
-               Veja como usuarios do Montte estao transformando suas financas com orcamentos inteligentes.
+            <span class="text-primary text-sm font-bold uppercase tracking-widest">
+               Orcamentos e Metas
+            </span>
+            <h1 class="mt-4 text-4xl md:text-5xl lg:text-6xl font-medium leading-[1.1] bg-gradient-to-b from-foreground to-foreground/60 bg-clip-text text-transparent max-w-[600px]">
+               Planeje. Acompanhe. Conquiste.
+            </h1>
+            <p class="mt-5 text-lg md:text-xl text-muted-foreground max-w-[510px]">
+               Defina orcamentos por periodo e metas financeiras claras. Acompanhe seu progresso e tome decisoes informadas.
             </p>
+            <div class="mt-10 flex flex-col sm:flex-row gap-3 items-center">
+               <a href="/signup">
+                  <Button size="lg" className="h-12 px-6 rounded-xl group">
+                     Comece Gratis
+                     <ArrowRight class="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Button>
+               </a>
+               <a href="/book-demo">
+                  <Button variant="outline" size="lg" className="h-12 px-6 rounded-xl">
+                     Agendar Demo
+                  </Button>
+               </a>
+            </div>
          </div>
+      </section>
 
-         <div class="mt-14 sm:columns-2 lg:columns-3">
-            {testimonials.map((testimonial) => (
-               <div class="mx-auto max-w-[320px] break-inside-avoid pb-4">
-                  <div class="p-5 backdrop-blur-xl rounded-xl border bg-card/80 border-border/20">
-                     <span class="inline-block px-3 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary border border-primary/20 mb-3">
-                        {testimonial.tag}
-                     </span>
-                     <p class="text-foreground/90">
-                        "{testimonial.quote}"
-                     </p>
-                     <div class="mt-5" />
-                     <div class="-m-5 p-5 flex items-start">
-                        <img
-                           alt={testimonial.name}
-                           class="mt-1 size-10 shrink-0 rounded-full bg-muted"
-                           src={testimonial.avatar}
-                           loading="lazy"
-                        />
-                        <div class="mx-3 grow">
-                           <div class="text-foreground font-bold">{testimonial.name}</div>
-                           <div class="text-muted-foreground text-sm">{testimonial.role}</div>
-                        </div>
+      <!-- Features Grid -->
+      <section class="py-16 md:py-24 container mx-auto px-4 sm:px-6">
+         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[1000px] mx-auto">
+            {features.map((feature, index) => (
+               <div class={`relative rounded-xl border overflow-hidden border-border/20 bg-card p-6 ${index >= 3 ? 'lg:col-span-1' : ''}`}>
+                  <div class="flex items-center gap-3 mb-4">
+                     <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <feature.icon class="w-5 h-5 text-primary" />
                      </div>
                   </div>
+                  <h3 class="text-foreground font-semibold text-lg">{feature.title}</h3>
+                  <p class="mt-2 text-muted-foreground">
+                     {feature.description}
+                  </p>
                </div>
             ))}
          </div>
       </section>
 
-      <!-- Security Section -->
-      <div class="container mx-auto mt-16 px-4 border-t border-border/20"></div>
-      <section class="mt-16 md:mt-24 pb-16 relative z-10 container mx-auto px-4" id="security">
-         <div class="mx-auto flex flex-col items-center">
-            <h2 class="text-foreground font-bold text-center text-[28px] md:text-[36px]">
-               Seguro, escalavel e transparente
-            </h2>
-            <p class="text-muted-foreground text-center mt-3 md:text-lg max-w-[450px]">
-               Seus dados financeiros merecem a melhor protecao. O Montte e open source e voce tem controle total.
-            </p>
-            <div class="mt-10 grid md:grid-cols-3 gap-6 max-w-[906px] w-full">
-               <div class="border rounded-xl p-6 border-border/20 bg-card w-full">
-                  <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                     <Shield class="w-6 h-6 text-primary" />
-                  </div>
-                  <div class="font-semibold text-foreground">
-                     100% Open Source
-                  </div>
-                  <div class="mt-2 text-sm text-muted-foreground">
-                     Codigo aberto no GitHub. Audite, modifique e auto-hospede quando quiser.
-                  </div>
-               </div>
-               <div class="border rounded-xl p-6 border-border/20 bg-card w-full">
-                  <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                     <Smartphone class="w-6 h-6 text-primary" />
-                  </div>
-                  <div class="font-semibold text-foreground">
-                     Seus dados, seu controle
-                  </div>
-                  <div class="mt-2 text-sm text-muted-foreground">
-                     Exporte seus dados a qualquer momento. Sem vendor lock-in.
-                  </div>
-               </div>
-               <div class="border rounded-xl p-6 border-border/20 bg-card w-full">
-                  <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                     <Zap class="w-6 h-6 text-primary" />
-                  </div>
-                  <div class="font-semibold text-foreground">
-                     Hospedagem flexivel
-                  </div>
-                  <div class="mt-2 text-sm text-muted-foreground">
-                     Use nossa cloud gratuita ou hospede no seu proprio servidor.
-                  </div>
-               </div>
-            </div>
-         </div>
-      </section>
-
-      <!-- Related Features Section -->
-      <div class="container mx-auto mt-8 px-4 border-t border-border/20"></div>
-      <section class="py-16 md:py-24">
-         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <!-- Related Features -->
+      <section class="py-16 md:py-24 border-t border-border/20">
+         <div class="container mx-auto px-4 sm:px-6">
             <div class="text-center mb-12">
                <span class="text-primary text-sm font-medium uppercase tracking-wider">
                   Funciona Com
@@ -698,7 +130,7 @@ const comparisonData = [
                </h2>
             </div>
 
-            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-[1000px] mx-auto">
                {relatedFeatures.map((feature) => (
                   <a
                      href={feature.href}
@@ -718,63 +150,22 @@ const comparisonData = [
          </div>
       </section>
 
-      <!-- FAQ Section -->
-      <section class="py-16 md:py-24 bg-muted/30">
-         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-12">
-               <h2 class="text-2xl font-semibold md:text-3xl text-foreground">
-                  Perguntas Frequentes
-               </h2>
-            </div>
-
-            <div class="max-w-3xl mx-auto space-y-4">
-               {faqs.map((faq) => (
-                  <details class="group p-6 rounded-2xl bg-card border border-border/20 hover:border-border/40 transition-all">
-                     <summary class="flex items-center justify-between cursor-pointer list-none">
-                        <h3 class="font-semibold text-foreground pr-4">{faq.question}</h3>
-                        <ChevronDown class="w-5 h-5 text-muted-foreground flex-shrink-0 transition-transform group-open:rotate-180" />
-                     </summary>
-                     <p class="mt-4 text-muted-foreground">{faq.answer}</p>
-                  </details>
-               ))}
-            </div>
-         </div>
-      </section>
-
-      <!-- Final CTA Section -->
-      <section class="relative">
-         <div class="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent pointer-events-none" />
-         <div class="mx-auto pt-24 pb-16 md:pt-32 md:pb-24 max-w-[1888px] relative z-10">
-            <div class="container mx-auto px-4 sm:px-6 flex flex-col items-center">
-               <span class="text-2xl font-bold text-primary">Montte</span>
-               <h2 class="mt-4 md:mt-5 font-medium bg-gradient-to-b from-foreground to-foreground/60 bg-clip-text text-transparent text-center text-[28px] md:text-[40px] leading-[110%]">
-                  Comece a controlar seu dinheiro hoje
-               </h2>
-               <p class="mt-5 text-center text-muted-foreground max-w-[400px] md:max-w-[500px]">
-                  Gratis para sempre. Open source. Sem cartao de credito.
-               </p>
-               <div class="mt-10 w-full sm:w-auto">
-                  <div class="flex flex-col sm:flex-row gap-3 items-center justify-center">
-                     <a href="/signup" class="w-full max-w-[316px] sm:max-w-none sm:w-auto">
-                        <Button size="lg" className="group relative overflow-hidden rounded-xl h-12 px-8 w-full sm:w-[250px] font-medium">
-                           <span>Crie seu primeiro orcamento</span>
-                           <ArrowRight class="size-4 transition-transform duration-300 group-hover:translate-x-1" />
-                        </Button>
-                     </a>
-                     <a href="https://github.com/montte/montte" target="_blank" rel="noopener noreferrer" class="w-full max-w-[316px] sm:max-w-none sm:w-auto">
-                        <Button variant="outline" size="lg" className="rounded-xl h-12 px-6 gap-2 w-full sm:w-auto border-border/20">
-                           <Github class="size-5" />
-                           Ver no GitHub
-                        </Button>
-                     </a>
-                  </div>
-                  <p class="mt-6 text-center text-sm text-muted-foreground">
-                     Ja tem conta?{" "}
-                     <a class="text-foreground underline underline-offset-4 transition hover:text-primary" href="/login">
-                        Fazer login
-                     </a>
-                  </p>
-               </div>
+      <!-- Final CTA -->
+      <section class="py-24 md:py-32 border-t border-border/20">
+         <div class="container mx-auto px-4 sm:px-6 flex flex-col items-center text-center">
+            <h2 class="text-2xl md:text-4xl font-medium bg-gradient-to-b from-foreground to-foreground/60 bg-clip-text text-transparent">
+               Comece a planejar suas financas
+            </h2>
+            <p class="mt-5 text-muted-foreground max-w-[400px]">
+               Gratis para sempre. Open source. Sem cartao de credito.
+            </p>
+            <div class="mt-10 flex flex-col sm:flex-row gap-3 items-center">
+               <a href="/signup">
+                  <Button size="lg" className="h-12 px-8 rounded-xl group">
+                     Comece Gratis
+                     <ArrowRight class="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Button>
+               </a>
             </div>
          </div>
       </section>

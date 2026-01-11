@@ -19,25 +19,7 @@ import {
       Delegue o operacional sem perder o controle. Convide sócios, assistentes e contadores com permissões personalizadas.
    </p>
 
-   <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm mb-10">
-      {[
-         "Convite seguro por e-mail",
-         "Permissões: Leitor, Editor, Admin",
-         "Acesso exclusivo para Contador",
-         "Revogação de acesso em 1 clique",
-         "Sessões ativas por dispositivo",
-         "Alertas de atividades suspeitas",
-         "Notificações de edição de saldo",
-         "Histórico de alterações",
-      ].map((feature) => (
-         <div class="flex items-center gap-2">
-            <Check class="size-4 text-primary shrink-0" />
-            <span class="text-muted-foreground">{feature}</span>
-         </div>
-      ))}
-   </div>
-
-   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- Card 1: FREE -->
       <Card className="bg-card/50">
          <CardHeader>
@@ -57,27 +39,49 @@ import {
          </CardContent>
       </Card>
 
-      <!-- Card 2: Compartilhado -->
+      <!-- Card 2: Básico -->
       <Card className="border-primary/40 shadow-lg shadow-primary/5 relative overflow-visible">
          <Badge className="absolute -top-3 left-6 uppercase tracking-wide">
             Recomendado
          </Badge>
          <CardHeader>
-            <CardTitle className="text-lg">Compartilhado</CardTitle>
-            <CardDescription>Para casais e famílias</CardDescription>
+            <CardTitle className="text-lg">Básico</CardTitle>
+            <CardDescription>Para casais e equipes pequenas</CardDescription>
          </CardHeader>
          <CardContent>
             <div class="flex items-baseline gap-1 mb-6">
                <span class="text-foreground text-4xl font-bold tracking-tighter">
-                  <span class="price-monthly">R$25</span>
-                  <span class="price-yearly hidden">R$21</span>
+                  <span class="price-monthly">R$19</span>
+                  <span class="price-yearly hidden">R$16</span>
                </span>
                <span class="text-sm text-muted-foreground">/mês</span>
             </div>
             <ul class="space-y-3 text-sm text-foreground/80 font-medium">
                <li class="flex items-center gap-2"><Check class="size-4 text-primary" /> 2 Usuários inclusos</li>
-               <li class="flex items-center gap-2"><Check class="size-4 text-primary" /> Contas compartilhadas</li>
-               <li class="flex items-center gap-2"><Check class="size-4 text-primary" /> Relatórios conjuntos</li>
+               <li class="flex items-center gap-2"><Check class="size-4 text-primary" /> Colaboração em tempo real</li>
+               <li class="flex items-center gap-2"><Check class="size-4 text-primary" /> IA (em breve)</li>
+            </ul>
+         </CardContent>
+      </Card>
+
+      <!-- Card 3: ERP -->
+      <Card className="bg-card/50">
+         <CardHeader>
+            <CardTitle className="text-lg">ERP</CardTitle>
+            <CardDescription>Para empresas em crescimento</CardDescription>
+         </CardHeader>
+         <CardContent>
+            <div class="flex items-baseline gap-1 mb-6">
+               <span class="text-foreground text-4xl font-bold tracking-tighter">
+                  <span class="price-monthly">R$150</span>
+                  <span class="price-yearly hidden">R$125</span>
+               </span>
+               <span class="text-sm text-muted-foreground">/mês</span>
+            </div>
+            <ul class="space-y-3 text-sm text-foreground/80 font-medium">
+               <li class="flex items-center gap-2"><Check class="size-4 text-primary" /> Membros ilimitados</li>
+               <li class="flex items-center gap-2"><Check class="size-4 text-primary" /> Workspaces ilimitados</li>
+               <li class="flex items-center gap-2"><Check class="size-4 text-primary" /> Logs de auditoria</li>
             </ul>
          </CardContent>
       </Card>
@@ -87,7 +91,7 @@ import {
    <Card className="mt-6 border-dashed bg-muted/20 py-5">
       <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 py-0">
          <p class="text-sm text-muted-foreground">
-            <span class="font-medium text-foreground">Precisa de mais membros?</span> No plano Enterprise você tem membros ilimitados, workspaces ilimitados e logs de auditoria completos.
+            <span class="font-medium text-foreground">Precisa de mais recursos?</span> No plano ERP você tem membros ilimitados, workspaces ilimitados e logs de auditoria completos.
          </p>
          <Button asChild variant="link" className="shrink-0 text-primary">
             <a href="/enterprise">

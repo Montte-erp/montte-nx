@@ -37,9 +37,4 @@ export const productItems = [
       href: "/features/collaboration",
       name: "Colaboração",
    },
-   {
-      description: "Código aberto e transparente",
-      href: "/features/open-source",
-      name: "Open Source",
-   },
 ];
