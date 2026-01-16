@@ -17,6 +17,20 @@ const posthogEnv = {
 <!doctype html>
 <html lang="pt-BR" class="scroll-smooth">
    <head>
+      <!-- Dark mode detection - runs before page renders to prevent flash -->
+      <script is:inline>
+         (function() {
+            const stored = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (stored === 'dark' || (!stored && prefersDark)) {
+               document.documentElement.classList.add('dark');
+            } else {
+               document.documentElement.classList.remove('dark');
+            }
+         })();
+      </script>
+      
       <link rel="sitemap" href="/sitemap-index.xml">
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width">

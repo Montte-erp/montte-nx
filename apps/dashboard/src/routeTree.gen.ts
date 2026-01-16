@@ -55,7 +55,6 @@ import { Route as SlugDashboardSettingsSecurityRouteImport } from './routes/$slu
 import { Route as SlugDashboardSettingsProfileRouteImport } from './routes/$slug/_dashboard/settings/profile'
 import { Route as SlugDashboardSettingsPreferencesRouteImport } from './routes/$slug/_dashboard/settings/preferences'
 import { Route as SlugDashboardSettingsNotificationsRouteImport } from './routes/$slug/_dashboard/settings/notifications'
-import { Route as SlugDashboardSettingsEncryptionRouteImport } from './routes/$slug/_dashboard/settings/encryption'
 import { Route as SlugDashboardSettingsBillingRouteImport } from './routes/$slug/_dashboard/settings/billing'
 import { Route as SlugDashboardOrganizationTeamsRouteImport } from './routes/$slug/_dashboard/organization/teams'
 import { Route as SlugDashboardOrganizationMembersRouteImport } from './routes/$slug/_dashboard/organization/members'
@@ -320,12 +319,6 @@ const SlugDashboardSettingsNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => SlugDashboardSettingsRoute,
   } as any)
-const SlugDashboardSettingsEncryptionRoute =
-  SlugDashboardSettingsEncryptionRouteImport.update({
-    id: '/encryption',
-    path: '/encryption',
-    getParentRoute: () => SlugDashboardSettingsRoute,
-  } as any)
 const SlugDashboardSettingsBillingRoute =
   SlugDashboardSettingsBillingRouteImport.update({
     id: '/billing',
@@ -455,7 +448,6 @@ export interface FileRoutesByFullPath {
   '/$slug/organization/members': typeof SlugDashboardOrganizationMembersRoute
   '/$slug/organization/teams': typeof SlugDashboardOrganizationTeamsRouteWithChildren
   '/$slug/settings/billing': typeof SlugDashboardSettingsBillingRoute
-  '/$slug/settings/encryption': typeof SlugDashboardSettingsEncryptionRoute
   '/$slug/settings/notifications': typeof SlugDashboardSettingsNotificationsRoute
   '/$slug/settings/preferences': typeof SlugDashboardSettingsPreferencesRoute
   '/$slug/settings/profile': typeof SlugDashboardSettingsProfileRoute
@@ -515,7 +507,6 @@ export interface FileRoutesByTo {
   '/$slug/organization/members': typeof SlugDashboardOrganizationMembersRoute
   '/$slug/organization/teams': typeof SlugDashboardOrganizationTeamsRouteWithChildren
   '/$slug/settings/billing': typeof SlugDashboardSettingsBillingRoute
-  '/$slug/settings/encryption': typeof SlugDashboardSettingsEncryptionRoute
   '/$slug/settings/notifications': typeof SlugDashboardSettingsNotificationsRoute
   '/$slug/settings/preferences': typeof SlugDashboardSettingsPreferencesRoute
   '/$slug/settings/profile': typeof SlugDashboardSettingsProfileRoute
@@ -580,7 +571,6 @@ export interface FileRoutesById {
   '/$slug/_dashboard/organization/members': typeof SlugDashboardOrganizationMembersRoute
   '/$slug/_dashboard/organization/teams': typeof SlugDashboardOrganizationTeamsRouteWithChildren
   '/$slug/_dashboard/settings/billing': typeof SlugDashboardSettingsBillingRoute
-  '/$slug/_dashboard/settings/encryption': typeof SlugDashboardSettingsEncryptionRoute
   '/$slug/_dashboard/settings/notifications': typeof SlugDashboardSettingsNotificationsRoute
   '/$slug/_dashboard/settings/preferences': typeof SlugDashboardSettingsPreferencesRoute
   '/$slug/_dashboard/settings/profile': typeof SlugDashboardSettingsProfileRoute
@@ -645,7 +635,6 @@ export interface FileRouteTypes {
     | '/$slug/organization/members'
     | '/$slug/organization/teams'
     | '/$slug/settings/billing'
-    | '/$slug/settings/encryption'
     | '/$slug/settings/notifications'
     | '/$slug/settings/preferences'
     | '/$slug/settings/profile'
@@ -705,7 +694,6 @@ export interface FileRouteTypes {
     | '/$slug/organization/members'
     | '/$slug/organization/teams'
     | '/$slug/settings/billing'
-    | '/$slug/settings/encryption'
     | '/$slug/settings/notifications'
     | '/$slug/settings/preferences'
     | '/$slug/settings/profile'
@@ -769,7 +757,6 @@ export interface FileRouteTypes {
     | '/$slug/_dashboard/organization/members'
     | '/$slug/_dashboard/organization/teams'
     | '/$slug/_dashboard/settings/billing'
-    | '/$slug/_dashboard/settings/encryption'
     | '/$slug/_dashboard/settings/notifications'
     | '/$slug/_dashboard/settings/preferences'
     | '/$slug/_dashboard/settings/profile'
@@ -1128,13 +1115,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SlugDashboardSettingsNotificationsRouteImport
       parentRoute: typeof SlugDashboardSettingsRoute
     }
-    '/$slug/_dashboard/settings/encryption': {
-      id: '/$slug/_dashboard/settings/encryption'
-      path: '/encryption'
-      fullPath: '/$slug/settings/encryption'
-      preLoaderRoute: typeof SlugDashboardSettingsEncryptionRouteImport
-      parentRoute: typeof SlugDashboardSettingsRoute
-    }
     '/$slug/_dashboard/settings/billing': {
       id: '/$slug/_dashboard/settings/billing'
       path: '/billing'
@@ -1283,7 +1263,6 @@ const SlugDashboardOrganizationRouteWithChildren =
 
 interface SlugDashboardSettingsRouteChildren {
   SlugDashboardSettingsBillingRoute: typeof SlugDashboardSettingsBillingRoute
-  SlugDashboardSettingsEncryptionRoute: typeof SlugDashboardSettingsEncryptionRoute
   SlugDashboardSettingsNotificationsRoute: typeof SlugDashboardSettingsNotificationsRoute
   SlugDashboardSettingsPreferencesRoute: typeof SlugDashboardSettingsPreferencesRoute
   SlugDashboardSettingsProfileRoute: typeof SlugDashboardSettingsProfileRoute
@@ -1293,7 +1272,6 @@ interface SlugDashboardSettingsRouteChildren {
 
 const SlugDashboardSettingsRouteChildren: SlugDashboardSettingsRouteChildren = {
   SlugDashboardSettingsBillingRoute: SlugDashboardSettingsBillingRoute,
-  SlugDashboardSettingsEncryptionRoute: SlugDashboardSettingsEncryptionRoute,
   SlugDashboardSettingsNotificationsRoute:
     SlugDashboardSettingsNotificationsRoute,
   SlugDashboardSettingsPreferencesRoute: SlugDashboardSettingsPreferencesRoute,

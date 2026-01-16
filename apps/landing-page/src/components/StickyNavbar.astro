@@ -3,7 +3,6 @@ import { Button } from "@packages/ui/components/button";
 import Logo from "./Logo.astro";
 import { MobileMenu } from "./mobile-menu";
 import { NavMenu } from "./nav-menu";
-import ThemeToggler from "./ThemeToggler.astro";
 
 const brandName = "Montte";
 ---
@@ -12,10 +11,10 @@ const brandName = "Montte";
    id="sticky-navbar"
    class="fixed top-0 inset-x-0 h-16 bg-background/50 backdrop-blur-md border-b border-primary/1 z-50 shadow-sm [background-image:linear-gradient(to_right,transparent,theme(colors.primary/5),transparent)] [background-position:0_100%] [background-size:100%_1px] [background-repeat:no-repeat]"
 >
-   <div class="h-full flex items-center justify-between max-w-6xl mx-auto px-8 sm:px-6 lg:px-8">
+   <div class="h-full flex items-center justify-between max-w-7xl mx-auto px-8 sm:px-6 lg:px-8">
       <a
          href="/"
-         class="flex items-center gap-3 transition-transform duration-300 hover:scale-105"
+         class="flex items-center gap-2 transition-transform duration-300 hover:scale-105"
       >
          <Logo size={32} class="text-primary"/>
          <span class="text-xl font-bold text-foreground hidden sm:block">
@@ -28,10 +27,6 @@ const brandName = "Montte";
       </div>
 
       <div class="flex items-center gap-3">
-         <div class="transition-transform duration-300 hover:scale-110">
-            <ThemeToggler/>
-         </div>
-
          <Button className="hidden md:block">
             <a
                href="https://app.montte.co/auth/sign-in"

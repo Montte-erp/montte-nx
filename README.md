@@ -27,6 +27,10 @@
     -   **Installment Plans**: Equal or custom installment amounts
     -   **Interest & Penalties**: Automated calculation with configurable templates
     -   **Monetary Correction**: Support for IPCA, SELIC, CDI indices
+-   **Counterparties**:
+    -   Manage vendors, customers, and business partners
+    -   Track by type, industry, and status
+    -   Filter by date ranges and custom attributes
 
 ### 📊 Planning & Control
 -   **Budget Management**:
@@ -35,6 +39,12 @@
     -   **Budget Rollover**: Carry balances between periods
     -   **Smart Alerts**: Configurable notification thresholds
     -   **Visual Progress**: Progress bars and spending forecasts
+-   **Financial Goals**:
+    -   **Savings Goals**: Track progress toward savings targets
+    -   **Debt Payoff**: Plan and monitor debt elimination
+    -   **Spending Limits**: Set and track spending caps
+    -   **Income Targets**: Define and track revenue goals
+    -   Status tracking: Active, Completed, Paused, Cancelled
 -   **Organization Tools**:
     -   Hierarchical categories with custom colors and icons
     -   Flexible tagging system
@@ -50,7 +60,13 @@
     -   **Execution Logs**: Detailed history of automation runs
 
 ### 📈 Analytics & Reporting
--   **Dashboard**: Net balance overview, income vs expenses, recent activity
+-   **Custom Dashboards**:
+    -   Create personalized dashboards with configurable widgets
+    -   Drag-and-drop layout customization
+    -   Save and organize multiple dashboard views
+-   **Saved Insights**:
+    -   Save frequently used analytics queries
+    -   Quickly access and reuse custom reports
 -   **Financial Reports**:
     -   **DRE Gerencial**: Managerial income statements
     -   **DRE Fiscal**: Fiscal statements with planned vs realized analysis
@@ -60,6 +76,9 @@
     -   Category breakdown (pie/bar charts)
     -   Monthly trends
     -   Payment performance analysis
+-   **Global Search**:
+    -   Search across transactions, bills, categories, and more
+    -   Fast keyboard-driven navigation
 
 ### 🔐 Administration & Security
 -   **Authentication**:
@@ -77,6 +96,10 @@
     -   Language support (pt-BR)
     -   Telemetry opt-in/out (PostHog)
     -   Web push notification controls
+-   **Progressive Web App (PWA)**:
+    -   Install on desktop and mobile devices
+    -   Offline-capable with service worker
+    -   Native file handling and share target support
 
 ## 🚀 Tech Stack
 
@@ -177,8 +200,7 @@ The dashboard organizes functionality into feature modules, each with its own ho
 | `bill`            | Bill tracking with recurrence and installments |
 | `category`        | Transaction type and category selection      |
 | `cookie-consent`  | GDPR cookie consent banner                   |
-| `custom-report`   | Custom financial report builder              |
-| `encryption`      | E2E encryption setup and unlock UI           |
+| `dashboard`       | Custom dashboards and widget management      |
 | `error-report`    | User error feedback modal                    |
 | `expense-split`   | Team expense splitting and settlements       |
 | `export`          | Multi-format data export wizard              |

@@ -1,10 +1,8 @@
 ---
-import { ArrowRight, Check } from "@lucide/astro";
+import { Check } from "@lucide/astro";
 import { Badge } from "@packages/ui/components/badge";
-import { Button } from "@packages/ui/components/button";
 import {
    Card,
-   CardAction,
    CardContent,
    CardDescription,
    CardHeader,
@@ -34,7 +32,7 @@ import {
             <ul class="space-y-3 text-sm text-muted-foreground">
                <li class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-muted-foreground"></div>1 Usuário</li>
                <li class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-muted-foreground"></div>1 Workspace</li>
-               <li class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-muted-foreground"></div>Segurança Padrão</li>
+               <li class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-muted-foreground"></div>Dashboards personalizados</li>
             </ul>
          </CardContent>
       </Card>
@@ -59,7 +57,7 @@ import {
             <ul class="space-y-3 text-sm text-foreground/80 font-medium">
                <li class="flex items-center gap-2"><Check class="size-4 text-primary" /> 2 Usuários inclusos</li>
                <li class="flex items-center gap-2"><Check class="size-4 text-primary" /> Colaboração em tempo real</li>
-               <li class="flex items-center gap-2"><Check class="size-4 text-primary" /> IA (em breve)</li>
+               <li class="flex items-center gap-2"><Check class="size-4 text-primary" /> Funcionalidades de IA</li>
             </ul>
          </CardContent>
       </Card>
@@ -80,25 +78,10 @@ import {
             </div>
             <ul class="space-y-3 text-sm text-foreground/80 font-medium">
                <li class="flex items-center gap-2"><Check class="size-4 text-primary" /> Membros ilimitados</li>
-               <li class="flex items-center gap-2"><Check class="size-4 text-primary" /> Workspaces ilimitados</li>
-               <li class="flex items-center gap-2"><Check class="size-4 text-primary" /> Logs de auditoria</li>
+               <li class="flex items-center gap-2"><Check class="size-4 text-primary" /> Automações ilimitadas</li>
+               <li class="flex items-center gap-2"><Check class="size-4 text-primary" /> Centros de custo</li>
             </ul>
          </CardContent>
       </Card>
    </div>
-
-   <!-- Enterprise CTA -->
-   <Card className="mt-6 border-dashed bg-muted/20 py-5">
-      <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 py-0">
-         <p class="text-sm text-muted-foreground">
-            <span class="font-medium text-foreground">Precisa de mais recursos?</span> No plano ERP você tem membros ilimitados, workspaces ilimitados e logs de auditoria completos.
-         </p>
-         <Button asChild variant="link" className="shrink-0 text-primary">
-            <a href="/enterprise">
-               Ver Enterprise
-               <ArrowRight class="size-4" />
-            </a>
-         </Button>
-      </CardContent>
-   </Card>
 </section>

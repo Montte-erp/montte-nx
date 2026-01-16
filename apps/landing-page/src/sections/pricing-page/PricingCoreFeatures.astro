@@ -1,6 +1,6 @@
 ---
 import { Check } from "@lucide/astro";
-import { Card, CardContent, CardHeader } from "@packages/ui/components/card";
+import { Card } from "@packages/ui/components/card";
 import {
    Table,
    TableBody,
@@ -11,22 +11,20 @@ import {
 const coreFeatures = {
    title: "Gestão Financeira Centralizada",
    description:
-      "O coração do seu financeiro. Organize contas, concilie extratos e tenha controle absoluto sobre cada centavo que entra e sai.",
+      "O coração do seu financeiro. Organize contas, controle transações e tenha visibilidade total sobre cada centavo que entra e sai.",
    included: {
       label: "Liberdade total",
       value: "Transações e Contas Ilimitadas",
    },
    features: [
       "Gestão completa de Receitas e Despesas",
-      "Rateio (Split) de categorias por lançamento",
-      "Arquivo Digital: Anexos de comprovantes/NF",
-      "Edição em massa para alta produtividade",
-      "Conciliação inteligente de transferências",
-      "Controle Multi-contas (Corrente, Caixa, Investimento)",
-      "Suporte a todos os bancos brasileiros",
-      "Importação de Extratos Bancários (OFX)",
-      "Arquivamento de contas com histórico preservado",
-      "Sistema inteligente anti-duplicidade",
+      "Controle Multi-contas (Corrente, Poupança, Investimento)",
+      "Arquivo Digital: Anexos de comprovantes",
+      "Importação de Extratos Bancários (OFX/CSV)",
+      "Filtros avançados por tipo, categoria, conta",
+      "Busca de transações",
+      "Marcar transações como transferência",
+      "Duplicar transações",
    ],
 };
 ---
@@ -49,11 +47,11 @@ const coreFeatures = {
    </Card>
 
    <!-- Features Grid -->
-   <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm">
+   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 text-sm">
       {coreFeatures.features.map((feature) => (
-         <div class="flex items-center gap-2">
-            <Check class="size-4 text-primary shrink-0" />
-            <span class="text-muted-foreground">{feature}</span>
+         <div class="flex items-start gap-2 py-1">
+            <Check class="size-4 text-primary shrink-0 mt-0.5" />
+            <span class="text-muted-foreground leading-snug">{feature}</span>
          </div>
       ))}
    </div>

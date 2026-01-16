@@ -3,6 +3,7 @@ import { FeatureCarousel } from "@/components/feature-carousel";
 
 const workspaceFeatures = [
    {
+      id: "multiplas-organizacoes",
       title: "Multiplas Organizacoes",
       description:
          "Gerencie financas pessoais e empresariais separadamente. Alterne entre workspaces com um clique, sem misturar dados.",
@@ -10,6 +11,7 @@ const workspaceFeatures = [
       width: "narrow" as const,
    },
    {
+      id: "convites-time",
       title: "Convites e Time",
       description:
          "Convide socios, contadores e colaboradores por e-mail. Cada pessoa acessa com suas proprias credenciais.",
@@ -17,6 +19,7 @@ const workspaceFeatures = [
       width: "wide" as const,
    },
    {
+      id: "permissoes-conta",
       title: "Permissoes por Conta",
       description:
          "Defina quem pode ver ou editar cada conta bancaria. Proteja informacoes sensiveis com controle granular de acesso.",
@@ -24,34 +27,25 @@ const workspaceFeatures = [
       width: "narrow" as const,
    },
    {
-      title: "Criptografia E2E",
-      description:
-         "Ative criptografia ponta-a-ponta para dados sensiveis. Apenas voce e quem voce autorizar podem descriptografar.",
-      image: "https://placehold.co/725x478/151925/22c55e?text=Criptografia+E2E",
-      width: "wide" as const,
-   },
-   {
+      id: "automacoes",
       title: "Automacoes",
       description:
          "Crie regras para categorizar transacoes automaticamente. Economize tempo com fluxos de trabalho inteligentes.",
-      image: "https://placehold.co/350x478/151925/22c55e?text=Automacoes",
-      width: "narrow" as const,
+      image: "https://placehold.co/725x478/151925/22c55e?text=Automacoes",
+      width: "wide" as const,
    },
 ];
 ---
 
 <section id="workspaces" class="py-16 md:py-24 overflow-hidden relative">
-
-
-
    <FeatureCarousel
-      client:load
-      label="Colaboracao e Seguranca"
+      items={workspaceFeatures}
+      badge="Colaboracao e Seguranca"
       title="Trabalhe em equipe. Com seguranca."
-      description="Compartilhe o acesso com seu time mantendo o controle. Permissoes granulares e criptografia para proteger seus dados."
+      subtitle="Compartilhe o acesso com seu time mantendo o controle. Permissoes granulares e criptografia para proteger seus dados."
       ctaText="Ver planos para equipes"
       ctaHref="#pricing"
-      benefitStatement="Colaboracao sem comprometer a seguranca."
-      items={workspaceFeatures as any}
+      benefitText="Colaboracao sem comprometer a seguranca."
+      client:load
    />
 </section>

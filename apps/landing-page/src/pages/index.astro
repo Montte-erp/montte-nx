@@ -10,6 +10,7 @@ import CTA from "@/components/CTA.astro";
 import Footer from "@/components/Footer.astro";
 import Hero from "@/sections/home/HomeHero.astro";
 import Showcase from "@/sections/home/Showcase.astro";
+import UseCases from "@/components/UseCases.astro";
 import Workspaces from "@/sections/home/Workspaces.astro";
 import { Separator } from "@packages/ui/components/separator";
 ---
@@ -27,6 +28,8 @@ import { Separator } from "@packages/ui/components/separator";
       <Budgeting />
 <Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
       <Analytics />
+<Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
+      <UseCases />
       <CTA title={["Suas finanças", "Sob controle total"]} buttonText="Começar Grátis" />
       <Footer />
    </div>

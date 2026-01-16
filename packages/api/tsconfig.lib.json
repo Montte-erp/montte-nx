@@ -16,6 +16,9 @@
       "path": "../logging"
     },
     {
+      "path": "../encryption"
+    },
+    {
       "path": "../environment/tsconfig.lib.json"
     },
     {
@@ -44,9 +47,6 @@
     },
     {
       "path": "../notifications/tsconfig.lib.json"
-    },
-    {
-      "path": "../localization/tsconfig.lib.json"
     },
     {
       "path": "../files/tsconfig.lib.json"

@@ -1,176 +1,106 @@
 ---
 export const prerender = true;
 
-import {
-   ArrowRight,
-   BarChart3,
-   ChevronRight,
-   LayoutDashboard,
-   LineChart,
-   AlertTriangle,
-   Bookmark,
-   MousePointerClick,
-} from "@lucide/astro";
-import { Button } from "@packages/ui/components/button";
 import StickyNavbar from "@/components/StickyNavbar.astro";
 import Layout from "@/layouts/Landing.astro";
 import Footer from "@/components/Footer.astro";
-
-const features = [
-   {
-      title: "Dashboards Personalizados",
-      description: "Crie dashboards sob medida com widgets arrastaveis. Organize suas informacoes mais importantes em uma unica tela.",
-      icon: LayoutDashboard,
-   },
-   {
-      title: "Graficos Interativos",
-      description: "Visualize seus dados em graficos de linha, barra, pizza, Sankey e heatmaps. Clique para fazer drill-down e explorar detalhes.",
-      icon: BarChart3,
-   },
-   {
-      title: "Deteccao de Anomalias",
-      description: "O sistema identifica automaticamente gastos fora do padrao. Receba alertas sobre transacoes incomuns antes que virem problema.",
-      icon: AlertTriangle,
-   },
-   {
-      title: "Insights Salvos",
-      description: "Salve configuracoes de relatorios que voce usa com frequencia. Acesse seus insights favoritos com um clique.",
-      icon: Bookmark,
-   },
-   {
-      title: "Drill-Down por Categoria",
-      description: "Clique em qualquer ponto do grafico para aprofundar a analise. Va do resumo ate a transacao individual em segundos.",
-      icon: MousePointerClick,
-   },
-];
-
-const relatedFeatures = [
-   {
-      title: "Gestao de Transacoes",
-      description: "Registre e categorize transacoes",
-      href: "/features/smart-transactions",
-   },
-   {
-      title: "Contas a Pagar",
-      description: "Controle seu fluxo de caixa",
-      href: "/features/bill-tracking",
-   },
-   {
-      title: "Orcamentos",
-      description: "Planeje e acompanhe metas",
-      href: "/features/budgeting",
-   },
-   {
-      title: "Colaboracao",
-      description: "Trabalhe em equipe",
-      href: "/features/collaboration",
-   },
-];
+import CTA from "@/components/CTA.astro";
+import UseCases from "@/components/UseCases.astro";
+import FeatureDeepDive from "@/components/features/FeatureDeepDive.astro";
+import FeatureHero from "@/components/features/FeatureHero.astro";
 ---
 
 <Layout>
-   <div class="flex flex-col bg-background">
-      <StickyNavbar />
+	<div class="flex flex-col bg-background">
+		<StickyNavbar />
 
-      <!-- Hero Section -->
-      <section class="pt-32 pb-16 container mx-auto px-4 sm:px-6">
-         <div class="flex flex-col items-center text-center">
-            <span class="text-primary text-sm font-bold uppercase tracking-widest">
-               Insights e Analises
-            </span>
-            <h1 class="mt-4 text-4xl md:text-5xl lg:text-6xl font-medium leading-[1.1] bg-gradient-to-b from-foreground to-foreground/60 bg-clip-text text-transparent max-w-[600px]">
-               Visualize. Entenda. Decida.
-            </h1>
-            <p class="mt-5 text-lg md:text-xl text-muted-foreground max-w-[510px]">
-               Transforme seus dados financeiros em insights acionaveis com dashboards personalizados e graficos interativos.
-            </p>
-            <div class="mt-10 flex flex-col sm:flex-row gap-3 items-center">
-               <a href="/signup">
-                  <Button size="lg" className="h-12 px-6 rounded-xl group">
-                     Comece Gratis
-                     <ArrowRight class="size-4 transition-transform duration-300 group-hover:translate-x-1" />
-                  </Button>
-               </a>
-               <a href="/book-demo">
-                  <Button variant="outline" size="lg" className="h-12 px-6 rounded-xl">
-                     Agendar Demo
-                  </Button>
-               </a>
-            </div>
-         </div>
-      </section>
+		<FeatureHero
+			eyebrow="Dashboards e Analises"
+			title="Visualize. Entenda. Decida."
+			description="Crie dashboards personalizados com graficos interativos e exporte como PDF para compartilhar com sua equipe. Tome decisoes baseadas em dados, nao em intuicao."
+			image="https://placehold.co/1200x700/151925/22c55e?text=Dashboard+de+Analises"
+			imageAlt="Visao geral do dashboard de analises do Montte"
+		/>
 
-      <!-- Features Grid -->
-      <section class="py-16 md:py-24 container mx-auto px-4 sm:px-6">
-         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[1000px] mx-auto">
-            {features.map((feature, index) => (
-               <div class={`relative rounded-xl border overflow-hidden border-border/20 bg-card p-6 ${index >= 3 ? 'lg:col-span-1' : ''}`}>
-                  <div class="flex items-center gap-3 mb-4">
-                     <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <feature.icon class="w-5 h-5 text-primary" />
-                     </div>
-                  </div>
-                  <h3 class="text-foreground font-semibold text-lg">{feature.title}</h3>
-                  <p class="mt-2 text-muted-foreground">
-                     {feature.description}
-                  </p>
-               </div>
-            ))}
-         </div>
-      </section>
+		<!-- Feature Deep Dives -->
+		<FeatureDeepDive
+			eyebrow="Dashboards Personalizados"
+			title="Monte a tela perfeita para suas necessidades."
+			description="Crie dashboards sob medida com widgets arrastaveis. Organize suas informacoes mais importantes em uma unica tela, com a flexibilidade de reorganizar e personalizar cada elemento. Cada membro do time pode ter seu proprio dashboard otimizado para suas tarefas."
+			image="https://placehold.co/600x400/151925/22c55e?text=Dashboards+Personalizados"
+			imageAlt="Interface de criacao de dashboards personalizados"
+			bullets={[
+				"Widgets arrastaveis e redimensionaveis",
+				"Templates prontos para comecar rapido",
+				"Dashboards compartilhaveis com o time",
+				"Atualizacao em tempo real dos dados",
+			]}
+		/>
 
-      <!-- Related Features -->
-      <section class="py-16 md:py-24 border-t border-border/20">
-         <div class="container mx-auto px-4 sm:px-6">
-            <div class="text-center mb-12">
-               <span class="text-primary text-sm font-medium uppercase tracking-wider">
-                  Funciona Com
-               </span>
-               <h2 class="mt-4 text-2xl font-semibold md:text-3xl text-foreground">
-                  Melhor Juntos
-               </h2>
-            </div>
+		<FeatureDeepDive
+			eyebrow="Graficos Interativos"
+			title="Explore seus dados com visualizacoes poderosas."
+			description="Visualize seus dados em graficos de linha, barra, pizza, Sankey e heatmaps. Cada grafico e interativo - clique para fazer drill-down, filtre por periodo, e exporte os dados quando precisar. Descubra padroes que passariam despercebidos em planilhas."
+			image="https://placehold.co/600x400/151925/22c55e?text=Graficos+Interativos"
+			imageAlt="Exemplos de graficos interativos disponiveis"
+			bullets={[
+				"Mais de 10 tipos de graficos disponiveis",
+				"Drill-down com um clique em qualquer ponto",
+				"Comparacao entre periodos diferentes",
+				"Filtros dinamicos por categoria e conta",
+			]}
+			reverse={true}
+		/>
 
-            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-[1000px] mx-auto">
-               {relatedFeatures.map((feature) => (
-                  <a
-                     href={feature.href}
-                     class="group p-6 rounded-2xl bg-card border border-border/20 hover:border-primary/30 transition-all"
-                  >
-                     <h3 class="font-semibold text-foreground group-hover:text-primary transition-colors">
-                        {feature.title}
-                     </h3>
-                     <p class="mt-2 text-sm text-muted-foreground">{feature.description}</p>
-                     <div class="mt-4 flex items-center gap-1 text-sm text-primary">
-                        Saiba mais
-                        <ChevronRight class="w-4 h-4" />
-                     </div>
-                  </a>
-               ))}
-            </div>
-         </div>
-      </section>
+		<FeatureDeepDive
+			eyebrow="Exportacao em PDF"
+			title="Compartilhe seus dashboards como relatorios profissionais."
+			description="Exporte qualquer dashboard como um PDF pronto para apresentar. Perfeito para reunioes com investidores, auditorias, prestacao de contas e relatorios gerenciais. Mantenha o historico de relatorios exportados para referencia futura."
+			image="https://placehold.co/600x400/151925/22c55e?text=Exportacao+PDF"
+			imageAlt="Exemplo de dashboard exportado como PDF"
+			bullets={[
+				"Exporte dashboards completos com um clique",
+				"Layout otimizado para impressao",
+				"Inclua periodo e filtros aplicados",
+				"Perfeito para reunioes e auditorias",
+			]}
+		/>
 
-      <!-- Final CTA -->
-      <section class="py-24 md:py-32 border-t border-border/20">
-         <div class="container mx-auto px-4 sm:px-6 flex flex-col items-center text-center">
-            <h2 class="text-2xl md:text-4xl font-medium bg-gradient-to-b from-foreground to-foreground/60 bg-clip-text text-transparent">
-               Comece a analisar suas financas
-            </h2>
-            <p class="mt-5 text-muted-foreground max-w-[400px]">
-               Gratis para sempre. Open source. Sem cartao de credito.
-            </p>
-            <div class="mt-10 flex flex-col sm:flex-row gap-3 items-center">
-               <a href="/signup">
-                  <Button size="lg" className="h-12 px-8 rounded-xl group">
-                     Comece Gratis
-                     <ArrowRight class="size-4 transition-transform duration-300 group-hover:translate-x-1" />
-                  </Button>
-               </a>
-            </div>
-         </div>
-      </section>
+		<FeatureDeepDive
+			eyebrow="Drill-Down por Categoria"
+			title="Do resumo ao detalhe em segundos."
+			description="Clique em qualquer ponto do grafico para aprofundar a analise. Va do resumo mensal ate a transacao individual com poucos cliques. Entenda exatamente onde seu dinheiro esta indo sem perder tempo navegando entre telas diferentes."
+			image="https://placehold.co/600x400/151925/22c55e?text=Drill-Down+Categorias"
+			imageAlt="Demonstracao do drill-down por categoria"
+			bullets={[
+				"Navegacao hierarquica intuitiva",
+				"Filtros mantidos durante exploracao",
+				"Volte ao nivel anterior com um clique",
+				"Exporte dados de qualquer nivel",
+			]}
+			reverse={true}
+		/>
 
-      <Footer />
-   </div>
+		<FeatureDeepDive
+			eyebrow="Widgets Customizaveis"
+			title="Escolha exatamente o que voce quer ver."
+			description="Monte seu dashboard ideal com uma variedade de widgets. Graficos de linha, barras, pizza, indicadores numericos, tabelas e muito mais. Redimensione e posicione cada widget como preferir para criar a visualizacao perfeita."
+			image="https://placehold.co/600x400/151925/22c55e?text=Widgets+Customizaveis"
+			imageAlt="Galeria de widgets disponiveis"
+			bullets={[
+				"Diversos tipos de widgets disponiveis",
+				"Redimensione e posicione livremente",
+				"Configure cores e estilos",
+				"Adicione titulos e descricoes",
+			]}
+		/>
+
+		<!-- Use Cases -->
+		<UseCases />
+
+		<!-- Final CTA -->
+		<CTA />
+
+		<Footer />
+	</div>
 </Layout>

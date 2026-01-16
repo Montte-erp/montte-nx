@@ -17,7 +17,6 @@ import { categoryRouter } from "./routers/categories";
 import { costCenterRouter } from "./routers/cost-centers";
 import { counterpartyRouter } from "./routers/counterparties";
 import { dashboardRouter } from "./routers/dashboards";
-import { encryptionRouter } from "./routers/encryption";
 import { expenseSplitsRouter } from "./routers/expense-splits";
 import { goalsRouter } from "./routers/goals";
 import { interestTemplateRouter } from "./routers/interest-templates";
@@ -49,7 +48,6 @@ export const appRouter = router({
    costCenters: costCenterRouter,
    counterparties: counterpartyRouter,
    dashboards: dashboardRouter,
-   encryption: encryptionRouter,
    expenseSplits: expenseSplitsRouter,
    goals: goalsRouter,
    interestTemplates: interestTemplateRouter,

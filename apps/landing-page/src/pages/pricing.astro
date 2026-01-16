@@ -4,15 +4,19 @@ export const prerender = true;
 import StickyNavbar from "@/components/StickyNavbar.astro";
 import Landing from "@/layouts/Landing.astro";
 import Footer from "@/components/Footer.astro";
+import CTA from "@/components/CTA.astro";
+import FAQ from "@/sections/home/FAQ.astro";
 import PricingAnalytics from "@/sections/pricing-page/PricingAnalytics.astro";
 import PricingAutomation from "@/sections/pricing-page/PricingAutomation.astro";
 import PricingCoreFeatures from "@/sections/pricing-page/PricingCoreFeatures.astro";
+import PricingEnterprise from "@/sections/pricing-page/PricingEnterprise.astro";
 import PricingFreeTier from "@/sections/pricing-page/PricingFreeTier.astro";
 import PricingHero from "@/sections/pricing-page/PricingHero.astro";
 import PricingPlanning from "@/sections/pricing-page/PricingPlanning.astro";
 import PricingPlansGrid from "@/sections/pricing-page/PricingPlansGrid.astro";
 import PricingSidebar from "@/sections/pricing-page/PricingSidebar.astro";
 import PricingTeam from "@/sections/pricing-page/PricingTeam.astro";
+import { PricingMobileNav } from "@/components/pricing-mobile-nav";
 ---
 
 <Landing>
@@ -22,7 +26,7 @@ import PricingTeam from "@/sections/pricing-page/PricingTeam.astro";
 
    <div class="bg-background min-h-screen font-sans text-muted-foreground selection:bg-primary selection:text-primary-foreground">
       <!-- MAIN LAYOUT WITH SIDEBAR -->
-      <div class="container mx-auto max-w-[1200px] px-4 pb-20">
+      <div class="container mx-auto max-w-7xl px-4 pb-16 lg:pb-20">
          <div class="flex flex-col lg:flex-row gap-8">
             <PricingSidebar />
 
@@ -35,10 +39,19 @@ import PricingTeam from "@/sections/pricing-page/PricingTeam.astro";
                <PricingAutomation />
                <PricingAnalytics />
                <PricingTeam />
+               <PricingEnterprise />
             </main>
          </div>
       </div>
    </div>
 
+   <!-- FAQ Section -->
+   <FAQ />
+
+   <!-- CTA Section -->
+   <CTA />
+
    <Footer />
+
+   <PricingMobileNav client:load />
 </Landing>

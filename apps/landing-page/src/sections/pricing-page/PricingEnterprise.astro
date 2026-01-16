@@ -1,120 +1,73 @@
 ---
 import { Check, Headset, ShieldCheck } from "@lucide/astro";
-
-const enterpriseFeatures = {
-   title: "Soluções Corporativas",
-   description:
-      "Infraestrutura robusta, segurança de nível bancário e atendimento exclusivo para grandes operações.",
-};
 ---
 
 <!-- ENTERPRISE SECTION -->
 <section id="enterprise" class="scroll-mt-24">
-   <h2 class="text-foreground text-3xl font-bold mb-8">Soluções Corporativas</h2>
+   <h2 class="text-foreground text-3xl font-bold mb-8">Segurança e Suporte</h2>
 
    <!-- Security Subsection -->
    <div class="mb-12">
        <div class="flex items-center gap-3 mb-2">
            <ShieldCheck class="size-6 text-primary" />
-           <h3 class="text-foreground text-xl font-bold">Segurança e Compliance</h3>
+           <h3 class="text-foreground text-xl font-bold">Segurança</h3>
        </div>
        <p class="text-muted-foreground mb-6 max-w-2xl">
-          Proteção total dos seus dados com governança alinhada aos padrões globais de segurança.
+          Proteção total dos seus dados com as melhores práticas de segurança.
        </p>
 
       <div class="rounded-xl border border-border bg-card overflow-hidden mb-6">
           {[
              { name: "Login Seguro (Senha, Google OAuth, Magic Link)", price: "Incluso" },
-             { name: "Verificação de identidade e Recuperação segura", price: "Incluso" },
-             { name: "SSO Corporativo (Google Workspace)", price: "Incluso" },
-             { name: "SSO Enterprise (Azure AD / Okta / OneLogin)", price: "Enterprise" },
-             { name: "Conexão SAML 2.0 Personalizada", price: "Enterprise" },
-             { name: "Gestão de Acesso Baseada em Função (RBAC)", price: "Enterprise" },
+             { name: "Autenticação de Dois Fatores (2FA)", price: "Incluso" },
+             { name: "Criptografia AES-256", price: "Incluso" },
+             { name: "Gestão de sessões", price: "Incluso" },
           ].map((tier, index) => (
-            <div class={`flex items-center justify-between px-6 py-4 ${index < 5 ? 'border-b border-dashed border-border' : ''}`}>
+            <div class={`flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 gap-2 ${index < 3 ? 'border-b border-dashed border-border' : ''}`}>
                <span class="text-sm font-medium">{tier.name}</span>
-               <span class={`text-sm ${tier.price === 'Incluso' ? 'text-muted-foreground' : 'text-primary font-bold'}`}>
+               <span class="text-sm text-muted-foreground">
                   {tier.price}
                </span>
             </div>
          ))}
       </div>
 
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-sm">
           {[
-             "Autenticação de Fator Duplo (2FA)",
-             "Trilha de Auditoria (Audit Logs)",
-             "Encerramento remoto de sessões",
-             "Restrição de acesso por IP (Allowlist)",
-             "Conformidade Total LGPD/GDPR",
-             "Criptografia AES-256 (Repouso/Trânsito)",
-             "Políticas de Senha Personalizáveis",
-             "Gestão de Dispositivos Confiáveis",
+             "Verificação de e-mail",
+             "Recuperação segura de senha",
+             "Encerramento de sessões",
           ].map((feature) => (
-            <div class="flex items-center gap-2">
-               <Check class="size-4 text-primary shrink-0" />
-               <span class="text-muted-foreground">{feature}</span>
+            <div class="flex items-start gap-2 py-1">
+               <Check class="size-4 text-primary shrink-0 mt-0.5" />
+               <span class="text-muted-foreground leading-snug">{feature}</span>
             </div>
          ))}
       </div>
    </div>
 
    <!-- Support Subsection -->
-   <div class="mb-12">
+   <div>
        <div class="flex items-center gap-3 mb-2">
            <Headset class="size-6 text-primary" />
-           <h3 class="text-foreground text-xl font-bold">Atendimento Premium</h3>
+           <h3 class="text-foreground text-xl font-bold">Suporte</h3>
        </div>
        <p class="text-muted-foreground mb-6 max-w-2xl">
-          Esqueça as filas de espera. Tenha acesso direto a especialistas que entendem o seu negócio.
+          Estamos aqui para ajudar você a aproveitar ao máximo a plataforma.
        </p>
 
        <div class="rounded-xl border border-border bg-card overflow-hidden mb-6">
           {[
-             { name: "Suporte Técnico via E-mail", price: "Incluso" },
-             { name: "SLA de Resposta Garantido (4h úteis)", price: "Business" },
-             { name: "Customer Success Manager (CSM) Dedicado", price: "Enterprise" },
-             { name: "Plantão Crítico 24/7", price: "Sob Consulta" },
+             { name: "Suporte via E-mail", price: "Incluso" },
+             { name: "Documentação completa", price: "Incluso" },
          ].map((tier, index) => (
-            <div class={`flex items-center justify-between px-6 py-4 ${index < 3 ? 'border-b border-dashed border-border' : ''}`}>
+            <div class={`flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 gap-2 ${index < 1 ? 'border-b border-dashed border-border' : ''}`}>
                <span class="text-sm font-medium">{tier.name}</span>
-               <span class={`text-sm ${tier.price === 'Incluso' ? 'text-muted-foreground' : 'text-primary font-bold'}`}>
+               <span class="text-sm text-muted-foreground">
                   {tier.price}
                </span>
             </div>
          ))}
-      </div>
-
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-         {[
-            "Base de Conhecimento Exclusiva",
-            "Documentação de API Completa",
-            "Canal Privado (Slack/Teams)",
-            "Onboarding Assistido (Setup)",
-            "Treinamento para Equipes",
-            "Review Trimestral de Sucesso (QBR)",
-         ].map((feature) => (
-            <div class="flex items-center gap-2">
-               <Check class="size-4 text-primary shrink-0" />
-               <span class="text-muted-foreground">{feature}</span>
-            </div>
-         ))}
-      </div>
-   </div>
-
-   <!-- Enterprise CTA -->
-   <div class="rounded-xl border border-border bg-linear-to-r from-card to-background p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-      <div class="absolute -right-20 -top-20 w-96 h-96 bg-primary opacity-5 blur-[120px] rounded-full pointer-events-none"></div>
-      <div class="relative z-10">
-         <h3 class="text-foreground text-2xl font-bold mb-2">Sua operação em outro nível</h3>
-         <p class="text-muted-foreground">Desbloqueie todo o potencial da plataforma com segurança e suporte ilimitados.</p>
-         <p class="text-sm text-muted-foreground/80 mt-2 font-medium">Junte-se a líderes de mercado que confiam na Montte.</p>
-      </div>
-      <div class="flex flex-col gap-3 shrink-0 relative z-10 w-full md:w-auto">
-         <a href="/enterprise" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-foreground text-background font-medium hover:bg-foreground/90 transition-colors shadow-lg shadow-foreground/10">
-            Falar com Especialista
-         </a>
-         <a href="mailto:enterprise@montte.co" class="text-sm text-primary text-center hover:underline">Solicitar Proposta Comercial</a>
       </div>
    </div>
 </section>

@@ -1,8 +1,10 @@
 {
    "dependencies": {
       "@astrojs/check": "catalog:astro",
+      "@astrojs/mdx": "catalog:astro",
       "@astrojs/node": "catalog:astro",
       "@astrojs/react": "catalog:astro",
+      "@astrojs/rss": "catalog:astro",
       "@astrojs/sitemap": "catalog:astro",
       "@astrojs/ts-plugin": "catalog:astro",
       "@lucide/astro": "catalog:astro",

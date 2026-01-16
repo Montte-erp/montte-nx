@@ -3,6 +3,7 @@ import { FeatureCarousel } from "@/components/feature-carousel";
 
 const analyticsFeatures = [
    {
+      id: "dashboards-personalizados",
       title: "Dashboards Personalizados",
       description:
          "Crie dashboards sob medida com widgets arrastaveis. Organize suas informacoes mais importantes em uma unica tela.",
@@ -10,6 +11,7 @@ const analyticsFeatures = [
       width: "narrow" as const,
    },
    {
+      id: "graficos-interativos",
       title: "Graficos Interativos",
       description:
          "Visualize seus dados em graficos de linha, barra, pizza, Sankey e heatmaps. Clique para fazer drill-down e explorar detalhes.",
@@ -17,24 +19,27 @@ const analyticsFeatures = [
       width: "wide" as const,
    },
    {
-      title: "Deteccao de Anomalias",
+      id: "exportacao-pdf",
+      title: "Exportacao em PDF",
       description:
-         "O sistema identifica automaticamente gastos fora do padrao. Receba alertas sobre transacoes incomuns antes que virem problema.",
-      image: "https://placehold.co/350x478/151925/22c55e?text=Anomalias",
+         "Exporte seus dashboards como relatorios PDF prontos para compartilhar. Perfeito para reunioes, auditorias e prestacao de contas.",
+      image: "https://placehold.co/350x478/151925/22c55e?text=Exportar+PDF",
       width: "narrow" as const,
    },
    {
-      title: "Insights Salvos",
-      description:
-         "Salve configuracoes de relatorios que voce usa com frequencia. Acesse seus insights favoritos com um clique.",
-      image: "https://placehold.co/725x478/151925/22c55e?text=Insights+Salvos",
-      width: "wide" as const,
-   },
-   {
+      id: "drill-down-categoria",
       title: "Drill-Down por Categoria",
       description:
          "Clique em qualquer ponto do grafico para aprofundar a analise. Va do resumo ate a transacao individual em segundos.",
-      image: "https://placehold.co/350x478/151925/22c55e?text=Drill-Down",
+      image: "https://placehold.co/725x478/151925/22c55e?text=Drill-Down",
+      width: "wide" as const,
+   },
+   {
+      id: "widgets-customizaveis",
+      title: "Widgets Customizaveis",
+      description:
+         "Escolha entre diversos tipos de widgets para montar seu painel ideal. Redimensione e posicione como preferir.",
+      image: "https://placehold.co/350x478/151925/22c55e?text=Widgets",
       width: "narrow" as const,
    },
 ];
@@ -42,13 +47,13 @@ const analyticsFeatures = [
 
 <section id="analytics" class="py-16 md:py-24 overflow-hidden relative">
    <FeatureCarousel
-      client:load
-      label="Insights e Analises"
+      items={analyticsFeatures}
+      badge="Dashboards e Analises"
       title="Visualize. Entenda. Decida."
-      description="Transforme seus dados financeiros em insights acionaveis com dashboards personalizados e graficos interativos."
-      ctaText="Ver todos os relatorios"
+      subtitle="Crie dashboards personalizados com graficos interativos e exporte como PDF para compartilhar com sua equipe."
+      ctaText="Explorar dashboards"
       ctaHref="/features/analytics"
-      benefitStatement="Tome decisoes baseadas em dados, nao em intuicao."
-      items={analyticsFeatures as any}
+      benefitText="Tome decisoes baseadas em dados, nao em intuicao."
+      client:load
    />
 </section>

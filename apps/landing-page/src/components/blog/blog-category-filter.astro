@@ -1,0 +1,79 @@
+---
+import { Check } from "@lucide/astro";
+
+interface Props {
+	categories: string[];
+	activeCategory: string | null;
+	baseUrl?: string;
+}
+
+const { categories, activeCategory, baseUrl = "/blog" } = Astro.props;
+
+const categoryLabels: Record<string, string> = {
+	tutoriais: "Tutoriais",
+	dicas: "Dicas",
+	atualizacoes: "Atualizacoes",
+	"casos-de-uso": "Casos de Uso",
+	"financas-pessoais": "Financas Pessoais",
+};
+
+function getCategoryUrl(category: string | null): string {
+	if (!category) return baseUrl;
+	return `${baseUrl}?categoria=${category}`;
+}
+---
+
+<div class="flex flex-wrap items-center gap-3">
+	<a
+		href={baseUrl}
+		class:list={[
+			"inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+			!activeCategory
+				? "bg-primary/10 text-primary"
+				: "text-muted-foreground hover:bg-muted hover:text-foreground",
+		]}
+	>
+		<span
+			class:list={[
+				"flex h-4 w-4 items-center justify-center rounded border transition-colors",
+				!activeCategory
+					? "border-primary bg-primary"
+					: "border-border bg-transparent",
+			]}
+		>
+			{!activeCategory && <Check class="h-3 w-3 text-primary-foreground" />}
+		</span>
+		Todos
+	</a>
+
+	{
+		categories.map((category) => {
+			const isActive = activeCategory === category;
+			const label = categoryLabels[category] || category;
+
+			return (
+				<a
+					href={getCategoryUrl(category)}
+					class:list={[
+						"inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+						isActive
+							? "bg-primary/10 text-primary"
+							: "text-muted-foreground hover:bg-muted hover:text-foreground",
+					]}
+				>
+					<span
+						class:list={[
+							"flex h-4 w-4 items-center justify-center rounded border transition-colors",
+							isActive
+								? "border-primary bg-primary"
+								: "border-border bg-transparent",
+						]}
+					>
+						{isActive && <Check class="h-3 w-3 text-primary-foreground" />}
+					</span>
+					{label}
+				</a>
+			);
+		})
+	}
+</div>

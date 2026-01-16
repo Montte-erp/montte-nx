@@ -335,7 +335,6 @@ BillFilterCredenza         // feature: bill, action: filter, type: credenza
 
 Use **use[Feature][Action]** pattern:
 ```typescript
-useEncryptionContext()
 useActiveOrganization()
 useCookieConsent()
 useDeleteCategory()
@@ -865,15 +864,4 @@ const organizationId = resolvedCtx.organizationId;
 ## Encryption
 
 ### Server-Side
-Transparent encryption at repository level using the `ENCRYPTION_KEY` env var.
-
-### End-to-End (E2E)
-Optional user-controlled encryption with NaCl (TweetNaCl):
-```typescript
-// Check E2E status
-const { e2eEnabled, isUnlocked, encrypt, decrypt } = useEncryptionContext();
-
-// Encrypt/decrypt
-const encrypted = encrypt(plaintext);
-const decrypted = decrypt(encryptedData);
-```
+Transparent encryption at repository level using the `ENCRYPTION_KEY` env var. Server-side encryption uses AES-256-GCM to encrypt sensitive fields (descriptions, notes) before storing them in the database.

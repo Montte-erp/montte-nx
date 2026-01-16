@@ -1,8 +1,28 @@
 ---
 import { Button } from "@packages/ui/components/button";
-import HeroCarousel from "@/components/HeroCarousel";
+import { HeroCarousel } from "@/components/hero-carousel";
 import LogoWithText from "@/components/LogoWithText.astro";
 import LogoCloud from "@/components/LogoCloud.astro";
+
+import transactionsLight from "@/assets/hero-carousel/transactions-light.png";
+import transactionsDark from "@/assets/hero-carousel/transactions-dark.png";
+import dashboardsLight from "@/assets/hero-carousel/dashboards-light.png";
+import dashboardsDark from "@/assets/hero-carousel/dashboards-dark.png";
+
+const heroSlides = [
+   {
+      id: "transactions",
+      label: "Gerencie suas transações de forma inteligente",
+      imageLightUrl: transactionsLight.src,
+      imageDarkUrl: transactionsDark.src,
+   },
+   {
+      id: "dashboards",
+      label: "Visualize seus dados com dashboards personalizados",
+      imageLightUrl: dashboardsLight.src,
+      imageDarkUrl: dashboardsDark.src,
+   },
+];
 ---
 
 <section  class="relative px-8 py-18 md:py-28 flex flex-col gap-12 items-center container max-w-7xl mx-auto overflow-hidden">
@@ -41,7 +61,7 @@ import LogoCloud from "@/components/LogoCloud.astro";
 
 
       <div class="w-full max-w-lg md:max-w-2xl ">
-                     <HeroCarousel client:load />
+                     <HeroCarousel items={heroSlides} client:load />
 
       </div>
    </div>

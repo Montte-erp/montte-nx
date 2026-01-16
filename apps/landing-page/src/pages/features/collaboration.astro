@@ -1,175 +1,92 @@
 ---
 export const prerender = true;
 
-import {
-   ArrowRight,
-   ChevronRight,
-   Building2,
-   UserPlus,
-   ShieldCheck,
-   Lock,
-   Wand2,
-} from "@lucide/astro";
-import { Button } from "@packages/ui/components/button";
 import StickyNavbar from "@/components/StickyNavbar.astro";
 import Layout from "@/layouts/Landing.astro";
 import Footer from "@/components/Footer.astro";
-
-const features = [
-   {
-      title: "Multiplas Organizacoes",
-      description: "Gerencie financas pessoais e empresariais separadamente. Alterne entre workspaces com um clique, sem misturar dados.",
-      icon: Building2,
-   },
-   {
-      title: "Convites e Time",
-      description: "Convide socios, contadores e colaboradores por e-mail. Cada pessoa acessa com suas proprias credenciais.",
-      icon: UserPlus,
-   },
-   {
-      title: "Permissoes por Conta",
-      description: "Defina quem pode ver ou editar cada conta bancaria. Proteja informacoes sensiveis com controle granular de acesso.",
-      icon: ShieldCheck,
-   },
-   {
-      title: "Criptografia E2E",
-      description: "Ative criptografia ponta-a-ponta para dados sensiveis. Apenas voce e quem voce autorizar podem descriptografar.",
-      icon: Lock,
-   },
-   {
-      title: "Automacoes",
-      description: "Crie regras para categorizar transacoes automaticamente. Economize tempo com fluxos de trabalho inteligentes.",
-      icon: Wand2,
-   },
-];
-
-const relatedFeatures = [
-   {
-      title: "Insights e Analises",
-      description: "Dashboards e graficos interativos",
-      href: "/features/analytics",
-   },
-   {
-      title: "Gestao de Transacoes",
-      description: "Registre e categorize transacoes",
-      href: "/features/smart-transactions",
-   },
-   {
-      title: "Contas a Pagar",
-      description: "Controle seu fluxo de caixa",
-      href: "/features/bill-tracking",
-   },
-   {
-      title: "Orcamentos",
-      description: "Planeje e acompanhe metas",
-      href: "/features/budgeting",
-   },
-];
+import CTA from "@/components/CTA.astro";
+import UseCases from "@/components/UseCases.astro";
+import FeatureDeepDive from "@/components/features/FeatureDeepDive.astro";
+import FeatureHero from "@/components/features/FeatureHero.astro";
 ---
 
 <Layout>
-   <div class="flex flex-col bg-background">
-      <StickyNavbar />
+	<div class="flex flex-col bg-background">
+		<StickyNavbar />
 
-      <!-- Hero Section -->
-      <section class="pt-32 pb-16 container mx-auto px-4 sm:px-6">
-         <div class="flex flex-col items-center text-center">
-            <span class="text-primary text-sm font-bold uppercase tracking-widest">
-               Colaboracao e Seguranca
-            </span>
-            <h1 class="mt-4 text-4xl md:text-5xl lg:text-6xl font-medium leading-[1.1] bg-gradient-to-b from-foreground to-foreground/60 bg-clip-text text-transparent max-w-[700px]">
-               Trabalhe em equipe. Com seguranca.
-            </h1>
-            <p class="mt-5 text-lg md:text-xl text-muted-foreground max-w-[510px]">
-               Compartilhe o acesso com seu time mantendo o controle. Permissoes granulares e criptografia para proteger seus dados.
-            </p>
-            <div class="mt-10 flex flex-col sm:flex-row gap-3 items-center">
-               <a href="/signup">
-                  <Button size="lg" className="h-12 px-6 rounded-xl group">
-                     Comece Gratis
-                     <ArrowRight class="size-4 transition-transform duration-300 group-hover:translate-x-1" />
-                  </Button>
-               </a>
-               <a href="/book-demo">
-                  <Button variant="outline" size="lg" className="h-12 px-6 rounded-xl">
-                     Agendar Demo
-                  </Button>
-               </a>
-            </div>
-         </div>
-      </section>
+		<FeatureHero
+			eyebrow="Colaboracao e Seguranca"
+			title="Trabalhe em equipe. Com seguranca."
+			description="Compartilhe o acesso com seu time mantendo o controle total. Permissoes granulares protegem seus dados mais sensiveis."
+			image="https://placehold.co/1200x700/151925/22c55e?text=Tela+de+Colaboracao"
+			imageAlt="Visao geral das configuracoes de colaboracao do Montte"
+		/>
 
-      <!-- Features Grid -->
-      <section class="py-16 md:py-24 container mx-auto px-4 sm:px-6">
-         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[1000px] mx-auto">
-            {features.map((feature, index) => (
-               <div class={`relative rounded-xl border overflow-hidden border-border/20 bg-card p-6 ${index >= 3 ? 'lg:col-span-1' : ''}`}>
-                  <div class="flex items-center gap-3 mb-4">
-                     <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <feature.icon class="w-5 h-5 text-primary" />
-                     </div>
-                  </div>
-                  <h3 class="text-foreground font-semibold text-lg">{feature.title}</h3>
-                  <p class="mt-2 text-muted-foreground">
-                     {feature.description}
-                  </p>
-               </div>
-            ))}
-         </div>
-      </section>
+		<!-- Feature Deep Dives -->
+		<FeatureDeepDive
+			eyebrow="Multiplas Organizacoes"
+			title="Separe suas financas sem complicacao."
+			description="Gerencie financas pessoais e empresariais em workspaces completamente separados. Alterne entre organizacoes com um clique, sem risco de misturar dados. Ideal para quem tem mais de um negocio ou quer separar vida pessoal e profissional."
+			image="https://placehold.co/600x400/151925/22c55e?text=Multiplas+Organizacoes"
+			imageAlt="Seletor de organizacoes e workspaces"
+			bullets={[
+				"Workspaces independentes e isolados",
+				"Alternancia rapida entre organizacoes",
+				"Configuracoes especificas por workspace",
+				"Relatorios consolidados quando necessario",
+			]}
+		/>
 
-      <!-- Related Features -->
-      <section class="py-16 md:py-24 border-t border-border/20">
-         <div class="container mx-auto px-4 sm:px-6">
-            <div class="text-center mb-12">
-               <span class="text-primary text-sm font-medium uppercase tracking-wider">
-                  Funciona Com
-               </span>
-               <h2 class="mt-4 text-2xl font-semibold md:text-3xl text-foreground">
-                  Melhor Juntos
-               </h2>
-            </div>
+		<FeatureDeepDive
+			eyebrow="Convites e Time"
+			title="Traga seu time para dentro da plataforma."
+			description="Convide socios, contadores e colaboradores por e-mail. Cada pessoa acessa com suas proprias credenciais, mantendo um registro de auditoria de quem fez o que. Colabore em tempo real sem compartilhar senhas ou planilhas."
+			image="https://placehold.co/600x400/151925/22c55e?text=Convites+e+Time"
+			imageAlt="Tela de gerenciamento de membros do time"
+			bullets={[
+				"Convite por e-mail com link seguro",
+				"Cada usuario com credenciais proprias",
+				"Registro de auditoria de acoes",
+				"Remocao de acesso instantanea",
+			]}
+			reverse={true}
+		/>
 
-            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-[1000px] mx-auto">
-               {relatedFeatures.map((feature) => (
-                  <a
-                     href={feature.href}
-                     class="group p-6 rounded-2xl bg-card border border-border/20 hover:border-primary/30 transition-all"
-                  >
-                     <h3 class="font-semibold text-foreground group-hover:text-primary transition-colors">
-                        {feature.title}
-                     </h3>
-                     <p class="mt-2 text-sm text-muted-foreground">{feature.description}</p>
-                     <div class="mt-4 flex items-center gap-1 text-sm text-primary">
-                        Saiba mais
-                        <ChevronRight class="w-4 h-4" />
-                     </div>
-                  </a>
-               ))}
-            </div>
-         </div>
-      </section>
+		<FeatureDeepDive
+			eyebrow="Permissoes por Conta"
+			title="Controle granular de quem ve o que."
+			description="Defina quem pode ver ou editar cada conta bancaria. Proteja informacoes sensiveis com controle de acesso por recurso. Seu contador pode ver apenas o necessario, enquanto socios tem visao completa."
+			image="https://placehold.co/600x400/151925/22c55e?text=Permissoes+por+Conta"
+			imageAlt="Configuracao de permissoes por conta bancaria"
+			bullets={[
+				"Permissoes de leitura ou edicao",
+				"Controle por conta bancaria",
+				"Papeis predefinidos (Admin, Editor, Leitor)",
+				"Permissoes customizadas quando necessario",
+			]}
+		/>
 
-      <!-- Final CTA -->
-      <section class="py-24 md:py-32 border-t border-border/20">
-         <div class="container mx-auto px-4 sm:px-6 flex flex-col items-center text-center">
-            <h2 class="text-2xl md:text-4xl font-medium bg-gradient-to-b from-foreground to-foreground/60 bg-clip-text text-transparent">
-               Comece a colaborar com sua equipe
-            </h2>
-            <p class="mt-5 text-muted-foreground max-w-[400px]">
-               Gratis para sempre. Open source. Sem cartao de credito.
-            </p>
-            <div class="mt-10 flex flex-col sm:flex-row gap-3 items-center">
-               <a href="/signup">
-                  <Button size="lg" className="h-12 px-8 rounded-xl group">
-                     Comece Gratis
-                     <ArrowRight class="size-4 transition-transform duration-300 group-hover:translate-x-1" />
-                  </Button>
-               </a>
-            </div>
-         </div>
-      </section>
+		<FeatureDeepDive
+			eyebrow="Automacoes"
+			title="Deixe o sistema trabalhar por voce."
+			description="Crie regras para categorizar transacoes automaticamente baseado em padroes. Economize tempo com fluxos de trabalho inteligentes que aprendem com seus habitos e aplicam as mesmas regras consistentemente."
+			image="https://placehold.co/600x400/151925/22c55e?text=Automacoes"
+			imageAlt="Configuracao de regras de automacao"
+			bullets={[
+				"Regras baseadas em descricao ou valor",
+				"Categorizacao automatica de transacoes",
+				"Aplicacao retroativa em historico",
+				"Sugestoes inteligentes de novas regras",
+			]}
+			reverse={true}
+		/>
 
-      <Footer />
-   </div>
+		<!-- Use Cases -->
+		<UseCases />
+
+		<!-- Final CTA -->
+		<CTA />
+
+		<Footer />
+	</div>
 </Layout>

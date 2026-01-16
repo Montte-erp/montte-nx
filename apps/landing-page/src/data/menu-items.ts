@@ -1,13 +1,18 @@
 export const menuItems = [
    {
-      description: "Planos e preços",
+      description: "Planos e precos",
       href: "/pricing",
-      name: "Preços",
+      name: "Precos",
    },
    {
-      description: "Para grandes organizações",
+      description: "Para grandes organizacoes",
       href: "/enterprise",
-      name: "Enterprise",
+      name: "Empresas",
+   },
+   {
+      description: "Artigos e tutoriais",
+      href: "/blog",
+      name: "Blog",
    },
 ];
 
@@ -28,9 +33,9 @@ export const productItems = [
       name: "Orçamentos",
    },
    {
-      description: "Relatórios e insights financeiros",
+      description: "Dashboards personalizados com exportação PDF",
       href: "/features/analytics",
-      name: "Análises",
+      name: "Dashboards",
    },
    {
       description: "Finanças em equipe",

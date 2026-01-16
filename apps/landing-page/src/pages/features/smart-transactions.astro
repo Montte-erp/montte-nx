@@ -1,174 +1,105 @@
 ---
 export const prerender = true;
 
-import {
-   ArrowRight,
-   ChevronRight,
-   Zap,
-   Split,
-   Paperclip,
-   FileUp,
-   Filter,
-} from "@lucide/astro";
-import { Button } from "@packages/ui/components/button";
 import StickyNavbar from "@/components/StickyNavbar.astro";
 import Layout from "@/layouts/Landing.astro";
 import Footer from "@/components/Footer.astro";
-
-const features = [
-   {
-      title: "Lancamento Rapido",
-      description: "Adicione transacoes em segundos pelo celular ou desktop. Interface otimizada para entrada de dados com categorias e tags inteligentes.",
-      icon: Zap,
-   },
-   {
-      title: "Rateio de Categorias",
-      description: "Divida uma unica transacao entre multiplas categorias. Perfeito para compras com itens de diferentes naturezas ou centros de custo.",
-      icon: Split,
-   },
-   {
-      title: "Anexos e Comprovantes",
-      description: "Anexe notas fiscais, recibos e comprovantes diretamente nas transacoes. Mantenha tudo organizado e acessivel para auditorias.",
-      icon: Paperclip,
-   },
-   {
-      title: "Importacao CSV e OFX",
-      description: "Importe extratos de qualquer banco brasileiro via arquivos CSV ou OFX. Mapeamento inteligente de colunas e deteccao de duplicatas.",
-      icon: FileUp,
-   },
-   {
-      title: "Filtros e Estatisticas",
-      description: "Filtre transacoes por periodo, tipo, categoria ou conta bancaria. Visualize estatisticas de receitas e despesas em tempo real.",
-      icon: Filter,
-   },
-];
-
-const relatedFeatures = [
-   {
-      title: "Insights e Analises",
-      description: "Dashboards e graficos interativos",
-      href: "/features/analytics",
-   },
-   {
-      title: "Contas a Pagar",
-      description: "Controle seu fluxo de caixa",
-      href: "/features/bill-tracking",
-   },
-   {
-      title: "Orcamentos",
-      description: "Planeje e acompanhe metas",
-      href: "/features/budgeting",
-   },
-   {
-      title: "Colaboracao",
-      description: "Trabalhe em equipe",
-      href: "/features/collaboration",
-   },
-];
+import CTA from "@/components/CTA.astro";
+import UseCases from "@/components/UseCases.astro";
+import FeatureDeepDive from "@/components/features/FeatureDeepDive.astro";
+import FeatureHero from "@/components/features/FeatureHero.astro";
 ---
 
 <Layout>
    <div class="flex flex-col bg-background">
       <StickyNavbar />
 
-      <!-- Hero Section -->
-      <section class="pt-32 pb-16 container mx-auto px-4 sm:px-6">
-         <div class="flex flex-col items-center text-center">
-            <span class="text-primary text-sm font-bold uppercase tracking-widest">
-               Gestao de Transacoes
-            </span>
-            <h1 class="mt-4 text-4xl md:text-5xl lg:text-6xl font-medium leading-[1.1] bg-gradient-to-b from-foreground to-foreground/60 bg-clip-text text-transparent max-w-[700px]">
-               Controle total das suas movimentacoes.
-            </h1>
-            <p class="mt-5 text-lg md:text-xl text-muted-foreground max-w-[510px]">
-               Registre, categorize e acompanhe todas as suas transacoes financeiras com ferramentas pensadas para agilidade e precisao.
-            </p>
-            <div class="mt-10 flex flex-col sm:flex-row gap-3 items-center">
-               <a href="/signup">
-                  <Button size="lg" className="h-12 px-6 rounded-xl group">
-                     Comece Gratis
-                     <ArrowRight class="size-4 transition-transform duration-300 group-hover:translate-x-1" />
-                  </Button>
-               </a>
-               <a href="/book-demo">
-                  <Button variant="outline" size="lg" className="h-12 px-6 rounded-xl">
-                     Agendar Demo
-                  </Button>
-               </a>
-            </div>
-         </div>
-      </section>
+      <FeatureHero
+         eyebrow="Gestao de Transacoes"
+         title="Controle total das suas movimentacoes financeiras."
+         description="Registre, categorize e acompanhe todas as suas transacoes com ferramentas pensadas para agilidade e precisao. Importe extratos, anexe comprovantes e visualize estatisticas em tempo real."
+         image="https://placehold.co/1200x700/151925/22c55e?text=Tela+de+Transacoes"
+         imageAlt="Visao geral da tela de transacoes do Montte"
+      />
 
-      <!-- Features Grid -->
-      <section class="py-16 md:py-24 container mx-auto px-4 sm:px-6">
-         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[1000px] mx-auto">
-            {features.map((feature, index) => (
-               <div class={`relative rounded-xl border overflow-hidden border-border/20 bg-card p-6 ${index >= 3 ? 'lg:col-span-1' : ''}`}>
-                  <div class="flex items-center gap-3 mb-4">
-                     <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <feature.icon class="w-5 h-5 text-primary" />
-                     </div>
-                  </div>
-                  <h3 class="text-foreground font-semibold text-lg">{feature.title}</h3>
-                  <p class="mt-2 text-muted-foreground">
-                     {feature.description}
-                  </p>
-               </div>
-            ))}
-         </div>
-      </section>
+      <!-- Feature Deep Dives -->
+      <FeatureDeepDive
+         eyebrow="Entrada Rapida"
+         title="Adicione transacoes em segundos, nao minutos."
+         description="Interface otimizada para entrada de dados rapida. Use atalhos de teclado, categorias inteligentes que aprendem com seus habitos, e uma experiencia mobile-first que funciona em qualquer dispositivo. Pare de perder tempo digitando e foque no que importa."
+         image="https://placehold.co/600x400/151925/22c55e?text=Lancamento+Rapido"
+         imageAlt="Formulario de lancamento rapido de transacoes"
+         bullets={[
+            "Atalhos de teclado para acoes frequentes",
+            "Categorias sugeridas baseadas no historico",
+            "Formulario otimizado para mobile e desktop",
+            "Salvamento automatico de rascunhos",
+         ]}
+      />
 
-      <!-- Related Features -->
-      <section class="py-16 md:py-24 border-t border-border/20">
-         <div class="container mx-auto px-4 sm:px-6">
-            <div class="text-center mb-12">
-               <span class="text-primary text-sm font-medium uppercase tracking-wider">
-                  Funciona Com
-               </span>
-               <h2 class="mt-4 text-2xl font-semibold md:text-3xl text-foreground">
-                  Melhor Juntos
-               </h2>
-            </div>
+      <FeatureDeepDive
+         eyebrow="Rateio Inteligente"
+         title="Divida uma transacao entre multiplas categorias."
+         description="Comprou no supermercado e pegou itens de limpeza junto com comida? Rateie a compra entre as categorias corretas. Defina valores fixos ou percentuais, e tenha relatorios precisos de onde seu dinheiro realmente vai."
+         image="https://placehold.co/600x400/151925/22c55e?text=Rateio+de+Categorias"
+         imageAlt="Modal de rateio de transacao entre categorias"
+         bullets={[
+            "Divisao por valor fixo ou percentual",
+            "Suporte a multiplas categorias por transacao",
+            "Ideal para compras mistas e centros de custo",
+            "Relatorios refletem a divisao corretamente",
+         ]}
+         reverse={true}
+      />
 
-            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-[1000px] mx-auto">
-               {relatedFeatures.map((feature) => (
-                  <a
-                     href={feature.href}
-                     class="group p-6 rounded-2xl bg-card border border-border/20 hover:border-primary/30 transition-all"
-                  >
-                     <h3 class="font-semibold text-foreground group-hover:text-primary transition-colors">
-                        {feature.title}
-                     </h3>
-                     <p class="mt-2 text-sm text-muted-foreground">{feature.description}</p>
-                     <div class="mt-4 flex items-center gap-1 text-sm text-primary">
-                        Saiba mais
-                        <ChevronRight class="w-4 h-4" />
-                     </div>
-                  </a>
-               ))}
-            </div>
-         </div>
-      </section>
+      <FeatureDeepDive
+         eyebrow="Documentacao Completa"
+         title="Anexe comprovantes e nunca perca um recibo."
+         description="Arraste e solte notas fiscais, recibos e comprovantes diretamente nas transacoes. Suporte a PDF, imagens e documentos. Tudo organizado, pesquisavel e pronto para quando o contador pedir ou para sua propria auditoria."
+         image="https://placehold.co/600x400/151925/22c55e?text=Anexos+e+Comprovantes"
+         imageAlt="Interface de upload e visualizacao de anexos"
+         bullets={[
+            "Drag-and-drop de arquivos",
+            "Suporte a PDF, PNG, JPG e mais",
+            "Preview inline sem sair da transacao",
+            "Historico completo para auditoria",
+         ]}
+      />
+
+      <FeatureDeepDive
+         eyebrow="Importacao Automatizada"
+         title="Importe extratos de qualquer banco brasileiro."
+         description="Conecte-se com seu banco atraves de arquivos CSV ou OFX. O sistema mapeia as colunas automaticamente, detecta transacoes duplicadas e sugere categorias baseadas na descricao. Meses de transacoes importadas em minutos."
+         image="https://placehold.co/600x400/151925/22c55e?text=Importacao+CSV+OFX"
+         imageAlt="Wizard de importacao de extratos bancarios"
+         bullets={[
+            "Compativel com todos os bancos brasileiros",
+            "Mapeamento inteligente de colunas",
+            "Deteccao automatica de duplicatas",
+            "Categorizacao sugerida por IA",
+         ]}
+         reverse={true}
+      />
+
+      <FeatureDeepDive
+         eyebrow="Analise em Tempo Real"
+         title="Filtre, busque e entenda suas financas."
+         description="Filtros poderosos por periodo, tipo, categoria, conta bancaria ou tags. Veja estatisticas de receitas e despesas atualizadas em tempo real conforme voce filtra. Encontre qualquer transacao em segundos, mesmo com milhares de registros."
+         image="https://placehold.co/600x400/151925/22c55e?text=Filtros+e+Estatisticas"
+         imageAlt="Painel de filtros e estatisticas de transacoes"
+         bullets={[
+            "Filtros combinados por data, categoria, conta",
+            "Busca full-text em descricoes e notas",
+            "Estatisticas atualizadas em tempo real",
+            "Exportacao de resultados filtrados",
+         ]}
+      />
+
+      <!-- Use Cases -->
+      <UseCases />
 
       <!-- Final CTA -->
-      <section class="py-24 md:py-32 border-t border-border/20">
-         <div class="container mx-auto px-4 sm:px-6 flex flex-col items-center text-center">
-            <h2 class="text-2xl md:text-4xl font-medium bg-gradient-to-b from-foreground to-foreground/60 bg-clip-text text-transparent">
-               Comece a registrar suas transacoes
-            </h2>
-            <p class="mt-5 text-muted-foreground max-w-[400px]">
-               Gratis para sempre. Open source. Sem cartao de credito.
-            </p>
-            <div class="mt-10 flex flex-col sm:flex-row gap-3 items-center">
-               <a href="/signup">
-                  <Button size="lg" className="h-12 px-8 rounded-xl group">
-                     Comece Gratis
-                     <ArrowRight class="size-4 transition-transform duration-300 group-hover:translate-x-1" />
-                  </Button>
-               </a>
-            </div>
-         </div>
-      </section>
+      <CTA />
 
       <Footer />
    </div>

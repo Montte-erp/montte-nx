@@ -1,5 +1,5 @@
 ---
-import { ArrowRight, Check } from "@lucide/astro";
+import { Check } from "@lucide/astro";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -30,7 +30,7 @@ const plans = [
          "2 usuários inclusos",
          "Anexos de comprovantes",
          "Colaboração em tempo real",
-         "Funcionalidades de IA (em breve)",
+         "Funcionalidades de IA",
          "14 dias de teste grátis",
       ],
       highlighted: false,
@@ -49,12 +49,11 @@ const plans = [
          { label: "Suporte", val: "Prioritário" },
       ],
       features: [
+         "Tudo do plano Básico",
          "Membros ilimitados",
          "Centros de custo",
          "Fornecedores",
          "Automações ilimitadas",
-         "Funcionalidades de IA",
-         "API access",
          "7 dias de teste grátis",
       ],
       highlighted: true,
@@ -144,22 +143,4 @@ const plans = [
          </Card>
       ))}
    </div>
-
-   <!-- Enterprise CTA -->
-   <Card className="mt-8 flex-row items-center justify-between bg-gradient-to-r from-card to-muted/30">
-      <CardContent className="flex flex-col md:flex-row items-center justify-between gap-4 py-0">
-         <div>
-            <h3 class="text-foreground font-bold text-lg mb-1">Precisa de mais?</h3>
-            <p class="text-sm text-muted-foreground">
-               Para equipes e empresas, conheça nosso plano Enterprise com recursos avançados, membros ilimitados e suporte prioritário.
-            </p>
-         </div>
-         <Button asChild variant="secondary" className="shrink-0 bg-foreground text-background hover:bg-foreground/90">
-            <a href="/enterprise">
-               Ver Plano Enterprise
-               <ArrowRight class="size-4" />
-            </a>
-         </Button>
-      </CardContent>
-   </Card>
 </section>

@@ -45,10 +45,87 @@ type DashboardTabsState = {
 	appTabName: string;
 };
 
-const dashboardTabsStore = new Store<DashboardTabsState>({
+const STORAGE_KEY = "montte:dashboard-tabs";
+
+// Serializable versions of tabs (without LucideIcon references)
+type SerializableAppTab = Omit<AppTab, "routeInfo">;
+type SerializableTab =
+	| SerializableAppTab
+	| DashboardTab
+	| InsightTab
+	| SearchTab;
+
+type SerializableDashboardTabsState = {
+	activeTabId: string;
+	tabs: SerializableTab[];
+	appTabName: string;
+};
+
+function serializeState(state: DashboardTabsState): SerializableDashboardTabsState {
+	return {
+		activeTabId: state.activeTabId,
+		appTabName: state.appTabName,
+		tabs: state.tabs.map((tab) => {
+			if (tab.type === "app") {
+				// Strip out routeInfo which contains non-serializable LucideIcon
+				const { routeInfo, ...serializableTab } = tab;
+				return serializableTab;
+			}
+			return tab;
+		}),
+	};
+}
+
+function loadFromStorage(): DashboardTabsState | null {
+	try {
+		const stored = localStorage.getItem(STORAGE_KEY);
+		if (!stored) return null;
+
+		const parsed = JSON.parse(stored) as SerializableDashboardTabsState;
+
+		// Validate basic structure
+		if (!parsed.tabs || !Array.isArray(parsed.tabs) || !parsed.activeTabId) {
+			return null;
+		}
+
+		// Ensure app tab exists
+		const hasAppTab = parsed.tabs.some((t) => t.id === "app" && t.type === "app");
+		if (!hasAppTab) {
+			return null;
+		}
+
+		return {
+			activeTabId: parsed.activeTabId,
+			appTabName: parsed.appTabName || "Home",
+			tabs: parsed.tabs as Tab[],
+		};
+	} catch {
+		return null;
+	}
+}
+
+function saveToStorage(state: DashboardTabsState): void {
+	try {
+		const serialized = serializeState(state);
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(serialized));
+	} catch {
+		// localStorage not available or quota exceeded
+	}
+}
+
+const DEFAULT_STATE: DashboardTabsState = {
 	activeTabId: "app",
 	appTabName: "Home",
 	tabs: [{ id: "app", name: "Home", type: "app" }],
+};
+
+const dashboardTabsStore = new Store<DashboardTabsState>(
+	loadFromStorage() ?? DEFAULT_STATE,
+);
+
+// Subscribe to state changes and persist to localStorage
+dashboardTabsStore.subscribe(() => {
+	saveToStorage(dashboardTabsStore.state);
 });
 
 export function useDashboardTabs() {

@@ -1,5 +1,5 @@
 ---
-import { ArrowRight, Github } from "@lucide/astro";
+import { ArrowRight } from "@lucide/astro";
 import { Button } from "@packages/ui/components/button";
 import { Input } from "@packages/ui/components/input";
 import { Separator } from "@packages/ui/components/separator";
@@ -10,14 +10,14 @@ const companyLinks = [{ href: "/blog", title: "Blog" }];
 
 const helpLinks = [
    { href: "/terms", title: "Termos de Uso" },
-   { href: "/privacy", title: "Política de Privacidade" },
+   { href: "/privacy", title: "Politica de Privacidade" },
 ];
 
 const year = new Date().getFullYear();
 ---
 
 <footer class="bg-muted">
-   <div class="mx-auto grid max-w-6xl grid-cols-6 gap-4  px-8 py-18 md:py-28  container   overflow-hidden">
+   <div class="mx-auto grid max-w-7xl grid-cols-6 gap-4  px-8 py-18 md:py-28  container   overflow-hidden">
       <div class="col-span-full flex flex-col items-start gap-4 lg:col-span-2">
          <a href="/">
             <div class="flex items-center gap-3">
@@ -26,19 +26,9 @@ const year = new Date().getFullYear();
             </div>
          </a>
          <p class="text-muted-foreground">
-            Gestão financeira open-source. Rastreie despesas, gerencie orçamentos e tenha controle total das suas finanças com propriedade completa dos dados.
+            Simplifique sua vida financeira. Acompanhe gastos, gerencie orçamentos e tome decisões inteligentes com total segurança e privacidade.
          </p>
        <Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
-         <div class="flex items-center gap-4">
-            <a
-               href="https://github.com/F-O-T/montte-nx"
-               target="_blank"
-               rel="noopener noreferrer"
-               aria-label="GitHub"
-            >
-               <Github class="size-4" aria-hidden="true" />
-            </a>
-         </div>
       </div>
 
       <div class="col-span-full grid grid-cols-2 gap-6 sm:grid-cols-4 lg:col-span-4 lg:gap-8">
