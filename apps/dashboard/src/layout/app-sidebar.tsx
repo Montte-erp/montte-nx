@@ -12,6 +12,7 @@ import {
 import { Link, useParams } from "@tanstack/react-router";
 import { PanelLeft } from "lucide-react";
 import type * as React from "react";
+import { NavNotifications } from "@/features/notifications/ui/nav-notifications";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
@@ -97,6 +98,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
          <SidebarFooter>
             <Separator />
             <SidebarCollapseButton />
+            <NavNotifications />
             <NavUser />
          </SidebarFooter>
       </Sidebar>

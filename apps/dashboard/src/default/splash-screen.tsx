@@ -1,6 +1,6 @@
 import { cn } from "@packages/ui/lib/utils";
 import { useEffect, useState } from "react";
-import { useIsStandalone } from "@/hooks/use-standalone";
+import { useIsStandalone } from "@/features/pwa/lib/use-standalone";
 
 export function SplashScreen({ children }: { children: React.ReactNode }) {
    const isStandalone = useIsStandalone();
@@ -28,7 +28,7 @@ export function SplashScreen({ children }: { children: React.ReactNode }) {
       <>
          <div
             className={cn(
-               "fixed inset-0 z-[100] flex items-center justify-center",
+               "fixed inset-0 z-100 flex items-center justify-center",
                "bg-[#050816] transition-opacity duration-400",
                fadeOut && "opacity-0 pointer-events-none",
             )}

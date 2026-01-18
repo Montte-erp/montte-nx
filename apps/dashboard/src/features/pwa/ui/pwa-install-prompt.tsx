@@ -2,8 +2,8 @@ import { Button } from "@packages/ui/components/button";
 import { cn } from "@packages/ui/lib/utils";
 import { Download, X } from "lucide-react";
 import { useState } from "react";
-import { useHaptic } from "@/hooks/use-haptic";
-import { usePWAInstall } from "@/hooks/use-pwa-install";
+import { useHaptic } from "@/features/pwa/lib/use-haptic";
+import { usePWAInstall } from "@/features/pwa/lib/use-pwa-install";
 
 export function PWAInstallPrompt() {
    const { canInstall, installPWA, dismissPrompt } = usePWAInstall();

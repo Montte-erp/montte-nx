@@ -3,6 +3,12 @@ import type { RouteTabInfo } from "../lib/route-tab-mapping";
 
 export type TabType = "app" | "dashboard" | "insight" | "search";
 
+// Route storage for browser-like tab behavior
+export type TabRoute = {
+	pathname: string;
+	search?: string;
+};
+
 export type DashboardTab = {
 	id: string;
 	type: "dashboard";
@@ -10,6 +16,7 @@ export type DashboardTab = {
 	name: string;
 	isDirty?: boolean;
 	isPinned?: boolean;
+	route?: TabRoute;
 };
 
 export type InsightTab = {
@@ -19,6 +26,7 @@ export type InsightTab = {
 	name: string;
 	isDirty?: boolean;
 	isPinned?: boolean;
+	route?: TabRoute;
 };
 
 export type AppTab = {
@@ -28,6 +36,7 @@ export type AppTab = {
 	dashboardId?: string;
 	routeKey?: string;
 	routeInfo?: RouteTabInfo;
+	route?: TabRoute;
 };
 
 export type SearchTab = {
@@ -35,6 +44,7 @@ export type SearchTab = {
 	type: "search";
 	name: string;
 	isPinned?: boolean;
+	route?: TabRoute;
 };
 
 export type Tab = AppTab | DashboardTab | InsightTab | SearchTab;
@@ -66,8 +76,9 @@ function serializeState(state: DashboardTabsState): SerializableDashboardTabsSta
 		activeTabId: state.activeTabId,
 		appTabName: state.appTabName,
 		tabs: state.tabs.map((tab) => {
-			if (tab.type === "app") {
-				// Strip out routeInfo which contains non-serializable LucideIcon
+			// Strip out routeInfo which contains non-serializable LucideIcon
+			// This applies to app tabs and transformed search tabs
+			if ("routeInfo" in tab && tab.routeInfo) {
 				const { routeInfo, ...serializableTab } = tab;
 				return serializableTab;
 			}
@@ -94,10 +105,20 @@ function loadFromStorage(): DashboardTabsState | null {
 			return null;
 		}
 
+		// Clean up any corrupted routeInfo that was accidentally serialized
+		// (routeInfo contains non-serializable LucideIcon and becomes an object after JSON parse)
+		const cleanedTabs = parsed.tabs.map((tab) => {
+			if ("routeInfo" in tab) {
+				const { routeInfo, ...cleanTab } = tab as typeof tab & { routeInfo?: unknown };
+				return cleanTab;
+			}
+			return tab;
+		});
+
 		return {
 			activeTabId: parsed.activeTabId,
 			appTabName: parsed.appTabName || "Home",
-			tabs: parsed.tabs as Tab[],
+			tabs: cleanedTabs as Tab[],
 		};
 	} catch {
 		return null;
@@ -140,6 +161,17 @@ export function useDashboardTabs() {
 			dashboardTabsStore.setState((s) => ({
 				...s,
 				activeTabId: tabId,
+			}));
+		},
+
+		updateActiveTabRoute: (pathname: string, search?: string) => {
+			dashboardTabsStore.setState((s) => ({
+				...s,
+				tabs: s.tabs.map((tab) =>
+					tab.id === s.activeTabId
+						? { ...tab, route: { pathname, search } }
+						: tab,
+				),
 			}));
 		},
 
@@ -316,14 +348,16 @@ export function useDashboardTabs() {
 
 		updateActiveTabForRoute: (routeKey: string, routeInfo: RouteTabInfo) => {
 			dashboardTabsStore.setState((s) => {
-				const activeTab = s.tabs.find((t) => t.id === s.activeTabId);
-				if (!activeTab || activeTab.type !== "app") return s;
+				// Always update the app tab with the current route, regardless of which tab is active
+				// This ensures clicking the app tab returns to the last visited app route
+				const appTab = s.tabs.find((t) => t.id === "app" && t.type === "app");
+				if (!appTab) return s;
 
 				return {
 					...s,
 					appTabName: routeInfo.name,
 					tabs: s.tabs.map((tab) =>
-						tab.id === s.activeTabId && tab.type === "app"
+						tab.id === "app" && tab.type === "app"
 							? { ...tab, name: routeInfo.name, routeKey, routeInfo }
 							: tab,
 					),
@@ -463,17 +497,96 @@ export function togglePinTab(tabId: string) {
 
 export function updateActiveTabForRoute(routeKey: string, routeInfo: RouteTabInfo) {
 	dashboardTabsStore.setState((s) => {
-		const activeTab = s.tabs.find((t) => t.id === s.activeTabId);
-		if (!activeTab || activeTab.type !== "app") return s;
+		// Always update the app tab with the current route, regardless of which tab is active
+		// This ensures clicking the app tab returns to the last visited app route
+		const appTab = s.tabs.find((t) => t.id === "app" && t.type === "app");
+		if (!appTab) return s;
 
 		return {
 			...s,
 			appTabName: routeInfo.name,
 			tabs: s.tabs.map((tab) =>
-				tab.id === s.activeTabId && tab.type === "app"
+				tab.id === "app" && tab.type === "app"
 					? { ...tab, name: routeInfo.name, routeKey, routeInfo }
 					: tab,
 			),
+		};
+	});
+}
+
+export function updateActiveTabRoute(pathname: string, search?: string) {
+	dashboardTabsStore.setState((s) => ({
+		...s,
+		tabs: s.tabs.map((tab) =>
+			tab.id === s.activeTabId
+				? { ...tab, route: { pathname, search } }
+				: tab,
+		),
+	}));
+}
+
+/**
+ * Transform the active tab to match the current route.
+ * - App and Search tabs transform their display (name, icon) to match the new route
+ * - Dashboard and Insight tabs only update their stored route (they're tied to specific IDs)
+ * - The tab TYPE is preserved to maintain proper sorting/filtering in the tab bar
+ */
+export function transformActiveTab(
+	routeKey: string,
+	routeInfo: RouteTabInfo,
+	route: TabRoute,
+) {
+	dashboardTabsStore.setState((s) => {
+		const activeTab = s.tabs.find((t) => t.id === s.activeTabId);
+
+		// Don't transform dashboard/insight tabs - they're tied to specific IDs
+		if (activeTab?.type === "dashboard" || activeTab?.type === "insight") {
+			// Just update the route, not the identity
+			return {
+				...s,
+				tabs: s.tabs.map((tab) =>
+					tab.id === s.activeTabId ? { ...tab, route } : tab,
+				),
+			};
+		}
+
+		// Transform app/search tabs to match the new route
+		// Keep the original type to maintain proper tab bar sorting
+		// For the app tab, we also update appTabName for consistency
+		const isAppTab = s.activeTabId === "app";
+
+		return {
+			...s,
+			appTabName: isAppTab ? routeInfo.name : s.appTabName,
+			tabs: s.tabs.map((tab) => {
+				if (tab.id !== s.activeTabId) return tab;
+
+				// Keep original type, just update display info
+				if (tab.type === "app") {
+					return {
+						...tab,
+						name: routeInfo.name,
+						routeKey,
+						routeInfo,
+						route,
+					} as AppTab;
+				}
+
+				// For search tabs, update display but keep type as "search"
+				if (tab.type === "search") {
+					return {
+						...tab,
+						name: routeInfo.name,
+						route,
+						// Store routeInfo for icon display even though SearchTab doesn't have this field
+						// The tab bar will use this for rendering
+						routeKey,
+						routeInfo,
+					} as SearchTab & { routeKey: string; routeInfo: RouteTabInfo };
+				}
+
+				return tab;
+			}),
 		};
 	});
 }

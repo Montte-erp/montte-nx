@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@f-o-t/markdown": "^1.0.0",
     "@f-o-t/rules-engine": "workspace:*",
     "@packages/analytics": "workspace:*",
     "@packages/api": "workspace:*",

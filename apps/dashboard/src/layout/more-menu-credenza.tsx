@@ -24,8 +24,8 @@ import {
    CreditCard,
    FileText,
    Landmark,
-   type LucideIcon,
    LogOut,
+   type LucideIcon,
    Percent,
    Settings,
    Tag,
@@ -36,11 +36,12 @@ import {
 import { Suspense, useCallback } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
+import { usePlanFeatures } from "@/features/billing/lib/use-plan-features";
+import { NotificationCredenzaContent } from "@/features/notifications/ui/nav-notifications";
+import { useHaptic } from "@/features/pwa/lib/use-haptic";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
-import { useHaptic } from "@/hooks/use-haptic";
-import { usePlanFeatures } from "@/hooks/use-plan-features";
 import { betterAuthClient, useTRPC } from "@/integrations/clients";
 import { ThemeSwitcher } from "./theme-provider";
 
@@ -142,8 +143,8 @@ function MoreMenuContent() {
             {
                icon: BarChart3,
                id: "reports",
-               label: "Relatórios",
-               url: "/$slug/reports",
+               label: "Análises",
+               url: "/$slug/dashboards",
             },
             {
                icon: Wallet,
@@ -170,76 +171,76 @@ function MoreMenuContent() {
             },
             ...(canAccessCounterparties
                ? [
-                    {
-                       icon: Users,
-                       id: "counterparties",
-                       label: "Fornecedores",
-                       url: "/$slug/counterparties",
-                    },
-                 ]
+                  {
+                     icon: Users,
+                     id: "counterparties",
+                     label: "Fornecedores",
+                     url: "/$slug/counterparties",
+                  },
+               ]
                : []),
             ...(canAccessInterestTemplates
                ? [
-                    {
-                       icon: Percent,
-                       id: "interest-templates",
-                       label: "Modelos de Juros",
-                       url: "/$slug/interest-templates",
-                    },
-                 ]
+                  {
+                     icon: Percent,
+                     id: "interest-templates",
+                     label: "Modelos de Juros",
+                     url: "/$slug/interest-templates",
+                  },
+               ]
                : []),
          ],
          title: "Contas",
       },
       ...(showCategorizationSection
          ? [
-              {
-                 items: [
-                    {
-                       icon: FileText,
-                       id: "categories",
-                       label: "Categorias",
-                       url: "/$slug/categories",
-                    },
-                    ...(canAccessCostCenters
-                       ? [
-                            {
-                               icon: Landmark,
-                               id: "cost-centers",
-                               label: "Centros de Custo",
-                               url: "/$slug/cost-centers",
-                            },
-                         ]
-                       : []),
-                    ...(canAccessTags
-                       ? [
-                            {
-                               icon: Tag,
-                               id: "tags",
-                               label: "Tags",
-                               url: "/$slug/tags",
-                            },
-                         ]
-                       : []),
-                 ],
-                 title: "Categorização",
-              },
-           ]
+            {
+               items: [
+                  {
+                     icon: FileText,
+                     id: "categories",
+                     label: "Categorias",
+                     url: "/$slug/categories",
+                  },
+                  ...(canAccessCostCenters
+                     ? [
+                        {
+                           icon: Landmark,
+                           id: "cost-centers",
+                           label: "Centros de Custo",
+                           url: "/$slug/cost-centers",
+                        },
+                     ]
+                     : []),
+                  ...(canAccessTags
+                     ? [
+                        {
+                           icon: Tag,
+                           id: "tags",
+                           label: "Tags",
+                           url: "/$slug/tags",
+                        },
+                     ]
+                     : []),
+               ],
+               title: "Categorização",
+            },
+         ]
          : []),
       ...(canAccessAutomations
          ? [
-              {
-                 items: [
-                    {
-                       icon: Zap,
-                       id: "automations",
-                       label: "Automações",
-                       url: "/$slug/automations",
-                    },
-                 ],
-                 title: "Automação",
-              },
-           ]
+            {
+               items: [
+                  {
+                     icon: Zap,
+                     id: "automations",
+                     label: "Automações",
+                     url: "/$slug/automations",
+                  },
+               ],
+               title: "Automação",
+            },
+         ]
          : []),
       {
          items: [
@@ -257,6 +258,17 @@ function MoreMenuContent() {
    const handleItemClick = () => {
       haptic("light");
       closeCredenza();
+   };
+
+   const handleNotificationsClick = () => {
+      haptic("light");
+      closeCredenza();
+      // Small delay to allow the current credenza to close first
+      setTimeout(() => {
+         openCredenza({
+            children: <NotificationCredenzaContent />,
+         });
+      }, 100);
    };
 
    return (
@@ -289,6 +301,30 @@ function MoreMenuContent() {
                   <div className="grid grid-cols-3 gap-2">
                      {userQuickActions.map((item) => {
                         const Icon = item.icon;
+                        const isNotifications = item.id === "notifications";
+                        
+                        if (isNotifications) {
+                           return (
+                              <button
+                                 className={cn(
+                                    "flex flex-col items-center justify-center gap-2 p-3",
+                                    "rounded-xl border bg-card",
+                                    "transition-colors active:bg-accent",
+                                 )}
+                                 key={item.id}
+                                 onClick={handleNotificationsClick}
+                                 type="button"
+                              >
+                                 <div className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+                                    <Icon className="size-5 text-primary" />
+                                 </div>
+                                 <span className="text-center text-xs font-medium leading-tight">
+                                    {item.label}
+                                 </span>
+                              </button>
+                           );
+                        }
+                        
                         return (
                            <Link
                               className={cn(

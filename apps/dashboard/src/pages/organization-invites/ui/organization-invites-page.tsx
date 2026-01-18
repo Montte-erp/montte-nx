@@ -2,12 +2,12 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useCallback, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
-import { UpgradeRequired } from "@/components/upgrade-required";
+import { UpgradeRequired } from "@/features/billing/ui/upgrade-required";
 import {
    InvitesDataTable,
    InvitesDataTableSkeleton,
 } from "@/features/organization/ui/invites-data-table";
-import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { usePlanFeatures } from "@/features/billing/lib/use-plan-features";
 import { betterAuthClient, useTRPC } from "@/integrations/clients";
 import { InvitesQuickActionsToolbar } from "./organization-invites-quick-actions-toolbar";
 

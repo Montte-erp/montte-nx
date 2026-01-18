@@ -18,11 +18,9 @@ import type { InsightConfig } from "@packages/database/schemas/dashboards";
 import {
 	AreaChart,
 	BarChart3,
-	ChevronDown,
 	Filter,
 	Globe,
 	Grid3X3,
-	GripVertical,
 	Hash,
 	GitMerge,
 	Layers,
@@ -206,8 +204,10 @@ type WidgetConfigToolbarProps = {
 	onOpenOptions: () => void;
 	onOpenFilters: () => void;
 	onSaveAsInsight: () => void;
-	isFullWidth: boolean;
-	onToggleWidth: () => void;
+	canExpand: boolean;
+	canShrink: boolean;
+	onExpand: () => void;
+	onShrink: () => void;
 	onRemove: () => void;
 };
 
@@ -217,8 +217,10 @@ export function WidgetConfigToolbar({
 	onOpenOptions,
 	onOpenFilters,
 	onSaveAsInsight,
-	isFullWidth,
-	onToggleWidth,
+	canExpand,
+	canShrink,
+	onExpand,
+	onShrink,
 	onRemove,
 }: WidgetConfigToolbarProps) {
 	// Count active data filters
@@ -245,29 +247,24 @@ export function WidgetConfigToolbar({
 	const CurrentIcon = getChartTypeIcon(config.chartType);
 
 	return (
-		<div className="hidden md:flex items-center justify-between gap-1.5 px-3 py-1.5 border-b bg-muted/30">
-			{/* Left side: Drag handle */}
-			<div className="flex items-center gap-1">
-				<div className="drag-handle cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded">
-					<GripVertical className="h-4 w-4 text-muted-foreground" />
-				</div>
-			</div>
-
-			{/* Right side: Display Type, Filters, Options, Save, Expand, Remove */}
-			<div className="flex items-center gap-1">
+		<div className="hidden md:flex items-center justify-end gap-0.5 px-2 py-1 border-b bg-muted/30">
+			<div className="flex items-center gap-0.5">
 				{/* Display Type Dropdown */}
 				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button
-							variant="ghost"
-							size="sm"
-							className="h-7 gap-1.5 px-2 text-xs"
-						>
-							<CurrentIcon className="h-3.5 w-3.5" />
-							<span className="max-w-24 truncate">{getChartTypeLabel(config.chartType)}</span>
-							<ChevronDown className="h-3 w-3 opacity-50" />
-						</Button>
-					</DropdownMenuTrigger>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<DropdownMenuTrigger asChild>
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-7 w-7"
+								>
+									<CurrentIcon className="h-3.5 w-3.5" />
+								</Button>
+							</DropdownMenuTrigger>
+						</TooltipTrigger>
+						<TooltipContent>{getChartTypeLabel(config.chartType)}</TooltipContent>
+					</Tooltip>
 					<DropdownMenuContent align="start" className="w-64">
 						{filteredCategories.map((category, categoryIndex) => (
 							<div key={category.name}>
@@ -312,20 +309,19 @@ export function WidgetConfigToolbar({
 					<TooltipTrigger asChild>
 						<Button
 							variant="ghost"
-							size="sm"
-							className="h-7 gap-1 px-2 text-xs"
+							size="icon"
+							className="h-7 w-7 relative"
 							onClick={onOpenFilters}
 						>
 							<Filter className="h-3.5 w-3.5" />
-							Filtros
 							{activeFilterCount > 0 && (
-								<Badge variant="secondary" className="h-4 min-w-4 px-1 text-[10px]">
+								<Badge variant="secondary" className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px]">
 									{activeFilterCount}
 								</Badge>
 							)}
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>Filtrar dados</TooltipContent>
+					<TooltipContent>Filtros</TooltipContent>
 				</Tooltip>
 
 				{/* Options */}
@@ -360,24 +356,39 @@ export function WidgetConfigToolbar({
 
 				<div className="w-px h-4 bg-border mx-0.5" />
 
-				{/* Expand/Collapse */}
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							variant="ghost"
-							size="icon"
-							className="h-7 w-7"
-							onClick={onToggleWidth}
-						>
-							{isFullWidth ? (
+				{/* Shrink */}
+				{canShrink && (
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-7 w-7"
+								onClick={onShrink}
+							>
 								<Minimize2 className="h-3.5 w-3.5" />
-							) : (
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Reduzir</TooltipContent>
+					</Tooltip>
+				)}
+
+				{/* Expand */}
+				{canExpand && (
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-7 w-7"
+								onClick={onExpand}
+							>
 								<Maximize2 className="h-3.5 w-3.5" />
-							)}
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>{isFullWidth ? "Meia largura" : "Largura total"}</TooltipContent>
-				</Tooltip>
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Expandir</TooltipContent>
+					</Tooltip>
+				)}
 
 				{/* Remove */}
 				<Tooltip>

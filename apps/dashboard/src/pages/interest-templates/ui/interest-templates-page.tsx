@@ -3,9 +3,9 @@ import { Button } from "@packages/ui/components/button";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Plus } from "lucide-react";
 import { Suspense } from "react";
-import { UpgradeRequired } from "@/components/upgrade-required";
+import { UpgradeRequired } from "@/features/billing/ui/upgrade-required";
 import { DefaultHeader } from "@/default/default-header";
-import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { usePlanFeatures } from "@/features/billing/lib/use-plan-features";
 import { useSheet } from "@/hooks/use-sheet";
 import {
    InterestTemplateListProvider,

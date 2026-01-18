@@ -8,14 +8,14 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import type { WidgetPosition, InsightConfig } from "@packages/database/schemas/dashboards";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { BarChart3, FileText, Plus } from "lucide-react";
 import { Suspense, useEffect } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/default/default-header";
 import { DashboardGrid } from "@/features/dashboard/ui/dashboard-grid";
-import { AddWidgetCredenza } from "@/features/dashboard/ui/add-widget-credenza";
 import { InsightPickerCredenza, type DefaultInsightType } from "@/features/dashboard/ui/insight-picker-credenza";
+import { TextCardEditorCredenza } from "@/features/dashboard/ui/text-card-editor-credenza";
 import { useDashboardTabs, setAppTabName } from "@/features/dashboard/hooks/use-dashboard-tabs";
 import { useInsightDrillDown, type DrillDownContext } from "@/features/dashboard/hooks/use-insight-drill-down";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -277,34 +277,25 @@ function DashboardContent({ dashboardId }: { dashboardId: string }) {
 	}
 
 	const handleAddTextCard = () => {
-		// Find a free position
-		const widgets = dashboard.widgets || [];
-		const maxY = widgets.reduce((max, w) => Math.max(max, w.position.y + w.position.h), 0);
-		
-		addWidgetMutation.mutate({
-			dashboardId,
-			name: "Text Card",
-			description: "Custom text and notes",
-			type: "text_card",
-			position: { x: 0, y: maxY, w: 1, h: 2 },
-			config: {
-				type: "text_card",
-				content: "# New Text Card\n\nAdd your content here...",
-			},
-		});
-	};
-
-	const handleOpenAddWidget = () => {
 		openCredenza({
 			children: (
-				<AddWidgetCredenza
-					onAddTextCard={() => {
-						closeCredenza();
-						handleAddTextCard();
-					}}
-					onAddInsight={() => {
-						closeCredenza();
-						handleOpenInsightPicker();
+				<TextCardEditorCredenza
+					initialContent=""
+					onSave={(content) => {
+						const widgets = dashboard.widgets || [];
+						const maxY = widgets.reduce((max, w) => Math.max(max, w.position.y + w.position.h), 0);
+
+						addWidgetMutation.mutate({
+							dashboardId,
+							name: "Text Card",
+							description: null,
+							type: "text_card",
+							position: { x: 0, y: maxY, w: 1, h: 2 },
+							config: {
+								type: "text_card",
+								content,
+							},
+						});
 					}}
 				/>
 			),
@@ -387,7 +378,7 @@ function DashboardContent({ dashboardId }: { dashboardId: string }) {
 			name: defaultNames[type],
 			description: defaultDescriptions[type],
 			type: "insight",
-			position: { x: 0, y: maxY, w: 2, h: 4 },
+			position: { x: 0, y: maxY, w: 3, h: 4 },
 			config: defaultConfigs[type],
 		});
 	};
@@ -401,7 +392,7 @@ function DashboardContent({ dashboardId }: { dashboardId: string }) {
 			name: insight.name,
 			description: insight.description || null,
 			type: "insight",
-			position: { x: 0, y: maxY, w: 2, h: 4 },
+			position: { x: 0, y: maxY, w: 3, h: 4 },
 			config: insight.config,
 		});
 	};
@@ -443,13 +434,19 @@ function DashboardContent({ dashboardId }: { dashboardId: string }) {
 		});
 	};
 
-	const handleToggleWidgetWidth = (widgetId: string, newWidth: 1 | 2) => {
+	const handleChangeWidgetWidth = (widgetId: string, newWidth: number) => {
 		const widget = widgets.find((w) => w.id === widgetId);
 		if (!widget) return;
 
+		// Clamp width based on widget type
+		const isTextCard = widget.type === "text_card";
+		const minWidth = isTextCard ? 1 : 3;
+		const maxWidth = isTextCard ? 3 : 6;
+		const clampedWidth = Math.min(Math.max(newWidth, minWidth), maxWidth);
+
 		updateWidgetMutation.mutate({
 			widgetId,
-			position: { ...widget.position, w: newWidth },
+			position: { ...widget.position, w: clampedWidth },
 		});
 	};
 
@@ -479,10 +476,16 @@ function DashboardContent({ dashboardId }: { dashboardId: string }) {
 				}}
 				descriptionPlaceholder="Click to add description..."
 				actions={
-					<Button size="sm" onClick={handleOpenAddWidget}>
-						<Plus className="h-4 w-4 mr-2" />
-						Add
-					</Button>
+					<>
+						<Button size="sm" variant="outline" onClick={handleAddTextCard}>
+							<FileText className="h-4 w-4 mr-2" />
+							Text Card
+						</Button>
+						<Button size="sm" onClick={handleOpenInsightPicker}>
+							<BarChart3 className="h-4 w-4 mr-2" />
+							Insight
+						</Button>
+					</>
 				}
 			/>
 
@@ -495,7 +498,7 @@ function DashboardContent({ dashboardId }: { dashboardId: string }) {
 					onUpdateWidgetConfig={handleUpdateWidgetConfig}
 					onUpdateWidgetName={handleUpdateWidgetName}
 					onUpdateWidgetDescription={handleUpdateWidgetDescription}
-					onToggleWidgetWidth={handleToggleWidgetWidth}
+					onChangeWidgetWidth={handleChangeWidgetWidth}
 					onDrillDown={handleDrillDown}
 				/>
 			) : (
@@ -508,10 +511,16 @@ function DashboardContent({ dashboardId }: { dashboardId: string }) {
 						<CardDescription className="mb-4">
 							Add insights or text cards to customize your dashboard
 						</CardDescription>
-						<Button onClick={handleOpenAddWidget}>
-							<Plus className="h-4 w-4 mr-2" />
-							Add
-						</Button>
+						<div className="flex gap-2">
+							<Button variant="outline" onClick={handleAddTextCard}>
+								<FileText className="h-4 w-4 mr-2" />
+								Text Card
+							</Button>
+							<Button onClick={handleOpenInsightPicker}>
+								<BarChart3 className="h-4 w-4 mr-2" />
+								Insight
+							</Button>
+						</div>
 					</CardContent>
 				</Card>
 			)}

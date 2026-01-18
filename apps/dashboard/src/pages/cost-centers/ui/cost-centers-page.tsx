@@ -1,9 +1,9 @@
 import type { RouterOutput } from "@packages/api/client";
 import { Button } from "@packages/ui/components/button";
 import { Plus } from "lucide-react";
-import { UpgradeRequired } from "@/components/upgrade-required";
+import { UpgradeRequired } from "@/features/billing/ui/upgrade-required";
 import { DefaultHeader } from "@/default/default-header";
-import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { usePlanFeatures } from "@/features/billing/lib/use-plan-features";
 import { useSheet } from "@/hooks/use-sheet";
 import { CostCenterListProvider } from "../features/cost-center-list-context";
 import { ManageCostCenterForm } from "../features/manage-cost-center-form";

@@ -1,12 +1,12 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { UpgradeRequired } from "@/components/upgrade-required";
+import { UpgradeRequired } from "@/features/billing/ui/upgrade-required";
 import {
    MembersDataTable,
    MembersDataTableSkeleton,
 } from "@/features/organization/ui/members-data-table";
-import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { usePlanFeatures } from "@/features/billing/lib/use-plan-features";
 import { useTRPC } from "@/integrations/clients";
 import { MembersQuickActionsToolbar } from "./organization-members-quick-actions-toolbar";
 
@@ -63,9 +63,7 @@ export function OrganizationMembersPage() {
          <main className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
                <div>
-                  <h1 className="text-2xl font-bold">
-                     Membros
-                  </h1>
+                  <h1 className="text-2xl font-bold">Membros</h1>
                   <p className="text-muted-foreground">
                      Gerencie os membros da sua organização
                   </p>

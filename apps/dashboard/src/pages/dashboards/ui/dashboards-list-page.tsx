@@ -8,7 +8,7 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
-import { LayoutDashboard, Plus, Trash2 } from "lucide-react";
+import { Gauge, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -127,7 +127,7 @@ export function DashboardsListPage() {
 								<div className="flex items-start justify-between">
 									<div className="flex items-center gap-3">
 										<div className="rounded-md bg-primary/10 p-2">
-											<LayoutDashboard className="h-4 w-4 text-primary" />
+											<Gauge className="h-4 w-4 text-primary" />
 										</div>
 										<div>
 											<CardTitle className="text-base">
@@ -158,7 +158,7 @@ export function DashboardsListPage() {
 				<Card className="border-dashed">
 					<CardHeader className="text-center py-12">
 						<div className="mx-auto rounded-full bg-muted p-3 mb-4 w-fit">
-							<LayoutDashboard className="h-6 w-6 text-muted-foreground" />
+							<Gauge className="h-6 w-6 text-muted-foreground" />
 						</div>
 						<CardTitle className="text-lg">No dashboards yet</CardTitle>
 						<CardDescription className="mb-4">

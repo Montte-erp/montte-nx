@@ -24,7 +24,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import {
 	Copy,
-	LayoutDashboard,
+	Gauge,
 	LineChart,
 	MoreHorizontal,
 	Pencil,
@@ -43,6 +43,7 @@ import {
 	togglePinTab,
 	useDashboardTabs,
 } from "@/features/dashboard/hooks/use-dashboard-tabs";
+import { ROUTE_TAB_MAP } from "@/features/dashboard/lib/route-tab-mapping";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useTRPC } from "@/integrations/clients";
 import { toast } from "sonner";
@@ -53,7 +54,7 @@ const TAB_COLORS = {
 	app: {
 		bg: "bg-blue-500/20",
 		text: "text-blue-500",
-		icon: LayoutDashboard,
+		icon: Gauge,
 	},
 	dashboard: {
 		bg: "bg-purple-500/20",
@@ -81,6 +82,38 @@ function getTabColors(tab: Tab) {
 			icon: tab.routeInfo.icon,
 		};
 	}
+	// For app tabs with routeKey but no routeInfo (loaded from storage), look up from map
+	if (tab.type === "app" && tab.routeKey) {
+		const routeInfo = ROUTE_TAB_MAP[tab.routeKey];
+		if (routeInfo) {
+			return {
+				bg: routeInfo.iconBg,
+				text: routeInfo.iconColor,
+				icon: routeInfo.icon,
+			};
+		}
+	}
+	// For transformed search tabs with routeInfo, use dynamic colors
+	if (tab.type === "search" && "routeInfo" in tab && tab.routeInfo) {
+		const routeInfo = tab.routeInfo as import("@/features/dashboard/lib/route-tab-mapping").RouteTabInfo;
+		return {
+			bg: routeInfo.iconBg,
+			text: routeInfo.iconColor,
+			icon: routeInfo.icon,
+		};
+	}
+	// For transformed search tabs with routeKey but no routeInfo (loaded from storage)
+	if (tab.type === "search" && "routeKey" in tab && tab.routeKey) {
+		const routeKey = tab.routeKey as string;
+		const routeInfo = ROUTE_TAB_MAP[routeKey];
+		if (routeInfo) {
+			return {
+				bg: routeInfo.iconBg,
+				text: routeInfo.iconColor,
+				icon: routeInfo.icon,
+			};
+		}
+	}
 	return TAB_COLORS[tab.type];
 }
 
@@ -106,9 +139,25 @@ export function DashboardTabBar() {
 	const handleTabClick = (tab: Tab) => {
 		setActiveTab(tab.id);
 
+		// Use stored route if available (browser-like behavior)
+		if (tab.route?.pathname) {
+			navigate({
+				to: tab.route.pathname,
+				search: tab.route.search ? JSON.parse(tab.route.search) : undefined,
+			});
+			return;
+		}
+
+		// Fall back to default routes for tabs without stored route
 		if (tab.type === "app") {
-			// Navigate to default dashboard if dashboardId is available
-			if (tab.dashboardId) {
+			// Use stored routeKey if available to return to the same section
+			if (tab.routeKey && tab.routeKey !== "home") {
+				navigate({
+					to: `/$slug/${tab.routeKey}`,
+					params: { slug },
+				});
+			} else if (tab.dashboardId) {
+				// Navigate to default dashboard if dashboardId is available
 				navigate({
 					to: "/$slug/dashboards/$dashboardId",
 					params: { dashboardId: tab.dashboardId, slug },

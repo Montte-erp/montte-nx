@@ -36,33 +36,33 @@ import {
    getAction,
    getActionTabs,
    getFieldsForTab,
+   actionsConfig,
 } from "@packages/workflows/config/actions";
 import type { ActionField } from "@packages/workflows/schemas/action-field.schema";
+import { TRIGGER_DEFINITIONS } from "@packages/workflows/triggers/definitions";
 import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, FileText, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { IconName } from "@/features/icon-selector/lib/available-icons";
-import { IconDisplay } from "@/features/icon-selector/ui/icon-display";
-import { useTRPC } from "@/integrations/clients";
-import {
-   validateActionNode,
-   validateConditionNode,
-} from "../lib/node-validation";
 import type {
    ActionNodeData,
    AutomationNode,
    ConditionNodeData,
    TriggerNodeData,
-} from "../lib/types";
+} from "@/features/automations/hooks/use-flow-serialization";
 import {
-   ACTION_TYPE_LABELS,
    CONDITION_OPERATOR_LABELS,
    DAYS_OF_WEEK,
-   isScheduleTrigger,
    TRANSACTION_FIELDS,
-   TRIGGER_TYPE_LABELS,
-} from "../lib/types";
+} from "@/features/automations/hooks/use-flow-serialization";
+import {
+   isScheduleTrigger,
+   validateActionNode,
+   validateConditionNode,
+} from "@/features/automations/hooks/use-node-validation";
+import type { IconName } from "@/features/icon-selector/lib/available-icons";
+import { IconDisplay } from "@/features/icon-selector/ui/icon-display";
+import { useTRPC } from "@/integrations/clients";
 import { DynamicFieldRenderer } from "./dynamic-field-renderer";
 
 type NodeConfigurationPanelProps = {
@@ -185,11 +185,9 @@ function TriggerConfigurationForm({
                            <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                           {(
-                              Object.keys(TRIGGER_TYPE_LABELS) as TriggerType[]
-                           ).map((type) => (
-                              <SelectItem key={type} value={type}>
-                                 {TRIGGER_TYPE_LABELS[type]}
+                           {TRIGGER_DEFINITIONS.map((def) => (
+                              <SelectItem key={def.type} value={def.type}>
+                                 {def.label}
                               </SelectItem>
                            ))}
                         </SelectContent>
@@ -576,7 +574,7 @@ function ActionConfigurationForm({
             onUpdate(nodeId, {
                actionType: newType,
                config: {},
-               label: ACTION_TYPE_LABELS[newType],
+               label: getAction(newType).label,
             });
          } else {
             onUpdate(nodeId, { config: { ...data.config, [field]: value } });
@@ -786,10 +784,10 @@ function ActionConfigurationForm({
                         </SelectTrigger>
                         <SelectContent>
                            {(
-                              Object.keys(ACTION_TYPE_LABELS) as ActionType[]
+                              Object.keys(actionsConfig) as ActionType[]
                            ).map((type) => (
                               <SelectItem key={type} value={type}>
-                                 {ACTION_TYPE_LABELS[type]}
+                                 {getAction(type).label}
                               </SelectItem>
                            ))}
                         </SelectContent>

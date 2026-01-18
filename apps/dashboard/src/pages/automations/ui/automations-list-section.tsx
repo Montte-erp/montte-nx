@@ -46,7 +46,7 @@ import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useTRPC } from "@/integrations/clients";
-import { useAutomationsList } from "../features/automations-list-context";
+import { useAutomationsList } from "@/features/automations/hooks/use-automations-list-context";
 import {
    AutomationExpandedContent,
    AutomationMobileCard,

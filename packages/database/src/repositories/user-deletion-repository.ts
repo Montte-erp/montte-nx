@@ -48,9 +48,7 @@ async function deleteOrganizationScopedData(
       tx
          .delete(automationRule)
          .where(eq(automationRule.organizationId, organizationId)),
-      tx
-         .delete(dashboard)
-         .where(eq(dashboard.organizationId, organizationId)),
+      tx.delete(dashboard).where(eq(dashboard.organizationId, organizationId)),
       tx
          .delete(interestTemplate)
          .where(eq(interestTemplate.organizationId, organizationId)),

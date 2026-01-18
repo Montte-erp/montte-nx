@@ -1,4 +1,5 @@
 import {
+   deleteNotification,
    findNotificationsByUserId,
    findUnreadNotificationsByUserId,
    markNotificationAsRead,
@@ -36,5 +37,13 @@ export const notificationRouter = router({
          const resolvedCtx = await ctx;
 
          return markNotificationAsRead(resolvedCtx.db, input.id);
+      }),
+
+   dismiss: protectedProcedure
+      .input(z.object({ id: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+         const resolvedCtx = await ctx;
+
+         return deleteNotification(resolvedCtx.db, input.id);
       }),
 });

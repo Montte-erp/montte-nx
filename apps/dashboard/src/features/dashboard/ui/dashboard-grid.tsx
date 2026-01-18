@@ -1,19 +1,10 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo, useRef, useEffect, useState } from "react";
-import GridLayout, { type Layout, type LayoutItem } from "react-grid-layout";
-import "react-grid-layout/css/styles.css";
-import "react-resizable/css/styles.css";
-import { useTRPC } from "@/integrations/clients";
-import { useSidebar } from "@packages/ui/components/sidebar";
 import type {
 	WidgetPosition,
 	InsightConfig,
 } from "@packages/database/schemas/dashboards";
+import { cn } from "@packages/ui/lib/utils";
 import { WidgetContainer } from "./widget-container";
 import type { DrillDownContext } from "../hooks/use-insight-drill-down";
-
-// Breakpoint for mobile (matches Tailwind md: breakpoint)
-const MOBILE_BREAKPOINT = 768;
 
 type Widget = {
 	id: string;
@@ -38,159 +29,60 @@ type DashboardGridProps = {
 		widgetId: string,
 		description: string | null,
 	) => void;
-	onToggleWidgetWidth: (widgetId: string, newWidth: 1 | 2) => void;
+	onChangeWidgetWidth: (widgetId: string, newWidth: number) => void;
 	onDrillDown?: (config: InsightConfig, context: DrillDownContext) => void;
 };
 
+const getColSpanClass = (width: number) => {
+	const colSpanMap: Record<number, string> = {
+		1: "md:col-span-1",
+		2: "md:col-span-2",
+		3: "md:col-span-3",
+		4: "md:col-span-4",
+		5: "md:col-span-5",
+		6: "md:col-span-6",
+	};
+	return colSpanMap[width] || "md:col-span-3";
+};
+
 export function DashboardGrid({
-	dashboardId,
 	widgets,
 	onRemoveWidget,
 	onUpdateWidgetConfig,
 	onUpdateWidgetName,
 	onUpdateWidgetDescription,
-	onToggleWidgetWidth,
+	onChangeWidgetWidth,
 	onDrillDown,
 }: DashboardGridProps) {
-	const trpc = useTRPC();
-	const queryClient = useQueryClient();
-	const containerRef = useRef<HTMLDivElement>(null);
-	const [containerWidth, setContainerWidth] = useState(1200);
-	const { state: sidebarState } = useSidebar();
-
-	// Detect mobile based on container width
-	const isMobile = containerWidth < MOBILE_BREAKPOINT;
-
-	// Measure container width for responsive grid using ResizeObserver
-	// This detects size changes from sidebar collapse/expand, not just window resize
-	useEffect(() => {
-		const container = containerRef.current;
-		if (!container) return;
-
-		const resizeObserver = new ResizeObserver((entries) => {
-			for (const entry of entries) {
-				setContainerWidth(entry.contentRect.width);
-			}
-		});
-
-		resizeObserver.observe(container);
-		return () => resizeObserver.disconnect();
-	}, []);
-
-	// Re-measure width after sidebar transition completes (200ms)
-	useEffect(() => {
-		const container = containerRef.current;
-		if (!container) return;
-
-		const timeoutId = setTimeout(() => {
-			setContainerWidth(container.offsetWidth);
-		}, 220); // Slightly longer than 200ms transition
-
-		return () => clearTimeout(timeoutId);
-	}, [sidebarState]);
-
-	const updatePositionsMutation = useMutation(
-		trpc.dashboards.updateWidgetPositions.mutationOptions({
-			onSuccess: () => {
-				queryClient.invalidateQueries({
-					queryKey: trpc.dashboards.getById.queryKey({ id: dashboardId }),
-				});
-			},
-		}),
-	);
-
-	const layout: LayoutItem[] = useMemo(
-		() =>
-			widgets.map((widget) => ({
-				i: widget.id,
-				x: isMobile ? 0 : Math.min(widget.position.x, 1), // On mobile, always x=0
-				y: widget.position.y,
-				w: isMobile ? 2 : Math.min(Math.max(widget.position.w, 1), 2), // On mobile, always full width (2)
-				h: widget.position.h,
-				minW: isMobile ? 2 : 1, // On mobile, lock to full width
-				maxW: 2,
-				minH: widget.position.minH ?? 2,
-			})),
-		[widgets, isMobile],
-	);
-
-	const handleLayoutChange = useCallback(
-		(newLayout: Layout) => {
-			// Don't save position changes on mobile since they're forced
-			if (isMobile) return;
-
-			// Check if layout actually changed
-			const hasChanges = newLayout.some((item) => {
-				const widget = widgets.find((w) => w.id === item.i);
-				if (!widget) return false;
-				return (
-					widget.position.x !== item.x ||
-					widget.position.y !== item.y ||
-					widget.position.w !== item.w ||
-					widget.position.h !== item.h
-				);
-			});
-
-			if (hasChanges) {
-				updatePositionsMutation.mutate({
-					positions: newLayout.map((item) => ({
-						widgetId: item.i,
-						position: {
-							x: item.x,
-							y: item.y,
-							w: item.w,
-							h: item.h,
-						},
-					})),
-				});
-			}
-		},
-		[widgets, updatePositionsMutation, isMobile],
-	);
+	// Sort widgets by y position for consistent ordering
+	const sortedWidgets = [...widgets].sort((a, b) => a.position.y - b.position.y);
 
 	return (
-		<div ref={containerRef}>
-			<GridLayout
-				className="layout"
-				layout={layout}
-				width={containerWidth}
-				onLayoutChange={handleLayoutChange}
-				gridConfig={{
-					cols: isMobile ? 1 : 2,
-					rowHeight: 100,
-					margin: isMobile ? [12, 12] : [16, 16],
-					containerPadding: [0, 0],
-				}}
-				dragConfig={{
-					enabled: !isMobile,
-					handle: ".drag-handle",
-				}}
-				resizeConfig={{
-					enabled: !isMobile,
-				}}
-			>
-				{widgets.map((widget) => (
-					<div key={widget.id} className="h-full">
-						<WidgetContainer
-							widget={widget}
-							onRemove={() => onRemoveWidget(widget.id, widget.name)}
-							onUpdateConfig={(updates) =>
-								onUpdateWidgetConfig(widget.id, updates)
-							}
-							onUpdateName={(name) =>
-								onUpdateWidgetName(widget.id, name)
-							}
-							onUpdateDescription={(description) =>
-								onUpdateWidgetDescription(widget.id, description)
-							}
-							onToggleWidth={(newWidth) =>
-								onToggleWidgetWidth(widget.id, newWidth)
-							}
-							onDrillDown={onDrillDown}
-						/>
-					</div>
-				))}
-			</GridLayout>
+		<div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+			{sortedWidgets.map((widget) => (
+				<div
+					key={widget.id}
+					className={cn("col-span-1", getColSpanClass(widget.position.w))}
+				>
+					<WidgetContainer
+						widget={widget}
+						onRemove={() => onRemoveWidget(widget.id, widget.name)}
+						onUpdateConfig={(updates) =>
+							onUpdateWidgetConfig(widget.id, updates)
+						}
+						onUpdateName={(name) =>
+							onUpdateWidgetName(widget.id, name)
+						}
+						onUpdateDescription={(description) =>
+							onUpdateWidgetDescription(widget.id, description)
+						}
+						onChangeWidth={(newWidth) =>
+							onChangeWidgetWidth(widget.id, newWidth)
+						}
+						onDrillDown={onDrillDown}
+					/>
+				</div>
+			))}
 		</div>
 	);
 }

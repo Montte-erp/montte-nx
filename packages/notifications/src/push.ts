@@ -1,9 +1,15 @@
 import type { DatabaseInstance } from "@packages/database/client";
 import {
+   createNotification,
+   findRecentNotificationByType,
+} from "@packages/database/repositories/notification-repository";
+import {
    deletePushSubscription,
    findPushSubscriptionsByUserId,
 } from "@packages/database/repositories/push-subscription-repository";
 import webpush from "web-push";
+
+const DEDUPLICATION_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 export interface PushNotificationPayload {
    title: string;
@@ -61,7 +67,27 @@ export async function sendPushNotificationToUser(
 
    const subscriptions = await findPushSubscriptionsByUserId(db, userId);
 
+   // Check for existing recent notification to avoid duplicates
+   const notificationType = payload.data?.type || "general";
+   const existingNotification = await findRecentNotificationByType(
+      db,
+      userId,
+      notificationType,
+      DEDUPLICATION_INTERVAL_MS,
+   );
+
    if (subscriptions.length === 0) {
+      // No push subscriptions, but still persist notification to database (if not duplicate)
+      if (!existingNotification) {
+         await createNotification(db, {
+            message: payload.body,
+            metadata: payload.data,
+            title: payload.title,
+            type: notificationType,
+            userId,
+         });
+      }
+
       return {
          errors: [],
          failed: 0,
@@ -106,6 +132,17 @@ export async function sendPushNotificationToUser(
    const errors = results
       .filter((r): r is PromiseRejectedResult => r.status === "rejected")
       .map((r) => String(r.reason));
+
+   // Persist notification to database (even if push fails, but only if not duplicate)
+   if (!existingNotification) {
+      await createNotification(db, {
+         message: payload.body,
+         metadata: payload.data,
+         title: payload.title,
+         type: notificationType,
+         userId,
+      });
+   }
 
    return {
       errors,

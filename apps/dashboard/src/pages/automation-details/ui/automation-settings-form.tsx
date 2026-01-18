@@ -22,10 +22,10 @@ import {
 } from "@packages/ui/components/sheet";
 import { Switch } from "@packages/ui/components/switch";
 import { Textarea } from "@packages/ui/components/textarea";
+import { TRIGGER_DEFINITIONS } from "@packages/workflows/triggers/definitions";
 import { useForm } from "@tanstack/react-form";
 import { useEffect } from "react";
 import { z } from "zod";
-import { TRIGGER_TYPE_LABELS } from "../lib/types";
 
 type AutomationSettings = {
    name: string;
@@ -169,13 +169,9 @@ export function AutomationSettingsForm({
                                  <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                 {(
-                                    Object.keys(
-                                       TRIGGER_TYPE_LABELS,
-                                    ) as TriggerType[]
-                                 ).map((type) => (
-                                    <SelectItem key={type} value={type}>
-                                       {TRIGGER_TYPE_LABELS[type]}
+                                 {TRIGGER_DEFINITIONS.map((def) => (
+                                    <SelectItem key={def.type} value={def.type}>
+                                       {def.label}
                                     </SelectItem>
                                  ))}
                               </SelectContent>

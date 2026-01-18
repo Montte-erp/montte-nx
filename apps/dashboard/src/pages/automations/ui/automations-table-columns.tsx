@@ -18,7 +18,7 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import { useIsMobile } from "@packages/ui/hooks/use-mobile";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { getTriggerLabel } from "@packages/workflows/triggers/definitions";
 import { Link } from "@tanstack/react-router";
 import type { ColumnDef, Row } from "@tanstack/react-table";
 import {
@@ -35,21 +35,10 @@ import {
    Trash2,
    Zap,
 } from "lucide-react";
-import { toast } from "sonner";
+import { useAutomationActions } from "@/features/automations/hooks/use-automation-actions";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
-import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useTRPC } from "@/integrations/clients";
 
 type Automation = RouterOutput["automations"]["getAllPaginated"]["rules"][0];
-
-const triggerTypeLabels: Record<string, string> = {
-   "transaction.created": "Transação Criada",
-   "transaction.updated": "Transação Atualizada",
-   "schedule.daily": "Agendamento Diário",
-   "schedule.weekly": "Agendamento Semanal",
-   "schedule.biweekly": "Agendamento Quinzenal",
-   "schedule.custom": "Agendamento Personalizado",
-};
 
 const triggerTypeIcons: Record<string, typeof Zap> = {
    "transaction.created": Zap,
@@ -73,87 +62,20 @@ function formatDate(date: Date | string | null): string {
 
 function AutomationActionsCell({ automation }: { automation: Automation }) {
    const { activeOrganization } = useActiveOrganization();
-   const { openAlertDialog } = useAlertDialog();
-   const trpc = useTRPC();
-   const queryClient = useQueryClient();
-
-   const deleteMutation = useMutation(
-      trpc.automations.delete.mutationOptions({
-         onError: () => {
-            toast.error("Erro ao excluir automação");
-         },
-         onSuccess: () => {
-            queryClient.invalidateQueries({
-               queryKey: [["automations"]],
-            });
-            toast.success("Automação excluída com sucesso");
-         },
-      }),
-   );
-
-   const duplicateMutation = useMutation(
-      trpc.automations.duplicate.mutationOptions({
-         onError: () => {
-            toast.error("Erro ao duplicar automação");
-         },
-         onSuccess: () => {
-            queryClient.invalidateQueries({
-               queryKey: [["automations"]],
-            });
-            toast.success("Automação duplicada com sucesso");
-         },
-      }),
-   );
-
-   const testRunMutation = useMutation(
-      trpc.automations.triggerManually.mutationOptions({
-         onError: (error) => {
-            toast.error(`Erro ao testar automação: ${error.message}`);
-         },
-         onSuccess: (data) => {
-            toast.success(`Automação executada! Job ID: ${data.jobId}`);
-         },
-      }),
-   );
-
-   const handleDelete = () => {
-      openAlertDialog({
-         actionLabel: "Excluir",
-         description:
-            "Tem certeza que deseja excluir esta automação? Esta ação não pode ser desfeita.",
-         onAction: async () => {
-            await deleteMutation.mutateAsync({ id: automation.id });
-         },
-         title: "Excluir automação",
-         variant: "destructive",
-      });
-   };
-
-   const handleDuplicate = () => {
-      duplicateMutation.mutate({
-         id: automation.id,
-         newName: `${automation.name} (cópia)`,
-      });
-   };
-
-   const handleTestRun = () => {
-      if (!automation.enabled) {
-         toast.error("Automação desativada. Ative-a primeiro para testar.");
-         return;
-      }
-      testRunMutation.mutate({
-         dryRun: false,
-         ruleId: automation.id,
-      });
-   };
+   const {
+      handleDelete,
+      handleDuplicate,
+      handleTestRun,
+      isTesting,
+   } = useAutomationActions(automation);
 
    return (
       <div className="flex justify-end gap-1">
          <Tooltip>
             <TooltipTrigger asChild>
                <Button
-                  disabled={!automation.enabled || testRunMutation.isPending}
-                  onClick={handleTestRun}
+                  disabled={!automation.enabled || isTesting}
+                  onClick={() => handleTestRun(false)}
                   size="icon"
                   variant="outline"
                >
@@ -204,32 +126,13 @@ function AutomationActionsCell({ automation }: { automation: Automation }) {
 }
 
 function AutomationStatusToggle({ automation }: { automation: Automation }) {
-   const trpc = useTRPC();
-   const queryClient = useQueryClient();
-
-   const toggleMutation = useMutation(
-      trpc.automations.toggle.mutationOptions({
-         onError: () => {
-            toast.error("Erro ao alterar status da automação");
-         },
-         onSuccess: () => {
-            queryClient.invalidateQueries({
-               queryKey: [["automations"]],
-            });
-         },
-      }),
-   );
+   const { handleToggle, isToggling } = useAutomationActions(automation);
 
    return (
       <Switch
          checked={automation.enabled}
-         disabled={toggleMutation.isPending}
-         onCheckedChange={(checked) => {
-            toggleMutation.mutate({
-               id: automation.id,
-               enabled: checked,
-            });
-         }}
+         disabled={isToggling}
+         onCheckedChange={handleToggle}
       />
    );
 }
@@ -249,7 +152,7 @@ export function createAutomationColumns(): ColumnDef<Automation>[] {
                   <div className="flex flex-col">
                      <span className="font-medium">{automation.name}</span>
                      <span className="text-xs text-muted-foreground">
-                        {triggerTypeLabels[automation.triggerType]}
+                        {getTriggerLabel(automation.triggerType)}
                      </span>
                   </div>
                </div>
@@ -310,57 +213,21 @@ export function AutomationExpandedContent({
 }: AutomationExpandedContentProps) {
    const automation = row.original;
    const { activeOrganization } = useActiveOrganization();
-   const { openAlertDialog } = useAlertDialog();
    const isMobile = useIsMobile();
-   const trpc = useTRPC();
-   const queryClient = useQueryClient();
+   const {
+      handleDelete,
+      handleTrigger,
+      isTesting,
+   } = useAutomationActions(automation);
 
-   const deleteMutation = useMutation(
-      trpc.automations.delete.mutationOptions({
-         onError: () => {
-            toast.error("Erro ao excluir automação");
-         },
-         onSuccess: () => {
-            queryClient.invalidateQueries({
-               queryKey: [["automations"]],
-            });
-            toast.success("Automação excluída com sucesso");
-         },
-      }),
-   );
-
-   const triggerMutation = useMutation(
-      trpc.automations.triggerManually.mutationOptions({
-         onError: () => {
-            toast.error("Erro ao executar automação");
-         },
-         onSuccess: () => {
-            toast.success("Automação adicionada à fila de execução");
-         },
-      }),
-   );
-
-   const handleDelete = (e: React.MouseEvent) => {
+   const onDeleteClick = (e: React.MouseEvent) => {
       e.stopPropagation();
-      openAlertDialog({
-         actionLabel: "Excluir",
-         description:
-            "Tem certeza que deseja excluir esta automação? Esta ação não pode ser desfeita.",
-         onAction: async () => {
-            await deleteMutation.mutateAsync({ id: automation.id });
-         },
-         title: "Excluir automação",
-         variant: "destructive",
-      });
+      handleDelete();
    };
 
-   const handleTrigger = (e: React.MouseEvent) => {
+   const onTriggerClick = (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (!automation.enabled) {
-         toast.error("Não é possível executar uma automação inativa");
-         return;
-      }
-      triggerMutation.mutate({ ruleId: automation.id });
+      handleTrigger();
    };
 
    const TriggerIcon = triggerTypeIcons[automation.triggerType] || Zap;
@@ -376,7 +243,7 @@ export function AutomationExpandedContent({
                   <div>
                      <p className="text-xs text-muted-foreground">Gatilho</p>
                      <p className="text-sm font-medium">
-                        {triggerTypeLabels[automation.triggerType]}
+                        {getTriggerLabel(automation.triggerType)}
                      </p>
                   </div>
                </div>
@@ -420,8 +287,8 @@ export function AutomationExpandedContent({
                {automation.enabled && (
                   <Button
                      className="w-full justify-start"
-                     disabled={triggerMutation.isPending}
-                     onClick={handleTrigger}
+                     disabled={isTesting}
+                     onClick={onTriggerClick}
                      size="sm"
                      variant="outline"
                   >
@@ -448,7 +315,7 @@ export function AutomationExpandedContent({
                </Button>
                <Button
                   className="w-full justify-start"
-                  onClick={handleDelete}
+                  onClick={onDeleteClick}
                   size="sm"
                   variant="destructive"
                >
@@ -468,7 +335,7 @@ export function AutomationExpandedContent({
                <div>
                   <p className="text-xs text-muted-foreground">Gatilho</p>
                   <p className="text-sm font-medium">
-                     {triggerTypeLabels[automation.triggerType]}
+                     {getTriggerLabel(automation.triggerType)}
                   </p>
                </div>
             </div>
@@ -511,8 +378,8 @@ export function AutomationExpandedContent({
          <div className="flex items-center gap-2">
             {automation.enabled && (
                <Button
-                  disabled={triggerMutation.isPending}
-                  onClick={handleTrigger}
+                  disabled={isTesting}
+                  onClick={onTriggerClick}
                   size="sm"
                   variant="outline"
                >
@@ -532,7 +399,7 @@ export function AutomationExpandedContent({
                   Detalhes
                </Link>
             </Button>
-            <Button onClick={handleDelete} size="sm" variant="destructive">
+            <Button onClick={onDeleteClick} size="sm" variant="destructive">
                <Trash2 className="size-4" />
                Excluir
             </Button>
@@ -566,7 +433,7 @@ export function AutomationMobileCard({
                <div className="flex-1">
                   <CardTitle className="text-base">{automation.name}</CardTitle>
                   <CardDescription>
-                     {triggerTypeLabels[automation.triggerType]}
+                     {getTriggerLabel(automation.triggerType)}
                   </CardDescription>
                </div>
             </div>

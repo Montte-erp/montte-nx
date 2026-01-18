@@ -1,5 +1,5 @@
 import { AppError, propagateError } from "@packages/utils/errors";
-import { eq } from "drizzle-orm";
+import { and, eq, gte } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import { notification } from "../schemas/notifications";
 
@@ -83,6 +83,56 @@ export async function markNotificationAsRead(
       propagateError(err);
       throw AppError.database(
          `Failed to mark notification as read: ${(err as Error).message}`,
+      );
+   }
+}
+
+export async function deleteNotification(
+   dbClient: DatabaseInstance,
+   notificationId: string,
+) {
+   try {
+      const result = await dbClient
+         .delete(notification)
+         .where(eq(notification.id, notificationId))
+         .returning();
+
+      if (!result.length) {
+         throw AppError.database("Notification not found");
+      }
+      return result[0];
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database(
+         `Failed to delete notification: ${(err as Error).message}`,
+      );
+   }
+}
+
+export async function findRecentNotificationByType(
+   dbClient: DatabaseInstance,
+   userId: string,
+   type: string,
+   withinMs: number,
+): Promise<Notification | undefined> {
+   try {
+      const cutoff = new Date(Date.now() - withinMs);
+      const result = await dbClient
+         .select()
+         .from(notification)
+         .where(
+            and(
+               eq(notification.userId, userId),
+               eq(notification.type, type),
+               gte(notification.createdAt, cutoff),
+            ),
+         )
+         .limit(1);
+      return result[0];
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database(
+         `Failed to find recent notification: ${(err as Error).message}`,
       );
    }
 }

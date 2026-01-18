@@ -1,7 +1,7 @@
 import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
+   Collapsible,
+   CollapsibleContent,
+   CollapsibleTrigger,
 } from "@packages/ui/components/collapsible";
 import {
 	SidebarGroup,
@@ -24,7 +24,6 @@ import {
 	CirclePlus,
 	FileText,
 	FolderKanban,
-	Home,
 	Landmark,
 	Percent,
 	Receipt,
@@ -39,7 +38,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { ManageTransactionForm } from "@/features/transaction/ui/manage-transaction-form";
-import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { usePlanFeatures } from "@/features/billing/lib/use-plan-features";
 import { useSheet } from "@/hooks/use-sheet";
 
 export function NavMain() {
@@ -48,7 +47,7 @@ export function NavMain() {
 	const { setOpenMobile, state } = useSidebar();
 	const [reportsOpen, setReportsOpen] = useState(true);
 	const [planningOpen, setPlanningOpen] = useState(true);
-	const [settingsOpen, setSettingsOpen] = useState(false);
+	const [categorizationOpen, setCategorizationOpen] = useState(false);
 	const {
 		canAccessTags,
 		canAccessCostCenters,
@@ -101,13 +100,13 @@ export function NavMain() {
 		},
 		...(canAccessCounterparties
 			? [
-					{
-						icon: Users,
-						id: "counterparties",
-						title: "Cadastros",
-						url: "/$slug/counterparties",
-					},
-				]
+				{
+					icon: Users,
+					id: "counterparties",
+					title: "Cadastros",
+					url: "/$slug/counterparties",
+				},
+			]
 			: []),
 	];
 
@@ -121,43 +120,43 @@ export function NavMain() {
 		},
 		...(canAccessCostCenters
 			? [
-					{
-						icon: Landmark,
-						id: "cost-centers",
-						title: "Centros de Custo",
-						url: "/$slug/cost-centers",
-					},
-				]
+				{
+					icon: Landmark,
+					id: "cost-centers",
+					title: "Centros de Custo",
+					url: "/$slug/cost-centers",
+				},
+			]
 			: []),
 		...(canAccessTags
 			? [
-					{
-						icon: Tag,
-						id: "tags",
-						title: "Tags",
-						url: "/$slug/tags",
-					},
-				]
+				{
+					icon: Tag,
+					id: "tags",
+					title: "Tags",
+					url: "/$slug/tags",
+				},
+			]
 			: []),
 		...(canAccessInterestTemplates
 			? [
-					{
-						icon: Percent,
-						id: "interest-templates",
-						title: "Modelos de Juros",
-						url: "/$slug/interest-templates",
-					},
-				]
+				{
+					icon: Percent,
+					id: "interest-templates",
+					title: "Modelos de Juros",
+					url: "/$slug/interest-templates",
+				},
+			]
 			: []),
 		...(canAccessAutomations
 			? [
-					{
-						icon: Zap,
-						id: "automations",
-						title: "Automações",
-						url: "/$slug/automations",
-					},
-				]
+				{
+					icon: Zap,
+					id: "automations",
+					title: "Automações",
+					url: "/$slug/automations",
+				},
+			]
 			: []),
 	];
 
@@ -210,30 +209,6 @@ export function NavMain() {
 					</SidebarMenuButton>
 				</SidebarMenu>
 
-				{/* Home */}
-				<SidebarMenu>
-					<SidebarMenuItem>
-						<SidebarMenuButton
-							asChild
-							className={
-								isActive("/$slug/home")
-									? "bg-primary/10 text-primary rounded-lg"
-									: ""
-							}
-							tooltip="Home"
-						>
-							<Link
-								onClick={() => setOpenMobile(false)}
-								params={{}}
-								to="/$slug/home"
-							>
-								<Home />
-								<span>Home</span>
-							</Link>
-						</SidebarMenuButton>
-					</SidebarMenuItem>
-				</SidebarMenu>
-
 				{/* Transactions - Main feature */}
 				<SidebarMenu>
 					<SidebarMenuItem>
@@ -264,19 +239,20 @@ export function NavMain() {
 						<SidebarMenuItem>
 							<CollapsibleTrigger asChild>
 								<SidebarMenuButton
-									tooltip="Relatórios"
+									tooltip="Análises"
 									className={cn(
-										(isActive("/$slug/dashboards") || isActive("/$slug/insights"))
+										isActive("/$slug/dashboards") ||
+											isActive("/$slug/insights")
 											? "bg-primary/10 text-primary rounded-lg"
-											: ""
+											: "",
 									)}
 								>
 									<BarChart3 />
-									<span>Relatórios</span>
+									<span>Análises</span>
 									<ChevronDown
 										className={cn(
 											"ml-auto h-4 w-4 transition-transform",
-											reportsOpen && "rotate-180"
+											reportsOpen && "rotate-180",
 										)}
 									/>
 								</SidebarMenuButton>
@@ -327,9 +303,10 @@ export function NavMain() {
 								<SidebarMenuButton
 									tooltip="Planejamento"
 									className={cn(
-										(isActive("/$slug/goals") || isActive("/$slug/budgets"))
+										isActive("/$slug/goals") ||
+											isActive("/$slug/budgets")
 											? "bg-primary/10 text-primary rounded-lg"
-											: ""
+											: "",
 									)}
 								>
 									<Target />
@@ -337,7 +314,7 @@ export function NavMain() {
 									<ChevronDown
 										className={cn(
 											"ml-auto h-4 w-4 transition-transform",
-											planningOpen && "rotate-180"
+											planningOpen && "rotate-180",
 										)}
 									/>
 								</SidebarMenuButton>
@@ -380,33 +357,25 @@ export function NavMain() {
 					</Collapsible>
 				</SidebarMenu>
 
-				{/* Finance Section */}
-				{state === "expanded" && (
-					<SidebarGroupLabel>Gestão</SidebarGroupLabel>
-				)}
+				{/* Categorização Section - Collapsible with Categories, Tags, etc */}
 				<SidebarMenu>
-					{financeItems.map((item) => renderNavItem(item))}
-				</SidebarMenu>
-
-				{/* Settings Section - Collapsible with Categories, Tags, etc */}
-				<SidebarMenu>
-					<Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
+					<Collapsible open={categorizationOpen} onOpenChange={setCategorizationOpen}>
 						<SidebarMenuItem>
 							<CollapsibleTrigger asChild>
 								<SidebarMenuButton
-									tooltip="Configurações"
+									tooltip="Categorização"
 									className={cn(
 										isSettingsActive()
 											? "bg-primary/10 text-primary rounded-lg"
-											: ""
+											: "",
 									)}
 								>
 									<Settings2 />
-									<span>Configurações</span>
+									<span>Categorização</span>
 									<ChevronDown
 										className={cn(
 											"ml-auto h-4 w-4 transition-transform",
-											settingsOpen && "rotate-180"
+											categorizationOpen && "rotate-180",
 										)}
 									/>
 								</SidebarMenuButton>
@@ -437,6 +406,14 @@ export function NavMain() {
 							</CollapsibleContent>
 						</SidebarMenuItem>
 					</Collapsible>
+				</SidebarMenu>
+
+				{/* Finance Section */}
+				{state === "expanded" && (
+					<SidebarGroupLabel>Gestão</SidebarGroupLabel>
+				)}
+				<SidebarMenu>
+					{financeItems.map((item) => renderNavItem(item))}
 				</SidebarMenu>
 			</SidebarGroupContent>
 		</SidebarGroup>

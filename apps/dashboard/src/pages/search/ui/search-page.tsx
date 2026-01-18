@@ -7,9 +7,9 @@ import {
 	Building2,
 	FileText,
 	FolderKanban,
+	Gauge,
 	Home,
 	Landmark,
-	LayoutDashboard,
 	Loader2,
 	Percent,
 	Plus,
@@ -383,7 +383,7 @@ export function SearchPage() {
 													)}
 												>
 													{item.itemType === "dashboard" ? (
-														<LayoutDashboard className="size-3.5 text-purple-600 dark:text-purple-400" />
+														<Gauge className="size-3.5 text-purple-600 dark:text-purple-400" />
 													) : (
 														<Sparkles className="size-3.5 text-blue-600 dark:text-blue-400" />
 													)}
@@ -476,7 +476,7 @@ export function SearchPage() {
 											)}
 										>
 											<div className="flex items-center justify-center size-6 rounded bg-purple-500/15">
-												<LayoutDashboard className="size-3.5 text-purple-600 dark:text-purple-400" />
+												<Gauge className="size-3.5 text-purple-600 dark:text-purple-400" />
 											</div>
 											<span className="flex-1 text-sm truncate">
 												{dashboard.name}

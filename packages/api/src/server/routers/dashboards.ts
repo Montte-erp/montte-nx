@@ -52,9 +52,9 @@ import { protectedProcedure, router } from "../trpc";
 // ============================================
 
 const widgetPositionSchema = z.object({
-	x: z.number().min(0).max(1),
+	x: z.number().min(0).max(5),
 	y: z.number().min(0),
-	w: z.number().min(1).max(2),
+	w: z.number().min(1).max(6),
 	h: z.number().min(1),
 	minW: z.number().optional(),
 	minH: z.number().optional(),

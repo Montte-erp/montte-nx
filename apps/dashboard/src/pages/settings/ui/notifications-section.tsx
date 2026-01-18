@@ -40,8 +40,8 @@ import {
 } from "lucide-react";
 import { Suspense } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
-import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
-import { usePushNotifications } from "@/hooks/use-push-notifications";
+import { useNotificationPreferences } from "@/features/notifications/hooks/use-notification-preferences";
+import { usePushNotifications } from "@/features/notifications/hooks/use-push-notifications";
 
 interface NotificationPreferences {
    budgetAlerts: boolean;

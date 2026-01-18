@@ -1,10 +1,10 @@
 import { cn } from "@packages/ui/lib/utils";
 import { Link, useLocation } from "@tanstack/react-router";
 import { CirclePlus, Home, Menu, Receipt, TrendingUp } from "lucide-react";
+import { useHaptic } from "@/features/pwa/lib/use-haptic";
 import { ManageTransactionForm } from "@/features/transaction/ui/manage-transaction-form";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useCredenza } from "@/hooks/use-credenza";
-import { useHaptic } from "@/hooks/use-haptic";
 import { useSheet } from "@/hooks/use-sheet";
 import { MoreMenuCredenza } from "./more-menu-credenza";
 

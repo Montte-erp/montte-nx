@@ -13,11 +13,17 @@ import { Check, Loader2, Settings, XCircle } from "lucide-react";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
+import type {
+   AutomationEdge,
+   AutomationNode,
+} from "@/features/automations/hooks/use-flow-serialization";
+import {
+   flowDataToSchema,
+   schemaToFlowData,
+} from "@/features/automations/hooks/use-flow-serialization";
 import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
 import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";
-import { flowDataToSchema, schemaToFlowData } from "../lib/flow-serialization";
-import type { AutomationEdge, AutomationNode } from "../lib/types";
 import { AutomationBuilder } from "./automation-builder";
 import { AutomationSettingsForm } from "./automation-settings-form";
 import type { ViewMode } from "./canvas-toolbar";

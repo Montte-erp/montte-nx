@@ -31,8 +31,8 @@ import {
    Receipt,
    Wallet,
 } from "lucide-react";
-import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
-import { usePushNotifications } from "@/hooks/use-push-notifications";
+import { useNotificationPreferences } from "@/features/notifications/hooks/use-notification-preferences";
+import { usePushNotifications } from "@/features/notifications/hooks/use-push-notifications";
 
 export function NotificationSettingsCard() {
    const {
