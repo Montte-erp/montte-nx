@@ -169,7 +169,11 @@ export function GoalMetadataCard({ goal }: GoalMetadataCardProps) {
                         {targetDateFormatted}
                         {daysRemaining !== null && goal.status === "active" && (
                            <span className="text-muted-foreground ml-1">
-                              ({daysRemaining > 0 ? `${daysRemaining}d` : "vencido"})
+                              (
+                              {daysRemaining > 0
+                                 ? `${daysRemaining}d`
+                                 : "vencido"}
+                              )
                            </span>
                         )}
                      </AnnouncementTitle>
@@ -187,7 +191,9 @@ export function GoalMetadataCard({ goal }: GoalMetadataCardProps) {
 
             {goal.description && (
                <div className="mt-4 pt-4 border-t">
-                  <p className="text-sm text-muted-foreground">{goal.description}</p>
+                  <p className="text-sm text-muted-foreground">
+                     {goal.description}
+                  </p>
                </div>
             )}
          </CardContent>

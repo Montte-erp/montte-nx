@@ -136,7 +136,8 @@ function GoalTransactionsContent({ goal }: GoalTransactionsSectionProps) {
                      <EmptyTitle>Nenhuma transacao encontrada</EmptyTitle>
                      <EmptyDescription>
                         Adicione transacoes com a tag "{goal.tag.name}" para que
-                        elas aparecam aqui e contribuam para o progresso da meta.
+                        elas aparecam aqui e contribuam para o progresso da
+                        meta.
                      </EmptyDescription>
                   </EmptyContent>
                </Empty>
@@ -150,7 +151,8 @@ function GoalTransactionsContent({ goal }: GoalTransactionsSectionProps) {
          <CardHeader>
             <CardTitle>Transacoes da Meta</CardTitle>
             <CardDescription>
-               Transacoes vinculadas a esta meta atraves da tag "{goal.tag.name}"
+               Transacoes vinculadas a esta meta atraves da tag "{goal.tag.name}
+               "
             </CardDescription>
          </CardHeader>
          <CardContent>

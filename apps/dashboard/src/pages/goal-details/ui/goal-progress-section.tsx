@@ -49,7 +49,10 @@ function ChartTooltipContent({ active, payload }: ChartTooltipContentProps) {
       <div className="rounded-lg border bg-background p-3 shadow-md">
          <div className="space-y-1.5">
             {payload.map((entry, index) => (
-               <div className="flex items-center gap-2" key={`tooltip-${index + 1}`}>
+               <div
+                  className="flex items-center gap-2"
+                  key={`tooltip-${index + 1}`}
+               >
                   <div
                      className="h-3 w-3 rounded-sm"
                      style={{ backgroundColor: entry.payload.fill }}
@@ -172,7 +175,11 @@ function GoalProgressContent({ goal }: GoalProgressSectionProps) {
                            ))}
                            <Label
                               content={({ viewBox }) => {
-                                 if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                                 if (
+                                    viewBox &&
+                                    "cx" in viewBox &&
+                                    "cy" in viewBox
+                                 ) {
                                     return (
                                        <text
                                           dominantBaseline="middle"
@@ -206,7 +213,9 @@ function GoalProgressContent({ goal }: GoalProgressSectionProps) {
                </div>
 
                <div>
-                  <h4 className="text-sm font-medium mb-4">Indicador de Meta</h4>
+                  <h4 className="text-sm font-medium mb-4">
+                     Indicador de Meta
+                  </h4>
                   <ChartContainer className="h-[200px]" config={chartConfig}>
                      <RadialBarChart
                         cx="50%"
@@ -224,7 +233,11 @@ function GoalProgressContent({ goal }: GoalProgressSectionProps) {
                         />
                         <Label
                            content={({ viewBox }) => {
-                              if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                              if (
+                                 viewBox &&
+                                 "cx" in viewBox &&
+                                 "cy" in viewBox
+                              ) {
                                  return (
                                     <text
                                        dominantBaseline="middle"
@@ -237,7 +250,9 @@ function GoalProgressContent({ goal }: GoalProgressSectionProps) {
                                           x={viewBox.cx}
                                           y={viewBox.cy}
                                        >
-                                          {percentage >= 100 ? "🎉" : `${percentage}%`}
+                                          {percentage >= 100
+                                             ? "🎉"
+                                             : `${percentage}%`}
                                        </tspan>
                                        {percentage >= 100 && (
                                           <tspan
@@ -286,7 +301,9 @@ function GoalProgressContent({ goal }: GoalProgressSectionProps) {
                            ? `${progressData.daysRemaining}d`
                            : "-"}
                      </p>
-                     <p className="text-xs text-muted-foreground">Dias restantes</p>
+                     <p className="text-xs text-muted-foreground">
+                        Dias restantes
+                     </p>
                   </div>
                </div>
             )}

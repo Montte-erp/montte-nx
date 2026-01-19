@@ -1058,9 +1058,18 @@ async function queryTransactionInsight(
       const shouldSeparateByType = !hasSingleTypeFilter;
 
       // Debug logging for multi-series issue
-      console.log("[queryTransactionInsight] config.filters:", JSON.stringify(config.filters));
-      console.log("[queryTransactionInsight] timeGrouping:", config.timeGrouping);
-      console.log("[queryTransactionInsight] shouldSeparateByType:", shouldSeparateByType);
+      console.log(
+         "[queryTransactionInsight] config.filters:",
+         JSON.stringify(config.filters),
+      );
+      console.log(
+         "[queryTransactionInsight] timeGrouping:",
+         config.timeGrouping,
+      );
+      console.log(
+         "[queryTransactionInsight] shouldSeparateByType:",
+         shouldSeparateByType,
+      );
 
       if (shouldSeparateByType) {
          // Query with separated income/expense values
@@ -1078,10 +1087,17 @@ async function queryTransactionInsight(
             .orderBy(asc(dateGroupSql));
 
          // Debug log raw SQL results
-         console.log("[queryTransactionInsight] Raw timeSeriesResult:", JSON.stringify(timeSeriesResult.slice(0, 2)));
+         console.log(
+            "[queryTransactionInsight] Raw timeSeriesResult:",
+            JSON.stringify(timeSeriesResult.slice(0, 2)),
+         );
 
          result.timeSeries = timeSeriesResult.map(
-            (row: { date: string; incomeValue: number; expenseValue: number }) => ({
+            (row: {
+               date: string;
+               incomeValue: number;
+               expenseValue: number;
+            }) => ({
                date: String(row.date),
                value: Number(row.incomeValue) - Number(row.expenseValue), // Net value
                incomeValue: Number(row.incomeValue),
@@ -1097,7 +1113,9 @@ async function queryTransactionInsight(
             })
             .from(transaction)
             .where(whereClause)
-            .groupBy(sql`TO_CHAR(${transaction.date}, '${sql.raw(dateFormat)}')`)
+            .groupBy(
+               sql`TO_CHAR(${transaction.date}, '${sql.raw(dateFormat)}')`,
+            )
             .orderBy(
                asc(sql`TO_CHAR(${transaction.date}, '${sql.raw(dateFormat)}')`),
             );

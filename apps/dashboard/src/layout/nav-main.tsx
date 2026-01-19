@@ -172,33 +172,33 @@ export function NavMain() {
          },
          ...(canAccessCounterparties
             ? [
-               {
-                  icon: Users,
-                  id: "counterparties",
-                  title: "Cadastros",
-                  url: "/$slug/counterparties",
-               },
-            ]
+                 {
+                    icon: Users,
+                    id: "counterparties",
+                    title: "Cadastros",
+                    url: "/$slug/counterparties",
+                 },
+              ]
             : []),
          ...(canAccessInterestTemplates
             ? [
-               {
-                  icon: Percent,
-                  id: "interest-templates",
-                  title: "Modelos de Juros",
-                  url: "/$slug/interest-templates",
-               },
-            ]
+                 {
+                    icon: Percent,
+                    id: "interest-templates",
+                    title: "Modelos de Juros",
+                    url: "/$slug/interest-templates",
+                 },
+              ]
             : []),
          ...(canAccessAutomations
             ? [
-               {
-                  icon: Zap,
-                  id: "automations",
-                  title: "Automações",
-                  url: "/$slug/automations",
-               },
-            ]
+                 {
+                    icon: Zap,
+                    id: "automations",
+                    title: "Automações",
+                    url: "/$slug/automations",
+                 },
+              ]
             : []),
       ],
       [
@@ -218,23 +218,23 @@ export function NavMain() {
          },
          ...(canAccessCostCenters
             ? [
-               {
-                  icon: Landmark,
-                  id: "cost-centers",
-                  title: "Centros de Custo",
-                  url: "/$slug/cost-centers",
-               },
-            ]
+                 {
+                    icon: Landmark,
+                    id: "cost-centers",
+                    title: "Centros de Custo",
+                    url: "/$slug/cost-centers",
+                 },
+              ]
             : []),
          ...(canAccessTags
             ? [
-               {
-                  icon: Tag,
-                  id: "tags",
-                  title: "Tags",
-                  url: "/$slug/tags",
-               },
-            ]
+                 {
+                    icon: Tag,
+                    id: "tags",
+                    title: "Tags",
+                    url: "/$slug/tags",
+                 },
+              ]
             : []),
       ],
       [canAccessCostCenters, canAccessTags],
@@ -355,7 +355,7 @@ export function NavMain() {
                   className={cn(
                      isItemActive && "bg-primary/10 text-primary rounded-lg",
                      isSubmenuOpen &&
-                     "bg-sidebar-accent text-sidebar-accent-foreground",
+                        "bg-sidebar-accent text-sidebar-accent-foreground",
                   )}
                   onClick={() => handleSubmenuTrigger(config, ref)}
                   ref={ref}

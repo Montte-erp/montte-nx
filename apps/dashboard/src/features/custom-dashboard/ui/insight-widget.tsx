@@ -56,17 +56,17 @@ import { getItemColor, SEMANTIC_COLORS } from "./chart-colors";
  * Handles: YYYY-MM-DD (day), IYYY-IW (week), YYYY-MM (month), YYYY"Q"Q (quarter), YYYY (year)
  */
 function parseDateString(dateStr: string): Date | null {
-	// Quarter format: "2024Q1", "2024Q2", etc. -> First day of that quarter
-	const quarterMatch = dateStr.match(/^(\d{4})Q([1-4])$/);
-	if (quarterMatch) {
-		const year = Number.parseInt(quarterMatch[1] ?? "0", 10);
-		const quarter = Number.parseInt(quarterMatch[2] ?? "1", 10);
-		return new Date(year, (quarter - 1) * 3, 1);
-	}
+   // Quarter format: "2024Q1", "2024Q2", etc. -> First day of that quarter
+   const quarterMatch = dateStr.match(/^(\d{4})Q([1-4])$/);
+   if (quarterMatch) {
+      const year = Number.parseInt(quarterMatch[1] ?? "0", 10);
+      const quarter = Number.parseInt(quarterMatch[2] ?? "1", 10);
+      return new Date(year, (quarter - 1) * 3, 1);
+   }
 
-	// Standard formats that JS can parse: "2024-01-15", "2024-01", "2024"
-	const date = new Date(dateStr);
-	return Number.isNaN(date.getTime()) ? null : date;
+   // Standard formats that JS can parse: "2024-01-15", "2024-01", "2024"
+   const date = new Date(dateStr);
+   return Number.isNaN(date.getTime()) ? null : date;
 }
 
 /**
@@ -422,7 +422,8 @@ function LineChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
    // Use typeof to handle cases where values might be 0 (which is valid)
    const hasSeparatedData = data.timeSeries.some(
       (p) =>
-         typeof p.incomeValue === "number" && typeof p.expenseValue === "number",
+         typeof p.incomeValue === "number" &&
+         typeof p.expenseValue === "number",
    );
 
    // Check if expense-only filter is active (negate values to show below zero)
@@ -447,7 +448,8 @@ function LineChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
          value: isExpenseOnly ? -point.value : point.value,
          incomeValue: point.incomeValue,
          // Negate expense values for proper visualization below zero line
-         expenseValue: point.expenseValue !== undefined ? -point.expenseValue : undefined,
+         expenseValue:
+            point.expenseValue !== undefined ? -point.expenseValue : undefined,
          comparisonValue: hasComparisonOverlay
             ? (data.comparisonTimeSeries?.[index]?.value ?? null)
             : null,
@@ -462,10 +464,14 @@ function LineChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
             // Negate forecast values for expense-only filter
             const forecastValue = isExpenseOnly ? -fp.value : fp.value;
             const forecastLower = fp.lowerBound
-               ? (isExpenseOnly ? -fp.lowerBound : fp.lowerBound)
+               ? isExpenseOnly
+                  ? -fp.lowerBound
+                  : fp.lowerBound
                : null;
             const forecastUpper = fp.upperBound
-               ? (isExpenseOnly ? -fp.upperBound : fp.upperBound)
+               ? isExpenseOnly
+                  ? -fp.upperBound
+                  : fp.upperBound
                : null;
 
             historical.push({
@@ -540,7 +546,10 @@ function LineChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
    };
 
    const showLegend =
-      config.showLegend || hasSeparatedData || hasComparisonOverlay || hasForecast;
+      config.showLegend ||
+      hasSeparatedData ||
+      hasComparisonOverlay ||
+      hasForecast;
 
    return (
       <ChartContainer className="h-full w-full" config={chartConfig}>
@@ -572,8 +581,12 @@ function LineChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
                      formatter={(value, name) => {
                         // Show absolute value for expenses (they're stored as negative)
                         // This includes both separated expense data and expense-only filter
-                        const isNegatedValue = name === "expenseValue" || (name === "value" && isExpenseOnly);
-                        const displayValue = isNegatedValue ? Math.abs(value as number) : (value as number);
+                        const isNegatedValue =
+                           name === "expenseValue" ||
+                           (name === "value" && isExpenseOnly);
+                        const displayValue = isNegatedValue
+                           ? Math.abs(value as number)
+                           : (value as number);
                         return config.aggregation === "count"
                            ? displayValue.toLocaleString()
                            : formatDecimalCurrency(displayValue);
@@ -624,7 +637,9 @@ function LineChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
                </>
             ) : (
                <Line
-                  activeDot={onDrillDown ? { r: 6, cursor: "pointer" } : undefined}
+                  activeDot={
+                     onDrillDown ? { r: 6, cursor: "pointer" } : undefined
+                  }
                   connectNulls
                   dataKey="value"
                   dot={false}
@@ -692,7 +707,10 @@ function BarChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
       ? (data.timeSeries || []).map((point) => ({
            ...point,
            // Negate expense values for proper visualization below zero line
-           expenseValue: point.expenseValue !== undefined ? -point.expenseValue : undefined,
+           expenseValue:
+              point.expenseValue !== undefined
+                 ? -point.expenseValue
+                 : undefined,
         }))
       : isExpenseOnly && data.timeSeries
         ? data.timeSeries.map((point) => ({
@@ -740,7 +758,11 @@ function BarChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
 
    // When using separated data from timeSeries, use "date" as dataKey
    // When using breakdown data, use "label" as dataKey
-   const dataKey = hasSeparatedData ? "date" : data.breakdown ? "label" : "date";
+   const dataKey = hasSeparatedData
+      ? "date"
+      : data.breakdown
+        ? "label"
+        : "date";
    const isBreakdown = !hasSeparatedData && Boolean(data.breakdown);
 
    const handleBarClick = (entry: {
@@ -796,8 +818,12 @@ function BarChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
                      formatter={(value, name) => {
                         // Show absolute value for expenses (they're stored as negative)
                         // This includes both separated expense data and expense-only filter
-                        const isNegatedValue = name === "expenseValue" || (name === "value" && isExpenseOnly);
-                        const displayValue = isNegatedValue ? Math.abs(value as number) : (value as number);
+                        const isNegatedValue =
+                           name === "expenseValue" ||
+                           (name === "value" && isExpenseOnly);
+                        const displayValue = isNegatedValue
+                           ? Math.abs(value as number)
+                           : (value as number);
                         return config.aggregation === "count"
                            ? displayValue.toLocaleString()
                            : formatDecimalCurrency(displayValue);
@@ -1233,7 +1259,8 @@ function AreaChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
    // Use typeof to handle cases where values might be 0 (which is valid)
    const hasSeparatedData = data.timeSeries.some(
       (p) =>
-         typeof p.incomeValue === "number" && typeof p.expenseValue === "number",
+         typeof p.incomeValue === "number" &&
+         typeof p.expenseValue === "number",
    );
 
    // Check if expense-only filter is active (negate values to show below zero)
@@ -1258,7 +1285,8 @@ function AreaChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
          value: isExpenseOnly ? -point.value : point.value,
          incomeValue: point.incomeValue,
          // Negate expense values for proper visualization below zero line
-         expenseValue: point.expenseValue !== undefined ? -point.expenseValue : undefined,
+         expenseValue:
+            point.expenseValue !== undefined ? -point.expenseValue : undefined,
          comparisonValue: hasComparisonOverlay
             ? (data.comparisonTimeSeries?.[index]?.value ?? null)
             : null,
@@ -1273,10 +1301,14 @@ function AreaChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
             // Negate forecast values for expense-only filter
             const forecastValue = isExpenseOnly ? -fp.value : fp.value;
             const forecastLower = fp.lowerBound
-               ? (isExpenseOnly ? -fp.lowerBound : fp.lowerBound)
+               ? isExpenseOnly
+                  ? -fp.lowerBound
+                  : fp.lowerBound
                : null;
             const forecastUpper = fp.upperBound
-               ? (isExpenseOnly ? -fp.upperBound : fp.upperBound)
+               ? isExpenseOnly
+                  ? -fp.upperBound
+                  : fp.upperBound
                : null;
 
             historical.push({
@@ -1340,7 +1372,10 @@ function AreaChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
    };
 
    const showLegend =
-      config.showLegend || hasSeparatedData || hasComparisonOverlay || hasForecast;
+      config.showLegend ||
+      hasSeparatedData ||
+      hasComparisonOverlay ||
+      hasForecast;
 
    return (
       <ChartContainer className="h-full w-full" config={chartConfig}>
@@ -1372,8 +1407,12 @@ function AreaChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
                      formatter={(value, name) => {
                         // Show absolute value for expenses (they're stored as negative)
                         // This includes both separated expense data and expense-only filter
-                        const isNegatedValue = name === "expenseValue" || (name === "value" && isExpenseOnly);
-                        const displayValue = isNegatedValue ? Math.abs(value as number) : (value as number);
+                        const isNegatedValue =
+                           name === "expenseValue" ||
+                           (name === "value" && isExpenseOnly);
+                        const displayValue = isNegatedValue
+                           ? Math.abs(value as number)
+                           : (value as number);
                         return config.aggregation === "count"
                            ? displayValue.toLocaleString()
                            : formatDecimalCurrency(displayValue);
@@ -1434,7 +1473,7 @@ function AreaChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
                   stroke="var(--color-value)"
                   strokeWidth={2}
                   type="monotone"
-                  />
+               />
             )}
             {hasForecast && (
                <>
@@ -1501,7 +1540,10 @@ function StackedBarChartWidget({
       ? (data.timeSeries || []).map((point) => ({
            ...point,
            // Negate expense values for proper visualization below zero line
-           expenseValue: point.expenseValue !== undefined ? -point.expenseValue : undefined,
+           expenseValue:
+              point.expenseValue !== undefined
+                 ? -point.expenseValue
+                 : undefined,
         }))
       : isExpenseOnly
         ? (data.timeSeries || []).map((point) => ({
@@ -1580,8 +1622,12 @@ function StackedBarChartWidget({
                      formatter={(value, name) => {
                         // Show absolute value for expenses (they're stored as negative)
                         // This includes both separated expense data and expense-only filter
-                        const isNegatedValue = name === "expenseValue" || (name === "value" && isExpenseOnly);
-                        const displayValue = isNegatedValue ? Math.abs(value as number) : (value as number);
+                        const isNegatedValue =
+                           name === "expenseValue" ||
+                           (name === "value" && isExpenseOnly);
+                        const displayValue = isNegatedValue
+                           ? Math.abs(value as number)
+                           : (value as number);
                         return config.aggregation === "count"
                            ? displayValue.toLocaleString()
                            : formatDecimalCurrency(displayValue);
@@ -1665,7 +1711,8 @@ function LineCumulativeWidget({
    // Use typeof to handle cases where values might be 0 (which is valid)
    const hasSeparatedData = data.timeSeries.some(
       (p) =>
-         typeof p.incomeValue === "number" && typeof p.expenseValue === "number",
+         typeof p.incomeValue === "number" &&
+         typeof p.expenseValue === "number",
    );
 
    // Check if expense-only filter is active (negate values to show below zero)
@@ -1748,8 +1795,12 @@ function LineCumulativeWidget({
                      formatter={(value, name) => {
                         // Show absolute value for expenses (they're stored as negative)
                         // This includes both separated expense data and expense-only filter
-                        const isNegatedValue = name === "cumulativeExpense" || (name === "value" && isExpenseOnly);
-                        const displayValue = isNegatedValue ? Math.abs(value as number) : (value as number);
+                        const isNegatedValue =
+                           name === "cumulativeExpense" ||
+                           (name === "value" && isExpenseOnly);
+                        const displayValue = isNegatedValue
+                           ? Math.abs(value as number)
+                           : (value as number);
                         return config.aggregation === "count"
                            ? displayValue.toLocaleString()
                            : formatDecimalCurrency(displayValue);

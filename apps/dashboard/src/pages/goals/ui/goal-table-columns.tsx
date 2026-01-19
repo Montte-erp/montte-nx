@@ -190,7 +190,10 @@ export function createGoalColumns({
             const targetAmount = Number(goal.targetAmount);
             const percentage =
                targetAmount > 0
-                  ? Math.min(100, Math.round((currentAmount / targetAmount) * 100))
+                  ? Math.min(
+                       100,
+                       Math.round((currentAmount / targetAmount) * 100),
+                    )
                   : 0;
 
             return (

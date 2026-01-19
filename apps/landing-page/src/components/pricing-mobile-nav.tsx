@@ -77,7 +77,6 @@ export function PricingMobileNav() {
       <nav
          aria-label="Navegacao por secoes"
          className="fixed bottom-0 inset-x-0 z-50 lg:hidden bg-background/95 backdrop-blur-md border-t border-border"
-         role="navigation"
          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
          <div className="flex items-center justify-around px-2 py-2">

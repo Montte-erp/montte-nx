@@ -65,7 +65,9 @@ function GoalContent() {
                   onClick={() =>
                      openSheet({
                         children: (
-                           <ManageTransactionForm defaultTagIds={defaultTagIds} />
+                           <ManageTransactionForm
+                              defaultTagIds={defaultTagIds}
+                           />
                         ),
                      })
                   }

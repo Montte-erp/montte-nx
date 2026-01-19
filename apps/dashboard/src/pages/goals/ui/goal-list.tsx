@@ -14,7 +14,7 @@ import {
 import { useRouter } from "@tanstack/react-router";
 import type { RowSelectionState } from "@tanstack/react-table";
 import { Target, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useSheet } from "@/hooks/use-sheet";
@@ -52,24 +52,36 @@ export function GoalList({
    const { deleteGoal, deleteGoalWithTag } = useDeleteGoal();
    const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
-   const handleView = (goal: Goal) => {
-      router.navigate({
-         params: { slug: activeOrganization.slug, goalId: goal.id },
-         to: "/$slug/goals/$goalId",
-      });
-   };
+   const handleView = useCallback(
+      (goal: Goal) => {
+         router.navigate({
+            params: { slug: activeOrganization.slug, goalId: goal.id },
+            to: "/$slug/goals/$goalId",
+         });
+      },
+      [router, activeOrganization.slug],
+   );
 
-   const handleEdit = (goal: Goal) => {
-      openSheet({ children: <ManageGoalForm goal={goal} /> });
-   };
+   const handleEdit = useCallback(
+      (goal: Goal) => {
+         openSheet({ children: <ManageGoalForm goal={goal} /> });
+      },
+      [openSheet],
+   );
 
-   const handleDelete = (goal: Goal) => {
-      deleteGoal(goal.id, goal.name, goal.tag.name);
-   };
+   const handleDelete = useCallback(
+      (goal: Goal) => {
+         deleteGoal(goal.id, goal.name, goal.tag.name);
+      },
+      [deleteGoal],
+   );
 
-   const handleDeleteWithTag = (goal: Goal) => {
-      deleteGoalWithTag(goal.id, goal.name, goal.tag.name);
-   };
+   const handleDeleteWithTag = useCallback(
+      (goal: Goal) => {
+         deleteGoalWithTag(goal.id, goal.name, goal.tag.name);
+      },
+      [deleteGoalWithTag],
+   );
 
    const columns = useMemo(
       () =>
@@ -79,7 +91,7 @@ export function GoalList({
             onDelete: handleDelete,
             onDeleteWithTag: handleDeleteWithTag,
          }),
-      [activeOrganization.slug],
+      [handleDelete, handleDeleteWithTag, handleEdit, handleView],
    );
 
    const selectedIds = Object.keys(rowSelection).filter(

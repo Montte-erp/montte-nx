@@ -63,7 +63,9 @@ export function InsightViewerPage({ insightId }: InsightViewerPageProps) {
       trpc.dashboards.deleteSavedInsight.mutationOptions({
          onSuccess: () => {
             toast.success("Insight excluído");
-            navigate({ to: "/$slug/insights", params: { slug: slug! } });
+            if (slug) {
+               navigate({ to: "/$slug/insights", params: { slug } });
+            }
          },
          onError: () => {
             toast.error("Falha ao excluir insight");
@@ -144,7 +146,9 @@ export function InsightViewerPage({ insightId }: InsightViewerPageProps) {
 
    const handleBack = () => {
       closeTab(`insight-${insightId}`);
-      navigate({ to: "/$slug/dashboards", params: { slug: slug! } });
+      if (slug) {
+         navigate({ to: "/$slug/dashboards", params: { slug } });
+      }
    };
 
    if (isLoading) {

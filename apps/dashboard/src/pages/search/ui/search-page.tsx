@@ -64,10 +64,12 @@ export function SearchPage() {
          onSuccess: (data) => {
             toast.success("Dashboard criado");
             openDashboardTabHook(data.id, data.name);
-            navigate({
-               to: "/$slug/dashboards/$dashboardId",
-               params: { dashboardId: data.id, slug: slug! },
-            });
+            if (slug) {
+               navigate({
+                  to: "/$slug/dashboards/$dashboardId",
+                  params: { dashboardId: data.id, slug },
+               });
+            }
          },
          onError: (error) => {
             toast.error(error.message || "Falha ao criar dashboard");
@@ -103,10 +105,12 @@ export function SearchPage() {
          });
 
          openDashboardTab(dashboardId, name);
-         navigate({
-            to: "/$slug/dashboards/$dashboardId",
-            params: { dashboardId, slug: slug! },
-         });
+         if (slug) {
+            navigate({
+               to: "/$slug/dashboards/$dashboardId",
+               params: { dashboardId, slug },
+            });
+         }
       },
       [navigate, slug, recordAccessMutation],
    );
@@ -120,10 +124,12 @@ export function SearchPage() {
          });
 
          openInsightTab(insightId, name);
-         navigate({
-            to: "/$slug/insights/$insightId",
-            params: { insightId, slug: slug! },
-         });
+         if (slug) {
+            navigate({
+               to: "/$slug/insights/$insightId",
+               params: { insightId, slug },
+            });
+         }
       },
       [navigate, slug, recordAccessMutation],
    );
@@ -136,10 +142,12 @@ export function SearchPage() {
 
    const handleNavigateTo = useCallback(
       (route: string) => {
-         navigate({
-            to: route,
-            params: { slug: slug! },
-         });
+         if (slug) {
+            navigate({
+               to: route,
+               params: { slug },
+            });
+         }
       },
       [navigate, slug],
    );

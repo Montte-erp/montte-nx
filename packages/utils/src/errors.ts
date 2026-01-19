@@ -7,7 +7,11 @@ export const ErrorCodes = {
    CONFLICT: "CONFLICT",
    FORBIDDEN: "FORBIDDEN",
    INTERNAL_SERVER_ERROR: "INTERNAL_SERVER_ERROR",
+   METHOD_NOT_SUPPORTED: "METHOD_NOT_SUPPORTED",
    NOT_FOUND: "NOT_FOUND",
+   PAYLOAD_TOO_LARGE: "PAYLOAD_TOO_LARGE",
+   PRECONDITION_FAILED: "PRECONDITION_FAILED",
+   TIMEOUT: "TIMEOUT",
    TOO_MANY_REQUESTS: "TOO_MANY_REQUESTS",
    UNAUTHORIZED: "UNAUTHORIZED",
    UNPROCESSABLE_CONTENT: "UNPROCESSABLE_CONTENT",
@@ -126,8 +130,20 @@ export class APIError extends TRPCError {
          case 404:
             code = ErrorCodes.NOT_FOUND;
             break;
+         case 405:
+            code = ErrorCodes.METHOD_NOT_SUPPORTED;
+            break;
+         case 408:
+            code = ErrorCodes.TIMEOUT;
+            break;
          case 409:
             code = ErrorCodes.CONFLICT;
+            break;
+         case 412:
+            code = ErrorCodes.PRECONDITION_FAILED;
+            break;
+         case 413:
+            code = ErrorCodes.PAYLOAD_TOO_LARGE;
             break;
          case 422:
             code = ErrorCodes.UNPROCESSABLE_CONTENT;

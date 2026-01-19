@@ -33,8 +33,8 @@ import { useMutation } from "@tanstack/react-query";
 import Color from "color";
 import { useMemo } from "react";
 import { TransactionTypesSelector } from "@/features/category/ui/transaction-types-selector";
-import type { IconName } from "@/features/icon-selector/lib/available-icons";
 import { IconSelector } from "@/features/icon-selector/icon-selector";
+import type { IconName } from "@/features/icon-selector/lib/available-icons";
 import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";
 
