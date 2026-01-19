@@ -37,9 +37,15 @@ export function InvitesExpandedContent({
          return { text: "Expira hoje", className: "text-warning" };
       }
       if (diffDays <= 3) {
-         return { text: `Expira em ${diffDays} dias`, className: "text-warning" };
+         return {
+            text: `Expira em ${diffDays} dias`,
+            className: "text-warning",
+         };
       }
-      return { text: `Expira em ${diffDays} dias`, className: "text-muted-foreground" };
+      return {
+         text: `Expira em ${diffDays} dias`,
+         className: "text-muted-foreground",
+      };
    };
 
    const expiryInfo = getExpiryInfo();
@@ -71,8 +77,13 @@ export function InvitesExpandedContent({
                         Data de expiração
                      </p>
                      <div className="flex items-center gap-2">
-                        <p className={`text-sm font-medium ${isExpired ? "text-destructive" : ""}`}>
-                           {formatDate(new Date(invite.expiresAt), "DD MMM YYYY")}
+                        <p
+                           className={`text-sm font-medium ${isExpired ? "text-destructive" : ""}`}
+                        >
+                           {formatDate(
+                              new Date(invite.expiresAt),
+                              "DD MMM YYYY",
+                           )}
                         </p>
                         <span className={`text-xs ${expiryInfo.className}`}>
                            ({expiryInfo.text})
@@ -145,7 +156,9 @@ export function InvitesExpandedContent({
                <div>
                   <p className="text-xs text-muted-foreground">Expiração</p>
                   <div className="flex items-center gap-2">
-                     <p className={`text-sm font-medium ${isExpired ? "text-destructive" : ""}`}>
+                     <p
+                        className={`text-sm font-medium ${isExpired ? "text-destructive" : ""}`}
+                     >
                         {formatDate(new Date(invite.expiresAt), "DD MMM YYYY")}
                      </p>
                      <span className={`text-xs ${expiryInfo.className}`}>

@@ -15,7 +15,7 @@ import { QueryProvider, useTRPC } from "@/integrations/clients";
 import { ThemeProvider } from "@/layout/theme-provider";
 
 // Lazy load devtools - excluded from production bundle
-const _TanStackRouterDevtools = import.meta.env.PROD
+const TanStackRouterDevtools = import.meta.env.PROD
    ? () => null
    : lazy(() =>
         import("@tanstack/react-router-devtools").then((m) => ({
@@ -101,7 +101,7 @@ function RootComponent() {
                   <Toaster />
                   <Outlet />
                   <Suspense fallback={null}>
-                     {/* <TanStackRouterDevtools position="bottom-left" /> */}
+                     <TanStackRouterDevtools position="bottom-left" />
                   </Suspense>
                </TelemetryAwarePostHogWrapper>
             </QueryProvider>

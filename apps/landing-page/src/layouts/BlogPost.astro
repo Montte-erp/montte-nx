@@ -17,7 +17,7 @@ interface Props {
 }
 
 const { post, headings = [] } = Astro.props;
-const { title, description, pubDate, updatedDate, author, image } = post.data;
+const { title, description: _description, pubDate, updatedDate: _updatedDate, author, image } = post.data;
 
 // Generate share URLs
 const currentUrl = Astro.url.href;

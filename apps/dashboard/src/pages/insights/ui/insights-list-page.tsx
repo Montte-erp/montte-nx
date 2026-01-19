@@ -2,7 +2,8 @@ import type { RouterOutput } from "@packages/api/client";
 import { DefaultHeader } from "@/default/default-header";
 import { InsightsListSection } from "./insights-list-section";
 
-export type SavedInsight = RouterOutput["dashboards"]["getAllSavedInsights"][number];
+export type SavedInsight =
+   RouterOutput["dashboards"]["getAllSavedInsights"][number];
 
 export function InsightsListPage() {
    return (

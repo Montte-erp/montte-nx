@@ -1,6 +1,14 @@
 import type { Category } from "@packages/database/repositories/category-repository";
 import { Button } from "@packages/ui/components/button";
-import { ColorPicker } from "@packages/ui/components/color-picker";
+import {
+   ColorPicker,
+   ColorPickerAlpha,
+   ColorPickerEyeDropper,
+   ColorPickerFormat,
+   ColorPickerHue,
+   ColorPickerOutput,
+   ColorPickerSelection,
+} from "@packages/ui/components/color-picker";
 import {
    Field,
    FieldDescription,
@@ -22,8 +30,10 @@ import {
 } from "@packages/ui/components/sheet";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
+import Color from "color";
 import { useMemo } from "react";
 import { TransactionTypesSelector } from "@/features/category/ui/transaction-types-selector";
+import type { IconName } from "@/features/icon-selector/lib/available-icons";
 import { IconSelector } from "@/features/icon-selector/icon-selector";
 import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";

@@ -21,6 +21,7 @@ import {
 } from "@packages/ui/components/dropdown-menu";
 import { Input } from "@packages/ui/components/input";
 import { useIsMobile } from "@packages/ui/hooks/use-mobile";
+import { cn } from "@packages/ui/lib/utils";
 import {
    Bookmark,
    ChartLine,
@@ -33,8 +34,8 @@ import {
    Trash2,
 } from "lucide-react";
 import type { DrillDownContext } from "../hooks/use-insight-drill-down";
-import { useWidgetContainer } from "../hooks/use-widget-container";
 import type { Widget } from "../hooks/use-widget";
+import { useWidgetContainer } from "../hooks/use-widget-container";
 import { AnomalyWidget } from "./anomaly-widget";
 import { InsightConfigDialog } from "./insight-config-dialog/insight-config-dialog";
 import { InsightWidget } from "./insight-widget";
@@ -269,7 +270,7 @@ export function WidgetContainer({
 
    return (
       <>
-         <Card className="h-full pt-0 flex flex-col">
+         <Card className={cn("h-full  flex flex-col", isInsight && "pt-0")}>
             {/* Desktop: Config toolbar for insights */}
             {!isMobile && isInsight && insightConfig && (
                <WidgetConfigToolbar
@@ -287,96 +288,94 @@ export function WidgetContainer({
             )}
 
             <CardHeader>
-               <div className="flex items-start justify-between gap-2">
-                  <div className="flex flex-col gap-1 flex-1 min-w-0">
-                     <EditableTitle
-                        displayValue={widget.name}
-                        inputRef={titleEdit.inputRef}
-                        isEditing={titleEdit.isEditing}
-                        onBlur={titleEdit.handleBlur}
-                        onChange={titleEdit.handleChange}
-                        onKeyDown={titleEdit.handleKeyDown}
-                        onStartEditing={titleEdit.startEditing}
-                        value={titleEdit.value}
-                     />
-                     <EditableDescription
-                        displayValue={widget.description}
-                        inputRef={descriptionEdit.inputRef}
-                        isEditing={descriptionEdit.isEditing}
-                        onBlur={descriptionEdit.handleBlur}
-                        onChange={descriptionEdit.handleChange}
-                        onKeyDown={descriptionEdit.handleKeyDown}
-                        onStartEditing={descriptionEdit.startEditing}
-                        value={descriptionEdit.value}
-                     />
-                  </div>
+               <EditableTitle
+                  displayValue={widget.name}
+                  inputRef={titleEdit.inputRef}
+                  isEditing={titleEdit.isEditing}
+                  onBlur={titleEdit.handleBlur}
+                  onChange={titleEdit.handleChange}
+                  onKeyDown={titleEdit.handleKeyDown}
+                  onStartEditing={titleEdit.startEditing}
+                  value={titleEdit.value}
+               />
+               <EditableDescription
+                  displayValue={widget.description}
+                  inputRef={descriptionEdit.inputRef}
+                  isEditing={descriptionEdit.isEditing}
+                  onBlur={descriptionEdit.handleBlur}
+                  onChange={descriptionEdit.handleChange}
+                  onKeyDown={descriptionEdit.handleKeyDown}
+                  onStartEditing={descriptionEdit.startEditing}
+                  value={descriptionEdit.value}
+               />
 
-                  {/* Show dropdown for mobile OR text cards OR non-insight widgets on desktop */}
-                  {(isMobile || isTextCard || !isInsight) && (
-                     <CardAction>
-                        <DropdownMenu>
-                           <DropdownMenuTrigger asChild>
-                              <Button
-                                 className="h-8 w-8 shrink-0"
-                                 size="icon"
-                                 variant="ghost"
-                              >
-                                 <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                           </DropdownMenuTrigger>
-                           <DropdownMenuContent align="end">
-                              {/* Width controls for non-insights on desktop */}
-                              {!isMobile && canExpand && (
-                                 <DropdownMenuItem onClick={handleExpand}>
-                                    <Maximize2 className="h-4 w-4 mr-2" />
-                                    Expandir
-                                 </DropdownMenuItem>
-                              )}
-                              {!isMobile && canShrink && (
-                                 <DropdownMenuItem onClick={handleShrink}>
-                                    <Minimize2 className="h-4 w-4 mr-2" />
-                                    Reduzir
-                                 </DropdownMenuItem>
-                              )}
-                              {!isMobile && (canExpand || canShrink) && (
-                                 <DropdownMenuSeparator />
-                              )}
-                              {/* Mobile: Show insight config options */}
-                              {isMobile && isInsight && (
-                                 <>
-                                    <DropdownMenuItem
-                                       onClick={handleOpenDisplayType}
-                                    >
-                                       <ChartLine className="h-4 w-4 mr-2" />
-                                       Tipo de exibição
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={handleOpenOptions}>
-                                       <Settings2 className="h-4 w-4 mr-2" />
-                                       Opções
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={handleOpenFilters}>
-                                       <Filter className="h-4 w-4 mr-2" />
-                                       Filtros
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={handleSaveAsInsight}>
-                                       <Bookmark className="h-4 w-4 mr-2" />
-                                       Salvar como Insight
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                 </>
-                              )}
-                              <DropdownMenuItem
-                                 className="text-destructive focus:text-destructive"
-                                 onClick={onRemove}
-                              >
-                                 <Trash2 className="h-4 w-4 mr-2" />
-                                 Remover
+               {/* Show dropdown for mobile OR text cards OR non-insight widgets on desktop */}
+               {(isMobile || isTextCard || !isInsight) && (
+                  <CardAction>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                           <Button
+                              className="h-8 w-8 shrink-0"
+                              size="icon"
+                              variant="ghost"
+                           >
+                              <MoreHorizontal className="h-4 w-4" />
+                           </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                           {/* Width controls for non-insights on desktop */}
+                           {!isMobile && canExpand && (
+                              <DropdownMenuItem onClick={handleExpand}>
+                                 <Maximize2 className="h-4 w-4 mr-2" />
+                                 Expandir
                               </DropdownMenuItem>
-                           </DropdownMenuContent>
-                        </DropdownMenu>
-                     </CardAction>
-                  )}
-               </div>
+                           )}
+                           {!isMobile && canShrink && (
+                              <DropdownMenuItem onClick={handleShrink}>
+                                 <Minimize2 className="h-4 w-4 mr-2" />
+                                 Reduzir
+                              </DropdownMenuItem>
+                           )}
+                           {!isMobile && (canExpand || canShrink) && (
+                              <DropdownMenuSeparator />
+                           )}
+                           {/* Mobile: Show insight config options */}
+                           {isMobile && isInsight && (
+                              <>
+                                 <DropdownMenuItem
+                                    onClick={handleOpenDisplayType}
+                                 >
+                                    <ChartLine className="h-4 w-4 mr-2" />
+                                    Tipo de exibição
+                                 </DropdownMenuItem>
+                                 <DropdownMenuItem onClick={handleOpenOptions}>
+                                    <Settings2 className="h-4 w-4 mr-2" />
+                                    Opções
+                                 </DropdownMenuItem>
+                                 <DropdownMenuItem onClick={handleOpenFilters}>
+                                    <Filter className="h-4 w-4 mr-2" />
+                                    Filtros
+                                 </DropdownMenuItem>
+                                 <DropdownMenuItem
+                                    onClick={handleSaveAsInsight}
+                                 >
+                                    <Bookmark className="h-4 w-4 mr-2" />
+                                    Salvar como Insight
+                                 </DropdownMenuItem>
+                                 <DropdownMenuSeparator />
+                              </>
+                           )}
+                           <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={onRemove}
+                           >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Remover
+                           </DropdownMenuItem>
+                        </DropdownMenuContent>
+                     </DropdownMenu>
+                  </CardAction>
+               )}
             </CardHeader>
 
             <CardContent className="flex-1 min-h-0 overflow-hidden">

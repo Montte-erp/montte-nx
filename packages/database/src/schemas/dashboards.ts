@@ -36,11 +36,6 @@ export const chartTypeEnum = pgEnum("chart_type", [
    "stat_card",
    "bar_total",
    "table",
-   "world_map",
-   "category_analysis",
-   "comparison",
-   "sankey",
-   "heatmap",
 ]);
 
 export const dataSourceEnum = pgEnum("data_source", [
@@ -157,12 +152,7 @@ export type InsightConfig = {
       | "donut"
       | "stat_card"
       | "bar_total"
-      | "table"
-      | "world_map"
-      | "category_analysis"
-      | "comparison"
-      | "sankey"
-      | "heatmap";
+      | "table";
    comparison?: InsightComparison;
    comparisonOverlay?: {
       enabled: boolean;
@@ -223,10 +213,7 @@ export type AnomalyCardConfig = {
    showAcknowledged?: boolean;
 };
 
-export type WidgetConfig =
-   | InsightConfig
-   | TextCardConfig
-   | AnomalyCardConfig;
+export type WidgetConfig = InsightConfig | TextCardConfig | AnomalyCardConfig;
 
 export type DashboardFilterConfig = {
    dateRange?: {

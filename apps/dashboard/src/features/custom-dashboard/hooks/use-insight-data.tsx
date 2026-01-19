@@ -14,6 +14,8 @@ export const insightBreakdownItemSchema = z.object({
 export const insightTimeSeriesPointSchema = z.object({
    date: z.string(),
    value: z.number(),
+   incomeValue: z.number().optional(),
+   expenseValue: z.number().optional(),
 });
 
 export const insightComparisonSchema = z.object({
@@ -28,7 +30,7 @@ export const insightDataSchema = z.object({
    breakdown: z.array(insightBreakdownItemSchema).optional(),
    timeSeries: z.array(insightTimeSeriesPointSchema).optional(),
    comparisonTimeSeries: z.array(insightTimeSeriesPointSchema).optional(),
-   tableData: z.array(z.record(z.unknown())).optional(),
+   tableData: z.array(z.record(z.string(), z.unknown())).optional(),
 });
 
 // ============================================

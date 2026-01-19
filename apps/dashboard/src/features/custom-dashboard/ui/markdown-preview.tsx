@@ -13,8 +13,11 @@ export function MarkdownPreview({ content, className }: MarkdownPreviewProps) {
       }
 
       try {
-         const doc = parse(content);
-         return renderToHtml(doc, {
+         const result = parse(content);
+         if (!result.success) {
+            return `<p>${content}</p>`;
+         }
+         return renderToHtml(result.data, {
             externalLinksNewTab: true,
             sanitizeHtml: true,
          });

@@ -366,7 +366,10 @@ function SecuritySectionContent() {
       trpc.session.getSession.queryOptions(),
    );
 
-   const { revokeOtherSessions, revokeAllSessions } = useSessionActions();
+   const {
+      revokeOtherSessions: _revokeOtherSessions,
+      revokeAllSessions: _revokeAllSessions,
+   } = useSessionActions();
 
    const currentSessionId = currentSession?.session?.id;
    const currentSessionLoginMethod =

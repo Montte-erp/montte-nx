@@ -1,4 +1,9 @@
-import { cn } from "@packages/ui/lib/utils";
+import { Button } from "@packages/ui/components/button";
+import {
+   Collapsible,
+   CollapsibleContent,
+   CollapsibleTrigger,
+} from "@packages/ui/components/collapsible";
 import {
    DropdownMenu,
    DropdownMenuContent,
@@ -7,12 +12,6 @@ import {
    DropdownMenuSeparator,
    DropdownMenuTrigger,
 } from "@packages/ui/components/dropdown-menu";
-import { Button } from "@packages/ui/components/button";
-import {
-   Collapsible,
-   CollapsibleContent,
-   CollapsibleTrigger,
-} from "@packages/ui/components/collapsible";
 import {
    SidebarGroup,
    SidebarGroupContent,
@@ -24,7 +23,10 @@ import {
    SidebarMenuItem,
    SidebarMenuSkeleton,
 } from "@packages/ui/components/sidebar";
+import { cn } from "@packages/ui/lib/utils";
 import { Link } from "@tanstack/react-router";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import type { LucideIcon } from "lucide-react";
 import {
    ArrowDownAZ,
@@ -36,16 +38,14 @@ import {
    Copy,
    ExternalLink,
    MoreHorizontal,
+   PanelTop,
    Plus,
    Search,
    SortAsc,
    X,
-   PanelTop,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import type { SortOption, SortDirection } from "./hooks/use-submenu-data";
+import type { SortDirection, SortOption } from "./hooks/use-submenu-data";
 
 // ============================================
 // Helper Functions
@@ -94,7 +94,7 @@ export function CollapsibleSection({
    action,
 }: CollapsibleSectionProps) {
    return (
-      <Collapsible open={isExpanded} onOpenChange={onToggle}>
+      <Collapsible onOpenChange={onToggle} open={isExpanded}>
          <SidebarGroup className="py-0">
             <div className="flex items-center justify-between px-2 py-1.5">
                <CollapsibleTrigger className="flex flex-1 items-center gap-1 text-xs font-medium text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors">
@@ -170,10 +170,10 @@ export function ItemRow({
       <SidebarMenuItem>
          <SidebarMenuButton
             asChild
-            isActive={isActive}
             className={cn(isActive && "bg-primary/10 text-primary")}
+            isActive={isActive}
          >
-            <Link to={url} onClick={onClick}>
+            <Link onClick={onClick} to={url}>
                <Icon
                   className="size-4 shrink-0"
                   style={iconColor ? { color: iconColor } : undefined}
@@ -194,7 +194,11 @@ export function ItemRow({
                   <span className="sr-only">Mais opções</span>
                </SidebarMenuAction>
             </DropdownMenuTrigger>
-            <DropdownMenuContent side="right" align="start" className="min-w-48">
+            <DropdownMenuContent
+               align="start"
+               className="min-w-48"
+               side="right"
+            >
                <DropdownMenuItem onClick={onOpenInDashboardTab}>
                   <PanelTop className="size-4 mr-2" />
                   Abrir em nova aba
@@ -239,16 +243,16 @@ export function SearchHeader({
          <div className="relative flex-1">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
             <SidebarInput
-               type="text"
-               placeholder={placeholder}
-               value={search}
-               onChange={(e) => onSearchChange(e.target.value)}
                className="pl-8"
+               onChange={(e) => onSearchChange(e.target.value)}
+               placeholder={placeholder}
+               type="text"
+               value={search}
             />
          </div>
          <DropdownMenu>
             <DropdownMenuTrigger asChild>
-               <Button variant="ghost" size="icon" className="size-8 shrink-0">
+               <Button className="size-8 shrink-0" size="icon" variant="ghost">
                   <SortAsc className="size-4" />
                </Button>
             </DropdownMenuTrigger>
@@ -258,9 +262,9 @@ export function SearchHeader({
                   const isSelected = sortBy === option.value;
                   return (
                      <DropdownMenuItem
+                        className={cn(isSelected && "bg-accent")}
                         key={option.value}
                         onClick={() => onSortChange(option.value)}
-                        className={cn(isSelected && "bg-accent")}
                      >
                         <Icon className="size-4 mr-2" />
                         {option.label}
@@ -274,7 +278,10 @@ export function SearchHeader({
                })}
                <DropdownMenuItem
                   onClick={() =>
-                     onSortChange(sortBy, sortDirection === "asc" ? "desc" : "asc")
+                     onSortChange(
+                        sortBy,
+                        sortDirection === "asc" ? "desc" : "asc",
+                     )
                   }
                >
                   {sortDirection === "asc" ? (
@@ -282,7 +289,9 @@ export function SearchHeader({
                   ) : (
                      <ArrowUpAZ className="size-4 mr-2" />
                   )}
-                  {sortDirection === "asc" ? "Ordem decrescente" : "Ordem crescente"}
+                  {sortDirection === "asc"
+                     ? "Ordem decrescente"
+                     : "Ordem crescente"}
                </DropdownMenuItem>
             </DropdownMenuContent>
          </DropdownMenu>
@@ -339,12 +348,16 @@ export type CreateActionProps = {
    onClick: () => void;
 };
 
-export function CreateAction({ icon: Icon, label, onClick }: CreateActionProps) {
+export function CreateAction({
+   icon: Icon,
+   label,
+   onClick,
+}: CreateActionProps) {
    return (
       <button
-         type="button"
-         onClick={onClick}
          className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+         onClick={onClick}
+         type="button"
       >
          <Icon className="size-4" />
          <span>{label}</span>
@@ -381,7 +394,7 @@ export function PanelHeader({
          </div>
          <DropdownMenu>
             <DropdownMenuTrigger asChild>
-               <Button variant="ghost" size="icon" className="size-7">
+               <Button className="size-7" size="icon" variant="ghost">
                   <Plus className="size-4" />
                </Button>
             </DropdownMenuTrigger>
@@ -393,7 +406,10 @@ export function PanelHeader({
                {createOptions.map((option) => {
                   const OptionIcon = option.icon;
                   return (
-                     <DropdownMenuItem key={option.label} onClick={option.onClick}>
+                     <DropdownMenuItem
+                        key={option.label}
+                        onClick={option.onClick}
+                     >
                         <OptionIcon className="size-4 mr-2" />
                         {option.label}
                      </DropdownMenuItem>

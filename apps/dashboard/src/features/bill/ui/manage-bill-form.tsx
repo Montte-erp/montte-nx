@@ -1087,14 +1087,14 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                                                {
                                                                   frequencyOptionLabels[
                                                                      option
-                                                                  ].title
+                                                                  ]?.title
                                                                }
                                                             </ChoiceboxItemTitle>
                                                             <ChoiceboxItemDescription>
                                                                {
                                                                   frequencyOptionLabels[
                                                                      option
-                                                                  ].description
+                                                                  ]?.description
                                                                }
                                                             </ChoiceboxItemDescription>
                                                          </ChoiceboxItemHeader>
@@ -1214,14 +1214,14 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                                                {
                                                                   occurrenceOptionLabels[
                                                                      option
-                                                                  ].title
+                                                                  ]?.title
                                                                }
                                                             </ChoiceboxItemTitle>
                                                             <ChoiceboxItemDescription>
                                                                {
                                                                   occurrenceOptionLabels[
                                                                      option
-                                                                  ].description
+                                                                  ]?.description
                                                                }
                                                             </ChoiceboxItemDescription>
                                                          </ChoiceboxItemHeader>

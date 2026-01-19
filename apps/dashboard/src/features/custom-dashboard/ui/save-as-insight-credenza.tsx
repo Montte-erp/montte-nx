@@ -20,9 +20,6 @@ import {
    Clock,
    Database,
    Filter,
-   GitMerge,
-   Globe,
-   Grid3X3,
    Hash,
    Layers,
    LineChart,
@@ -102,11 +99,6 @@ const CHART_TYPE_CONFIG: Record<
    stat_card: { label: "Numero", icon: Hash },
    bar_total: { label: "Barras (total)", icon: BarChart3 },
    table: { label: "Tabela", icon: Table2 },
-   world_map: { label: "Mapa mundial", icon: Globe },
-   category_analysis: { label: "Analise por categoria", icon: Layers },
-   comparison: { label: "Comparacao", icon: Scale },
-   sankey: { label: "Diagrama de Sankey", icon: GitMerge },
-   heatmap: { label: "Mapa de calor", icon: Grid3X3 },
 };
 
 export function SaveAsInsightCredenza({

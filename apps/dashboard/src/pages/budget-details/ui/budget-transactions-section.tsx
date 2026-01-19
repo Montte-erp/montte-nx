@@ -114,8 +114,8 @@ function BudgetTransactionsContent({
 
    // Get linked category IDs from budget metadata for filtering
    const linkedCategoryIds =
-      (budget.metadata as { linkedCategoryIds?: string[] })?.linkedCategoryIds ??
-      [];
+      (budget.metadata as { linkedCategoryIds?: string[] })
+         ?.linkedCategoryIds ?? [];
 
    const [transactionsQuery, categoriesQuery] = useSuspenseQueries({
       queries: [

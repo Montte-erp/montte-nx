@@ -43,14 +43,14 @@ type CategoryFilterCredenzaProps = {
 };
 
 export function CategoryFilterCredenza({
-   timePeriod,
-   onTimePeriodChange,
-   customStartDate,
-   customEndDate,
-   onCustomStartDateChange,
-   onCustomEndDateChange,
-   typeFilter,
-   onTypeFilterChange,
+   timePeriod: _timePeriod,
+   onTimePeriodChange: _onTimePeriodChange,
+   customStartDate: _customStartDate,
+   customEndDate: _customEndDate,
+   onCustomStartDateChange: _onCustomStartDateChange,
+   onCustomEndDateChange: _onCustomEndDateChange,
+   typeFilter: _typeFilter,
+   onTypeFilterChange: _onTypeFilterChange,
    orderBy,
    orderDirection,
    pageSize,
@@ -60,7 +60,7 @@ export function CategoryFilterCredenza({
    onClearFilters,
    hasActiveFilters,
 }: CategoryFilterCredenzaProps) {
-   const { closeCredenza } = useCredenza();
+   const { closeCredenza: _closeCredenza } = useCredenza();
 
    const orderByOptions = [
       {
@@ -87,13 +87,6 @@ export function CategoryFilterCredenza({
          value: "desc" as const,
       },
    ];
-
-   const _handlePeriodClick = (period: TimePeriod) => {
-      const range = getDateRangeForPeriod(period);
-      onTimePeriodChange(period, range);
-   };
-
-   const _isCustomMode = timePeriod === "custom";
 
    return (
       <>

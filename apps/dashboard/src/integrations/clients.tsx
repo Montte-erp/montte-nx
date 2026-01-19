@@ -14,7 +14,7 @@ import {
 import { lazy, Suspense } from "react";
 
 // Lazy load devtools - excluded from production bundle
-const _ReactQueryDevtools = import.meta.env.PROD
+const ReactQueryDevtools = import.meta.env.PROD
    ? () => null
    : lazy(() =>
         import("@tanstack/react-query-devtools").then((m) => ({
@@ -210,7 +210,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
          <TRPCProvider queryClient={queryClient} trpcClient={trpcClient}>
             <Suspense fallback={null}>
-               {/* <ReactQueryDevtools buttonPosition="bottom-left" /> */}
+               <ReactQueryDevtools buttonPosition="bottom-left" />
             </Suspense>
             {children}
          </TRPCProvider>

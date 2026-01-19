@@ -147,10 +147,10 @@ export function ManageRecurrenceForm({
                         >
                            <ChoiceboxItemHeader>
                               <ChoiceboxItemTitle>
-                                 {frequencyOptionLabels[option].title}
+                                 {frequencyOptionLabels[option]?.title}
                               </ChoiceboxItemTitle>
                               <ChoiceboxItemDescription>
-                                 {frequencyOptionLabels[option].description}
+                                 {frequencyOptionLabels[option]?.description}
                               </ChoiceboxItemDescription>
                            </ChoiceboxItemHeader>
                            <ChoiceboxIndicator id={`freq-${option}`} />

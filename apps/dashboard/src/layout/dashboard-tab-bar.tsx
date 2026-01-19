@@ -315,7 +315,7 @@ export function DashboardTabBar() {
 
 function TabItem({
    tab,
-   tabIndex,
+   tabIndex: _tabIndex,
    isActive,
    onClick,
    onClose,
@@ -549,12 +549,7 @@ function TabItem({
    );
 
    // Determine if context menu has any items
-   const hasContextMenuItems =
-      canRename ||
-      canDuplicate ||
-      canPin ||
-      canDelete ||
-      (tab.type === "dashboard" && !isPinned);
+   const hasContextMenuItems = canRename || canDuplicate || canPin || canDelete;
 
    // Only wrap in ContextMenu if there are items to show
    if (!hasContextMenuItems) {

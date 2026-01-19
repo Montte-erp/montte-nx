@@ -173,9 +173,7 @@ function DashboardContent({ dashboardId }: { dashboardId: string }) {
    });
 
    const updateWidgetMutation = useUpdateWidget({
-      onError: () => {
-         toast.error("Falha ao atualizar widget");
-      },
+      dashboardId,
    });
 
    // Sync app tab name when viewing the default (pinned) dashboard
@@ -329,10 +327,12 @@ function DashboardContent({ dashboardId }: { dashboardId: string }) {
    };
 
    const handleDrillDown = (
+      widgetId: string,
       config: InsightConfig,
       context: DrillDownContext,
    ) => {
-      drillDown(config, context);
+      const newConfig = drillDown(config, context);
+      updateWidgetMutation.mutate({ widgetId, config: newConfig });
    };
 
    const widgets = (dashboard.widgets || []) as Widget[];

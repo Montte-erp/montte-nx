@@ -35,10 +35,7 @@ export function InsightConfigSidebar({
    activeFilterCount = 0,
 }: InsightConfigSidebarProps) {
    return (
-      <Sidebar
-         className="hidden md:flex w-[180px] border-r"
-         collapsible="none"
-      >
+      <Sidebar className="hidden md:flex w-[180px] border-r" collapsible="none">
          <SidebarContent>
             <SidebarGroup>
                <SidebarGroupContent>
@@ -58,7 +55,9 @@ export function InsightConfigSidebar({
                               >
                                  <span className="flex items-center gap-2">
                                     <Icon className="h-4 w-4" />
-                                    <span className="text-sm">{item.label}</span>
+                                    <span className="text-sm">
+                                       {item.label}
+                                    </span>
                                  </span>
                                  {showBadge && (
                                     <Badge

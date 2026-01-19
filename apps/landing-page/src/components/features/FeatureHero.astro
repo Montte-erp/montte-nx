@@ -6,7 +6,7 @@ interface Props {
    eyebrow: string;
    title: string;
    description: string;
-   image: ImageMetadata;
+   image: ImageMetadata | string;
    imageAlt: string;
    primaryCta?: {
       label: string;
@@ -70,12 +70,20 @@ const {
 	<section class="pb-16 md:pb-24 container mx-auto px-4 sm:px-6">
 		<div class="relative mx-auto">
 			<div class="rounded-2xl overflow-hidden border border-border/20 bg-card shadow-2xl">
-				<Image
-					src={image}
-					alt={imageAlt}
-					inferSize
-					class="w-full h-auto"
-				/>
+				{typeof image === "string" ? (
+					<img
+						src={image}
+						alt={imageAlt}
+						class="w-full h-auto"
+					/>
+				) : (
+					<Image
+						src={image}
+						alt={imageAlt}
+						inferSize
+						class="w-full h-auto"
+					/>
+				)}
 			</div>
 			<div class="absolute -inset-4 bg-gradient-to-r from-primary/10 via-transparent to-primary/10 rounded-3xl -z-10 blur-3xl"></div>
 		</div>

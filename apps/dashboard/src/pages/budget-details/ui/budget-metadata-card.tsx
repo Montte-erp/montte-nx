@@ -78,18 +78,9 @@ function MetadataCardContent({ budgetId }: { budgetId: string }) {
       cash: "Regime de caixa",
    };
 
-   const targetTypeLabels: Record<string, string> = {
-      categories: "Múltiplas categorias",
-      category: "Categoria única",
-      cost_center: "Centro de custo",
-      tag: "Tag",
-   };
-
    const periodLabel = periodLabels[budget.periodType] ?? budget.periodType;
    const regimeLabel = regimeLabels[budget.regime] ?? budget.regime;
-   const targetLabel = budget.target?.type
-      ? targetTypeLabels[budget.target.type]
-      : "-";
+   const targetLabel = "Tag";
 
    const StatusIcon = budget.isActive ? CheckCircle : CircleDashed;
    const statusColor = budget.isActive ? "#10b981" : "#6b7280";

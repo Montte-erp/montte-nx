@@ -7,15 +7,11 @@ import {
    Eye,
    Filter,
    GitCompare,
-   GitMerge,
-   Globe,
-   Grid3X3,
    Hash,
    Layers,
    LineChart,
    Palette,
    PieChart,
-   Scale,
    Sparkles,
    Table2,
    Tag,
@@ -136,46 +132,6 @@ export const CHART_CATEGORIES: ChartCategory[] = [
          },
       ],
    },
-   {
-      name: "Visualizacoes",
-      types: [
-         {
-            value: "world_map",
-            label: "Mapa mundial",
-            description: "Valores por pais em um mapa",
-            icon: Globe,
-         },
-         {
-            value: "sankey",
-            label: "Diagrama de Sankey",
-            description: "Fluxo de receitas para despesas por categoria",
-            icon: GitMerge,
-         },
-         {
-            value: "heatmap",
-            label: "Mapa de calor",
-            description: "Intensidade de gastos por dia e hora",
-            icon: Grid3X3,
-         },
-      ],
-   },
-   {
-      name: "Analise",
-      types: [
-         {
-            value: "category_analysis",
-            label: "Analise por categoria",
-            description: "Comparacao entre categorias",
-            icon: Layers,
-         },
-         {
-            value: "comparison",
-            label: "Comparacao",
-            description: "Comparar valores entre periodos",
-            icon: Scale,
-         },
-      ],
-   },
 ];
 
 export const CHART_TYPE_COMPATIBILITY: Record<DataSource, ChartType[]> = {
@@ -190,10 +146,6 @@ export const CHART_TYPE_COMPATIBILITY: Record<DataSource, ChartType[]> = {
       "stat_card",
       "bar_total",
       "table",
-      "category_analysis",
-      "comparison",
-      "sankey",
-      "heatmap",
    ],
    bills: [
       "line",
@@ -281,30 +233,6 @@ export const SEARCH_INDEX: SearchableOption[] = [
       section: "display-type",
       icon: Table2,
    },
-   {
-      id: "chart-sankey",
-      label: "Diagrama de Sankey",
-      description: "Fluxo de valores",
-      keywords: ["sankey", "fluxo", "flow", "receita", "despesa"],
-      section: "display-type",
-      icon: GitMerge,
-   },
-   {
-      id: "chart-heatmap",
-      label: "Mapa de calor",
-      description: "Intensidade por periodo",
-      keywords: ["heatmap", "calor", "intensidade", "matriz"],
-      section: "display-type",
-      icon: Grid3X3,
-   },
-   {
-      id: "chart-world-map",
-      label: "Mapa mundial",
-      description: "Valores por pais",
-      keywords: ["mapa", "mundo", "pais", "geografico"],
-      section: "display-type",
-      icon: Globe,
-   },
 
    // Time Filters options
    {
@@ -319,7 +247,15 @@ export const SEARCH_INDEX: SearchableOption[] = [
       id: "time-grouping",
       label: "Agrupamento temporal",
       description: "Agrupe por dia, semana, mes",
-      keywords: ["agrupamento", "grupo", "dia", "semana", "mes", "trimestre", "ano"],
+      keywords: [
+         "agrupamento",
+         "grupo",
+         "dia",
+         "semana",
+         "mes",
+         "trimestre",
+         "ano",
+      ],
       section: "time-filters",
       icon: Layers,
    },
@@ -337,7 +273,14 @@ export const SEARCH_INDEX: SearchableOption[] = [
       id: "filter-type",
       label: "Tipo de transacao",
       description: "Filtre por receita ou despesa",
-      keywords: ["tipo", "receita", "despesa", "transferencia", "entrada", "saida"],
+      keywords: [
+         "tipo",
+         "receita",
+         "despesa",
+         "transferencia",
+         "entrada",
+         "saida",
+      ],
       section: "data-filters",
       icon: Filter,
    },

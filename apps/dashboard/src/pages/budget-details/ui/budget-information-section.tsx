@@ -54,8 +54,8 @@ export function BudgetInformationSection({
 
    // Get linked categories from metadata
    const linkedCategoryIds =
-      (budget.metadata as { linkedCategoryIds?: string[] })?.linkedCategoryIds ??
-      [];
+      (budget.metadata as { linkedCategoryIds?: string[] })
+         ?.linkedCategoryIds ?? [];
    const linkedCategories = categories.filter((cat) =>
       linkedCategoryIds.includes(cat.id),
    );

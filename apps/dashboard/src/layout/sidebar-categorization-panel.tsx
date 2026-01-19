@@ -2,7 +2,6 @@ import { SidebarContent, useSidebar } from "@packages/ui/components/sidebar";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { Building2, FolderOpen, Layers, Tag } from "lucide-react";
 import { useCategorizationData } from "./hooks/use-submenu-data";
-import { useSubmenu } from "./sidebar-submenu-context";
 import {
    CollapsibleSection,
    EmptyState,
@@ -11,6 +10,7 @@ import {
    PanelHeader,
    SearchHeader,
 } from "./sidebar-panel-shared";
+import { useSubmenu } from "./sidebar-submenu-context";
 
 export function SidebarCategorizationPanel() {
    const { panelState, setSearch, setSort, toggleSection, closeSubmenu } =
@@ -76,8 +76,6 @@ export function SidebarCategorizationPanel() {
       <div className="flex flex-col h-full">
          {/* Panel Header with title and create dropdown */}
          <PanelHeader
-            title="Categorização"
-            icon={Layers}
             createOptions={[
                {
                   icon: FolderOpen,
@@ -95,15 +93,17 @@ export function SidebarCategorizationPanel() {
                   onClick: handleCreateTag,
                },
             ]}
+            icon={Layers}
+            title="Categorização"
          />
 
          <SearchHeader
-            search={panelState.search}
             onSearchChange={setSearch}
-            sortBy={panelState.sortBy}
-            sortDirection={panelState.sortDirection}
             onSortChange={setSort}
             placeholder="Buscar..."
+            search={panelState.search}
+            sortBy={panelState.sortBy}
+            sortDirection={panelState.sortDirection}
          />
 
          <SidebarContent>
@@ -115,23 +115,25 @@ export function SidebarCategorizationPanel() {
                <div className="py-2">
                   {/* Categories Section */}
                   <CollapsibleSection
-                     title="Categorias"
-                     count={totalCategories}
-                     isExpanded={panelState.expandedSections.includes("categories")}
-                     onToggle={() => toggleSection("categories")}
                      action={
                         <Link
-                           to="/$slug/categories"
-                           params={{ slug }}
+                           className="text-[10px] text-muted-foreground hover:text-foreground"
                            onClick={(e) => {
                               e.stopPropagation();
                               handleItemClick();
                            }}
-                           className="text-[10px] text-muted-foreground hover:text-foreground"
+                           params={{ slug }}
+                           to="/$slug/categories"
                         >
                            Ver todos
                         </Link>
                      }
+                     count={totalCategories}
+                     isExpanded={panelState.expandedSections.includes(
+                        "categories",
+                     )}
+                     onToggle={() => toggleSection("categories")}
+                     title="Categorias"
                   >
                      {categories.length === 0 ? (
                         <p className="px-3 py-2 text-xs text-muted-foreground">
@@ -140,14 +142,12 @@ export function SidebarCategorizationPanel() {
                      ) : (
                         categories.map((category) => (
                            <ItemRow
-                              key={`category-${category.id}`}
-                              id={category.id}
-                              name={category.name}
-                              url={`/${slug}/categories/${category.id}`}
                               icon={FolderOpen}
                               iconColor={category.color}
-                              timestamp={category.updatedAt}
+                              id={category.id}
                               isActive={isActive("category", category.id)}
+                              key={`category-${category.id}`}
+                              name={category.name}
                               onClick={handleItemClick}
                               onOpenInDashboardTab={() => {
                                  navigate({
@@ -155,6 +155,8 @@ export function SidebarCategorizationPanel() {
                                     params: { slug, categoryId: category.id },
                                  });
                               }}
+                              timestamp={category.updatedAt}
+                              url={`/${slug}/categories/${category.id}`}
                            />
                         ))
                      )}
@@ -162,23 +164,25 @@ export function SidebarCategorizationPanel() {
 
                   {/* Cost Centers Section */}
                   <CollapsibleSection
-                     title="Centros de Custo"
-                     count={totalCostCenters}
-                     isExpanded={panelState.expandedSections.includes("costCenters")}
-                     onToggle={() => toggleSection("costCenters")}
                      action={
                         <Link
-                           to="/$slug/cost-centers"
-                           params={{ slug }}
+                           className="text-[10px] text-muted-foreground hover:text-foreground"
                            onClick={(e) => {
                               e.stopPropagation();
                               handleItemClick();
                            }}
-                           className="text-[10px] text-muted-foreground hover:text-foreground"
+                           params={{ slug }}
+                           to="/$slug/cost-centers"
                         >
                            Ver todos
                         </Link>
                      }
+                     count={totalCostCenters}
+                     isExpanded={panelState.expandedSections.includes(
+                        "costCenters",
+                     )}
+                     onToggle={() => toggleSection("costCenters")}
+                     title="Centros de Custo"
                   >
                      {costCenters.length === 0 ? (
                         <p className="px-3 py-2 text-xs text-muted-foreground">
@@ -187,20 +191,6 @@ export function SidebarCategorizationPanel() {
                      ) : (
                         costCenters.map((costCenter) => (
                            <ItemRow
-                              key={`costCenter-${costCenter.id}`}
-                              id={costCenter.id}
-                              name={costCenter.name}
-                              url={`/${slug}/cost-centers/${costCenter.id}`}
-                              icon={Building2}
-                              timestamp={costCenter.updatedAt}
-                              isActive={isActive("costCenter", costCenter.id)}
-                              onClick={handleItemClick}
-                              onOpenInDashboardTab={() => {
-                                 navigate({
-                                    to: "/$slug/cost-centers/$costCenterId",
-                                    params: { slug, costCenterId: costCenter.id },
-                                 });
-                              }}
                               badge={
                                  costCenter.code ? (
                                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">
@@ -208,6 +198,23 @@ export function SidebarCategorizationPanel() {
                                     </span>
                                  ) : undefined
                               }
+                              icon={Building2}
+                              id={costCenter.id}
+                              isActive={isActive("costCenter", costCenter.id)}
+                              key={`costCenter-${costCenter.id}`}
+                              name={costCenter.name}
+                              onClick={handleItemClick}
+                              onOpenInDashboardTab={() => {
+                                 navigate({
+                                    to: "/$slug/cost-centers/$costCenterId",
+                                    params: {
+                                       slug,
+                                       costCenterId: costCenter.id,
+                                    },
+                                 });
+                              }}
+                              timestamp={costCenter.updatedAt}
+                              url={`/${slug}/cost-centers/${costCenter.id}`}
                            />
                         ))
                      )}
@@ -215,23 +222,23 @@ export function SidebarCategorizationPanel() {
 
                   {/* Tags Section */}
                   <CollapsibleSection
-                     title="Tags"
-                     count={totalTags}
-                     isExpanded={panelState.expandedSections.includes("tags")}
-                     onToggle={() => toggleSection("tags")}
                      action={
                         <Link
-                           to="/$slug/tags"
-                           params={{ slug }}
+                           className="text-[10px] text-muted-foreground hover:text-foreground"
                            onClick={(e) => {
                               e.stopPropagation();
                               handleItemClick();
                            }}
-                           className="text-[10px] text-muted-foreground hover:text-foreground"
+                           params={{ slug }}
+                           to="/$slug/tags"
                         >
                            Ver todos
                         </Link>
                      }
+                     count={totalTags}
+                     isExpanded={panelState.expandedSections.includes("tags")}
+                     onToggle={() => toggleSection("tags")}
+                     title="Tags"
                   >
                      {tags.length === 0 ? (
                         <p className="px-3 py-2 text-xs text-muted-foreground">
@@ -240,14 +247,12 @@ export function SidebarCategorizationPanel() {
                      ) : (
                         tags.map((tag) => (
                            <ItemRow
-                              key={`tag-${tag.id}`}
-                              id={tag.id}
-                              name={tag.name}
-                              url={`/${slug}/tags/${tag.id}`}
                               icon={Tag}
                               iconColor={tag.color}
-                              timestamp={tag.updatedAt}
+                              id={tag.id}
                               isActive={isActive("tag", tag.id)}
+                              key={`tag-${tag.id}`}
+                              name={tag.name}
                               onClick={handleItemClick}
                               onOpenInDashboardTab={() => {
                                  navigate({
@@ -255,6 +260,8 @@ export function SidebarCategorizationPanel() {
                                     params: { slug, tagId: tag.id },
                                  });
                               }}
+                              timestamp={tag.updatedAt}
+                              url={`/${slug}/tags/${tag.id}`}
                            />
                         ))
                      )}

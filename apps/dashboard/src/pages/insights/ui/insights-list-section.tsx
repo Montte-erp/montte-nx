@@ -29,9 +29,9 @@ import { useTRPC } from "@/integrations/clients";
 import { useDeleteInsight } from "../features/use-delete-insight";
 import type { SavedInsight } from "./insights-list-page";
 import {
+   createInsightColumns,
    InsightExpandedContent,
    InsightMobileCard,
-   createInsightColumns,
 } from "./insights-table-columns";
 
 function InsightsListErrorFallback() {
@@ -144,8 +144,8 @@ function InsightsListContent() {
                         </EmptyMedia>
                         <EmptyTitle>Nenhum insight salvo ainda</EmptyTitle>
                         <EmptyDescription>
-                           Crie insights a partir dos dashboards para salvá-los e
-                           reutilizá-los posteriormente.
+                           Crie insights a partir dos dashboards para salvá-los
+                           e reutilizá-los posteriormente.
                         </EmptyDescription>
                      </EmptyContent>
                   </Empty>
@@ -156,7 +156,9 @@ function InsightsListContent() {
                      enableRowSelection
                      getRowId={(row) => row.id}
                      onRowSelectionChange={setRowSelection}
-                     renderMobileCard={(props) => <InsightMobileCard {...props} />}
+                     renderMobileCard={(props) => (
+                        <InsightMobileCard {...props} />
+                     )}
                      renderSubComponent={(props) => (
                         <InsightExpandedContent {...props} />
                      )}

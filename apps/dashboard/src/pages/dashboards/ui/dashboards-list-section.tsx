@@ -29,9 +29,9 @@ import { useTRPC } from "@/integrations/clients";
 import { useDeleteDashboard } from "../features/use-delete-dashboard";
 import type { Dashboard } from "./dashboards-list-page";
 import {
+   createDashboardColumns,
    DashboardExpandedContent,
    DashboardMobileCard,
-   createDashboardColumns,
 } from "./dashboards-table-columns";
 
 function DashboardsListErrorFallback() {
@@ -97,7 +97,9 @@ function DashboardsListContent() {
    const filteredDashboards = useMemo(() => {
       if (!debouncedSearchTerm) return dashboards;
       return dashboards.filter((dashboard) =>
-         dashboard.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()),
+         dashboard.name
+            .toLowerCase()
+            .includes(debouncedSearchTerm.toLowerCase()),
       );
    }, [dashboards, debouncedSearchTerm]);
 

@@ -9,12 +9,7 @@ import {
    SelectValue,
 } from "@packages/ui/components/select";
 import { useQuery } from "@tanstack/react-query";
-import {
-   ArrowLeftRight,
-   CreditCard,
-   Layers,
-   Tag,
-} from "lucide-react";
+import { ArrowLeftRight, CreditCard, Layers, Tag } from "lucide-react";
 import { useMemo } from "react";
 import { trpc } from "@/integrations/clients";
 
@@ -147,7 +142,9 @@ export function DataFiltersSection({
             <section className="space-y-3">
                <div className="flex items-center gap-2">
                   <Tag className="h-4 w-4 text-muted-foreground" />
-                  <FieldLabel className="text-sm font-medium m-0">Tags</FieldLabel>
+                  <FieldLabel className="text-sm font-medium m-0">
+                     Tags
+                  </FieldLabel>
                </div>
                <MultiSelect
                   onChange={onTagsChange}

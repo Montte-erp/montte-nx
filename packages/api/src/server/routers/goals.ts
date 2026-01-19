@@ -35,21 +35,24 @@ const newTagSchema = z.object({
    color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
 });
 
-const createGoalSchema = z.object({
-   name: z.string().min(1).max(100),
-   description: z.string().max(500).optional(),
-   // Either provide an existing tagId or create a new tag
-   tagId: z.string().uuid().optional(),
-   newTag: newTagSchema.optional(),
-   progressCalculationType: z.enum(["income", "expense", "net"]).default("income"),
-   targetAmount: z.number().positive(),
-   startingAmount: z.number().min(0).optional(),
-   targetDate: z.string().datetime().optional(),
-   metadata: goalMetadataSchema.optional(),
-}).refine(
-   (data) => data.tagId || data.newTag,
-   { message: "Either tagId or newTag must be provided" }
-);
+const createGoalSchema = z
+   .object({
+      name: z.string().min(1).max(100),
+      description: z.string().max(500).optional(),
+      // Either provide an existing tagId or create a new tag
+      tagId: z.string().uuid().optional(),
+      newTag: newTagSchema.optional(),
+      progressCalculationType: z
+         .enum(["income", "expense", "net"])
+         .default("income"),
+      targetAmount: z.number().positive(),
+      startingAmount: z.number().min(0).optional(),
+      targetDate: z.string().datetime().optional(),
+      metadata: goalMetadataSchema.optional(),
+   })
+   .refine((data) => data.tagId || data.newTag, {
+      message: "Either tagId or newTag must be provided",
+   });
 
 const updateGoalSchema = z.object({
    id: z.string().uuid(),
@@ -98,14 +101,19 @@ export const goalsRouter = router({
             }
 
             // Check if tag already has a goal
-            const existingGoal = await findGoalByTagId(resolvedCtx.db, input.tagId);
+            const existingGoal = await findGoalByTagId(
+               resolvedCtx.db,
+               input.tagId,
+            );
             if (existingGoal) {
                throw APIError.conflict("This tag is already linked to a goal");
             }
 
             tagId = input.tagId;
          } else {
-            throw APIError.validation("Either tagId or newTag must be provided");
+            throw APIError.validation(
+               "Either tagId or newTag must be provided",
+            );
          }
 
          return createGoal(resolvedCtx.db, {
@@ -173,10 +181,12 @@ export const goalsRouter = router({
       }),
 
    delete: protectedProcedure
-      .input(z.object({
-         id: z.string().uuid(),
-         deleteTag: z.boolean().default(false),
-      }))
+      .input(
+         z.object({
+            id: z.string().uuid(),
+            deleteTag: z.boolean().default(false),
+         }),
+      )
       .mutation(async ({ ctx, input }) => {
          const resolvedCtx = await ctx;
          const organizationId = resolvedCtx.organizationId;

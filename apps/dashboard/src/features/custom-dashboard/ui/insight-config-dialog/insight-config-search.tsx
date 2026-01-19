@@ -88,7 +88,7 @@ export function InsightConfigSearch({
                         const SectionIcon = sectionInfo.icon;
 
                         return (
-                           <div key={section} className="mb-2 last:mb-0">
+                           <div className="mb-2 last:mb-0" key={section}>
                               <div className="flex items-center gap-2 px-2 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                  <SectionIcon className="h-3 w-3" />
                                  {sectionInfo.label}

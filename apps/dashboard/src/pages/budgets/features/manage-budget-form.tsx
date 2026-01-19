@@ -79,8 +79,9 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
    const form = useForm({
       defaultValues: {
          amount: budget?.amount ? Number(budget.amount) : 0,
-         linkedCategoryIds: (budget?.metadata as { linkedCategoryIds?: string[] })
-            ?.linkedCategoryIds ?? [],
+         linkedCategoryIds:
+            (budget?.metadata as { linkedCategoryIds?: string[] })
+               ?.linkedCategoryIds ?? [],
          name: budget?.name || "",
          periodType: (budget?.periodType || "monthly") as
             | "daily"
@@ -253,7 +254,9 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                <form.Field name="linkedCategoryIds">
                   {(field) => (
                      <Field>
-                        <FieldLabel>Filtrar por categorias (opcional)</FieldLabel>
+                        <FieldLabel>
+                           Filtrar por categorias (opcional)
+                        </FieldLabel>
                         <CategoryMultiSelect
                            categories={categories}
                            onChange={(selected) => field.handleChange(selected)}
@@ -261,8 +264,8 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                            selected={field.state.value}
                         />
                         <FieldDescription>
-                           Quando selecionadas, apenas transações com essas categorias
-                           serão contabilizadas
+                           Quando selecionadas, apenas transações com essas
+                           categorias serão contabilizadas
                         </FieldDescription>
                      </Field>
                   )}
@@ -276,7 +279,9 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                         <Field>
                            <FieldLabel>Tag de agrupamento</FieldLabel>
                            <Select
-                              onValueChange={(value) => field.handleChange(value)}
+                              onValueChange={(value) =>
+                                 field.handleChange(value)
+                              }
                               value={field.state.value}
                            >
                               <SelectTrigger className="w-full">
@@ -288,7 +293,9 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                                        <div className="flex items-center gap-2">
                                           <div
                                              className="size-3 rounded-full"
-                                             style={{ backgroundColor: tag.color }}
+                                             style={{
+                                                backgroundColor: tag.color,
+                                             }}
                                           />
                                           {tag.name}
                                        </div>

@@ -47,8 +47,6 @@ export function FeatureCarousel({
 }: FeatureCarouselProps) {
    const [api, setApi] = useState<CarouselApi>();
    const [canScrollPrev, setCanScrollPrev] = useState(false);
-   const [canScrollNext, setCanScrollNext] = useState(true);
-   const [selectedIndex, setSelectedIndex] = useState(0);
    const autoplayRef = useRef(
       Autoplay({
          delay: autoplayInterval,
@@ -61,17 +59,11 @@ export function FeatureCarousel({
    const lastItemIndex = items.length - 1;
 
    // Track scroll state
-   const onSelect = useCallback(
-      (api: CarouselApi) => {
-         if (!api) return;
-         const index = api.selectedScrollSnap();
-         setSelectedIndex(index);
-         setCanScrollPrev(index > 0);
-         // Can scroll next only if not at the last item
-         setCanScrollNext(index < lastItemIndex);
-      },
-      [lastItemIndex],
-   );
+   const onSelect = useCallback((api: CarouselApi) => {
+      if (!api) return;
+      const index = api.selectedScrollSnap();
+      setCanScrollPrev(index > 0);
+   }, []);
 
    // Custom scroll next that rewinds at end
    const scrollNext = useCallback(() => {

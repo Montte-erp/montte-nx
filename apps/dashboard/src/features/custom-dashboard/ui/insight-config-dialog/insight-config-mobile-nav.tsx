@@ -67,11 +67,7 @@ export function InsightConfigMobileNav({
                      item.id === "data-filters" && activeFilterCount > 0;
 
                   return (
-                     <SelectItem
-                        className="py-3"
-                        key={item.id}
-                        value={item.id}
-                     >
+                     <SelectItem className="py-3" key={item.id} value={item.id}>
                         <span className="flex items-center gap-2 w-full">
                            <Icon className="h-4 w-4" />
                            <span>{item.label}</span>

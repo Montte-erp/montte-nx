@@ -14,7 +14,7 @@ import { useRouter } from "@tanstack/react-router";
 import { Building2, Check, Eye, Plus, Users } from "lucide-react";
 import React, { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { useHaptic } from "@/features/lib/lib/use-haptic";
+import { useHaptic } from "@/features/pwa/lib/use-haptic";
 import { useSetActiveOrganization } from "@/features/organization/hooks/use-set-active-organization";
 import { CreateTeamForm } from "@/features/organization/ui/create-team-form";
 import { ManageOrganizationForm } from "@/features/organization/ui/manage-organization-form";

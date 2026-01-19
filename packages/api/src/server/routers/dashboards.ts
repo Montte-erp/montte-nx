@@ -108,11 +108,6 @@ const insightConfigSchema = z.object({
       "stat_card",
       "bar_total",
       "table",
-      "world_map",
-      "category_analysis",
-      "comparison",
-      "sankey",
-      "heatmap",
    ]),
    comparison: z
       .object({
@@ -413,11 +408,7 @@ export const dashboardRouter = router({
             dashboardId: z.string().uuid(),
             name: z.string().min(1).max(100),
             description: z.string().max(500).nullish(),
-            type: z.enum([
-               "insight",
-               "text_card",
-               "anomaly_card",
-            ]),
+            type: z.enum(["insight", "text_card", "anomaly_card"]),
             position: widgetPositionSchema,
             config: widgetConfigSchema,
          }),
@@ -838,6 +829,8 @@ type InsightResult = {
    timeSeries?: Array<{
       date: string;
       value: number;
+      incomeValue?: number;
+      expenseValue?: number;
    }>;
    comparisonTimeSeries?: Array<{
       date: string;
@@ -1055,24 +1048,67 @@ async function queryTransactionInsight(
             dateFormat = "YYYY-MM";
       }
 
-      const timeSeriesResult = await db
-         .select({
-            date: sql<string>`TO_CHAR(${transaction.date}, '${sql.raw(dateFormat)}')`,
-            value: aggregateSql,
-         })
-         .from(transaction)
-         .where(whereClause)
-         .groupBy(sql`TO_CHAR(${transaction.date}, '${sql.raw(dateFormat)}')`)
-         .orderBy(
-            asc(sql`TO_CHAR(${transaction.date}, '${sql.raw(dateFormat)}')`),
-         );
+      // Check if we should separate income/expense in time series
+      // This happens when there's no type filter (all types included)
+      const typeFilter = config.filters.find((f) => f.field === "type");
+      const hasSingleTypeFilter =
+         typeFilter &&
+         typeFilter.operator === "equals" &&
+         typeof typeFilter.value === "string";
+      const shouldSeparateByType = !hasSingleTypeFilter;
 
-      result.timeSeries = timeSeriesResult.map(
-         (row: { date: string; value: number }) => ({
-            date: row.date,
-            value: row.value,
-         }),
-      );
+      // Debug logging for multi-series issue
+      console.log("[queryTransactionInsight] config.filters:", JSON.stringify(config.filters));
+      console.log("[queryTransactionInsight] timeGrouping:", config.timeGrouping);
+      console.log("[queryTransactionInsight] shouldSeparateByType:", shouldSeparateByType);
+
+      if (shouldSeparateByType) {
+         // Query with separated income/expense values
+         const dateGroupSql = sql`TO_CHAR(${transaction.date}, '${sql.raw(dateFormat)}')`;
+
+         const timeSeriesResult = await db
+            .select({
+               date: dateGroupSql,
+               incomeValue: sql<number>`COALESCE(SUM(CASE WHEN ${transaction.type} = 'income' THEN CAST(${transaction.amount} AS REAL) ELSE 0 END), 0)`,
+               expenseValue: sql<number>`COALESCE(SUM(CASE WHEN ${transaction.type} = 'expense' THEN CAST(${transaction.amount} AS REAL) ELSE 0 END), 0)`,
+            })
+            .from(transaction)
+            .where(whereClause)
+            .groupBy(dateGroupSql)
+            .orderBy(asc(dateGroupSql));
+
+         // Debug log raw SQL results
+         console.log("[queryTransactionInsight] Raw timeSeriesResult:", JSON.stringify(timeSeriesResult.slice(0, 2)));
+
+         result.timeSeries = timeSeriesResult.map(
+            (row: { date: string; incomeValue: number; expenseValue: number }) => ({
+               date: String(row.date),
+               value: Number(row.incomeValue) - Number(row.expenseValue), // Net value
+               incomeValue: Number(row.incomeValue),
+               expenseValue: Number(row.expenseValue),
+            }),
+         );
+      } else {
+         // Original single-value query for filtered type
+         const timeSeriesResult = await db
+            .select({
+               date: sql<string>`TO_CHAR(${transaction.date}, '${sql.raw(dateFormat)}')`,
+               value: aggregateSql,
+            })
+            .from(transaction)
+            .where(whereClause)
+            .groupBy(sql`TO_CHAR(${transaction.date}, '${sql.raw(dateFormat)}')`)
+            .orderBy(
+               asc(sql`TO_CHAR(${transaction.date}, '${sql.raw(dateFormat)}')`),
+            );
+
+         result.timeSeries = timeSeriesResult.map(
+            (row: { date: string; value: number }) => ({
+               date: row.date,
+               value: row.value,
+            }),
+         );
+      }
 
       // Handle comparison overlay time series
       if (config.comparisonOverlay?.enabled) {

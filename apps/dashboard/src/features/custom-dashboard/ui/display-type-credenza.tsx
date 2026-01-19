@@ -18,14 +18,10 @@ import {
    AreaChart,
    BarChart3,
    Check,
-   GitMerge,
-   Globe,
-   Grid3X3,
    Hash,
    Layers,
    LineChart,
    PieChart,
-   Scale,
    Table2,
    TrendingUp,
 } from "lucide-react";
@@ -119,46 +115,6 @@ const CHART_CATEGORIES: ChartCategory[] = [
          },
       ],
    },
-   {
-      name: "Visualizações",
-      types: [
-         {
-            value: "world_map",
-            label: "Mapa mundial",
-            description: "Valores por país em um mapa",
-            icon: Globe,
-         },
-         {
-            value: "sankey",
-            label: "Diagrama de Sankey",
-            description: "Fluxo de receitas para despesas por categoria",
-            icon: GitMerge,
-         },
-         {
-            value: "heatmap",
-            label: "Mapa de calor",
-            description: "Intensidade de gastos por dia e hora",
-            icon: Grid3X3,
-         },
-      ],
-   },
-   {
-      name: "Análise",
-      types: [
-         {
-            value: "category_analysis",
-            label: "Análise por categoria",
-            description: "Comparação entre categorias",
-            icon: Layers,
-         },
-         {
-            value: "comparison",
-            label: "Comparação",
-            description: "Comparar valores entre períodos",
-            icon: Scale,
-         },
-      ],
-   },
 ];
 
 // Chart types available for each data source
@@ -175,10 +131,6 @@ const CHART_TYPE_COMPATIBILITY: Record<DataSource, ChartType[]> = {
       "stat_card",
       "bar_total",
       "table",
-      "category_analysis",
-      "comparison",
-      "sankey",
-      "heatmap",
    ],
    bills: [
       "line",

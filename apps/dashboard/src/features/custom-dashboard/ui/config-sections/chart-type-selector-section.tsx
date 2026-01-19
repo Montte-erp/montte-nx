@@ -3,10 +3,8 @@ import { Button } from "@packages/ui/components/button";
 import { cn } from "@packages/ui/lib/utils";
 import {
    BarChart3,
-   Layers,
    LineChart,
    PieChart,
-   Scale,
    Table2,
    TrendingUp,
 } from "lucide-react";
@@ -24,8 +22,6 @@ const CHART_TYPES: Array<{
    { value: "pie", label: "Pie", icon: PieChart },
    { value: "donut", label: "Donut", icon: PieChart },
    { value: "table", label: "Table", icon: Table2 },
-   { value: "category_analysis", label: "Categories", icon: Layers },
-   { value: "comparison", label: "Compare", icon: Scale },
 ];
 
 type ChartTypeSelectorSectionProps = {

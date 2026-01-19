@@ -236,12 +236,12 @@ export function MarkAsRecurrentForm({
                               >
                                  <ChoiceboxItemHeader>
                                     <ChoiceboxItemTitle>
-                                       {frequencyOptionLabels[option].title}
+                                       {frequencyOptionLabels[option]?.title}
                                     </ChoiceboxItemTitle>
                                     <ChoiceboxItemDescription>
                                        {
                                           frequencyOptionLabels[option]
-                                             .description
+                                             ?.description
                                        }
                                     </ChoiceboxItemDescription>
                                  </ChoiceboxItemHeader>
@@ -330,12 +330,12 @@ export function MarkAsRecurrentForm({
                               >
                                  <ChoiceboxItemHeader>
                                     <ChoiceboxItemTitle>
-                                       {occurrenceOptionLabels[option].title}
+                                       {occurrenceOptionLabels[option]?.title}
                                     </ChoiceboxItemTitle>
                                     <ChoiceboxItemDescription>
                                        {
                                           occurrenceOptionLabels[option]
-                                             .description
+                                             ?.description
                                        }
                                     </ChoiceboxItemDescription>
                                  </ChoiceboxItemHeader>

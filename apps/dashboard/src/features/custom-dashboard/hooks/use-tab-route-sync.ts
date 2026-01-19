@@ -10,7 +10,10 @@ import { getRouteKey, getRouteTabInfo, ROUTE_TAB_MAP } from "./use-routes";
 function isDetailRoute(pathname: string): boolean {
    const segments = pathname.split("/").filter(Boolean);
    // Pattern: [slug, routeKey, id] - at least 3 segments where the 3rd is an ID
-   return segments.length >= 3 && !ROUTE_TAB_MAP[segments[2]];
+   const thirdSegment = segments[2];
+   return (
+      segments.length >= 3 && !!thirdSegment && !ROUTE_TAB_MAP[thirdSegment]
+   );
 }
 
 /**

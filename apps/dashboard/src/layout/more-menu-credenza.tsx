@@ -54,7 +54,7 @@ interface NavItem {
 
 function MoreMenuContent() {
    const { activeOrganization } = useActiveOrganization();
-   const { closeCredenza } = useCredenza();
+   const { closeCredenza, openCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const { trigger: haptic } = useHaptic();
    const router = useRouter();

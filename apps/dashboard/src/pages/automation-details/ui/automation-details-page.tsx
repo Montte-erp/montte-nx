@@ -13,7 +13,6 @@ import { Check, Loader2, Settings, XCircle } from "lucide-react";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
-import { useDetailTabName } from "@/features/custom-dashboard/hooks/use-detail-tab-name";
 import type {
    AutomationEdge,
    AutomationNode,
@@ -22,6 +21,7 @@ import {
    flowDataToSchema,
    schemaToFlowData,
 } from "@/features/automations/hooks/use-flow-serialization";
+import { useDetailTabName } from "@/features/custom-dashboard/hooks/use-detail-tab-name";
 import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
 import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";

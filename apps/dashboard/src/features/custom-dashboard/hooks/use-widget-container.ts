@@ -2,8 +2,8 @@ import type { InsightConfig } from "@packages/database/schemas/dashboards";
 import { useCallback, useState } from "react";
 import { useCredenza } from "@/hooks/use-credenza";
 import type { ConfigSection } from "../ui/insight-config-dialog/config-search-index";
-import type { DrillDownContext } from "./use-insight-drill-down";
 import { useInlineEdit } from "./use-inline-edit";
+import type { DrillDownContext } from "./use-insight-drill-down";
 import type { Widget } from "./use-widget";
 
 type UseWidgetContainerOptions = {

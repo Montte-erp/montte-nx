@@ -81,7 +81,9 @@ export function ChartOptionsSection({
          <section className="space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b">
                <Eye className="h-4 w-4 text-muted-foreground" />
-               <h4 className="text-sm font-medium">Configuracoes de Exibicao</h4>
+               <h4 className="text-sm font-medium">
+                  Configuracoes de Exibicao
+               </h4>
             </div>
             <div className="space-y-4 pl-6">
                <SwitchField
@@ -132,11 +134,17 @@ export function ChartOptionsSection({
                value={colorBy}
                variant="outline"
             >
-               <ToggleGroupItem className="flex items-center gap-2" value="name">
+               <ToggleGroupItem
+                  className="flex items-center gap-2"
+                  value="name"
+               >
                   <Tag className="h-4 w-4" />
                   Por nome
                </ToggleGroupItem>
-               <ToggleGroupItem className="flex items-center gap-2" value="rank">
+               <ToggleGroupItem
+                  className="flex items-center gap-2"
+                  value="rank"
+               >
                   <Trophy className="h-4 w-4" />
                   Por classificacao
                </ToggleGroupItem>
@@ -151,7 +159,9 @@ export function ChartOptionsSection({
             </div>
             <div className="space-y-4">
                <Field>
-                  <Label className="text-sm font-normal">Unidade do eixo Y</Label>
+                  <Label className="text-sm font-normal">
+                     Unidade do eixo Y
+                  </Label>
                   <Select onValueChange={onYAxisUnitChange} value={yAxisUnit}>
                      <SelectTrigger className="h-10">
                         <SelectValue />
@@ -223,8 +233,12 @@ export function ChartOptionsSection({
                               <ToggleGroupItem value="sparkline">
                                  Linha
                               </ToggleGroupItem>
-                              <ToggleGroupItem value="area">Area</ToggleGroupItem>
-                              <ToggleGroupItem value="bar">Barras</ToggleGroupItem>
+                              <ToggleGroupItem value="area">
+                                 Area
+                              </ToggleGroupItem>
+                              <ToggleGroupItem value="bar">
+                                 Barras
+                              </ToggleGroupItem>
                            </ToggleGroup>
                         </div>
                         <SwitchField

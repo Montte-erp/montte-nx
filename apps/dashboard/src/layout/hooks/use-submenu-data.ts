@@ -1,5 +1,5 @@
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { useTRPC } from "@/integrations/clients";
 
 export type SortOption = "name" | "date_created" | "date_updated";
@@ -47,11 +47,9 @@ export type SubmenuDataItem = {
    description?: string | null;
 };
 
-function sortItems<T extends { name: string; createdAt: Date; updatedAt: Date }>(
-   items: T[],
-   sortBy: SortOption,
-   sortDirection: SortDirection,
-): T[] {
+function sortItems<
+   T extends { name: string; createdAt: Date; updatedAt: Date },
+>(items: T[], sortBy: SortOption, sortDirection: SortDirection): T[] {
    return [...items].sort((a, b) => {
       let comparison = 0;
 
@@ -61,11 +59,13 @@ function sortItems<T extends { name: string; createdAt: Date; updatedAt: Date }>
             break;
          case "date_created":
             comparison =
-               new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+               new Date(a.createdAt).getTime() -
+               new Date(b.createdAt).getTime();
             break;
          case "date_updated":
             comparison =
-               new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+               new Date(a.updatedAt).getTime() -
+               new Date(b.updatedAt).getTime();
             break;
       }
 
@@ -73,10 +73,9 @@ function sortItems<T extends { name: string; createdAt: Date; updatedAt: Date }>
    });
 }
 
-function filterBySearch<T extends { name: string; description?: string | null }>(
-   items: T[],
-   search: string,
-): T[] {
+function filterBySearch<
+   T extends { name: string; description?: string | null },
+>(items: T[], search: string): T[] {
    if (!search.trim()) return items;
 
    const searchLower = search.toLowerCase().trim();
@@ -190,7 +189,8 @@ export function useSubmenuData(options: SubmenuDataOptions) {
       };
    }, [dashboards, insights, recents, search, sortBy, sortDirection]);
 
-   const isLoading = isLoadingDashboards || isLoadingInsights || isLoadingRecents;
+   const isLoading =
+      isLoadingDashboards || isLoadingInsights || isLoadingRecents;
    const error = dashboardsError || insightsError || recentsError;
 
    return {
@@ -271,15 +271,17 @@ export function usePlanningData(options: SubmenuDataOptions) {
          updatedAt: g.updatedAt,
       }));
 
-      const budgetItems: PlanningDataItem[] = (budgets ?? []).map((b: Budget) => ({
-         id: b.id,
-         name: b.name,
-         type: "budget" as const,
-         description: b.description,
-         isActive: b.isActive,
-         createdAt: b.createdAt,
-         updatedAt: b.updatedAt,
-      }));
+      const budgetItems: PlanningDataItem[] = (budgets ?? []).map(
+         (b: Budget) => ({
+            id: b.id,
+            name: b.name,
+            type: "budget" as const,
+            description: b.description,
+            isActive: b.isActive,
+            createdAt: b.createdAt,
+            updatedAt: b.updatedAt,
+         }),
+      );
 
       const filteredGoals = filterBySearch(goalItems, search);
       const filteredBudgets = filterBySearch(budgetItems, search);
@@ -330,7 +332,7 @@ type Tag = {
    id: string;
    name: string;
    color: string;
-   icon: string | null;
+   icon?: string | null;
    createdAt: Date;
    updatedAt: Date;
 };
@@ -418,8 +420,16 @@ export function useCategorizationData(options: SubmenuDataOptions) {
       const filteredCostCenters = filterBySearch(costCenterItems, search);
       const filteredTags = filterBySearch(tagItems, search);
 
-      const sortedCategories = sortItems(filteredCategories, sortBy, sortDirection);
-      const sortedCostCenters = sortItems(filteredCostCenters, sortBy, sortDirection);
+      const sortedCategories = sortItems(
+         filteredCategories,
+         sortBy,
+         sortDirection,
+      );
+      const sortedCostCenters = sortItems(
+         filteredCostCenters,
+         sortBy,
+         sortDirection,
+      );
       const sortedTags = sortItems(filteredTags, sortBy, sortDirection);
 
       return {
@@ -432,7 +442,8 @@ export function useCategorizationData(options: SubmenuDataOptions) {
       };
    }, [categories, costCenters, tags, search, sortBy, sortDirection]);
 
-   const isLoading = isLoadingCategories || isLoadingCostCenters || isLoadingTags;
+   const isLoading =
+      isLoadingCategories || isLoadingCostCenters || isLoadingTags;
    const error = categoriesError || costCentersError || tagsError;
 
    return {

@@ -21,7 +21,7 @@ import { SidebarProvider } from "@packages/ui/components/sidebar";
 import { useIsMobile } from "@packages/ui/hooks/use-mobile";
 import { Settings2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { type ConfigSection, type ChartType } from "./config-search-index";
+import type { ChartType, ConfigSection } from "./config-search-index";
 import { InsightConfigHeader } from "./insight-config-header";
 import { InsightConfigMobileNav } from "./insight-config-mobile-nav";
 import { InsightConfigSidebar } from "./insight-config-sidebar";
@@ -291,14 +291,18 @@ export function InsightConfigDialog({
 
       // Reset comparison overlay
       setShowComparisonOverlay(config.comparisonOverlay?.enabled ?? false);
-      setComparisonOverlayType(config.comparisonOverlay?.type ?? "previous_period");
+      setComparisonOverlayType(
+         config.comparisonOverlay?.type ?? "previous_period",
+      );
       setComparisonOverlayStyle(config.comparisonOverlay?.style ?? "dashed");
 
       // Reset forecast options
       setShowForecast(config.forecast?.enabled ?? false);
       setForecastModel(config.forecast?.model ?? "linear");
       setForecastPeriods(config.forecast?.periods ?? 3);
-      setForecastShowConfidence(config.forecast?.showConfidenceInterval ?? true);
+      setForecastShowConfidence(
+         config.forecast?.showConfidenceInterval ?? true,
+      );
    }, [open, config, initialSection]);
 
    // Count active data filters
@@ -344,9 +348,7 @@ export function InsightConfigDialog({
       // Chart options
       if (showLabels !== (config.showLabels ?? false)) return true;
       if (showLegend !== (config.showLegend ?? false)) return true;
-      if (
-         showAlertThresholdLines !== (config.showAlertThresholdLines ?? false)
-      )
+      if (showAlertThresholdLines !== (config.showAlertThresholdLines ?? false))
          return true;
       if (showMultipleYAxes !== (config.showMultipleYAxes ?? false))
          return true;
@@ -365,9 +367,7 @@ export function InsightConfigDialog({
       }
 
       // Advanced
-      if (
-         showConfidenceIntervals !== (config.showConfidenceIntervals ?? false)
-      )
+      if (showConfidenceIntervals !== (config.showConfidenceIntervals ?? false))
          return true;
       if (showMovingAverage !== (config.showMovingAverage ?? false))
          return true;

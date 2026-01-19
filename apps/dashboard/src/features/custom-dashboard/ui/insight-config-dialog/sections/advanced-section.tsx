@@ -117,7 +117,9 @@ export function AdvancedSection({
                               onValueChange={(value) =>
                                  value &&
                                  onComparisonOverlayTypeChange(
-                                    value as "previous_period" | "previous_year",
+                                    value as
+                                       | "previous_period"
+                                       | "previous_year",
                                  )
                               }
                               type="single"
@@ -154,7 +156,9 @@ export function AdvancedSection({
                               <ToggleGroupItem value="dotted">
                                  Pontilhada
                               </ToggleGroupItem>
-                              <ToggleGroupItem value="solid">Solida</ToggleGroupItem>
+                              <ToggleGroupItem value="solid">
+                                 Solida
+                              </ToggleGroupItem>
                            </ToggleGroup>
                         </div>
                      </>

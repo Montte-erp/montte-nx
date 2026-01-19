@@ -18,7 +18,11 @@ type DashboardGridProps = {
       description: string | null,
    ) => void;
    onChangeWidgetWidth: (widgetId: string, newWidth: number) => void;
-   onDrillDown?: (config: InsightConfig, context: DrillDownContext) => void;
+   onDrillDown?: (
+      widgetId: string,
+      config: InsightConfig,
+      context: DrillDownContext,
+   ) => void;
 };
 
 export function DashboardGrid({
@@ -50,7 +54,12 @@ export function DashboardGrid({
                   onChangeWidth={(newWidth) =>
                      onChangeWidgetWidth(widget.id, newWidth)
                   }
-                  onDrillDown={onDrillDown}
+                  onDrillDown={
+                     onDrillDown
+                        ? (config, context) =>
+                             onDrillDown(widget.id, config, context)
+                        : undefined
+                  }
                   onRemove={() => onRemoveWidget(widget.id, widget.name)}
                   onUpdateConfig={(updates) =>
                      onUpdateWidgetConfig(widget.id, updates)

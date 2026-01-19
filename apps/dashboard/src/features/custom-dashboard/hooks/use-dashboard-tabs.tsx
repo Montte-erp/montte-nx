@@ -6,7 +6,15 @@ import type { RouteTabInfo } from "./use-routes";
 // Schemas
 // ============================================
 
-export const tabTypeSchema = z.enum(["app", "dashboard", "insight", "search", "goal", "budget", "page"]);
+export const tabTypeSchema = z.enum([
+   "app",
+   "dashboard",
+   "insight",
+   "search",
+   "goal",
+   "budget",
+   "page",
+]);
 
 export const tabRouteSchema = z.object({
    pathname: z.string(),
@@ -96,7 +104,14 @@ export type { RouteTabInfo };
 export type AppTab = z.infer<typeof appTabSchema> & {
    routeInfo?: RouteTabInfo;
 };
-export type Tab = AppTab | DashboardTab | InsightTab | SearchTab | GoalTab | BudgetTab | PageTab;
+export type Tab =
+   | AppTab
+   | DashboardTab
+   | InsightTab
+   | SearchTab
+   | GoalTab
+   | BudgetTab
+   | PageTab;
 
 type DashboardTabsState = {
    activeTabId: string;
@@ -356,7 +371,8 @@ export function useDashboardTabs() {
       openPageTab: (pageKey: string, name: string) => {
          dashboardTabsStore.setState((s) => {
             const existingTab = s.tabs.find(
-               (t) => t.type === "page" && "pageKey" in t && t.pageKey === pageKey,
+               (t) =>
+                  t.type === "page" && "pageKey" in t && t.pageKey === pageKey,
             );
 
             if (existingTab) {

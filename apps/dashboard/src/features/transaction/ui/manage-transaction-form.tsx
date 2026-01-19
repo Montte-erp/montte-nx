@@ -388,12 +388,6 @@ export function ManageTransactionForm({
    const { data: budgetImpactWarnings = [] } = useQuery({
       ...trpc.budgets.checkBudgetImpact.queryOptions({
          amount: budgetImpactParams?.amount ?? 0,
-         categoryIds:
-            budgetImpactParams?.categoryIds &&
-            budgetImpactParams.categoryIds.length > 0
-               ? budgetImpactParams.categoryIds
-               : undefined,
-         costCenterId: budgetImpactParams?.costCenterId || undefined,
          excludeTransactionId: transaction?.id,
          tagIds:
             budgetImpactParams?.tagIds && budgetImpactParams.tagIds.length > 0

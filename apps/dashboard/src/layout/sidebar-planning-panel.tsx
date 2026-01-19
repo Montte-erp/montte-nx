@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { Crosshair, Target, Wallet } from "lucide-react";
 import { useDashboardTabs } from "@/features/custom-dashboard/hooks/use-dashboard-tabs";
 import { usePlanningData } from "./hooks/use-submenu-data";
-import { useSubmenu } from "./sidebar-submenu-context";
 import {
    CollapsibleSection,
    EmptyState,
@@ -12,6 +11,7 @@ import {
    PanelHeader,
    SearchHeader,
 } from "./sidebar-panel-shared";
+import { useSubmenu } from "./sidebar-submenu-context";
 
 export function SidebarPlanningPanel() {
    const { panelState, setSearch, setSort, toggleSection, closeSubmenu } =
@@ -23,12 +23,13 @@ export function SidebarPlanningPanel() {
 
    const slug = pathname.split("/")[1] || "";
 
-   const { goals, budgets, isLoading, totalGoals, totalBudgets } = usePlanningData({
-      search: panelState.search,
-      sortBy: panelState.sortBy,
-      sortDirection: panelState.sortDirection,
-      enabled: true,
-   });
+   const { goals, budgets, isLoading, totalGoals, totalBudgets } =
+      usePlanningData({
+         search: panelState.search,
+         sortBy: panelState.sortBy,
+         sortDirection: panelState.sortDirection,
+         enabled: true,
+      });
 
    const isActive = (type: "goal" | "budget", id: string) => {
       if (type === "goal") {
@@ -52,14 +53,13 @@ export function SidebarPlanningPanel() {
       handleItemClick();
    };
 
-   const hasNoResults = !isLoading && goals.length === 0 && budgets.length === 0;
+   const hasNoResults =
+      !isLoading && goals.length === 0 && budgets.length === 0;
 
    return (
       <div className="flex flex-col h-full">
          {/* Panel Header with title and create dropdown */}
          <PanelHeader
-            title="Planejamento"
-            icon={Target}
             createOptions={[
                {
                   icon: Crosshair,
@@ -72,15 +72,17 @@ export function SidebarPlanningPanel() {
                   onClick: handleCreateBudget,
                },
             ]}
+            icon={Target}
+            title="Planejamento"
          />
 
          <SearchHeader
-            search={panelState.search}
             onSearchChange={setSearch}
-            sortBy={panelState.sortBy}
-            sortDirection={panelState.sortDirection}
             onSortChange={setSort}
             placeholder="Buscar..."
+            search={panelState.search}
+            sortBy={panelState.sortBy}
+            sortDirection={panelState.sortDirection}
          />
 
          <SidebarContent>
@@ -92,23 +94,23 @@ export function SidebarPlanningPanel() {
                <div className="py-2">
                   {/* Goals Section */}
                   <CollapsibleSection
-                     title="Metas"
-                     count={totalGoals}
-                     isExpanded={panelState.expandedSections.includes("goals")}
-                     onToggle={() => toggleSection("goals")}
                      action={
                         <Link
-                           to="/$slug/goals"
-                           params={{ slug }}
+                           className="text-[10px] text-muted-foreground hover:text-foreground"
                            onClick={(e) => {
                               e.stopPropagation();
                               handleItemClick();
                            }}
-                           className="text-[10px] text-muted-foreground hover:text-foreground"
+                           params={{ slug }}
+                           to="/$slug/goals"
                         >
                            Ver todos
                         </Link>
                      }
+                     count={totalGoals}
+                     isExpanded={panelState.expandedSections.includes("goals")}
+                     onToggle={() => toggleSection("goals")}
+                     title="Metas"
                   >
                      {goals.length === 0 ? (
                         <p className="px-3 py-2 text-xs text-muted-foreground">
@@ -117,21 +119,6 @@ export function SidebarPlanningPanel() {
                      ) : (
                         goals.map((goal) => (
                            <ItemRow
-                              key={`goal-${goal.id}`}
-                              id={goal.id}
-                              name={goal.name}
-                              url={`/${slug}/goals/${goal.id}`}
-                              icon={Crosshair}
-                              timestamp={goal.updatedAt}
-                              isActive={isActive("goal", goal.id)}
-                              onClick={handleItemClick}
-                              onOpenInDashboardTab={() => {
-                                 openGoalTab(goal.id, goal.name);
-                                 navigate({
-                                    to: "/$slug/goals",
-                                    params: { slug },
-                                 });
-                              }}
                               badge={
                                  goal.status && goal.status !== "active" ? (
                                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
@@ -143,6 +130,21 @@ export function SidebarPlanningPanel() {
                                     </span>
                                  ) : undefined
                               }
+                              icon={Crosshair}
+                              id={goal.id}
+                              isActive={isActive("goal", goal.id)}
+                              key={`goal-${goal.id}`}
+                              name={goal.name}
+                              onClick={handleItemClick}
+                              onOpenInDashboardTab={() => {
+                                 openGoalTab(goal.id, goal.name);
+                                 navigate({
+                                    to: "/$slug/goals",
+                                    params: { slug },
+                                 });
+                              }}
+                              timestamp={goal.updatedAt}
+                              url={`/${slug}/goals/${goal.id}`}
                            />
                         ))
                      )}
@@ -150,23 +152,25 @@ export function SidebarPlanningPanel() {
 
                   {/* Budgets Section */}
                   <CollapsibleSection
-                     title="Orçamentos"
-                     count={totalBudgets}
-                     isExpanded={panelState.expandedSections.includes("budgets")}
-                     onToggle={() => toggleSection("budgets")}
                      action={
                         <Link
-                           to="/$slug/budgets"
-                           params={{ slug }}
+                           className="text-[10px] text-muted-foreground hover:text-foreground"
                            onClick={(e) => {
                               e.stopPropagation();
                               handleItemClick();
                            }}
-                           className="text-[10px] text-muted-foreground hover:text-foreground"
+                           params={{ slug }}
+                           to="/$slug/budgets"
                         >
                            Ver todos
                         </Link>
                      }
+                     count={totalBudgets}
+                     isExpanded={panelState.expandedSections.includes(
+                        "budgets",
+                     )}
+                     onToggle={() => toggleSection("budgets")}
+                     title="Orçamentos"
                   >
                      {budgets.length === 0 ? (
                         <p className="px-3 py-2 text-xs text-muted-foreground">
@@ -175,13 +179,18 @@ export function SidebarPlanningPanel() {
                      ) : (
                         budgets.map((budget) => (
                            <ItemRow
-                              key={`budget-${budget.id}`}
-                              id={budget.id}
-                              name={budget.name}
-                              url={`/${slug}/budgets/${budget.id}`}
+                              badge={
+                                 budget.isActive === false ? (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                                       Inativo
+                                    </span>
+                                 ) : undefined
+                              }
                               icon={Wallet}
-                              timestamp={budget.updatedAt}
+                              id={budget.id}
                               isActive={isActive("budget", budget.id)}
+                              key={`budget-${budget.id}`}
+                              name={budget.name}
                               onClick={handleItemClick}
                               onOpenInDashboardTab={() => {
                                  openBudgetTab(budget.id, budget.name);
@@ -190,13 +199,8 @@ export function SidebarPlanningPanel() {
                                     params: { slug, budgetId: budget.id },
                                  });
                               }}
-                              badge={
-                                 budget.isActive === false ? (
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                                       Inativo
-                                    </span>
-                                 ) : undefined
-                              }
+                              timestamp={budget.updatedAt}
+                              url={`/${slug}/budgets/${budget.id}`}
                            />
                         ))
                      )}

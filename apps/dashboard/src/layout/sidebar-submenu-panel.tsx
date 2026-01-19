@@ -1,10 +1,10 @@
+import { useSidebar } from "@packages/ui/components/sidebar";
 import { cn } from "@packages/ui/lib/utils";
 import { useEffect, useRef } from "react";
-import { useSidebar } from "@packages/ui/components/sidebar";
-import { useSubmenu } from "./sidebar-submenu-context";
-import { SidebarReportsPanel } from "./sidebar-reports-panel";
-import { SidebarPlanningPanel } from "./sidebar-planning-panel";
 import { SidebarCategorizationPanel } from "./sidebar-categorization-panel";
+import { SidebarPlanningPanel } from "./sidebar-planning-panel";
+import { SidebarReportsPanel } from "./sidebar-reports-panel";
+import { useSubmenu } from "./sidebar-submenu-context";
 
 export function SidebarSubmenuPanel() {
    const { activeSubmenu, submenuConfig, closeSubmenu } = useSubmenu();
@@ -54,20 +54,20 @@ export function SidebarSubmenuPanel() {
          {/* Overlay backdrop */}
          {isOpen && (
             <div
+               aria-hidden="true"
                className="fixed inset-0 z-10 bg-black/20"
                onClick={closeSubmenu}
-               aria-hidden="true"
             />
          )}
 
          {/* Panel */}
          <div
-            ref={panelRef}
             className={cn(
                "fixed top-0 bottom-0 z-20 w-[280px] bg-sidebar border-l border-sidebar-border",
                "transition-opacity duration-150 ease-out",
                isOpen ? "opacity-100" : "opacity-0 pointer-events-none",
             )}
+            ref={panelRef}
             style={{
                left: sidebarWidth,
             }}

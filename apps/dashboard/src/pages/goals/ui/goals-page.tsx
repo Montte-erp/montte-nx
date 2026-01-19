@@ -6,13 +6,7 @@ import {
    ToggleGroupItem,
 } from "@packages/ui/components/toggle-group";
 import { cn } from "@packages/ui/lib/utils";
-import {
-   CheckCircle2,
-   PauseCircle,
-   Plus,
-   Target,
-   XCircle,
-} from "lucide-react";
+import { CheckCircle2, PauseCircle, Plus, Target, XCircle } from "lucide-react";
 import { DefaultHeader } from "@/default/default-header";
 import { useSheet } from "@/hooks/use-sheet";
 import {

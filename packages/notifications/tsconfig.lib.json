@@ -7,9 +7,6 @@
       "path": "../money"
     },
     {
-      "path": "../workflows/tsconfig.lib.json"
-    },
-    {
       "path": "../utils/tsconfig.lib.json"
     },
     {

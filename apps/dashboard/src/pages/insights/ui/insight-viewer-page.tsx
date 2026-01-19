@@ -40,7 +40,7 @@ export function InsightViewerPage({ insightId }: InsightViewerPageProps) {
    const {
       data: insight,
       isLoading,
-      error,
+      error: _error,
    } = useQuery(
       trpc.dashboards.getSavedInsight.queryOptions(
          { id: insightId },

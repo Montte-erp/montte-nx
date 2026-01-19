@@ -47,7 +47,11 @@ export function useDeleteGoal() {
       });
    };
 
-   const deleteGoalWithTag = (goalId: string, goalName: string, tagName: string) => {
+   const deleteGoalWithTag = (
+      goalId: string,
+      goalName: string,
+      tagName: string,
+   ) => {
       openAlertDialog({
          title: "Excluir Meta e Tag",
          description: `Tem certeza que deseja excluir a meta "${goalName}" E a tag "${tagName}"? Ambos serao removidos permanentemente.`,

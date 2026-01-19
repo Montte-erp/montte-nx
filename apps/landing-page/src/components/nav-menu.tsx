@@ -117,6 +117,10 @@ export const NavMenu = ({ orientation = "horizontal" }: NavMenuProps) => {
    // Split product items: first one is featured, rest are in grid
    const [featuredItem, ...gridItems] = productItems;
 
+   if (!featuredItem) {
+      return null;
+   }
+
    return (
       <NavigationMenu
          className={orientation === "vertical" ? "flex-col items-start" : ""}

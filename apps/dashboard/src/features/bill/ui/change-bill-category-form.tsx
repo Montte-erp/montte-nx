@@ -19,9 +19,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { CostCenterCombobox } from "@/features/cost-center/ui/cost-center-combobox";
 import type { IconName } from "@/features/icon-selector/lib/available-icons";
 import { IconDisplay } from "@/features/icon-selector/ui/icon-display";
-import { CostCenterCombobox } from "@/features/cost-center/ui/cost-center-combobox";
 import { TagMultiSelect } from "@/features/tag/ui/tag-multi-select";
 import { useTRPC } from "@/integrations/clients";
 

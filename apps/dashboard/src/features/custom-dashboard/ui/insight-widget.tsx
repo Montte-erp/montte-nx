@@ -25,7 +25,7 @@ import { TrendSparkline } from "@packages/ui/components/sparkline";
 import { formatDate } from "@packages/utils/date";
 import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef, Row } from "@tanstack/react-table";
-import { ChevronDown, Globe, TrendingDown, TrendingUp } from "lucide-react";
+import { ChevronDown, TrendingDown, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
    Area,
@@ -46,14 +46,57 @@ import { useTRPC } from "@/integrations/clients";
 import type { InsightData } from "../hooks/use-insight-data";
 import type { DrillDownContext } from "../hooks/use-insight-drill-down";
 import {
-   resolveDateRange,
    type RelativePeriod,
+   resolveDateRange,
 } from "../lib/resolve-date-range";
-import { CategoryAnalysisChart } from "./category-analysis-chart";
-import { getItemColor } from "./chart-colors";
-import { ComparisonChart } from "./comparison-chart";
-import { HeatmapChart, transformToHeatmapData } from "./heatmap-chart";
-import { SankeyChart, transformToSankeyData } from "./sankey-chart";
+import { getItemColor, SEMANTIC_COLORS } from "./chart-colors";
+
+/**
+ * Parse date strings from various SQL formats into Date objects
+ * Handles: YYYY-MM-DD (day), IYYY-IW (week), YYYY-MM (month), YYYY"Q"Q (quarter), YYYY (year)
+ */
+function parseDateString(dateStr: string): Date | null {
+	// Quarter format: "2024Q1", "2024Q2", etc. -> First day of that quarter
+	const quarterMatch = dateStr.match(/^(\d{4})Q([1-4])$/);
+	if (quarterMatch) {
+		const year = Number.parseInt(quarterMatch[1] ?? "0", 10);
+		const quarter = Number.parseInt(quarterMatch[2] ?? "1", 10);
+		return new Date(year, (quarter - 1) * 3, 1);
+	}
+
+	// Standard formats that JS can parse: "2024-01-15", "2024-01", "2024"
+	const date = new Date(dateStr);
+	return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * Get the semantic color based on type filter in config
+ * Returns income color (green), expense color (red), or default chart color
+ */
+function getTypeFilterColor(config: InsightConfig): string {
+   const typeFilter = config.filters.find((f) => f.field === "type");
+   if (
+      typeFilter?.operator === "equals" &&
+      typeof typeFilter.value === "string"
+   ) {
+      if (typeFilter.value === "expense") {
+         return SEMANTIC_COLORS.expense;
+      }
+      if (typeFilter.value === "income") {
+         return SEMANTIC_COLORS.income;
+      }
+   }
+   return "var(--chart-1)"; // Default
+}
+
+/**
+ * Check if the config has an expense-only type filter
+ * Used to negate values so expenses are shown below the zero line
+ */
+function isExpenseOnlyFilter(config: InsightConfig): boolean {
+   const typeFilter = config.filters.find((f) => f.field === "type");
+   return typeFilter?.operator === "equals" && typeFilter.value === "expense";
+}
 
 type InsightWidgetProps = {
    widgetId: string;
@@ -205,34 +248,6 @@ export function InsightWidget({
                onDrillDown={onDrillDown}
             />
          );
-      case "world_map":
-         return (
-            <WorldMapWidget
-               config={config}
-               data={data}
-               onDrillDown={onDrillDown}
-            />
-         );
-      case "category_analysis":
-         return (
-            <CategoryAnalysisChart
-               config={config}
-               globalFilters={globalFilters}
-               onDrillDown={onDrillDown}
-            />
-         );
-      case "comparison":
-         return (
-            <ComparisonChart
-               config={config}
-               globalFilters={globalFilters}
-               onDrillDown={onDrillDown}
-            />
-         );
-      case "sankey":
-         return <SankeyChartWidget config={config} data={data} />;
-      case "heatmap":
-         return <HeatmapChartWidget config={config} data={data} />;
       default:
          return (
             <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
@@ -272,10 +287,16 @@ function useForecastData(
          return { forecastData: [], lastDataDate: null };
       }
 
-      const dataPoints = timeSeries.map((point) => ({
-         date: point.date,
-         value: point.value,
-      }));
+      // Parse and validate dates before passing to forecast
+      const dataPoints: Array<{ date: Date; value: number }> = [];
+      for (const point of timeSeries) {
+         const parsedDate = parseDateString(point.date);
+         if (!parsedDate) {
+            // If any date fails to parse, skip forecasting entirely
+            return { forecastData: [], lastDataDate: null };
+         }
+         dataPoints.push({ date: parsedDate, value: point.value });
+      }
 
       const result = forecast(
          dataPoints,
@@ -397,17 +418,36 @@ function LineChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
       );
    }
 
+   // Check if we have separated income/expense data
+   // Use typeof to handle cases where values might be 0 (which is valid)
+   const hasSeparatedData = data.timeSeries.some(
+      (p) =>
+         typeof p.incomeValue === "number" && typeof p.expenseValue === "number",
+   );
+
+   // Check if expense-only filter is active (negate values to show below zero)
+   const isExpenseOnly = isExpenseOnlyFilter(config);
+
+   // Get semantic color for single type filter
+   const singleTypeColor = getTypeFilterColor(config);
+
    // Merge time series with comparison data if overlay is enabled
    const hasComparisonOverlay =
       config.comparisonOverlay?.enabled && data.comparisonTimeSeries;
    const hasForecast = config.forecast?.enabled && forecastData.length > 0;
 
    // Build chart data with historical, comparison, and forecast values
+   // Negate expense values so they appear below zero line when showing both income/expense
+   // Also negate single value when expense-only filter is active
    const chartData = (() => {
       // Start with historical data
       const historical = data.timeSeries.map((point, index) => ({
          date: point.date,
-         value: point.value,
+         // Negate value for expense-only filter (shows chart going down)
+         value: isExpenseOnly ? -point.value : point.value,
+         incomeValue: point.incomeValue,
+         // Negate expense values for proper visualization below zero line
+         expenseValue: point.expenseValue !== undefined ? -point.expenseValue : undefined,
          comparisonValue: hasComparisonOverlay
             ? (data.comparisonTimeSeries?.[index]?.value ?? null)
             : null,
@@ -419,13 +459,24 @@ function LineChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
       // Add forecast data points if enabled
       if (hasForecast) {
          for (const fp of forecastData) {
+            // Negate forecast values for expense-only filter
+            const forecastValue = isExpenseOnly ? -fp.value : fp.value;
+            const forecastLower = fp.lowerBound
+               ? (isExpenseOnly ? -fp.lowerBound : fp.lowerBound)
+               : null;
+            const forecastUpper = fp.upperBound
+               ? (isExpenseOnly ? -fp.upperBound : fp.upperBound)
+               : null;
+
             historical.push({
                date: fp.date.toISOString().split("T")[0] ?? "",
                value: null as unknown as number, // No actual value for forecast points
+               incomeValue: undefined,
+               expenseValue: undefined,
                comparisonValue: null,
-               forecastValue: fp.value,
-               forecastLower: fp.lowerBound ?? null,
-               forecastUpper: fp.upperBound ?? null,
+               forecastValue,
+               forecastLower,
+               forecastUpper,
             });
          }
 
@@ -445,12 +496,24 @@ function LineChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
 
    const chartConfig: ChartConfig = {
       value: {
-         color: "hsl(var(--chart-1))",
+         color: singleTypeColor,
          label: config.aggregateField,
       },
+      // Use direct oklch colors to avoid CSS variable resolution issues
+      // (var(--color-income) -> var(--income) -> oklch is too many levels)
+      ...(hasSeparatedData && {
+         incomeValue: {
+            color: "oklch(0.7227 0.1920 142)", // Green (income)
+            label: "Receitas",
+         },
+         expenseValue: {
+            color: "oklch(0.6368 0.2078 25.33)", // Red (expense/destructive)
+            label: "Despesas",
+         },
+      }),
       ...(hasComparisonOverlay && {
          comparisonValue: {
-            color: "hsl(var(--muted-foreground))",
+            color: "var(--muted-foreground)",
             label:
                config.comparisonOverlay?.type === "previous_year"
                   ? "Last Year"
@@ -459,7 +522,7 @@ function LineChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
       }),
       ...(hasForecast && {
          forecastValue: {
-            color: "hsl(var(--chart-2))",
+            color: "var(--chart-2)",
             label: "Forecast",
          },
       }),
@@ -475,6 +538,9 @@ function LineChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
             return undefined;
       }
    };
+
+   const showLegend =
+      config.showLegend || hasSeparatedData || hasComparisonOverlay || hasForecast;
 
    return (
       <ChartContainer className="h-full w-full" config={chartConfig}>
@@ -503,14 +569,27 @@ function LineChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
             <ChartTooltip
                content={
                   <ChartTooltipContent
-                     formatter={(value) =>
-                        config.aggregation === "count"
-                           ? (value as number).toLocaleString()
-                           : formatDecimalCurrency(value as number)
-                     }
+                     formatter={(value, name) => {
+                        // Show absolute value for expenses (they're stored as negative)
+                        // This includes both separated expense data and expense-only filter
+                        const isNegatedValue = name === "expenseValue" || (name === "value" && isExpenseOnly);
+                        const displayValue = isNegatedValue ? Math.abs(value as number) : (value as number);
+                        return config.aggregation === "count"
+                           ? displayValue.toLocaleString()
+                           : formatDecimalCurrency(displayValue);
+                     }}
                   />
                }
             />
+            {/* Reference line at zero when showing separated income/expense or expense-only */}
+            {(hasSeparatedData || isExpenseOnly) && (
+               <ReferenceLine
+                  stroke="var(--muted-foreground)"
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.5}
+                  y={0}
+               />
+            )}
             {hasComparisonOverlay && (
                <Line
                   connectNulls
@@ -522,15 +601,38 @@ function LineChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
                   type="monotone"
                />
             )}
-            <Line
-               activeDot={onDrillDown ? { r: 6, cursor: "pointer" } : undefined}
-               connectNulls
-               dataKey="value"
-               dot={false}
-               stroke="var(--color-value)"
-               strokeWidth={2}
-               type="monotone"
-            />
+            {hasSeparatedData ? (
+               <>
+                  <Line
+                     connectNulls
+                     dataKey="incomeValue"
+                     dot={false}
+                     name="Receitas"
+                     stroke="var(--color-incomeValue)"
+                     strokeWidth={2}
+                     type="monotone"
+                  />
+                  <Line
+                     connectNulls
+                     dataKey="expenseValue"
+                     dot={false}
+                     name="Despesas"
+                     stroke="var(--color-expenseValue)"
+                     strokeWidth={2}
+                     type="monotone"
+                  />
+               </>
+            ) : (
+               <Line
+                  activeDot={onDrillDown ? { r: 6, cursor: "pointer" } : undefined}
+                  connectNulls
+                  dataKey="value"
+                  dot={false}
+                  stroke="var(--color-value)"
+                  strokeWidth={2}
+                  type="monotone"
+               />
+            )}
             {hasForecast && (
                <>
                   {/* Forecast confidence interval area */}
@@ -557,7 +659,7 @@ function LineChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
                   {/* Reference line at forecast start */}
                   {lastDataDate && (
                      <ReferenceLine
-                        stroke="hsl(var(--muted-foreground))"
+                        stroke="var(--muted-foreground)"
                         strokeDasharray="3 3"
                         strokeOpacity={0.5}
                         x={lastDataDate}
@@ -565,16 +667,46 @@ function LineChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
                   )}
                </>
             )}
-            {(hasComparisonOverlay || hasForecast) && config.showLegend && (
-               <ChartLegend content={<ChartLegendContent />} />
-            )}
+            {showLegend && <ChartLegend content={<ChartLegendContent />} />}
          </LineChart>
       </ChartContainer>
    );
 }
 
 function BarChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
-   const chartData = data.breakdown || data.timeSeries || [];
+   // Check if we have separated income/expense data FIRST
+   // This must be checked before determining chartData source
+   const hasSeparatedData =
+      data.timeSeries?.some(
+         (p) => p.incomeValue !== undefined && p.expenseValue !== undefined,
+      ) ?? false;
+
+   // Check if expense-only filter is active (negate values to show below zero)
+   const isExpenseOnly = isExpenseOnlyFilter(config);
+
+   // When we have separated data (income/expense), ALWAYS use timeSeries
+   // because breakdown data doesn't contain incomeValue/expenseValue keys
+   // Also transform to negate expense values so they appear below zero
+   // For expense-only filter, also negate the single value
+   const chartData = hasSeparatedData
+      ? (data.timeSeries || []).map((point) => ({
+           ...point,
+           // Negate expense values for proper visualization below zero line
+           expenseValue: point.expenseValue !== undefined ? -point.expenseValue : undefined,
+        }))
+      : isExpenseOnly && data.timeSeries
+        ? data.timeSeries.map((point) => ({
+             ...point,
+             // Negate value for expense-only filter
+             value: -point.value,
+          }))
+        : isExpenseOnly && data.breakdown
+          ? data.breakdown.map((point) => ({
+               ...point,
+               // Negate value for expense-only filter
+               value: -point.value,
+            }))
+          : data.breakdown || data.timeSeries || [];
 
    if (chartData.length === 0) {
       return (
@@ -584,15 +716,32 @@ function BarChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
       );
    }
 
+   // Get semantic color for single type filter
+   const singleTypeColor = getTypeFilterColor(config);
+
    const chartConfig: ChartConfig = {
       value: {
-         color: "hsl(var(--chart-1))",
+         color: singleTypeColor,
          label: config.aggregateField,
       },
+      // Use direct oklch colors to avoid CSS variable resolution issues
+      // (var(--color-income) -> var(--income) -> oklch is too many levels)
+      ...(hasSeparatedData && {
+         incomeValue: {
+            color: "oklch(0.7227 0.1920 142)", // Green (income)
+            label: "Receitas",
+         },
+         expenseValue: {
+            color: "oklch(0.6368 0.2078 25.33)", // Red (expense/destructive)
+            label: "Despesas",
+         },
+      }),
    };
 
-   const dataKey = data.breakdown ? "label" : "date";
-   const isBreakdown = Boolean(data.breakdown);
+   // When using separated data from timeSeries, use "date" as dataKey
+   // When using breakdown data, use "label" as dataKey
+   const dataKey = hasSeparatedData ? "date" : data.breakdown ? "label" : "date";
+   const isBreakdown = !hasSeparatedData && Boolean(data.breakdown);
 
    const handleBarClick = (entry: {
       label?: string;
@@ -644,39 +793,77 @@ function BarChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
             <ChartTooltip
                content={
                   <ChartTooltipContent
-                     formatter={(value) =>
-                        config.aggregation === "count"
-                           ? (value as number).toLocaleString()
-                           : formatDecimalCurrency(value as number)
-                     }
+                     formatter={(value, name) => {
+                        // Show absolute value for expenses (they're stored as negative)
+                        // This includes both separated expense data and expense-only filter
+                        const isNegatedValue = name === "expenseValue" || (name === "value" && isExpenseOnly);
+                        const displayValue = isNegatedValue ? Math.abs(value as number) : (value as number);
+                        return config.aggregation === "count"
+                           ? displayValue.toLocaleString()
+                           : formatDecimalCurrency(displayValue);
+                     }}
                   />
                }
             />
-            <Bar
-               cursor={onDrillDown ? "pointer" : undefined}
-               dataKey="value"
-               radius={[4, 4, 0, 0]}
-            >
-               {chartData.map((entry, index) => (
-                  <Cell
-                     fill={getItemColor(
-                        (entry as { color?: string }).color,
-                        index,
-                     )}
-                     key={`cell-${index + 1}`}
-                     onClick={() =>
-                        handleBarClick(
-                           entry as {
-                              label?: string;
-                              date?: string;
-                              id?: string;
-                              value: number;
-                           },
-                        )
-                     }
+            {/* Reference line at zero when showing separated income/expense or expense-only */}
+            {(hasSeparatedData || isExpenseOnly) && (
+               <ReferenceLine
+                  stroke="var(--muted-foreground)"
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.5}
+                  y={0}
+               />
+            )}
+            {hasSeparatedData ? (
+               <>
+                  <Bar
+                     dataKey="incomeValue"
+                     fill="var(--color-incomeValue)"
+                     name="Receitas"
+                     radius={[4, 4, 0, 0]}
+                     stackId="stack"
                   />
-               ))}
-            </Bar>
+                  <Bar
+                     dataKey="expenseValue"
+                     fill="var(--color-expenseValue)"
+                     name="Despesas"
+                     radius={[0, 0, 4, 4]}
+                     stackId="stack"
+                  />
+                  <ChartLegend content={<ChartLegendContent />} />
+               </>
+            ) : (
+               <Bar
+                  cursor={onDrillDown ? "pointer" : undefined}
+                  dataKey="value"
+                  fill="var(--color-value)"
+                  radius={[4, 4, 0, 0]}
+               >
+                  {chartData.map((entry, index) => (
+                     <Cell
+                        fill={
+                           isBreakdown
+                              ? getItemColor(
+                                   (entry as { color?: string }).color,
+                                   index,
+                                )
+                              : "var(--color-value)"
+                        }
+                        key={`cell-${index + 1}`}
+                        onClick={() =>
+                           handleBarClick(
+                              entry as {
+                                 label?: string;
+                                 date?: string;
+                                 id?: string;
+                                 value: number;
+                              },
+                           )
+                        }
+                     />
+                  ))}
+               </Bar>
+            )}
          </BarChart>
       </ChartContainer>
    );
@@ -723,7 +910,10 @@ function PieChartWidget({
 
    return (
       <ChartContainer className="h-full w-full" config={chartConfig}>
-         <PieChart accessibilityLayer margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+         <PieChart
+            accessibilityLayer
+            margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
+         >
             <ChartTooltip
                content={
                   <ChartTooltipContent
@@ -1039,17 +1229,36 @@ function AreaChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
       );
    }
 
+   // Check if we have separated income/expense data
+   // Use typeof to handle cases where values might be 0 (which is valid)
+   const hasSeparatedData = data.timeSeries.some(
+      (p) =>
+         typeof p.incomeValue === "number" && typeof p.expenseValue === "number",
+   );
+
+   // Check if expense-only filter is active (negate values to show below zero)
+   const isExpenseOnly = isExpenseOnlyFilter(config);
+
+   // Get semantic color for single type filter
+   const singleTypeColor = getTypeFilterColor(config);
+
    // Merge time series with comparison data if overlay is enabled
    const hasComparisonOverlay =
       config.comparisonOverlay?.enabled && data.comparisonTimeSeries;
    const hasForecast = config.forecast?.enabled && forecastData.length > 0;
 
    // Build chart data with historical, comparison, and forecast values
+   // Negate expense values so they appear below zero line when showing both income/expense
+   // Also negate single value when expense-only filter is active
    const chartData = (() => {
       // Start with historical data
       const historical = data.timeSeries.map((point, index) => ({
          date: point.date,
-         value: point.value,
+         // Negate value for expense-only filter (shows chart going down)
+         value: isExpenseOnly ? -point.value : point.value,
+         incomeValue: point.incomeValue,
+         // Negate expense values for proper visualization below zero line
+         expenseValue: point.expenseValue !== undefined ? -point.expenseValue : undefined,
          comparisonValue: hasComparisonOverlay
             ? (data.comparisonTimeSeries?.[index]?.value ?? null)
             : null,
@@ -1061,13 +1270,24 @@ function AreaChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
       // Add forecast data points if enabled
       if (hasForecast) {
          for (const fp of forecastData) {
+            // Negate forecast values for expense-only filter
+            const forecastValue = isExpenseOnly ? -fp.value : fp.value;
+            const forecastLower = fp.lowerBound
+               ? (isExpenseOnly ? -fp.lowerBound : fp.lowerBound)
+               : null;
+            const forecastUpper = fp.upperBound
+               ? (isExpenseOnly ? -fp.upperBound : fp.upperBound)
+               : null;
+
             historical.push({
                date: fp.date.toISOString().split("T")[0] ?? "",
                value: null as unknown as number,
+               incomeValue: undefined,
+               expenseValue: undefined,
                comparisonValue: null,
-               forecastValue: fp.value,
-               forecastLower: fp.lowerBound ?? null,
-               forecastUpper: fp.upperBound ?? null,
+               forecastValue,
+               forecastLower,
+               forecastUpper,
             });
          }
 
@@ -1087,12 +1307,24 @@ function AreaChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
 
    const chartConfig: ChartConfig = {
       value: {
-         color: "hsl(var(--chart-1))",
+         color: singleTypeColor,
          label: config.aggregateField,
       },
+      // Use direct oklch colors to avoid CSS variable resolution issues
+      // (var(--color-income) -> var(--income) -> oklch is too many levels)
+      ...(hasSeparatedData && {
+         incomeValue: {
+            color: "oklch(0.7227 0.1920 142)", // Green (income)
+            label: "Receitas",
+         },
+         expenseValue: {
+            color: "oklch(0.6368 0.2078 25.33)", // Red (expense/destructive)
+            label: "Despesas",
+         },
+      }),
       ...(hasComparisonOverlay && {
          comparisonValue: {
-            color: "hsl(var(--muted-foreground))",
+            color: "var(--muted-foreground)",
             label:
                config.comparisonOverlay?.type === "previous_year"
                   ? "Last Year"
@@ -1101,11 +1333,14 @@ function AreaChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
       }),
       ...(hasForecast && {
          forecastValue: {
-            color: "hsl(var(--chart-2))",
+            color: "var(--chart-2)",
             label: "Forecast",
          },
       }),
    };
+
+   const showLegend =
+      config.showLegend || hasSeparatedData || hasComparisonOverlay || hasForecast;
 
    return (
       <ChartContainer className="h-full w-full" config={chartConfig}>
@@ -1134,14 +1369,27 @@ function AreaChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
             <ChartTooltip
                content={
                   <ChartTooltipContent
-                     formatter={(value) =>
-                        config.aggregation === "count"
-                           ? (value as number).toLocaleString()
-                           : formatDecimalCurrency(value as number)
-                     }
+                     formatter={(value, name) => {
+                        // Show absolute value for expenses (they're stored as negative)
+                        // This includes both separated expense data and expense-only filter
+                        const isNegatedValue = name === "expenseValue" || (name === "value" && isExpenseOnly);
+                        const displayValue = isNegatedValue ? Math.abs(value as number) : (value as number);
+                        return config.aggregation === "count"
+                           ? displayValue.toLocaleString()
+                           : formatDecimalCurrency(displayValue);
+                     }}
                   />
                }
             />
+            {/* Reference line at zero when showing separated income/expense or expense-only */}
+            {(hasSeparatedData || isExpenseOnly) && (
+               <ReferenceLine
+                  stroke="var(--muted-foreground)"
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.5}
+                  y={0}
+               />
+            )}
             {hasComparisonOverlay && (
                <Area
                   connectNulls
@@ -1154,15 +1402,40 @@ function AreaChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
                   type="monotone"
                />
             )}
-            <Area
-               connectNulls
-               dataKey="value"
-               fill="var(--color-value)"
-               fillOpacity={0.3}
-               stroke="var(--color-value)"
-               strokeWidth={2}
-               type="monotone"
-            />
+            {hasSeparatedData ? (
+               <>
+                  <Area
+                     connectNulls
+                     dataKey="incomeValue"
+                     fill="var(--color-incomeValue)"
+                     fillOpacity={0.3}
+                     name="Receitas"
+                     stroke="var(--color-incomeValue)"
+                     strokeWidth={2}
+                     type="monotone"
+                  />
+                  <Area
+                     connectNulls
+                     dataKey="expenseValue"
+                     fill="var(--color-expenseValue)"
+                     fillOpacity={0.3}
+                     name="Despesas"
+                     stroke="var(--color-expenseValue)"
+                     strokeWidth={2}
+                     type="monotone"
+                  />
+               </>
+            ) : (
+               <Area
+                  connectNulls
+                  dataKey="value"
+                  fill="var(--color-value)"
+                  fillOpacity={0.3}
+                  stroke="var(--color-value)"
+                  strokeWidth={2}
+                  type="monotone"
+                  />
+            )}
             {hasForecast && (
                <>
                   {/* Forecast confidence interval */}
@@ -1190,7 +1463,7 @@ function AreaChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
                   {/* Reference line at forecast start */}
                   {lastDataDate && (
                      <ReferenceLine
-                        stroke="hsl(var(--muted-foreground))"
+                        stroke="var(--muted-foreground)"
                         strokeDasharray="3 3"
                         strokeOpacity={0.5}
                         x={lastDataDate}
@@ -1198,9 +1471,7 @@ function AreaChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
                   )}
                </>
             )}
-            {(hasComparisonOverlay || hasForecast) && config.showLegend && (
-               <ChartLegend content={<ChartLegendContent />} />
-            )}
+            {showLegend && <ChartLegend content={<ChartLegendContent />} />}
          </AreaChart>
       </ChartContainer>
    );
@@ -1213,9 +1484,32 @@ function StackedBarChartWidget({
 }: ChartComponentProps) {
    void onDrillDown;
 
+   // Check if we have separated income/expense data
+   const hasSeparatedData =
+      data.timeSeries?.some(
+         (p) => p.incomeValue !== undefined && p.expenseValue !== undefined,
+      ) ?? false;
+
+   // Check if expense-only filter is active (negate values to show below zero)
+   const isExpenseOnly = isExpenseOnlyFilter(config);
+
    // For stacked bar, we need breakdown data with time series
    // If we have timeSeries and breakdown, create stacked visualization
-   const chartData = data.timeSeries || [];
+   // Transform to negate expense values when we have separated data
+   // Also negate single value when expense-only filter is active
+   const chartData = hasSeparatedData
+      ? (data.timeSeries || []).map((point) => ({
+           ...point,
+           // Negate expense values for proper visualization below zero line
+           expenseValue: point.expenseValue !== undefined ? -point.expenseValue : undefined,
+        }))
+      : isExpenseOnly
+        ? (data.timeSeries || []).map((point) => ({
+             ...point,
+             // Negate value for expense-only filter
+             value: -point.value,
+          }))
+        : data.timeSeries || [];
 
    if (chartData.length === 0) {
       return (
@@ -1228,15 +1522,33 @@ function StackedBarChartWidget({
       );
    }
 
+   // Get semantic color for single type filter
+   const singleTypeColor = getTypeFilterColor(config);
+
    const chartConfig: ChartConfig = {
       value: {
-         color: "hsl(var(--chart-1))",
+         color: singleTypeColor,
          label: config.aggregateField,
       },
+      // Use direct oklch colors to avoid CSS variable resolution issues
+      // (var(--color-income) -> var(--income) -> oklch is too many levels)
+      ...(hasSeparatedData && {
+         incomeValue: {
+            color: "oklch(0.7227 0.1920 142)", // Green (income)
+            label: "Receitas",
+         },
+         expenseValue: {
+            color: "oklch(0.6368 0.2078 25.33)", // Red (expense/destructive)
+            label: "Despesas",
+         },
+      }),
    };
 
    // If we have breakdown data, use it for coloring
    const breakdownLabels = data.breakdown?.map((b) => b.label) || [];
+
+   // Determine if we should show legend
+   const showLegend = hasSeparatedData || breakdownLabels.length > 0;
 
    return (
       <ChartContainer className="h-full w-full" config={chartConfig}>
@@ -1265,15 +1577,45 @@ function StackedBarChartWidget({
             <ChartTooltip
                content={
                   <ChartTooltipContent
-                     formatter={(value) =>
-                        config.aggregation === "count"
-                           ? (value as number).toLocaleString()
-                           : formatDecimalCurrency(value as number)
-                     }
+                     formatter={(value, name) => {
+                        // Show absolute value for expenses (they're stored as negative)
+                        // This includes both separated expense data and expense-only filter
+                        const isNegatedValue = name === "expenseValue" || (name === "value" && isExpenseOnly);
+                        const displayValue = isNegatedValue ? Math.abs(value as number) : (value as number);
+                        return config.aggregation === "count"
+                           ? displayValue.toLocaleString()
+                           : formatDecimalCurrency(displayValue);
+                     }}
                   />
                }
             />
-            {breakdownLabels.length > 0 ? (
+            {/* Reference line at zero when showing separated income/expense or expense-only */}
+            {(hasSeparatedData || isExpenseOnly) && (
+               <ReferenceLine
+                  stroke="var(--muted-foreground)"
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.5}
+                  y={0}
+               />
+            )}
+            {hasSeparatedData ? (
+               <>
+                  <Bar
+                     dataKey="incomeValue"
+                     fill="var(--color-incomeValue)"
+                     name="Receitas"
+                     radius={[4, 4, 0, 0]}
+                     stackId="income"
+                  />
+                  <Bar
+                     dataKey="expenseValue"
+                     fill="var(--color-expenseValue)"
+                     name="Despesas"
+                     radius={[4, 4, 0, 0]}
+                     stackId="expense"
+                  />
+               </>
+            ) : breakdownLabels.length > 0 ? (
                breakdownLabels.map((label, index) => (
                   <Bar
                      dataKey={label}
@@ -1295,9 +1637,7 @@ function StackedBarChartWidget({
                   stackId="stack"
                />
             )}
-            {breakdownLabels.length > 0 && (
-               <ChartLegend content={<ChartLegendContent />} />
-            )}
+            {showLegend && <ChartLegend content={<ChartLegendContent />} />}
          </BarChart>
       </ChartContainer>
    );
@@ -1321,19 +1661,62 @@ function LineCumulativeWidget({
       );
    }
 
+   // Check if we have separated income/expense data
+   // Use typeof to handle cases where values might be 0 (which is valid)
+   const hasSeparatedData = data.timeSeries.some(
+      (p) =>
+         typeof p.incomeValue === "number" && typeof p.expenseValue === "number",
+   );
+
+   // Check if expense-only filter is active (negate values to show below zero)
+   const isExpenseOnly = isExpenseOnlyFilter(config);
+
    // Transform to cumulative values
+   // When we have separated data, create separate cumulative lines for income and expense
+   // When expense-only filter is active, negate the cumulative values
    let cumulative = 0;
+   let cumulativeIncome = 0;
+   let cumulativeExpense = 0;
+
    const cumulativeData = data.timeSeries.map((point) => {
+      if (hasSeparatedData) {
+         cumulativeIncome += point.incomeValue ?? 0;
+         cumulativeExpense += point.expenseValue ?? 0;
+         return {
+            ...point,
+            value: point.value,
+            cumulativeIncome,
+            // Negate cumulative expense for proper visualization below zero line
+            cumulativeExpense: -cumulativeExpense,
+         };
+      }
       cumulative += point.value;
-      return { ...point, value: cumulative };
+      // Negate cumulative value for expense-only filter
+      return { ...point, value: isExpenseOnly ? -cumulative : cumulative };
    });
 
-   const chartConfig: ChartConfig = {
-      value: {
-         color: "hsl(var(--chart-1))",
-         label: `Cumulative ${config.aggregateField}`,
-      },
-   };
+   // Get semantic color for single type filter
+   const singleTypeColor = getTypeFilterColor(config);
+
+   // Use direct oklch colors to avoid CSS variable resolution issues
+   // (var(--color-income) -> var(--income) -> oklch is too many levels)
+   const chartConfig: ChartConfig = hasSeparatedData
+      ? {
+           cumulativeIncome: {
+              color: "oklch(0.7227 0.1920 142)", // Green (income)
+              label: "Receitas (acumulado)",
+           },
+           cumulativeExpense: {
+              color: "oklch(0.6368 0.2078 25.33)", // Red (expense/destructive)
+              label: "Despesas (acumulado)",
+           },
+        }
+      : {
+           value: {
+              color: singleTypeColor,
+              label: `Cumulative ${config.aggregateField}`,
+           },
+        };
 
    return (
       <ChartContainer className="h-full w-full" config={chartConfig}>
@@ -1362,22 +1745,59 @@ function LineCumulativeWidget({
             <ChartTooltip
                content={
                   <ChartTooltipContent
-                     formatter={(value) =>
-                        config.aggregation === "count"
-                           ? (value as number).toLocaleString()
-                           : formatDecimalCurrency(value as number)
-                     }
+                     formatter={(value, name) => {
+                        // Show absolute value for expenses (they're stored as negative)
+                        // This includes both separated expense data and expense-only filter
+                        const isNegatedValue = name === "cumulativeExpense" || (name === "value" && isExpenseOnly);
+                        const displayValue = isNegatedValue ? Math.abs(value as number) : (value as number);
+                        return config.aggregation === "count"
+                           ? displayValue.toLocaleString()
+                           : formatDecimalCurrency(displayValue);
+                     }}
                   />
                }
             />
-            <Area
-               dataKey="value"
-               fill="var(--color-value)"
-               fillOpacity={0.2}
-               stroke="var(--color-value)"
-               strokeWidth={2}
-               type="monotone"
-            />
+            {/* Reference line at zero when showing separated income/expense or expense-only */}
+            {(hasSeparatedData || isExpenseOnly) && (
+               <ReferenceLine
+                  stroke="var(--muted-foreground)"
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.5}
+                  y={0}
+               />
+            )}
+            {hasSeparatedData ? (
+               <>
+                  <Area
+                     dataKey="cumulativeIncome"
+                     fill="var(--color-cumulativeIncome)"
+                     fillOpacity={0.2}
+                     name="Receitas (acumulado)"
+                     stroke="var(--color-cumulativeIncome)"
+                     strokeWidth={2}
+                     type="monotone"
+                  />
+                  <Area
+                     dataKey="cumulativeExpense"
+                     fill="var(--color-cumulativeExpense)"
+                     fillOpacity={0.2}
+                     name="Despesas (acumulado)"
+                     stroke="var(--color-cumulativeExpense)"
+                     strokeWidth={2}
+                     type="monotone"
+                  />
+                  <ChartLegend content={<ChartLegendContent />} />
+               </>
+            ) : (
+               <Area
+                  dataKey="value"
+                  fill="var(--color-value)"
+                  fillOpacity={0.2}
+                  stroke="var(--color-value)"
+                  strokeWidth={2}
+                  type="monotone"
+               />
+            )}
          </AreaChart>
       </ChartContainer>
    );
@@ -1395,9 +1815,12 @@ function BarTotalWidget({ data, config, onDrillDown }: ChartComponentProps) {
       );
    }
 
+   // Get semantic color for single type filter
+   const singleTypeColor = getTypeFilterColor(config);
+
    const chartConfig: ChartConfig = {
       value: {
-         color: "hsl(var(--chart-1))",
+         color: singleTypeColor,
          label: config.aggregateField,
       },
    };
@@ -1474,75 +1897,5 @@ function BarTotalWidget({ data, config, onDrillDown }: ChartComponentProps) {
             </Bar>
          </BarChart>
       </ChartContainer>
-   );
-}
-
-function WorldMapWidget({ config }: ChartComponentProps) {
-   void config;
-
-   return (
-      <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
-         <Globe className="h-12 w-12 mb-3 opacity-50" />
-         <span className="text-sm font-medium">World Map</span>
-         <span className="text-xs mt-1">Coming soon</span>
-      </div>
-   );
-}
-
-function SankeyChartWidget({ data, config }: ChartComponentProps) {
-   void config; // Reserved for future configuration options
-
-   // Transform breakdown data into Sankey format
-   // Source nodes: income sources (or bank accounts)
-   // Target nodes: expense categories
-   const sankeyData = (() => {
-      if (!data.breakdown?.length) {
-         return { nodes: [], links: [] };
-      }
-
-      // For simplicity, we'll assume breakdown contains category data
-      // and use a single "Income" source flowing to all categories
-      const incomeBySource = [{ name: "Receita", value: data.value }];
-      const expensesByCategory = data.breakdown.map((item) => ({
-         name: item.label,
-         value: item.value,
-      }));
-
-      return transformToSankeyData(incomeBySource, expensesByCategory);
-   })();
-
-   return (
-      <div className="h-full">
-         <SankeyChart data={sankeyData} height={300} />
-      </div>
-   );
-}
-
-function HeatmapChartWidget({ data, config }: ChartComponentProps) {
-   // Transform time series data into heatmap format
-   // Each data point should have a date and value
-   const heatmapData = (() => {
-      if (!data.timeSeries?.length) {
-         // If no time series, return empty heatmap
-         return { cells: [], maxValue: 0 };
-      }
-
-      // Transform time series to transaction-like format
-      const transactions = data.timeSeries.map((point) => ({
-         date: new Date(point.date),
-         amount: point.value,
-      }));
-
-      return transformToHeatmapData(transactions);
-   })();
-
-   return (
-      <div className="h-full">
-         <HeatmapChart
-            colorScale={config.dataSource === "transactions" ? "red" : "blue"}
-            data={heatmapData}
-            height={300}
-         />
-      </div>
    );
 }

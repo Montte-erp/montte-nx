@@ -46,7 +46,7 @@ const allSteps: Array<{ id: StepId; title: string }> = [
 
 const { Stepper } = defineStepper(...allSteps);
 
-function getActiveSteps(isEditing: boolean): StepId[] {
+function getActiveSteps(_isEditing: boolean): StepId[] {
    // Same steps for both create and edit modes
    return ["basic", "filters", "amounts"];
 }
@@ -90,7 +90,8 @@ export function ManageGoalForm({ goal }: ManageGoalFormProps) {
    const modeTexts = useMemo(() => {
       const createTexts = {
          title: "Nova Meta",
-         description: "Crie uma nova meta para acompanhar seu progresso financeiro",
+         description:
+            "Crie uma nova meta para acompanhar seu progresso financeiro",
       };
       const editTexts = {
          title: "Editar Meta",
@@ -134,13 +135,15 @@ export function ManageGoalForm({ goal }: ManageGoalFormProps) {
       defaultValues: {
          name: goal?.name ?? "",
          description: goal?.description ?? "",
-         progressCalculationType: goal?.progressCalculationType ?? ("income" as const),
+         progressCalculationType:
+            goal?.progressCalculationType ?? ("income" as const),
          targetAmount: goal ? Number(goal.targetAmount) : 0,
          startingAmount: goal ? Number(goal.startingAmount) : 0,
          targetDate: goal?.targetDate
             ? new Date(goal.targetDate).toISOString().split("T")[0]
             : "",
-         linkedCategoryIds: (goal?.metadata?.linkedCategoryIds as string[]) ?? [],
+         linkedCategoryIds:
+            (goal?.metadata?.linkedCategoryIds as string[]) ?? [],
       },
       validators: {
          onBlur: goalSchema,
@@ -214,7 +217,6 @@ export function ManageGoalForm({ goal }: ManageGoalFormProps) {
                   </Field>
                )}
             </form.Field>
-
          </div>
       );
    }
@@ -230,7 +232,10 @@ export function ManageGoalForm({ goal }: ManageGoalFormProps) {
                         <div className="font-medium text-sm">Tag Vinculada</div>
                         <div className="flex items-center gap-2 mt-1">
                            <Badge
-                              style={{ backgroundColor: goal.tag.color, color: "#fff" }}
+                              style={{
+                                 backgroundColor: goal.tag.color,
+                                 color: "#fff",
+                              }}
                            >
                               {goal.tag.name}
                            </Badge>
@@ -335,7 +340,9 @@ export function ManageGoalForm({ goal }: ManageGoalFormProps) {
                            <FieldLabel>Valor inicial</FieldLabel>
                            <MoneyInput
                               onBlur={field.handleBlur}
-                              onChange={(value) => field.handleChange(value ?? 0)}
+                              onChange={(value) =>
+                                 field.handleChange(value ?? 0)
+                              }
                               placeholder="0,00"
                               value={field.state.value}
                               valueInCents={false}
@@ -389,7 +396,8 @@ export function ManageGoalForm({ goal }: ManageGoalFormProps) {
             };
 
             const isFirstStep = currentId === activeSteps[0];
-            const isLastStep = currentId === activeSteps[activeSteps.length - 1];
+            const isLastStep =
+               currentId === activeSteps[activeSteps.length - 1];
 
             return (
                <form
@@ -402,7 +410,9 @@ export function ManageGoalForm({ goal }: ManageGoalFormProps) {
                >
                   <SheetHeader>
                      <SheetTitle>{modeTexts.title}</SheetTitle>
-                     <SheetDescription>{modeTexts.description}</SheetDescription>
+                     <SheetDescription>
+                        {modeTexts.description}
+                     </SheetDescription>
                   </SheetHeader>
 
                   <div className="px-4 py-2">
