@@ -243,9 +243,7 @@ export function LinkFileBillForm({ bill, onSuccess }: LinkFileBillFormProps) {
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               Anexar Arquivo
-            </SheetTitle>
+            <SheetTitle>Anexar Arquivo</SheetTitle>
             <SheetDescription>
                Anexe documentos relacionados a esta conta
             </SheetDescription>

@@ -181,9 +181,7 @@ export function SignInPage({ redirectUrl }: SignInPageProps) {
                </div>
                <div className="text-center">
                   <p className="text-sm font-medium">Link mágico</p>
-                  <p className="text-xs text-muted-foreground">
-                     Sem senha
-                  </p>
+                  <p className="text-xs text-muted-foreground">Sem senha</p>
                </div>
             </Link>
          </div>

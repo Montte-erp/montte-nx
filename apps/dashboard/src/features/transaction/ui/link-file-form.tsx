@@ -227,7 +227,8 @@ export function LinkFileForm({ transaction, onSuccess }: LinkFileFormProps) {
          <SheetHeader>
             <SheetTitle>Anexar Arquivos</SheetTitle>
             <SheetDescription>
-               Anexe arquivos a esta transacao. Formatos aceitos: PDF, JPG, PNG, WebP.
+               Anexe arquivos a esta transacao. Formatos aceitos: PDF, JPG, PNG,
+               WebP.
             </SheetDescription>
          </SheetHeader>
 

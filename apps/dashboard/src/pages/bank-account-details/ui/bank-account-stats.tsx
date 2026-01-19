@@ -5,23 +5,18 @@ import {
    CardHeader,
    CardTitle,
 } from "@packages/ui/components/card";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { StatsCard } from "@packages/ui/components/stats-card";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { ErrorBoundary } from "react-error-boundary";
 import { useTRPC } from "@/integrations/clients";
 
-function BankAccountStatsErrorFallback(props: FallbackProps) {
+function BankAccountStatsErrorFallback() {
    return (
-      <div className="grid gap-4 h-min">
-         {createErrorFallback({
-            errorDescription:
-               "Failed to load bank account stats. Please try again later.",
-            errorTitle: "Error loading stats",
-            retryText: "Retry",
-         })(props)}
+      <div className="p-4 text-center text-sm text-destructive">
+         Falha ao carregar estatísticas da conta bancária. Tente novamente mais
+         tarde.
       </div>
    );
 }

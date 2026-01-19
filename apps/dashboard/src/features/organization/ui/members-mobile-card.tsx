@@ -57,7 +57,8 @@ export function MembersMobileCard({
                   />
                </CardTitle>
                <CardDescription className="mt-1">
-                  Entrou em: {formatDate(new Date(member.createdAt), "DD MMM YYYY")}
+                  Entrou em:{" "}
+                  {formatDate(new Date(member.createdAt), "DD MMM YYYY")}
                </CardDescription>
             </div>
             <CardAction>

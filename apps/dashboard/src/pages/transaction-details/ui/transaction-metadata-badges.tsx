@@ -26,9 +26,7 @@ type CategorySplit = {
 function MetadataBadgesErrorFallback() {
    return (
       <Alert variant="destructive">
-         <AlertDescription>
-            Falha ao carregar categorias
-         </AlertDescription>
+         <AlertDescription>Falha ao carregar categorias</AlertDescription>
       </Alert>
    );
 }

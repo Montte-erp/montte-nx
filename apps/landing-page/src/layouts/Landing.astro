@@ -1,11 +1,16 @@
 ---
 import "@packages/ui/globals.css";
 
-import { VITE_POSTHOG_HOST, VITE_POSTHOG_KEY, VITE_POSTHOG_UI_HOST } from "astro:env/client";
+import {
+   VITE_POSTHOG_HOST,
+   VITE_POSTHOG_KEY,
+   VITE_POSTHOG_UI_HOST,
+} from "astro:env/client";
 import { getAstroPosthogConfig } from "@packages/posthog/client";
 
 const brandName = "Montte";
-const brandDescription = "Gestão financeira completa para você e seus negócios. Simples, transparente e Open Source.";
+const brandDescription =
+   "Gestão financeira completa para você e seus negócios. Simples, transparente e Open Source.";
 
 const posthogEnv = {
    VITE_POSTHOG_HOST,

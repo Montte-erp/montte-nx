@@ -29,9 +29,7 @@ export function CreateBankAccountItem({
             <Plus className="size-6 " />
          </ItemMedia>
          <ItemContent>
-            <ItemTitle>
-               Adicionar conta bancária
-            </ItemTitle>
+            <ItemTitle>Adicionar conta bancária</ItemTitle>
             <ItemDescription>
                Clique para adicionar uma nova conta bancária.
             </ItemDescription>

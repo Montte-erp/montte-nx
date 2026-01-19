@@ -41,25 +41,21 @@ import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";
 import { SessionDetailsForm } from "../features/session-details-form";
-import {
-   useRevokeAllSessions,
-   useRevokeOtherSessions,
-} from "../features/use-session-actions";
+import { useSessionActions } from "../features/use-session-actions";
 
 function SessionsSectionErrorFallback(props: FallbackProps) {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               Sessões ativas
-            </CardTitle>
+            <CardTitle>Sessões ativas</CardTitle>
             <CardDescription>
                Visualize e gerencie suas sessões de login ativas.
             </CardDescription>
          </CardHeader>
          <CardContent>
             {createErrorFallback({
-               errorDescription: "Ocorreu um erro ao carregar suas sessões ativas.",
+               errorDescription:
+                  "Ocorreu um erro ao carregar suas sessões ativas.",
                errorTitle: "Erro ao carregar",
                retryText: "Tentar novamente",
             })(props)}
@@ -117,18 +113,13 @@ function SessionsSectionContent() {
       trpc.session.getSession.queryOptions(),
    );
 
-   const { revokeOtherSessions, isRevoking: isRevokingOthers } =
-      useRevokeOtherSessions();
-   const { revokeAllSessions, isRevoking: isRevokingAll } =
-      useRevokeAllSessions();
+   const { revokeOtherSessions, revokeAllSessions } = useSessionActions();
 
    return (
       <TooltipProvider>
          <Card>
             <CardHeader>
-               <CardTitle>
-                  Sessões ativas
-               </CardTitle>
+               <CardTitle>Sessões ativas</CardTitle>
                <CardDescription>
                   Visualize e gerencie suas sessões de login ativas.
                </CardDescription>
@@ -146,27 +137,21 @@ function SessionsSectionContent() {
                               </Button>
                            </DropdownMenuTrigger>
                         </TooltipTrigger>
-                        <TooltipContent>
-                           Gerenciar sessões
-                        </TooltipContent>
+                        <TooltipContent>Gerenciar sessões</TooltipContent>
                      </Tooltip>
                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel>
-                           Gerenciar sessões
-                        </DropdownMenuLabel>
+                        <DropdownMenuLabel>Gerenciar sessões</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuGroup>
                            <DropdownMenuItem
-                              disabled={isRevokingOthers}
-                              onClick={revokeOtherSessions}
+                              onClick={() => revokeOtherSessions()}
                               variant="destructive"
                            >
                               <Trash2 className="w-4 h-4 mr-2" />
                               Revogar outras sessões
                            </DropdownMenuItem>
                            <DropdownMenuItem
-                              disabled={isRevokingAll}
-                              onClick={revokeAllSessions}
+                              onClick={() => revokeAllSessions()}
                               variant="destructive"
                            >
                               <Trash2 className="w-4 h-4 mr-2 text-destructive" />
@@ -187,12 +172,11 @@ function SessionsSectionContent() {
                            </ItemMedia>
                            <ItemContent className="truncate">
                               <ItemTitle>
-                                 {session.userAgent || "Dispositivo desconhecido"}
+                                 {session.userAgent ||
+                                    "Dispositivo desconhecido"}
                               </ItemTitle>
                               <ItemDescription>
-                                 <span>
-                                    Endereço IP
-                                 </span>
+                                 <span>Endereço IP</span>
                                  <span>:</span>
                                  <span> {session.ipAddress || "-"}</span>
                               </ItemDescription>

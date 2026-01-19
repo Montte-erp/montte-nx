@@ -40,7 +40,8 @@ export function QuickAccessCards() {
          title: "Membros",
       },
       {
-         description: "Envie e gerencie convites para ingressar na organização.",
+         description:
+            "Envie e gerencie convites para ingressar na organização.",
          icon: <Mail className="size-5" />,
          onClick: () =>
             router.navigate({

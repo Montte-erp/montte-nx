@@ -5,7 +5,6 @@ import {
    AlertTitle,
 } from "@packages/ui/components/alert";
 import { Button } from "@packages/ui/components/button";
-import { Combobox } from "@packages/ui/components/combobox";
 import { DatePicker } from "@packages/ui/components/date-picker";
 import {
    Field,
@@ -15,7 +14,6 @@ import {
    FieldLabel,
 } from "@packages/ui/components/field";
 import { MoneyInput } from "@packages/ui/components/money-input";
-import { MultiSelect } from "@packages/ui/components/multi-select";
 import {
    Select,
    SelectContent,
@@ -44,7 +42,7 @@ import { getRandomColor } from "@packages/utils/colors";
 import { formatDate } from "@packages/utils/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Info, Tag, XCircle } from "lucide-react";
+import { AlertTriangle, Info, XCircle } from "lucide-react";
 import {
    type FormEvent,
    useCallback,
@@ -55,8 +53,9 @@ import {
 import { toast } from "sonner";
 import { z } from "zod";
 
-import type { IconName } from "@/features/icon-selector/lib/available-icons";
-import { IconDisplay } from "@/features/icon-selector/ui/icon-display";
+import { CategoryMultiSelect } from "@/features/category/ui/category-multi-select";
+import { CostCenterCombobox } from "@/features/cost-center/ui/cost-center-combobox";
+import { TagMultiSelect } from "@/features/tag/ui/tag-multi-select";
 import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";
 
@@ -404,40 +403,6 @@ export function ManageTransactionForm({
       enabled: shouldCheckBudgetImpact,
    });
 
-   const categoryOptions = useMemo(
-      () =>
-         categories.map((category) => {
-            const iconName = (category.icon || "Wallet") as IconName;
-            return {
-               icon: <IconDisplay iconName={iconName} size={16} />,
-               label: category.name,
-               value: category.id,
-            };
-         }),
-      [categories],
-   );
-
-   const tagOptions = useMemo(
-      () =>
-         tags.map((tag) => ({
-            icon: <Tag className="size-4" style={{ color: tag.color }} />,
-            label: tag.name,
-            value: tag.id,
-         })),
-      [tags],
-   );
-
-   const costCenterOptions = useMemo(
-      () => [
-         { label: "Nenhum", value: "" },
-         ...costCenters.map((cc) => ({
-            label: cc.code ? `${cc.name} (${cc.code})` : cc.name,
-            value: cc.id,
-         })),
-      ],
-      [costCenters],
-   );
-
    function DetailsStep() {
       return (
          <div className="space-y-4">
@@ -476,9 +441,7 @@ export function ManageTransactionForm({
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              Valor
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Valor</FieldLabel>
                            <MoneyInput
                               id={field.name}
                               onBlur={field.handleBlur}
@@ -505,9 +468,7 @@ export function ManageTransactionForm({
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              Banco
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Banco</FieldLabel>
                            <Select
                               onOpenChange={(open) => {
                                  if (!open) field.handleBlur();
@@ -518,9 +479,7 @@ export function ManageTransactionForm({
                               value={field.state.value}
                            >
                               <SelectTrigger id={field.name}>
-                                 <SelectValue
-                                    placeholder="Selecione seu banco"
-                                 />
+                                 <SelectValue placeholder="Selecione seu banco" />
                               </SelectTrigger>
                               <SelectContent>
                                  {bankAccounts.map((account) => (
@@ -549,9 +508,7 @@ export function ManageTransactionForm({
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              Tipo
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Tipo</FieldLabel>
                            <Select
                               onValueChange={(value) => {
                                  const typedValue = value as
@@ -569,9 +526,7 @@ export function ManageTransactionForm({
                                  <SelectItem value="expense">
                                     Despesa
                                  </SelectItem>
-                                 <SelectItem value="income">
-                                    Receita
-                                 </SelectItem>
+                                 <SelectItem value="income">Receita</SelectItem>
                               </SelectContent>
                            </Select>
                            {isInvalid && (
@@ -590,9 +545,7 @@ export function ManageTransactionForm({
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              Data
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Data</FieldLabel>
                            <DatePicker
                               date={field.state.value}
                               onSelect={(date) =>
@@ -625,18 +578,17 @@ export function ManageTransactionForm({
                            <FieldLabel htmlFor={field.name}>
                               Categoria
                            </FieldLabel>
-                           <MultiSelect
+                           <CategoryMultiSelect
+                              categories={categories}
                               className="flex-1"
-                              createLabel="Criar categoria"
-                              emptyMessage="Nenhum resultado encontrado"
                               onChange={(val) => field.handleChange(val)}
                               onCreate={handleCreateCategory}
-                              options={categoryOptions}
                               placeholder="Selecione uma categoria"
                               selected={field.state.value || []}
                            />
                            <FieldDescription>
-                              Agrupe suas transações por tipo de gasto ou receita para análises detalhadas
+                              Agrupe suas transações por tipo de gasto ou
+                              receita para análises detalhadas
                            </FieldDescription>
                            {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
@@ -654,20 +606,17 @@ export function ManageTransactionForm({
                         <FieldLabel htmlFor={field.name}>
                            Centro de Custo
                         </FieldLabel>
-                        <Combobox
+                        <CostCenterCombobox
                            className="w-full justify-between"
-                           createLabel="Criar centro de custo "
+                           costCenters={costCenters}
                            disabled={isCreating}
-                           emptyMessage="Nenhum resultado encontrado"
                            onCreate={handleCreateCostCenter}
                            onValueChange={(value) => field.handleChange(value)}
-                           options={costCenterOptions}
-                           placeholder="Selecione um centro de custo"
-                           searchPlaceholder="Pesquisar"
                            value={field.state.value}
                         />
                         <FieldDescription>
-                           Associe a departamentos, projetos ou áreas para controle orçamentário
+                           Associe a departamentos, projetos ou áreas para
+                           controle orçamentário
                         </FieldDescription>
                      </Field>
                   )}
@@ -678,21 +627,18 @@ export function ManageTransactionForm({
                <form.Field name="tagIds">
                   {(field) => (
                      <Field>
-                        <FieldLabel htmlFor={field.name}>
-                           Tags
-                        </FieldLabel>
-                        <MultiSelect
+                        <FieldLabel htmlFor={field.name}>Tags</FieldLabel>
+                        <TagMultiSelect
                            className="flex-1"
-                           createLabel="Criar tag "
-                           emptyMessage="Nenhum resultado encontrado"
                            onChange={(val) => field.handleChange(val)}
                            onCreate={handleCreateTag}
-                           options={tagOptions}
                            placeholder="Selecione as tags"
                            selected={field.state.value || []}
+                           tags={tags}
                         />
                         <FieldDescription>
-                           Adicione marcadores personalizados para filtrar e organizar suas transações
+                           Adicione marcadores personalizados para filtrar e
+                           organizar suas transações
                         </FieldDescription>
                      </Field>
                   )}

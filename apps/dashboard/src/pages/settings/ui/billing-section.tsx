@@ -240,16 +240,15 @@ function BillingSectionErrorFallback(props: FallbackProps) {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               Assinatura
-            </CardTitle>
+            <CardTitle>Assinatura</CardTitle>
             <CardDescription>
                Gerencie sua assinatura e informações de cobrança.
             </CardDescription>
          </CardHeader>
          <CardContent>
             {createErrorFallback({
-               errorDescription: "Ocorreu um erro ao carregar suas informações de assinatura.",
+               errorDescription:
+                  "Ocorreu um erro ao carregar suas informações de assinatura.",
                errorTitle: "Erro ao carregar",
                retryText: "Tentar novamente",
             })(props)}
@@ -867,9 +866,7 @@ function NoSubscriptionContent() {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               Assinatura
-            </CardTitle>
+            <CardTitle>Assinatura</CardTitle>
             <CardDescription>
                Gerencie sua assinatura e informações de cobrança.
             </CardDescription>
@@ -880,11 +877,10 @@ function NoSubscriptionContent() {
                   <EmptyMedia variant="icon">
                      <CreditCard className="size-6" />
                   </EmptyMedia>
-                  <EmptyTitle>
-                     Modo de teste
-                  </EmptyTitle>
+                  <EmptyTitle>Modo de teste</EmptyTitle>
                   <EmptyDescription>
-                     O aplicativo está em modo de teste e não estamos cobrando pela assinatura no momento.
+                     O aplicativo está em modo de teste e não estamos cobrando
+                     pela assinatura no momento.
                   </EmptyDescription>
                </EmptyHeader>
                <EmptyContent>

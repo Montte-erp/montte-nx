@@ -30,7 +30,8 @@ export function useDeleteCounterparty({
       openAlertDialog({
          actionLabel: "Excluir",
          cancelLabel: "Cancelar",
-         description: "Tem certeza que deseja excluir este cadastro? Esta ação não pode ser desfeita.",
+         description:
+            "Tem certeza que deseja excluir este cadastro? Esta ação não pode ser desfeita.",
          onAction: async () => {
             await deleteCounterpartyMutation.mutateAsync({
                id: counterparty.id,

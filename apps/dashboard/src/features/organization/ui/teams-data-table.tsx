@@ -18,6 +18,7 @@ import { Trash2, Users } from "lucide-react";
 import { Fragment, useState } from "react";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { TeamsExpandedContent } from "./teams-expanded-content";
 import { TeamsFilterBar } from "./teams-filter-bar";
 import { TeamsMobileCard } from "./teams-mobile-card";
 import { createTeamColumns, type Team } from "./teams-table-columns";
@@ -133,11 +134,10 @@ export function TeamsDataTable({
                      <EmptyMedia variant="icon">
                         <Users className="size-12 text-muted-foreground" />
                      </EmptyMedia>
-                     <EmptyTitle>
-                        Nenhuma equipe encontrada
-                     </EmptyTitle>
+                     <EmptyTitle>Nenhuma equipe encontrada</EmptyTitle>
                      <EmptyDescription>
-                        Crie equipes para organizar os membros da sua organização.
+                        Crie equipes para organizar os membros da sua
+                        organização.
                      </EmptyDescription>
                   </EmptyContent>
                </Empty>
@@ -174,6 +174,14 @@ export function TeamsDataTable({
                      onRowSelectionChange={setRowSelection}
                      renderMobileCard={(props) => (
                         <TeamsMobileCard
+                           {...props}
+                           onDelete={handleDeleteTeam}
+                           onEdit={onEdit}
+                           slug={activeOrganization.slug}
+                        />
+                     )}
+                     renderSubComponent={(props) => (
+                        <TeamsExpandedContent
                            {...props}
                            onDelete={handleDeleteTeam}
                            onEdit={onEdit}

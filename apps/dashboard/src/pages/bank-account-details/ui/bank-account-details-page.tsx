@@ -124,12 +124,11 @@ function BankAccountContent() {
       bankAccount,
       onSuccess: handleDeleteSuccess,
    });
-   if (!bankAccountId) {
+   if (!bankAccountId || typeof bankAccountId !== "string") {
       return (
-         <BankAccountPageError
-            error={new Error("Invalid bank account ID")}
-            resetErrorBoundary={() => {}}
-         />
+         <div className="p-4 text-center text-sm text-destructive">
+            ID da conta bancária inválido
+         </div>
       );
    }
 
@@ -204,9 +203,7 @@ function BankAccountContent() {
                </TooltipTrigger>
                {!canDelete && (
                   <TooltipContent>
-                     <p>
-                        Você deve ter pelo menos uma conta bancária.
-                     </p>
+                     <p>Você deve ter pelo menos uma conta bancária.</p>
                   </TooltipContent>
                )}
             </Tooltip>

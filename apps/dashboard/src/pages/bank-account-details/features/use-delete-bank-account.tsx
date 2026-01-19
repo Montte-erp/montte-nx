@@ -20,11 +20,11 @@ export function useDeleteBankAccount({
 
    const deleteBankAccountMutation = useMutation(
       trpc.bankAccounts.delete.mutationOptions({
-         onError: (error) => {
-            toast.error(error.message || "Failed to delete bank account");
+         onError: (_error) => {
+            toast.error("Falha ao excluir conta bancária");
          },
          onSuccess: () => {
-            toast.success("Bank account deleted successfully");
+            toast.success("Conta bancária excluída com sucesso");
             onSuccess?.();
          },
       }),
@@ -34,16 +34,15 @@ export function useDeleteBankAccount({
 
    const deleteBankAccount = () => {
       if (allBankAccounts.length < 2) {
-         toast.error(
-            "Você deve ter pelo menos uma conta bancária.",
-         );
+         toast.error("Você deve ter pelo menos uma conta bancária.");
          return;
       }
 
       openAlertDialog({
          actionLabel: "Excluir conta",
          cancelLabel: "Cancelar",
-         description: "Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.",
+         description:
+            "Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.",
          onAction: async () => {
             await deleteBankAccountMutation.mutateAsync({ id: bankAccount.id });
          },

@@ -1,19 +1,19 @@
 ---
-import Layout from "./Landing.astro";
-import StickyNavbar from "@/components/StickyNavbar.astro";
-import Footer from "@/components/Footer.astro";
-import { User } from "@lucide/astro";
 import type { CollectionEntry } from "astro:content";
+import { User } from "@lucide/astro";
+import Footer from "@/components/Footer.astro";
+import StickyNavbar from "@/components/StickyNavbar.astro";
+import Layout from "./Landing.astro";
 
 interface Heading {
-	depth: number;
-	slug: string;
-	text: string;
+   depth: number;
+   slug: string;
+   text: string;
 }
 
 interface Props {
-	post: CollectionEntry<"blog">;
-	headings?: Heading[];
+   post: CollectionEntry<"blog">;
+   headings?: Heading[];
 }
 
 const { post, headings = [] } = Astro.props;
@@ -25,9 +25,9 @@ const encodedUrl = encodeURIComponent(currentUrl);
 const encodedTitle = encodeURIComponent(title);
 
 const shareUrls = {
-	facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-	twitter: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
-	linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+   facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+   twitter: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
+   linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
 };
 ---
 

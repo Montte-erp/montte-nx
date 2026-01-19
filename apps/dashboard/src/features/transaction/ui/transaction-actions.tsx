@@ -99,9 +99,7 @@ export function TransactionActions({
          {/* Group 2: Management Actions */}
          <Button onClick={handleEdit} size="sm" variant="outline">
             <Pencil className="size-4" />
-            {variant === "full"
-               ? "Editar Transação"
-               : "Editar"}
+            {variant === "full" ? "Editar Transação" : "Editar"}
          </Button>
          <Button onClick={handleDuplicate} size="sm" variant="outline">
             <Copy className="size-4" />

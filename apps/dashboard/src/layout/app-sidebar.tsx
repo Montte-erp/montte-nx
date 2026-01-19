@@ -17,6 +17,8 @@ import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
 import { OrganizationSwitcher } from "./organization-switcher";
+import { SubmenuProvider } from "./sidebar-submenu-context";
+import { SidebarSubmenuPanel } from "./sidebar-submenu-panel";
 
 function MontteBranding() {
    const { slug } = useParams({ strict: false }) as { slug: string };
@@ -81,26 +83,30 @@ function SidebarCollapseButton() {
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
    const { activeSubscription } = useActiveOrganization();
 
-   const hasProSubscription =
-      activeSubscription?.plan?.toLowerCase() === "pro" &&
+   const hasOrgSwitcher =
+      (activeSubscription?.plan?.toLowerCase() === "pro" ||
+         activeSubscription?.plan?.toLowerCase() === "erp") &&
       (activeSubscription?.status === "active" ||
          activeSubscription?.status === "trialing");
 
    return (
-      <Sidebar collapsible="icon" {...props}>
-         <SidebarHeader>
-            {hasProSubscription ? <OrganizationSwitcher /> : <MontteBranding />}
-         </SidebarHeader>
-         <SidebarContent>
-            <Separator />
-            <NavMain />
-         </SidebarContent>
-         <SidebarFooter>
-            <Separator />
-            <SidebarCollapseButton />
-            <NavNotifications />
-            <NavUser />
-         </SidebarFooter>
-      </Sidebar>
+      <SubmenuProvider>
+         <Sidebar collapsible="icon" {...props}>
+            <SidebarHeader>
+               {hasOrgSwitcher ? <OrganizationSwitcher /> : <MontteBranding />}
+            </SidebarHeader>
+            <SidebarContent>
+               <Separator />
+               <NavMain />
+            </SidebarContent>
+            <SidebarFooter>
+               <Separator />
+               <SidebarCollapseButton />
+               <NavNotifications />
+               <NavUser />
+            </SidebarFooter>
+         </Sidebar>
+         <SidebarSubmenuPanel />
+      </SubmenuProvider>
    );
 }

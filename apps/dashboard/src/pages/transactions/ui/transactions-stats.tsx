@@ -20,9 +20,9 @@ function TransactionsStatsErrorFallback(props: FallbackProps) {
       <div className="grid gap-4 h-min">
          {createErrorFallback({
             errorDescription:
-               "Failed to load transactions stats. Please try again later.",
-            errorTitle: "Error loading stats",
-            retryText: "Retry",
+               "Falha ao carregar estatísticas de transações. Tente novamente mais tarde.",
+            errorTitle: "Erro ao carregar estatísticas",
+            retryText: "Tentar novamente",
          })(props)}
       </div>
    );

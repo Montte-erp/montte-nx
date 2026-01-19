@@ -237,8 +237,7 @@ export const accountRouter = router({
 
          // Dashboards
          db.query.dashboard.findMany({
-            where: (d, { eq }) =>
-               eq(d.organizationId, organizationId),
+            where: (d, { eq }) => eq(d.organizationId, organizationId),
             with: {
                widgets: true,
             },

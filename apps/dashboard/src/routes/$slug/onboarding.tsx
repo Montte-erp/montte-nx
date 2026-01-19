@@ -94,13 +94,9 @@ const defaultCategoryLabels: Record<DefaultCategoryKey, string> = {
 };
 
 const bankAccountSchema = z.object({
-   bank: z
-      .string()
-      .min(1, "Banco e obrigatorio"),
+   bank: z.string().min(1, "Banco e obrigatorio"),
    bankAccountName: z.string().optional(),
-   bankAccountType: z
-      .string()
-      .min(1, "Tipo de conta e obrigatorio"),
+   bankAccountType: z.string().min(1, "Tipo de conta e obrigatorio"),
 });
 
 type StepId =
@@ -398,9 +394,7 @@ function RouteComponent() {
                         <PiggyBankIcon className="size-6 text-primary" />
                      </div>
                      <div className="text-center space-y-1">
-                        <p className="font-medium font-serif">
-                           Orcamentos
-                        </p>
+                        <p className="font-medium font-serif">Orcamentos</p>
                         <p className="text-sm text-muted-foreground">
                            Defina orcamentos mensais e acompanhe seus gastos.
                         </p>
@@ -411,9 +405,7 @@ function RouteComponent() {
                         <BarChart3Icon className="size-6 text-primary" />
                      </div>
                      <div className="text-center space-y-1">
-                        <p className="font-medium font-serif">
-                           Relatorios
-                        </p>
+                        <p className="font-medium font-serif">Relatorios</p>
                         <p className="text-sm text-muted-foreground">
                            Visualize relatorios detalhados das suas financas.
                         </p>
@@ -424,9 +416,7 @@ function RouteComponent() {
                         <ShieldCheckIcon className="size-6 text-primary" />
                      </div>
                      <div className="text-center space-y-1">
-                        <p className="font-medium font-serif">
-                           Seguranca
-                        </p>
+                        <p className="font-medium font-serif">Seguranca</p>
                         <p className="text-sm text-muted-foreground">
                            Seus dados protegidos com criptografia de ponta.
                         </p>
@@ -444,15 +434,14 @@ function RouteComponent() {
                      </div>
                      <div className="text-center space-y-1">
                         <p className="text-sm text-muted-foreground">
-                           Este nome sera usado para identifica-lo na plataforma.
+                           Este nome sera usado para identifica-lo na
+                           plataforma.
                         </p>
                      </div>
                   </div>
                   <FieldGroup>
                      <Field>
-                        <FieldLabel htmlFor="profile-name">
-                           Seu nome
-                        </FieldLabel>
+                        <FieldLabel htmlFor="profile-name">Seu nome</FieldLabel>
                         <Input
                            autoFocus
                            id="profile-name"
@@ -484,9 +473,7 @@ function RouteComponent() {
                   <Alert>
                      <CheckCircle2Icon className="size-4" />
                      <AlertTitle>{title}</AlertTitle>
-                     <AlertDescription>
-                        {description}
-                     </AlertDescription>
+                     <AlertDescription>{description}</AlertDescription>
                   </Alert>
                </div>
             );
@@ -519,7 +506,9 @@ function RouteComponent() {
                                  value={field.state.value}
                               />
                               <FieldDescription>
-                                 Opcional. Use para identificar facilmente esta conta, como 'Conta Salario' ou 'Banco Principal'
+                                 Opcional. Use para identificar facilmente esta
+                                 conta, como 'Conta Salario' ou 'Banco
+                                 Principal'
                               </FieldDescription>
                            </Field>
                         )}
@@ -557,9 +546,7 @@ function RouteComponent() {
                      <bankAccountForm.Field name="bankAccountType">
                         {(field) => (
                            <Field>
-                              <FieldLabel>
-                                 Tipo de Conta
-                              </FieldLabel>
+                              <FieldLabel>Tipo de Conta</FieldLabel>
                               <Select
                                  onValueChange={(value) =>
                                     field.handleChange(value)
@@ -567,9 +554,7 @@ function RouteComponent() {
                                  value={field.state.value}
                               >
                                  <SelectTrigger>
-                                    <SelectValue
-                                       placeholder="Selecione o tipo de conta"
-                                    />
+                                    <SelectValue placeholder="Selecione o tipo de conta" />
                                  </SelectTrigger>
                                  <SelectContent>
                                     <SelectItem value="checking">
@@ -594,9 +579,7 @@ function RouteComponent() {
             return (
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Categorias sugeridas
-                     </FieldLabel>
+                     <FieldLabel>Categorias sugeridas</FieldLabel>
                      <div className="flex flex-wrap gap-2 justify-center">
                         {defaultCategoryKeys.map((key) => {
                            const isSelected =
@@ -731,9 +714,7 @@ function RouteComponent() {
                         }
                         onClick={handleProfileNext}
                      >
-                        {updateUserName.isPending
-                           ? "Carregando..."
-                           : "Proximo"}
+                        {updateUserName.isPending ? "Carregando..." : "Proximo"}
                         <ChevronRightIcon className="size-4" />
                      </Button>
                   )}

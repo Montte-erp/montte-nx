@@ -128,9 +128,7 @@ export function CreateInstallmentsForm({
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               Criar Parcelas
-            </SheetTitle>
+            <SheetTitle>Criar Parcelas</SheetTitle>
             <SheetDescription>
                Divida esta conta em parcelas mensais
             </SheetDescription>
@@ -163,9 +161,7 @@ export function CreateInstallmentsForm({
                            )}
                         </div>
                         <div className="text-left">
-                           <div className="font-medium">
-                              Número de parcelas
-                           </div>
+                           <div className="font-medium">Número de parcelas</div>
                            <div className="text-sm text-muted-foreground">
                               {activeSection !== "count" &&
                               installmentCount >= 2
@@ -347,9 +343,7 @@ export function CreateInstallmentsForm({
 
                         {intervalType === "custom" && (
                            <div className="space-y-2">
-                              <Label>
-                                 Dias personalizados
-                              </Label>
+                              <Label>Dias personalizados</Label>
                               <Input
                                  max={365}
                                  min={1}
@@ -399,9 +393,7 @@ export function CreateInstallmentsForm({
                   activeSection === "review" && (
                      <Alert>
                         <CalendarCheck className="h-4 w-4" />
-                        <AlertTitle>
-                           Resumo
-                        </AlertTitle>
+                        <AlertTitle>Resumo</AlertTitle>
                         <AlertDescription>
                            {`${installmentCount} parcelas de ${formatDecimalCurrency(amountPerInstallment)}`}
                         </AlertDescription>

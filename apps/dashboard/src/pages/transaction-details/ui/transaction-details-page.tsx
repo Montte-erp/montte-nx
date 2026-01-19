@@ -131,9 +131,7 @@ function TransactionPageError({ error, resetErrorBoundary }: FallbackProps) {
                   <EmptyMedia variant="icon">
                      <Receipt className="size-12 text-destructive" />
                   </EmptyMedia>
-                  <EmptyTitle>
-                     Falha ao carregar transação
-                  </EmptyTitle>
+                  <EmptyTitle>Falha ao carregar transação</EmptyTitle>
                   <EmptyDescription>{error?.message}</EmptyDescription>
                   <div className="mt-6 flex gap-2 justify-center">
                      <Button

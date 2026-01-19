@@ -1,6 +1,5 @@
 import { relations, sql } from "drizzle-orm";
 import {
-   boolean,
    decimal,
    index,
    jsonb,
@@ -8,19 +7,20 @@ import {
    pgTable,
    text,
    timestamp,
+   unique,
    uuid,
 } from "drizzle-orm/pg-core";
 import { organization, user } from "./auth";
+import { tag } from "./tags";
 
 // ============================================
 // Enums
 // ============================================
 
-export const goalTypeEnum = pgEnum("goal_type", [
-   "savings",
-   "debt_payoff",
-   "spending_limit",
-   "income_target",
+export const progressCalculationTypeEnum = pgEnum("progress_calculation_type", [
+   "income",
+   "expense",
+   "net",
 ]);
 
 export const goalStatusEnum = pgEnum("goal_status", [
@@ -35,13 +35,9 @@ export const goalStatusEnum = pgEnum("goal_status", [
 // ============================================
 
 export type GoalMetadata = {
-   // Linked entities for automatic tracking
+   // For tracking linked entities (bank accounts, categories) - optional filters
    linkedBankAccountIds?: string[];
    linkedCategoryIds?: string[];
-   linkedTagIds?: string[];
-   // For debt payoff goals
-   initialDebtAmount?: number;
-   interestRate?: number;
    // Milestones tracking
    milestonesReached?: number[]; // Array of percentages reached (25, 50, 75, 100)
    lastMilestoneNotifiedAt?: string;
@@ -60,19 +56,23 @@ export const financialGoal = pgTable(
       organizationId: uuid("organization_id")
          .notNull()
          .references(() => organization.id, { onDelete: "cascade" }),
+      tagId: uuid("tag_id")
+         .notNull()
+         .references(() => tag.id, { onDelete: "restrict" }),
       createdBy: uuid("created_by").references(() => user.id),
       name: text("name").notNull(),
       description: text("description"),
-      type: goalTypeEnum("type").notNull(),
+      progressCalculationType: progressCalculationTypeEnum(
+         "progress_calculation_type",
+      )
+         .notNull()
+         .default("income"),
       status: goalStatusEnum("status").notNull().default("active"),
       // Target and progress
       targetAmount: decimal("target_amount", {
          precision: 15,
          scale: 2,
       }).notNull(),
-      currentAmount: decimal("current_amount", { precision: 15, scale: 2 })
-         .notNull()
-         .default("0"),
       startingAmount: decimal("starting_amount", { precision: 15, scale: 2 })
          .notNull()
          .default("0"),
@@ -81,7 +81,6 @@ export const financialGoal = pgTable(
       targetDate: timestamp("target_date"),
       completedAt: timestamp("completed_at"),
       // Settings
-      isAutoTracked: boolean("is_auto_tracked").notNull().default(false),
       metadata: jsonb("metadata").$type<GoalMetadata>().default({}),
       // Timestamps
       createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -92,8 +91,9 @@ export const financialGoal = pgTable(
    },
    (table) => [
       index("idx_goal_org_status").on(table.organizationId, table.status),
-      index("idx_goal_type").on(table.type),
+      index("idx_goal_tag").on(table.tagId),
       index("idx_goal_target_date").on(table.targetDate),
+      unique("uq_goal_tag").on(table.tagId),
    ],
 );
 
@@ -110,6 +110,10 @@ export const financialGoalRelations = relations(financialGoal, ({ one }) => ({
       fields: [financialGoal.createdBy],
       references: [user.id],
    }),
+   tag: one(tag, {
+      fields: [financialGoal.tagId],
+      references: [tag.id],
+   }),
 }));
 
 // ============================================
@@ -118,9 +122,5 @@ export const financialGoalRelations = relations(financialGoal, ({ one }) => ({
 
 export type FinancialGoal = typeof financialGoal.$inferSelect;
 export type NewFinancialGoal = typeof financialGoal.$inferInsert;
-export type GoalType =
-   | "savings"
-   | "debt_payoff"
-   | "spending_limit"
-   | "income_target";
+export type ProgressCalculationType = "income" | "expense" | "net";
 export type GoalStatus = "active" | "completed" | "paused" | "cancelled";

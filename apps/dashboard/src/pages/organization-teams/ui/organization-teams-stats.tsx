@@ -22,30 +22,30 @@ function TeamsStatsContent() {
 
    const statCards = [
       {
-         description: "All organization teams",
+         description: "Todos os times da organização",
          icon: <Users className="size-4" />,
-         title: "Total Teams",
+         title: "Total de Times",
          value: stats.total,
          variant: "default" as const,
       },
       {
-         description: "Active teams",
+         description: "Times ativos",
          icon: <Activity className="size-4" />,
-         title: "Active Teams",
+         title: "Times Ativos",
          value: stats.active,
          variant: "secondary" as const,
       },
       {
-         description: "Total members across all teams",
+         description: "Total de membros em todos os times",
          icon: <UserPlus className="size-4" />,
-         title: "Team Members",
+         title: "Membros dos Times",
          value: stats.totalMembers,
          variant: "default" as const,
       },
       {
-         description: "Teams with members",
+         description: "Times com membros",
          icon: <Settings className="size-4" />,
-         title: "Configured Teams",
+         title: "Times Configurados",
          value: stats.configured,
          variant: "default" as const,
       },
@@ -94,8 +94,10 @@ function TeamsStatsErrorFallback({ error }: { error: Error }) {
    return (
       <Card className="w-full">
          <CardHeader>
-            <CardTitle>Team Statistics</CardTitle>
-            <CardDescription>Overview of all team metrics</CardDescription>
+            <CardTitle>Estatísticas de Times</CardTitle>
+            <CardDescription>
+               Visão geral de todas as métricas de times
+            </CardDescription>
          </CardHeader>
          <CardContent>
             <div className="text-center py-4">

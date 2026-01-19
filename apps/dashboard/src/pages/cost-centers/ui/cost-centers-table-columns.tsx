@@ -56,9 +56,7 @@ function CostCenterActionsCell({ costCenter }: { costCenter: CostCenter }) {
                   </Link>
                </Button>
             </TooltipTrigger>
-            <TooltipContent>
-               Ver detalhes
-            </TooltipContent>
+            <TooltipContent>Ver detalhes</TooltipContent>
          </Tooltip>
          <Tooltip>
             <TooltipTrigger asChild>
@@ -76,9 +74,7 @@ function CostCenterActionsCell({ costCenter }: { costCenter: CostCenter }) {
                   <Edit className="size-4" />
                </Button>
             </TooltipTrigger>
-            <TooltipContent>
-               Editar centro de custo
-            </TooltipContent>
+            <TooltipContent>Editar centro de custo</TooltipContent>
          </Tooltip>
          <Tooltip>
             <TooltipTrigger asChild>
@@ -91,9 +87,7 @@ function CostCenterActionsCell({ costCenter }: { costCenter: CostCenter }) {
                   <Trash2 className="size-4" />
                </Button>
             </TooltipTrigger>
-            <TooltipContent>
-               Excluir centro de custo
-            </TooltipContent>
+            <TooltipContent>Excluir centro de custo</TooltipContent>
          </Tooltip>
       </div>
    );
@@ -171,9 +165,7 @@ export function CostCenterExpandedContent({
                <div className="flex items-center gap-2">
                   <ArrowDownLeft className="size-4 text-emerald-500" />
                   <div>
-                     <p className="text-xs text-muted-foreground">
-                        Receita
-                     </p>
+                     <p className="text-xs text-muted-foreground">Receita</p>
                      <p className="text-sm font-medium text-emerald-500">
                         +{formatDecimalCurrency(income)}
                      </p>
@@ -183,9 +175,7 @@ export function CostCenterExpandedContent({
                <div className="flex items-center gap-2">
                   <ArrowUpRight className="size-4 text-destructive" />
                   <div>
-                     <p className="text-xs text-muted-foreground">
-                        Despesas
-                     </p>
+                     <p className="text-xs text-muted-foreground">Despesas</p>
                      <p className="text-sm font-medium text-destructive">
                         -{formatDecimalCurrency(expenses)}
                      </p>
@@ -265,9 +255,7 @@ export function CostCenterExpandedContent({
             <div className="flex items-center gap-2">
                <ArrowDownLeft className="size-4 text-emerald-500" />
                <div>
-                  <p className="text-xs text-muted-foreground">
-                     Receita
-                  </p>
+                  <p className="text-xs text-muted-foreground">Receita</p>
                   <p className="text-sm font-medium text-emerald-500">
                      +{formatDecimalCurrency(income)}
                   </p>
@@ -277,9 +265,7 @@ export function CostCenterExpandedContent({
             <div className="flex items-center gap-2">
                <ArrowUpRight className="size-4 text-destructive" />
                <div>
-                  <p className="text-xs text-muted-foreground">
-                     Despesas
-                  </p>
+                  <p className="text-xs text-muted-foreground">Despesas</p>
                   <p className="text-sm font-medium text-destructive">
                      -{formatDecimalCurrency(expenses)}
                   </p>
@@ -291,9 +277,7 @@ export function CostCenterExpandedContent({
                   <div className="flex items-center gap-2">
                      <Hash className="size-4 text-muted-foreground" />
                      <div>
-                        <p className="text-xs text-muted-foreground">
-                           Código
-                        </p>
+                        <p className="text-xs text-muted-foreground">Código</p>
                         <p className="text-sm font-medium">{costCenter.code}</p>
                      </div>
                   </div>

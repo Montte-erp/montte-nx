@@ -49,7 +49,7 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
    // Desktop: sidebar + content layout
    return (
       <SidebarProvider defaultOpen>
-         <div className="flex h-full w-full gap-4">
+         <div className="flex pt-4  h-full w-full gap-4">
             <Sidebar
                className="border rounded-xl bg-card shadow-sm"
                collapsible="none"

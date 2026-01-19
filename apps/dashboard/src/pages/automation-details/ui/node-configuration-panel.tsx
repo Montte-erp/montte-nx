@@ -33,10 +33,10 @@ import {
    isPercentageSumValid,
 } from "@packages/utils/split";
 import {
+   actionsConfig,
    getAction,
    getActionTabs,
    getFieldsForTab,
-   actionsConfig,
 } from "@packages/workflows/config/actions";
 import type { ActionField } from "@packages/workflows/schemas/action-field.schema";
 import { TRIGGER_DEFINITIONS } from "@packages/workflows/triggers/definitions";
@@ -783,13 +783,13 @@ function ActionConfigurationForm({
                            <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                           {(
-                              Object.keys(actionsConfig) as ActionType[]
-                           ).map((type) => (
-                              <SelectItem key={type} value={type}>
-                                 {getAction(type).label}
-                              </SelectItem>
-                           ))}
+                           {(Object.keys(actionsConfig) as ActionType[]).map(
+                              (type) => (
+                                 <SelectItem key={type} value={type}>
+                                    {getAction(type).label}
+                                 </SelectItem>
+                              ),
+                           )}
                         </SelectContent>
                      </Select>
                   </Field>

@@ -63,9 +63,7 @@ function BudgetTransactionsErrorFallback({ error }: FallbackProps) {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               Transações do Orçamento
-            </CardTitle>
+            <CardTitle>Transações do Orçamento</CardTitle>
          </CardHeader>
          <CardContent>
             <Empty>
@@ -73,42 +71,13 @@ function BudgetTransactionsErrorFallback({ error }: FallbackProps) {
                   <EmptyMedia variant="icon">
                      <Receipt className="size-12 text-destructive" />
                   </EmptyMedia>
-                  <EmptyTitle>
-                     Erro ao carregar transações
-                  </EmptyTitle>
+                  <EmptyTitle>Erro ao carregar transações</EmptyTitle>
                   <EmptyDescription>{error?.message}</EmptyDescription>
                </EmptyContent>
             </Empty>
          </CardContent>
       </Card>
    );
-}
-
-function getBudgetCategoryIds(budget: Budget): string[] | undefined {
-   if (!budget.target) return undefined;
-   if (budget.target.type === "category" && budget.target.categoryId) {
-      return [budget.target.categoryId];
-   }
-   if (budget.target.type === "categories" && budget.target.categoryIds) {
-      return budget.target.categoryIds;
-   }
-   return undefined;
-}
-
-function getBudgetTagId(budget: Budget): string | undefined {
-   if (!budget.target) return undefined;
-   if (budget.target.type === "tag" && budget.target.tagId) {
-      return budget.target.tagId;
-   }
-   return undefined;
-}
-
-function getBudgetCostCenterId(budget: Budget): string | undefined {
-   if (!budget.target) return undefined;
-   if (budget.target.type === "cost_center" && budget.target.costCenterId) {
-      return budget.target.costCenterId;
-   }
-   return undefined;
 }
 
 function BudgetTransactionsContent({
@@ -140,16 +109,20 @@ function BudgetTransactionsContent({
       setCurrentPage(1);
    }, [dateKey]);
 
-   const categoryIds = getBudgetCategoryIds(budget);
-   const tagId = getBudgetTagId(budget);
-   const costCenterId = getBudgetCostCenterId(budget);
+   // Use the budget's tagId for filtering transactions
+   const tagId = budget.tagId;
+
+   // Get linked category IDs from budget metadata for filtering
+   const linkedCategoryIds =
+      (budget.metadata as { linkedCategoryIds?: string[] })?.linkedCategoryIds ??
+      [];
 
    const [transactionsQuery, categoriesQuery] = useSuspenseQueries({
       queries: [
          trpc.transactions.getAllPaginated.queryOptions(
             {
-               categoryIds,
-               costCenterId,
+               categoryIds:
+                  linkedCategoryIds.length > 0 ? linkedCategoryIds : undefined,
                endDate: endDate?.toISOString(),
                limit: pageSize,
                page: currentPage,
@@ -176,9 +149,7 @@ function BudgetTransactionsContent({
       return (
          <Card>
             <CardHeader>
-               <CardTitle>
-                  Transações do Orçamento
-               </CardTitle>
+               <CardTitle>Transações do Orçamento</CardTitle>
                <CardDescription>
                   Transações que afetam este orçamento no período selecionado
                </CardDescription>
@@ -189,11 +160,10 @@ function BudgetTransactionsContent({
                      <EmptyMedia variant="icon">
                         <Receipt className="size-12 text-muted-foreground" />
                      </EmptyMedia>
-                     <EmptyTitle>
-                        Nenhuma transação encontrada
-                     </EmptyTitle>
+                     <EmptyTitle>Nenhuma transação encontrada</EmptyTitle>
                      <EmptyDescription>
-                        Não há transações que afetam este orçamento no período selecionado
+                        Não há transações que afetam este orçamento no período
+                        selecionado
                      </EmptyDescription>
                   </EmptyContent>
                </Empty>

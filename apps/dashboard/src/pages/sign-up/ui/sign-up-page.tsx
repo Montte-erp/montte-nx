@@ -29,18 +29,10 @@ export function SignUpPage() {
       .object({
          confirmPassword: z.string(),
          email: z.email("Insira um endereço de email válido."),
-         name: z
-            .string()
-            .min(
-               2,
-               "O campo deve ter no mínimo 2 caracteres.",
-            ),
+         name: z.string().min(2, "O campo deve ter no mínimo 2 caracteres."),
          password: z
             .string()
-            .min(
-               8,
-               "O campo deve ter no mínimo 8 caracteres.",
-            ),
+            .min(8, "O campo deve ter no mínimo 8 caracteres."),
       })
       .refine((data) => data.password === data.confirmPassword, {
          message: "As senhas não coincidem.",
@@ -111,9 +103,7 @@ export function SignUpPage() {
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              Nome
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
                            <Input
                               aria-invalid={isInvalid}
                               autoComplete="name"
@@ -141,9 +131,7 @@ export function SignUpPage() {
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              Email
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Email</FieldLabel>
                            <Input
                               aria-invalid={isInvalid}
                               autoComplete="email"
@@ -180,9 +168,7 @@ export function SignUpPage() {
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              Senha
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Senha</FieldLabel>
                            <PasswordInput
                               aria-invalid={isInvalid}
                               autoComplete="new-password"
@@ -340,9 +326,7 @@ export function SignUpPage() {
                {/* Footer */}
                <div className="text-sm text-center space-y-4">
                   <div className="flex gap-1 justify-center items-center">
-                     <span>
-                        Já tem uma conta? 
-                     </span>
+                     <span>Já tem uma conta?</span>
                      <Link
                         className="text-primary font-medium hover:underline"
                         to="/auth/sign-in"

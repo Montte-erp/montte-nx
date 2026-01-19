@@ -1,5 +1,5 @@
-import type { DRELineItem } from "../types";
 import { StyleSheet, Text, View } from "@react-pdf/renderer";
+import type { DRELineItem } from "../types";
 
 type DRETableProps = {
    lines: DRELineItem[];

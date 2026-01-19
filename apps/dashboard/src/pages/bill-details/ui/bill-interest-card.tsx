@@ -134,9 +134,7 @@ function InterestCardContent({ billId }: { billId: string }) {
             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                <div className="flex items-center gap-2">
                   <FileText className="size-4 text-muted-foreground" />
-                  <span className="text-sm">
-                     Template de Juros:
-                  </span>
+                  <span className="text-sm">Template de Juros:</span>
                </div>
                <Link
                   className="text-sm font-medium text-primary hover:underline"
@@ -209,9 +207,7 @@ function InterestCardContent({ billId }: { billId: string }) {
             <Separator />
 
             <div className="flex items-center justify-between p-4 bg-primary/5 border border-primary/20 rounded-lg">
-               <span className="text-sm font-medium">
-                  Valor Atualizado
-               </span>
+               <span className="text-sm font-medium">Valor Atualizado</span>
                <span className="text-xl font-bold text-primary">
                   {formatDecimalCurrency(result.updatedAmount)}
                </span>

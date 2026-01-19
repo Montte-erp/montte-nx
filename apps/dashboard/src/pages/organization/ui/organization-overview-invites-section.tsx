@@ -31,9 +31,7 @@ function InvitesSectionCardHeader() {
    return (
       <CardHeader>
          <CardTitle>Convites Recentes</CardTitle>
-         <CardDescription>
-            Os convites mais recentes enviados
-         </CardDescription>
+         <CardDescription>Os convites mais recentes enviados</CardDescription>
       </CardHeader>
    );
 }

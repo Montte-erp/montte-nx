@@ -35,7 +35,10 @@ import {
    getUniqueCategories,
 } from "@packages/workflows/config/actions";
 import { DeletableEdge } from "@/features/automations/edges/deletable-edge";
-import type { AutomationEdge, AutomationNode } from "@/features/automations/hooks/use-flow-serialization";
+import type {
+   AutomationEdge,
+   AutomationNode,
+} from "@/features/automations/hooks/use-flow-serialization";
 import { ActionNode } from "@/features/automations/nodes/action-node";
 import { ConditionNode } from "@/features/automations/nodes/condition-node";
 import { TriggerNode } from "@/features/automations/nodes/trigger-node";

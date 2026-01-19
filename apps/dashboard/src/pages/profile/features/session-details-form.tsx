@@ -56,7 +56,8 @@ export function SessionDetailsForm({
       openAlertDialog({
          actionLabel: "Revogar sessão atual",
          cancelLabel: "Cancelar",
-         description: "Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.",
+         description:
+            "Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.",
          onAction: handleDelete,
          title: "Confirmar Exclusão",
          variant: "destructive",
@@ -69,8 +70,7 @@ export function SessionDetailsForm({
             isCurrent: session.id === currentSessionId,
             showIcon: false,
             title: "Dispositivo",
-            value:
-               session.userAgent || "Dispositivo desconhecido",
+            value: session.userAgent || "Dispositivo desconhecido",
          },
          {
             isCurrent: false,
@@ -96,9 +96,7 @@ export function SessionDetailsForm({
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               Detalhes da sessão
-            </SheetTitle>
+            <SheetTitle>Detalhes da sessão</SheetTitle>
             <SheetDescription>
                Informações sobre a sessão selecionada.
             </SheetDescription>
@@ -128,9 +126,7 @@ export function SessionDetailsForm({
          </ItemGroup>
          <Separator />
          <SheetHeader>
-            <SheetTitle>
-               Gerencie sua sessão
-            </SheetTitle>
+            <SheetTitle>Gerencie sua sessão</SheetTitle>
             <SheetDescription>
                Aqui você pode gerenciar sua sessão atual.
             </SheetDescription>

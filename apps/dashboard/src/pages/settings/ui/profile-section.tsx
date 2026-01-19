@@ -151,7 +151,8 @@ function ChangeNameSheetContent({
                <Info className="size-4" />
                <AlertTitle>Nome de exibição</AlertTitle>
                <AlertDescription>
-                  Este é o nome que será exibido para outros usuários e em seu perfil.
+                  Este é o nome que será exibido para outros usuários e em seu
+                  perfil.
                </AlertDescription>
             </Alert>
 
@@ -211,9 +212,7 @@ function ChangeEmailSheetContent({
       },
       onError: (error) => {
          const errorMessage =
-            error instanceof Error
-               ? error.message
-               : "Erro ao alterar email";
+            error instanceof Error ? error.message : "Erro ao alterar email";
          toast.error(errorMessage);
       },
    });
@@ -249,7 +248,9 @@ function ChangeEmailSheetContent({
                <Info className="size-4" />
                <AlertTitle>Verificação necessária</AlertTitle>
                <AlertDescription>
-                  Um email de verificação será enviado para o novo endereço. Seu email só será alterado após você clicar no link de confirmação.
+                  Um email de verificação será enviado para o novo endereço. Seu
+                  email só será alterado após você clicar no link de
+                  confirmação.
                </AlertDescription>
             </Alert>
 
@@ -523,9 +524,7 @@ function ChangePasswordStepperContent({
       },
       onError: (error) => {
          const errorMessage =
-            error instanceof Error
-               ? error.message
-               : "Erro ao alterar senha";
+            error instanceof Error ? error.message : "Erro ao alterar senha";
          toast.error(errorMessage);
       },
    });
@@ -538,7 +537,8 @@ function ChangePasswordStepperContent({
    const handleSubmit = () => {
       openAlertDialog({
          title: "Confirmar alteração de senha",
-         description: "Tem certeza que deseja alterar sua senha? Todas as outras sessões ativas serão encerradas por segurança.",
+         description:
+            "Tem certeza que deseja alterar sua senha? Todas as outras sessões ativas serão encerradas por segurança.",
          onAction: async () => {
             await changeMutation.mutateAsync();
          },
@@ -587,7 +587,8 @@ function ChangePasswordStepperContent({
                         <Info className="size-4" />
                         <AlertTitle>Verificação de identidade</AlertTitle>
                         <AlertDescription>
-                           Por segurança, confirme sua senha atual antes de alterá-la.
+                           Por segurança, confirme sua senha atual antes de
+                           alterá-la.
                         </AlertDescription>
                      </Alert>
 
@@ -610,7 +611,8 @@ function ChangePasswordStepperContent({
                            <AlertTriangle className="size-4" />
                            <AlertTitle>Senha incorreta</AlertTitle>
                            <AlertDescription>
-                              A senha informada não está correta. Por favor, tente novamente.
+                              A senha informada não está correta. Por favor,
+                              tente novamente.
                            </AlertDescription>
                         </Alert>
                      )}
@@ -622,7 +624,8 @@ function ChangePasswordStepperContent({
                         <Info className="size-4" />
                         <AlertTitle>Segurança da conta</AlertTitle>
                         <AlertDescription>
-                           Ao alterar sua senha, todas as outras sessões serão encerradas automaticamente por segurança.
+                           Ao alterar sua senha, todas as outras sessões serão
+                           encerradas automaticamente por segurança.
                         </AlertDescription>
                      </Alert>
 
@@ -643,7 +646,9 @@ function ChangePasswordStepperContent({
                      </div>
 
                      <div className="space-y-2">
-                        <Label htmlFor="confirm-new-password">Confirmar nova senha</Label>
+                        <Label htmlFor="confirm-new-password">
+                           Confirmar nova senha
+                        </Label>
                         <Input
                            id="confirm-new-password"
                            onChange={(e) => setConfirmPassword(e.target.value)}
@@ -707,7 +712,8 @@ function ProfileSectionErrorFallback(props: FallbackProps) {
          </CardHeader>
          <CardContent>
             {createErrorFallback({
-               errorDescription: "Ocorreu um erro ao carregar suas informações de perfil.",
+               errorDescription:
+                  "Ocorreu um erro ao carregar suas informações de perfil.",
                errorTitle: "Erro ao carregar",
                retryText: "Tentar novamente",
             })(props)}
@@ -1125,12 +1131,17 @@ function TwoFactorSetupCredenzaContent({ onClose }: { onClose: () => void }) {
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>Configurar Autenticação em Duas Etapas</CredenzaTitle>
+            <CredenzaTitle>
+               Configurar Autenticação em Duas Etapas
+            </CredenzaTitle>
             <CredenzaDescription>
                {step === "password" && "Digite sua senha para continuar"}
-               {step === "qrcode" && "Escaneie o QR code com seu aplicativo autenticador"}
-               {step === "verify" && "Digite o código do seu aplicativo autenticador"}
-               {step === "backup" && "Guarde seus códigos de recuperação em um local seguro"}
+               {step === "qrcode" &&
+                  "Escaneie o QR code com seu aplicativo autenticador"}
+               {step === "verify" &&
+                  "Digite o código do seu aplicativo autenticador"}
+               {step === "backup" &&
+                  "Guarde seus códigos de recuperação em um local seguro"}
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -1217,7 +1228,8 @@ function TwoFactorSetupCredenzaContent({ onClose }: { onClose: () => void }) {
                      Copiar códigos
                   </Button>
                   <p className="text-xs text-muted-foreground text-center">
-                     Guarde estes códigos em um local seguro. Cada código pode ser usado apenas uma vez.
+                     Guarde estes códigos em um local seguro. Cada código pode
+                     ser usado apenas uma vez.
                   </p>
                </div>
             )}
@@ -1298,14 +1310,16 @@ function SetPasswordCredenzaContent({ onSuccess }: { onSuccess: () => void }) {
          <CredenzaHeader>
             <CredenzaTitle>Definir Senha</CredenzaTitle>
             <CredenzaDescription>
-               Para ativar a autenticação em duas etapas, você precisa definir uma senha para sua conta.
+               Para ativar a autenticação em duas etapas, você precisa definir
+               uma senha para sua conta.
             </CredenzaDescription>
          </CredenzaHeader>
 
          <CredenzaBody className="space-y-4">
             <div className="p-4 bg-secondary/50 rounded-lg">
                <p className="text-sm text-muted-foreground">
-                  Você entrou usando o Google. Para usar recursos de segurança avançados como 2FA, é necessário criar uma senha.
+                  Você entrou usando o Google. Para usar recursos de segurança
+                  avançados como 2FA, é necessário criar uma senha.
                </p>
             </div>
 
@@ -1474,7 +1488,8 @@ function TwoFactorCard({
                               Você entrou com o Google
                            </p>
                            <p className="text-sm text-muted-foreground">
-                              Para ativar o 2FA, você precisa definir uma senha para sua conta primeiro.
+                              Para ativar o 2FA, você precisa definir uma senha
+                              para sua conta primeiro.
                            </p>
                            <Button
                               onClick={handleSetPassword}
@@ -1643,7 +1658,8 @@ function ViewBackupCodesCredenzaContent({ onClose }: { onClose: () => void }) {
                      Copiar códigos
                   </Button>
                   <p className="text-xs text-muted-foreground text-center">
-                     Guarde estes códigos em um local seguro. Os códigos anteriores foram invalidados.
+                     Guarde estes códigos em um local seguro. Os códigos
+                     anteriores foram invalidados.
                   </p>
                </div>
             )}
@@ -1694,7 +1710,8 @@ function DisableTwoFactorCredenzaContent({
          <CredenzaHeader>
             <CredenzaTitle>Desativar Autenticação em Duas Etapas</CredenzaTitle>
             <CredenzaDescription>
-               Isso tornará sua conta menos segura. Digite sua senha para confirmar.
+               Isso tornará sua conta menos segura. Digite sua senha para
+               confirmar.
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -1702,7 +1719,8 @@ function DisableTwoFactorCredenzaContent({
             <div className="p-4 bg-destructive/10 rounded-lg flex items-start gap-3">
                <AlertTriangle className="size-5 text-destructive shrink-0 mt-0.5" />
                <p className="text-sm text-destructive">
-                  Ao desativar o 2FA, sua conta ficará protegida apenas pela senha. Recomendamos manter ativo para maior segurança.
+                  Ao desativar o 2FA, sua conta ficará protegida apenas pela
+                  senha. Recomendamos manter ativo para maior segurança.
                </p>
             </div>
             <div className="space-y-2">
@@ -1860,7 +1878,8 @@ function DeleteAccountCredenzaContent({ onClose }: { onClose: () => void }) {
                   <div className="p-4 bg-destructive/10 rounded-lg flex items-start gap-3">
                      <AlertTriangle className="size-5 text-destructive shrink-0 mt-0.5" />
                      <p className="text-sm text-destructive">
-                        Esta ação é irreversível. Todos os seus dados serão permanentemente excluídos.
+                        Esta ação é irreversível. Todos os seus dados serão
+                        permanentemente excluídos.
                      </p>
                   </div>
 
@@ -1880,7 +1899,8 @@ function DeleteAccountCredenzaContent({ onClose }: { onClose: () => void }) {
                               Excluir em 30 dias (Recomendado)
                            </Label>
                            <p className="text-sm text-muted-foreground">
-                              Você terá 30 dias para mudar de ideia antes da exclusão permanente
+                              Você terá 30 dias para mudar de ideia antes da
+                              exclusão permanente
                            </p>
                         </div>
                      </div>
@@ -1894,7 +1914,8 @@ function DeleteAccountCredenzaContent({ onClose }: { onClose: () => void }) {
                               Excluir imediatamente
                            </Label>
                            <p className="text-sm text-muted-foreground">
-                              Sua conta será excluída imediatamente e não poderá ser recuperada
+                              Sua conta será excluída imediatamente e não poderá
+                              ser recuperada
                            </p>
                         </div>
                      </div>
@@ -2042,9 +2063,7 @@ function LinkedAccountsCard({
                   <ItemContent>
                      <ItemTitle>Senha</ItemTitle>
                      <ItemDescription>
-                        {hasPassword
-                           ? "Configurada"
-                           : "Não configurada"}
+                        {hasPassword ? "Configurada" : "Não configurada"}
                      </ItemDescription>
                   </ItemContent>
                   <ItemActions>
@@ -2072,9 +2091,7 @@ function LinkedAccountsCard({
                   <ItemContent>
                      <ItemTitle>Google</ItemTitle>
                      <ItemDescription>
-                        {hasGoogleLinked
-                           ? "Vinculado"
-                           : "Não vinculado"}
+                        {hasGoogleLinked ? "Vinculado" : "Não vinculado"}
                      </ItemDescription>
                   </ItemContent>
                   <ItemActions>

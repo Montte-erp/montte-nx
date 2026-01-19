@@ -109,9 +109,7 @@ export function DuplicateBillSheet({ bill }: DuplicateBillSheetProps) {
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               Duplicar Conta
-            </SheetTitle>
+            <SheetTitle>Duplicar Conta</SheetTitle>
             <SheetDescription>
                Escolha a data de vencimento para a conta duplicada
             </SheetDescription>

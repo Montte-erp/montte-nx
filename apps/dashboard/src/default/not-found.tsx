@@ -2,28 +2,15 @@ import { Button } from "@packages/ui/components/button";
 import { useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 
-export function NotFoundComponent() {
+export function NotFound() {
    const navigate = useNavigate();
 
    return (
-      <div className="flex items-center justify-center h-full w-full">
-         <div className="flex flex-col items-center gap-6 max-w-md text-center">
-            <div className="flex flex-col items-center gap-4">
-               <div className="flex-shrink-0">
-                  <img
-                     alt="Content Agent Mascot"
-                     className="w-20 h-20 shadow-lg"
-                  />
-               </div>
-               <div className="flex flex-col items-center gap-2">
-                  <div className="text-6xl font-bold text-muted-foreground">
-                     404
-                  </div>
-                  <h2 className="text-2xl font-semibold">Page Not Found</h2>
-               </div>
-            </div>
+      <div className="flex min-h-screen items-center justify-center">
+         <div className="text-center">
+            <h1 className="text-4xl font-bold">Página Não Encontrada</h1>
             <p className="text-muted-foreground">
-               The page you're looking for doesn't exist or has been moved.
+               A página que você está procurando não existe ou foi movida.
             </p>
             <Button onClick={() => navigate({ to: "/auth/sign-in" })}>
                <Search className="mr-2 h-4 w-4" />

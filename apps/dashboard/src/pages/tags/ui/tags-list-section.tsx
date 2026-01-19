@@ -40,7 +40,8 @@ function TagsListErrorFallback(props: FallbackProps) {
       <Card>
          <CardContent className="pt-6">
             {createErrorFallback({
-               errorDescription: "Falha ao carregar tags. Tente novamente mais tarde.",
+               errorDescription:
+                  "Falha ao carregar tags. Tente novamente mais tarde.",
                errorTitle: "Erro ao carregar tags",
                retryText: "Tentar novamente",
             })(props)}
@@ -164,11 +165,10 @@ function TagsListContent() {
                         <EmptyMedia variant="icon">
                            <Inbox className="size-6" />
                         </EmptyMedia>
-                        <EmptyTitle>
-                           Nenhuma tag ainda
-                        </EmptyTitle>
+                        <EmptyTitle>Nenhuma tag ainda</EmptyTitle>
                         <EmptyDescription>
-                           Crie sua primeira tag usando a barra de ações rápidas acima para começar a organizar suas transações.
+                           Crie sua primeira tag usando a barra de ações rápidas
+                           acima para começar a organizar suas transações.
                         </EmptyDescription>
                      </EmptyContent>
                   </Empty>
@@ -214,13 +214,15 @@ function TagsListContent() {
                   openAlertDialog({
                      actionLabel: "Excluir",
                      cancelLabel: "Cancelar",
-                     description: selectedIds.length === 1
-                        ? "Esta ação não pode ser desfeita. Isso excluirá permanentemente 1 tag e removerá a associação de todas as transações vinculadas."
-                        : `Esta ação não pode ser desfeita. Isso excluirá permanentemente ${selectedIds.length} tags e removerá a associação de todas as transações vinculadas.`,
+                     description:
+                        selectedIds.length === 1
+                           ? "Esta ação não pode ser desfeita. Isso excluirá permanentemente 1 tag e removerá a associação de todas as transações vinculadas."
+                           : `Esta ação não pode ser desfeita. Isso excluirá permanentemente ${selectedIds.length} tags e removerá a associação de todas as transações vinculadas.`,
                      onAction: () => deleteSelected(selectedIds),
-                     title: selectedIds.length === 1
-                        ? "Excluir 1 tag?"
-                        : `Excluir ${selectedIds.length} tags?`,
+                     title:
+                        selectedIds.length === 1
+                           ? "Excluir 1 tag?"
+                           : `Excluir ${selectedIds.length} tags?`,
                      variant: "destructive",
                   })
                }

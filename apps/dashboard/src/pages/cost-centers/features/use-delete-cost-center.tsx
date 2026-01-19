@@ -1,43 +1,22 @@
-import type { CostCenter } from "@packages/database/repositories/cost-center-repository";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useTRPC } from "@/integrations/clients";
 
-export function useDeleteCostCenter({
-   costCenter,
-   onSuccess,
-}: {
-   costCenter: CostCenter;
-   onSuccess?: () => void;
-}) {
+export function useDeleteCostCenter(options?: MutationOptions) {
    const trpc = useTRPC();
    const { openAlertDialog } = useAlertDialog();
 
-   const deleteCostCenterMutation = useMutation(
-      trpc.costCenters.delete.mutationOptions({
+   return useMutation(
+      trpc.costCenter.delete.mutationOptions({
          onError: (error) => {
-            toast.error(error.message || "Failed to delete cost center");
+            toast.error("Falha ao excluir centro de custo");
+            options?.onError?.(error);
          },
-         onSuccess: () => {
-            toast.success("Cost center deleted successfully");
-            onSuccess?.();
+         onSuccess: (data, variables, context) => {
+            toast.success("Centro de custo excluído com sucesso");
+            options?.onSuccess?.(data, variables, context);
          },
       }),
    );
-
-   const deleteCostCenter = () => {
-      openAlertDialog({
-         actionLabel: "Excluir centro de custo",
-         cancelLabel: "Cancelar",
-         description: "Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.",
-         onAction: async () => {
-            await deleteCostCenterMutation.mutateAsync({ id: costCenter.id });
-         },
-         title: "Confirmar Exclusão",
-         variant: "destructive",
-      });
-   };
-
-   return { deleteCostCenter, isDeleting: deleteCostCenterMutation.isPending };
 }

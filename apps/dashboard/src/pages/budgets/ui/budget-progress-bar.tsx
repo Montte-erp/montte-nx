@@ -78,23 +78,17 @@ export function BudgetProgressBar({
             </TooltipTrigger>
             <TooltipContent className="space-y-1">
                <p>
-                  <span className="font-medium">
-                     Gasto:
-                  </span>{" "}
+                  <span className="font-medium">Gasto:</span>{" "}
                   {formatCurrency(spent)} ({percentage.toFixed(1)}%)
                </p>
                {scheduled > 0 && (
                   <p>
-                     <span className="font-medium">
-                        Agendado:
-                     </span>{" "}
+                     <span className="font-medium">Agendado:</span>{" "}
                      {formatCurrency(scheduled)}
                   </p>
                )}
                <p>
-                  <span className="font-medium">
-                     Disponível:
-                  </span>{" "}
+                  <span className="font-medium">Disponível:</span>{" "}
                   {formatCurrency(available)}
                </p>
             </TooltipContent>

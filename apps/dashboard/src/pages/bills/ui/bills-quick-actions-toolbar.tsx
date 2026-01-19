@@ -67,9 +67,7 @@ export function BillsQuickActionsToolbar({
                   </Button>
                </TooltipTrigger>
                <TooltipContent>
-                  <p>
-                     Nova Conta
-                  </p>
+                  <p>Nova Conta</p>
                </TooltipContent>
             </Tooltip>
          </ItemActions>

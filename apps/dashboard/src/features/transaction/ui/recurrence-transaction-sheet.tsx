@@ -182,7 +182,8 @@ export function RecurrenceTransactionSheet({
          <SheetHeader>
             <SheetTitle>Criar Recorrencia</SheetTitle>
             <SheetDescription>
-               Configure a frequencia e duracao da recorrencia para criar contas futuras automaticamente.
+               Configure a frequencia e duracao da recorrencia para criar contas
+               futuras automaticamente.
             </SheetDescription>
          </SheetHeader>
 

@@ -53,9 +53,7 @@ export function EditBillMetadataForm({
    const updateBillMutation = useMutation(
       trpc.bills.update.mutationOptions({
          onError: (error) => {
-            toast.error(
-               error.message || "Erro ao atualizar conta",
-            );
+            toast.error(error.message || "Erro ao atualizar conta");
          },
          onSuccess: () => {
             queryClient.invalidateQueries({
@@ -125,9 +123,7 @@ export function EditBillMetadataForm({
    return (
       <form className="h-full flex flex-col" onSubmit={handleSubmit}>
          <SheetHeader>
-            <SheetTitle>
-               Editar Conta
-            </SheetTitle>
+            <SheetTitle>Editar Conta</SheetTitle>
             <SheetDescription>
                Atualize o fornecedor/cliente e observações desta conta.
             </SheetDescription>
@@ -208,9 +204,7 @@ export function EditBillMetadataForm({
                      disabled={isSubmitting || isLoading}
                      type="submit"
                   >
-                     {isLoading
-                        ? "Carregando..."
-                        : "Salvar"}
+                     {isLoading ? "Carregando..." : "Salvar"}
                   </Button>
                </SheetFooter>
             )}

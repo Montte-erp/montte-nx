@@ -82,12 +82,11 @@ function CategoryContent() {
       trpc.categories.getById.queryOptions({ id: categoryId }),
    );
 
-   if (!categoryId) {
+   if (!categoryId || typeof categoryId !== "string") {
       return (
-         <CategoryPageError
-            error={new Error("Invalid category ID")}
-            resetErrorBoundary={() => {}}
-         />
+         <div className="p-4 text-center text-sm text-destructive">
+            ID da categoria inválido
+         </div>
       );
    }
 

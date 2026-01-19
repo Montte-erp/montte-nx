@@ -38,16 +38,19 @@ type DateOption = "same-day" | "today" | "custom";
 
 const dateOptions: DateOption[] = ["same-day", "today", "custom"];
 
-const dateOptionTexts: Record<DateOption, { title: string; description: string }> = {
+const dateOptionTexts: Record<
+   DateOption,
+   { title: string; description: string }
+> = {
    "same-day": {
       title: "Mesmo dia da transação",
       description: "Usar a mesma data da transação original",
    },
-   "today": {
+   today: {
       title: "Hoje",
       description: "Usar a data de hoje para o estorno",
    },
-   "custom": {
+   custom: {
       title: "Data específica",
       description: "Escolha uma data específica para o estorno",
    },
@@ -104,9 +107,7 @@ export function RefundTransactionSheet({
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               Estornar Transação
-            </SheetTitle>
+            <SheetTitle>Estornar Transação</SheetTitle>
             <SheetDescription>
                Crie uma transação de estorno para reverter esta transação.
             </SheetDescription>

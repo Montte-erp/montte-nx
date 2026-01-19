@@ -273,7 +273,8 @@ export function ManageCounterpartyForm({
 
    const modeTexts = useMemo(() => {
       const createTexts = {
-         description: "Preencha os dados para cadastrar um novo parceiro comercial",
+         description:
+            "Preencha os dados para cadastrar um novo parceiro comercial",
          title: "Novo Cadastro",
       };
 

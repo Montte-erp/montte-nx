@@ -17,7 +17,8 @@ function InterestTemplatesStatsErrorFallback(props: FallbackProps) {
    return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-min">
          {createErrorFallback({
-            errorDescription: "Falha ao carregar estatisticas. Tente novamente mais tarde.",
+            errorDescription:
+               "Falha ao carregar estatisticas. Tente novamente mais tarde.",
             errorTitle: "Erro ao carregar estatisticas",
             retryText: "Tentar novamente",
          })(props)}

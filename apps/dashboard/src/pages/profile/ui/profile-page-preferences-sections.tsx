@@ -40,9 +40,7 @@ export function PreferencesSection() {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               Preferências
-            </CardTitle>
+            <CardTitle>Preferências</CardTitle>
             <CardDescription>
                Gerencie suas preferências de conta.
             </CardDescription>
@@ -55,11 +53,10 @@ export function PreferencesSection() {
                      <Moon className="size-4" />
                   </ItemMedia>
                   <ItemContent className="truncate">
-                     <ItemTitle>
-                        Tema
-                     </ItemTitle>
+                     <ItemTitle>Tema</ItemTitle>
                      <ItemDescription>
-                        Escolha entre o modo claro, escuro ou siga o do seu sistema.
+                        Escolha entre o modo claro, escuro ou siga o do seu
+                        sistema.
                      </ItemDescription>
                   </ItemContent>
                   <ItemActions>
@@ -75,11 +72,10 @@ export function PreferencesSection() {
                      <Activity className="size-4" />
                   </ItemMedia>
                   <ItemContent className="truncate">
-                     <ItemTitle>
-                        Telemetria
-                     </ItemTitle>
+                     <ItemTitle>Telemetria</ItemTitle>
                      <ItemDescription>
-                        Permita a coleta de dados de uso para melhorar o produto.
+                        Permita a coleta de dados de uso para melhorar o
+                        produto.
                      </ItemDescription>
                   </ItemContent>
                   <ItemActions>

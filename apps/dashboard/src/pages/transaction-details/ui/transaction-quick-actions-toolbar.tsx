@@ -73,12 +73,8 @@ export function TransactionQuickActionsToolbar({
    return (
       <Item variant="outline">
          <ItemContent className="hidden md:block">
-            <ItemTitle>
-               Barra de Ações
-            </ItemTitle>
-            <ItemDescription>
-               Ações e operações comuns
-            </ItemDescription>
+            <ItemTitle>Barra de Ações</ItemTitle>
+            <ItemDescription>Ações e operações comuns</ItemDescription>
          </ItemContent>
          <ItemActions className="w-full md:w-auto">
             <div className="flex flex-wrap gap-2 w-full md:w-auto justify-between md:justify-end">

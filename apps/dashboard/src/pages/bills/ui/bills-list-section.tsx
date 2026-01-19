@@ -9,7 +9,6 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import {
    InputGroup,
    InputGroupAddon,
@@ -25,7 +24,7 @@ import { keepPreviousData, useSuspenseQueries } from "@tanstack/react-query";
 import type { RowSelectionState } from "@tanstack/react-table";
 import { Receipt, Search, Trash2, Wallet } from "lucide-react";
 import { Fragment, Suspense, useEffect, useState } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { ErrorBoundary } from "react-error-boundary";
 import { useBillList } from "@/features/bill/lib/bill-list-context";
 import { useBillBulkActions } from "@/features/bill/lib/use-bill-bulk-actions";
 import {
@@ -42,18 +41,11 @@ type BillsListSectionProps = {
    type?: "payable" | "receivable";
 };
 
-function BillsListErrorFallback(props: FallbackProps) {
+function BillsListErrorFallback() {
    return (
-      <Card>
-         <CardContent className="pt-6">
-            {createErrorFallback({
-               errorDescription:
-                  "Failed to load bills. Please try again later.",
-               errorTitle: "Error loading bills",
-               retryText: "Retry",
-            })(props)}
-         </CardContent>
-      </Card>
+      <div className="p-4 text-center text-sm text-destructive">
+         Falha ao carregar contas. Tente novamente mais tarde.
+      </div>
    );
 }
 
@@ -238,9 +230,7 @@ function BillsListContent({ type }: BillsListSectionProps) {
                         <EmptyMedia variant="icon">
                            <Receipt className="size-12 text-muted-foreground" />
                         </EmptyMedia>
-                        <EmptyTitle>
-                           Nenhuma conta encontrada
-                        </EmptyTitle>
+                        <EmptyTitle>Nenhuma conta encontrada</EmptyTitle>
                         <EmptyDescription>
                            {debouncedSearchTerm ||
                            categoryFilter !== "all" ||

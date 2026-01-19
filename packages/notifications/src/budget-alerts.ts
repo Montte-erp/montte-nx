@@ -5,9 +5,9 @@ import {
 } from "@packages/database/repositories/budget-repository";
 import { shouldSendNotification } from "@packages/database/repositories/notification-preferences-repository";
 import {
+   type BudgetEventInput,
    emitBudgetOverspentEvent,
    emitBudgetThresholdEvent,
-   type BudgetEventInput,
 } from "@packages/workflows/queue/producer";
 import { createNotificationPayload, sendPushNotificationToUser } from "./push";
 
@@ -46,10 +46,20 @@ function calculateProjectedSpending(
    periodStart: Date,
    periodEnd: Date,
    limit: number,
-): { projectedPercentage: number; projectedOverspend: number; daysRemaining: number } {
+): {
+   projectedPercentage: number;
+   projectedOverspend: number;
+   daysRemaining: number;
+} {
    const now = new Date();
-   const daysElapsed = Math.max(1, (now.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24));
-   const daysRemaining = Math.max(0, (periodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+   const daysElapsed = Math.max(
+      1,
+      (now.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24),
+   );
+   const daysRemaining = Math.max(
+      0,
+      (periodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+   );
 
    // Daily spending rate
    const dailyRate = spent / daysElapsed;
@@ -119,17 +129,23 @@ export async function checkPredictiveBudgetAlerts(
          continue;
       }
 
-      const { projectedPercentage, projectedOverspend, daysRemaining } = calculateProjectedSpending(
-         budget.progress.spent,
-         periodStart,
-         periodEnd,
-         limit,
-      );
+      const { projectedPercentage, projectedOverspend, daysRemaining } =
+         calculateProjectedSpending(
+            budget.progress.spent,
+            periodStart,
+            periodEnd,
+            limit,
+         );
 
       // Only alert if projected to exceed budget and not already notified for prediction
-      const predictiveAlertSent = budget.alertConfig.predictiveAlertSent ?? false;
+      const predictiveAlertSent =
+         budget.alertConfig.predictiveAlertSent ?? false;
 
-      if (projectedPercentage >= 100 && !predictiveAlertSent && daysRemaining > 0) {
+      if (
+         projectedPercentage >= 100 &&
+         !predictiveAlertSent &&
+         daysRemaining > 0
+      ) {
          const payload = createNotificationPayload("budget_prediction", {
             body: `${budget.name}: Baseado no ritmo atual de gastos, você deve ultrapassar o orçamento em ${daysRemaining} dias. Projeção: ${projectedPercentage.toFixed(0)}%`,
             metadata: {
@@ -375,7 +391,10 @@ export async function emitBudgetWorkflowEvents(
                   percentage,
                });
             } catch (err) {
-               console.error(`[BudgetWorkflowEvents] Error emitting overspent event for ${budget.id}:`, err);
+               console.error(
+                  `[BudgetWorkflowEvents] Error emitting overspent event for ${budget.id}:`,
+                  err,
+               );
                results.push({
                   budgetId: budget.id,
                   budgetName: budget.name,
@@ -400,7 +419,10 @@ export async function emitBudgetWorkflowEvents(
                   percentage,
                });
             } catch (err) {
-               console.error(`[BudgetWorkflowEvents] Error emitting threshold event for ${budget.id}:`, err);
+               console.error(
+                  `[BudgetWorkflowEvents] Error emitting threshold event for ${budget.id}:`,
+                  err,
+               );
                results.push({
                   budgetId: budget.id,
                   budgetName: budget.name,

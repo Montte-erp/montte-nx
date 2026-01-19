@@ -40,7 +40,8 @@ function CounterpartiesListErrorFallback(props: FallbackProps) {
       <Card>
          <CardContent className="pt-6">
             {createErrorFallback({
-               errorDescription: "Falha ao carregar parceiros. Tente novamente mais tarde.",
+               errorDescription:
+                  "Falha ao carregar parceiros. Tente novamente mais tarde.",
                errorTitle: "Erro ao carregar parceiros",
                retryText: "Tentar novamente",
             })(props)}

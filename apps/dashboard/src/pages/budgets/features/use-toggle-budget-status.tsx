@@ -43,9 +43,7 @@ export function useToggleBudgetStatus({
                id: budget.id,
             });
          },
-         title: budget.isActive
-            ? "Desativar orçamento"
-            : "Ativar orçamento",
+         title: budget.isActive ? "Desativar orçamento" : "Ativar orçamento",
       });
    };
 

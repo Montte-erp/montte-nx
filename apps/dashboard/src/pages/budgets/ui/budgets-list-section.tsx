@@ -57,7 +57,8 @@ function BudgetsListErrorFallback(props: FallbackProps) {
       <Card>
          <CardContent className="pt-6">
             {createErrorFallback({
-               errorDescription: "Não foi possível carregar os orçamentos. Tente novamente.",
+               errorDescription:
+                  "Não foi possível carregar os orçamentos. Tente novamente.",
                errorTitle: "Erro ao carregar orçamentos",
                retryText: "Tentar novamente",
             })(props)}
@@ -295,9 +296,7 @@ function BudgetsListContent() {
                         <EmptyMedia variant="icon">
                            <Inbox className="size-12 text-muted-foreground" />
                         </EmptyMedia>
-                        <EmptyTitle>
-                           Nenhum orçamento encontrado
-                        </EmptyTitle>
+                        <EmptyTitle>Nenhum orçamento encontrado</EmptyTitle>
                         <EmptyDescription>
                            Crie seu primeiro orçamento para começar a controlar
                            seus gastos

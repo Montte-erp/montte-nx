@@ -84,9 +84,7 @@ export function BudgetActionButtons({
             <CircleDot className="size-4" />
             Status
             <Badge variant={budget.isActive ? "default" : "secondary"}>
-               {budget.isActive
-                  ? "Ativo"
-                  : "Inativo"}
+               {budget.isActive ? "Ativo" : "Inativo"}
             </Badge>
          </Button>
 
@@ -100,9 +98,7 @@ export function BudgetActionButtons({
             <RefreshCw className="size-4" />
             Acumulação
             <Badge variant={budget.rollover ? "default" : "secondary"}>
-               {budget.rollover
-                  ? "Ativado"
-                  : "Desativado"}
+               {budget.rollover ? "Ativado" : "Desativado"}
             </Badge>
          </Button>
 

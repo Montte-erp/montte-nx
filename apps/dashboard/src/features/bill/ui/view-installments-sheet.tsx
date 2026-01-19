@@ -68,9 +68,7 @@ export function ViewInstallmentsSheet({ bill }: ViewInstallmentsSheetProps) {
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               Parcelas
-            </SheetTitle>
+            <SheetTitle>Parcelas</SheetTitle>
             <SheetDescription>
                Visualize todas as parcelas desta conta
             </SheetDescription>
@@ -80,17 +78,13 @@ export function ViewInstallmentsSheet({ bill }: ViewInstallmentsSheetProps) {
             {/* Summary */}
             <div className="py-4 border-b space-y-2">
                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                     Valor Total
-                  </span>
+                  <span className="text-muted-foreground">Valor Total</span>
                   <span className="font-medium">
                      {formatDecimalCurrency(totalAmount)}
                   </span>
                </div>
                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                     Progresso
-                  </span>
+                  <span className="text-muted-foreground">Progresso</span>
                   <span className="font-medium">
                      {completedCount} / {totalCount}
                   </span>

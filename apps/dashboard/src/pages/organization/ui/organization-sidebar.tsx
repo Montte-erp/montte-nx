@@ -52,7 +52,7 @@ export function OrganizationSidebar() {
    };
 
    return (
-      <SidebarGroup>
+      <SidebarGroup className="pt-2">
          <SidebarGroupContent>
             <SidebarMenu>
                {organizationNavItems.map((item) => (

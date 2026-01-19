@@ -89,9 +89,7 @@ function InfoCardContent({ billId }: { billId: string }) {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               Informações Adicionais
-            </CardTitle>
+            <CardTitle>Informações Adicionais</CardTitle>
          </CardHeader>
          <CardContent className="grid gap-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -190,9 +188,7 @@ function InfoCardContent({ billId }: { billId: string }) {
                   <div className="flex items-center gap-3">
                      <Tags className="size-4 text-muted-foreground" />
                      <div>
-                        <p className="text-xs text-muted-foreground">
-                           Tags
-                        </p>
+                        <p className="text-xs text-muted-foreground">Tags</p>
                         <div className="flex gap-1 flex-wrap mt-0.5">
                            {billTags.map((tag) => (
                               <Badge

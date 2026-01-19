@@ -142,9 +142,7 @@ export function BillFilterCredenza({
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               Filtrar Contas
-            </CredenzaTitle>
+            <CredenzaTitle>Filtrar Contas</CredenzaTitle>
             <CredenzaDescription>
                Use os filtros abaixo para encontrar contas específicas
             </CredenzaDescription>
@@ -166,9 +164,7 @@ export function BillFilterCredenza({
 
                {/* Time Period Grid */}
                <FieldGroup>
-                  <FieldLabel>
-                     Período
-                  </FieldLabel>
+                  <FieldLabel>Período</FieldLabel>
                   <div className="grid grid-cols-3 gap-2">
                      {TIME_PERIODS.map((period) => (
                         <Button
@@ -190,17 +186,13 @@ export function BillFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Status
-                     </FieldLabel>
+                     <FieldLabel>Status</FieldLabel>
                      <Select
                         onValueChange={onStatusFilterChange}
                         value={statusFilter}
                      >
                         <SelectTrigger>
-                           <SelectValue
-                              placeholder="Selecione um status"
-                           />
+                           <SelectValue placeholder="Selecione um status" />
                         </SelectTrigger>
                         <SelectContent>
                            {statusOptions.map((option) => (
@@ -218,17 +210,13 @@ export function BillFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Tipo
-                     </FieldLabel>
+                     <FieldLabel>Tipo</FieldLabel>
                      <Select
                         onValueChange={onTypeFilterChange}
                         value={typeFilter}
                      >
                         <SelectTrigger>
-                           <SelectValue
-                              placeholder="Selecione um tipo"
-                           />
+                           <SelectValue placeholder="Selecione um tipo" />
                         </SelectTrigger>
                         <SelectContent>
                            {typeOptions.map((option) => (
@@ -246,9 +234,7 @@ export function BillFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Categoria
-                     </FieldLabel>
+                     <FieldLabel>Categoria</FieldLabel>
                      <Combobox
                         emptyMessage="Nenhum resultado encontrado"
                         onValueChange={onCategoryFilterChange}
@@ -262,22 +248,16 @@ export function BillFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Conta Bancária
-                     </FieldLabel>
+                     <FieldLabel>Conta Bancária</FieldLabel>
                      <Select
                         onValueChange={onBankAccountFilterChange}
                         value={bankAccountFilter}
                      >
                         <SelectTrigger>
-                           <SelectValue
-                              placeholder="Selecione uma conta"
-                           />
+                           <SelectValue placeholder="Selecione uma conta" />
                         </SelectTrigger>
                         <SelectContent>
-                           <SelectItem value="all">
-                              Todas as contas
-                           </SelectItem>
+                           <SelectItem value="all">Todas as contas</SelectItem>
                            {bankAccounts.map((account) => (
                               <SelectItem key={account.id} value={account.id}>
                                  {account.name || account.bank}
@@ -290,9 +270,7 @@ export function BillFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Data Inicial
-                     </FieldLabel>
+                     <FieldLabel>Data Inicial</FieldLabel>
                      <DatePicker
                         date={customStartDate ?? undefined}
                         onSelect={onCustomStartDateChange}
@@ -303,9 +281,7 @@ export function BillFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Data Final
-                     </FieldLabel>
+                     <FieldLabel>Data Final</FieldLabel>
                      <DatePicker
                         date={customEndDate ?? undefined}
                         onSelect={onCustomEndDateChange}
@@ -316,9 +292,7 @@ export function BillFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Itens por página
-                     </FieldLabel>
+                     <FieldLabel>Itens por página</FieldLabel>
                      <Select
                         onValueChange={(value) =>
                            onPageSizeChange(Number(value))

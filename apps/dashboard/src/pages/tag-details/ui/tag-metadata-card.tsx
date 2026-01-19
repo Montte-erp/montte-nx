@@ -68,12 +68,8 @@ function TagMetadataCardContent() {
    return (
       <Card>
          <CardHeader>
-            <CardTitle className="text-base">
-               Metadados
-            </CardTitle>
-            <CardDescription>
-               Informações da categoria
-            </CardDescription>
+            <CardTitle className="text-base">Metadados</CardTitle>
+            <CardDescription>Informações da categoria</CardDescription>
          </CardHeader>
          <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">

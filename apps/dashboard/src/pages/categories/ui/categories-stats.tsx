@@ -1,10 +1,3 @@
-import {
-   Card,
-   CardContent,
-   CardDescription,
-   CardHeader,
-   CardTitle,
-} from "@packages/ui/components/card";
 import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { StatsCard } from "@packages/ui/components/stats-card";

@@ -358,9 +358,7 @@ export function CounterpartyExpandedContent({
                <div className="flex items-center gap-2">
                   <Calendar className="size-4 text-muted-foreground" />
                   <div>
-                     <p className="text-xs text-muted-foreground">
-                        Criado em
-                     </p>
+                     <p className="text-xs text-muted-foreground">Criado em</p>
                      <p className="text-sm font-medium">
                         {formatDate(
                            new Date(counterparty.createdAt),
@@ -434,9 +432,7 @@ export function CounterpartyExpandedContent({
                   <div className="flex items-center gap-2">
                      <Mail className="size-4 text-muted-foreground" />
                      <div>
-                        <p className="text-xs text-muted-foreground">
-                           E-mail
-                        </p>
+                        <p className="text-xs text-muted-foreground">E-mail</p>
                         <p className="text-sm font-medium">
                            {counterparty.email}
                         </p>
@@ -480,9 +476,7 @@ export function CounterpartyExpandedContent({
             <div className="flex items-center gap-2">
                <Calendar className="size-4 text-muted-foreground" />
                <div>
-                  <p className="text-xs text-muted-foreground">
-                     Criado em
-                  </p>
+                  <p className="text-xs text-muted-foreground">Criado em</p>
                   <p className="text-sm font-medium">
                      {formatDate(
                         new Date(counterparty.createdAt),

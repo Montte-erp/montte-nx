@@ -23,16 +23,15 @@ function AccountConfigurationErrorFallback(props: FallbackProps) {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               Configurações da Conta
-            </CardTitle>
+            <CardTitle>Configurações da Conta</CardTitle>
             <CardDescription>
                Configure sua conta e preferências.
             </CardDescription>
          </CardHeader>
          <CardContent>
             {createErrorFallback({
-               errorDescription: "Ocorreu um erro ao carregar suas configurações.",
+               errorDescription:
+                  "Ocorreu um erro ao carregar suas configurações.",
                errorTitle: "Erro ao carregar",
                retryText: "Tentar novamente",
             })(props)}
@@ -75,9 +74,7 @@ function AccountConfigurationContent() {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               Configurações da Conta
-            </CardTitle>
+            <CardTitle>Configurações da Conta</CardTitle>
             <CardDescription>
                Configure sua conta e preferências.
             </CardDescription>
@@ -89,9 +86,7 @@ function AccountConfigurationContent() {
                   <DollarSign className="size-4" />
                </ItemMedia>
                <ItemContent>
-                  <ItemTitle>
-                     Moeda
-                  </ItemTitle>
+                  <ItemTitle>Moeda</ItemTitle>
                   <ItemDescription>
                      Selecione a moeda padrão para suas transações.
                   </ItemDescription>

@@ -2,12 +2,13 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useCallback, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
+import { DefaultHeader } from "@/default/default-header";
+import { usePlanFeatures } from "@/features/billing/lib/use-plan-features";
 import { UpgradeRequired } from "@/features/billing/ui/upgrade-required";
 import {
    InvitesDataTable,
    InvitesDataTableSkeleton,
 } from "@/features/organization/ui/invites-data-table";
-import { usePlanFeatures } from "@/features/billing/lib/use-plan-features";
 import { betterAuthClient, useTRPC } from "@/integrations/clients";
 import { InvitesQuickActionsToolbar } from "./organization-invites-quick-actions-toolbar";
 
@@ -155,15 +156,11 @@ export function OrganizationInvitesPage() {
          requiredPlan="erp"
       >
          <main className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-               <div>
-                  <h1 className="text-2xl font-bold">Convites</h1>
-                  <p className="text-muted-foreground">
-                     Gerencie os convites da sua organização
-                  </p>
-               </div>
-               <InvitesQuickActionsToolbar />
-            </div>
+            <DefaultHeader
+               actions={<InvitesQuickActionsToolbar />}
+               description="Gerencie os convites da sua organização"
+               title="Convites"
+            />
 
             <ErrorBoundary FallbackComponent={InvitesPageError}>
                <Suspense fallback={<InvitesDataTableSkeleton />}>

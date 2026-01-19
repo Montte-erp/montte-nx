@@ -245,9 +245,7 @@ export function CreateExpenseSplitForm({
                <form.Field name="description">
                   {(field) => (
                      <Field>
-                        <FieldLabel>
-                           Descrição
-                        </FieldLabel>
+                        <FieldLabel>Descrição</FieldLabel>
                         <Textarea
                            onBlur={field.handleBlur}
                            onChange={(e) => field.handleChange(e.target.value)}

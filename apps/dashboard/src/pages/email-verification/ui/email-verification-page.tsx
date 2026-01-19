@@ -24,13 +24,7 @@ export function EmailVerificationPage() {
       select: (s) => s.email,
    });
    const schema = z.object({
-      otp: z
-         .string()
-         .min(
-            6,
-            "O campo deve ter no mínimo 6 caracteres.",
-         )
-         .max(6),
+      otp: z.string().min(6, "O campo deve ter no mínimo 6 caracteres.").max(6),
    });
 
    const router = useRouter();
@@ -133,9 +127,7 @@ export function EmailVerificationPage() {
                               className="flex flex-col items-center"
                               data-invalid={isInvalid}
                            >
-                              <FieldLabel>
-                                 Código OTP
-                              </FieldLabel>
+                              <FieldLabel>Código OTP</FieldLabel>
                               <InputOTP
                                  aria-invalid={isInvalid}
                                  autoComplete="one-time-code"

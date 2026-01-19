@@ -29,30 +29,30 @@ function MembersStatsContent() {
 
    const statCards = [
       {
-         description: "All organization members",
+         description: "Todos os membros da organização",
          icon: <Users className="size-4" />,
-         title: "Total Members",
+         title: "Total de Membros",
          value: stats.total,
          variant: "default" as const,
       },
       {
-         description: "Active members",
+         description: "Membros ativos",
          icon: <UserCheck className="size-4" />,
-         title: "Active Members",
+         title: "Membros Ativos",
          value: stats.active,
          variant: "secondary" as const,
       },
       {
-         description: "Users with Member Role",
+         description: "Usuários com função de Membro",
          icon: <UserPlus className="size-4" />,
-         title: "Members",
+         title: "Membros",
          value: stats.members,
          variant: "default" as const,
       },
       {
-         description: "Admin members",
+         description: "Membros administradores",
          icon: <Shield className="size-4" />,
-         title: "Admins",
+         title: "Administradores",
          value: stats.admins,
          variant: "default" as const,
       },
@@ -101,8 +101,10 @@ function MembersStatsErrorFallback({ error }: { error: Error }) {
    return (
       <Card className="w-full">
          <CardHeader>
-            <CardTitle>Member Statistics</CardTitle>
-            <CardDescription>Overview of all member metrics</CardDescription>
+            <CardTitle>Estatísticas de Membros</CardTitle>
+            <CardDescription>
+               Visão geral de todas as métricas de membros
+            </CardDescription>
          </CardHeader>
          <CardContent>
             <div className="text-center py-4">

@@ -81,11 +81,13 @@ export function IconSelector({
             <Command>
                <CommandInput
                   onValueChange={setSearch}
-                  placeholder="Search icons..."
+                  placeholder="Pesquisar ícones..."
                   value={search}
                />
                <CommandList className="">
-                  {!hasResults && <CommandEmpty>No icon found.</CommandEmpty>}
+                  {!hasResults && (
+                     <CommandEmpty>Nenhum ícone encontrado.</CommandEmpty>
+                  )}
                   {Object.entries(filteredCategories).map(
                      ([category, icons]) => (
                         <CommandGroup heading={category} key={category}>

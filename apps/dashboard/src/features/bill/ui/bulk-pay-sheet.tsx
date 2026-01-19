@@ -80,9 +80,7 @@ export function BulkPaySheet({ bills, onSuccess }: BulkPaySheetProps) {
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               Pagar Contas Selecionadas
-            </SheetTitle>
+            <SheetTitle>Pagar Contas Selecionadas</SheetTitle>
             <SheetDescription>
                Escolha como deseja registrar o pagamento
             </SheetDescription>
@@ -98,11 +96,10 @@ export function BulkPaySheet({ bills, onSuccess }: BulkPaySheetProps) {
                >
                   <ChoiceboxItem id="today" value="today">
                      <ChoiceboxItemHeader>
-                        <ChoiceboxItemTitle>
-                           Pagar Hoje
-                        </ChoiceboxItemTitle>
+                        <ChoiceboxItemTitle>Pagar Hoje</ChoiceboxItemTitle>
                         <ChoiceboxItemDescription>
-                           Todas as contas serão marcadas como pagas na data de hoje
+                           Todas as contas serão marcadas como pagas na data de
+                           hoje
                         </ChoiceboxItemDescription>
                      </ChoiceboxItemHeader>
                      <ChoiceboxIndicator id="today" />
@@ -114,7 +111,8 @@ export function BulkPaySheet({ bills, onSuccess }: BulkPaySheetProps) {
                            Datas Personalizadas
                         </ChoiceboxItemTitle>
                         <ChoiceboxItemDescription>
-                           Defina a data de pagamento para cada conta (pré-preenchido com vencimento)
+                           Defina a data de pagamento para cada conta
+                           (pré-preenchido com vencimento)
                         </ChoiceboxItemDescription>
                      </ChoiceboxItemHeader>
                      <ChoiceboxIndicator id="custom" />
@@ -171,9 +169,7 @@ export function BulkPaySheet({ bills, onSuccess }: BulkPaySheetProps) {
                disabled={isLoading}
                onClick={handleSubmit}
             >
-               {isLoading
-                  ? "Carregando..."
-                  : "Confirmar Pagamento"}
+               {isLoading ? "Carregando..." : "Confirmar Pagamento"}
             </Button>
          </SheetFooter>
       </>

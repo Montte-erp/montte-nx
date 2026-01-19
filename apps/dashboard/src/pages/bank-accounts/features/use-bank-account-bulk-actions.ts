@@ -39,9 +39,7 @@ export function useBankAccountBulkActions(
             ids,
             status: "active",
          });
-         toast.success(
-            `${ids.length} conta(s) ativada(s) com sucesso`,
-         );
+         toast.success(`${ids.length} conta(s) ativada(s) com sucesso`);
       } catch {
          toast.error("Erro ao ativar contas");
       }
@@ -55,9 +53,7 @@ export function useBankAccountBulkActions(
             ids,
             status: "inactive",
          });
-         toast.success(
-            `${ids.length} conta(s) desativada(s) com sucesso`,
-         );
+         toast.success(`${ids.length} conta(s) desativada(s) com sucesso`);
       } catch {
          toast.error("Erro ao desativar contas");
       }
@@ -78,14 +74,10 @@ export function useBankAccountBulkActions(
 
       try {
          await deleteMutation.mutateAsync({ ids });
-         toast.success(
-            `${ids.length} conta(s) excluída(s) com sucesso`,
-         );
+         toast.success(`${ids.length} conta(s) excluída(s) com sucesso`);
       } catch (error) {
          toast.error(
-            error instanceof Error
-               ? error.message
-               : "Erro ao excluir contas",
+            error instanceof Error ? error.message : "Erro ao excluir contas",
          );
       }
    };

@@ -2,6 +2,7 @@ import { AppError, propagateError } from "@packages/utils/errors";
 import { and, count, eq, ilike, inArray, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import { billTag, tag, transactionTag } from "../schemas/tags";
+import { financialGoal } from "../schemas/goals";
 
 export type Tag = typeof tag.$inferSelect;
 export type NewTag = typeof tag.$inferInsert;
@@ -546,6 +547,40 @@ export async function findTagsByIds(
       propagateError(err);
       throw AppError.database(
          `Failed to find tags by ids: ${(err as Error).message}`,
+      );
+   }
+}
+
+export async function findTagsWithoutGoal(
+   dbClient: DatabaseInstance,
+   organizationId: string,
+): Promise<Tag[]> {
+   try {
+      // Get all tags that don't have a linked goal
+      const result = await dbClient
+         .select({
+            color: tag.color,
+            createdAt: tag.createdAt,
+            id: tag.id,
+            name: tag.name,
+            organizationId: tag.organizationId,
+            updatedAt: tag.updatedAt,
+         })
+         .from(tag)
+         .leftJoin(financialGoal, eq(tag.id, financialGoal.tagId))
+         .where(
+            and(
+               eq(tag.organizationId, organizationId),
+               sql`${financialGoal.id} IS NULL`,
+            ),
+         )
+         .orderBy(tag.name);
+
+      return result;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database(
+         `Failed to find tags without goal: ${(err as Error).message}`,
       );
    }
 }

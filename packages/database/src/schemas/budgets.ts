@@ -10,6 +10,7 @@ import {
    uuid,
 } from "drizzle-orm/pg-core";
 import { organization } from "./auth";
+import { tag } from "./tags";
 
 export const budgetPeriodTypeEnum = pgEnum("budget_period_type", [
    "daily",
@@ -20,22 +21,9 @@ export const budgetPeriodTypeEnum = pgEnum("budget_period_type", [
    "custom",
 ]);
 
-export const budgetTargetTypeEnum = pgEnum("budget_target_type", [
-   "category",
-   "categories",
-   "tag",
-   "cost_center",
-]);
-
 export const budgetRegimeEnum = pgEnum("budget_regime", ["cash", "accrual"]);
 
 export const budgetModeEnum = pgEnum("budget_mode", ["personal", "business"]);
-
-export type BudgetTarget =
-   | { type: "category"; categoryId: string }
-   | { type: "categories"; categoryIds: string[] }
-   | { type: "tag"; tagId: string }
-   | { type: "cost_center"; costCenterId: string };
 
 export type AlertThreshold = {
    percentage: number;
@@ -55,6 +43,11 @@ export type ShadowBudgetConfig = {
    enabled: boolean;
    visibleLimit: number;
    internalLimit: number;
+};
+
+export type BudgetMetadata = {
+   linkedCategoryIds?: string[];
+   notes?: string;
 };
 
 export const budget = pgTable("budget", {
@@ -103,9 +96,14 @@ export const budget = pgTable("budget", {
 
    shadowBudget: jsonb("shadow_budget").$type<ShadowBudgetConfig>(),
 
+   metadata: jsonb("metadata").$type<BudgetMetadata>().default({}),
+
    startDate: timestamp("start_date"),
 
-   target: jsonb("target").$type<BudgetTarget>().notNull(),
+   tagId: uuid("tag_id")
+      .notNull()
+      .references(() => tag.id, { onDelete: "cascade" }),
+
    updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => new Date())
@@ -151,6 +149,10 @@ export const budgetRelations = relations(budget, ({ one, many }) => ({
       references: [organization.id],
    }),
    periods: many(budgetPeriod),
+   tag: one(tag, {
+      fields: [budget.tagId],
+      references: [tag.id],
+   }),
 }));
 
 export const budgetPeriodRelations = relations(budgetPeriod, ({ one }) => ({

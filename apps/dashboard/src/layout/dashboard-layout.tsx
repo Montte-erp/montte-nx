@@ -2,9 +2,8 @@ import { SidebarInset, SidebarProvider } from "@packages/ui/components/sidebar";
 import { useIsMobile } from "@packages/ui/hooks/use-mobile";
 import { cn } from "@packages/ui/lib/utils";
 import type * as React from "react";
-import { useEffect, useMemo } from "react";
-import { useDashboardTabs } from "@/features/dashboard/hooks/use-dashboard-tabs";
-import { useTabRouteSync } from "@/features/dashboard/hooks/use-tab-route-sync";
+import { useEffect } from "react";
+import { useTabRouteSync } from "@/features/custom-dashboard/hooks/use-tab-route-sync";
 import { useIsStandalone } from "@/features/pwa/lib/use-standalone";
 import { PWAInstallPrompt } from "@/features/pwa/ui/pwa-install-prompt";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
@@ -43,7 +42,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                className={cn(
                   "px-4 pb-4 flex-1 overflow-y-auto bg-background rounded-b-xl",
                   showBottomNav &&
-                  "overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom))]",
+                     "overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom))]",
                )}
             >
                {children}

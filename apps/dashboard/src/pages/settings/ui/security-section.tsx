@@ -43,7 +43,6 @@ import {
    Shield,
    Smartphone,
    Tablet,
-   Trash2,
    User,
 } from "lucide-react";
 import { Fragment, Suspense } from "react";
@@ -51,10 +50,7 @@ import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { useSheet } from "@/hooks/use-sheet";
 import { betterAuthClient, useTRPC } from "@/integrations/clients";
 import { SessionDetailsForm } from "@/pages/profile/features/session-details-form";
-import {
-   useRevokeAllSessions,
-   useRevokeOtherSessions,
-} from "@/pages/profile/features/use-session-actions";
+import { useSessionActions } from "@/pages/profile/features/use-session-actions";
 
 function getDeviceIcon(userAgent: string | null | undefined) {
    if (!userAgent) return Monitor;
@@ -77,8 +73,7 @@ function formatLastActive(date: Date | string | null): string {
    const days = Math.floor(diff / 86400000);
 
    if (minutes < 1) return "Agora";
-   if (minutes < 60)
-      return `${minutes} min atrás`;
+   if (minutes < 60) return `${minutes} min atrás`;
    if (hours < 24) return `${hours}h atrás`;
    if (days < 7) return `${days}d atrás`;
    return d.toLocaleDateString("pt-BR", {
@@ -128,16 +123,15 @@ function SecuritySectionErrorFallback(props: FallbackProps) {
    return (
       <Card className="h-full">
          <CardHeader>
-            <CardTitle>
-               Segurança
-            </CardTitle>
+            <CardTitle>Segurança</CardTitle>
             <CardDescription>
                Gerencie suas sessões e configurações de segurança.
             </CardDescription>
          </CardHeader>
          <CardContent>
             {createErrorFallback({
-               errorDescription: "Ocorreu um erro ao carregar suas sessões ativas.",
+               errorDescription:
+                  "Ocorreu um erro ao carregar suas sessões ativas.",
                errorTitle: "Erro ao carregar",
                retryText: "Tentar novamente",
             })(props)}
@@ -215,9 +209,7 @@ function SessionsCard({
    return (
       <Card className="h-full">
          <CardHeader>
-            <CardTitle>
-               Segurança
-            </CardTitle>
+            <CardTitle>Segurança</CardTitle>
             <CardDescription>
                Gerencie seus dispositivos conectados e proteja sua conta
             </CardDescription>
@@ -229,11 +221,10 @@ function SessionsCard({
                      <EmptyMedia variant="icon">
                         <Globe className="size-6" />
                      </EmptyMedia>
-                     <EmptyTitle>
-                        Nenhuma sessão ativa
-                     </EmptyTitle>
+                     <EmptyTitle>Nenhuma sessão ativa</EmptyTitle>
                      <EmptyDescription>
-                        Suas sessões aparecerão aqui quando você estiver conectado
+                        Suas sessões aparecerão aqui quando você estiver
+                        conectado
                      </EmptyDescription>
                   </EmptyHeader>
                </Empty>
@@ -272,8 +263,7 @@ function SessionsCard({
                                  </div>
                                  <ItemDescription className="flex items-center gap-2 flex-wrap">
                                     <span>
-                                       {session.ipAddress ||
-                                          "IP desconhecido"}
+                                       {session.ipAddress || "IP desconhecido"}
                                     </span>
                                     {loginMethod && (
                                        <>
@@ -342,9 +332,7 @@ function SessionOverviewCard({ sessions }: { sessions: SessionType[] }) {
       <Card className="h-full">
          <CardHeader>
             <CardTitle>Visão Geral</CardTitle>
-            <CardDescription>
-               Resumo de segurança da sua conta
-            </CardDescription>
+            <CardDescription>Resumo de segurança da sua conta</CardDescription>
          </CardHeader>
          <CardContent className="space-y-4">
             <div className="rounded-lg bg-secondary/50 p-4 text-center">
@@ -356,9 +344,7 @@ function SessionOverviewCard({ sessions }: { sessions: SessionType[] }) {
                </p>
                <Badge className="mt-2" variant="secondary">
                   <Monitor className="size-3 mr-1" />
-                  {sessions.length === 1
-                     ? "dispositivo"
-                     : "dispositivos"}
+                  {sessions.length === 1 ? "dispositivo" : "dispositivos"}
                </Badge>
             </div>
          </CardContent>
@@ -380,17 +366,11 @@ function SecuritySectionContent() {
       trpc.session.getSession.queryOptions(),
    );
 
-   const { revokeOtherSessions, isRevoking: isRevokingOthers } =
-      useRevokeOtherSessions();
-   const { revokeAllSessions, isRevoking: isRevokingAll } =
-      useRevokeAllSessions();
+   const { revokeOtherSessions, revokeAllSessions } = useSessionActions();
 
    const currentSessionId = currentSession?.session?.id;
    const currentSessionLoginMethod =
       betterAuthClient.getLastUsedLoginMethod() ?? null;
-   const otherSessionsCount = sessions.filter(
-      (s) => s.id !== currentSessionId,
-   ).length;
 
    return (
       <TooltipProvider>

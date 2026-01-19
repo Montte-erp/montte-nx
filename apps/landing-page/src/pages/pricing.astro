@@ -1,10 +1,11 @@
 ---
 export const prerender = true;
 
+import CTA from "@/components/CTA.astro";
+import Footer from "@/components/Footer.astro";
+import { PricingMobileNav } from "@/components/pricing-mobile-nav";
 import StickyNavbar from "@/components/StickyNavbar.astro";
 import Landing from "@/layouts/Landing.astro";
-import Footer from "@/components/Footer.astro";
-import CTA from "@/components/CTA.astro";
 import FAQ from "@/sections/home/FAQ.astro";
 import PricingAnalytics from "@/sections/pricing-page/PricingAnalytics.astro";
 import PricingAutomation from "@/sections/pricing-page/PricingAutomation.astro";
@@ -16,7 +17,6 @@ import PricingPlanning from "@/sections/pricing-page/PricingPlanning.astro";
 import PricingPlansGrid from "@/sections/pricing-page/PricingPlansGrid.astro";
 import PricingSidebar from "@/sections/pricing-page/PricingSidebar.astro";
 import PricingTeam from "@/sections/pricing-page/PricingTeam.astro";
-import { PricingMobileNav } from "@/components/pricing-mobile-nav";
 ---
 
 <Landing>

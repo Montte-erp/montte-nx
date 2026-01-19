@@ -184,7 +184,9 @@ export function createInterestTemplateColumns(
                   {hasValue ? (
                      <>
                         {template.interestValue}%/{" "}
-                        {template.interestType === "daily" ? "Diário" : "Mensal"}
+                        {template.interestType === "daily"
+                           ? "Diário"
+                           : "Mensal"}
                      </>
                   ) : (
                      "-"

@@ -13,9 +13,9 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@packages/ui/components/select";
-import {
-   type TimePeriod,
-   type TimePeriodDateRange,
+import type {
+   TimePeriod,
+   TimePeriodDateRange,
 } from "@packages/ui/components/time-period-chips";
 import { X } from "lucide-react";
 import { useCredenza } from "@/hooks/use-credenza";
@@ -88,12 +88,12 @@ export function CategoryFilterCredenza({
       },
    ];
 
-   const handlePeriodClick = (period: TimePeriod) => {
+   const _handlePeriodClick = (period: TimePeriod) => {
       const range = getDateRangeForPeriod(period);
       onTimePeriodChange(period, range);
    };
 
-   const isCustomMode = timePeriod === "custom";
+   const _isCustomMode = timePeriod === "custom";
 
    return (
       <>

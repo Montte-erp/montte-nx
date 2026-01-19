@@ -46,9 +46,7 @@ export function useToggleBankAccountStatus({
                id: bankAccount.id,
             });
          },
-         title: isActive
-            ? "Desativar conta bancária"
-            : "Ativar conta bancária",
+         title: isActive ? "Desativar conta bancária" : "Ativar conta bancária",
          variant: "default",
       });
    };

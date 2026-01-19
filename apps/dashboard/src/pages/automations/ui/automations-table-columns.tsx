@@ -62,12 +62,8 @@ function formatDate(date: Date | string | null): string {
 
 function AutomationActionsCell({ automation }: { automation: Automation }) {
    const { activeOrganization } = useActiveOrganization();
-   const {
-      handleDelete,
-      handleDuplicate,
-      handleTestRun,
-      isTesting,
-   } = useAutomationActions(automation);
+   const { handleDelete, handleDuplicate, handleTestRun, isTesting } =
+      useAutomationActions(automation);
 
    return (
       <div className="flex justify-end gap-1">
@@ -214,11 +210,8 @@ export function AutomationExpandedContent({
    const automation = row.original;
    const { activeOrganization } = useActiveOrganization();
    const isMobile = useIsMobile();
-   const {
-      handleDelete,
-      handleTrigger,
-      isTesting,
-   } = useAutomationActions(automation);
+   const { handleDelete, handleTrigger, isTesting } =
+      useAutomationActions(automation);
 
    const onDeleteClick = (e: React.MouseEvent) => {
       e.stopPropagation();

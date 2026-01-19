@@ -63,9 +63,7 @@ function CompleteBillSheetContent({
    const completeBillMutation = useMutation(
       trpc.bills.complete.mutationOptions({
          onError: (error) => {
-            toast.error(
-               error.message || "Erro ao completar conta",
-            );
+            toast.error(error.message || "Erro ao completar conta");
          },
          onSuccess: () => {
             queryClient.invalidateQueries({
@@ -102,9 +100,7 @@ function CompleteBillSheetContent({
       <div className="flex flex-col h-full">
          <SheetHeader>
             <SheetTitle>
-               {isExpense
-                  ? "Registrar Pagamento"
-                  : "Registrar Recebimento"}
+               {isExpense ? "Registrar Pagamento" : "Registrar Recebimento"}
             </SheetTitle>
             <SheetDescription>
                {isExpense
@@ -188,17 +184,13 @@ function CompleteBillSheetContent({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Conta Bancária (Opcional)
-                     </FieldLabel>
+                     <FieldLabel>Conta Bancária (Opcional)</FieldLabel>
                      <Select
                         onValueChange={setBankAccountId}
                         value={bankAccountId}
                      >
                         <SelectTrigger>
-                           <SelectValue
-                              placeholder="Selecione uma conta bancária"
-                           />
+                           <SelectValue placeholder="Selecione uma conta bancária" />
                         </SelectTrigger>
                         <SelectContent>
                            {bankAccounts.map((account) => (
@@ -209,7 +201,8 @@ function CompleteBillSheetContent({
                         </SelectContent>
                      </Select>
                      <FieldDescription>
-                        Selecione a conta bancária usada para este {isExpense ? "pagamento" : "recebimento"}
+                        Selecione a conta bancária usada para este{" "}
+                        {isExpense ? "pagamento" : "recebimento"}
                      </FieldDescription>
                   </Field>
                </FieldGroup>

@@ -5,6 +5,7 @@ import {
    findTagById,
    findTagsByOrganizationId,
    findTagsByOrganizationIdPaginated,
+   findTagsWithoutGoal,
    findTransactionsByTagId,
    getTagWithMostTransactions,
    getTotalTagsByOrganizationId,
@@ -112,6 +113,13 @@ export const tagRouter = router({
 
          return tag;
       }),
+
+   getAvailableForGoal: protectedProcedure.query(async ({ ctx }) => {
+      const resolvedCtx = await ctx;
+      const organizationId = resolvedCtx.organizationId;
+
+      return findTagsWithoutGoal(resolvedCtx.db, organizationId);
+   }),
 
    getStats: protectedProcedure.query(async ({ ctx }) => {
       const resolvedCtx = await ctx;

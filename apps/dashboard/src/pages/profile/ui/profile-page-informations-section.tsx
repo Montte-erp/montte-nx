@@ -22,16 +22,15 @@ function ProfileInformationErrorFallback(props: FallbackProps) {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               Informações do perfil
-            </CardTitle>
+            <CardTitle>Informações do perfil</CardTitle>
             <CardDescription>
                Atualize suas informações pessoais e de conta.
             </CardDescription>
          </CardHeader>
          <CardContent>
             {createErrorFallback({
-               errorDescription: "Ocorreu um erro ao carregar suas informações de perfil.",
+               errorDescription:
+                  "Ocorreu um erro ao carregar suas informações de perfil.",
                errorTitle: "Erro ao carregar",
                retryText: "Tentar novamente",
             })(props)}
@@ -71,9 +70,7 @@ function ProfileInformationContent() {
    return (
       <Card className="w-full h-full">
          <CardHeader>
-            <CardTitle>
-               Informações do perfil
-            </CardTitle>
+            <CardTitle>Informações do perfil</CardTitle>
             <CardDescription>
                Atualize suas informações pessoais e de conta.
             </CardDescription>

@@ -8,7 +8,6 @@ import {
    FieldGroup,
    FieldLabel,
 } from "@packages/ui/components/field";
-import { MultiSelect } from "@packages/ui/components/multi-select";
 import {
    SheetDescription,
    SheetFooter,
@@ -17,11 +16,13 @@ import {
 } from "@packages/ui/components/sheet";
 import { getRandomColor } from "@packages/utils/colors";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Tag, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { IconName } from "@/features/icon-selector/lib/available-icons";
 import { IconDisplay } from "@/features/icon-selector/ui/icon-display";
+import { CostCenterCombobox } from "@/features/cost-center/ui/cost-center-combobox";
+import { TagMultiSelect } from "@/features/tag/ui/tag-multi-select";
 import { useTRPC } from "@/integrations/clients";
 
 type Bill = BillWithRelations;
@@ -86,9 +87,7 @@ export function ChangeBillCategoryForm({
    const updateBillMutation = useMutation(
       trpc.bills.update.mutationOptions({
          onError: (error) => {
-            toast.error(
-               error.message || "Erro ao atualizar categorização",
-            );
+            toast.error(error.message || "Erro ao atualizar categorização");
          },
          onSuccess: () => {
             queryClient.invalidateQueries({
@@ -217,20 +216,6 @@ export function ChangeBillCategoryForm({
       value: category.id,
    }));
 
-   const tagOptions = tags.map((tag) => ({
-      icon: <Tag className="size-4" style={{ color: tag.color }} />,
-      label: tag.name,
-      value: tag.id,
-   }));
-
-   const costCenterOptions = [
-      { label: "Nenhum", value: "" },
-      ...costCenters.map((cc) => ({
-         label: cc.code ? `${cc.name} (${cc.code})` : cc.name,
-         value: cc.id,
-      })),
-   ];
-
    const isLoading = updateBillMutation.isPending;
    const isCreating =
       createCategoryMutation.isPending ||
@@ -240,9 +225,7 @@ export function ChangeBillCategoryForm({
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               Categorizar Conta
-            </SheetTitle>
+            <SheetTitle>Categorizar Conta</SheetTitle>
             <SheetDescription>
                Associe categoria, tags e centro de custo a esta conta
             </SheetDescription>
@@ -252,9 +235,7 @@ export function ChangeBillCategoryForm({
             <div className="space-y-4 py-4">
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Categoria
-                     </FieldLabel>
+                     <FieldLabel>Categoria</FieldLabel>
                      <Combobox
                         className="w-full justify-between"
                         createLabel="Criar categoria"
@@ -270,16 +251,15 @@ export function ChangeBillCategoryForm({
                         value={selectedCategoryId}
                      />
                      <FieldDescription>
-                        Agrupe suas transações por tipo de gasto ou receita para análises detalhadas
+                        Agrupe suas transações por tipo de gasto ou receita para
+                        análises detalhadas
                      </FieldDescription>
                   </Field>
                </FieldGroup>
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Tags
-                     </FieldLabel>
+                     <FieldLabel>Tags</FieldLabel>
                      {selectedTagIds.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mb-2">
                            {selectedTagIds.map((tagId) => {
@@ -308,43 +288,37 @@ export function ChangeBillCategoryForm({
                            })}
                         </div>
                      )}
-                     <MultiSelect
+                     <TagMultiSelect
                         className="flex-1"
-                        createLabel="Criar tag "
-                        emptyMessage="Nenhum resultado encontrado"
                         onChange={(val) => setSelectedTagIds(val)}
                         onCreate={handleCreateTag}
-                        options={tagOptions}
                         placeholder="Selecione as tags"
                         selected={selectedTagIds}
+                        tags={tags}
                      />
                      <FieldDescription>
-                        Adicione marcadores personalizados para filtrar e organizar suas transações
+                        Adicione marcadores personalizados para filtrar e
+                        organizar suas transações
                      </FieldDescription>
                   </Field>
                </FieldGroup>
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Centro de Custo
-                     </FieldLabel>
-                     <Combobox
+                     <FieldLabel>Centro de Custo</FieldLabel>
+                     <CostCenterCombobox
                         className="w-full justify-between"
-                        createLabel="Criar centro de custo "
+                        costCenters={costCenters}
                         disabled={isLoading || isCreating}
-                        emptyMessage="Nenhum resultado encontrado"
                         onCreate={handleCreateCostCenter}
                         onValueChange={(value) =>
                            setSelectedCostCenterId(value || "")
                         }
-                        options={costCenterOptions}
-                        placeholder="Selecione um centro de custo"
-                        searchPlaceholder="Pesquisar"
                         value={selectedCostCenterId}
                      />
                      <FieldDescription>
-                        Associe a departamentos, projetos ou áreas para controle orçamentário
+                        Associe a departamentos, projetos ou áreas para controle
+                        orçamentário
                      </FieldDescription>
                   </Field>
                </FieldGroup>
@@ -357,9 +331,7 @@ export function ChangeBillCategoryForm({
                disabled={isLoading || isCreating}
                onClick={handleSubmit}
             >
-               {isLoading
-                  ? "Carregando..."
-                  : "Salvar"}
+               {isLoading ? "Carregando..." : "Salvar"}
             </Button>
          </SheetFooter>
       </>

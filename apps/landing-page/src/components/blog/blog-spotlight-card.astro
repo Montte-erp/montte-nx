@@ -3,23 +3,23 @@ import type { CollectionEntry } from "astro:content";
 import { ArrowRight } from "@lucide/astro";
 
 interface Props {
-	post: CollectionEntry<"blog">;
+   post: CollectionEntry<"blog">;
 }
 
 const { post } = Astro.props;
 const { title, description, categoria, image } = post.data;
 
 const categoryLabels: Record<string, string> = {
-	tutoriais: "Tutoriais",
-	dicas: "Dicas",
-	atualizacoes: "Atualizacoes",
-	"casos-de-uso": "Casos de Uso",
-	"financas-pessoais": "Financas Pessoais",
+   tutoriais: "Tutoriais",
+   dicas: "Dicas",
+   atualizacoes: "Atualizacoes",
+   "casos-de-uso": "Casos de Uso",
+   "financas-pessoais": "Financas Pessoais",
 };
 
 const categoryLabel = categoria
-	? categoryLabels[categoria] || categoria
-	: "Destaque";
+   ? categoryLabels[categoria] || categoria
+   : "Destaque";
 ---
 
 <a

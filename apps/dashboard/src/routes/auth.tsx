@@ -192,15 +192,15 @@ function AuthLayout() {
                      Gestao financeira inteligente para equipes modernas
                   </h2>
                   <p className="text-white/70 text-sm xl:text-base max-w-sm mx-auto">
-                     Controle total das suas financas pessoais e empresariais em um so lugar.
+                     Controle total das suas financas pessoais e empresariais em
+                     um so lugar.
                   </p>
                </div>
             </div>
 
             {/* Footer */}
             <div className="relative z-10 text-white/50 text-xs">
-               © {new Date().getFullYear()} Montte.{" "}
-               Todos os direitos reservados
+               © {new Date().getFullYear()} Montte. Todos os direitos reservados
             </div>
          </aside>
       </div>

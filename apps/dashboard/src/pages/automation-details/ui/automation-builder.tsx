@@ -1,55 +1,59 @@
 import type { AutomationTemplate } from "@packages/database/repositories/automation-template-repository";
 import type {
-	ActionType,
-	ConditionEvaluationLogResult,
-	ConsequenceExecutionLogResult,
-	TriggeredBy,
-	TriggerType,
+   ActionType,
+   ConditionEvaluationLogResult,
+   ConsequenceExecutionLogResult,
+   TriggeredBy,
+   TriggerType,
 } from "@packages/database/schema";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { ScrollArea } from "@packages/ui/components/scroll-area";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { cn } from "@packages/ui/lib/utils";
-import { type ActionTab, getAction, getActionTabs } from "@packages/workflows/config/actions";
+import {
+   type ActionTab,
+   getAction,
+   getActionTabs,
+} from "@packages/workflows/config/actions";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
-	addEdge,
-	type Connection,
-	ReactFlowProvider,
-	useEdgesState,
-	useNodesState,
-	useReactFlow,
+   addEdge,
+   type Connection,
+   ReactFlowProvider,
+   useEdgesState,
+   useNodesState,
+   useReactFlow,
 } from "@xyflow/react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-	Activity,
-	AlertTriangle,
-	CheckCircle2,
-	ChevronDown,
-	ChevronUp,
-	CircleSlash,
-	Filter,
-	Pencil,
-	Play,
-	SkipForward,
-	Trash2,
-	X,
-	XCircle,
-	Zap,
+   Activity,
+   AlertTriangle,
+   CheckCircle2,
+   ChevronDown,
+   ChevronUp,
+   CircleSlash,
+   Filter,
+   Pencil,
+   Play,
+   SkipForward,
+   Trash2,
+   X,
+   XCircle,
+   Zap,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type {
-	ActionNodeData,
-	AutomationEdge,
-	AutomationNode,
+   ActionNodeData,
+   AutomationEdge,
+   AutomationNode,
 } from "@/features/automations/hooks/use-flow-serialization";
 import {
-	createDefaultActionNode,
-	createDefaultConditionNode,
-	createDefaultTriggerNode,
+   createDefaultActionNode,
+   createDefaultConditionNode,
+   createDefaultTriggerNode,
 } from "@/features/automations/hooks/use-flow-serialization";
 import { useTRPC } from "@/integrations/clients";
 import { AutomationCanvas } from "./automation-canvas";

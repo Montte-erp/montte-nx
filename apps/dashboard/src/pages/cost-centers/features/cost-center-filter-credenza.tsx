@@ -78,11 +78,10 @@ export function CostCenterFilterCredenza({
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               Filtrar Centros de Custo
-            </CredenzaTitle>
+            <CredenzaTitle>Filtrar Centros de Custo</CredenzaTitle>
             <CredenzaDescription>
-               Refine a lista de centros de custo com base em critérios específicos.
+               Refine a lista de centros de custo com base em critérios
+               específicos.
             </CredenzaDescription>
          </CredenzaHeader>
          <CredenzaBody>
@@ -100,9 +99,7 @@ export function CostCenterFilterCredenza({
                )}
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Ordenar por
-                     </FieldLabel>
+                     <FieldLabel>Ordenar por</FieldLabel>
                      <Select
                         onValueChange={(
                            value: "name" | "code" | "createdAt" | "updatedAt",
@@ -110,9 +107,7 @@ export function CostCenterFilterCredenza({
                         value={orderBy}
                      >
                         <SelectTrigger>
-                           <SelectValue
-                              placeholder="Selecione o campo"
-                           />
+                           <SelectValue placeholder="Selecione o campo" />
                         </SelectTrigger>
                         <SelectContent>
                            {orderByOptions.map((option) => (
@@ -130,9 +125,7 @@ export function CostCenterFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Direção da Ordenação
-                     </FieldLabel>
+                     <FieldLabel>Direção da Ordenação</FieldLabel>
                      <Select
                         onValueChange={(value: "asc" | "desc") =>
                            onOrderDirectionChange(value)
@@ -140,9 +133,7 @@ export function CostCenterFilterCredenza({
                         value={orderDirection}
                      >
                         <SelectTrigger>
-                           <SelectValue
-                              placeholder="Selecione a direção"
-                           />
+                           <SelectValue placeholder="Selecione a direção" />
                         </SelectTrigger>
                         <SelectContent>
                            {orderDirectionOptions.map((option) => (
@@ -159,9 +150,7 @@ export function CostCenterFilterCredenza({
                </FieldGroup>
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Itens por Página
-                     </FieldLabel>
+                     <FieldLabel>Itens por Página</FieldLabel>
                      <Select
                         onValueChange={(value) =>
                            onPageSizeChange?.(Number(value))

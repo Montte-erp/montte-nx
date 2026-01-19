@@ -6,8 +6,8 @@ import {
 import { DREFiscalTemplate } from "./templates/dre-fiscal";
 import { DREGerencialTemplate } from "./templates/dre-gerencial";
 import {
-   isSupportedPdfReportType,
    type DRESnapshotData,
+   isSupportedPdfReportType,
    type ReportType,
    type SupportedPdfReportType,
 } from "./types";

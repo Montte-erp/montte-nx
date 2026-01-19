@@ -1,5 +1,5 @@
-import type { CSSProperties } from "react";
 import { cn } from "@packages/ui/lib/utils";
+import type { CSSProperties } from "react";
 import type { IconName } from "./lib/available-icons";
 import { getIconComponent } from "./lib/available-icons";
 

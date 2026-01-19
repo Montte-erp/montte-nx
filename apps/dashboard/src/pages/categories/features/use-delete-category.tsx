@@ -16,11 +16,11 @@ export function useDeleteCategory({
 
    const deleteCategoryMutation = useMutation(
       trpc.categories.delete.mutationOptions({
-         onError: (error) => {
-            toast.error(error.message || "Failed to delete category");
+         onError: (_error) => {
+            toast.error("Falha ao excluir categoria");
          },
          onSuccess: () => {
-            toast.success("Category deleted successfully");
+            toast.success("Categoria excluída com sucesso");
             onSuccess?.();
          },
       }),

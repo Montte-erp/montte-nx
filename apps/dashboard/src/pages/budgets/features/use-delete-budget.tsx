@@ -30,7 +30,8 @@ export function useDeleteBudget({
       openAlertDialog({
          actionLabel: "Excluir",
          cancelLabel: "Cancelar",
-         description: "Tem certeza que deseja excluir este orçamento? Esta ação não pode ser desfeita.",
+         description:
+            "Tem certeza que deseja excluir este orçamento? Esta ação não pode ser desfeita.",
          onAction: async () => {
             await deleteBudgetMutation.mutateAsync({ id: budget.id });
          },

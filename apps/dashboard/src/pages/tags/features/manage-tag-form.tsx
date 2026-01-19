@@ -131,9 +131,7 @@ export function ManageTagForm({ tag }: ManageTagFormProps) {
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel>
-                              Nome
-                           </FieldLabel>
+                           <FieldLabel>Nome</FieldLabel>
                            <Input
                               onBlur={field.handleBlur}
                               onChange={(e) =>
@@ -158,9 +156,7 @@ export function ManageTagForm({ tag }: ManageTagFormProps) {
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel>
-                              Cor
-                           </FieldLabel>
+                           <FieldLabel>Cor</FieldLabel>
 
                            <Popover>
                               <PopoverTrigger asChild>

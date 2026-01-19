@@ -91,8 +91,7 @@ export function MultiSelect({
 
    const showCreateOption =
       onCreate &&
-      inputValue.trim().length > 0 &&
-      filteredSelectables.length === 0;
+      inputValue.trim().length > 0;
 
    return (
       <Command

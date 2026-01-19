@@ -107,9 +107,7 @@ export function TagFilterCredenza({
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               Filtrar Tags
-            </CredenzaTitle>
+            <CredenzaTitle>Filtrar Tags</CredenzaTitle>
             <CredenzaDescription>
                Refine a lista de tags com base em critérios específicos.
             </CredenzaDescription>
@@ -130,9 +128,7 @@ export function TagFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Período
-                     </FieldLabel>
+                     <FieldLabel>Período</FieldLabel>
                      <div className="grid grid-cols-2 gap-2">
                         {TIME_PERIODS.map((period) => {
                            const Icon = period.icon;
@@ -179,9 +175,7 @@ export function TagFilterCredenza({
                {isCustomMode && (
                   <FieldGroup>
                      <Field>
-                        <FieldLabel>
-                           Data Inicial
-                        </FieldLabel>
+                        <FieldLabel>Data Inicial</FieldLabel>
                         <DatePicker
                            date={customStartDate || undefined}
                            onSelect={onCustomStartDateChange}
@@ -189,9 +183,7 @@ export function TagFilterCredenza({
                         />
                      </Field>
                      <Field>
-                        <FieldLabel>
-                           Data Final
-                        </FieldLabel>
+                        <FieldLabel>Data Final</FieldLabel>
                         <DatePicker
                            date={customEndDate || undefined}
                            onSelect={onCustomEndDateChange}
@@ -203,9 +195,7 @@ export function TagFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Tipo
-                     </FieldLabel>
+                     <FieldLabel>Tipo</FieldLabel>
                      <ToggleGroup
                         className="justify-start"
                         onValueChange={onTypeFilterChange}
@@ -242,9 +232,7 @@ export function TagFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Ordenar por
-                     </FieldLabel>
+                     <FieldLabel>Ordenar por</FieldLabel>
                      <Select
                         onValueChange={(
                            value: "name" | "createdAt" | "updatedAt",
@@ -252,9 +240,7 @@ export function TagFilterCredenza({
                         value={orderBy}
                      >
                         <SelectTrigger>
-                           <SelectValue
-                              placeholder="Selecione o campo"
-                           />
+                           <SelectValue placeholder="Selecione o campo" />
                         </SelectTrigger>
                         <SelectContent>
                            {orderByOptions.map((option) => (
@@ -272,9 +258,7 @@ export function TagFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Direção da Ordenação
-                     </FieldLabel>
+                     <FieldLabel>Direção da Ordenação</FieldLabel>
                      <Select
                         onValueChange={(value: "asc" | "desc") =>
                            onOrderDirectionChange(value)
@@ -282,9 +266,7 @@ export function TagFilterCredenza({
                         value={orderDirection}
                      >
                         <SelectTrigger>
-                           <SelectValue
-                              placeholder="Selecione a direção"
-                           />
+                           <SelectValue placeholder="Selecione a direção" />
                         </SelectTrigger>
                         <SelectContent>
                            {orderDirectionOptions.map((option) => (
@@ -303,9 +285,7 @@ export function TagFilterCredenza({
                {onPageSizeChange && (
                   <FieldGroup>
                      <Field>
-                        <FieldLabel>
-                           Itens por Página
-                        </FieldLabel>
+                        <FieldLabel>Itens por Página</FieldLabel>
                         <Select
                            onValueChange={(value) =>
                               onPageSizeChange(Number(value))

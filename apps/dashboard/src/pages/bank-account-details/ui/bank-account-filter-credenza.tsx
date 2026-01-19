@@ -85,9 +85,7 @@ export function BankAccountFilterCredenza({
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               Filtros
-            </CredenzaTitle>
+            <CredenzaTitle>Filtros</CredenzaTitle>
             <CredenzaDescription>
                Refine os resultados com filtros
             </CredenzaDescription>
@@ -155,9 +153,7 @@ export function BankAccountFilterCredenza({
                {isCustomMode && (
                   <FieldGroup>
                      <Field>
-                        <FieldLabel>
-                           Data Inicial
-                        </FieldLabel>
+                        <FieldLabel>Data Inicial</FieldLabel>
                         <DatePicker
                            date={customStartDate || undefined}
                            onSelect={onCustomStartDateChange}
@@ -165,9 +161,7 @@ export function BankAccountFilterCredenza({
                         />
                      </Field>
                      <Field>
-                        <FieldLabel>
-                           Data Final
-                        </FieldLabel>
+                        <FieldLabel>Data Final</FieldLabel>
                         <DatePicker
                            date={customEndDate || undefined}
                            onSelect={onCustomEndDateChange}
@@ -179,9 +173,7 @@ export function BankAccountFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Tipo
-                     </FieldLabel>
+                     <FieldLabel>Tipo</FieldLabel>
                      <ToggleGroup
                         className="justify-start"
                         onValueChange={onTypeFilterChange}
@@ -218,9 +210,7 @@ export function BankAccountFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Categoria
-                     </FieldLabel>
+                     <FieldLabel>Categoria</FieldLabel>
                      <Combobox
                         emptyMessage="Nenhum resultado encontrado"
                         onValueChange={onCategoryFilterChange}

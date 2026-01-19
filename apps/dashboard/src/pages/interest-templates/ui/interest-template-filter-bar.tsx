@@ -280,9 +280,7 @@ export function InterestTemplateFilterBar({
             </PopoverTrigger>
             <PopoverContent align="start" className="w-80 p-0">
                <div className="border-b px-4 py-3">
-                  <h4 className="font-medium text-sm">
-                     Filtros Avancados
-                  </h4>
+                  <h4 className="font-medium text-sm">Filtros Avancados</h4>
                   <p className="text-xs text-muted-foreground mt-0.5">
                      Refine sua busca com filtros adicionais
                   </p>
@@ -479,9 +477,7 @@ export function InterestTemplateFilterBar({
                variant="secondary"
             >
                <Star className="size-3" />
-               <span className="max-w-24 truncate">
-                  Modelo Padrao
-               </span>
+               <span className="max-w-24 truncate">Modelo Padrao</span>
                <X className="size-3" />
             </Badge>
          )}

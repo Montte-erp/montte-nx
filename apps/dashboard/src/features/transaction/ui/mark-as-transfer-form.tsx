@@ -197,9 +197,7 @@ export function MarkAsTransferForm({
 
                   <FieldGroup>
                      <Field>
-                        <FieldLabel>
-                           Conta de Destino
-                        </FieldLabel>
+                        <FieldLabel>Conta de Destino</FieldLabel>
                         <Combobox
                            emptyMessage="Nenhum resultado encontrado"
                            onValueChange={setSelectedBankAccountId}

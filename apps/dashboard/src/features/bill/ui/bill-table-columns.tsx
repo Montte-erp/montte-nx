@@ -63,9 +63,7 @@ function BillActionsCell({ bill }: { bill: Bill }) {
                   </Link>
                </Button>
             </TooltipTrigger>
-            <TooltipContent>
-               Ver Detalhes
-            </TooltipContent>
+            <TooltipContent>Ver Detalhes</TooltipContent>
          </Tooltip>
       </div>
    );
@@ -196,8 +194,7 @@ export function BillMobileCard({
             </CardDescription>
             <CardTitle className="truncate">{bill.description}</CardTitle>
             <CardDescription>
-               Vencimento:{" "}
-               {formatDate(new Date(bill.dueDate), "DD/MM/YYYY")}
+               Vencimento: {formatDate(new Date(bill.dueDate), "DD/MM/YYYY")}
             </CardDescription>
          </CardHeader>
          <CardContent className="flex flex-wrap gap-2">
@@ -225,9 +222,7 @@ export function BillMobileCard({
                   }}
                   variant="outline"
                >
-                  {isExpanded
-                     ? "Menos info"
-                     : "Mais info"}
+                  {isExpanded ? "Menos info" : "Mais info"}
                   <ChevronDown
                      className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
                   />
@@ -275,9 +270,7 @@ export function BillExpandedContent({
          <div className="p-4 space-y-4">
             <div className="space-y-3">
                <div className="flex flex-col gap-1">
-                  <p className="text-xs text-muted-foreground">
-                     Valor
-                  </p>
+                  <p className="text-xs text-muted-foreground">Valor</p>
                   <AmountAnnouncement
                      amount={Number(bill.amount)}
                      isPositive={bill.type === "income"}
@@ -285,9 +278,7 @@ export function BillExpandedContent({
                </div>
                <Separator />
                <div className="flex flex-col gap-1">
-                  <p className="text-xs text-muted-foreground">
-                     Tipo
-                  </p>
+                  <p className="text-xs text-muted-foreground">Tipo</p>
                   <TypeAnnouncement type={bill.type as "expense" | "income"} />
                </div>
                <Separator />
@@ -311,9 +302,7 @@ export function BillExpandedContent({
                )}
                <Separator />
                <div className="flex flex-col gap-1">
-                  <p className="text-xs text-muted-foreground">
-                     Categoria
-                  </p>
+                  <p className="text-xs text-muted-foreground">Categoria</p>
                   <CategoryAnnouncement
                      category={{
                         color: category?.color || "#6b7280",
@@ -388,9 +377,7 @@ export function BillExpandedContent({
          {/* Metadata Section */}
          <div className="flex flex-wrap items-center gap-6">
             <div className="flex flex-col gap-1">
-               <p className="text-xs text-muted-foreground">
-                  Valor
-               </p>
+               <p className="text-xs text-muted-foreground">Valor</p>
                <AmountAnnouncement
                   amount={Number(bill.amount)}
                   isPositive={bill.type === "income"}
@@ -398,9 +385,7 @@ export function BillExpandedContent({
             </div>
             <Separator className="h-8" orientation="vertical" />
             <div className="flex flex-col gap-1">
-               <p className="text-xs text-muted-foreground">
-                  Tipo
-               </p>
+               <p className="text-xs text-muted-foreground">Tipo</p>
                <TypeAnnouncement type={bill.type as "expense" | "income"} />
             </div>
             <Separator className="h-8" orientation="vertical" />
@@ -421,9 +406,7 @@ export function BillExpandedContent({
             )}
             <Separator className="h-8" orientation="vertical" />
             <div className="flex flex-col gap-1">
-               <p className="text-xs text-muted-foreground">
-                  Categoria
-               </p>
+               <p className="text-xs text-muted-foreground">Categoria</p>
                <CategoryAnnouncement
                   category={{
                      color: category?.color || "#6b7280",

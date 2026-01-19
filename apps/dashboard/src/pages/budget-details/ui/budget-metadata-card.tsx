@@ -93,14 +93,10 @@ function MetadataCardContent({ budgetId }: { budgetId: string }) {
 
    const StatusIcon = budget.isActive ? CheckCircle : CircleDashed;
    const statusColor = budget.isActive ? "#10b981" : "#6b7280";
-   const statusLabel = budget.isActive
-      ? "Ativo"
-      : "Inativo";
+   const statusLabel = budget.isActive ? "Ativo" : "Inativo";
 
    const rolloverColor = budget.rollover ? "#3b82f6" : "#6b7280";
-   const rolloverLabel = budget.rollover
-      ? "Ativado"
-      : "Desativado";
+   const rolloverLabel = budget.rollover ? "Ativado" : "Desativado";
 
    return (
       <Card className="h-fit">

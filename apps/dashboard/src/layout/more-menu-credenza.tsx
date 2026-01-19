@@ -171,76 +171,76 @@ function MoreMenuContent() {
             },
             ...(canAccessCounterparties
                ? [
-                  {
-                     icon: Users,
-                     id: "counterparties",
-                     label: "Fornecedores",
-                     url: "/$slug/counterparties",
-                  },
-               ]
+                    {
+                       icon: Users,
+                       id: "counterparties",
+                       label: "Fornecedores",
+                       url: "/$slug/counterparties",
+                    },
+                 ]
                : []),
             ...(canAccessInterestTemplates
                ? [
-                  {
-                     icon: Percent,
-                     id: "interest-templates",
-                     label: "Modelos de Juros",
-                     url: "/$slug/interest-templates",
-                  },
-               ]
+                    {
+                       icon: Percent,
+                       id: "interest-templates",
+                       label: "Modelos de Juros",
+                       url: "/$slug/interest-templates",
+                    },
+                 ]
                : []),
          ],
          title: "Contas",
       },
       ...(showCategorizationSection
          ? [
-            {
-               items: [
-                  {
-                     icon: FileText,
-                     id: "categories",
-                     label: "Categorias",
-                     url: "/$slug/categories",
-                  },
-                  ...(canAccessCostCenters
-                     ? [
-                        {
-                           icon: Landmark,
-                           id: "cost-centers",
-                           label: "Centros de Custo",
-                           url: "/$slug/cost-centers",
-                        },
-                     ]
-                     : []),
-                  ...(canAccessTags
-                     ? [
-                        {
-                           icon: Tag,
-                           id: "tags",
-                           label: "Tags",
-                           url: "/$slug/tags",
-                        },
-                     ]
-                     : []),
-               ],
-               title: "Categorização",
-            },
-         ]
+              {
+                 items: [
+                    {
+                       icon: FileText,
+                       id: "categories",
+                       label: "Categorias",
+                       url: "/$slug/categories",
+                    },
+                    ...(canAccessCostCenters
+                       ? [
+                            {
+                               icon: Landmark,
+                               id: "cost-centers",
+                               label: "Centros de Custo",
+                               url: "/$slug/cost-centers",
+                            },
+                         ]
+                       : []),
+                    ...(canAccessTags
+                       ? [
+                            {
+                               icon: Tag,
+                               id: "tags",
+                               label: "Tags",
+                               url: "/$slug/tags",
+                            },
+                         ]
+                       : []),
+                 ],
+                 title: "Categorização",
+              },
+           ]
          : []),
       ...(canAccessAutomations
          ? [
-            {
-               items: [
-                  {
-                     icon: Zap,
-                     id: "automations",
-                     label: "Automações",
-                     url: "/$slug/automations",
-                  },
-               ],
-               title: "Automação",
-            },
-         ]
+              {
+                 items: [
+                    {
+                       icon: Zap,
+                       id: "automations",
+                       label: "Automações",
+                       url: "/$slug/automations",
+                    },
+                 ],
+                 title: "Automação",
+              },
+           ]
          : []),
       {
          items: [
@@ -302,7 +302,7 @@ function MoreMenuContent() {
                      {userQuickActions.map((item) => {
                         const Icon = item.icon;
                         const isNotifications = item.id === "notifications";
-                        
+
                         if (isNotifications) {
                            return (
                               <button
@@ -324,7 +324,7 @@ function MoreMenuContent() {
                               </button>
                            );
                         }
-                        
+
                         return (
                            <Link
                               className={cn(

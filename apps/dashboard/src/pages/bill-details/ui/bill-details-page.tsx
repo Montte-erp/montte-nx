@@ -122,9 +122,7 @@ function BillDetailsPageError({ error, resetErrorBoundary }: FallbackProps) {
                   <EmptyMedia variant="icon">
                      <Receipt className="size-12 text-destructive" />
                   </EmptyMedia>
-                  <EmptyTitle>
-                     Conta Não Encontrada
-                  </EmptyTitle>
+                  <EmptyTitle>Conta Não Encontrada</EmptyTitle>
                   <EmptyDescription>{error?.message}</EmptyDescription>
                   <div className="mt-6 flex gap-2 justify-center">
                      <Button

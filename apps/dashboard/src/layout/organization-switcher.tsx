@@ -45,9 +45,7 @@ function OrganizationDropdownErrorFallback() {
          <DropdownMenuLabel className="text-muted-foreground text-xs">
             Organizações
          </DropdownMenuLabel>
-         <DropdownMenuItem disabled>
-            Erro ao carregar equipes
-         </DropdownMenuItem>
+         <DropdownMenuItem disabled>Erro ao carregar equipes</DropdownMenuItem>
       </>
    );
 }
@@ -133,7 +131,7 @@ function OrganizationDropdownContent({
 
       if (!isCurrentOrg) {
          await setActiveOrganization({ organizationId });
-         toast.success("Organization set successfully");
+         toast.success("Organização definida com sucesso");
       }
    }
 

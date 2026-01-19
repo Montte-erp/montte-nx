@@ -59,7 +59,10 @@ export function ManageRecurrenceForm({
       semiannual: "Semestral",
    };
 
-   const frequencyOptionLabels: Record<string, { title: string; description: string }> = {
+   const frequencyOptionLabels: Record<
+      string,
+      { title: string; description: string }
+   > = {
       monthly: { title: "Mensal", description: "Repete todo mês" },
       quarterly: { title: "Trimestral", description: "Repete a cada 3 meses" },
       semiannual: { title: "Semestral", description: "Repete a cada 6 meses" },
@@ -108,9 +111,7 @@ export function ManageRecurrenceForm({
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               Gerenciar Recorrência
-            </SheetTitle>
+            <SheetTitle>Gerenciar Recorrência</SheetTitle>
             <SheetDescription>
                Altere ou desative a recorrência desta conta
             </SheetDescription>
@@ -121,9 +122,7 @@ export function ManageRecurrenceForm({
                {/* Current recurrence info */}
                <Alert>
                   <CalendarCheck className="h-4 w-4" />
-                  <AlertTitle>
-                     Padrão Atual
-                  </AlertTitle>
+                  <AlertTitle>Padrão Atual</AlertTitle>
                   <AlertDescription>
                      {bill.recurrencePattern
                         ? frequencyLabels[bill.recurrencePattern]
@@ -133,9 +132,7 @@ export function ManageRecurrenceForm({
 
                {/* Frequency selection */}
                <div className="space-y-2">
-                  <span className="text-sm font-medium">
-                     Frequência
-                  </span>
+                  <span className="text-sm font-medium">Frequência</span>
                   <Choicebox
                      onValueChange={(value) => {
                         setRecurrencePattern(value as RecurrencePattern);
@@ -183,9 +180,7 @@ export function ManageRecurrenceForm({
                disabled={isSubmitDisabled}
                onClick={handleUpdatePattern}
             >
-               {updateBillMutation.isPending
-                  ? "Carregando..."
-                  : "Salvar"}
+               {updateBillMutation.isPending ? "Carregando..." : "Salvar"}
             </Button>
          </SheetFooter>
       </>

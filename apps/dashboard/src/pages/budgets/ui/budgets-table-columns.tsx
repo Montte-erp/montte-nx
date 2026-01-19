@@ -351,7 +351,8 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
                         Gasto
                      </AnnouncementTag>
                      <AnnouncementTitle>
-                        {formatDecimalCurrency(spent)} ({Math.round(percentage)}%)
+                        {formatDecimalCurrency(spent)} ({Math.round(percentage)}
+                        %)
                      </AnnouncementTitle>
                   </Announcement>
 
@@ -570,7 +571,8 @@ export function BudgetMobileCard({
          <CardContent className="space-y-3">
             <div className="flex justify-between items-center">
                <span className="text-sm text-muted-foreground">
-                  {formatDecimalCurrency(spent)} / {formatDecimalCurrency(totalAmount)}
+                  {formatDecimalCurrency(spent)} /{" "}
+                  {formatDecimalCurrency(totalAmount)}
                </span>
                <span
                   className={`text-sm font-medium ${percentage >= 100 ? "text-destructive" : ""}`}

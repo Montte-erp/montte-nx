@@ -1,6 +1,5 @@
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
-import { Combobox } from "@packages/ui/components/combobox";
 import {
    Field,
    FieldDescription,
@@ -8,7 +7,6 @@ import {
    FieldGroup,
    FieldLabel,
 } from "@packages/ui/components/field";
-import { MultiSelect } from "@packages/ui/components/multi-select";
 import {
    SheetDescription,
    SheetFooter,
@@ -22,7 +20,7 @@ import {
 } from "@packages/utils/split";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Tag, X } from "lucide-react";
+import { X } from "lucide-react";
 import type { FormEvent } from "react";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
@@ -30,8 +28,9 @@ import { z } from "zod";
 
 type TransactionType = "income" | "expense" | "transfer";
 
-import type { IconName } from "@/features/icon-selector/lib/available-icons";
-import { IconDisplay } from "@/features/icon-selector/ui/icon-display";
+import { CategoryMultiSelect } from "@/features/category/ui/category-multi-select";
+import { CostCenterCombobox } from "@/features/cost-center/ui/cost-center-combobox";
+import { TagMultiSelect } from "@/features/tag/ui/tag-multi-select";
 import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";
 import type { Transaction } from "./transaction-list";
@@ -370,33 +369,6 @@ export function CategorizeForm({
       [createTagMutation.mutate],
    );
 
-   const categoryOptions = categories.map((category) => ({
-      icon: (
-         <div
-            className="flex size-4 items-center justify-center rounded"
-            style={{ backgroundColor: category.color }}
-         >
-            <IconDisplay iconName={category.icon as IconName} size={10} />
-         </div>
-      ),
-      label: category.name,
-      value: category.id,
-   }));
-
-   const costCenterOptions = [
-      { label: "Nenhum", value: "" },
-      ...costCenters.map((cc) => ({
-         label: cc.code ? `${cc.name} (${cc.code})` : cc.name,
-         value: cc.id,
-      })),
-   ];
-
-   const tagOptions = tags.map((tag) => ({
-      icon: <Tag className="size-4" style={{ color: tag.color }} />,
-      label: tag.name,
-      value: tag.id,
-   }));
-
    const transactionCount = transactions.length;
    const transactionLabel =
       transactionCount === 1 ? "1 transação" : `${transactionCount} transações`;
@@ -432,18 +404,17 @@ export function CategorizeForm({
                               <FieldLabel htmlFor={field.name}>
                                  Categoria
                               </FieldLabel>
-                              <MultiSelect
+                              <CategoryMultiSelect
+                                 categories={categories}
                                  className="flex-1"
-                                 createLabel="Criar categoria"
-                                 emptyMessage="Nenhum resultado encontrado"
                                  onChange={(val) => field.handleChange(val)}
                                  onCreate={handleCreateCategory}
-                                 options={categoryOptions}
                                  placeholder="Selecione uma categoria"
                                  selected={field.state.value || []}
                               />
                               <FieldDescription>
-                                 Agrupe suas transações por tipo de gasto ou receita para análises detalhadas
+                                 Agrupe suas transações por tipo de gasto ou
+                                 receita para análises detalhadas
                               </FieldDescription>
                               {isInvalid && (
                                  <FieldError errors={field.state.meta.errors} />
@@ -465,22 +436,19 @@ export function CategorizeForm({
                               <FieldLabel htmlFor={field.name}>
                                  Centro de Custo
                               </FieldLabel>
-                              <Combobox
+                              <CostCenterCombobox
                                  className="w-full justify-between"
-                                 createLabel="Criar centro de custo "
+                                 costCenters={costCenters}
                                  disabled={isCreating}
-                                 emptyMessage="Nenhum resultado encontrado"
                                  onCreate={handleCreateCostCenter}
                                  onValueChange={(value) =>
                                     field.handleChange(value || "")
                                  }
-                                 options={costCenterOptions}
-                                 placeholder="Selecione um centro de custo"
-                                 searchPlaceholder="Pesquisar"
                                  value={field.state.value}
                               />
                               <FieldDescription>
-                                 Associe a departamentos, projetos ou áreas para controle orçamentário
+                                 Associe a departamentos, projetos ou áreas para
+                                 controle orçamentário
                               </FieldDescription>
                               {isInvalid && (
                                  <FieldError errors={field.state.meta.errors} />
@@ -499,9 +467,7 @@ export function CategorizeForm({
                            !field.state.meta.isValid;
                         return (
                            <Field data-invalid={isInvalid}>
-                              <FieldLabel htmlFor={field.name}>
-                                 Tags
-                              </FieldLabel>
+                              <FieldLabel htmlFor={field.name}>Tags</FieldLabel>
                               {(field.state.value || []).length > 0 && (
                                  <div className="flex flex-wrap gap-1.5 mb-2">
                                     {(field.state.value || []).map((tagId) => {
@@ -538,18 +504,17 @@ export function CategorizeForm({
                                     })}
                                  </div>
                               )}
-                              <MultiSelect
+                              <TagMultiSelect
                                  className="flex-1"
-                                 createLabel="Criar tag "
-                                 emptyMessage="Nenhum resultado encontrado"
                                  onChange={(val) => field.handleChange(val)}
                                  onCreate={handleCreateTag}
-                                 options={tagOptions}
                                  placeholder="Selecione as tags"
                                  selected={field.state.value || []}
+                                 tags={tags}
                               />
                               <FieldDescription>
-                                 Adicione marcadores personalizados para filtrar e organizar suas transações
+                                 Adicione marcadores personalizados para filtrar
+                                 e organizar suas transações
                               </FieldDescription>
                               {isInvalid && (
                                  <FieldError errors={field.state.meta.errors} />

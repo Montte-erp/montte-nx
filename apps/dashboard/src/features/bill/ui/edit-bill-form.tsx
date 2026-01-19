@@ -82,12 +82,8 @@ export function EditBillForm({ bill }: EditBillFormProps) {
    return (
       <form className="flex flex-col h-full" onSubmit={handleSubmit}>
          <SheetHeader>
-            <SheetTitle>
-               Editar Conta
-            </SheetTitle>
-            <SheetDescription>
-               Atualize os detalhes da conta
-            </SheetDescription>
+            <SheetTitle>Editar Conta</SheetTitle>
+            <SheetDescription>Atualize os detalhes da conta</SheetDescription>
          </SheetHeader>
 
          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -126,9 +122,7 @@ export function EditBillForm({ bill }: EditBillFormProps) {
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              Valor
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Valor</FieldLabel>
                            <MoneyInput
                               id={field.name}
                               onBlur={field.handleBlur}
@@ -205,9 +199,7 @@ export function EditBillForm({ bill }: EditBillFormProps) {
                      disabled={!canSubmit || isSubmitting || isPending}
                      type="submit"
                   >
-                     {isPending
-                        ? "Carregando..."
-                        : "Salvar"}
+                     {isPending ? "Carregando..." : "Salvar"}
                   </Button>
                )}
             </form.Subscribe>

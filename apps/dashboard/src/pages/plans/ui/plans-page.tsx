@@ -31,7 +31,6 @@ import {
    Rocket,
    Sparkles,
    User,
-   Users,
    Zap,
 } from "lucide-react";
 import { Suspense, useState, useTransition } from "react";

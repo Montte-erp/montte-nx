@@ -1,4 +1,3 @@
-import type { DRESnapshotData } from "../types";
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { DRETable } from "../components/dre-table";
 import { FilterInfo } from "../components/filter-info";
@@ -6,6 +5,7 @@ import { Footer } from "../components/footer";
 import { Header } from "../components/header";
 import { SummaryCards } from "../components/summary-card";
 import { TransactionRow } from "../components/transaction-row";
+import type { DRESnapshotData } from "../types";
 
 type DREFiscalProps = {
    name: string;

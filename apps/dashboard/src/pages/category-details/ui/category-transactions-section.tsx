@@ -222,11 +222,10 @@ function CategoryTransactionsContent({
                      <EmptyMedia variant="icon">
                         <FolderOpen className="size-12 text-muted-foreground" />
                      </EmptyMedia>
-                     <EmptyTitle>
-                        Nenhuma Transação Encontrada
-                     </EmptyTitle>
+                     <EmptyTitle>Nenhuma Transação Encontrada</EmptyTitle>
                      <EmptyDescription>
-                        Tente ajustar seus filtros ou adicionar uma nova transação.
+                        Tente ajustar seus filtros ou adicionar uma nova
+                        transação.
                      </EmptyDescription>
                   </EmptyContent>
                </Empty>

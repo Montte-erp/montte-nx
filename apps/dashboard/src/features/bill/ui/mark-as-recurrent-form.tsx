@@ -81,7 +81,10 @@ export function MarkAsRecurrentForm({
       semiannual: "Semestral",
    };
 
-   const frequencyOptionLabels: Record<string, { title: string; description: string }> = {
+   const frequencyOptionLabels: Record<
+      string,
+      { title: string; description: string }
+   > = {
       monthly: { title: "Mensal", description: "Repete todo mês" },
       quarterly: { title: "Trimestral", description: "Repete a cada 3 meses" },
       semiannual: { title: "Semestral", description: "Repete a cada 6 meses" },
@@ -94,10 +97,22 @@ export function MarkAsRecurrentForm({
       "until-date": "Até uma data",
    };
 
-   const occurrenceOptionLabels: Record<string, { title: string; description: string }> = {
-      auto: { title: "Automático", description: "Usa padrão baseado na frequência" },
-      count: { title: "Número de vezes", description: "Define quantidade específica" },
-      "until-date": { title: "Até uma data", description: "Repete até a data escolhida" },
+   const occurrenceOptionLabels: Record<
+      string,
+      { title: string; description: string }
+   > = {
+      auto: {
+         title: "Automático",
+         description: "Usa padrão baseado na frequência",
+      },
+      count: {
+         title: "Número de vezes",
+         description: "Define quantidade específica",
+      },
+      "until-date": {
+         title: "Até uma data",
+         description: "Repete até a data escolhida",
+      },
    };
 
    const createBillMutation = useMutation(
@@ -157,9 +172,7 @@ export function MarkAsRecurrentForm({
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               Tornar Recorrente
-            </SheetTitle>
+            <SheetTitle>Tornar Recorrente</SheetTitle>
             <SheetDescription>
                Configure a recorrência para criar contas automaticamente
             </SheetDescription>
@@ -191,9 +204,7 @@ export function MarkAsRecurrentForm({
                            )}
                         </div>
                         <div className="text-left">
-                           <div className="font-medium">
-                              Frequência
-                           </div>
+                           <div className="font-medium">Frequência</div>
                            <div className="text-sm text-muted-foreground">
                               {recurrencePattern &&
                               activeSection !== "frequency"
@@ -228,7 +239,10 @@ export function MarkAsRecurrentForm({
                                        {frequencyOptionLabels[option].title}
                                     </ChoiceboxItemTitle>
                                     <ChoiceboxItemDescription>
-                                       {frequencyOptionLabels[option].description}
+                                       {
+                                          frequencyOptionLabels[option]
+                                             .description
+                                       }
                                     </ChoiceboxItemDescription>
                                  </ChoiceboxItemHeader>
                                  <ChoiceboxIndicator id={`freq-${option}`} />
@@ -272,9 +286,7 @@ export function MarkAsRecurrentForm({
                            )}
                         </div>
                         <div className="text-left">
-                           <div className="font-medium">
-                              Quantidade
-                           </div>
+                           <div className="font-medium">Quantidade</div>
                            <div className="text-sm text-muted-foreground">
                               {occurrenceType &&
                               activeSection !== "occurrence" ? (
@@ -321,7 +333,10 @@ export function MarkAsRecurrentForm({
                                        {occurrenceOptionLabels[option].title}
                                     </ChoiceboxItemTitle>
                                     <ChoiceboxItemDescription>
-                                       {occurrenceOptionLabels[option].description}
+                                       {
+                                          occurrenceOptionLabels[option]
+                                             .description
+                                       }
                                     </ChoiceboxItemDescription>
                                  </ChoiceboxItemHeader>
                                  <ChoiceboxIndicator id={`occ-${option}`} />
@@ -331,9 +346,7 @@ export function MarkAsRecurrentForm({
 
                         {occurrenceType === "count" && (
                            <div className="space-y-2">
-                              <Label>
-                                 Quantidade de repetições
-                              </Label>
+                              <Label>Quantidade de repetições</Label>
                               <Input
                                  max={365}
                                  min={1}
@@ -400,16 +413,16 @@ export function MarkAsRecurrentForm({
                   activeSection === "review" && (
                      <Alert>
                         <CalendarCheck className="h-4 w-4" />
-                        <AlertTitle>
-                           Resumo
-                        </AlertTitle>
+                        <AlertTitle>Resumo</AlertTitle>
                         <AlertDescription>
                            {`${frequencyLabels[recurrencePattern]} - ${
                               occurrenceType === "auto"
                                  ? "Automático"
                                  : occurrenceType === "count"
                                    ? `${occurrenceCount}x`
-                                   : occurrenceUntilDate?.toLocaleDateString("pt-BR") || ""
+                                   : occurrenceUntilDate?.toLocaleDateString(
+                                        "pt-BR",
+                                     ) || ""
                            }`}
                         </AlertDescription>
                      </Alert>

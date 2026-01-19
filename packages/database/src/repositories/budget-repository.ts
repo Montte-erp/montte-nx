@@ -1,8 +1,7 @@
 import { AppError, propagateError } from "@packages/utils/errors";
 import { and, count, eq, gte, ilike, lte, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
-import { bill } from "../schemas/bills";
-import { type BudgetTarget, budget, budgetPeriod } from "../schemas/budgets";
+import { budget, budgetPeriod, type BudgetMetadata } from "../schemas/budgets";
 import { transactionCategory } from "../schemas/categories";
 import { transactionTag } from "../schemas/tags";
 import { transaction } from "../schemas/transactions";
@@ -395,94 +394,58 @@ export async function calculateBudgetSpent(
    periodEnd: Date,
 ): Promise<BudgetSpentCalculation> {
    try {
-      const target = budgetData.target as BudgetTarget;
-      let spentAmount = 0;
-      let scheduledAmount = 0;
+      // Extract linked category IDs from metadata
+      const linkedCategoryIds = (budgetData.metadata as BudgetMetadata | null)
+         ?.linkedCategoryIds;
+      const hasCategoryFilter =
+         linkedCategoryIds && linkedCategoryIds.length > 0;
 
-      if (target.type === "category") {
-         const spentResult = await dbClient.execute<{ total: string }>(sql`
-            SELECT COALESCE(SUM(ABS(CAST(t.amount AS DECIMAL))), 0) as total
-            FROM ${transaction} t
-            INNER JOIN ${transactionCategory} tc ON t.id = tc.transaction_id
-            WHERE tc.category_id = ${target.categoryId}
-               AND t.type = 'expense'
-               AND t.date >= ${periodStart}
-               AND t.date <= ${periodEnd}
-               AND t.organization_id = ${budgetData.organizationId}
-         `);
-         spentAmount = parseFloat(spentResult.rows[0]?.total || "0");
+      // Build the query with optional category filtering
+      let spentResult: { rows: { total: string }[] };
 
-         const scheduledResult = await dbClient.execute<{ total: string }>(sql`
-            SELECT COALESCE(SUM(ABS(CAST(b.amount AS DECIMAL))), 0) as total
-            FROM ${bill} b
-            WHERE b.category_id = ${target.categoryId}
-               AND b.type = 'payable'
-               AND b.due_date >= ${new Date()}
-               AND b.due_date <= ${periodEnd}
-               AND b.completion_date IS NULL
-               AND b.organization_id = ${budgetData.organizationId}
-         `);
-         scheduledAmount = parseFloat(scheduledResult.rows[0]?.total || "0");
-      } else if (target.type === "categories") {
-         const categoryIds = target.categoryIds;
-         if (categoryIds.length > 0) {
-            const spentResult = await dbClient.execute<{ total: string }>(sql`
-               SELECT COALESCE(SUM(ABS(CAST(t.amount AS DECIMAL))), 0) as total
-               FROM ${transaction} t
-               INNER JOIN ${transactionCategory} tc ON t.id = tc.transaction_id
-               WHERE tc.category_id = ANY(ARRAY[${sql.join(
-                  categoryIds.map((id) => sql`${id}::uuid`),
-                  sql`, `,
-               )}])
-                  AND t.type = 'expense'
-                  AND t.date >= ${periodStart}
-                  AND t.date <= ${periodEnd}
-                  AND t.organization_id = ${budgetData.organizationId}
-            `);
-            spentAmount = parseFloat(spentResult.rows[0]?.total || "0");
-         }
-      } else if (target.type === "tag") {
-         const spentResult = await dbClient.execute<{ total: string }>(sql`
+      if (hasCategoryFilter) {
+         // With category filter: transactions must have the tag AND at least one matching category
+         spentResult = await dbClient.execute<{ total: string }>(sql`
             SELECT COALESCE(SUM(ABS(CAST(t.amount AS DECIMAL))), 0) as total
             FROM ${transaction} t
             INNER JOIN ${transactionTag} tt ON t.id = tt.transaction_id
-            WHERE tt.tag_id = ${target.tagId}
+            INNER JOIN ${transactionCategory} tc ON t.id = tc.transaction_id
+            WHERE tt.tag_id = ${budgetData.tagId}
+               AND tc.category_id = ANY(ARRAY[${sql.join(
+                  linkedCategoryIds.map((id) => sql`${id}::uuid`),
+                  sql`, `,
+               )}])
                AND t.type = 'expense'
                AND t.date >= ${periodStart}
                AND t.date <= ${periodEnd}
                AND t.organization_id = ${budgetData.organizationId}
          `);
-         spentAmount = parseFloat(spentResult.rows[0]?.total || "0");
-      } else if (target.type === "cost_center") {
-         const spentResult = await dbClient.execute<{ total: string }>(sql`
+      } else {
+         // Without category filter: all transactions with the tag
+         spentResult = await dbClient.execute<{ total: string }>(sql`
             SELECT COALESCE(SUM(ABS(CAST(t.amount AS DECIMAL))), 0) as total
             FROM ${transaction} t
-            WHERE t.cost_center_id = ${target.costCenterId}
+            INNER JOIN ${transactionTag} tt ON t.id = tt.transaction_id
+            WHERE tt.tag_id = ${budgetData.tagId}
                AND t.type = 'expense'
                AND t.date >= ${periodStart}
                AND t.date <= ${periodEnd}
                AND t.organization_id = ${budgetData.organizationId}
          `);
-         spentAmount = parseFloat(spentResult.rows[0]?.total || "0");
       }
 
+      const spentAmount = parseFloat(spentResult.rows[0]?.total || "0");
+
       const totalBudget = parseFloat(budgetData.amount);
-      const available = Math.max(
-         0,
-         totalBudget - spentAmount - scheduledAmount,
-      );
+      const available = Math.max(0, totalBudget - spentAmount);
       const percentage =
          totalBudget > 0 ? (spentAmount / totalBudget) * 100 : 0;
-      const forecastPercentage =
-         totalBudget > 0
-            ? ((spentAmount + scheduledAmount) / totalBudget) * 100
-            : 0;
 
       return {
          available,
-         forecastPercentage: Math.min(100, forecastPercentage),
+         forecastPercentage: Math.min(100, percentage),
          percentage: Math.min(100, percentage),
-         scheduled: scheduledAmount,
+         scheduled: 0,
          spent: spentAmount,
       };
    } catch (err) {
@@ -818,11 +781,9 @@ export interface BudgetTransaction {
    date: Date;
    type: string;
    bankAccountId: string | null;
-   categoryId?: string;
-   categoryName?: string;
 }
 
-export async function findTransactionsByBudgetTarget(
+export async function findTransactionsByBudget(
    dbClient: DatabaseInstance,
    budgetData: Budget,
    options: {
@@ -847,210 +808,73 @@ export async function findTransactionsByBudgetTarget(
    const offset = (page - 1) * limit;
 
    try {
-      const target = budgetData.target as BudgetTarget;
-      let transactions: BudgetTransaction[] = [];
-      let totalCount = 0;
+      const searchCondition = search
+         ? sql`AND t.description ILIKE ${`%${search}%`}`
+         : sql``;
 
-      if (target.type === "category") {
-         const searchCondition = search
-            ? sql`AND t.description ILIKE ${`%${search}%`}`
-            : sql``;
+      // Extract linked category IDs from metadata
+      const linkedCategoryIds = (budgetData.metadata as BudgetMetadata | null)
+         ?.linkedCategoryIds;
+      const hasCategoryFilter =
+         linkedCategoryIds && linkedCategoryIds.length > 0;
 
-         const countResult = await dbClient.execute<{ count: string }>(sql`
-            SELECT COUNT(*) as count
-            FROM ${transaction} t
-            INNER JOIN ${transactionCategory} tc ON t.id = tc.transaction_id
-            WHERE tc.category_id = ${target.categoryId}
-               AND t.type = 'expense'
-               AND t.date >= ${periodStart}
-               AND t.date <= ${periodEnd}
-               AND t.organization_id = ${budgetData.organizationId}
-               ${searchCondition}
-         `);
-         totalCount = parseInt(countResult.rows[0]?.count || "0", 10);
+      const categoryJoin = hasCategoryFilter
+         ? sql`INNER JOIN ${transactionCategory} tc ON t.id = tc.transaction_id`
+         : sql``;
 
-         const result = await dbClient.execute<{
-            id: string;
-            description: string;
-            amount: string;
-            date: Date;
-            type: string;
-            bank_account_id: string | null;
-            category_id: string;
-         }>(sql`
-            SELECT t.id, t.description, t.amount, t.date, t.type, t.bank_account_id, tc.category_id
-            FROM ${transaction} t
-            INNER JOIN ${transactionCategory} tc ON t.id = tc.transaction_id
-            WHERE tc.category_id = ${target.categoryId}
-               AND t.type = 'expense'
-               AND t.date >= ${periodStart}
-               AND t.date <= ${periodEnd}
-               AND t.organization_id = ${budgetData.organizationId}
-               ${searchCondition}
-            ORDER BY t.date DESC
-            LIMIT ${limit} OFFSET ${offset}
-         `);
+      const categoryCondition = hasCategoryFilter
+         ? sql`AND tc.category_id = ANY(ARRAY[${sql.join(
+              linkedCategoryIds.map((id) => sql`${id}::uuid`),
+              sql`, `,
+           )}])`
+         : sql``;
 
-         transactions = result.rows.map((row) => ({
-            amount: row.amount,
-            bankAccountId: row.bank_account_id,
-            categoryId: row.category_id,
-            date: row.date,
-            description: row.description,
-            id: row.id,
-            type: row.type,
-         }));
-      } else if (target.type === "categories") {
-         const categoryIds = target.categoryIds;
-         if (categoryIds.length > 0) {
-            const searchCondition = search
-               ? sql`AND t.description ILIKE ${`%${search}%`}`
-               : sql``;
+      const countResult = await dbClient.execute<{ count: string }>(sql`
+         SELECT COUNT(DISTINCT t.id) as count
+         FROM ${transaction} t
+         INNER JOIN ${transactionTag} tt ON t.id = tt.transaction_id
+         ${categoryJoin}
+         WHERE tt.tag_id = ${budgetData.tagId}
+            AND t.type = 'expense'
+            AND t.date >= ${periodStart}
+            AND t.date <= ${periodEnd}
+            AND t.organization_id = ${budgetData.organizationId}
+            ${categoryCondition}
+            ${searchCondition}
+      `);
+      const totalCount = parseInt(countResult.rows[0]?.count || "0", 10);
 
-            const countResult = await dbClient.execute<{ count: string }>(sql`
-               SELECT COUNT(*) as count
-               FROM ${transaction} t
-               INNER JOIN ${transactionCategory} tc ON t.id = tc.transaction_id
-               WHERE tc.category_id = ANY(ARRAY[${sql.join(
-                  categoryIds.map((id) => sql`${id}::uuid`),
-                  sql`, `,
-               )}])
-                  AND t.type = 'expense'
-                  AND t.date >= ${periodStart}
-                  AND t.date <= ${periodEnd}
-                  AND t.organization_id = ${budgetData.organizationId}
-                  ${searchCondition}
-            `);
-            totalCount = parseInt(countResult.rows[0]?.count || "0", 10);
+      const result = await dbClient.execute<{
+         id: string;
+         description: string;
+         amount: string;
+         date: Date;
+         type: string;
+         bank_account_id: string | null;
+      }>(sql`
+         SELECT DISTINCT t.id, t.description, t.amount, t.date, t.type, t.bank_account_id
+         FROM ${transaction} t
+         INNER JOIN ${transactionTag} tt ON t.id = tt.transaction_id
+         ${categoryJoin}
+         WHERE tt.tag_id = ${budgetData.tagId}
+            AND t.type = 'expense'
+            AND t.date >= ${periodStart}
+            AND t.date <= ${periodEnd}
+            AND t.organization_id = ${budgetData.organizationId}
+            ${categoryCondition}
+            ${searchCondition}
+         ORDER BY t.date DESC
+         LIMIT ${limit} OFFSET ${offset}
+      `);
 
-            const result = await dbClient.execute<{
-               id: string;
-               description: string;
-               amount: string;
-               date: Date;
-               type: string;
-               bank_account_id: string | null;
-               category_id: string;
-            }>(sql`
-               SELECT t.id, t.description, t.amount, t.date, t.type, t.bank_account_id, tc.category_id
-               FROM ${transaction} t
-               INNER JOIN ${transactionCategory} tc ON t.id = tc.transaction_id
-               WHERE tc.category_id = ANY(ARRAY[${sql.join(
-                  categoryIds.map((id) => sql`${id}::uuid`),
-                  sql`, `,
-               )}])
-                  AND t.type = 'expense'
-                  AND t.date >= ${periodStart}
-                  AND t.date <= ${periodEnd}
-                  AND t.organization_id = ${budgetData.organizationId}
-                  ${searchCondition}
-               ORDER BY t.date DESC
-               LIMIT ${limit} OFFSET ${offset}
-            `);
-
-            transactions = result.rows.map((row) => ({
-               amount: row.amount,
-               bankAccountId: row.bank_account_id,
-               categoryId: row.category_id,
-               date: row.date,
-               description: row.description,
-               id: row.id,
-               type: row.type,
-            }));
-         }
-      } else if (target.type === "tag") {
-         const searchCondition = search
-            ? sql`AND t.description ILIKE ${`%${search}%`}`
-            : sql``;
-
-         const countResult = await dbClient.execute<{ count: string }>(sql`
-            SELECT COUNT(*) as count
-            FROM ${transaction} t
-            INNER JOIN ${transactionTag} tt ON t.id = tt.transaction_id
-            WHERE tt.tag_id = ${target.tagId}
-               AND t.type = 'expense'
-               AND t.date >= ${periodStart}
-               AND t.date <= ${periodEnd}
-               AND t.organization_id = ${budgetData.organizationId}
-               ${searchCondition}
-         `);
-         totalCount = parseInt(countResult.rows[0]?.count || "0", 10);
-
-         const result = await dbClient.execute<{
-            id: string;
-            description: string;
-            amount: string;
-            date: Date;
-            type: string;
-            bank_account_id: string | null;
-         }>(sql`
-            SELECT t.id, t.description, t.amount, t.date, t.type, t.bank_account_id
-            FROM ${transaction} t
-            INNER JOIN ${transactionTag} tt ON t.id = tt.transaction_id
-            WHERE tt.tag_id = ${target.tagId}
-               AND t.type = 'expense'
-               AND t.date >= ${periodStart}
-               AND t.date <= ${periodEnd}
-               AND t.organization_id = ${budgetData.organizationId}
-               ${searchCondition}
-            ORDER BY t.date DESC
-            LIMIT ${limit} OFFSET ${offset}
-         `);
-
-         transactions = result.rows.map((row) => ({
-            amount: row.amount,
-            bankAccountId: row.bank_account_id,
-            date: row.date,
-            description: row.description,
-            id: row.id,
-            type: row.type,
-         }));
-      } else if (target.type === "cost_center") {
-         const searchCondition = search
-            ? sql`AND t.description ILIKE ${`%${search}%`}`
-            : sql``;
-
-         const countResult = await dbClient.execute<{ count: string }>(sql`
-            SELECT COUNT(*) as count
-            FROM ${transaction} t
-            WHERE t.cost_center_id = ${target.costCenterId}
-               AND t.type = 'expense'
-               AND t.date >= ${periodStart}
-               AND t.date <= ${periodEnd}
-               AND t.organization_id = ${budgetData.organizationId}
-               ${searchCondition}
-         `);
-         totalCount = parseInt(countResult.rows[0]?.count || "0", 10);
-
-         const result = await dbClient.execute<{
-            id: string;
-            description: string;
-            amount: string;
-            date: Date;
-            type: string;
-            bank_account_id: string | null;
-         }>(sql`
-            SELECT t.id, t.description, t.amount, t.date, t.type, t.bank_account_id
-            FROM ${transaction} t
-            WHERE t.cost_center_id = ${target.costCenterId}
-               AND t.type = 'expense'
-               AND t.date >= ${periodStart}
-               AND t.date <= ${periodEnd}
-               AND t.organization_id = ${budgetData.organizationId}
-               ${searchCondition}
-            ORDER BY t.date DESC
-            LIMIT ${limit} OFFSET ${offset}
-         `);
-
-         transactions = result.rows.map((row) => ({
-            amount: row.amount,
-            bankAccountId: row.bank_account_id,
-            date: row.date,
-            description: row.description,
-            id: row.id,
-            type: row.type,
-         }));
-      }
+      const transactions = result.rows.map((row) => ({
+         amount: row.amount,
+         bankAccountId: row.bank_account_id,
+         date: row.date,
+         description: row.description,
+         id: row.id,
+         type: row.type,
+      }));
 
       const totalPages = Math.ceil(totalCount / limit);
 
@@ -1068,10 +892,13 @@ export async function findTransactionsByBudgetTarget(
    } catch (err) {
       propagateError(err);
       throw AppError.database(
-         `Failed to find transactions by budget target: ${(err as Error).message}`,
+         `Failed to find transactions by budget: ${(err as Error).message}`,
       );
    }
 }
+
+// Keep old function name as alias for backward compatibility
+export const findTransactionsByBudgetTarget = findTransactionsByBudget;
 
 export async function updateBudgets(
    dbClient: DatabaseInstance,
@@ -1195,10 +1022,7 @@ export async function checkBudgetImpact(
    organizationId: string,
    options: {
       amount: number;
-      categoryId?: string;
-      categoryIds?: string[];
       tagIds?: string[];
-      costCenterId?: string;
       excludeTransactionId?: string;
    },
 ): Promise<BudgetImpactWarning[]> {
@@ -1213,24 +1037,8 @@ export async function checkBudgetImpact(
       for (const b of budgetsWithProgress) {
          if (!b.isActive) continue;
 
-         const target = b.target as BudgetTarget;
-         let isAffected = false;
-
-         if (target.type === "category" && options.categoryId) {
-            isAffected = target.categoryId === options.categoryId;
-         } else if (target.type === "category" && options.categoryIds) {
-            isAffected = options.categoryIds.includes(target.categoryId);
-         } else if (target.type === "categories" && options.categoryId) {
-            isAffected = target.categoryIds.includes(options.categoryId);
-         } else if (target.type === "categories" && options.categoryIds) {
-            isAffected = target.categoryIds.some((id) =>
-               options.categoryIds?.includes(id),
-            );
-         } else if (target.type === "tag" && options.tagIds) {
-            isAffected = options.tagIds.includes(target.tagId);
-         } else if (target.type === "cost_center" && options.costCenterId) {
-            isAffected = target.costCenterId === options.costCenterId;
-         }
+         // Check if any of the transaction's tags match the budget's tagId
+         const isAffected = options.tagIds?.includes(b.tagId) ?? false;
 
          if (!isAffected) continue;
 
@@ -1283,14 +1091,11 @@ export async function checkBudgetImpact(
    }
 }
 
-export async function findBudgetsByTarget(
+export async function findBudgetsByTag(
    dbClient: DatabaseInstance,
    organizationId: string,
    options: {
-      categoryId?: string;
-      categoryIds?: string[];
       tagIds?: string[];
-      costCenterId?: string;
    },
 ): Promise<BudgetWithProgress[]> {
    try {
@@ -1302,27 +1107,9 @@ export async function findBudgetsByTarget(
       return budgetsWithProgress.filter((b) => {
          if (!b.isActive) return false;
 
-         const target = b.target as BudgetTarget;
-
-         if (target.type === "category" && options.categoryId) {
-            return target.categoryId === options.categoryId;
-         }
-         if (target.type === "category" && options.categoryIds) {
-            return options.categoryIds.includes(target.categoryId);
-         }
-         if (target.type === "categories" && options.categoryId) {
-            return target.categoryIds.includes(options.categoryId);
-         }
-         if (target.type === "categories" && options.categoryIds) {
-            return target.categoryIds.some((id) =>
-               options.categoryIds?.includes(id),
-            );
-         }
-         if (target.type === "tag" && options.tagIds) {
-            return options.tagIds.includes(target.tagId);
-         }
-         if (target.type === "cost_center" && options.costCenterId) {
-            return target.costCenterId === options.costCenterId;
+         // Check if the budget's tagId is in the provided tagIds
+         if (options.tagIds) {
+            return options.tagIds.includes(b.tagId);
          }
 
          return false;
@@ -1330,9 +1117,12 @@ export async function findBudgetsByTarget(
    } catch (err) {
       propagateError(err);
       throw AppError.database(
-         `Failed to find budgets by target: ${(err as Error).message}`,
+         `Failed to find budgets by tag: ${(err as Error).message}`,
       );
    }
 }
+
+// Keep old function name as alias for backward compatibility
+export const findBudgetsByTarget = findBudgetsByTag;
 
 export { calculatePeriodDates };

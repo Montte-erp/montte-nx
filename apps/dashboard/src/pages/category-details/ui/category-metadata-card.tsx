@@ -102,12 +102,8 @@ function CategoryMetadataCardContent() {
    return (
       <Card>
          <CardHeader>
-            <CardTitle className="text-base">
-               Metadados
-            </CardTitle>
-            <CardDescription>
-               Informações da categoria
-            </CardDescription>
+            <CardTitle className="text-base">Metadados</CardTitle>
+            <CardDescription>Informações da categoria</CardDescription>
          </CardHeader>
          <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
@@ -162,9 +158,7 @@ function CategoryMetadataCardContent() {
             </div>
 
             <div className="pt-2 border-t">
-               <p className="text-sm text-muted-foreground mb-2">
-                  Tipo
-               </p>
+               <p className="text-sm text-muted-foreground mb-2">Tipo</p>
                <div className="flex flex-wrap gap-2">
                   {types.map((type) => {
                      const config =

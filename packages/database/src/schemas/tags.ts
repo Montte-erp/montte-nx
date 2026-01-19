@@ -8,6 +8,8 @@ import {
 } from "drizzle-orm/pg-core";
 import { organization } from "./auth";
 import { bill } from "./bills";
+import { budget } from "./budgets";
+import { financialGoal } from "./goals";
 import { transaction } from "./transactions";
 
 export const tag = pgTable("tag", {
@@ -56,6 +58,11 @@ export const billTag = pgTable(
 
 export const tagRelations = relations(tag, ({ one, many }) => ({
    billTags: many(billTag),
+   budgets: many(budget),
+   financialGoal: one(financialGoal, {
+      fields: [tag.id],
+      references: [financialGoal.tagId],
+   }),
    organization: one(organization, {
       fields: [tag.organizationId],
       references: [organization.id],

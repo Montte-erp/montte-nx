@@ -140,9 +140,7 @@ function BudgetProgressContent({ budget }: BudgetProgressSectionProps) {
    return (
       <Card className="flex flex-col">
          <CardHeader>
-            <CardTitle>
-               Progresso do Período
-            </CardTitle>
+            <CardTitle>Progresso do Período</CardTitle>
             <CardDescription>
                Acompanhe quanto foi gasto em relação ao limite definido
             </CardDescription>

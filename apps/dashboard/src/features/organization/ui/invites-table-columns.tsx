@@ -41,9 +41,7 @@ function InviteActionsCell({ invite, onResend, onRevoke }: InviteActionsProps) {
                      </Button>
                   </DropdownMenuTrigger>
                </TooltipTrigger>
-               <TooltipContent>
-                  Ações
-               </TooltipContent>
+               <TooltipContent>Ações</TooltipContent>
             </Tooltip>
             <DropdownMenuContent align="end">
                {isPending && onResend && (

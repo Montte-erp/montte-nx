@@ -18,9 +18,7 @@ import { betterAuthClient } from "@/integrations/clients";
 export function SignInEmailPage() {
    const schema = z.object({
       email: z.email("Insira um endereço de email válido."),
-      password: z
-         .string()
-         .min(8, "O campo deve ter no mínimo 8 caracteres."),
+      password: z.string().min(8, "O campo deve ter no mínimo 8 caracteres."),
    });
    const router = useRouter();
 
@@ -101,9 +99,7 @@ export function SignInEmailPage() {
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              Email
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Email</FieldLabel>
                            <Input
                               aria-invalid={isInvalid}
                               id={field.name}
@@ -177,9 +173,7 @@ export function SignInEmailPage() {
          {/* Footer */}
          <div className="text-sm text-center">
             <div className="flex gap-1 justify-center items-center">
-               <span>
-                  Não tem uma conta?
-               </span>
+               <span>Não tem uma conta?</span>
                <Link
                   className="text-primary font-medium hover:underline"
                   to="/auth/sign-up"

@@ -25,7 +25,6 @@ import {
    ChevronDown,
    Edit,
    Eye,
-   FolderOpen,
    Trash2,
 } from "lucide-react";
 
@@ -92,7 +91,7 @@ function CategoryActionsCell({ category }: { category: Category }) {
    );
 }
 
-const TRANSACTION_TYPE_CONFIG = {
+const _TRANSACTION_TYPE_CONFIG = {
    expense: {
       color: "#ef4444",
       icon: ArrowUpRight,

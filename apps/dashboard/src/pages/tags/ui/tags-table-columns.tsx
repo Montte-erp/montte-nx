@@ -57,9 +57,7 @@ function TagActionsCell({ tag }: { tag: TagType }) {
                   </Link>
                </Button>
             </TooltipTrigger>
-            <TooltipContent>
-               Ver detalhes
-            </TooltipContent>
+            <TooltipContent>Ver detalhes</TooltipContent>
          </Tooltip>
       </div>
    );
@@ -275,9 +273,7 @@ export function TagMobileCard({
                   }}
                   variant="outline"
                >
-                  {isExpanded
-                     ? "Menos info"
-                     : "Mais info"}
+                  {isExpanded ? "Menos info" : "Mais info"}
                   <ChevronDown
                      className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
                   />

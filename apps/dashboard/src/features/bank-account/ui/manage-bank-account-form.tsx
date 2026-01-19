@@ -42,7 +42,8 @@ export function ManageBankAccountForm({
 
    const modeTexts = useMemo(() => {
       const createTexts = {
-         description: "Crie sua conta bancária para começar a fazer transações.",
+         description:
+            "Crie sua conta bancária para começar a fazer transações.",
          title: "Criar conta bancária",
       };
 
@@ -161,7 +162,8 @@ export function ManageBankAccountForm({
                               value={field.state.value}
                            />
                            <FieldDescription>
-                              Opcional. Use para identificar facilmente esta conta, como 'Conta Salário' ou 'Banco Principal'
+                              Opcional. Use para identificar facilmente esta
+                              conta, como 'Conta Salário' ou 'Banco Principal'
                            </FieldDescription>
                            {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
@@ -179,9 +181,7 @@ export function ManageBankAccountForm({
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              Banco
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Banco</FieldLabel>
                            <BankAccountCombobox
                               onBlur={field.handleBlur}
                               onValueChange={field.handleChange}
@@ -219,9 +219,7 @@ export function ManageBankAccountForm({
                               value={field.state.value}
                            >
                               <SelectTrigger>
-                                 <SelectValue
-                                    placeholder="Selecione o tipo de conta"
-                                 />
+                                 <SelectValue placeholder="Selecione o tipo de conta" />
                               </SelectTrigger>
                               <SelectContent>
                                  <SelectItem value="checking">

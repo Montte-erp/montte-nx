@@ -2,12 +2,12 @@
 export const prerender = true;
 
 import { getCollection } from "astro:content";
-import Layout from "@/layouts/Landing.astro";
-import StickyNavbar from "@/components/StickyNavbar.astro";
-import Footer from "@/components/Footer.astro";
-import BlogSpotlightCard from "@/components/blog/blog-spotlight-card.astro";
 import BlogCard from "@/components/blog/blog-card.astro";
 import BlogCategoryFilter from "@/components/blog/blog-category-filter.astro";
+import BlogSpotlightCard from "@/components/blog/blog-spotlight-card.astro";
+import Footer from "@/components/Footer.astro";
+import StickyNavbar from "@/components/StickyNavbar.astro";
+import Layout from "@/layouts/Landing.astro";
 
 // Configuration
 const INITIAL_POSTS = 6;
@@ -18,12 +18,12 @@ const categoryParam = url.searchParams.get("categoria");
 
 // Get all published posts sorted by date
 const allPosts = (await getCollection("blog", ({ data }) => !data.draft)).sort(
-	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+   (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 );
 
 // Get unique categories from posts
 const categories = [
-	...new Set(allPosts.map((post) => post.data.categoria).filter(Boolean)),
+   ...new Set(allPosts.map((post) => post.data.categoria).filter(Boolean)),
 ] as string[];
 
 // Spotlight post is always the most recent
@@ -31,8 +31,8 @@ const spotlightPost = allPosts[0];
 
 // Posts for the grid (all posts, will be filtered by category if specified)
 const gridPosts = categoryParam
-	? allPosts.filter((post) => post.data.categoria === categoryParam)
-	: allPosts;
+   ? allPosts.filter((post) => post.data.categoria === categoryParam)
+   : allPosts;
 
 const hasMorePosts = gridPosts.length > INITIAL_POSTS;
 ---

@@ -20,9 +20,9 @@ export const Route = createFileRoute("/$slug/_dashboard")({
             isOnboardingPage
                ? Promise.resolve(null)
                : queryClient.fetchQuery({
-                  ...trpc.onboarding.getOnboardingStatus.queryOptions(),
-                  staleTime: 30 * 1000, // Cache for 30s instead of always refetching
-               }),
+                    ...trpc.onboarding.getOnboardingStatus.queryOptions(),
+                    staleTime: 30 * 1000, // Cache for 30s instead of always refetching
+                 }),
          ]);
 
          // Validate session

@@ -36,9 +36,7 @@ export function ForgotPasswordPage() {
       .object({
          confirmPassword: z.string(),
          email: z.email("Insira um endereço de email válido."),
-         otp: z
-            .string()
-            .min(6, "O campo deve ter no mínimo 6 caracteres."),
+         otp: z.string().min(6, "O campo deve ter no mínimo 6 caracteres."),
          password: z
             .string()
             .min(8, "O campo deve ter no mínimo 8 caracteres."),
@@ -128,9 +126,7 @@ export function ForgotPasswordPage() {
                      field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>
-                           Email
-                        </FieldLabel>
+                        <FieldLabel htmlFor={field.name}>Email</FieldLabel>
                         <Input
                            aria-invalid={isInvalid}
                            autoComplete="email"
@@ -213,9 +209,7 @@ export function ForgotPasswordPage() {
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              Senha
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Senha</FieldLabel>
                            <PasswordInput
                               aria-invalid={isInvalid}
                               autoComplete="new-password"

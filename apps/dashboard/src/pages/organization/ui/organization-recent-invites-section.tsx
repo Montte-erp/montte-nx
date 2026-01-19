@@ -28,11 +28,10 @@ import { useTRPC } from "@/integrations/clients";
 function RecentInvitesCardHeader() {
    return (
       <CardHeader className="">
-         <CardTitle className="">
-            Convites Recentes
-         </CardTitle>
+         <CardTitle className="">Convites Recentes</CardTitle>
          <CardDescription>
-            Uma lista dos convites mais recentes enviados para ingressar na organização.
+            Uma lista dos convites mais recentes enviados para ingressar na
+            organização.
          </CardDescription>
       </CardHeader>
    );

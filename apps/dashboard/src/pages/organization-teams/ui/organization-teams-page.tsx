@@ -2,6 +2,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useCallback, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
+import { DefaultHeader } from "@/default/default-header";
 import {
    TeamsDataTable,
    TeamsDataTableSkeleton,
@@ -81,15 +82,11 @@ function TeamsPageError({ error }: { error: Error }) {
 export function OrganizationTeamsPage() {
    return (
       <main className="flex flex-col gap-4">
-         <div className="flex items-center justify-between">
-            <div>
-               <h1 className="text-2xl font-bold">Equipes</h1>
-               <p className="text-muted-foreground">
-                  Gerencie as equipes da sua organização
-               </p>
-            </div>
-            <TeamsQuickActionsToolbar />
-         </div>
+         <DefaultHeader
+            actions={<TeamsQuickActionsToolbar />}
+            description="Gerencie as equipes da sua organização"
+            title="Equipes"
+         />
 
          <ErrorBoundary FallbackComponent={TeamsPageError}>
             <Suspense fallback={<TeamsDataTableSkeleton />}>

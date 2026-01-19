@@ -8,8 +8,8 @@ import {
    findBudgetById,
    findBudgetPeriods,
    findBudgetsByOrganizationIdPaginated,
-   findBudgetsByTarget,
-   findTransactionsByBudgetTarget,
+   findBudgetsByTag,
+   findTransactionsByBudget,
    getBudgetStats,
    getBudgetsWithProgress,
    getBudgetWithProgress,
@@ -17,28 +17,13 @@ import {
    updateBudget,
    updateBudgets,
 } from "@packages/database/repositories/budget-repository";
+import {
+   createTag,
+   findTagById,
+} from "@packages/database/repositories/tag-repository";
 import { APIError } from "@packages/utils/errors";
 import { z } from "zod";
 import { protectedProcedure, router } from "../trpc";
-
-const budgetTargetSchema = z.discriminatedUnion("type", [
-   z.object({
-      categoryId: z.string().uuid(),
-      type: z.literal("category"),
-   }),
-   z.object({
-      categoryIds: z.array(z.string().uuid()).min(1),
-      type: z.literal("categories"),
-   }),
-   z.object({
-      tagId: z.string().uuid(),
-      type: z.literal("tag"),
-   }),
-   z.object({
-      costCenterId: z.string().uuid(),
-      type: z.literal("cost_center"),
-   }),
-]);
 
 const alertConfigSchema = z.object({
    enabled: z.boolean(),
@@ -57,6 +42,11 @@ const shadowBudgetSchema = z.object({
    visibleLimit: z.number(),
 });
 
+const budgetMetadataSchema = z.object({
+   linkedCategoryIds: z.array(z.string().uuid()).optional(),
+   notes: z.string().max(1000).optional(),
+});
+
 const createBudgetSchema = z.object({
    alertConfig: alertConfigSchema.optional(),
    amount: z.string(),
@@ -68,6 +58,7 @@ const createBudgetSchema = z.object({
    endDate: z.date().optional(),
    icon: z.string().optional(),
    isActive: z.boolean().default(true),
+   metadata: budgetMetadataSchema.optional(),
    mode: z.enum(["personal", "business"]).default("personal"),
    name: z.string().min(1),
    periodStartDay: z.string().optional(),
@@ -79,7 +70,7 @@ const createBudgetSchema = z.object({
    rolloverCap: z.string().optional(),
    shadowBudget: shadowBudgetSchema.optional(),
    startDate: z.date().optional(),
-   target: budgetTargetSchema,
+   tagId: z.string().uuid().optional(),
 });
 
 const updateBudgetSchema = z.object({
@@ -93,6 +84,7 @@ const updateBudgetSchema = z.object({
    endDate: z.date().optional(),
    icon: z.string().optional(),
    isActive: z.boolean().optional(),
+   metadata: budgetMetadataSchema.optional(),
    mode: z.enum(["personal", "business"]).optional(),
    name: z.string().min(1).optional(),
    periodStartDay: z.string().optional(),
@@ -104,7 +96,7 @@ const updateBudgetSchema = z.object({
    rolloverCap: z.string().optional(),
    shadowBudget: shadowBudgetSchema.optional(),
    startDate: z.date().optional(),
-   target: budgetTargetSchema.optional(),
+   tagId: z.string().uuid().optional(),
 });
 
 const paginationSchema = z.object({
@@ -164,9 +156,6 @@ export const budgetRouter = router({
       .input(
          z.object({
             amount: z.number(),
-            categoryId: z.string().optional(),
-            categoryIds: z.array(z.string()).optional(),
-            costCenterId: z.string().optional(),
             excludeTransactionId: z.string().optional(),
             tagIds: z.array(z.string()).optional(),
          }),
@@ -177,9 +166,6 @@ export const budgetRouter = router({
 
          return checkBudgetImpact(resolvedCtx.db, organizationId, {
             amount: input.amount,
-            categoryId: input.categoryId,
-            categoryIds: input.categoryIds,
-            costCenterId: input.costCenterId,
             excludeTransactionId: input.excludeTransactionId,
             tagIds: input.tagIds,
          });
@@ -191,10 +177,39 @@ export const budgetRouter = router({
          const resolvedCtx = await ctx;
          const organizationId = resolvedCtx.organizationId;
 
+         let tagId: string;
+
+         if (input.tagId) {
+            // Existing flow: validate the provided tag
+            const tag = await findTagById(resolvedCtx.db, input.tagId);
+            if (!tag || tag.organizationId !== organizationId) {
+               throw APIError.notFound("Tag not found");
+            }
+            tagId = input.tagId;
+         } else {
+            // New flow: auto-create a tag
+            const tagName = `[Orçamento] ${input.name}`;
+            const tagColor = input.color || "#3B82F6";
+
+            const newTag = await createTag(resolvedCtx.db, {
+               id: crypto.randomUUID(),
+               organizationId,
+               name: tagName,
+               color: tagColor,
+            });
+
+            if (!newTag) {
+               throw APIError.internal("Failed to create tag");
+            }
+
+            tagId = newTag.id;
+         }
+
          return createBudget(resolvedCtx.db, {
             ...input,
             id: crypto.randomUUID(),
             organizationId,
+            tagId,
          });
       }),
 
@@ -264,12 +279,9 @@ export const budgetRouter = router({
          );
       }),
 
-   getBudgetsByTarget: protectedProcedure
+   getBudgetsByTag: protectedProcedure
       .input(
          z.object({
-            categoryId: z.string().optional(),
-            categoryIds: z.array(z.string()).optional(),
-            costCenterId: z.string().optional(),
             tagIds: z.array(z.string()).optional(),
          }),
       )
@@ -277,10 +289,23 @@ export const budgetRouter = router({
          const resolvedCtx = await ctx;
          const organizationId = resolvedCtx.organizationId;
 
-         return findBudgetsByTarget(resolvedCtx.db, organizationId, {
-            categoryId: input.categoryId,
-            categoryIds: input.categoryIds,
-            costCenterId: input.costCenterId,
+         return findBudgetsByTag(resolvedCtx.db, organizationId, {
+            tagIds: input.tagIds,
+         });
+      }),
+
+   // Keep old procedure name as alias
+   getBudgetsByTarget: protectedProcedure
+      .input(
+         z.object({
+            tagIds: z.array(z.string()).optional(),
+         }),
+      )
+      .query(async ({ ctx, input }) => {
+         const resolvedCtx = await ctx;
+         const organizationId = resolvedCtx.organizationId;
+
+         return findBudgetsByTag(resolvedCtx.db, organizationId, {
             tagIds: input.tagIds,
          });
       }),
@@ -355,7 +380,7 @@ export const budgetRouter = router({
                ? { periodEnd: input.periodEnd, periodStart: input.periodStart }
                : calculatePeriodDates(budget);
 
-         return findTransactionsByBudgetTarget(resolvedCtx.db, budget, {
+         return findTransactionsByBudget(resolvedCtx.db, budget, {
             limit: input.limit,
             page: input.page,
             periodEnd,
@@ -397,6 +422,14 @@ export const budgetRouter = router({
             existingBudget.organizationId !== organizationId
          ) {
             throw APIError.notFound("Budget not found");
+         }
+
+         // If tagId is being updated, verify it belongs to the same organization
+         if (input.data.tagId) {
+            const tag = await findTagById(resolvedCtx.db, input.data.tagId);
+            if (!tag || tag.organizationId !== organizationId) {
+               throw APIError.notFound("Tag not found");
+            }
          }
 
          return updateBudget(resolvedCtx.db, input.id, input.data);

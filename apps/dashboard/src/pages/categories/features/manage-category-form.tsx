@@ -1,5 +1,6 @@
 import type { Category } from "@packages/database/repositories/category-repository";
 import { Button } from "@packages/ui/components/button";
+import { ColorPicker } from "@packages/ui/components/color-picker";
 import {
    Field,
    FieldDescription,
@@ -7,7 +8,6 @@ import {
    FieldGroup,
    FieldLabel,
 } from "@packages/ui/components/field";
-import { IconSelector } from "@/features/icon-selector/icon-selector";
 import { Input } from "@packages/ui/components/input";
 import {
    Popover,
@@ -23,8 +23,8 @@ import {
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { ColorPicker } from "@packages/ui/components/color-picker";
 import { TransactionTypesSelector } from "@/features/category/ui/transaction-types-selector";
+import { IconSelector } from "@/features/icon-selector/icon-selector";
 import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";
 
@@ -41,7 +41,8 @@ export function ManageCategoryForm({ category }: ManageCategoryFormProps) {
 
    const modeTexts = useMemo(() => {
       const createTexts = {
-         description: "Adicione uma nova categoria para organizar suas transações.",
+         description:
+            "Adicione uma nova categoria para organizar suas transações.",
          title: "Criar Nova Categoria",
       };
 
@@ -265,7 +266,8 @@ export function ManageCategoryForm({ category }: ManageCategoryFormProps) {
                               value={field.state.value || []}
                            />
                            <FieldDescription>
-                              Selecione os tipos de transação permitidos para esta categoria.
+                              Selecione os tipos de transação permitidos para
+                              esta categoria.
                            </FieldDescription>
                            {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />

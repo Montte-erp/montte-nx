@@ -34,7 +34,7 @@ export function useBillReminderCheck(
       checkMutation.mutate(
          reminderDaysBefore ? { reminderDaysBefore } : undefined,
       );
-   }, [enabled, reminderDaysBefore]); // Remove checkMutation from deps
+   }, [enabled, reminderDaysBefore, checkMutation.mutate]); // Remove checkMutation from deps
 
    return {
       error: checkMutation.error,

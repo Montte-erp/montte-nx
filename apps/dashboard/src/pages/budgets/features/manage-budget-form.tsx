@@ -1,13 +1,13 @@
 import { Button } from "@packages/ui/components/button";
 import {
    Field,
+   FieldDescription,
    FieldError,
    FieldGroup,
    FieldLabel,
 } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { MoneyInput } from "@packages/ui/components/money-input";
-import { MultiSelect } from "@packages/ui/components/multi-select";
 import {
    Select,
    SelectContent,
@@ -24,6 +24,7 @@ import {
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { CategoryMultiSelect } from "@/features/category/ui/category-multi-select";
 import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";
 import type { Budget } from "../ui/budgets-page";
@@ -31,12 +32,6 @@ import type { Budget } from "../ui/budgets-page";
 type ManageBudgetFormProps = {
    budget?: Budget;
 };
-
-type BudgetTarget =
-   | { type: "category"; categoryId: string }
-   | { type: "categories"; categoryIds: string[] }
-   | { type: "tag"; tagId: string }
-   | { type: "cost_center"; costCenterId: string };
 
 export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
    const trpc = useTRPC();
@@ -57,14 +52,9 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
       return isEditMode ? editTexts : createTexts;
    }, [isEditMode, budget?.name]);
 
+   const { data: tags = [] } = useQuery(trpc.tags.getAll.queryOptions());
    const { data: categories = [] } = useQuery(
       trpc.categories.getAll.queryOptions(),
-   );
-
-   const { data: tags = [] } = useQuery(trpc.tags.getAll.queryOptions());
-
-   const { data: costCenters = [] } = useQuery(
-      trpc.costCenters.getAll.queryOptions(),
    );
 
    const createBudgetMutation = useMutation(
@@ -86,31 +76,11 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
       }),
    );
 
-   const getInitialTargetType = (): string => {
-      if (budget?.target) {
-         return (budget.target as BudgetTarget).type;
-      }
-      return "category";
-   };
-
    const form = useForm({
       defaultValues: {
          amount: budget?.amount ? Number(budget.amount) : 0,
-         categoryId:
-            budget?.target &&
-            (budget.target as BudgetTarget).type === "category"
-               ? (budget.target as { categoryId: string }).categoryId
-               : "",
-         categoryIds:
-            budget?.target &&
-            (budget.target as BudgetTarget).type === "categories"
-               ? (budget.target as { categoryIds: string[] }).categoryIds
-               : [],
-         costCenterId:
-            budget?.target &&
-            (budget.target as BudgetTarget).type === "cost_center"
-               ? (budget.target as { costCenterId: string }).costCenterId
-               : "",
+         linkedCategoryIds: (budget?.metadata as { linkedCategoryIds?: string[] })
+            ?.linkedCategoryIds ?? [],
          name: budget?.name || "",
          periodType: (budget?.periodType || "monthly") as
             | "daily"
@@ -119,56 +89,20 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
             | "quarterly"
             | "yearly"
             | "custom",
-         tagId:
-            budget?.target && (budget.target as BudgetTarget).type === "tag"
-               ? (budget.target as { tagId: string }).tagId
-               : "",
-         targetType: getInitialTargetType(),
+         tagId: budget?.tagId || "",
       },
       onSubmit: async ({ value }) => {
-         if (value.targetType === "category" && !value.categoryId) {
-            return;
-         }
-         if (
-            value.targetType === "categories" &&
-            value.categoryIds.length === 0
-         ) {
-            return;
-         }
-         if (value.targetType === "tag" && !value.tagId) {
-            return;
-         }
-         if (value.targetType === "cost_center" && !value.costCenterId) {
-            return;
-         }
-
-         let target: BudgetTarget;
-
-         switch (value.targetType) {
-            case "category":
-               target = { categoryId: value.categoryId, type: "category" };
-               break;
-            case "categories":
-               target = { categoryIds: value.categoryIds, type: "categories" };
-               break;
-            case "tag":
-               target = { tagId: value.tagId, type: "tag" };
-               break;
-            case "cost_center":
-               target = {
-                  costCenterId: value.costCenterId,
-                  type: "cost_center",
-               };
-               break;
-            default:
-               target = { categoryId: value.categoryId, type: "category" };
-         }
-
          const budgetData = {
             amount: String(value.amount),
+            metadata: {
+               linkedCategoryIds:
+                  value.linkedCategoryIds.length > 0
+                     ? value.linkedCategoryIds
+                     : undefined,
+            },
             name: value.name,
             periodType: value.periodType,
-            target,
+            ...(isEditMode && value.tagId ? { tagId: value.tagId } : {}),
          };
 
          try {
@@ -212,25 +146,6 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
       },
    ];
 
-   const targetTypeOptions = [
-      {
-         label: "Categoria única",
-         value: "category",
-      },
-      {
-         label: "Múltiplas categorias",
-         value: "categories",
-      },
-      {
-         label: "Tag",
-         value: "tag",
-      },
-      {
-         label: "Centro de custo",
-         value: "cost_center",
-      },
-   ];
-
    return (
       <form
          className="h-full flex flex-col"
@@ -252,9 +167,7 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel>
-                              Nome
-                           </FieldLabel>
+                           <FieldLabel>Nome</FieldLabel>
                            <Input
                               onBlur={field.handleBlur}
                               onChange={(e) =>
@@ -279,9 +192,7 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel>
-                              Valor limite
-                           </FieldLabel>
+                           <FieldLabel>Valor limite</FieldLabel>
                            <MoneyInput
                               onBlur={field.handleBlur}
                               onChange={(value) =>
@@ -304,9 +215,7 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                <form.Field name="periodType">
                   {(field) => (
                      <Field>
-                        <FieldLabel>
-                           Período
-                        </FieldLabel>
+                        <FieldLabel>Período</FieldLabel>
                         <Select
                            onValueChange={(value) =>
                               field.handleChange(
@@ -341,173 +250,61 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
             </FieldGroup>
 
             <FieldGroup>
-               <form.Field name="targetType">
+               <form.Field name="linkedCategoryIds">
                   {(field) => (
                      <Field>
-                        <FieldLabel>
-                           Alvo do orçamento
-                        </FieldLabel>
-                        <Select
-                           onValueChange={(value) => field.handleChange(value)}
-                           value={field.state.value}
-                        >
-                           <SelectTrigger className="w-full">
-                              <SelectValue />
-                           </SelectTrigger>
-                           <SelectContent>
-                              {targetTypeOptions.map((option) => (
-                                 <SelectItem
-                                    key={option.value}
-                                    value={option.value}
-                                 >
-                                    {option.label}
-                                 </SelectItem>
-                              ))}
-                           </SelectContent>
-                        </Select>
+                        <FieldLabel>Filtrar por categorias (opcional)</FieldLabel>
+                        <CategoryMultiSelect
+                           categories={categories}
+                           onChange={(selected) => field.handleChange(selected)}
+                           placeholder="Selecione categorias..."
+                           selected={field.state.value}
+                        />
+                        <FieldDescription>
+                           Quando selecionadas, apenas transações com essas categorias
+                           serão contabilizadas
+                        </FieldDescription>
                      </Field>
                   )}
                </form.Field>
             </FieldGroup>
 
-            <form.Subscribe selector={(state) => state.values.targetType}>
-               {(targetType) => (
-                  <>
-                     {targetType === "category" && (
-                        <FieldGroup>
-                           <form.Field name="categoryId">
-                              {(field) => (
-                                 <Field>
-                                    <FieldLabel>
-                                       Categoria
-                                    </FieldLabel>
-                                    <Select
-                                       onValueChange={(value) =>
-                                          field.handleChange(value)
-                                       }
-                                       value={field.state.value}
-                                    >
-                                       <SelectTrigger className="w-full">
-                                          <SelectValue
-                                             placeholder="Selecione uma categoria"
+            {isEditMode ? (
+               <FieldGroup>
+                  <form.Field name="tagId">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel>Tag de agrupamento</FieldLabel>
+                           <Select
+                              onValueChange={(value) => field.handleChange(value)}
+                              value={field.state.value}
+                           >
+                              <SelectTrigger className="w-full">
+                                 <SelectValue placeholder="Selecione uma tag" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 {tags.map((tag) => (
+                                    <SelectItem key={tag.id} value={tag.id}>
+                                       <div className="flex items-center gap-2">
+                                          <div
+                                             className="size-3 rounded-full"
+                                             style={{ backgroundColor: tag.color }}
                                           />
-                                       </SelectTrigger>
-                                       <SelectContent>
-                                          {categories.map((cat) => (
-                                             <SelectItem
-                                                key={cat.id}
-                                                value={cat.id}
-                                             >
-                                                {cat.name}
-                                             </SelectItem>
-                                          ))}
-                                       </SelectContent>
-                                    </Select>
-                                 </Field>
-                              )}
-                           </form.Field>
-                        </FieldGroup>
+                                          {tag.name}
+                                       </div>
+                                    </SelectItem>
+                                 ))}
+                              </SelectContent>
+                           </Select>
+                           <FieldDescription>
+                              Selecione a tag que agrupa as transações deste
+                              orçamento
+                           </FieldDescription>
+                        </Field>
                      )}
-
-                     {targetType === "categories" && (
-                        <FieldGroup>
-                           <form.Field name="categoryIds">
-                              {(field) => (
-                                 <Field>
-                                    <FieldLabel>
-                                       Categoria
-                                    </FieldLabel>
-                                    <MultiSelect
-                                       onChange={(selected) =>
-                                          field.handleChange(selected)
-                                       }
-                                       options={categories.map((cat) => ({
-                                          label: cat.name,
-                                          value: cat.id,
-                                       }))}
-                                       placeholder="Selecione uma categoria"
-                                       selected={field.state.value}
-                                    />
-                                 </Field>
-                              )}
-                           </form.Field>
-                        </FieldGroup>
-                     )}
-
-                     {targetType === "tag" && (
-                        <FieldGroup>
-                           <form.Field name="tagId">
-                              {(field) => (
-                                 <Field>
-                                    <FieldLabel>
-                                       Tags
-                                    </FieldLabel>
-                                    <Select
-                                       onValueChange={(value) =>
-                                          field.handleChange(value)
-                                       }
-                                       value={field.state.value}
-                                    >
-                                       <SelectTrigger className="w-full">
-                                          <SelectValue
-                                             placeholder="Selecione as tags"
-                                          />
-                                       </SelectTrigger>
-                                       <SelectContent>
-                                          {tags.map((tag) => (
-                                             <SelectItem
-                                                key={tag.id}
-                                                value={tag.id}
-                                             >
-                                                {tag.name}
-                                             </SelectItem>
-                                          ))}
-                                       </SelectContent>
-                                    </Select>
-                                 </Field>
-                              )}
-                           </form.Field>
-                        </FieldGroup>
-                     )}
-
-                     {targetType === "cost_center" && (
-                        <FieldGroup>
-                           <form.Field name="costCenterId">
-                              {(field) => (
-                                 <Field>
-                                    <FieldLabel>
-                                       Centro de Custo
-                                    </FieldLabel>
-                                    <Select
-                                       onValueChange={(value) =>
-                                          field.handleChange(value)
-                                       }
-                                       value={field.state.value}
-                                    >
-                                       <SelectTrigger className="w-full">
-                                          <SelectValue
-                                             placeholder="Selecione um centro de custo"
-                                          />
-                                       </SelectTrigger>
-                                       <SelectContent>
-                                          {costCenters.map((cc) => (
-                                             <SelectItem
-                                                key={cc.id}
-                                                value={cc.id}
-                                             >
-                                                {cc.name}
-                                             </SelectItem>
-                                          ))}
-                                       </SelectContent>
-                                    </Select>
-                                 </Field>
-                              )}
-                           </form.Field>
-                        </FieldGroup>
-                     )}
-                  </>
-               )}
-            </form.Subscribe>
+                  </form.Field>
+               </FieldGroup>
+            ) : null}
          </div>
 
          <SheetFooter>
@@ -523,9 +320,7 @@ export function ManageBudgetForm({ budget }: ManageBudgetFormProps) {
                      }
                      type="submit"
                   >
-                     {isEditMode
-                        ? "Editar orçamento"
-                        : "Novo orçamento"}
+                     {isEditMode ? "Editar orçamento" : "Novo orçamento"}
                   </Button>
                )}
             </form.Subscribe>

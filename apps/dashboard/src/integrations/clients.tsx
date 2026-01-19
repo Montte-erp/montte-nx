@@ -14,13 +14,13 @@ import {
 import { lazy, Suspense } from "react";
 
 // Lazy load devtools - excluded from production bundle
-const ReactQueryDevtools = import.meta.env.PROD
+const _ReactQueryDevtools = import.meta.env.PROD
    ? () => null
    : lazy(() =>
-      import("@tanstack/react-query-devtools").then((m) => ({
-         default: m.ReactQueryDevtools,
-      })),
-   );
+        import("@tanstack/react-query-devtools").then((m) => ({
+           default: m.ReactQueryDevtools,
+        })),
+     );
 
 import { TRPCClientError } from "@trpc/client";
 import {

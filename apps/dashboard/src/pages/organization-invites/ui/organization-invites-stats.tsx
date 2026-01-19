@@ -22,30 +22,30 @@ function InvitesStatsContent() {
 
    const statCards = [
       {
-         description: "All time invitations",
+         description: "Convites de todos os tempos",
          icon: <Mail className="size-4" />,
-         title: "Total Invites",
+         title: "Total de Convites",
          value: stats.total,
          variant: "default" as const,
       },
       {
-         description: "Awaiting response",
+         description: "Aguardando resposta",
          icon: <Clock className="size-4" />,
-         title: "Pending Invites",
+         title: "Convites Pendentes",
          value: stats.pending,
          variant: "secondary" as const,
       },
       {
-         description: "Successfully joined",
+         description: "Ingressaram com sucesso",
          icon: <MailCheck className="size-4" />,
-         title: "Accepted Invites",
+         title: "Convites Aceitos",
          value: stats.accepted,
          variant: "default" as const,
       },
       {
-         description: "No longer valid",
+         description: "Não são mais válidos",
          icon: <MailX className="size-4" />,
-         title: "Expired Invites",
+         title: "Convites Expirados",
          value: stats.rejected,
          variant: "destructive" as const,
       },
@@ -94,9 +94,9 @@ function InvitesStatsErrorFallback({ error }: { error: Error }) {
    return (
       <Card className="w-full">
          <CardHeader>
-            <CardTitle>Invitation Statistics</CardTitle>
+            <CardTitle>Estatísticas de Convites</CardTitle>
             <CardDescription>
-               Overview of all invitation statuses
+               Visão geral de todos os status de convites
             </CardDescription>
          </CardHeader>
          <CardContent>

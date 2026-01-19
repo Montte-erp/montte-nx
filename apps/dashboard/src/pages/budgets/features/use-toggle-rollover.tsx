@@ -42,9 +42,7 @@ export function useToggleRollover({
                id: budget.id,
             });
          },
-         title: budget.rollover
-            ? "Desativar acumulação"
-            : "Ativar acumulação",
+         title: budget.rollover ? "Desativar acumulação" : "Ativar acumulação",
       });
    };
 

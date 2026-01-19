@@ -38,9 +38,7 @@ function TeamActionsCell({ team, slug, onEdit, onDelete }: TeamActionsProps) {
                      </Button>
                   </DropdownMenuTrigger>
                </TooltipTrigger>
-               <TooltipContent>
-                  Ações
-               </TooltipContent>
+               <TooltipContent>Ações</TooltipContent>
             </Tooltip>
             <DropdownMenuContent align="end">
                <DropdownMenuItem asChild>

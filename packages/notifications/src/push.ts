@@ -153,7 +153,12 @@ export async function sendPushNotificationToUser(
 }
 
 export function createNotificationPayload(
-   type: "budget_alert" | "budget_prediction" | "bill_reminder" | "overdue_alert" | "transaction",
+   type:
+      | "budget_alert"
+      | "budget_prediction"
+      | "bill_reminder"
+      | "overdue_alert"
+      | "transaction",
    data: {
       title: string;
       body: string;
@@ -170,7 +175,8 @@ export function createNotificationPayload(
          ...data.metadata,
       },
       icon: "/android/android-launchericon-192-192.png",
-      requireInteraction: type === "overdue_alert" || type === "budget_prediction",
+      requireInteraction:
+         type === "overdue_alert" || type === "budget_prediction",
       silent: false,
       tag: `montte-${type}-${Date.now()}`,
       title: data.title,

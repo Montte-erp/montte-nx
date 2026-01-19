@@ -33,7 +33,8 @@ export function ManageCostCenterForm({
 
    const modeTexts = useMemo(() => {
       const createTexts = {
-         description: "Adicione um novo centro de custo para organizar suas transações.",
+         description:
+            "Adicione um novo centro de custo para organizar suas transações.",
          title: "Criar Novo Centro de Custo",
       };
 
@@ -120,9 +121,7 @@ export function ManageCostCenterForm({
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel>
-                              Nome
-                           </FieldLabel>
+                           <FieldLabel>Nome</FieldLabel>
                            <Input
                               onBlur={field.handleBlur}
                               onChange={(e) =>

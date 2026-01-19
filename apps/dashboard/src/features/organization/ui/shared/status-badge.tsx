@@ -52,9 +52,7 @@ export function StatusBadge({
    return (
       <Badge className={cn(config.className, className)} variant="outline">
          {showIcon && <Icon className="size-3" />}
-         <span>
-            {config.label}
-         </span>
+         <span>{config.label}</span>
       </Badge>
    );
 }

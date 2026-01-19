@@ -49,25 +49,27 @@ export function OrganizationLayout({ children }: OrganizationLayoutProps) {
    // Desktop: sidebar + content layout
    return (
       <SidebarProvider defaultOpen>
-         <div className="flex h-full w-full gap-4">
-            <Sidebar
-               className="border rounded-xl bg-card shadow-sm"
-               collapsible="none"
-               variant="inset"
-            >
-               <SidebarHeader className="px-4 pt-4">
-                  <h1 className="text-lg font-semibold font-serif">
-                     Organização
-                  </h1>
-                  <p className="text-xs text-muted-foreground">
-                     Gerencie sua organização
-                  </p>
-               </SidebarHeader>
-               <SidebarContent>
-                  <OrganizationSidebar />
-               </SidebarContent>
-            </Sidebar>
-            <main className="flex-1 min-w-0">{children}</main>
+         <div className="flex h-full w-full gap-4 ">
+            <div className="pt-4 h-min">
+               <Sidebar
+                  className="border rounded-xl bg-card shadow-sm"
+                  collapsible="none"
+                  variant="inset"
+               >
+                  <SidebarHeader className="px-4 pt-4">
+                     <h1 className="text-lg font-semibold font-serif">
+                        Organização
+                     </h1>
+                     <p className="text-xs text-muted-foreground">
+                        Gerencie sua organização
+                     </p>
+                  </SidebarHeader>
+                  <SidebarContent>
+                     <OrganizationSidebar />
+                  </SidebarContent>
+               </Sidebar>
+            </div>
+            <main className="flex-1 min-w-0 ">{children}</main>
          </div>
       </SidebarProvider>
    );

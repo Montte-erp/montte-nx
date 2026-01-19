@@ -31,7 +31,7 @@ type BudgetReportItem = {
 	isActive: boolean;
 	isOverBudget: boolean;
 	isNearLimit: boolean;
-	targetType: string;
+	tagId: string;
 };
 
 type BudgetReportSummary = {
@@ -125,7 +125,7 @@ export const fetchBudgetReportHandler: ActionHandler = {
 			periodType: b.periodType,
 			scheduled: b.progress.scheduled,
 			spent: b.progress.spent,
-			targetType: b.target.type,
+			tagId: b.tagId,
 		}));
 
 		// Calculate summary for filtered budgets

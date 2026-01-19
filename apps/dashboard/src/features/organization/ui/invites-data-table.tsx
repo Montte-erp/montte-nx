@@ -22,6 +22,7 @@ import type { RowSelectionState } from "@tanstack/react-table";
 import { Mail, RefreshCw, Search, Trash2 } from "lucide-react";
 import { Fragment, useState } from "react";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { InvitesExpandedContent } from "./invites-expanded-content";
 import { InvitesFilterBar } from "./invites-filter-bar";
 import { InvitesMobileCard } from "./invites-mobile-card";
 import { createInviteColumns, type Invite } from "./invites-table-columns";
@@ -155,11 +156,10 @@ export function InvitesDataTable({
                      <EmptyMedia variant="icon">
                         <Mail className="size-12 text-muted-foreground" />
                      </EmptyMedia>
-                     <EmptyTitle>
-                        Nenhum convite encontrado
-                     </EmptyTitle>
+                     <EmptyTitle>Nenhum convite encontrado</EmptyTitle>
                      <EmptyDescription>
-                        Convide membros para sua organização para começar a colaborar.
+                        Convide membros para sua organização para começar a
+                        colaborar.
                      </EmptyDescription>
                   </EmptyContent>
                </Empty>
@@ -208,6 +208,13 @@ export function InvitesDataTable({
                      pagination={pagination}
                      renderMobileCard={(props) => (
                         <InvitesMobileCard
+                           {...props}
+                           onResend={onResend}
+                           onRevoke={handleRevokeInvite}
+                        />
+                     )}
+                     renderSubComponent={(props) => (
+                        <InvitesExpandedContent
                            {...props}
                            onResend={onResend}
                            onRevoke={handleRevokeInvite}

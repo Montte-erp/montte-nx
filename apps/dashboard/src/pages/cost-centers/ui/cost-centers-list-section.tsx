@@ -56,7 +56,8 @@ function CostCentersListErrorFallback(props: FallbackProps) {
       <Card>
          <CardContent className="pt-6">
             {createErrorFallback({
-               errorDescription: "Falha ao carregar centros de custo. Tente novamente mais tarde.",
+               errorDescription:
+                  "Falha ao carregar centros de custo. Tente novamente mais tarde.",
                errorTitle: "Erro ao carregar centros de custo",
                retryText: "Tentar novamente",
             })(props)}
@@ -284,11 +285,11 @@ function CostCentersListContent() {
                         <EmptyMedia variant="icon">
                            <Inbox className="size-6" />
                         </EmptyMedia>
-                        <EmptyTitle>
-                           Nenhum centro de custo ainda
-                        </EmptyTitle>
+                        <EmptyTitle>Nenhum centro de custo ainda</EmptyTitle>
                         <EmptyDescription>
-                           Crie seu primeiro centro de custo usando a barra de ações rápidas acima para começar a organizar suas transações.
+                           Crie seu primeiro centro de custo usando a barra de
+                           ações rápidas acima para começar a organizar suas
+                           transações.
                         </EmptyDescription>
                      </EmptyContent>
                   </Empty>
@@ -338,13 +339,15 @@ function CostCentersListContent() {
                   openAlertDialog({
                      actionLabel: "Excluir",
                      cancelLabel: "Cancelar",
-                     description: selectedIds.length === 1
-                        ? "Esta ação não pode ser desfeita. Isso excluirá permanentemente 1 centro de custo e removerá a associação de todas as transações vinculadas."
-                        : `Esta ação não pode ser desfeita. Isso excluirá permanentemente ${selectedIds.length} centros de custo e removerá a associação de todas as transações vinculadas.`,
+                     description:
+                        selectedIds.length === 1
+                           ? "Esta ação não pode ser desfeita. Isso excluirá permanentemente 1 centro de custo e removerá a associação de todas as transações vinculadas."
+                           : `Esta ação não pode ser desfeita. Isso excluirá permanentemente ${selectedIds.length} centros de custo e removerá a associação de todas as transações vinculadas.`,
                      onAction: () => deleteSelected(selectedIds),
-                     title: selectedIds.length === 1
-                        ? "Excluir 1 centro de custo?"
-                        : `Excluir ${selectedIds.length} centros de custo?`,
+                     title:
+                        selectedIds.length === 1
+                           ? "Excluir 1 centro de custo?"
+                           : `Excluir ${selectedIds.length} centros de custo?`,
                      variant: "destructive",
                   })
                }

@@ -30,7 +30,8 @@ export function useDeleteTag({
       openAlertDialog({
          actionLabel: "Excluir tag",
          cancelLabel: "Cancelar",
-         description: "Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.",
+         description:
+            "Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.",
          onAction: async () => {
             await deleteTagMutation.mutateAsync({ id: tag.id });
          },

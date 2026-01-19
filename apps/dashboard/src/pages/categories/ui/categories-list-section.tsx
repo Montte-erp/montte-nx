@@ -1,4 +1,3 @@
-import { Button } from "@packages/ui/components/button";
 import { Card, CardContent } from "@packages/ui/components/card";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
@@ -8,7 +7,6 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import {
    InputGroup,
    InputGroupAddon,
@@ -20,29 +18,14 @@ import {
    SelectionActionButton,
 } from "@packages/ui/components/selection-action-bar";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import {
-   ToggleGroup,
-   ToggleGroupItem,
-} from "@packages/ui/components/toggle-group";
-import { useIsMobile } from "@packages/ui/hooks/use-mobile";
 import { keepPreviousData, useSuspenseQuery } from "@tanstack/react-query";
 import type { RowSelectionState } from "@tanstack/react-table";
-import {
-   ArrowDownAZ,
-   ArrowUpAZ,
-   Filter,
-   Inbox,
-   Search,
-   Trash2,
-   X,
-} from "lucide-react";
+import { Inbox, Search, Trash2 } from "lucide-react";
 import { Fragment, Suspense, useEffect, useMemo, useState } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { ErrorBoundary } from "react-error-boundary";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
 import { useTRPC } from "@/integrations/clients";
-import { CategoryFilterCredenza } from "../features/category-filter-credenza";
 import { useCategoryList } from "../features/category-list-context";
 import { useCategoryBulkActions } from "../features/use-category-bulk-actions";
 import {
@@ -51,18 +34,11 @@ import {
    createCategoryColumns,
 } from "./categories-table-columns";
 
-function CategoriesListErrorFallback(props: FallbackProps) {
+function CategoriesListErrorFallback() {
    return (
-      <Card>
-         <CardContent className="pt-6">
-            {createErrorFallback({
-               errorDescription:
-                  "Falha ao carregar categorias. Tente novamente mais tarde.",
-               errorTitle: "Erro ao carregar categorias",
-               retryText: "Tentar novamente",
-            })(props)}
-         </CardContent>
-      </Card>
+      <div className="p-4 text-center text-sm text-destructive">
+         Erro ao carregar categorias
+      </div>
    );
 }
 
@@ -213,7 +189,9 @@ function CategoriesListContent() {
                         </EmptyMedia>
                         <EmptyTitle>Nenhuma categoria ainda</EmptyTitle>
                         <EmptyDescription>
-                           Crie sua primeira categoria usando a barra de ações rápidas acima para começar a organizar suas transações.
+                           Crie sua primeira categoria usando a barra de ações
+                           rápidas acima para começar a organizar suas
+                           transações.
                         </EmptyDescription>
                      </EmptyContent>
                   </Empty>

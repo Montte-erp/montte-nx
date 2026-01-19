@@ -38,16 +38,19 @@ type DateOption = "same-day" | "today" | "custom";
 
 const dateOptions: DateOption[] = ["same-day", "today", "custom"];
 
-const dateOptionTexts: Record<DateOption, { title: string; description: string }> = {
+const dateOptionTexts: Record<
+   DateOption,
+   { title: string; description: string }
+> = {
    "same-day": {
       title: "Mesmo dia da transação",
       description: "Usar a mesma data da transação original",
    },
-   "today": {
+   today: {
       title: "Hoje",
       description: "Usar a data de hoje para a duplicação",
    },
-   "custom": {
+   custom: {
       title: "Data específica",
       description: "Escolha uma data específica para a duplicação",
    },
@@ -113,9 +116,7 @@ export function DuplicateTransactionSheet({
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               Duplicar Transação
-            </SheetTitle>
+            <SheetTitle>Duplicar Transação</SheetTitle>
             <SheetDescription>
                Crie uma cópia desta transação com os mesmos dados.
             </SheetDescription>

@@ -1,20 +1,125 @@
 import { AppError, propagateError } from "@packages/utils/errors";
-import { and, desc, eq, gte, isNotNull, lte } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, lte, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import {
    type FinancialGoal,
    financialGoal,
    type GoalStatus,
-   type GoalType,
    type NewFinancialGoal,
+   type ProgressCalculationType,
 } from "../schemas/goals";
+import { transaction } from "../schemas/transactions";
+import { transactionTag } from "../schemas/tags";
+import { transactionCategory } from "../schemas/categories";
 
 export type {
    FinancialGoal,
    GoalStatus,
-   GoalType,
    NewFinancialGoal,
+   ProgressCalculationType,
 } from "../schemas/goals";
+
+// ============================================
+// Types
+// ============================================
+
+export type GoalWithTag = FinancialGoal & {
+   tag: {
+      id: string;
+      name: string;
+      color: string;
+   };
+   currentAmount: number;
+};
+
+export type GoalProgressSummary = {
+   goalId: string;
+   name: string;
+   progressCalculationType: ProgressCalculationType;
+   targetAmount: number;
+   currentAmount: number;
+   startingAmount: number;
+   progressPercentage: number;
+   remainingAmount: number;
+   daysRemaining: number | null;
+   isOnTrack: boolean;
+   projectedCompletionDate: Date | null;
+   tag: {
+      id: string;
+      name: string;
+      color: string;
+   };
+};
+
+// ============================================
+// Progress Calculation
+// ============================================
+
+export async function calculateGoalProgress(
+   dbClient: DatabaseInstance,
+   tagId: string,
+   organizationId: string,
+   progressCalculationType: ProgressCalculationType,
+   startDate?: Date,
+   startingAmount = 0,
+   linkedCategoryIds?: string[],
+): Promise<number> {
+   try {
+      let amountCondition: ReturnType<typeof sql>;
+
+      switch (progressCalculationType) {
+         case "income":
+            amountCondition = sql`CASE WHEN ${transaction.amount}::numeric > 0 THEN ${transaction.amount}::numeric ELSE 0 END`;
+            break;
+         case "expense":
+            amountCondition = sql`CASE WHEN ${transaction.amount}::numeric < 0 THEN ABS(${transaction.amount}::numeric) ELSE 0 END`;
+            break;
+         case "net":
+            amountCondition = sql`${transaction.amount}::numeric`;
+            break;
+      }
+
+      const conditions = [
+         eq(transactionTag.tagId, tagId),
+         eq(transaction.organizationId, organizationId),
+      ];
+
+      if (startDate) {
+         conditions.push(gte(transaction.date, startDate));
+      }
+
+      // Build query with optional category filter
+      let query = dbClient
+         .select({
+            total: sql<string>`COALESCE(SUM(${amountCondition}), 0)`,
+         })
+         .from(transactionTag)
+         .innerJoin(transaction, eq(transactionTag.transactionId, transaction.id));
+
+      // Add category join if linkedCategoryIds are provided
+      if (linkedCategoryIds && linkedCategoryIds.length > 0) {
+         query = query.innerJoin(
+            transactionCategory,
+            eq(transactionCategory.transactionId, transaction.id),
+         );
+         conditions.push(inArray(transactionCategory.categoryId, linkedCategoryIds));
+      }
+
+      const result = await query.where(and(...conditions));
+
+      const transactionTotal = Number(result[0]?.total ?? 0);
+      return startingAmount + transactionTotal;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database(
+         `Failed to calculate goal progress: ${(err as Error).message}`,
+      );
+   }
+}
+
+// ============================================
+// CRUD Operations
+// ============================================
 
 export async function createGoal(
    dbClient: DatabaseInstance,
@@ -44,12 +149,36 @@ export async function createGoal(
 export async function findGoalById(
    dbClient: DatabaseInstance,
    goalId: string,
-): Promise<FinancialGoal | undefined> {
+): Promise<GoalWithTag | undefined> {
    try {
       const result = await dbClient.query.financialGoal.findFirst({
          where: eq(financialGoal.id, goalId),
+         with: {
+            tag: true,
+         },
       });
-      return result;
+
+      if (!result || !result.tag) return undefined;
+
+      const currentAmount = await calculateGoalProgress(
+         dbClient,
+         result.tagId,
+         result.organizationId,
+         result.progressCalculationType,
+         result.startDate,
+         Number(result.startingAmount),
+         result.metadata?.linkedCategoryIds,
+      );
+
+      return {
+         ...result,
+         tag: {
+            id: result.tag.id,
+            name: result.tag.name,
+            color: result.tag.color,
+         },
+         currentAmount,
+      };
    } catch (err) {
       propagateError(err);
       throw AppError.database(
@@ -63,12 +192,11 @@ export async function findGoalsByOrganizationId(
    organizationId: string,
    options?: {
       status?: GoalStatus;
-      type?: GoalType;
       limit?: number;
       offset?: number;
    },
-): Promise<FinancialGoal[]> {
-   const { status, type, limit = 50, offset = 0 } = options ?? {};
+): Promise<GoalWithTag[]> {
+   const { status, limit = 50, offset = 0 } = options ?? {};
    try {
       const conditions = [eq(financialGoal.organizationId, organizationId)];
 
@@ -76,17 +204,46 @@ export async function findGoalsByOrganizationId(
          conditions.push(eq(financialGoal.status, status));
       }
 
-      if (type) {
-         conditions.push(eq(financialGoal.type, type));
-      }
-
-      const result = await dbClient.query.financialGoal.findMany({
+      const results = await dbClient.query.financialGoal.findMany({
          where: and(...conditions),
          orderBy: [desc(financialGoal.createdAt)],
          limit,
          offset,
+         with: {
+            tag: true,
+         },
       });
-      return result;
+
+      // Calculate current amount for each goal
+      const goalsWithProgress = await Promise.all(
+         results.map(async (goal) => {
+            if (!goal.tag) {
+               throw AppError.database(`Goal ${goal.id} has no associated tag`);
+            }
+
+            const currentAmount = await calculateGoalProgress(
+               dbClient,
+               goal.tagId,
+               goal.organizationId,
+               goal.progressCalculationType,
+               goal.startDate,
+               Number(goal.startingAmount),
+               goal.metadata?.linkedCategoryIds,
+            );
+
+            return {
+               ...goal,
+               tag: {
+                  id: goal.tag.id,
+                  name: goal.tag.name,
+                  color: goal.tag.color,
+               },
+               currentAmount,
+            };
+         }),
+      );
+
+      return goalsWithProgress;
    } catch (err) {
       propagateError(err);
       throw AppError.database(
@@ -95,10 +252,27 @@ export async function findGoalsByOrganizationId(
    }
 }
 
+export async function findGoalByTagId(
+   dbClient: DatabaseInstance,
+   tagId: string,
+): Promise<FinancialGoal | undefined> {
+   try {
+      const result = await dbClient.query.financialGoal.findFirst({
+         where: eq(financialGoal.tagId, tagId),
+      });
+      return result;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database(
+         `Failed to find goal by tag id: ${(err as Error).message}`,
+      );
+   }
+}
+
 export async function updateGoal(
    dbClient: DatabaseInstance,
    goalId: string,
-   data: Partial<Omit<NewFinancialGoal, "id" | "organizationId" | "createdAt">>,
+   data: Partial<Omit<NewFinancialGoal, "id" | "organizationId" | "createdAt" | "tagId">>,
 ): Promise<FinancialGoal | undefined> {
    try {
       const result = await dbClient
@@ -111,26 +285,6 @@ export async function updateGoal(
       propagateError(err);
       throw AppError.database(
          `Failed to update goal: ${(err as Error).message}`,
-      );
-   }
-}
-
-export async function updateGoalProgress(
-   dbClient: DatabaseInstance,
-   goalId: string,
-   currentAmount: string,
-): Promise<FinancialGoal | undefined> {
-   try {
-      const result = await dbClient
-         .update(financialGoal)
-         .set({ currentAmount })
-         .where(eq(financialGoal.id, goalId))
-         .returning();
-      return result[0];
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database(
-         `Failed to update goal progress: ${(err as Error).message}`,
       );
    }
 }
@@ -199,15 +353,15 @@ export async function getActiveGoalsCount(
 export async function getGoalsNearingDeadline(
    dbClient: DatabaseInstance,
    organizationId: string,
-   daysAhead: number = 30,
-): Promise<FinancialGoal[]> {
+   daysAhead = 30,
+): Promise<GoalWithTag[]> {
    try {
       const now = new Date();
       const futureDate = new Date(
          now.getTime() + daysAhead * 24 * 60 * 60 * 1000,
       );
 
-      const result = await dbClient.query.financialGoal.findMany({
+      const results = await dbClient.query.financialGoal.findMany({
          where: and(
             eq(financialGoal.organizationId, organizationId),
             eq(financialGoal.status, "active"),
@@ -216,8 +370,40 @@ export async function getGoalsNearingDeadline(
             lte(financialGoal.targetDate, futureDate),
          ),
          orderBy: [financialGoal.targetDate],
+         with: {
+            tag: true,
+         },
       });
-      return result;
+
+      const goalsWithProgress = await Promise.all(
+         results.map(async (goal) => {
+            if (!goal.tag) {
+               throw AppError.database(`Goal ${goal.id} has no associated tag`);
+            }
+
+            const currentAmount = await calculateGoalProgress(
+               dbClient,
+               goal.tagId,
+               goal.organizationId,
+               goal.progressCalculationType,
+               goal.startDate,
+               Number(goal.startingAmount),
+               goal.metadata?.linkedCategoryIds,
+            );
+
+            return {
+               ...goal,
+               tag: {
+                  id: goal.tag.id,
+                  name: goal.tag.name,
+                  color: goal.tag.color,
+               },
+               currentAmount,
+            };
+         }),
+      );
+
+      return goalsWithProgress;
    } catch (err) {
       propagateError(err);
       throw AppError.database(
@@ -225,20 +411,6 @@ export async function getGoalsNearingDeadline(
       );
    }
 }
-
-export type GoalProgressSummary = {
-   goalId: string;
-   name: string;
-   type: GoalType;
-   targetAmount: number;
-   currentAmount: number;
-   startingAmount: number;
-   progressPercentage: number;
-   remainingAmount: number;
-   daysRemaining: number | null;
-   isOnTrack: boolean;
-   projectedCompletionDate: Date | null;
-};
 
 export async function getGoalProgressSummary(
    dbClient: DatabaseInstance,
@@ -249,28 +421,20 @@ export async function getGoalProgressSummary(
       if (!goal) return null;
 
       const targetAmount = Number(goal.targetAmount);
-      const currentAmount = Number(goal.currentAmount);
+      const currentAmount = goal.currentAmount;
       const startingAmount = Number(goal.startingAmount);
 
-      // For savings goals, progress is current / target
-      // For debt payoff, progress is (initial - current) / initial
-      // For spending limit, progress is current / target (lower is better)
+      // Calculate progress percentage based on calculation type
       let progressPercentage: number;
       let remainingAmount: number;
 
-      if (goal.type === "debt_payoff") {
-         const initialDebt = goal.metadata?.initialDebtAmount ?? targetAmount;
-         progressPercentage =
-            initialDebt > 0
-               ? ((initialDebt - currentAmount) / initialDebt) * 100
-               : 0;
-         remainingAmount = currentAmount;
-      } else if (goal.type === "spending_limit") {
+      if (goal.progressCalculationType === "expense") {
+         // For expense goals, higher spending = higher progress (spending limit tracking)
          progressPercentage =
             targetAmount > 0 ? (currentAmount / targetAmount) * 100 : 0;
          remainingAmount = Math.max(0, targetAmount - currentAmount);
       } else {
-         // savings, income_target
+         // For income and net goals, we're tracking towards the target
          progressPercentage =
             targetAmount > 0 ? (currentAmount / targetAmount) * 100 : 0;
          remainingAmount = Math.max(0, targetAmount - currentAmount);
@@ -313,7 +477,7 @@ export async function getGoalProgressSummary(
       return {
          goalId: goal.id,
          name: goal.name,
-         type: goal.type,
+         progressCalculationType: goal.progressCalculationType,
          targetAmount,
          currentAmount,
          startingAmount,
@@ -322,6 +486,7 @@ export async function getGoalProgressSummary(
          daysRemaining,
          isOnTrack,
          projectedCompletionDate,
+         tag: goal.tag,
       };
    } catch (err) {
       propagateError(err);

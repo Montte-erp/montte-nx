@@ -1,7 +1,4 @@
 import { clientEnv } from "@packages/environment/client";
-import { NotFoundComponent } from "@/default/not-found";
-import { QueryProvider, useTRPC } from "@/integrations/clients";
-import { ThemeProvider } from "@/layout/theme-provider";
 import { PostHogWrapper, PosthogRouterTracker } from "@packages/posthog/client";
 import { Toaster } from "@packages/ui/components/sonner";
 import { useQuery } from "@tanstack/react-query";
@@ -13,15 +10,18 @@ import {
    useLocation,
 } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
+import { NotFound } from "@/default/not-found";
+import { QueryProvider, useTRPC } from "@/integrations/clients";
+import { ThemeProvider } from "@/layout/theme-provider";
 
 // Lazy load devtools - excluded from production bundle
-const TanStackRouterDevtools = import.meta.env.PROD
+const _TanStackRouterDevtools = import.meta.env.PROD
    ? () => null
    : lazy(() =>
-      import("@tanstack/react-router-devtools").then((m) => ({
-         default: m.TanStackRouterDevtools,
-      })),
-   );
+        import("@tanstack/react-router-devtools").then((m) => ({
+           default: m.TanStackRouterDevtools,
+        })),
+     );
 
 import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
 import { GlobalCredenza } from "@/hooks/use-credenza";
@@ -43,7 +43,8 @@ export const Route = createRootRoute({
       ],
       meta: [
          {
-            content: "Gestão financeira completa para você e seus negócios. Simples, transparente e Open Source.",
+            content:
+               "Gestão financeira completa para você e seus negócios. Simples, transparente e Open Source.",
             name: "description",
          },
          {
@@ -56,11 +57,7 @@ export const Route = createRootRoute({
          throw redirect({ to: "/auth/sign-in" });
       }
    },
-   notFoundComponent: () => (
-      <div className="h-screen w-screen">
-         <NotFoundComponent />
-      </div>
-   ),
+   notFoundComponent: NotFound,
    staticData: {
       breadcrumb: "Home",
    },

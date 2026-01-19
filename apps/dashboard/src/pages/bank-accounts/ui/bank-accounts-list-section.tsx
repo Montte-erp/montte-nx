@@ -8,7 +8,6 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import {
    InputGroup,
    InputGroupAddon,
@@ -24,7 +23,7 @@ import { keepPreviousData, useSuspenseQuery } from "@tanstack/react-query";
 import type { RowSelectionState } from "@tanstack/react-table";
 import { Building, Check, Search, Trash2, X } from "lucide-react";
 import { Fragment, Suspense, useEffect, useMemo, useState } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { ErrorBoundary } from "react-error-boundary";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useTRPC } from "@/integrations/clients";
 import { useBankAccountBulkActions } from "../features/use-bank-account-bulk-actions";
@@ -34,18 +33,11 @@ import {
    createBankAccountColumns,
 } from "./bank-accounts-table-columns";
 
-function BankAccountsListErrorFallback(props: FallbackProps) {
+function BankAccountsListErrorFallback() {
    return (
-      <Card>
-         <CardContent className="pt-6">
-            {createErrorFallback({
-               errorDescription:
-                  "Failed to load bank accounts. Please try again later.",
-               errorTitle: "Error loading bank accounts",
-               retryText: "Retry",
-            })(props)}
-         </CardContent>
-      </Card>
+      <div className="p-4 text-center text-sm text-destructive">
+         Falha ao carregar contas bancárias. Tente novamente mais tarde.
+      </div>
    );
 }
 

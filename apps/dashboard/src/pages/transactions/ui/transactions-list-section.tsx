@@ -20,9 +20,7 @@ function TransactionsListErrorFallback(props: FallbackProps) {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               Lista de Transações
-            </CardTitle>
+            <CardTitle>Lista de Transações</CardTitle>
             <CardDescription>
                Veja todas as suas transações financeiras aqui.
             </CardDescription>
@@ -30,9 +28,9 @@ function TransactionsListErrorFallback(props: FallbackProps) {
          <CardContent>
             {createErrorFallback({
                errorDescription:
-                  "Failed to load transactions. Please try again later.",
-               errorTitle: "Error loading transactions",
-               retryText: "Retry",
+                  "Falha ao carregar transações. Tente novamente mais tarde.",
+               errorTitle: "Erro ao carregar transações",
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>

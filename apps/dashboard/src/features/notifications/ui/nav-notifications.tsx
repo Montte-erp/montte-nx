@@ -185,8 +185,8 @@ function NotificationListContent({
             <NotificationItemInline
                key={notification.id}
                notification={notification}
-               onMarkAsRead={onMarkAsRead}
                onDismiss={onDismiss}
+               onMarkAsRead={onMarkAsRead}
             />
          ))}
       </ItemGroup>
@@ -227,8 +227,8 @@ export function NotificationCredenzaContent() {
                <NotificationListContent
                   isLoading={isLoading}
                   notifications={notifications}
-                  onMarkAsRead={markAsRead}
                   onDismiss={dismiss}
+                  onMarkAsRead={markAsRead}
                />
             </ScrollArea>
          </CredenzaBody>
@@ -316,8 +316,8 @@ export function NavNotifications() {
                      <NotificationListContent
                         isLoading={isLoading}
                         notifications={notifications}
-                        onMarkAsRead={markAsRead}
                         onDismiss={dismiss}
+                        onMarkAsRead={markAsRead}
                      />
                   </ScrollArea>
                </DropdownMenuContent>

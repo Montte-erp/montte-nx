@@ -317,9 +317,7 @@ export function BillFilterBar({
                </PopoverTrigger>
                <PopoverContent align="start" className="w-80 p-0">
                   <div className="border-b px-4 py-3">
-                     <h4 className="font-medium text-sm">
-                        Mais Filtros
-                     </h4>
+                     <h4 className="font-medium text-sm">Mais Filtros</h4>
                      <p className="text-xs text-muted-foreground mt-0.5">
                         Refine os resultados com filtros
                      </p>
@@ -338,9 +336,7 @@ export function BillFilterBar({
                            value={bankAccountFilter}
                         >
                            <SelectTrigger className="h-9">
-                              <SelectValue
-                                 placeholder="Selecione uma conta"
-                              />
+                              <SelectValue placeholder="Selecione uma conta" />
                            </SelectTrigger>
                            <SelectContent>
                               <SelectItem value="all">

@@ -182,13 +182,13 @@ const SendInvitationFormContent = () => {
                            className="w-full"
                            emptyMessage={
                               teams.length === 0
-                                 ? "No teams available"
-                                 : "No team found."
+                                 ? "Nenhum time disponível"
+                                 : "Nenhum time encontrado."
                            }
                            onValueChange={(value) => field.handleChange(value)}
                            options={teamOptions}
-                           placeholder="Select a team (optional)"
-                           searchPlaceholder="Search teams..."
+                           placeholder="Selecione um time (opcional)"
+                           searchPlaceholder="Pesquisar times..."
                            value={field.state.value}
                         />
                      </Field>

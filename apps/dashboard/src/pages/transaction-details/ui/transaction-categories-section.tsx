@@ -46,9 +46,7 @@ type ChartConfig = {
 function CategorizationErrorFallback() {
    return (
       <Alert variant="destructive">
-         <AlertDescription>
-            Falha ao carregar categorias
-         </AlertDescription>
+         <AlertDescription>Falha ao carregar categorias</AlertDescription>
       </Alert>
    );
 }

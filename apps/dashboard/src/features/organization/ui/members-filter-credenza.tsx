@@ -30,15 +30,11 @@ export function MembersFilterCredenza({
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               Cargo
-            </CredenzaTitle>
+            <CredenzaTitle>Cargo</CredenzaTitle>
          </CredenzaHeader>
          <CredenzaBody className="space-y-4">
             <div className="space-y-2">
-               <p className="text-sm font-medium">
-                  Cargo
-               </p>
+               <p className="text-sm font-medium">Cargo</p>
                <ToggleGroup
                   className="flex-wrap justify-start"
                   onValueChange={(value) => onRoleFilterChange(value || "all")}

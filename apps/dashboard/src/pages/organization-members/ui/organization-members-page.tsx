@@ -1,13 +1,15 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Suspense, useState } from "react";
+import { Suspense, useCallback, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
+import { toast } from "sonner";
+import { DefaultHeader } from "@/default/default-header";
+import { usePlanFeatures } from "@/features/billing/lib/use-plan-features";
 import { UpgradeRequired } from "@/features/billing/ui/upgrade-required";
 import {
    MembersDataTable,
    MembersDataTableSkeleton,
 } from "@/features/organization/ui/members-data-table";
-import { usePlanFeatures } from "@/features/billing/lib/use-plan-features";
-import { useTRPC } from "@/integrations/clients";
+import { betterAuthClient, useTRPC } from "@/integrations/clients";
 import { MembersQuickActionsToolbar } from "./organization-members-quick-actions-toolbar";
 
 function MembersPageContent() {
@@ -18,6 +20,35 @@ function MembersPageContent() {
    const { data: members } = useSuspenseQuery(
       trpc.organization.getActiveOrganizationMembers.queryOptions(),
    );
+
+   const removeMember = useCallback(async (memberId: string) => {
+      await betterAuthClient.organization.removeMember(
+         {
+            memberIdOrEmail: memberId,
+         },
+         {
+            onRequest: () => {
+               toast.loading("Removendo membro...");
+            },
+            onSuccess: () => {
+               toast.success("Membro removido com sucesso");
+            },
+            onError: (ctx) => {
+               toast.error(ctx.error.message || "Falha ao remover membro");
+            },
+         },
+      );
+   }, []);
+
+   const handleRemove = (memberId: string) => {
+      removeMember(memberId);
+   };
+
+   const handleBulkRemove = (memberIds: string[]) => {
+      for (const id of memberIds) {
+         removeMember(id);
+      }
+   };
 
    const hasActiveFilters = roleFilter !== "all";
 
@@ -36,6 +67,8 @@ function MembersPageContent() {
             searchTerm,
          }}
          members={members}
+         onBulkRemove={handleBulkRemove}
+         onRemove={handleRemove}
       />
    );
 }
@@ -61,15 +94,11 @@ export function OrganizationMembersPage() {
          requiredPlan="erp"
       >
          <main className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-               <div>
-                  <h1 className="text-2xl font-bold">Membros</h1>
-                  <p className="text-muted-foreground">
-                     Gerencie os membros da sua organização
-                  </p>
-               </div>
-               <MembersQuickActionsToolbar />
-            </div>
+            <DefaultHeader
+               actions={<MembersQuickActionsToolbar />}
+               description="Gerencie os membros da sua organização"
+               title="Membros"
+            />
 
             <ErrorBoundary FallbackComponent={MembersPageError}>
                <Suspense fallback={<MembersDataTableSkeleton />}>

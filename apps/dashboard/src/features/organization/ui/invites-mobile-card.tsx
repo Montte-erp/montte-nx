@@ -9,9 +9,17 @@ import {
    CardTitle,
 } from "@packages/ui/components/card";
 import { Checkbox } from "@packages/ui/components/checkbox";
+import { CollapsibleTrigger } from "@packages/ui/components/collapsible";
+import {
+   DropdownMenu,
+   DropdownMenuContent,
+   DropdownMenuItem,
+   DropdownMenuSeparator,
+   DropdownMenuTrigger,
+} from "@packages/ui/components/dropdown-menu";
 import { formatDate } from "@packages/utils/date";
 import type { Row } from "@tanstack/react-table";
-import { RefreshCw, Trash2 } from "lucide-react";
+import { ChevronDown, MoreVertical, RefreshCw, Trash2 } from "lucide-react";
 import { RoleBadge } from "@/features/organization/ui/shared/role-badge";
 import { StatusBadge } from "@/features/organization/ui/shared/status-badge";
 import type { Invite } from "./invites-table-columns";
@@ -27,6 +35,9 @@ type InvitesMobileCardProps = {
 
 export function InvitesMobileCard({
    row,
+   isExpanded,
+   toggleExpanded,
+   canExpand = true,
    onResend,
    onRevoke,
 }: InvitesMobileCardProps) {
@@ -35,7 +46,7 @@ export function InvitesMobileCard({
    const isExpired = new Date(invite.expiresAt) < new Date();
 
    return (
-      <Card className="py-4">
+      <Card className={isExpanded ? "rounded-b-none py-4" : "py-4"}>
          <CardHeader className="flex items-center gap-2">
             <div className="min-w-0 flex-1">
                <CardTitle className="text-sm truncate">
@@ -44,7 +55,8 @@ export function InvitesMobileCard({
                <CardDescription
                   className={isExpired ? "text-destructive" : undefined}
                >
-                  Expira em: {formatDate(new Date(invite.expiresAt), "DD MMM YYYY")}
+                  Expira em:{" "}
+                  {formatDate(new Date(invite.expiresAt), "DD MMM YYYY")}
                </CardDescription>
             </div>
             <CardAction>
@@ -58,28 +70,45 @@ export function InvitesMobileCard({
             <RoleBadge role={invite.role} />
             <StatusBadge status={invite.status} />
          </CardContent>
-         {isPending && (onResend || onRevoke) && (
+         {canExpand && (
             <CardFooter className="flex gap-2">
-               {onResend && (
-                  <Button
-                     className="flex-1"
-                     onClick={() => onResend(invite)}
-                     variant="outline"
-                  >
-                     <RefreshCw className="size-4 mr-2" />
-                     Reenviar
-                  </Button>
+               {isPending && (onResend || onRevoke) && (
+                  <DropdownMenu>
+                     <DropdownMenuTrigger asChild>
+                        <Button size="icon" variant="outline">
+                           <MoreVertical className="size-4" />
+                        </Button>
+                     </DropdownMenuTrigger>
+                     <DropdownMenuContent align="start">
+                        {onResend && (
+                           <DropdownMenuItem onClick={() => onResend(invite)}>
+                              <RefreshCw className="size-4 mr-2" />
+                              Reenviar
+                           </DropdownMenuItem>
+                        )}
+                        {onRevoke && (
+                           <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                 className="text-destructive"
+                                 onClick={() => onRevoke(invite)}
+                              >
+                                 <Trash2 className="size-4 mr-2" />
+                                 Revogar
+                              </DropdownMenuItem>
+                           </>
+                        )}
+                     </DropdownMenuContent>
+                  </DropdownMenu>
                )}
-               {onRevoke && (
-                  <Button
-                     className="flex-1"
-                     onClick={() => onRevoke(invite)}
-                     variant="destructive"
-                  >
-                     <Trash2 className="size-4 mr-2" />
-                     Revogar
+               <CollapsibleTrigger asChild onClick={toggleExpanded}>
+                  <Button className="flex-1" variant="outline">
+                     <ChevronDown
+                        className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                     />
+                     Mais
                   </Button>
-               )}
+               </CollapsibleTrigger>
             </CardFooter>
          )}
       </Card>

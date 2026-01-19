@@ -378,7 +378,9 @@ export function ManageInterestTemplateForm({
       return (
          <div className="grid gap-4 py-4">
             <div className="space-y-2">
-               <h3 className="font-medium text-base">Configurações Avançadas</h3>
+               <h3 className="font-medium text-base">
+                  Configurações Avançadas
+               </h3>
                <p className="text-sm text-muted-foreground">
                   Configure correção monetária e carência
                </p>

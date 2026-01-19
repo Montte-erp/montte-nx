@@ -97,23 +97,8 @@ function BudgetContent() {
       return null;
    }
 
-   const target = budget.target as
-      | { type: "category"; categoryId: string }
-      | { type: "categories"; categoryIds: string[] }
-      | { type: "tag"; tagId: string }
-      | { type: "cost_center"; costCenterId: string };
-
-   const defaultCategoryIds =
-      target.type === "category"
-         ? [target.categoryId]
-         : target.type === "categories"
-           ? target.categoryIds
-           : [];
-
-   const defaultTagIds = target.type === "tag" ? [target.tagId] : [];
-
-   const defaultCostCenterId =
-      target.type === "cost_center" ? target.costCenterId : "";
+   // Use the budget's tagId for default tag
+   const defaultTagIds = [budget.tagId];
 
    return (
       <main className="space-y-6">
@@ -124,8 +109,6 @@ function BudgetContent() {
                      openSheet({
                         children: (
                            <ManageTransactionForm
-                              defaultCategoryIds={defaultCategoryIds}
-                              defaultCostCenterId={defaultCostCenterId}
                               defaultTagIds={defaultTagIds}
                            />
                         ),
@@ -232,9 +215,7 @@ function BudgetPageError({ error, resetErrorBoundary }: FallbackProps) {
                   <EmptyMedia variant="icon">
                      <FileText className="size-12 text-destructive" />
                   </EmptyMedia>
-                  <EmptyTitle>
-                     Erro ao carregar orçamento
-                  </EmptyTitle>
+                  <EmptyTitle>Erro ao carregar orçamento</EmptyTitle>
                   <EmptyDescription>{error?.message}</EmptyDescription>
                   <div className="mt-6 flex gap-2 justify-center">
                      <Button

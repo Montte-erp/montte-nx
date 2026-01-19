@@ -1,6 +1,6 @@
 import { cn } from "@packages/ui/lib/utils";
 import { Link, useLocation } from "@tanstack/react-router";
-import { CirclePlus, Home, Menu, Receipt, TrendingUp } from "lucide-react";
+import { CirclePlus, Gauge, Menu, Receipt, TrendingUp } from "lucide-react";
 import { useHaptic } from "@/features/pwa/lib/use-haptic";
 import { ManageTransactionForm } from "@/features/transaction/ui/manage-transaction-form";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
@@ -10,10 +10,10 @@ import { MoreMenuCredenza } from "./more-menu-credenza";
 
 const navItems = [
    {
-      icon: Home,
-      id: "home",
-      label: "Início",
-      to: "/$slug/home",
+      icon: Gauge,
+      id: "dashboards",
+      label: "Dashboards",
+      to: "/$slug/dashboards",
    },
    {
       icon: TrendingUp,

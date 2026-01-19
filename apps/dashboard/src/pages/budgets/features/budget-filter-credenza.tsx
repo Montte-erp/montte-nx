@@ -86,9 +86,7 @@ export function BudgetFilterCredenza({
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               Filtrar orçamentos
-            </CredenzaTitle>
+            <CredenzaTitle>Filtrar orçamentos</CredenzaTitle>
             <CredenzaDescription>
                Filtre os orçamentos por diferentes critérios
             </CredenzaDescription>
@@ -109,9 +107,7 @@ export function BudgetFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Ordenar por
-                     </FieldLabel>
+                     <FieldLabel>Ordenar por</FieldLabel>
                      <Select
                         onValueChange={(
                            value: "name" | "createdAt" | "updatedAt" | "amount",
@@ -119,9 +115,7 @@ export function BudgetFilterCredenza({
                         value={orderBy}
                      >
                         <SelectTrigger>
-                           <SelectValue
-                              placeholder="Selecione o campo"
-                           />
+                           <SelectValue placeholder="Selecione o campo" />
                         </SelectTrigger>
                         <SelectContent>
                            {orderByOptions.map((option) => (
@@ -139,9 +133,7 @@ export function BudgetFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Direção da Ordenação
-                     </FieldLabel>
+                     <FieldLabel>Direção da Ordenação</FieldLabel>
                      <Select
                         onValueChange={(value: "asc" | "desc") =>
                            onOrderDirectionChange(value)
@@ -149,9 +141,7 @@ export function BudgetFilterCredenza({
                         value={orderDirection}
                      >
                         <SelectTrigger>
-                           <SelectValue
-                              placeholder="Selecione a direção"
-                           />
+                           <SelectValue placeholder="Selecione a direção" />
                         </SelectTrigger>
                         <SelectContent>
                            {orderDirectionOptions.map((option) => (
@@ -169,9 +159,7 @@ export function BudgetFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        Itens por Página
-                     </FieldLabel>
+                     <FieldLabel>Itens por Página</FieldLabel>
                      <Select
                         onValueChange={(value) =>
                            onPageSizeChange?.(Number(value))

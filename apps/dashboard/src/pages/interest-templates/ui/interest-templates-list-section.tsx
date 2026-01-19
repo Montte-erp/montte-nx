@@ -40,7 +40,8 @@ function InterestTemplatesListErrorFallback(props: FallbackProps) {
       <Card>
          <CardContent className="pt-6">
             {createErrorFallback({
-               errorDescription: "Falha ao carregar modelos de juros. Tente novamente mais tarde.",
+               errorDescription:
+                  "Falha ao carregar modelos de juros. Tente novamente mais tarde.",
                errorTitle: "Erro ao carregar modelos",
                retryText: "Tentar novamente",
             })(props)}

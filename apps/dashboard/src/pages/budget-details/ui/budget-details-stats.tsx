@@ -48,8 +48,7 @@ export function BudgetDetailsStats({ budget }: BudgetDetailsStatsProps) {
         ? "Próximos do limite"
         : "No caminho certo";
 
-   const periodLabel =
-      periodLabels[budget.periodType as string] || "Mensal";
+   const periodLabel = periodLabels[budget.periodType as string] || "Mensal";
 
    return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
