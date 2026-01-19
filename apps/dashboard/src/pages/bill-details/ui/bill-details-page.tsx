@@ -13,6 +13,7 @@ import { ArrowLeft, Receipt } from "lucide-react";
 import { Suspense } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { DefaultHeader } from "@/default/default-header";
+import { useDetailTabName } from "@/features/custom-dashboard/hooks/use-detail-tab-name";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useTRPC } from "@/integrations/clients";
 import { BillActionButtons } from "./bill-action-buttons";
@@ -33,6 +34,8 @@ function BillDetailsContent() {
    const { data: bill } = useSuspenseQuery(
       trpc.bills.getById.queryOptions({ id: billId }),
    );
+
+   useDetailTabName(bill?.description);
 
    const handleDeleteSuccess = () => {
       router.navigate({

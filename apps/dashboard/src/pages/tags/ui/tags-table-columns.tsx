@@ -4,64 +4,18 @@ import {
    AnnouncementTag,
    AnnouncementTitle,
 } from "@packages/ui/components/announcement";
-import { Button } from "@packages/ui/components/button";
-import {
-   Card,
-   CardContent,
-   CardDescription,
-   CardFooter,
-   CardHeader,
-   CardTitle,
-} from "@packages/ui/components/card";
-import { CollapsibleTrigger } from "@packages/ui/components/collapsible";
-import {
-   Tooltip,
-   TooltipContent,
-   TooltipTrigger,
-} from "@packages/ui/components/tooltip";
 import { formatDate } from "@packages/utils/date";
-import { Link } from "@tanstack/react-router";
 import type { ColumnDef, Row } from "@tanstack/react-table";
-import {
-   ArrowDownLeft,
-   ArrowUpRight,
-   Calendar,
-   ChevronDown,
-   Edit,
-   Eye,
-   Tag,
-   Trash2,
-} from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Calendar, Tag } from "lucide-react";
+
+import { EntityActions, ViewDetailsButton } from "@/components/entity-actions";
+import { EntityExpandedContent } from "@/components/entity-expanded-content";
+import { EntityMobileCardWithActions } from "@/components/entity-mobile-card";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useSheet } from "@/hooks/use-sheet";
 import type { Tag as TagType } from "@/pages/tags/ui/tags-page";
 import { ManageTagForm } from "../features/manage-tag-form";
 import { useDeleteTag } from "../features/use-delete-tag";
-
-function TagActionsCell({ tag }: { tag: TagType }) {
-   const { activeOrganization } = useActiveOrganization();
-
-   return (
-      <div className="flex justify-end">
-         <Tooltip>
-            <TooltipTrigger asChild>
-               <Button asChild size="icon" variant="outline">
-                  <Link
-                     params={{
-                        slug: activeOrganization.slug,
-                        tagId: tag.id,
-                     }}
-                     to="/$slug/tags/$tagId"
-                  >
-                     <Eye className="size-4" />
-                  </Link>
-               </Button>
-            </TooltipTrigger>
-            <TooltipContent>Ver detalhes</TooltipContent>
-         </Tooltip>
-      </div>
-   );
-}
 
 export function createTagColumns(_slug: string): ColumnDef<TagType>[] {
    return [
@@ -107,7 +61,21 @@ export function createTagColumns(_slug: string): ColumnDef<TagType>[] {
          header: "Criado em",
       },
       {
-         cell: ({ row }) => <TagActionsCell tag={row.original} />,
+         cell: ({ row }) => {
+            const tag = row.original;
+            const { activeOrganization } = useActiveOrganization();
+            return (
+               <ViewDetailsButton
+                  detailsLink={{
+                     params: {
+                        slug: activeOrganization.slug,
+                        tagId: tag.id,
+                     },
+                     to: "/$slug/tags/$tagId",
+                  }}
+               />
+            );
+         },
          header: "",
          id: "actions",
       },
@@ -130,7 +98,21 @@ export function TagExpandedContent({
    const { openSheet } = useSheet();
    const { deleteTag } = useDeleteTag({ tag });
 
-   const statsRow = (
+   const detailsLink = {
+      params: {
+         slug: activeOrganization.slug,
+         tagId: tag.id,
+      },
+      to: "/$slug/tags/$tagId" as const,
+   };
+
+   const handleEdit = () => {
+      openSheet({
+         children: <ManageTagForm tag={tag} />,
+      });
+   };
+
+   const statsContent = (
       <div className="flex flex-wrap items-center gap-2">
          <Announcement>
             <AnnouncementTag className="flex items-center gap-1.5">
@@ -156,52 +138,20 @@ export function TagExpandedContent({
       </div>
    );
 
-   const actionsRow = (
-      <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
-         <Button asChild size="sm" variant="outline">
-            <Link
-               params={{
-                  slug: activeOrganization.slug,
-                  tagId: tag.id,
-               }}
-               to="/$slug/tags/$tagId"
-            >
-               <Eye className="size-4" />
-               Ver detalhes
-            </Link>
-         </Button>
-         <Button
-            onClick={(e) => {
-               e.stopPropagation();
-               openSheet({
-                  children: <ManageTagForm tag={tag} />,
-               });
-            }}
-            size="sm"
-            variant="outline"
-         >
-            <Edit className="size-4" />
-            Editar tag
-         </Button>
-         <Button
-            onClick={(e) => {
-               e.stopPropagation();
-               deleteTag();
-            }}
-            size="sm"
-            variant="destructive"
-         >
-            <Trash2 className="size-4" />
-            Excluir tag
-         </Button>
-      </div>
-   );
-
    return (
-      <div className="p-4 space-y-4">
-         {statsRow}
-         {actionsRow}
-      </div>
+      <EntityExpandedContent
+         actions={
+            <EntityActions
+               detailsLink={detailsLink}
+               labels={{ edit: "Editar tag", delete: "Excluir tag" }}
+               onDelete={deleteTag}
+               onEdit={handleEdit}
+               variant="full"
+            />
+         }
+      >
+         {statsContent}
+      </EntityExpandedContent>
    );
 }
 
@@ -225,108 +175,65 @@ export function TagMobileCard({
    const { openSheet } = useSheet();
    const { deleteTag } = useDeleteTag({ tag });
 
+   const detailsLink = {
+      params: {
+         slug: activeOrganization.slug,
+         tagId: tag.id,
+      },
+      to: "/$slug/tags/$tagId" as const,
+   };
+
+   const handleEdit = () => {
+      openSheet({
+         children: <ManageTagForm tag={tag} />,
+      });
+   };
+
+   const statsContent = (
+      <div className="flex flex-wrap items-center gap-2">
+         <Announcement>
+            <AnnouncementTag className="flex items-center gap-1.5">
+               <ArrowDownLeft className="size-3.5 text-emerald-500" />
+            </AnnouncementTag>
+            <AnnouncementTitle className="text-emerald-500">
+               +{formatDecimalCurrency(income)}
+            </AnnouncementTitle>
+         </Announcement>
+         <Announcement>
+            <AnnouncementTag className="flex items-center gap-1.5">
+               <ArrowUpRight className="size-3.5 text-destructive" />
+            </AnnouncementTag>
+            <AnnouncementTitle className="text-destructive">
+               -{formatDecimalCurrency(expenses)}
+            </AnnouncementTitle>
+         </Announcement>
+      </div>
+   );
+
    return (
-      <Card className={isExpanded ? "rounded-b-none border-b-0" : ""}>
-         <CardHeader>
-            <div className="flex items-center gap-3">
-               <div
-                  className="size-10 rounded-sm flex items-center justify-center"
-                  style={{ backgroundColor: tag.color }}
-               >
-                  <Tag className="size-5 text-white" />
-               </div>
-               <div>
-                  <CardTitle className="text-base">{tag.name}</CardTitle>
-                  <CardDescription>
-                     {formatDate(new Date(tag.createdAt), "DD MMM YYYY")}
-                  </CardDescription>
-               </div>
+      <EntityMobileCardWithActions
+         content={statsContent}
+         expandedActions={
+            <EntityActions
+               detailsLink={detailsLink}
+               labels={{ edit: "Editar tag", delete: "Excluir tag" }}
+               onDelete={deleteTag}
+               onEdit={handleEdit}
+               variant="mobile"
+            />
+         }
+         icon={
+            <div
+               className="size-10 rounded-sm flex items-center justify-center"
+               style={{ backgroundColor: tag.color }}
+            >
+               <Tag className="size-5 text-white" />
             </div>
-         </CardHeader>
-         <CardContent className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-               <Announcement>
-                  <AnnouncementTag className="flex items-center gap-1.5">
-                     <ArrowDownLeft className="size-3.5 text-emerald-500" />
-                  </AnnouncementTag>
-                  <AnnouncementTitle className="text-emerald-500">
-                     +{formatDecimalCurrency(income)}
-                  </AnnouncementTitle>
-               </Announcement>
-               <Announcement>
-                  <AnnouncementTag className="flex items-center gap-1.5">
-                     <ArrowUpRight className="size-3.5 text-destructive" />
-                  </AnnouncementTag>
-                  <AnnouncementTitle className="text-destructive">
-                     -{formatDecimalCurrency(expenses)}
-                  </AnnouncementTitle>
-               </Announcement>
-            </div>
-         </CardContent>
-         <CardFooter className="flex-col gap-2">
-            <CollapsibleTrigger asChild>
-               <Button
-                  className="w-full"
-                  onClick={(e) => {
-                     e.stopPropagation();
-                     toggleExpanded();
-                  }}
-                  variant="outline"
-               >
-                  {isExpanded ? "Menos info" : "Mais info"}
-                  <ChevronDown
-                     className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-                  />
-               </Button>
-            </CollapsibleTrigger>
-            {isExpanded && (
-               <div className="w-full space-y-2 pt-2 border-t">
-                  <Button
-                     asChild
-                     className="w-full justify-start"
-                     size="sm"
-                     variant="outline"
-                  >
-                     <Link
-                        params={{
-                           slug: activeOrganization.slug,
-                           tagId: tag.id,
-                        }}
-                        to="/$slug/tags/$tagId"
-                     >
-                        <Eye className="size-4" />
-                        Ver detalhes
-                     </Link>
-                  </Button>
-                  <Button
-                     className="w-full justify-start"
-                     onClick={(e) => {
-                        e.stopPropagation();
-                        openSheet({
-                           children: <ManageTagForm tag={tag} />,
-                        });
-                     }}
-                     size="sm"
-                     variant="outline"
-                  >
-                     <Edit className="size-4" />
-                     Editar tag
-                  </Button>
-                  <Button
-                     className="w-full justify-start"
-                     onClick={(e) => {
-                        e.stopPropagation();
-                        deleteTag();
-                     }}
-                     size="sm"
-                     variant="destructive"
-                  >
-                     <Trash2 className="size-4" />
-                     Excluir tag
-                  </Button>
-               </div>
-            )}
-         </CardFooter>
-      </Card>
+         }
+         isExpanded={isExpanded}
+         subtitle={formatDate(new Date(tag.createdAt), "DD MMM YYYY")}
+         title={tag.name}
+         toggleExpanded={toggleExpanded}
+      />
    );
 }

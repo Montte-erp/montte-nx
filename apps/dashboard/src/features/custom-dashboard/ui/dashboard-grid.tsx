@@ -39,7 +39,11 @@ export function DashboardGrid({
       <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
          {sortedWidgets.map((widget) => (
             <div
-               className={cn("col-span-1", getColSpanClass(widget.position.w))}
+               className={cn(
+                  "col-span-1",
+                  widget.type !== "text_card" && "h-[400px]",
+                  getColSpanClass(widget.position.w),
+               )}
                key={widget.id}
             >
                <WidgetContainer

@@ -28,7 +28,10 @@ export function SidebarSubmenuPanel() {
 
    // Calculate position - panel appears flush with sidebar edge
    // Use CSS variable values: --sidebar-width: 16rem (256px), --sidebar-width-icon: 3rem (48px)
-   const sidebarWidth = isCollapsed ? "var(--sidebar-width-icon)" : "var(--sidebar-width)";
+   // Inset variant adds 1rem padding + 2px when collapsed
+   const sidebarWidth = isCollapsed
+      ? "calc(var(--sidebar-width-icon) + 1rem + 2px)"
+      : "var(--sidebar-width)";
 
    // Render dynamic content based on activeSubmenu
    const renderPanelContent = () => {

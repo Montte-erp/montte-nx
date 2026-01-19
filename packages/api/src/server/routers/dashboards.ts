@@ -159,6 +159,7 @@ const insightConfigSchema = z.object({
                "this_quarter",
                "this_year",
                "last_year",
+               "custom",
             ])
             .optional(),
          startDate: z.string().optional(),
@@ -178,29 +179,6 @@ const textCardConfigSchema = z.object({
    content: z.string(),
 });
 
-const balanceCardConfigSchema = z.object({
-   type: z.literal("balance_card"),
-   showComparison: z.boolean().optional(),
-});
-
-const quickActionsConfigSchema = z.object({
-   type: z.literal("quick_actions"),
-   actions: z.array(
-      z.enum(["new_transaction", "reports", "payables", "receivables"]),
-   ),
-});
-
-const bankAccountsConfigSchema = z.object({
-   type: z.literal("bank_accounts"),
-   limit: z.number().optional(),
-   showCreateButton: z.boolean().optional(),
-});
-
-const recentTransactionsConfigSchema = z.object({
-   type: z.literal("recent_transactions"),
-   limit: z.number().optional(),
-});
-
 const anomalyCardConfigSchema = z.object({
    type: z.literal("anomaly_card"),
    limit: z.number().optional(),
@@ -210,10 +188,6 @@ const anomalyCardConfigSchema = z.object({
 const widgetConfigSchema = z.discriminatedUnion("type", [
    insightConfigSchema,
    textCardConfigSchema,
-   balanceCardConfigSchema,
-   quickActionsConfigSchema,
-   bankAccountsConfigSchema,
-   recentTransactionsConfigSchema,
    anomalyCardConfigSchema,
 ]);
 
@@ -442,10 +416,6 @@ export const dashboardRouter = router({
             type: z.enum([
                "insight",
                "text_card",
-               "balance_card",
-               "quick_actions",
-               "bank_accounts",
-               "recent_transactions",
                "anomaly_card",
             ]),
             position: widgetPositionSchema,

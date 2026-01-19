@@ -20,6 +20,7 @@ import { FileText, Home, Plus } from "lucide-react";
 import { Suspense, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { DefaultHeader } from "@/default/default-header";
+import { useDetailTabName } from "@/features/custom-dashboard/hooks/use-detail-tab-name";
 import { TransactionListProvider } from "@/features/transaction/lib/transaction-list-context";
 import { ManageTransactionForm } from "@/features/transaction/ui/manage-transaction-form";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
@@ -81,6 +82,8 @@ function CategoryContent() {
    const { data: category } = useSuspenseQuery(
       trpc.categories.getById.queryOptions({ id: categoryId }),
    );
+
+   useDetailTabName(category?.name);
 
    if (!categoryId || typeof categoryId !== "string") {
       return (

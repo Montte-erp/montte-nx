@@ -203,7 +203,6 @@ export const ThemeSwitcher = ({ className }: ThemeSwitcherProps) => {
             console.warn("Empty theme received, defaulting to system");
             themeKey = "system";
          }
-         console.log("Theme changing to:", themeKey);
          setTheme(themeKey);
       },
       [setTheme],

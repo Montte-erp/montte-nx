@@ -1,15 +1,6 @@
 import type { RouterOutput } from "@packages/api/client";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
-import {
-   Card,
-   CardContent,
-   CardDescription,
-   CardFooter,
-   CardHeader,
-   CardTitle,
-} from "@packages/ui/components/card";
-import { CollapsibleTrigger } from "@packages/ui/components/collapsible";
 import { Separator } from "@packages/ui/components/separator";
 import { Switch } from "@packages/ui/components/switch";
 import {
@@ -27,7 +18,6 @@ import {
    CalendarClock,
    CalendarDays,
    CalendarRange,
-   ChevronDown,
    Clock,
    Copy,
    ExternalLink,
@@ -35,6 +25,8 @@ import {
    Trash2,
    Zap,
 } from "lucide-react";
+import { ResponsiveEntityExpandedContent } from "@/components/entity-expanded-content";
+import { EntityMobileCard } from "@/components/entity-mobile-card";
 import { useAutomationActions } from "@/features/automations/hooks/use-automation-actions";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 
@@ -60,6 +52,7 @@ function formatDate(date: Date | string | null): string {
    }).format(new Date(date));
 }
 
+// Keep AutomationActionsCell since it has special actions (test run, duplicate) that differ from standard EntityActions
 function AutomationActionsCell({ automation }: { automation: Automation }) {
    const { activeOrganization } = useActiveOrganization();
    const { handleDelete, handleDuplicate, handleTestRun, isTesting } =
@@ -213,191 +206,202 @@ export function AutomationExpandedContent({
    const { handleDelete, handleTrigger, isTesting } =
       useAutomationActions(automation);
 
-   const onDeleteClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      handleDelete();
-   };
-
-   const onTriggerClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      handleTrigger();
-   };
-
    const TriggerIcon = triggerTypeIcons[automation.triggerType] || Zap;
    const consequencesCount = automation.consequences?.length || 0;
    const conditionsCount = automation.conditions?.conditions?.length || 0;
 
-   if (isMobile) {
-      return (
-         <div className="p-4 space-y-4">
-            <div className="space-y-3">
-               <div className="flex items-center gap-2">
-                  <TriggerIcon className="size-4 text-muted-foreground" />
-                  <div>
-                     <p className="text-xs text-muted-foreground">Gatilho</p>
-                     <p className="text-sm font-medium">
-                        {getTriggerLabel(automation.triggerType)}
-                     </p>
-                  </div>
-               </div>
-               <Separator />
-               <div className="flex items-center gap-2">
-                  <Activity className="size-4 text-muted-foreground" />
-                  <div>
-                     <p className="text-xs text-muted-foreground">Ações</p>
-                     <p className="text-sm font-medium">
-                        {consequencesCount}{" "}
-                        {consequencesCount === 1 ? "ação" : "ações"}
-                     </p>
-                  </div>
-               </div>
-               <Separator />
-               <div className="flex items-center gap-2">
-                  <Clock className="size-4 text-muted-foreground" />
-                  <div>
-                     <p className="text-xs text-muted-foreground">Criado em</p>
-                     <p className="text-sm font-medium">
-                        {formatDate(automation.createdAt)}
-                     </p>
-                  </div>
-               </div>
-               {automation.description && (
-                  <>
-                     <Separator />
-                     <div>
-                        <p className="text-xs text-muted-foreground mb-1">
-                           Descrição
-                        </p>
-                        <p className="text-sm">{automation.description}</p>
-                     </div>
-                  </>
-               )}
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2">
-               {automation.enabled && (
-                  <Button
-                     className="w-full justify-start"
-                     disabled={isTesting}
-                     onClick={onTriggerClick}
-                     size="sm"
-                     variant="outline"
-                  >
-                     <Play className="size-4" />
-                     Executar Manualmente
-                  </Button>
-               )}
-               <Button
-                  asChild
-                  className="w-full justify-start"
-                  size="sm"
-                  variant="outline"
-               >
-                  <Link
-                     params={{
-                        automationId: automation.id,
-                        slug: activeOrganization.slug,
-                     }}
-                     to="/$slug/automations/$automationId"
-                  >
-                     <ExternalLink className="size-4" />
-                     Detalhes
-                  </Link>
-               </Button>
-               <Button
-                  className="w-full justify-start"
-                  onClick={onDeleteClick}
-                  size="sm"
-                  variant="destructive"
-               >
-                  <Trash2 className="size-4" />
-                  Excluir
-               </Button>
+   const mobileContent = (
+      <div className="space-y-3">
+         <div className="flex items-center gap-2">
+            <TriggerIcon className="size-4 text-muted-foreground" />
+            <div>
+               <p className="text-xs text-muted-foreground">Gatilho</p>
+               <p className="text-sm font-medium">
+                  {getTriggerLabel(automation.triggerType)}
+               </p>
             </div>
          </div>
-      );
-   }
+         <Separator />
+         <div className="flex items-center gap-2">
+            <Activity className="size-4 text-muted-foreground" />
+            <div>
+               <p className="text-xs text-muted-foreground">Ações</p>
+               <p className="text-sm font-medium">
+                  {consequencesCount}{" "}
+                  {consequencesCount === 1 ? "ação" : "ações"}
+               </p>
+            </div>
+         </div>
+         <Separator />
+         <div className="flex items-center gap-2">
+            <Clock className="size-4 text-muted-foreground" />
+            <div>
+               <p className="text-xs text-muted-foreground">Criado em</p>
+               <p className="text-sm font-medium">
+                  {formatDate(automation.createdAt)}
+               </p>
+            </div>
+         </div>
+         {automation.description && (
+            <>
+               <Separator />
+               <div>
+                  <p className="text-xs text-muted-foreground mb-1">
+                     Descrição
+                  </p>
+                  <p className="text-sm">{automation.description}</p>
+               </div>
+            </>
+         )}
+      </div>
+   );
+
+   const desktopContent = (
+      <div className="flex items-center gap-6">
+         <div className="flex items-center gap-2">
+            <TriggerIcon className="size-4 text-muted-foreground" />
+            <div>
+               <p className="text-xs text-muted-foreground">Gatilho</p>
+               <p className="text-sm font-medium">
+                  {getTriggerLabel(automation.triggerType)}
+               </p>
+            </div>
+         </div>
+         <Separator className="h-8" orientation="vertical" />
+         <div className="flex items-center gap-2">
+            <Activity className="size-4 text-muted-foreground" />
+            <div>
+               <p className="text-xs text-muted-foreground">Configuração</p>
+               <p className="text-sm font-medium">
+                  {conditionsCount}{" "}
+                  {conditionsCount === 1 ? "condição" : "condições"},{" "}
+                  {consequencesCount}{" "}
+                  {consequencesCount === 1 ? "ação" : "ações"}
+               </p>
+            </div>
+         </div>
+         <Separator className="h-8" orientation="vertical" />
+         <div className="flex items-center gap-2">
+            <Clock className="size-4 text-muted-foreground" />
+            <div>
+               <p className="text-xs text-muted-foreground">Criado em</p>
+               <p className="text-sm font-medium">
+                  {formatDate(automation.createdAt)}
+               </p>
+            </div>
+         </div>
+         {automation.description && (
+            <>
+               <Separator className="h-8" orientation="vertical" />
+               <div className="max-w-xs">
+                  <p className="text-xs text-muted-foreground">Descrição</p>
+                  <p className="text-sm truncate">{automation.description}</p>
+               </div>
+            </>
+         )}
+      </div>
+   );
+
+   // Custom actions for automations (Execute, Details, Delete)
+   const mobileActions = (
+      <div className="space-y-2">
+         {automation.enabled && (
+            <Button
+               className="w-full justify-start"
+               disabled={isTesting}
+               onClick={(e) => {
+                  e.stopPropagation();
+                  handleTrigger();
+               }}
+               size="sm"
+               variant="outline"
+            >
+               <Play className="size-4" />
+               Executar Manualmente
+            </Button>
+         )}
+         <Button
+            asChild
+            className="w-full justify-start"
+            size="sm"
+            variant="outline"
+         >
+            <Link
+               params={{
+                  automationId: automation.id,
+                  slug: activeOrganization.slug,
+               }}
+               to="/$slug/automations/$automationId"
+            >
+               <ExternalLink className="size-4" />
+               Detalhes
+            </Link>
+         </Button>
+         <Button
+            className="w-full justify-start text-destructive hover:text-destructive"
+            onClick={(e) => {
+               e.stopPropagation();
+               handleDelete();
+            }}
+            size="sm"
+            variant="outline"
+         >
+            <Trash2 className="size-4" />
+            Excluir
+         </Button>
+      </div>
+   );
+
+   const desktopActions = (
+      <div className="flex items-center gap-2">
+         {automation.enabled && (
+            <Button
+               disabled={isTesting}
+               onClick={(e) => {
+                  e.stopPropagation();
+                  handleTrigger();
+               }}
+               size="sm"
+               variant="outline"
+            >
+               <Play className="size-4" />
+               Executar
+            </Button>
+         )}
+         <Button asChild size="sm" variant="outline">
+            <Link
+               params={{
+                  automationId: automation.id,
+                  slug: activeOrganization.slug,
+               }}
+               to="/$slug/automations/$automationId"
+            >
+               <ExternalLink className="size-4" />
+               Detalhes
+            </Link>
+         </Button>
+         <Button
+            onClick={(e) => {
+               e.stopPropagation();
+               handleDelete();
+            }}
+            size="sm"
+            variant="destructive"
+         >
+            <Trash2 className="size-4" />
+            Excluir
+         </Button>
+      </div>
+   );
 
    return (
-      <div className="p-4 flex items-center justify-between gap-6">
-         <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-               <TriggerIcon className="size-4 text-muted-foreground" />
-               <div>
-                  <p className="text-xs text-muted-foreground">Gatilho</p>
-                  <p className="text-sm font-medium">
-                     {getTriggerLabel(automation.triggerType)}
-                  </p>
-               </div>
-            </div>
-            <Separator className="h-8" orientation="vertical" />
-            <div className="flex items-center gap-2">
-               <Activity className="size-4 text-muted-foreground" />
-               <div>
-                  <p className="text-xs text-muted-foreground">Configuração</p>
-                  <p className="text-sm font-medium">
-                     {conditionsCount}{" "}
-                     {conditionsCount === 1 ? "condição" : "condições"},{" "}
-                     {consequencesCount}{" "}
-                     {consequencesCount === 1 ? "ação" : "ações"}
-                  </p>
-               </div>
-            </div>
-            <Separator className="h-8" orientation="vertical" />
-            <div className="flex items-center gap-2">
-               <Clock className="size-4 text-muted-foreground" />
-               <div>
-                  <p className="text-xs text-muted-foreground">Criado em</p>
-                  <p className="text-sm font-medium">
-                     {formatDate(automation.createdAt)}
-                  </p>
-               </div>
-            </div>
-            {automation.description && (
-               <>
-                  <Separator className="h-8" orientation="vertical" />
-                  <div className="max-w-xs">
-                     <p className="text-xs text-muted-foreground">Descrição</p>
-                     <p className="text-sm truncate">
-                        {automation.description}
-                     </p>
-                  </div>
-               </>
-            )}
-         </div>
-
-         <div className="flex items-center gap-2">
-            {automation.enabled && (
-               <Button
-                  disabled={isTesting}
-                  onClick={onTriggerClick}
-                  size="sm"
-                  variant="outline"
-               >
-                  <Play className="size-4" />
-                  Executar
-               </Button>
-            )}
-            <Button asChild size="sm" variant="outline">
-               <Link
-                  params={{
-                     automationId: automation.id,
-                     slug: activeOrganization.slug,
-                  }}
-                  to="/$slug/automations/$automationId"
-               >
-                  <ExternalLink className="size-4" />
-                  Detalhes
-               </Link>
-            </Button>
-            <Button onClick={onDeleteClick} size="sm" variant="destructive">
-               <Trash2 className="size-4" />
-               Excluir
-            </Button>
-         </div>
-      </div>
+      <ResponsiveEntityExpandedContent
+         desktopActions={desktopActions}
+         desktopContent={desktopContent}
+         isMobile={isMobile}
+         mobileActions={mobileActions}
+         mobileContent={mobileContent}
+      />
    );
 }
 
@@ -417,54 +421,35 @@ export function AutomationMobileCard({
    const consequencesCount = automation.consequences?.length || 0;
 
    return (
-      <Card className={isExpanded ? "rounded-b-none border-b-0" : ""}>
-         <CardHeader>
-            <div className="flex items-center gap-3">
-               <div className="size-10 rounded-lg flex items-center justify-center bg-primary/10 text-primary">
-                  <TriggerIcon className="size-5" />
+      <EntityMobileCard
+         content={
+            <>
+               <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">
+                     {consequencesCount}{" "}
+                     {consequencesCount === 1 ? "ação" : "ações"}
+                  </span>
+                  <AutomationStatusToggle automation={automation} />
                </div>
-               <div className="flex-1">
-                  <CardTitle className="text-base">{automation.name}</CardTitle>
-                  <CardDescription>
-                     {getTriggerLabel(automation.triggerType)}
-                  </CardDescription>
+               <div className="flex gap-2 mt-3">
+                  <Badge variant={automation.enabled ? "default" : "secondary"}>
+                     {automation.enabled ? "Ativa" : "Inativa"}
+                  </Badge>
+                  <Badge className="font-mono" variant="outline">
+                     Prioridade: {automation.priority}
+                  </Badge>
                </div>
+            </>
+         }
+         icon={
+            <div className="size-10 rounded-lg flex items-center justify-center bg-primary/10 text-primary">
+               <TriggerIcon className="size-5" />
             </div>
-         </CardHeader>
-         <CardContent className="space-y-3">
-            <div className="flex justify-between items-center">
-               <span className="text-sm text-muted-foreground">
-                  {consequencesCount}{" "}
-                  {consequencesCount === 1 ? "ação" : "ações"}
-               </span>
-               <AutomationStatusToggle automation={automation} />
-            </div>
-            <div className="flex gap-2">
-               <Badge variant={automation.enabled ? "default" : "secondary"}>
-                  {automation.enabled ? "Ativa" : "Inativa"}
-               </Badge>
-               <Badge className="font-mono" variant="outline">
-                  Prioridade: {automation.priority}
-               </Badge>
-            </div>
-         </CardContent>
-         <CardFooter>
-            <CollapsibleTrigger asChild>
-               <Button
-                  className="w-full"
-                  onClick={(e) => {
-                     e.stopPropagation();
-                     toggleExpanded();
-                  }}
-                  variant="outline"
-               >
-                  {isExpanded ? "Menos informações" : "Mais informações"}
-                  <ChevronDown
-                     className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-                  />
-               </Button>
-            </CollapsibleTrigger>
-         </CardFooter>
-      </Card>
+         }
+         isExpanded={isExpanded}
+         subtitle={getTriggerLabel(automation.triggerType)}
+         title={automation.name}
+         toggleExpanded={toggleExpanded}
+      />
    );
 }

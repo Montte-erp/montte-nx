@@ -1,3 +1,4 @@
+import { getNestedValue } from "@packages/utils/object";
 import {
    Body,
    Button,
@@ -32,15 +33,6 @@ function processTemplate(text: string, data: Record<string, unknown>): string {
       const value = getNestedValue(data, key.trim());
       return value != null ? String(value) : `{{${key}}}`;
    });
-}
-
-function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
-   return path.split(".").reduce<unknown>((acc, part) => {
-      if (acc && typeof acc === "object" && part in acc) {
-         return (acc as Record<string, unknown>)[part];
-      }
-      return undefined;
-   }, obj);
 }
 
 /**

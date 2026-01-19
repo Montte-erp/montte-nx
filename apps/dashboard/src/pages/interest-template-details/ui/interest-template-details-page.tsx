@@ -32,6 +32,7 @@ import {
 import { Suspense } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { DefaultHeader } from "@/default/default-header";
+import { useDetailTabName } from "@/features/custom-dashboard/hooks/use-detail-tab-name";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";
@@ -72,6 +73,8 @@ function InterestTemplateContent() {
    const { data: template } = useSuspenseQuery(
       trpc.interestTemplates.getById.queryOptions({ id: interestTemplateId }),
    );
+
+   useDetailTabName(template?.name);
 
    const handleDeleteSuccess = () => {
       router.navigate({

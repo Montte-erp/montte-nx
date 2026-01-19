@@ -13,6 +13,7 @@ import { Home, Receipt } from "lucide-react";
 import { Suspense } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { DefaultHeader } from "@/default/default-header";
+import { useDetailTabName } from "@/features/custom-dashboard/hooks/use-detail-tab-name";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useTRPC } from "@/integrations/clients";
 import { TransactionActionButtons } from "./transaction-action-buttons";
@@ -34,6 +35,8 @@ function TransactionContent() {
    const { data: transaction } = useSuspenseQuery(
       trpc.transactions.getById.queryOptions({ id: transactionId }),
    );
+
+   useDetailTabName(transaction?.description);
 
    const handleDeleteSuccess = () => {
       router.navigate({

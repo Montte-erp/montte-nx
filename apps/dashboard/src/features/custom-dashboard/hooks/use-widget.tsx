@@ -8,10 +8,6 @@ import { z } from "zod";
 export const widgetTypeSchema = z.enum([
    "insight",
    "text_card",
-   "balance_card",
-   "quick_actions",
-   "bank_accounts",
-   "recent_transactions",
    "anomaly_card",
 ]);
 

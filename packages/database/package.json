@@ -37,6 +37,10 @@
       "./schemas/*": {
          "default": "./src/schemas/*.ts",
          "types": "./dist/src/schemas/*.d.ts"
+      },
+      "./utils/*": {
+         "default": "./src/utils/*.ts",
+         "types": "./dist/src/utils/*.d.ts"
       }
    },
    "files": [

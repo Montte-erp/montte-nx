@@ -94,6 +94,7 @@ export const relativePeriodEnum = pgEnum("relative_period", [
    "this_quarter",
    "this_year",
    "last_year",
+   "custom",
 ]);
 
 // ============================================
@@ -196,7 +197,8 @@ export type InsightConfig = {
          | "last_month"
          | "this_quarter"
          | "this_year"
-         | "last_year";
+         | "last_year"
+         | "custom";
       startDate?: string;
       endDate?: string;
    };
@@ -215,27 +217,6 @@ export type TextCardConfig = {
    content: string;
 };
 
-export type BalanceCardConfig = {
-   type: "balance_card";
-   showComparison?: boolean;
-};
-
-export type QuickActionsConfig = {
-   type: "quick_actions";
-   actions: ("new_transaction" | "reports" | "payables" | "receivables")[];
-};
-
-export type BankAccountsConfig = {
-   type: "bank_accounts";
-   limit?: number;
-   showCreateButton?: boolean;
-};
-
-export type RecentTransactionsConfig = {
-   type: "recent_transactions";
-   limit?: number;
-};
-
 export type AnomalyCardConfig = {
    type: "anomaly_card";
    limit?: number;
@@ -245,10 +226,6 @@ export type AnomalyCardConfig = {
 export type WidgetConfig =
    | InsightConfig
    | TextCardConfig
-   | BalanceCardConfig
-   | QuickActionsConfig
-   | BankAccountsConfig
-   | RecentTransactionsConfig
    | AnomalyCardConfig;
 
 export type DashboardFilterConfig = {

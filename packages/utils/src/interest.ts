@@ -222,16 +222,3 @@ export function formatInterestBreakdown(
       total: result.updatedAmount,
    };
 }
-
-export function isOverdue(dueDate: Date, referenceDate?: Date): boolean {
-   return calculateDaysOverdue(dueDate, referenceDate) > 0;
-}
-
-export function isWithinGracePeriod(
-   dueDate: Date,
-   gracePeriodDays: number,
-   referenceDate?: Date,
-): boolean {
-   const daysOverdue = calculateDaysOverdue(dueDate, referenceDate);
-   return daysOverdue > 0 && daysOverdue <= gracePeriodDays;
-}

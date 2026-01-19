@@ -1,6 +1,7 @@
 import { AppError, propagateError } from "@packages/utils/errors";
 import { and, desc, eq, gte, inArray, isNotNull, lte, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
+import { transactionCategory } from "../schemas/categories";
 import {
    type FinancialGoal,
    financialGoal,
@@ -8,9 +9,8 @@ import {
    type NewFinancialGoal,
    type ProgressCalculationType,
 } from "../schemas/goals";
-import { transaction } from "../schemas/transactions";
 import { transactionTag } from "../schemas/tags";
-import { transactionCategory } from "../schemas/categories";
+import { transaction } from "../schemas/transactions";
 
 export type {
    FinancialGoal,
@@ -94,7 +94,10 @@ export async function calculateGoalProgress(
             total: sql<string>`COALESCE(SUM(${amountCondition}), 0)`,
          })
          .from(transactionTag)
-         .innerJoin(transaction, eq(transactionTag.transactionId, transaction.id));
+         .innerJoin(
+            transaction,
+            eq(transactionTag.transactionId, transaction.id),
+         );
 
       // Add category join if linkedCategoryIds are provided
       if (linkedCategoryIds && linkedCategoryIds.length > 0) {
@@ -102,7 +105,9 @@ export async function calculateGoalProgress(
             transactionCategory,
             eq(transactionCategory.transactionId, transaction.id),
          );
-         conditions.push(inArray(transactionCategory.categoryId, linkedCategoryIds));
+         conditions.push(
+            inArray(transactionCategory.categoryId, linkedCategoryIds),
+         );
       }
 
       const result = await query.where(and(...conditions));
@@ -272,7 +277,9 @@ export async function findGoalByTagId(
 export async function updateGoal(
    dbClient: DatabaseInstance,
    goalId: string,
-   data: Partial<Omit<NewFinancialGoal, "id" | "organizationId" | "createdAt" | "tagId">>,
+   data: Partial<
+      Omit<NewFinancialGoal, "id" | "organizationId" | "createdAt" | "tagId">
+   >,
 ): Promise<FinancialGoal | undefined> {
    try {
       const result = await dbClient

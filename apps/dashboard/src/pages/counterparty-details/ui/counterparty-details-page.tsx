@@ -14,6 +14,7 @@ import { useParams, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, Building2, FileText, User, Users } from "lucide-react";
 import { Suspense } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { useDetailTabName } from "@/features/custom-dashboard/hooks/use-detail-tab-name";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useTRPC } from "@/integrations/clients";
 import { CounterpartyActionButtons } from "./counterparty-action-buttons";
@@ -72,6 +73,8 @@ function CounterpartyContent() {
    const { data: counterparty } = useSuspenseQuery(
       trpc.counterparties.getById.queryOptions({ id: counterpartyId }),
    );
+
+   useDetailTabName(counterparty?.name);
 
    const handleDeleteSuccess = () => {
       router.navigate({

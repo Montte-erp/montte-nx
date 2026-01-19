@@ -13,6 +13,8 @@ import {
 import {
    type ChartConfig,
    ChartContainer,
+   ChartLegend,
+   ChartLegendContent,
    ChartTooltip,
    ChartTooltipContent,
 } from "@packages/ui/components/chart";
@@ -32,7 +34,6 @@ import {
    BarChart,
    CartesianGrid,
    Cell,
-   Legend,
    Line,
    LineChart,
    Pie,
@@ -44,6 +45,10 @@ import {
 import { useTRPC } from "@/integrations/clients";
 import type { InsightData } from "../hooks/use-insight-data";
 import type { DrillDownContext } from "../hooks/use-insight-drill-down";
+import {
+   resolveDateRange,
+   type RelativePeriod,
+} from "../lib/resolve-date-range";
 import { CategoryAnalysisChart } from "./category-analysis-chart";
 import { getItemColor } from "./chart-colors";
 import { ComparisonChart } from "./comparison-chart";
@@ -69,10 +74,39 @@ export function InsightWidget({
 }: InsightWidgetProps) {
    const trpc = useTRPC();
 
+   // Resolve widget-level date range override to actual dates
+   const resolvedFilters = useMemo(() => {
+      // If widget has a date range override, resolve it to actual dates
+      const relativePeriod = config.dateRangeOverride?.relativePeriod;
+
+      if (relativePeriod) {
+         const customStart = config.dateRangeOverride?.startDate
+            ? new Date(config.dateRangeOverride.startDate)
+            : null;
+         const customEnd = config.dateRangeOverride?.endDate
+            ? new Date(config.dateRangeOverride.endDate)
+            : null;
+
+         const { startDate, endDate } = resolveDateRange(
+            relativePeriod as RelativePeriod,
+            customStart,
+            customEnd,
+         );
+
+         return {
+            ...globalFilters,
+            dateRange: { startDate, endDate },
+         };
+      }
+
+      // Fall back to global filters if no widget-level override
+      return globalFilters;
+   }, [config.dateRangeOverride, globalFilters]);
+
    const { data, isLoading, error } = useQuery(
       trpc.dashboards.queryInsight.queryOptions({
          config,
-         globalFilters,
+         globalFilters: resolvedFilters,
       }),
    );
 
@@ -445,6 +479,7 @@ function LineChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
    return (
       <ChartContainer className="h-full w-full" config={chartConfig}>
          <LineChart
+            accessibilityLayer
             data={chartData}
             margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
          >
@@ -465,7 +500,17 @@ function LineChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
                }
                tickLine={false}
             />
-            <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartTooltip
+               content={
+                  <ChartTooltipContent
+                     formatter={(value) =>
+                        config.aggregation === "count"
+                           ? (value as number).toLocaleString()
+                           : formatDecimalCurrency(value as number)
+                     }
+                  />
+               }
+            />
             {hasComparisonOverlay && (
                <Line
                   connectNulls
@@ -521,7 +566,7 @@ function LineChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
                </>
             )}
             {(hasComparisonOverlay || hasForecast) && config.showLegend && (
-               <Legend />
+               <ChartLegend content={<ChartLegendContent />} />
             )}
          </LineChart>
       </ChartContainer>
@@ -575,6 +620,7 @@ function BarChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
    return (
       <ChartContainer className="h-full w-full" config={chartConfig}>
          <BarChart
+            accessibilityLayer
             data={chartData}
             margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
          >
@@ -595,7 +641,17 @@ function BarChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
                }
                tickLine={false}
             />
-            <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartTooltip
+               content={
+                  <ChartTooltipContent
+                     formatter={(value) =>
+                        config.aggregation === "count"
+                           ? (value as number).toLocaleString()
+                           : formatDecimalCurrency(value as number)
+                     }
+                  />
+               }
+            />
             <Bar
                cursor={onDrillDown ? "pointer" : undefined}
                dataKey="value"
@@ -667,8 +723,18 @@ function PieChartWidget({
 
    return (
       <ChartContainer className="h-full w-full" config={chartConfig}>
-         <PieChart margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
-            <ChartTooltip content={<ChartTooltipContent />} />
+         <PieChart accessibilityLayer margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+            <ChartTooltip
+               content={
+                  <ChartTooltipContent
+                     formatter={(value) =>
+                        config.aggregation === "count"
+                           ? (value as number).toLocaleString()
+                           : formatDecimalCurrency(value as number)
+                     }
+                  />
+               }
+            />
             <Pie
                cursor={onDrillDown ? "pointer" : undefined}
                data={data.breakdown}
@@ -1044,6 +1110,7 @@ function AreaChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
    return (
       <ChartContainer className="h-full w-full" config={chartConfig}>
          <AreaChart
+            accessibilityLayer
             data={chartData}
             margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
          >
@@ -1064,7 +1131,17 @@ function AreaChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
                }
                tickLine={false}
             />
-            <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartTooltip
+               content={
+                  <ChartTooltipContent
+                     formatter={(value) =>
+                        config.aggregation === "count"
+                           ? (value as number).toLocaleString()
+                           : formatDecimalCurrency(value as number)
+                     }
+                  />
+               }
+            />
             {hasComparisonOverlay && (
                <Area
                   connectNulls
@@ -1122,7 +1199,7 @@ function AreaChartWidget({ data, config, onDrillDown }: ChartComponentProps) {
                </>
             )}
             {(hasComparisonOverlay || hasForecast) && config.showLegend && (
-               <Legend />
+               <ChartLegend content={<ChartLegendContent />} />
             )}
          </AreaChart>
       </ChartContainer>
@@ -1164,6 +1241,7 @@ function StackedBarChartWidget({
    return (
       <ChartContainer className="h-full w-full" config={chartConfig}>
          <BarChart
+            accessibilityLayer
             data={chartData}
             margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
          >
@@ -1184,7 +1262,17 @@ function StackedBarChartWidget({
                }
                tickLine={false}
             />
-            <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartTooltip
+               content={
+                  <ChartTooltipContent
+                     formatter={(value) =>
+                        config.aggregation === "count"
+                           ? (value as number).toLocaleString()
+                           : formatDecimalCurrency(value as number)
+                     }
+                  />
+               }
+            />
             {breakdownLabels.length > 0 ? (
                breakdownLabels.map((label, index) => (
                   <Bar
@@ -1207,7 +1295,9 @@ function StackedBarChartWidget({
                   stackId="stack"
                />
             )}
-            {breakdownLabels.length > 0 && <Legend />}
+            {breakdownLabels.length > 0 && (
+               <ChartLegend content={<ChartLegendContent />} />
+            )}
          </BarChart>
       </ChartContainer>
    );
@@ -1248,6 +1338,7 @@ function LineCumulativeWidget({
    return (
       <ChartContainer className="h-full w-full" config={chartConfig}>
          <AreaChart
+            accessibilityLayer
             data={cumulativeData}
             margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
          >
@@ -1268,7 +1359,17 @@ function LineCumulativeWidget({
                }
                tickLine={false}
             />
-            <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartTooltip
+               content={
+                  <ChartTooltipContent
+                     formatter={(value) =>
+                        config.aggregation === "count"
+                           ? (value as number).toLocaleString()
+                           : formatDecimalCurrency(value as number)
+                     }
+                  />
+               }
+            />
             <Area
                dataKey="value"
                fill="var(--color-value)"
@@ -1318,6 +1419,7 @@ function BarTotalWidget({ data, config, onDrillDown }: ChartComponentProps) {
    return (
       <ChartContainer className="h-full w-full" config={chartConfig}>
          <BarChart
+            accessibilityLayer
             data={data.breakdown}
             layout="vertical"
             margin={{ top: 5, right: 20, bottom: 5, left: 80 }}
@@ -1346,7 +1448,17 @@ function BarTotalWidget({ data, config, onDrillDown }: ChartComponentProps) {
                type="category"
                width={75}
             />
-            <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartTooltip
+               content={
+                  <ChartTooltipContent
+                     formatter={(value) =>
+                        config.aggregation === "count"
+                           ? (value as number).toLocaleString()
+                           : formatDecimalCurrency(value as number)
+                     }
+                  />
+               }
+            />
             <Bar
                cursor={onDrillDown ? "pointer" : undefined}
                dataKey="value"

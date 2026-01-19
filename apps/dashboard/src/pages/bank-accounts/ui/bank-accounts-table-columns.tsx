@@ -7,27 +7,12 @@ import {
 } from "@packages/ui/components/announcement";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
-import {
-   Card,
-   CardContent,
-   CardDescription,
-   CardFooter,
-   CardHeader,
-   CardTitle,
-} from "@packages/ui/components/card";
-import { CollapsibleTrigger } from "@packages/ui/components/collapsible";
-import {
-   Tooltip,
-   TooltipContent,
-   TooltipTrigger,
-} from "@packages/ui/components/tooltip";
 import { formatDate } from "@packages/utils/date";
 import { Link } from "@tanstack/react-router";
 import type { ColumnDef, Row } from "@tanstack/react-table";
 import {
    ArrowDownLeft,
    ArrowUpRight,
-   ChevronDown,
    Download,
    Edit,
    Eye,
@@ -52,36 +37,13 @@ function getAccountTypeIcon(type: string | null | undefined) {
    }
 }
 
+import { ViewDetailsButton } from "@/components/entity-actions";
+import { EntityMobileCard } from "@/components/entity-mobile-card";
 import { ManageBankAccountForm } from "@/features/bank-account/ui/manage-bank-account-form";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useSheet } from "@/hooks/use-sheet";
 import { useDeleteBankAccount } from "@/pages/bank-account-details/features/use-delete-bank-account";
 import { useToggleBankAccountStatus } from "@/pages/bank-accounts/features/use-toggle-bank-account-status";
-
-function BankAccountActionsCell({ account }: { account: BankAccount }) {
-   const { activeOrganization } = useActiveOrganization();
-
-   return (
-      <div className="flex justify-end gap-1">
-         <Tooltip>
-            <TooltipTrigger asChild>
-               <Button asChild size="icon" variant="outline">
-                  <Link
-                     params={{
-                        bankAccountId: account.id,
-                        slug: activeOrganization.slug,
-                     }}
-                     to="/$slug/bank-accounts/$bankAccountId"
-                  >
-                     <Eye className="size-4" />
-                  </Link>
-               </Button>
-            </TooltipTrigger>
-            <TooltipContent>Ver detalhes</TooltipContent>
-         </Tooltip>
-      </div>
-   );
-}
 
 export function createBankAccountColumns(): ColumnDef<BankAccount>[] {
    return [
@@ -164,7 +126,21 @@ export function createBankAccountColumns(): ColumnDef<BankAccount>[] {
          header: "Criado em",
       },
       {
-         cell: ({ row }) => <BankAccountActionsCell account={row.original} />,
+         cell: ({ row }) => {
+            const account = row.original;
+            const { activeOrganization } = useActiveOrganization();
+            return (
+               <ViewDetailsButton
+                  detailsLink={{
+                     params: {
+                        bankAccountId: account.id,
+                        slug: activeOrganization.slug,
+                     },
+                     to: "/$slug/bank-accounts/$bankAccountId",
+                  }}
+               />
+            );
+         },
          header: "",
          id: "actions",
       },
@@ -212,7 +188,8 @@ export function BankAccountExpandedContent({
       deleteBankAccount();
    };
 
-   // Common stats row for both mobile and desktop
+   // Bank accounts have custom actions (Import/Export, Status toggle) that don't fit EntityActions
+   // We keep the existing pattern but use proper structure
    const statsRow = (
       <div className="flex flex-wrap items-center gap-2">
          <Announcement>
@@ -251,7 +228,6 @@ export function BankAccountExpandedContent({
       </div>
    );
 
-   // Common actions row for both mobile and desktop
    const actionsRow = (
       <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
          <Button
@@ -348,54 +324,43 @@ export function BankAccountMobileCard({
    const AccountTypeIcon = getAccountTypeIcon(account.type);
 
    return (
-      <Card className={isExpanded ? "rounded-b-none border-b-0" : ""}>
-         <CardHeader>
-            <CardDescription>{account.name}</CardDescription>
-            <CardTitle>{account.bank}</CardTitle>
-            <CardDescription>
-               <Badge variant="outline">{formatDecimalCurrency(balance)}</Badge>
-            </CardDescription>
-         </CardHeader>
-         <CardContent className="flex flex-wrap items-center gap-2">
-            <Announcement>
-               <AnnouncementTag
-                  style={{
-                     backgroundColor: `${statusColor}20`,
-                     color: statusColor,
-                  }}
-               >
-                  <StatusIcon className="size-3.5" />
-               </AnnouncementTag>
-               <AnnouncementTitle style={{ color: statusColor }}>
-                  {isActive ? "Ativa" : "Inativa"}
-               </AnnouncementTitle>
-            </Announcement>
-            <Announcement>
-               <AnnouncementTag className="flex items-center gap-1.5">
-                  <AccountTypeIcon className="size-3.5" />
-               </AnnouncementTag>
-               <AnnouncementTitle>
-                  {typeMap[account.type] || account.type}
-               </AnnouncementTitle>
-            </Announcement>
-         </CardContent>
-         <CardFooter>
-            <CollapsibleTrigger asChild>
-               <Button
-                  className="w-full"
-                  onClick={(e) => {
-                     e.stopPropagation();
-                     toggleExpanded();
-                  }}
-                  variant="outline"
-               >
-                  {isExpanded ? "Menos informações" : "Mais informações"}
-                  <ChevronDown
-                     className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-                  />
-               </Button>
-            </CollapsibleTrigger>
-         </CardFooter>
-      </Card>
+      <EntityMobileCard
+         content={
+            <div className="flex flex-wrap items-center gap-2">
+               <Announcement>
+                  <AnnouncementTag
+                     style={{
+                        backgroundColor: `${statusColor}20`,
+                        color: statusColor,
+                     }}
+                  >
+                     <StatusIcon className="size-3.5" />
+                  </AnnouncementTag>
+                  <AnnouncementTitle style={{ color: statusColor }}>
+                     {isActive ? "Ativa" : "Inativa"}
+                  </AnnouncementTitle>
+               </Announcement>
+               <Announcement>
+                  <AnnouncementTag className="flex items-center gap-1.5">
+                     <AccountTypeIcon className="size-3.5" />
+                  </AnnouncementTag>
+                  <AnnouncementTitle>
+                     {typeMap[account.type] || account.type}
+                  </AnnouncementTitle>
+               </Announcement>
+            </div>
+         }
+         icon={
+            <div className="size-10 rounded-sm flex items-center justify-center bg-muted">
+               <Landmark className="size-5" />
+            </div>
+         }
+         isExpanded={isExpanded}
+         subtitle={
+            <Badge variant="outline">{formatDecimalCurrency(balance)}</Badge>
+         }
+         title={account.bank ?? account.name}
+         toggleExpanded={toggleExpanded}
+      />
    );
 }

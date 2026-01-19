@@ -10,6 +10,7 @@ import {
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
+import { DatePicker } from "@packages/ui/components/date-picker";
 import { FieldLabel } from "@packages/ui/components/field";
 import { MultiSelect } from "@packages/ui/components/multi-select";
 import {
@@ -59,6 +60,7 @@ const DATE_RANGE_OPTIONS = [
    { value: "this_quarter", label: "Este trimestre" },
    { value: "this_year", label: "Este ano" },
    { value: "last_year", label: "Ano passado" },
+   { value: "custom", label: "Personalizado" },
 ] as const;
 
 const GROUPING_OPTIONS: Array<{ value: TimeGrouping; label: string }> = [
@@ -164,6 +166,16 @@ export function WidgetFiltersCredenza({
    const [dateRange, setDateRange] = useState<RelativePeriod>(
       config.dateRangeOverride?.relativePeriod ?? "last_30_days",
    );
+   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(
+      config.dateRangeOverride?.startDate
+         ? new Date(config.dateRangeOverride.startDate)
+         : undefined,
+   );
+   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(
+      config.dateRangeOverride?.endDate
+         ? new Date(config.dateRangeOverride.endDate)
+         : undefined,
+   );
    const [timeGrouping, setTimeGrouping] = useState<TimeGrouping>(
       config.timeGrouping ?? "month",
    );
@@ -241,6 +253,14 @@ export function WidgetFiltersCredenza({
       onApply({
          dateRangeOverride: {
             relativePeriod: dateRange,
+            startDate:
+               dateRange === "custom" && customStartDate
+                  ? customStartDate.toISOString()
+                  : undefined,
+            endDate:
+               dateRange === "custom" && customEndDate
+                  ? customEndDate.toISOString()
+                  : undefined,
          },
          timeGrouping,
          comparison: comparison === "none" ? undefined : { type: comparison },
@@ -252,6 +272,8 @@ export function WidgetFiltersCredenza({
    const handleClearFilters = () => {
       // Clear time-based filters
       setDateRange("last_30_days");
+      setCustomStartDate(undefined);
+      setCustomEndDate(undefined);
       setTimeGrouping("month");
       setComparison("none");
       // Clear data filters
@@ -318,6 +340,34 @@ export function WidgetFiltersCredenza({
                         ))}
                      </SelectContent>
                   </Select>
+
+                  {/* Custom date pickers */}
+                  {dateRange === "custom" && (
+                     <div className="flex flex-col gap-3 pt-2">
+                        <div className="flex flex-col gap-1.5">
+                           <FieldLabel className="text-xs text-muted-foreground m-0">
+                              Data inicial
+                           </FieldLabel>
+                           <DatePicker
+                              className="w-full"
+                              date={customStartDate}
+                              onSelect={setCustomStartDate}
+                              placeholder="Selecione a data inicial"
+                           />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                           <FieldLabel className="text-xs text-muted-foreground m-0">
+                              Data final
+                           </FieldLabel>
+                           <DatePicker
+                              className="w-full"
+                              date={customEndDate}
+                              onSelect={setCustomEndDate}
+                              placeholder="Selecione a data final"
+                           />
+                        </div>
+                     </div>
+                  )}
                </section>
 
                {/* Grouped By */}
@@ -328,29 +378,27 @@ export function WidgetFiltersCredenza({
                         Agrupado por
                      </FieldLabel>
                   </div>
-                  <ToggleGroup
-                     className="flex flex-wrap gap-2"
+                  <Select
                      onValueChange={(value) =>
-                        value && setTimeGrouping(value as TimeGrouping)
+                        setTimeGrouping(value as TimeGrouping)
                      }
-                     type="single"
                      value={timeGrouping}
-                     variant="outline"
                   >
-                     {GROUPING_OPTIONS.map((option) => (
-                        <ToggleGroupItem
-                           className={cn(
-                              "px-4 py-2 rounded-full border transition-all",
-                              timeGrouping === option.value &&
-                                 "bg-primary text-primary-foreground border-primary",
-                           )}
-                           key={option.value}
-                           value={option.value}
-                        >
-                           {option.label}
-                        </ToggleGroupItem>
-                     ))}
-                  </ToggleGroup>
+                     <SelectTrigger className="w-full h-11">
+                        <SelectValue placeholder="Selecione o agrupamento" />
+                     </SelectTrigger>
+                     <SelectContent>
+                        {GROUPING_OPTIONS.map((option) => (
+                           <SelectItem
+                              className="py-2.5"
+                              key={option.value}
+                              value={option.value}
+                           >
+                              {option.label}
+                           </SelectItem>
+                        ))}
+                     </SelectContent>
+                  </Select>
                </section>
 
                {/* Comparison */}

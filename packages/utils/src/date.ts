@@ -1,26 +1,3 @@
-export function getCurrentDate(timezone?: string): { date: string } {
-   const now = new Date();
-
-   if (timezone) {
-      return {
-         date: now
-            .toLocaleDateString("en-CA", {
-               day: "2-digit",
-               month: "2-digit",
-               timeZone: timezone,
-               year: "numeric",
-            })
-            .replace(/\//g, "-"),
-      };
-   }
-
-   const year = now.getFullYear();
-   const month = String(now.getMonth() + 1).padStart(2, "0");
-   const day = String(now.getDate()).padStart(2, "0");
-
-   return { date: `${year}-${month}-${day}` };
-}
-
 export type DateLocale = "pt-BR" | "en-US";
 
 interface DateParts {

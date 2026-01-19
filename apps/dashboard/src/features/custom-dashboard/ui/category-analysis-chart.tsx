@@ -1,6 +1,12 @@
 import type { InsightConfig } from "@packages/database/schemas/dashboards";
 import { formatDecimalCurrency } from "@packages/money";
 import { Card, CardContent } from "@packages/ui/components/card";
+import {
+   type ChartConfig,
+   ChartContainer,
+   ChartTooltip,
+   ChartTooltipContent,
+} from "@packages/ui/components/chart";
 import { Progress } from "@packages/ui/components/progress";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { cn } from "@packages/ui/lib/utils";
@@ -10,8 +16,6 @@ import {
    BarChart,
    CartesianGrid,
    Cell,
-   ResponsiveContainer,
-   Tooltip,
    XAxis,
    YAxis,
 } from "recharts";
@@ -87,6 +91,13 @@ export function CategoryAnalysisChart({
       }
    };
 
+   const chartConfig: ChartConfig = {
+      value: {
+         color: "hsl(var(--chart-1))",
+         label: "Valor",
+      },
+   };
+
    return (
       <div className="h-full flex flex-col gap-4 overflow-auto">
          {/* Summary Header */}
@@ -103,30 +114,35 @@ export function CategoryAnalysisChart({
 
          {/* Horizontal Bar Chart */}
          <div className="h-48 min-h-48">
-            <ResponsiveContainer height="100%" width="100%">
+            <ChartContainer className="h-full w-full" config={chartConfig}>
                <BarChart
+                  accessibilityLayer
                   data={categories.slice(0, 8)}
                   layout="vertical"
                   margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
                >
-                  <CartesianGrid horizontal={false} strokeDasharray="3 3" />
+                  <CartesianGrid className="stroke-muted" horizontal={false} strokeDasharray="3 3" />
                   <XAxis
+                     axisLine={false}
                      tick={{ fontSize: 10 }}
                      tickFormatter={(value) => formatDecimalCurrency(value)}
+                     tickLine={false}
                      type="number"
                   />
                   <YAxis
+                     axisLine={false}
                      dataKey="name"
                      tick={{ fontSize: 11 }}
+                     tickLine={false}
                      type="category"
                      width={75}
                   />
-                  <Tooltip
-                     formatter={(value: number) => [
-                        formatDecimalCurrency(value),
-                        "Amount",
-                     ]}
-                     labelStyle={{ fontWeight: "bold" }}
+                  <ChartTooltip
+                     content={
+                        <ChartTooltipContent
+                           formatter={(value) => formatDecimalCurrency(value as number)}
+                        />
+                     }
                   />
                   <Bar
                      cursor={onDrillDown ? "pointer" : undefined}
@@ -142,7 +158,7 @@ export function CategoryAnalysisChart({
                      ))}
                   </Bar>
                </BarChart>
-            </ResponsiveContainer>
+            </ChartContainer>
          </div>
 
          {/* Category List with Details */}

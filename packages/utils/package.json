@@ -9,10 +9,6 @@
       "typescript": "catalog:development"
    },
    "exports": {
-      "./array": {
-         "default": "./src/array.ts",
-         "types": "./dist/src/array.d.ts"
-      },
       "./colors": {
          "default": "./src/colors.ts",
          "types": "./dist/src/colors.d.ts"

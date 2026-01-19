@@ -21,6 +21,7 @@ import { Edit, Home, Landmark, Plus, Trash2 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { DefaultHeader } from "@/default/default-header";
+import { useDetailTabName } from "@/features/custom-dashboard/hooks/use-detail-tab-name";
 import { TransactionListProvider } from "@/features/transaction/lib/transaction-list-context";
 import { ManageTransactionForm } from "@/features/transaction/ui/manage-transaction-form";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
@@ -76,6 +77,8 @@ function CostCenterContent() {
    const { data: costCenter } = useSuspenseQuery(
       trpc.costCenters.getById.queryOptions({ id: costCenterId }),
    );
+
+   useDetailTabName(costCenter?.name);
 
    const handleDeleteSuccess = () => {
       router.navigate({

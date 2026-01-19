@@ -747,6 +747,19 @@ export function updateActiveTabRoute(pathname: string, search?: string) {
 }
 
 /**
+ * Update just the active tab's name.
+ * Used by detail pages to set the entity name after data loads.
+ */
+export function updateActiveTabName(name: string) {
+   dashboardTabsStore.setState((s) => ({
+      ...s,
+      tabs: s.tabs.map((tab) =>
+         tab.id === s.activeTabId ? { ...tab, name } : tab,
+      ),
+   }));
+}
+
+/**
  * Transform the active tab to match the current route.
  * - App and Search tabs transform their display (name, icon) to match the new route
  * - Dashboard and Insight tabs only update their stored route (they're tied to specific IDs)

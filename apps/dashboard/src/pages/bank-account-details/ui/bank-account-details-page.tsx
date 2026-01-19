@@ -33,6 +33,7 @@ import { Suspense, useMemo, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { DefaultHeader } from "@/default/default-header";
 import { ManageBankAccountForm } from "@/features/bank-account/ui/manage-bank-account-form";
+import { useDetailTabName } from "@/features/custom-dashboard/hooks/use-detail-tab-name";
 import { BankAccountPermissionsSheet } from "@/features/permissions/ui/bank-account-permissions-sheet";
 import { TransactionListProvider } from "@/features/transaction/lib/transaction-list-context";
 import { ManageTransactionForm } from "@/features/transaction/ui/manage-transaction-form";
@@ -112,6 +113,8 @@ function BankAccountContent() {
    const { data: categories = [] } = useSuspenseQuery(
       trpc.categories.getAll.queryOptions(),
    );
+
+   useDetailTabName(bankAccount?.name || "Conta Bancária");
 
    const handleDeleteSuccess = () => {
       router.navigate({

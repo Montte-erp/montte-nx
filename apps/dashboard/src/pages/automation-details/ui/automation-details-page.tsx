@@ -13,6 +13,7 @@ import { Check, Loader2, Settings, XCircle } from "lucide-react";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
+import { useDetailTabName } from "@/features/custom-dashboard/hooks/use-detail-tab-name";
 import type {
    AutomationEdge,
    AutomationNode,
@@ -115,6 +116,8 @@ function AutomationDetailsContent({ automationId }: { automationId: string }) {
    const { data: automation } = useSuspenseQuery(
       trpc.automations.getById.queryOptions({ id: automationId }),
    );
+
+   useDetailTabName(automation?.name);
 
    const [settings, setSettings] = useState<AutomationSettings>({
       description: automation.description || "",

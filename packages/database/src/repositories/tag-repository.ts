@@ -1,8 +1,8 @@
 import { AppError, propagateError } from "@packages/utils/errors";
 import { and, count, eq, ilike, inArray, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
-import { billTag, tag, transactionTag } from "../schemas/tags";
 import { financialGoal } from "../schemas/goals";
+import { billTag, tag, transactionTag } from "../schemas/tags";
 
 export type Tag = typeof tag.$inferSelect;
 export type NewTag = typeof tag.$inferInsert;

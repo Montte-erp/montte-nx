@@ -1,6 +1,14 @@
 import type { InsightConfig } from "@packages/database/schemas/dashboards";
 import { formatDecimalCurrency } from "@packages/money";
 import { Card, CardContent } from "@packages/ui/components/card";
+import {
+   type ChartConfig,
+   ChartContainer,
+   ChartLegend,
+   ChartLegendContent,
+   ChartTooltip,
+   ChartTooltipContent,
+} from "@packages/ui/components/chart";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { cn } from "@packages/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -16,9 +24,6 @@ import {
    BarChart,
    CartesianGrid,
    Cell,
-   Legend,
-   ResponsiveContainer,
-   Tooltip,
    XAxis,
    YAxis,
 } from "recharts";
@@ -103,6 +108,21 @@ export function ComparisonChart({
       previous: (item as { previousValue?: number }).previousValue ?? 0,
    }));
 
+   const chartConfig: ChartConfig = {
+      current: {
+         color: "hsl(var(--chart-1))",
+         label: "Período Atual",
+      },
+      previous: {
+         color: "hsl(var(--chart-2))",
+         label: comparisonLabel,
+      },
+      value: {
+         color: "hsl(var(--chart-1))",
+         label: "Valor",
+      },
+   };
+
    return (
       <div className="h-full flex flex-col gap-4 overflow-auto">
          {/* Summary Cards */}
@@ -178,84 +198,90 @@ export function ComparisonChart({
 
          {/* Comparison Bar Chart */}
          <div className="flex-1 min-h-48 px-1">
-            <ResponsiveContainer height="100%" width="100%">
+            <ChartContainer className="h-full w-full" config={chartConfig}>
                {breakdownComparison && breakdownComparison.length > 0 ? (
                   <BarChart
+                     accessibilityLayer
                      data={breakdownComparison.slice(0, 10)}
                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                   >
-                     <CartesianGrid strokeDasharray="3 3" />
-                     <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                     <CartesianGrid className="stroke-muted" strokeDasharray="3 3" vertical={false} />
+                     <XAxis axisLine={false} dataKey="name" tick={{ fontSize: 10 }} tickLine={false} />
                      <YAxis
+                        axisLine={false}
                         tick={{ fontSize: 10 }}
                         tickFormatter={(value) =>
                            config.aggregation === "count"
                               ? value.toLocaleString()
                               : formatDecimalCurrency(value)
                         }
+                        tickLine={false}
                      />
-                     <Tooltip
-                        formatter={(value: number, name: string) => [
-                           config.aggregation === "count"
-                              ? value.toLocaleString()
-                              : formatDecimalCurrency(value),
-                           name === "current"
-                              ? "Current Period"
-                              : comparisonLabel,
-                        ]}
+                     <ChartTooltip
+                        content={
+                           <ChartTooltipContent
+                              formatter={(value) =>
+                                 config.aggregation === "count"
+                                    ? (value as number).toLocaleString()
+                                    : formatDecimalCurrency(value as number)
+                              }
+                           />
+                        }
                      />
-                     <Legend />
+                     <ChartLegend content={<ChartLegendContent />} />
                      <Bar
                         dataKey="current"
-                        fill="hsl(var(--chart-1))"
+                        fill="var(--color-current)"
                         name="Current Period"
                         radius={[4, 4, 0, 0]}
                      />
                      <Bar
                         dataKey="previous"
-                        fill="hsl(var(--chart-2))"
+                        fill="var(--color-previous)"
                         name={comparisonLabel}
                         radius={[4, 4, 0, 0]}
                      />
                   </BarChart>
                ) : (
                   <BarChart
+                     accessibilityLayer
                      data={chartData}
                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                   >
-                     <CartesianGrid strokeDasharray="3 3" />
-                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                     <CartesianGrid className="stroke-muted" strokeDasharray="3 3" vertical={false} />
+                     <XAxis axisLine={false} dataKey="name" tick={{ fontSize: 12 }} tickLine={false} />
                      <YAxis
+                        axisLine={false}
                         tick={{ fontSize: 10 }}
                         tickFormatter={(value) =>
                            config.aggregation === "count"
                               ? value.toLocaleString()
                               : formatDecimalCurrency(value)
                         }
+                        tickLine={false}
                      />
-                     <Tooltip
-                        formatter={(value: number) => [
-                           config.aggregation === "count"
-                              ? value.toLocaleString()
-                              : formatDecimalCurrency(value),
-                           "Amount",
-                        ]}
+                     <ChartTooltip
+                        content={
+                           <ChartTooltipContent
+                              formatter={(value) =>
+                                 config.aggregation === "count"
+                                    ? (value as number).toLocaleString()
+                                    : formatDecimalCurrency(value as number)
+                              }
+                           />
+                        }
                      />
                      <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                         {chartData.map((_, index) => (
                            <Cell
-                              fill={
-                                 index === 0
-                                    ? "hsl(var(--chart-1))"
-                                    : "hsl(var(--chart-2))"
-                              }
+                              fill={index === 0 ? "var(--color-current)" : "var(--color-previous)"}
                               key={`cell-${index + 1}`}
                            />
                         ))}
                      </Bar>
                   </BarChart>
                )}
-            </ResponsiveContainer>
+            </ChartContainer>
          </div>
 
          {/* Breakdown List (if available) */}

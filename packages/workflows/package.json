@@ -16,6 +16,7 @@
       "@packages/database": "workspace:*",
       "@packages/pdf": "workspace:*",
       "@packages/queue": "workspace:*",
+      "@packages/utils": "workspace:*",
       "zod": "catalog:validation"
    },
    "devDependencies": {
