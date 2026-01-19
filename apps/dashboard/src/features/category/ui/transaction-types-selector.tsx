@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    ToggleGroup,
    ToggleGroupItem,
@@ -34,27 +33,21 @@ export function TransactionTypesSelector({
             value="income"
          >
             <ArrowDownLeft className="size-3.5" />
-            {translate(
-               "dashboard.routes.transactions.list-section.types.income",
-            )}
+            Receita
          </ToggleGroupItem>
          <ToggleGroupItem
             className="gap-1.5 data-[state=on]:bg-red-50 data-[state=on]:border-red-500 data-[state=on]:text-red-600"
             value="expense"
          >
             <ArrowUpRight className="size-3.5" />
-            {translate(
-               "dashboard.routes.transactions.list-section.types.expense",
-            )}
+            Despesa
          </ToggleGroupItem>
          <ToggleGroupItem
             className="gap-1.5 data-[state=on]:bg-blue-50 data-[state=on]:border-blue-500 data-[state=on]:text-blue-600"
             value="transfer"
          >
             <ArrowLeftRight className="size-3.5" />
-            {translate(
-               "dashboard.routes.transactions.list-section.types.transfer",
-            )}
+            Transferência
          </ToggleGroupItem>
       </ToggleGroup>
    );

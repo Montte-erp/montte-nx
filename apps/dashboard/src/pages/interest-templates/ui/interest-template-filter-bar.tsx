@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { DateRangePickerPopover } from "@packages/ui/components/date-range-picker-popover";
@@ -155,9 +154,7 @@ export function InterestTemplateFilterBar({
                variant={hasActiveFilters ? "default" : "outline"}
             >
                <Filter className="size-4" />
-               {translate(
-                  "dashboard.routes.interest-templates.features.filter.actions.filters",
-               )}
+               Filtros
                {activeFilterCount > 0 && (
                   <Badge
                      className="size-5 p-0 justify-center"
@@ -190,27 +187,21 @@ export function InterestTemplateFilterBar({
                className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                value="all"
             >
-               {translate(
-                  "dashboard.routes.interest-templates.features.filter.status.all",
-               )}
+               Todos
             </ToggleGroupItem>
             <ToggleGroupItem
                className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-emerald-500 data-[state=on]:text-emerald-600"
                value="active"
             >
                <CheckCircle2 className="size-3.5" />
-               {translate(
-                  "dashboard.routes.interest-templates.features.filter.status.active",
-               )}
+               Ativos
             </ToggleGroupItem>
             <ToggleGroupItem
                className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-destructive data-[state=on]:text-destructive"
                value="inactive"
             >
                <XCircle className="size-3.5" />
-               {translate(
-                  "dashboard.routes.interest-templates.features.filter.status.inactive",
-               )}
+               Inativos
             </ToggleGroupItem>
          </ToggleGroup>
 
@@ -235,9 +226,7 @@ export function InterestTemplateFilterBar({
                className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                value="all"
             >
-               {translate(
-                  "dashboard.routes.interest-templates.features.filter.monetary-correction.all",
-               )}
+               Todos
             </ToggleGroupItem>
             <ToggleGroupItem
                className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-blue-500 data-[state=on]:text-blue-600"
@@ -262,9 +251,7 @@ export function InterestTemplateFilterBar({
                className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-muted-foreground data-[state=on]:text-muted-foreground"
                value="none"
             >
-               {translate(
-                  "dashboard.routes.interest-templates.features.filter.monetary-correction.none",
-               )}
+               Nenhum
             </ToggleGroupItem>
          </ToggleGroup>
 
@@ -282,9 +269,7 @@ export function InterestTemplateFilterBar({
                   variant="outline"
                >
                   <Filter className="size-3.5" />
-                  {translate(
-                     "dashboard.routes.interest-templates.features.filter.actions.more-filters",
-                  )}
+                  Mais Filtros
                   <ChevronDown
                      className={cn(
                         "size-3.5 transition-transform",
@@ -295,15 +280,9 @@ export function InterestTemplateFilterBar({
             </PopoverTrigger>
             <PopoverContent align="start" className="w-80 p-0">
                <div className="border-b px-4 py-3">
-                  <h4 className="font-medium text-sm">
-                     {translate(
-                        "dashboard.routes.interest-templates.features.filter.actions.advanced-filters",
-                     )}
-                  </h4>
+                  <h4 className="font-medium text-sm">Filtros Avancados</h4>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                     {translate(
-                        "dashboard.routes.interest-templates.features.filter.actions.advanced-filters-description",
-                     )}
+                     Refine sua busca com filtros adicionais
                   </p>
                </div>
 
@@ -313,9 +292,7 @@ export function InterestTemplateFilterBar({
                      <div className="flex items-center gap-2">
                         <Percent className="size-4 text-muted-foreground" />
                         <label className="text-sm font-medium">
-                           {translate(
-                              "dashboard.routes.interest-templates.features.filter.interest-type.label",
-                           )}
+                           Tipo de Juros
                         </label>
                      </div>
                      <ToggleGroup
@@ -337,33 +314,25 @@ export function InterestTemplateFilterBar({
                            className="data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="all"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.features.filter.interest-type.all",
-                           )}
+                           Todos
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="daily"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.form.interest-type.daily",
-                           )}
+                           Diario
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="monthly"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.form.interest-type.monthly",
-                           )}
+                           Mensal
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="none"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.form.interest-type.none",
-                           )}
+                           Nenhum
                         </ToggleGroupItem>
                      </ToggleGroup>
                   </div>
@@ -373,9 +342,7 @@ export function InterestTemplateFilterBar({
                      <div className="flex items-center gap-2">
                         <AlertTriangle className="size-4 text-muted-foreground" />
                         <label className="text-sm font-medium">
-                           {translate(
-                              "dashboard.routes.interest-templates.features.filter.penalty-type.label",
-                           )}
+                           Tipo de Multa
                         </label>
                      </div>
                      <ToggleGroup
@@ -397,33 +364,25 @@ export function InterestTemplateFilterBar({
                            className="data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="all"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.features.filter.penalty-type.all",
-                           )}
+                           Todos
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="percentage"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.form.penalty-type.percentage",
-                           )}
+                           Percentual
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="fixed"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.form.penalty-type.fixed",
-                           )}
+                           Fixo
                         </ToggleGroupItem>
                         <ToggleGroupItem
                            className="data-[state=on]:bg-transparent data-[state=on]:border-primary data-[state=on]:text-primary"
                            value="none"
                         >
-                           {translate(
-                              "dashboard.routes.interest-templates.form.penalty-type.none",
-                           )}
+                           Nenhum
                         </ToggleGroupItem>
                      </ToggleGroup>
                   </div>
@@ -433,9 +392,7 @@ export function InterestTemplateFilterBar({
                      <div className="flex items-center gap-2">
                         <Star className="size-4 text-muted-foreground" />
                         <label className="text-sm font-medium">
-                           {translate(
-                              "dashboard.routes.interest-templates.features.filter.is-default.label",
-                           )}
+                           Modelo Padrao
                         </label>
                      </div>
                      <Switch
@@ -449,16 +406,12 @@ export function InterestTemplateFilterBar({
                   {/* Date Range */}
                   <div className="space-y-2">
                      <label className="text-sm font-medium">
-                        {translate(
-                           "dashboard.routes.interest-templates.features.filter.date-range.label",
-                        )}
+                        Periodo de Criacao
                      </label>
                      <DateRangePickerPopover
                         endDate={endDate}
                         onRangeChange={onDateRangeChange}
-                        placeholder={translate(
-                           "dashboard.routes.interest-templates.features.filter.date-range.placeholder",
-                        )}
+                        placeholder="Selecione um periodo"
                         startDate={startDate}
                      />
                   </div>
@@ -481,9 +434,7 @@ export function InterestTemplateFilterBar({
                         variant="ghost"
                      >
                         <X className="size-3.5 mr-2" />
-                        {translate(
-                           "dashboard.routes.interest-templates.features.filter.actions.clear-advanced-filters",
-                        )}
+                        Limpar Filtros Avancados
                      </Button>
                   </div>
                )}
@@ -499,9 +450,7 @@ export function InterestTemplateFilterBar({
             >
                <Percent className="size-3" />
                <span className="max-w-24 truncate">
-                  {translate(
-                     `dashboard.routes.interest-templates.form.interest-type.${interestTypeFilter}`,
-                  )}
+                  {getInterestTypeLabel(interestTypeFilter)}
                </span>
                <X className="size-3" />
             </Badge>
@@ -515,9 +464,7 @@ export function InterestTemplateFilterBar({
             >
                <AlertTriangle className="size-3" />
                <span className="max-w-24 truncate">
-                  {translate(
-                     `dashboard.routes.interest-templates.form.penalty-type.${penaltyTypeFilter}`,
-                  )}
+                  {getPenaltyTypeLabel(penaltyTypeFilter)}
                </span>
                <X className="size-3" />
             </Badge>
@@ -530,11 +477,7 @@ export function InterestTemplateFilterBar({
                variant="secondary"
             >
                <Star className="size-3" />
-               <span className="max-w-24 truncate">
-                  {translate(
-                     "dashboard.routes.interest-templates.features.filter.is-default.label",
-                  )}
-               </span>
+               <span className="max-w-24 truncate">Modelo Padrao</span>
                <X className="size-3" />
             </Badge>
          )}
@@ -552,7 +495,7 @@ export function InterestTemplateFilterBar({
                      ? `${startDate.toLocaleDateString("pt-BR")} - ${endDate.toLocaleDateString("pt-BR")}`
                      : startDate
                        ? `A partir de ${startDate.toLocaleDateString("pt-BR")}`
-                       : `Até ${endDate?.toLocaleDateString("pt-BR")}`}
+                       : `Ate ${endDate?.toLocaleDateString("pt-BR")}`}
                </span>
                <X className="size-3" />
             </Badge>
@@ -566,11 +509,35 @@ export function InterestTemplateFilterBar({
                variant="outline"
             >
                <X className="size-3" />
-               {translate(
-                  "dashboard.routes.interest-templates.features.filter.actions.clear-filters",
-               )}
+               Limpar Filtros
             </Button>
          )}
       </div>
    );
+}
+
+function getInterestTypeLabel(type: string): string {
+   switch (type) {
+      case "daily":
+         return "Diario";
+      case "monthly":
+         return "Mensal";
+      case "none":
+         return "Nenhum";
+      default:
+         return type;
+   }
+}
+
+function getPenaltyTypeLabel(type: string): string {
+   switch (type) {
+      case "percentage":
+         return "Percentual";
+      case "fixed":
+         return "Fixo";
+      case "none":
+         return "Nenhum";
+      default:
+         return type;
+   }
 }

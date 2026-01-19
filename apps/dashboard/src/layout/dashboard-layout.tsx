@@ -3,11 +3,12 @@ import { useIsMobile } from "@packages/ui/hooks/use-mobile";
 import { cn } from "@packages/ui/lib/utils";
 import type * as React from "react";
 import { useEffect } from "react";
-import { PWAInstallPrompt } from "@/default/pwa-install-prompt";
+import { useTabRouteSync } from "@/features/custom-dashboard/hooks/use-tab-route-sync";
+import { useIsStandalone } from "@/features/pwa/lib/use-standalone";
+import { PWAInstallPrompt } from "@/features/pwa/ui/pwa-install-prompt";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useBillReminderCheck } from "@/hooks/use-bill-reminder-check";
 import { useLastOrganization } from "@/hooks/use-last-organization";
-import { useIsStandalone } from "@/hooks/use-standalone";
 import { AppSidebar } from "./app-sidebar";
 import { BottomNavigation } from "./bottom-navigation";
 import { SiteHeader } from "./site-header";
@@ -15,11 +16,14 @@ import { SiteHeader } from "./site-header";
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
    const isMobile = useIsMobile();
    const isStandalone = useIsStandalone();
-   const showBottomNav = isMobile && isStandalone;
+   const showBottomNav = isMobile;
    const showPWAPrompt = isMobile && !isStandalone;
 
    const { activeOrganization } = useActiveOrganization();
    const { setLastSlug } = useLastOrganization();
+
+   // Sync active tab with current route
+   useTabRouteSync();
 
    useBillReminderCheck();
 
@@ -30,15 +34,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
    }, [activeOrganization?.slug, setLastSlug]);
 
    return (
-      <SidebarProvider defaultOpen={false}>
+      <SidebarProvider className="h-screen" defaultOpen={false}>
          {!showBottomNav && <AppSidebar variant="inset" />}
-         <SidebarInset>
+         <SidebarInset className=" overflow-hidden">
             <SiteHeader />
             <div
                className={cn(
-                  "p-4 h-full flex-1 overflow-y-auto",
+                  "px-4 pb-4 flex-1 overflow-y-auto bg-background rounded-b-xl",
                   showBottomNav &&
-                     "pb-[calc(5rem+env(safe-area-inset-bottom))]",
+                     "overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom))]",
                )}
             >
                {children}

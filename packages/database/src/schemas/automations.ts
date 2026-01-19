@@ -44,7 +44,13 @@ export type TriggerType =
    | "schedule.custom"
    | "budget.threshold_reached"
    | "budget.period_end"
-   | "budget.overspent";
+   | "budget.overspent"
+   | "anomaly.spending_spike"
+   | "anomaly.unusual_category"
+   | "anomaly.large_transaction"
+   | "goal.milestone_reached"
+   | "goal.at_risk"
+   | "goal.completed";
 
 export type ScheduleTriggerType =
    | "schedule.daily"
@@ -153,7 +159,13 @@ export type ActionConfig = {
    pdfPageSize?: "A4" | "Letter";
    htmlTableStyle?: "default" | "striped" | "bordered";
    // generate_custom_report config
-   reportType?: "dre_gerencial" | "dre_fiscal" | "budget_vs_actual" | "spending_trends" | "cash_flow_forecast" | "counterparty_analysis";
+   reportType?:
+      | "dre_gerencial"
+      | "dre_fiscal"
+      | "budget_vs_actual"
+      | "spending_trends"
+      | "cash_flow_forecast"
+      | "counterparty_analysis";
    periodType?: "previous_month" | "previous_week" | "current_month" | "custom";
    daysBack?: number;
    forecastDays?: number;

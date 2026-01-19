@@ -1,5 +1,4 @@
 import type { BillWithRelations } from "@packages/database/repositories/bill-repository";
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -81,13 +80,9 @@ export function BulkPaySheet({ bills, onSuccess }: BulkPaySheetProps) {
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               {translate("dashboard.routes.bills.bulk-actions.bulk-pay.title")}
-            </SheetTitle>
+            <SheetTitle>Pagar Contas Selecionadas</SheetTitle>
             <SheetDescription>
-               {translate(
-                  "dashboard.routes.bills.bulk-actions.bulk-pay.description",
-               )}
+               Escolha como deseja registrar o pagamento
             </SheetDescription>
          </SheetHeader>
 
@@ -101,15 +96,10 @@ export function BulkPaySheet({ bills, onSuccess }: BulkPaySheetProps) {
                >
                   <ChoiceboxItem id="today" value="today">
                      <ChoiceboxItemHeader>
-                        <ChoiceboxItemTitle>
-                           {translate(
-                              "dashboard.routes.bills.bulk-actions.bulk-pay.options.today.title",
-                           )}
-                        </ChoiceboxItemTitle>
+                        <ChoiceboxItemTitle>Pagar Hoje</ChoiceboxItemTitle>
                         <ChoiceboxItemDescription>
-                           {translate(
-                              "dashboard.routes.bills.bulk-actions.bulk-pay.options.today.description",
-                           )}
+                           Todas as contas serão marcadas como pagas na data de
+                           hoje
                         </ChoiceboxItemDescription>
                      </ChoiceboxItemHeader>
                      <ChoiceboxIndicator id="today" />
@@ -118,14 +108,11 @@ export function BulkPaySheet({ bills, onSuccess }: BulkPaySheetProps) {
                   <ChoiceboxItem id="custom" value="custom">
                      <ChoiceboxItemHeader>
                         <ChoiceboxItemTitle>
-                           {translate(
-                              "dashboard.routes.bills.bulk-actions.bulk-pay.options.custom.title",
-                           )}
+                           Datas Personalizadas
                         </ChoiceboxItemTitle>
                         <ChoiceboxItemDescription>
-                           {translate(
-                              "dashboard.routes.bills.bulk-actions.bulk-pay.options.custom.description",
-                           )}
+                           Defina a data de pagamento para cada conta
+                           (pré-preenchido com vencimento)
                         </ChoiceboxItemDescription>
                      </ChoiceboxItemHeader>
                      <ChoiceboxIndicator id="custom" />
@@ -149,10 +136,7 @@ export function BulkPaySheet({ bills, onSuccess }: BulkPaySheetProps) {
                                        {bill.description}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
-                                       {translate(
-                                          "dashboard.routes.bills.bulk-actions.bulk-pay.bill-list.due-date",
-                                       )}
-                                       :{" "}
+                                       Vencimento:{" "}
                                        {formatDate(
                                           new Date(bill.dueDate),
                                           "DD/MM/YYYY",
@@ -169,9 +153,7 @@ export function BulkPaySheet({ bills, onSuccess }: BulkPaySheetProps) {
                                  onSelect={(date) =>
                                     updatePaymentDate(bill.id, date)
                                  }
-                                 placeholder={translate(
-                                    "dashboard.routes.bills.bulk-actions.bulk-pay.bill-list.payment-date",
-                                 )}
+                                 placeholder="Data do Pagamento"
                               />
                            </div>
                         );
@@ -187,11 +169,7 @@ export function BulkPaySheet({ bills, onSuccess }: BulkPaySheetProps) {
                disabled={isLoading}
                onClick={handleSubmit}
             >
-               {isLoading
-                  ? translate("common.actions.loading")
-                  : translate(
-                       "dashboard.routes.bills.bulk-actions.bulk-pay.submit",
-                    )}
+               {isLoading ? "Carregando..." : "Confirmar Pagamento"}
             </Button>
          </SheetFooter>
       </>

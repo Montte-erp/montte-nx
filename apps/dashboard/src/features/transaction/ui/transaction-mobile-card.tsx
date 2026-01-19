@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Card,
@@ -75,7 +74,7 @@ export function TransactionMobileCard({
                      <ChevronDown
                         className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
                      />
-                     {translate("common.actions.more")}
+                     Mais
                   </Button>
                </CollapsibleTrigger>
             </CardFooter>

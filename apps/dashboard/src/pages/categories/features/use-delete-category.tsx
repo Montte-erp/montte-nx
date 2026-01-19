@@ -1,9 +1,8 @@
-import { translate } from "@packages/localization";
+import type { Category } from "@packages/database/repositories/category-repository";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useTRPC } from "@/integrations/clients";
-import type { Category } from "../ui/categories-page";
 
 export function useDeleteCategory({
    category,
@@ -17,11 +16,11 @@ export function useDeleteCategory({
 
    const deleteCategoryMutation = useMutation(
       trpc.categories.delete.mutationOptions({
-         onError: (error) => {
-            toast.error(error.message || "Failed to delete category");
+         onError: (_error) => {
+            toast.error("Falha ao excluir categoria");
          },
          onSuccess: () => {
-            toast.success("Category deleted successfully");
+            toast.success("Categoria excluída com sucesso");
             onSuccess?.();
          },
       }),
@@ -29,17 +28,14 @@ export function useDeleteCategory({
 
    const deleteCategory = () => {
       openAlertDialog({
-         actionLabel: translate(
-            "dashboard.routes.categories.list-section.actions.delete-category",
-         ),
-         cancelLabel: translate("common.actions.cancel"),
-         description: translate(
-            "common.headers.delete-confirmation.description",
-         ),
+         actionLabel: "Excluir categoria",
+         cancelLabel: "Cancelar",
+         description:
+            "Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.",
          onAction: async () => {
             await deleteCategoryMutation.mutateAsync({ id: category.id });
          },
-         title: translate("common.headers.delete-confirmation.title"),
+         title: "Confirmar Exclusão",
          variant: "destructive",
       });
    };

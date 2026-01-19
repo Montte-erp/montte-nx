@@ -1,5 +1,4 @@
 import type { Bill } from "@packages/database/repositories/bill-repository";
-import { translate } from "@packages/localization";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -18,17 +17,10 @@ export function useDeleteBillDialog({
    const deleteBillMutation = useMutation(
       trpc.bills.delete.mutationOptions({
          onError: (error) => {
-            toast.error(
-               error.message ||
-                  translate(
-                     "dashboard.routes.bills.features.delete-bill.error",
-                  ),
-            );
+            toast.error(error.message || "Erro ao excluir conta");
          },
          onSuccess: () => {
-            toast.success(
-               translate("dashboard.routes.bills.features.delete-bill.success"),
-            );
+            toast.success("Conta excluída com sucesso");
             closeAlertDialog();
             onSuccess?.();
          },
@@ -37,17 +29,14 @@ export function useDeleteBillDialog({
 
    const handleDelete = () => {
       openAlertDialog({
-         description: translate(
-            "dashboard.routes.bills.features.delete-bill.description",
-            { description: bill.description },
-         ),
+         description: `Tem certeza que deseja excluir "${bill.description}"? Esta ação não pode ser desfeita.`,
 
          onAction: async () => {
             await deleteBillMutation.mutateAsync({
                id: bill.id,
             });
          },
-         title: translate("dashboard.routes.bills.features.delete-bill.title"),
+         title: "Excluir Conta",
       });
    };
    return {

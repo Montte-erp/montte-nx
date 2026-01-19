@@ -169,11 +169,13 @@ const InviteMemberFormContent = () => {
                            value={field.state.value}
                         >
                            <SelectTrigger>
-                              <SelectValue placeholder="Select a role" />
+                              <SelectValue placeholder="Selecione uma função" />
                            </SelectTrigger>
                            <SelectContent>
-                              <SelectItem value="member">Member</SelectItem>
-                              <SelectItem value="admin">Admin</SelectItem>
+                              <SelectItem value="member">Membro</SelectItem>
+                              <SelectItem value="admin">
+                                 Administrador
+                              </SelectItem>
                            </SelectContent>
                         </Select>
 

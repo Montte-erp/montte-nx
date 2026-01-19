@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import {
    Card,
@@ -23,11 +22,9 @@ function BillsStatsErrorFallback(props: FallbackProps) {
    return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-min">
          {createErrorFallback({
-            errorDescription: translate(
-               "dashboard.routes.bills.stats.error.description",
-            ),
-            errorTitle: translate("dashboard.routes.bills.stats.error.title"),
-            retryText: translate("common.actions.retry"),
+            errorDescription: "Erro ao carregar estatísticas",
+            errorTitle: "Erro ao carregar estatísticas",
+            retryText: "Tentar novamente",
          })(props)}
       </div>
    );
@@ -66,41 +63,25 @@ function BillsStatsContent({ type }: BillsStatsProps) {
       return (
          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-min">
             <StatsCard
-               description={translate(
-                  "dashboard.routes.bills.stats.totalPayables.description",
-               )}
-               title={translate(
-                  "dashboard.routes.bills.stats.totalPayables.title",
-               )}
+               description="Total de contas a pagar"
+               title="A Pagar"
                value={formatDecimalCurrency(stats?.totalPendingPayables ?? 0)}
             />
             <StatsCard
-               description={translate(
-                  "dashboard.routes.bills.stats.overduePayables.description",
-               )}
-               title={translate(
-                  "dashboard.routes.bills.stats.overduePayables.title",
-               )}
+               description="Contas a pagar vencidas"
+               title="Vencidas a Pagar"
                value={stats?.totalOverduePayables || 0}
             />
             <StatsCard
-               description={translate(
-                  "dashboard.routes.bills.stats.totalReceivables.description",
-               )}
-               title={translate(
-                  "dashboard.routes.bills.stats.totalReceivables.title",
-               )}
+               description="Total de contas a receber"
+               title="A Receber"
                value={formatDecimalCurrency(
                   stats?.totalPendingReceivables ?? 0,
                )}
             />
             <StatsCard
-               description={translate(
-                  "dashboard.routes.bills.stats.totalOverdue.description",
-               )}
-               title={translate(
-                  "dashboard.routes.bills.stats.totalOverdue.title",
-               )}
+               description="Total de contas vencidas"
+               title="Total Vencido"
                value={stats?.totalOverdue || 0}
             />
          </div>
@@ -111,41 +92,25 @@ function BillsStatsContent({ type }: BillsStatsProps) {
       return (
          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-min">
             <StatsCard
-               description={translate(
-                  "dashboard.routes.bills.stats.totalReceivables.description",
-               )}
-               title={translate(
-                  "dashboard.routes.bills.stats.totalReceivables.title",
-               )}
+               description="Total de contas a receber"
+               title="A Receber"
                value={formatDecimalCurrency(
                   stats?.totalPendingReceivables ?? 0,
                )}
             />
             <StatsCard
-               description={translate(
-                  "dashboard.routes.bills.stats.overdueReceivables.description",
-               )}
-               title={translate(
-                  "dashboard.routes.bills.stats.overdueReceivables.title",
-               )}
+               description="Contas a receber vencidas"
+               title="Vencidas a Receber"
                value={stats?.totalOverdueReceivables || 0}
             />
             <StatsCard
-               description={translate(
-                  "dashboard.routes.bills.stats.totalPayables.description",
-               )}
-               title={translate(
-                  "dashboard.routes.bills.stats.totalPayables.title",
-               )}
+               description="Total de contas a pagar"
+               title="A Pagar"
                value={formatDecimalCurrency(stats?.totalPendingPayables ?? 0)}
             />
             <StatsCard
-               description={translate(
-                  "dashboard.routes.bills.stats.totalOverdue.description",
-               )}
-               title={translate(
-                  "dashboard.routes.bills.stats.totalOverdue.title",
-               )}
+               description="Total de contas vencidas"
+               title="Total Vencido"
                value={stats?.totalOverdue || 0}
             />
          </div>
@@ -155,39 +120,23 @@ function BillsStatsContent({ type }: BillsStatsProps) {
    return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-min">
          <StatsCard
-            description={translate(
-               "dashboard.routes.bills.stats.totalPayables.description",
-            )}
-            title={translate(
-               "dashboard.routes.bills.stats.totalPayables.title",
-            )}
+            description="Total de contas a pagar"
+            title="A Pagar"
             value={formatDecimalCurrency(stats?.totalPendingPayables ?? 0)}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.bills.stats.totalReceivables.description",
-            )}
-            title={translate(
-               "dashboard.routes.bills.stats.totalReceivables.title",
-            )}
+            description="Total de contas a receber"
+            title="A Receber"
             value={formatDecimalCurrency(stats?.totalPendingReceivables ?? 0)}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.bills.stats.overduePayables.description",
-            )}
-            title={translate(
-               "dashboard.routes.bills.stats.overduePayables.title",
-            )}
+            description="Contas a pagar vencidas"
+            title="Vencidas a Pagar"
             value={stats?.totalOverduePayables || 0}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.bills.stats.overdueReceivables.description",
-            )}
-            title={translate(
-               "dashboard.routes.bills.stats.overdueReceivables.title",
-            )}
+            description="Contas a receber vencidas"
+            title="Vencidas a Receber"
             value={stats?.totalOverdueReceivables || 0}
          />
       </div>

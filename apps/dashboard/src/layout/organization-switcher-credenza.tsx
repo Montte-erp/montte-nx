@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    CredenzaBody,
@@ -18,18 +17,16 @@ import { ErrorBoundary } from "react-error-boundary";
 import { useSetActiveOrganization } from "@/features/organization/hooks/use-set-active-organization";
 import { CreateTeamForm } from "@/features/organization/ui/create-team-form";
 import { ManageOrganizationForm } from "@/features/organization/ui/manage-organization-form";
+import { useHaptic } from "@/features/pwa/lib/use-haptic";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useCredenza } from "@/hooks/use-credenza";
-import { useHaptic } from "@/hooks/use-haptic";
 import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";
 
 function OrganizationSwitcherErrorFallback() {
    return (
       <div className="p-4 text-center text-destructive text-sm">
-         {translate(
-            "dashboard.layout.organization-switcher.error.failed-to-load-active",
-         )}
+         Falha ao carregar organização ativa
       </div>
    );
 }
@@ -111,11 +108,7 @@ function OrganizationTeamsList({
                variant="ghost"
             >
                <Plus className="size-4" />
-               <span>
-                  {translate(
-                     "dashboard.layout.organization-switcher.create-team",
-                  )}
-               </span>
+               <span>Criar equipe</span>
             </Button>
          </div>
       );
@@ -152,9 +145,7 @@ function OrganizationTeamsList({
             variant="ghost"
          >
             <Plus className="size-4" />
-            <span>
-               {translate("dashboard.layout.organization-switcher.create-team")}
-            </span>
+            <span>Criar equipe</span>
          </Button>
       </div>
    );
@@ -332,19 +323,13 @@ function OrganizationSwitcherContent() {
                   onClick={handleCreateOrganization}
                   title={
                      hasReachedLimit
-                        ? translate(
-                             "dashboard.layout.organization-switcher.limit-reached",
-                          )
+                        ? "Limite de organizações atingido"
                         : undefined
                   }
                   variant="outline"
                >
                   <Building2 className="size-4" />
-                  <span>
-                     {translate(
-                        "dashboard.layout.organization-switcher.add-organization",
-                     )}
-                  </span>
+                  <span>Adicionar organização</span>
                </Button>
             </div>
          </CredenzaBody>

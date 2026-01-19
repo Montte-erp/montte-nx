@@ -29,7 +29,7 @@ import {
    organization,
    twoFactor,
 } from "better-auth/plugins";
-import { type BuiltInLocales, localization } from "better-auth-localization";
+import { localization } from "better-auth-localization";
 
 // Initialize Redis connection for session caching
 const redis = createRedisConnection(serverEnv.REDIS_URL);
@@ -173,15 +173,6 @@ export const getAuthOptions = (
                   },
                   {
                      annualDiscountPriceId:
-                        serverEnv.STRIPE_SHARED_ANNUAL_PRICE_ID,
-                     freeTrial: {
-                        days: 14,
-                     },
-                     name: PlanName.SHARED,
-                     priceId: serverEnv.STRIPE_SHARED_PRICE_ID,
-                  },
-                  {
-                     annualDiscountPriceId:
                         serverEnv.STRIPE_ERP_ANNUAL_PRICE_ID,
                      freeTrial: {
                         days: 7,
@@ -193,20 +184,7 @@ export const getAuthOptions = (
             },
          }),
          localization({
-            defaultLocale: "pt-BR", // Use built-in Portuguese translations
-            fallbackLocale: "default", // Fallback to English,
-            getLocale: async (request) => {
-               try {
-                  const userLocale = request?.headers.get(
-                     "x-user-locale",
-                  ) as BuiltInLocales;
-
-                  return userLocale || "pt-BR";
-               } catch (error) {
-                  console.warn("Error detecting locale:", error);
-                  return "default"; // Safe fallback
-               }
-            },
+            defaultLocale: "pt-BR", // Use built-in Portuguese translations only
          }),
          admin(),
          anonymous({
@@ -341,25 +319,6 @@ export const getAuthOptions = (
                type: "date",
             },
             deletionType: {
-               defaultValue: null,
-               input: true,
-               required: false,
-               type: "string",
-            },
-            // E2E Encryption fields
-            encryptionEnabled: {
-               defaultValue: false,
-               input: true,
-               required: false,
-               type: "boolean",
-            },
-            encryptionSalt: {
-               defaultValue: null,
-               input: true,
-               required: false,
-               type: "string",
-            },
-            encryptionKeyHash: {
                defaultValue: null,
                input: true,
                required: false,

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -18,10 +17,10 @@ export function useDeleteBudget({
    const deleteBudgetMutation = useMutation(
       trpc.budgets.delete.mutationOptions({
          onError: (error) => {
-            toast.error(error.message || "Failed to delete budget");
+            toast.error(error.message || "Falha ao excluir orçamento");
          },
          onSuccess: () => {
-            toast.success("Budget deleted successfully");
+            toast.success("Orçamento excluído com sucesso");
             onSuccess?.();
          },
       }),
@@ -29,21 +28,14 @@ export function useDeleteBudget({
 
    const deleteBudget = () => {
       openAlertDialog({
-         actionLabel: translate(
-            "dashboard.routes.budgets.features.delete-budget.confirm",
-         ),
-         cancelLabel: translate(
-            "dashboard.routes.budgets.features.delete-budget.cancel",
-         ),
-         description: translate(
-            "dashboard.routes.budgets.features.delete-budget.description",
-         ),
+         actionLabel: "Excluir",
+         cancelLabel: "Cancelar",
+         description:
+            "Tem certeza que deseja excluir este orçamento? Esta ação não pode ser desfeita.",
          onAction: async () => {
             await deleteBudgetMutation.mutateAsync({ id: budget.id });
          },
-         title: translate(
-            "dashboard.routes.budgets.features.delete-budget.title",
-         ),
+         title: "Excluir orçamento",
          variant: "destructive",
       });
    };

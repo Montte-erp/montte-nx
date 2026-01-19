@@ -70,7 +70,6 @@ finance-tracker/
 │   ├── encryption/      # NaCl-based encryption
 │   ├── environment/     # Zod-validated env vars
 │   ├── files/           # MinIO & file utilities
-│   ├── localization/    # i18next translations (en-US, pt-BR)
 │   ├── notifications/   # Push notifications
 │   ├── posthog/         # Analytics client
 │   ├── queue/           # BullMQ abstractions
@@ -336,7 +335,6 @@ BillFilterCredenza         // feature: bill, action: filter, type: credenza
 
 Use **use[Feature][Action]** pattern:
 ```typescript
-useEncryptionContext()
 useActiveOrganization()
 useCookieConsent()
 useDeleteCategory()
@@ -550,7 +548,7 @@ const form = useForm({
 <form.Field name="description">
    {(field) => (
       <Field>
-         <FieldLabel>{translate("common.form.description.label")}</FieldLabel>
+         <FieldLabel>Descrição</FieldLabel>
          <Input
             value={field.state.value}
             onChange={(e) => field.handleChange(e.target.value)}
@@ -669,7 +667,6 @@ import { useSheet } from "@/hooks/use-sheet";
 import { TransactionForm } from "@/features/transaction/ui/transaction-form";
 
 // Cross-package imports
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { serverEnv } from "@packages/environment/server";
 ```
@@ -846,36 +843,6 @@ export async function createTransaction(db: DatabaseInstance, data: NewTransacti
 
 ---
 
-## Localization
-
-### Usage Pattern
-```typescript
-import { translate } from "@packages/localization";
-
-translate("common.actions.save");
-translate("dashboard.routes.settings.profile.title");
-```
-
-### Supported Languages
-- `en-US` (English)
-- `pt-BR` (Portuguese - Brazil)
-
-### File Organization
-```
-packages/localization/src/locales/
-├── en-US/
-│   ├── common/
-│   │   ├── actions.json
-│   │   └── form.json
-│   └── dashboard/
-│       └── routes/
-│           └── settings.json
-└── pt-BR/
-    └── (same structure)
-```
-
----
-
 ## Authentication (Better Auth)
 
 ### Session Access
@@ -897,15 +864,4 @@ const organizationId = resolvedCtx.organizationId;
 ## Encryption
 
 ### Server-Side
-Transparent encryption at repository level using the `ENCRYPTION_KEY` env var.
-
-### End-to-End (E2E)
-Optional user-controlled encryption with NaCl (TweetNaCl):
-```typescript
-// Check E2E status
-const { e2eEnabled, isUnlocked, encrypt, decrypt } = useEncryptionContext();
-
-// Encrypt/decrypt
-const encrypted = encrypt(plaintext);
-const decrypted = decrypt(encryptedData);
-```
+Transparent encryption at repository level using the `ENCRYPTION_KEY` env var. Server-side encryption uses AES-256-GCM to encrypt sensitive fields (descriptions, notes) before storing them in the database.

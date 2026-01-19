@@ -1,9 +1,7 @@
-import { translate } from "@packages/localization";
 import { formatCurrency, formatDecimalCurrency } from "@packages/money";
 import { Button } from "@packages/ui/components/button";
 import { Field, FieldGroup, FieldLabel } from "@packages/ui/components/field";
 import { MoneyInput } from "@packages/ui/components/money-input";
-import { MultiSelect } from "@packages/ui/components/multi-select";
 import {
    SheetDescription,
    SheetFooter,
@@ -21,6 +19,7 @@ import { toast } from "sonner";
 
 type TransactionType = "income" | "expense" | "transfer";
 
+import { CategoryMultiSelect } from "@/features/category/ui/category-multi-select";
 import type { IconName } from "@/features/icon-selector/lib/available-icons";
 import { IconDisplay } from "@/features/icon-selector/ui/icon-display";
 import { useSheet } from "@/hooks/use-sheet";
@@ -134,19 +133,6 @@ export function CategorySplitForm({
    const remainingAmount =
       splits.length > 0 ? getRemainingAmount(splits, totalAmount) : totalAmount;
 
-   const categoryOptions = categories.map((category) => ({
-      icon: (
-         <div
-            className="flex size-4 items-center justify-center rounded"
-            style={{ backgroundColor: category.color }}
-         >
-            <IconDisplay iconName={category.icon as IconName} size={10} />
-         </div>
-      ),
-      label: category.name,
-      value: category.id,
-   }));
-
    return (
       <>
          <SheetHeader>
@@ -162,14 +148,11 @@ export function CategorySplitForm({
          <div className="grid gap-4 px-4 py-4">
             <FieldGroup>
                <Field>
-                  <FieldLabel>
-                     {translate("common.form.category.label")}
-                  </FieldLabel>
-                  <MultiSelect
-                     emptyMessage={translate("common.form.search.no-results")}
+                  <FieldLabel>Categoria</FieldLabel>
+                  <CategoryMultiSelect
+                     categories={categories}
                      onChange={handleCategoryChange}
-                     options={categoryOptions}
-                     placeholder={translate("common.form.category.placeholder")}
+                     placeholder="Selecione uma categoria"
                      selected={selectedCategoryIds}
                   />
                </Field>

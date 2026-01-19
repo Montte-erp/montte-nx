@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { Card, CardContent } from "@packages/ui/components/card";
 import { DataTable } from "@packages/ui/components/data-table";
@@ -57,13 +56,10 @@ function CostCentersListErrorFallback(props: FallbackProps) {
       <Card>
          <CardContent className="pt-6">
             {createErrorFallback({
-               errorDescription: translate(
-                  "dashboard.routes.cost-centers.list-section.state.error.description",
-               ),
-               errorTitle: translate(
-                  "dashboard.routes.cost-centers.list-section.state.error.title",
-               ),
-               retryText: translate("common.actions.retry"),
+               errorDescription:
+                  "Falha ao carregar centros de custo. Tente novamente mais tarde.",
+               errorTitle: "Erro ao carregar centros de custo",
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>
@@ -189,9 +185,7 @@ function CostCentersListContent() {
                         onChange={(e) => {
                            setSearchTerm(e.target.value);
                         }}
-                        placeholder={translate(
-                           "common.form.search.placeholder",
-                        )}
+                        placeholder="Digite para pesquisar"
                         value={searchTerm}
                      />
                      <InputGroupAddon>
@@ -236,7 +230,7 @@ function CostCentersListContent() {
                   <div className="flex flex-wrap items-center gap-3">
                      <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">
-                           {translate("common.form.sort-by.label")}:
+                           Ordenar por:
                         </span>
                         <ToggleGroup
                            onValueChange={(value) => {
@@ -278,9 +272,7 @@ function CostCentersListContent() {
                               variant="outline"
                            >
                               <X className="size-3" />
-                              {translate(
-                                 "dashboard.routes.cost-centers.features.filter.actions.clear-filters",
-                              )}
+                              Limpar Filtros
                            </Button>
                         </>
                      )}
@@ -293,15 +285,11 @@ function CostCentersListContent() {
                         <EmptyMedia variant="icon">
                            <Inbox className="size-6" />
                         </EmptyMedia>
-                        <EmptyTitle>
-                           {translate(
-                              "dashboard.routes.cost-centers.list-section.state.empty.title",
-                           )}
-                        </EmptyTitle>
+                        <EmptyTitle>Nenhum centro de custo ainda</EmptyTitle>
                         <EmptyDescription>
-                           {translate(
-                              "dashboard.routes.cost-centers.list-section.state.empty.description",
-                           )}
+                           Crie seu primeiro centro de custo usando a barra de
+                           ações rápidas acima para começar a organizar suas
+                           transações.
                         </EmptyDescription>
                      </EmptyContent>
                   </Empty>
@@ -349,25 +337,23 @@ function CostCentersListContent() {
                icon={<Trash2 className="size-3.5" />}
                onClick={() =>
                   openAlertDialog({
-                     actionLabel: translate(
-                        "dashboard.routes.cost-centers.bulk-actions.delete",
-                     ),
-                     cancelLabel: translate("common.actions.cancel"),
-                     description: translate(
-                        "dashboard.routes.cost-centers.bulk-actions.delete-confirm-description",
-                        { count: selectedIds.length },
-                     ),
+                     actionLabel: "Excluir",
+                     cancelLabel: "Cancelar",
+                     description:
+                        selectedIds.length === 1
+                           ? "Esta ação não pode ser desfeita. Isso excluirá permanentemente 1 centro de custo e removerá a associação de todas as transações vinculadas."
+                           : `Esta ação não pode ser desfeita. Isso excluirá permanentemente ${selectedIds.length} centros de custo e removerá a associação de todas as transações vinculadas.`,
                      onAction: () => deleteSelected(selectedIds),
-                     title: translate(
-                        "dashboard.routes.cost-centers.bulk-actions.delete-confirm-title",
-                        { count: selectedIds.length },
-                     ),
+                     title:
+                        selectedIds.length === 1
+                           ? "Excluir 1 centro de custo?"
+                           : `Excluir ${selectedIds.length} centros de custo?`,
                      variant: "destructive",
                   })
                }
                variant="destructive"
             >
-               {translate("dashboard.routes.cost-centers.bulk-actions.delete")}
+               Excluir
             </SelectionActionButton>
          </SelectionActionBar>
       </>

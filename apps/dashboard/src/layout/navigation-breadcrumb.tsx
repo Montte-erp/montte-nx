@@ -14,12 +14,12 @@ import {
 } from "@packages/ui/components/tooltip";
 import { cn } from "@packages/ui/lib/utils";
 import { Link, useMatches, useParams } from "@tanstack/react-router";
-import { Home } from "lucide-react";
+import { Gauge } from "lucide-react";
 
 type TBreadcrumbItem = {
    to: string;
    params: Record<string, string>;
-   isHome: boolean;
+   isDashboards: boolean;
    label: string;
 };
 
@@ -37,41 +37,42 @@ export function NavigationBreadcrumb() {
          return match.staticData?.breadcrumb !== undefined && !isLayoutRoute;
       })
       .map((match) => ({
-         isHome: false,
+         isDashboards: false,
          label: match.staticData.breadcrumb as string,
          params: match.params as Record<string, string>,
          to: match.pathname,
       }));
 
-   const isHomeBreadcrumbPage = contentBreadcrumbs.some(
+   const isDashboardsBreadcrumbPage = contentBreadcrumbs.some(
       (breadcrumb) =>
-         breadcrumb.label === "Home" || breadcrumb.to === `/${slug}/home`,
+         breadcrumb.label === "Dashboards" ||
+         breadcrumb.to === `/${slug}/dashboards`,
    );
 
    let allBreadcrumbs: TBreadcrumbItem[] = [
       {
-         isHome: true,
-         label: "Home",
+         isDashboards: true,
+         label: "Dashboards",
          params: { slug },
-         to: "/$slug/home",
+         to: "/$slug/dashboards",
       },
    ];
 
-   if (!isHomeBreadcrumbPage) {
+   if (!isDashboardsBreadcrumbPage) {
       allBreadcrumbs = [...allBreadcrumbs, ...contentBreadcrumbs];
    }
 
-   // On home page, show only the home icon (not clickable)
-   const isOnHomePage =
-      allBreadcrumbs.length === 1 && allBreadcrumbs[0]?.isHome;
+   // On dashboards page, show only the dashboards icon (not clickable)
+   const isOnDashboardsPage =
+      allBreadcrumbs.length === 1 && allBreadcrumbs[0]?.isDashboards;
 
-   if (isOnHomePage) {
+   if (isOnDashboardsPage) {
       return (
          <Breadcrumb>
             <BreadcrumbList>
                <BreadcrumbItem>
                   <BreadcrumbPage className={cn("flex items-center")}>
-                     <Home className={cn("size-4")} />
+                     <Gauge className={cn("size-4")} />
                   </BreadcrumbPage>
                </BreadcrumbItem>
             </BreadcrumbList>
@@ -95,8 +96,8 @@ export function NavigationBreadcrumb() {
                         <BreadcrumbItem key={breadcrumb.to}>
                            {isLast ? (
                               <BreadcrumbPage className={cn("font-medium")}>
-                                 {breadcrumb.isHome ? (
-                                    <Home className={cn("size-4")} />
+                                 {breadcrumb.isDashboards ? (
+                                    <Gauge className={cn("size-4")} />
                                  ) : (
                                     breadcrumb.label
                                  )}
@@ -116,13 +117,13 @@ export function NavigationBreadcrumb() {
                                     params={breadcrumb.params}
                                     to={breadcrumb.to}
                                  >
-                                    {breadcrumb.isHome ? (
+                                    {breadcrumb.isDashboards ? (
                                        <Tooltip>
                                           <TooltipTrigger asChild>
-                                             <Home className={cn("size-4")} />
+                                             <Gauge className={cn("size-4")} />
                                           </TooltipTrigger>
                                           <TooltipContent>
-                                             <p>Go back to home page</p>
+                                             <p>Go to dashboards</p>
                                           </TooltipContent>
                                        </Tooltip>
                                     ) : (

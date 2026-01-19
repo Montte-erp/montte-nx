@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Card,
@@ -31,14 +30,8 @@ import { useTRPC } from "@/integrations/clients";
 function InvitesSectionCardHeader() {
    return (
       <CardHeader>
-         <CardTitle>
-            {translate("dashboard.routes.organization.recent-invites.title")}
-         </CardTitle>
-         <CardDescription>
-            {translate(
-               "dashboard.routes.organization.recent-invites.description",
-            )}
-         </CardDescription>
+         <CardTitle>Convites Recentes</CardTitle>
+         <CardDescription>Os convites mais recentes enviados</CardDescription>
       </CardHeader>
    );
 }
@@ -49,13 +42,10 @@ function OrganizationInvitesSectionErrorFallback(props: FallbackProps) {
          <InvitesSectionCardHeader />
          <CardContent>
             {createErrorFallback({
-               errorDescription: translate(
-                  "dashboard.routes.organization.recent-invites.state.error.description",
-               ),
-               errorTitle: translate(
-                  "dashboard.routes.organization.recent-invites.state.error.title",
-               ),
-               retryText: translate("common.actions.retry"),
+               errorDescription:
+                  "Não foi possível carregar os convites recentes.",
+               errorTitle: "Erro ao Carregar Convites",
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>
@@ -118,15 +108,9 @@ function OrganizationInvitesSectionContent() {
                      <EmptyMedia variant="icon">
                         <Mail className="size-8" />
                      </EmptyMedia>
-                     <EmptyTitle>
-                        {translate(
-                           "dashboard.routes.organization.recent-invites.state.empty.title",
-                        )}
-                     </EmptyTitle>
+                     <EmptyTitle>Nenhum convite</EmptyTitle>
                      <EmptyDescription>
-                        {translate(
-                           "dashboard.routes.organization.recent-invites.state.empty.description",
-                        )}
+                        Envie convites para novos membros
                      </EmptyDescription>
                   </EmptyContent>
                </Empty>
@@ -141,10 +125,7 @@ function OrganizationInvitesSectionContent() {
                                     {invite.email}
                                  </p>
                                  <p className="text-sm text-muted-foreground">
-                                    {translate(
-                                       "dashboard.routes.organization.invites-table.columns.expires",
-                                    )}
-                                    :{" "}
+                                    Expira em:{" "}
                                     {formatDate(
                                        new Date(invite.expiresAt),
                                        "DD MMM YYYY",
@@ -167,9 +148,7 @@ function OrganizationInvitesSectionContent() {
                         onClick={handleViewAll}
                         variant="outline"
                      >
-                        {translate(
-                           "dashboard.routes.organization.recent-invites.view-all",
-                        )}
+                        Ver todos os convites
                         <ArrowRight className="size-4 ml-2" />
                      </Button>
                   )}

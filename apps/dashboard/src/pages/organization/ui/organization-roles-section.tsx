@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Card,
    CardContent,
@@ -32,70 +31,76 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
+const roleData = {
+   owner: {
+      description:
+         "O usuário que criou a organização. Tem controle total sobre a organização e pode executar qualquer ação.",
+      permissions: [
+         "Organização: atualizar, excluir",
+         "Membro: criar, atualizar, excluir",
+         "Convite: criar, cancelar",
+         "Transferir propriedade",
+         "Controle total sobre todos os recursos",
+      ],
+      title: "Dono",
+   },
+   admin: {
+      description:
+         "Controle total sobre a organização, exceto excluir a organização ou alterar o dono.",
+      permissions: [
+         "Organização: atualizar",
+         "Membro: criar, atualizar, excluir",
+         "Convite: criar, cancelar",
+         "Não pode excluir organização",
+         "Não pode alterar dono",
+      ],
+      title: "Administrador",
+   },
+   member: {
+      description:
+         "Controle limitado sobre a organização. Pode criar projetos, convidar usuários e gerenciar projetos que criou.",
+      permissions: [
+         "Ler dados da organização",
+         "Criar projetos",
+         "Convidar usuários",
+         "Gerenciar próprios projetos",
+         "Sem controle sobre ações de organização/membro/convite",
+      ],
+      title: "Membro",
+   },
+};
+
 export function OrganizationRoles() {
    const organizationRoles = [
       {
          icon: CrownIcon,
-         id: "owner",
+         id: "owner" as const,
       },
       {
          icon: ShieldIcon,
-         id: "admin",
+         id: "admin" as const,
       },
       {
          icon: UserIcon,
-         id: "member",
+         id: "member" as const,
       },
    ];
-
-   function getLocalizedRoleData(roleId: string) {
-      const roleKey = `dashboard.routes.organization.roles-section.roles.${roleId}`;
-      return {
-         description: translate(
-            `${roleKey}.description` as Parameters<typeof translate>[0],
-         ),
-         permissions: [
-            translate(
-               `${roleKey}.permissions.0` as Parameters<typeof translate>[0],
-            ),
-            translate(
-               `${roleKey}.permissions.1` as Parameters<typeof translate>[0],
-            ),
-            translate(
-               `${roleKey}.permissions.2` as Parameters<typeof translate>[0],
-            ),
-            translate(
-               `${roleKey}.permissions.3` as Parameters<typeof translate>[0],
-            ),
-            translate(
-               `${roleKey}.permissions.4` as Parameters<typeof translate>[0],
-            ),
-         ].filter(Boolean),
-         title: translate(
-            `${roleKey}.title` as Parameters<typeof translate>[0],
-         ),
-      };
-   }
 
    function RolePermissionsDialog({
       role,
    }: {
       role: (typeof organizationRoles)[0];
    }) {
-      const localizedRole = getLocalizedRoleData(role.id);
+      const localizedRole = roleData[role.id];
 
       return (
          <DialogContent>
             <DialogHeader>
                <DialogTitle className="flex items-center gap-3">
-                  {translate(
-                     "dashboard.routes.organization.roles-section.dialog.permissions-title",
-                  )}
+                  Permissões
                </DialogTitle>
                <DialogDescription>
-                  {translate(
-                     "dashboard.routes.organization.roles-section.dialog.permissions-description",
-                  )}
+                  Permissões e capacidades detalhadas para este cargo
                </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -103,12 +108,7 @@ export function OrganizationRoles() {
                   {localizedRole.description}
                </p>
                <div>
-                  <p className="text-sm font-medium mb-3">
-                     {translate(
-                        "dashboard.routes.organization.roles-section.dialog.permissions-title",
-                     )}
-                     :
-                  </p>
+                  <p className="text-sm font-medium mb-3">Permissões:</p>
                   <ul className="text-sm space-y-2">
                      {localizedRole.permissions.map((permission, index) => (
                         <li
@@ -128,19 +128,16 @@ export function OrganizationRoles() {
    return (
       <Card className="w-full">
          <CardHeader>
-            <CardTitle>
-               {translate("dashboard.routes.organization.roles-section.title")}
-            </CardTitle>
+            <CardTitle>Cargos da Organização</CardTitle>
             <CardDescription>
-               {translate(
-                  "dashboard.routes.organization.roles-section.description",
-               )}
+               Cargos e permissões de controle de acesso para gestão da
+               organização
             </CardDescription>
          </CardHeader>
          <CardContent className="w-full">
             <ItemGroup>
                {organizationRoles.map((role, index) => {
-                  const localizedRole = getLocalizedRoleData(role.id);
+                  const localizedRole = roleData[role.id];
                   return (
                      <React.Fragment key={role.id}>
                         <Dialog>

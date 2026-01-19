@@ -45,9 +45,9 @@ export function CurrencyCommand() {
          </PopoverTrigger>
          <PopoverContent className="w-[200px] p-0">
             <Command>
-               <CommandInput placeholder="Search currency..." />
+               <CommandInput placeholder="Buscar moeda..." />
                <CommandList>
-                  <CommandEmpty>No currency found.</CommandEmpty>
+                  <CommandEmpty>Nenhuma moeda encontrada.</CommandEmpty>
                   <CommandGroup>
                      {currencies.map((currency) => (
                         <CommandItem

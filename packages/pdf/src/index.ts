@@ -1,7 +1,3 @@
-import type {
-   DRESnapshotData,
-   ReportType,
-} from "@packages/database/schemas/custom-reports";
 import { renderToBuffer } from "@react-pdf/renderer";
 import {
    type BankStatementProps,
@@ -9,7 +5,12 @@ import {
 } from "./templates/bank-statement";
 import { DREFiscalTemplate } from "./templates/dre-fiscal";
 import { DREGerencialTemplate } from "./templates/dre-gerencial";
-import { isSupportedPdfReportType, type SupportedPdfReportType } from "./types";
+import {
+   type DRESnapshotData,
+   isSupportedPdfReportType,
+   type ReportType,
+   type SupportedPdfReportType,
+} from "./types";
 
 export type RenderDREReportOptions = {
    name: string;
@@ -50,11 +51,11 @@ export function getUnsupportedReportTypeError(type: ReportType): string | null {
       Exclude<ReportType, SupportedPdfReportType>,
       string
    > = {
+      bank_statement: "Bank Statement",
+      balance_sheet: "Balance Sheet",
       budget_vs_actual: "Budget vs Actual",
-      cash_flow_forecast: "Cash Flow Forecast",
-      category_analysis: "Category Analysis",
-      counterparty_analysis: "Counterparty Analysis",
-      spending_trends: "Spending Trends",
+      cash_flow: "Cash Flow",
+      category_breakdown: "Category Breakdown",
    };
 
    const typeName = unsupportedTypes[type];

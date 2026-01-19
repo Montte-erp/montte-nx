@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { BillsPage } from "@/pages/bills/ui/bills-page";
@@ -12,7 +11,7 @@ const billsSearchSchema = z.object({
 export const Route = createFileRoute("/$slug/_dashboard/bills/")({
    component: RouteComponent,
    staticData: {
-      breadcrumb: translate("dashboard.layout.breadcrumbs.bills"),
+      breadcrumb: "Contas a Pagar",
    },
    validateSearch: billsSearchSchema,
 });

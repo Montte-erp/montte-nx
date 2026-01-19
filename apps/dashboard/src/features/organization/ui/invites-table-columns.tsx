@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    DropdownMenu,
@@ -42,19 +41,13 @@ function InviteActionsCell({ invite, onResend, onRevoke }: InviteActionsProps) {
                      </Button>
                   </DropdownMenuTrigger>
                </TooltipTrigger>
-               <TooltipContent>
-                  {translate(
-                     "dashboard.routes.organization.invites-table.columns.actions",
-                  )}
-               </TooltipContent>
+               <TooltipContent>Ações</TooltipContent>
             </Tooltip>
             <DropdownMenuContent align="end">
                {isPending && onResend && (
                   <DropdownMenuItem onClick={() => onResend(invite)}>
                      <RefreshCw className="size-4 mr-2" />
-                     {translate(
-                        "dashboard.routes.organization.invites-table.actions.resend",
-                     )}
+                     Reenviar
                   </DropdownMenuItem>
                )}
                {isPending && onRevoke && (
@@ -65,9 +58,7 @@ function InviteActionsCell({ invite, onResend, onRevoke }: InviteActionsProps) {
                         onClick={() => onRevoke(invite)}
                      >
                         <Trash2 className="size-4 mr-2" />
-                        {translate(
-                           "dashboard.routes.organization.invites-table.actions.revoke",
-                        )}
+                        Revogar
                      </DropdownMenuItem>
                   </>
                )}
@@ -90,25 +81,19 @@ export function createInviteColumns(
             </span>
          ),
          enableSorting: false,
-         header: translate(
-            "dashboard.routes.organization.invites-table.columns.email",
-         ),
+         header: "Email",
       },
       {
          accessorKey: "role",
          cell: ({ row }) => <RoleBadge role={row.original.role} />,
          enableSorting: false,
-         header: translate(
-            "dashboard.routes.organization.invites-table.columns.role",
-         ),
+         header: "Cargo",
       },
       {
          accessorKey: "status",
          cell: ({ row }) => <StatusBadge status={row.original.status} />,
          enableSorting: false,
-         header: translate(
-            "dashboard.routes.organization.invites-table.columns.status",
-         ),
+         header: "Status",
       },
       {
          accessorKey: "expiresAt",
@@ -124,9 +109,7 @@ export function createInviteColumns(
             );
          },
          enableSorting: false,
-         header: translate(
-            "dashboard.routes.organization.invites-table.columns.expires",
-         ),
+         header: "Expira em",
       },
       {
          cell: ({ row }) => (

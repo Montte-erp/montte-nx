@@ -1,12 +1,11 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Plus } from "lucide-react";
 import { Suspense } from "react";
-import { UpgradeRequired } from "@/components/upgrade-required";
 import { DefaultHeader } from "@/default/default-header";
-import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { usePlanFeatures } from "@/features/billing/lib/use-plan-features";
+import { UpgradeRequired } from "@/features/billing/ui/upgrade-required";
 import { useSheet } from "@/hooks/use-sheet";
 import {
    InterestTemplateListProvider,
@@ -118,15 +117,11 @@ function InterestTemplatesPageContent() {
                   }
                >
                   <Plus className="size-4" />
-                  {translate(
-                     "dashboard.routes.interest-templates.actions.add-new",
-                  )}
+                  Novo Modelo
                </Button>
             }
-            description={translate(
-               "dashboard.routes.interest-templates.description",
-            )}
-            title={translate("dashboard.routes.interest-templates.title")}
+            description="Gerencie modelos de juros e multas para suas contas"
+            title="Modelos de Juros"
          />
 
          <Suspense fallback={<InterestTemplateFilterBarSkeleton />}>

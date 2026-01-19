@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { PlanName, STRIPE_PLANS } from "@packages/stripe/constants";
 import { Badge } from "@packages/ui/components/badge";
 import {
@@ -32,7 +31,6 @@ import {
    Rocket,
    Sparkles,
    User,
-   Users,
    Zap,
 } from "lucide-react";
 import { Suspense, useState, useTransition } from "react";
@@ -153,8 +151,6 @@ const getIconForPlan = (planName: string) => {
          return <User className="size-6" />;
       case PlanName.BASIC:
          return <Zap className="size-6" />;
-      case PlanName.SHARED:
-         return <Users className="size-6" />;
       case PlanName.ERP:
          return <Building2 className="size-6" />;
       default:
@@ -165,7 +161,6 @@ const getIconForPlan = (planName: string) => {
 const getTrialDaysForPlan = (planName: string) => {
    switch (planName) {
       case PlanName.BASIC:
-      case PlanName.SHARED:
          return 14;
       case PlanName.ERP:
          return 7;
@@ -188,7 +183,7 @@ function PlansPageErrorFallback(props: FallbackProps) {
    return createErrorFallback({
       errorDescription: "Falha ao carregar os planos. Tente novamente.",
       errorTitle: "Erro ao carregar planos",
-      retryText: translate("common.actions.retry"),
+      retryText: "Tentar novamente",
    })(props);
 }
 

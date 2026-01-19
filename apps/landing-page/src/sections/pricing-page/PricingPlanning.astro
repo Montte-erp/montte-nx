@@ -1,7 +1,6 @@
 ---
-import { ArrowRight, Check, Zap } from "@lucide/astro";
-import { Button } from "@packages/ui/components/button";
-import { Card, CardContent } from "@packages/ui/components/card";
+import { Check, Zap } from "@lucide/astro";
+import { Card } from "@packages/ui/components/card";
 import {
    Table,
    TableBody,
@@ -12,28 +11,23 @@ import {
 const planningFeatures = {
    title: "Planejamento e Previsibilidade",
    description:
-      "Não seja pego de surpresa. Controle o futuro do seu caixa, gerencie vencimentos e garanta que as contas fechem no azul.",
+      "Não seja pego de surpresa. Controle o futuro do seu caixa, gerencie vencimentos e acompanhe suas metas financeiras.",
    included: {
       label: "Incluso em todos os planos",
-      value: "Metas de Gastos Mensais",
+      value: "Orçamentos e Metas",
    },
    addons: [
-      { name: "Orçamento Flexível (Rollover de saldo)", price: "Incluso" },
       { name: "Gestão de Contas a Pagar/Receber", price: "Incluso" },
-      { name: "Motor de Cálculo de Juros e Multas", price: "Incluso" },
+      { name: "Transações Recorrentes", price: "Incluso" },
+      { name: "Templates de Juros (modelagem)", price: "Pro" },
    ],
    features: [
-      "Orçamento por Centro de Custo ou Categoria",
-      "Modos de Controle: Flexível ou Rígido",
-      "Rollover: Acumule saldo não gasto",
-      "Alertas preventivos de estouro",
-      "Monitoramento visual de metas",
-      "Workflow de Status (Agendado, Pago, Atrasado)",
-      "Gestão de Recorrências e Assinaturas",
-      "Parcelamentos complexos",
-      "Cálculo automático de encargos",
-      "Atualização monetária (IPCA, SELIC, CDI)",
-      "Projeção de saldo futuro",
+      "Criar e gerenciar orçamentos",
+      "Acompanhamento de metas financeiras",
+      "Contas a pagar e receber",
+      "Gestão de vencimentos",
+      "Status de pagamento (Agendado, Pago, Atrasado)",
+      "Transações recorrentes",
    ],
 };
 ---
@@ -67,27 +61,12 @@ const planningFeatures = {
    </Card>
 
    <!-- Features Grid -->
-   <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm mb-6">
+   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 text-sm">
       {planningFeatures.features.map((feature) => (
-         <div class="flex items-center gap-2">
-            <Check class="size-4 text-primary shrink-0" />
-            <span class="text-muted-foreground">{feature}</span>
+         <div class="flex items-start gap-2 py-1">
+            <Check class="size-4 text-primary shrink-0 mt-0.5" />
+            <span class="text-muted-foreground leading-snug">{feature}</span>
          </div>
       ))}
    </div>
-
-   <!-- Enterprise CTA -->
-   <Card className="border-dashed bg-muted/20 py-4">
-      <CardContent className="flex items-center justify-between py-0">
-         <p class="text-sm text-muted-foreground">
-            <span class="font-medium text-foreground">Para empresas:</span> recursos avançados de planejamento no plano Enterprise.
-         </p>
-         <Button asChild variant="link" className="shrink-0 text-primary p-0 h-auto">
-            <a href="/enterprise">
-               Ver Enterprise
-               <ArrowRight class="size-3" />
-            </a>
-         </Button>
-      </CardContent>
-   </Card>
 </section>

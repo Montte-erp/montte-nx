@@ -1,3 +1,7 @@
+import { getNestedValue } from "@packages/utils/object";
+
+export { getNestedValue };
+
 export type TemplateContext = Record<string, unknown>;
 
 const TEMPLATE_REGEX = /\{\{([^}]+)\}\}/g;
@@ -20,37 +24,6 @@ export function renderTemplate(
 
       return String(value);
    });
-}
-
-export function getNestedValue(obj: TemplateContext, path: string): unknown {
-   const parts = path.split(".");
-   let current: unknown = obj;
-
-   for (const part of parts) {
-      if (current === null || current === undefined) {
-         return undefined;
-      }
-
-      if (typeof current !== "object") {
-         return undefined;
-      }
-
-      const arrayMatch = part.match(/^(\w+)\[(\d+)\]$/);
-      if (arrayMatch?.[1] && arrayMatch[2]) {
-         const key = arrayMatch[1];
-         const index = Number.parseInt(arrayMatch[2], 10);
-         const arr = (current as Record<string, unknown>)[key];
-         if (Array.isArray(arr)) {
-            current = arr[index];
-         } else {
-            return undefined;
-         }
-      } else {
-         current = (current as Record<string, unknown>)[part];
-      }
-   }
-
-   return current;
 }
 
 export function extractTemplateVariables(template: string): string[] {

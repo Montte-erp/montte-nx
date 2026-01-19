@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Card,
    CardContent,
@@ -18,13 +17,10 @@ function InterestTemplatesStatsErrorFallback(props: FallbackProps) {
    return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-min">
          {createErrorFallback({
-            errorDescription: translate(
-               "dashboard.routes.interest-templates.stats.error.description",
-            ),
-            errorTitle: translate(
-               "dashboard.routes.interest-templates.stats.error.title",
-            ),
-            retryText: translate("common.actions.retry"),
+            errorDescription:
+               "Falha ao carregar estatisticas. Tente novamente mais tarde.",
+            errorTitle: "Erro ao carregar estatisticas",
+            retryText: "Tentar novamente",
          })(props)}
       </div>
    );
@@ -64,39 +60,23 @@ function InterestTemplatesStatsContent() {
    return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-min">
          <StatsCard
-            description={translate(
-               "dashboard.routes.interest-templates.stats.total.description",
-            )}
-            title={translate(
-               "dashboard.routes.interest-templates.stats.total.title",
-            )}
+            description="Numero total de modelos de juros cadastrados"
+            title="Total de Modelos"
             value={stats?.total ?? 0}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.interest-templates.stats.active.description",
-            )}
-            title={translate(
-               "dashboard.routes.interest-templates.stats.active.title",
-            )}
+            description="Modelos ativos disponiveis para uso"
+            title="Modelos Ativos"
             value={stats?.totalActive ?? 0}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.interest-templates.stats.with-penalty.description",
-            )}
-            title={translate(
-               "dashboard.routes.interest-templates.stats.with-penalty.title",
-            )}
+            description="Modelos com multa configurada"
+            title="Com Multa"
             value={stats?.withPenalty ?? 0}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.interest-templates.stats.with-correction.description",
-            )}
-            title={translate(
-               "dashboard.routes.interest-templates.stats.with-correction.title",
-            )}
+            description="Modelos com correcao monetaria"
+            title="Com Correcao"
             value={stats?.withCorrection ?? 0}
          />
       </div>

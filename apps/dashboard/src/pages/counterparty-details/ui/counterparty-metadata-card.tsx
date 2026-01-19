@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Alert, AlertDescription } from "@packages/ui/components/alert";
 import {
    Announcement,
@@ -87,6 +86,19 @@ function getTypeColor(type: string) {
    }
 }
 
+function getTypeLabel(type: string): string {
+   switch (type) {
+      case "client":
+         return "Cliente";
+      case "supplier":
+         return "Fornecedor";
+      case "both":
+         return "Cliente e Fornecedor";
+      default:
+         return type;
+   }
+}
+
 function copyToClipboard(text: string) {
    navigator.clipboard.writeText(text);
    toast.success("Copiado para a área de transferência");
@@ -107,7 +119,7 @@ function MetadataCardContent({ counterpartyId }: { counterpartyId: string }) {
       <Card className="h-fit">
          <CardHeader>
             <CardTitle>Metadados</CardTitle>
-            <CardDescription>Informações do parceiro</CardDescription>
+            <CardDescription>Informacoes do parceiro</CardDescription>
          </CardHeader>
          <CardContent>
             <div className="flex flex-wrap gap-2">
@@ -119,11 +131,7 @@ function MetadataCardContent({ counterpartyId }: { counterpartyId: string }) {
                      Tipo
                   </AnnouncementTag>
                   <AnnouncementTitle>
-                     {translate(
-                        `dashboard.routes.counterparties.form.type.${counterparty.type}` as Parameters<
-                           typeof translate
-                        >[0],
-                     )}
+                     {getTypeLabel(counterparty.type)}
                   </AnnouncementTitle>
                </Announcement>
 

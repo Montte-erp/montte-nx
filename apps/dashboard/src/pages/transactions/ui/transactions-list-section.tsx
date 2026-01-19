@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Card,
    CardContent,
@@ -21,21 +20,17 @@ function TransactionsListErrorFallback(props: FallbackProps) {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               {translate("dashboard.routes.transactions.list-section.title")}
-            </CardTitle>
+            <CardTitle>Lista de Transações</CardTitle>
             <CardDescription>
-               {translate(
-                  "dashboard.routes.transactions.list-section.description",
-               )}
+               Veja todas as suas transações financeiras aqui.
             </CardDescription>
          </CardHeader>
          <CardContent>
             {createErrorFallback({
                errorDescription:
-                  "Failed to load transactions. Please try again later.",
-               errorTitle: "Error loading transactions",
-               retryText: "Retry",
+                  "Falha ao carregar transações. Tente novamente mais tarde.",
+               errorTitle: "Erro ao carregar transações",
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>

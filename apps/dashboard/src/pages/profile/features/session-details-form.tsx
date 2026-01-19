@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import {
    Item,
@@ -55,15 +54,12 @@ export function SessionDetailsForm({
 
    const handleRevokeClick = useCallback(() => {
       openAlertDialog({
-         actionLabel: translate(
-            "dashboard.routes.profile.features.session-details.actions.revoke-current.title",
-         ),
-         cancelLabel: translate("common.actions.cancel"),
-         description: translate(
-            "common.headers.delete-confirmation.description",
-         ),
+         actionLabel: "Revogar sessão atual",
+         cancelLabel: "Cancelar",
+         description:
+            "Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.",
          onAction: handleDelete,
-         title: translate("common.headers.delete-confirmation.title"),
+         title: "Confirmar Exclusão",
          variant: "destructive",
       });
    }, [openAlertDialog, handleDelete]);
@@ -73,35 +69,25 @@ export function SessionDetailsForm({
          {
             isCurrent: session.id === currentSessionId,
             showIcon: false,
-            title: translate("dashboard.routes.profile.sessions.item.device"),
-            value:
-               session.userAgent ||
-               translate(
-                  "dashboard.routes.profile.sessions.item.unknown-device",
-               ),
+            title: "Dispositivo",
+            value: session.userAgent || "Dispositivo desconhecido",
          },
          {
             isCurrent: false,
             showIcon: false,
-            title: translate(
-               "dashboard.routes.profile.sessions.item.ip-address",
-            ),
+            title: "Endereço IP",
             value: session.ipAddress || "-",
          },
          {
             isCurrent: false,
             showIcon: false,
-            title: translate(
-               "dashboard.routes.profile.sessions.item.created-at",
-            ),
+            title: "Iniciado em",
             value: formatDate(session.createdAt),
          },
          {
             isCurrent: false,
             showIcon: false,
-            title: translate(
-               "dashboard.routes.profile.sessions.item.last-active",
-            ),
+            title: "Última atividade",
             value: formatDate(session.updatedAt),
          },
       ];
@@ -110,15 +96,9 @@ export function SessionDetailsForm({
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               {translate(
-                  "dashboard.routes.profile.features.session-details.title",
-               )}
-            </SheetTitle>
+            <SheetTitle>Detalhes da sessão</SheetTitle>
             <SheetDescription>
-               {translate(
-                  "dashboard.routes.profile.features.session-details.description",
-               )}
+               Informações sobre a sessão selecionada.
             </SheetDescription>
          </SheetHeader>
          <ItemGroup>
@@ -135,9 +115,7 @@ export function SessionDetailsForm({
                         {detail.isCurrent && (
                            <Badge>
                               <CheckCircle2 className="w-4 h-4" />
-                              {translate(
-                                 "dashboard.routes.profile.sessions.item.current",
-                              )}
+                              Sessão atual
                            </Badge>
                         )}
                      </ItemTitle>
@@ -148,22 +126,14 @@ export function SessionDetailsForm({
          </ItemGroup>
          <Separator />
          <SheetHeader>
-            <SheetTitle>
-               {translate(
-                  "dashboard.routes.profile.features.session-details.actions.title",
-               )}
-            </SheetTitle>
+            <SheetTitle>Gerencie sua sessão</SheetTitle>
             <SheetDescription>
-               {translate(
-                  "dashboard.routes.profile.features.session-details.actions.description",
-               )}
+               Aqui você pode gerenciar sua sessão atual.
             </SheetDescription>
          </SheetHeader>
          <ItemGroup className="px-4">
             <Item
-               aria-label={translate(
-                  "dashboard.routes.profile.features.session-details.actions.revoke-current.title",
-               )}
+               aria-label="Revogar sessão atual"
                className="cursor-pointer"
                onClick={handleRevokeClick}
                variant="outline"
@@ -173,14 +143,10 @@ export function SessionDetailsForm({
                </ItemMedia>
                <ItemContent className="gap-1">
                   <ItemTitle className="text-destructive">
-                     {translate(
-                        "dashboard.routes.profile.features.session-details.actions.revoke-current.title",
-                     )}
+                     Revogar sessão atual
                   </ItemTitle>
                   <ItemDescription>
-                     {translate(
-                        "dashboard.routes.profile.features.session-details.actions.revoke-current.description",
-                     )}
+                     Revogar a sessão atual e sair deste dispositivo.
                   </ItemDescription>
                </ItemContent>
                <ItemActions>

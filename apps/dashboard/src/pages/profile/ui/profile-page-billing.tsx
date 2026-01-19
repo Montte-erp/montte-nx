@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { PlanName, STRIPE_PLANS } from "@packages/stripe/constants";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
@@ -82,22 +81,17 @@ function ProfilePageBillingErrorFallback(props: FallbackProps) {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               {translate("dashboard.routes.profile.billing.title")}
-            </CardTitle>
+            <CardTitle>Assinatura</CardTitle>
             <CardDescription>
-               {translate("dashboard.routes.profile.billing.description")}
+               Gerencie sua assinatura e informações de cobrança.
             </CardDescription>
          </CardHeader>
          <CardContent>
             {createErrorFallback({
-               errorDescription: translate(
-                  "dashboard.routes.profile.billing.state.error.description",
-               ),
-               errorTitle: translate(
-                  "dashboard.routes.profile.billing.state.error.title",
-               ),
-               retryText: translate("common.actions.retry"),
+               errorDescription:
+                  "Ocorreu um erro ao carregar suas informações de assinatura.",
+               errorTitle: "Erro ao carregar",
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>
@@ -204,15 +198,10 @@ function NoSubscriptionContent() {
             <EmptyMedia variant="icon">
                <CreditCard className="size-6" />
             </EmptyMedia>
-            <EmptyTitle>
-               {translate(
-                  "dashboard.routes.profile.billing.state.not-active.title",
-               )}
-            </EmptyTitle>
+            <EmptyTitle>Modo de teste</EmptyTitle>
             <EmptyDescription>
-               {translate(
-                  "dashboard.routes.profile.billing.state.not-active.description",
-               )}
+               O aplicativo está em modo de teste e não estamos cobrando pela
+               assinatura no momento.
             </EmptyDescription>
          </EmptyHeader>
          <EmptyContent>
@@ -248,12 +237,10 @@ function ProfilePageBillingContent() {
                   subscription={activeSubscription as Subscription}
                />
             }
-            description={translate(
-               "dashboard.routes.profile.billing.description",
-            )}
+            description="Gerencie sua assinatura e informações de cobrança."
             icon={<CreditCard className="size-4" />}
             onClick={handleNavigateToManagePlan}
-            title={translate("dashboard.routes.profile.billing.title")}
+            title="Assinatura"
          />
       );
    }
@@ -261,11 +248,9 @@ function ProfilePageBillingContent() {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               {translate("dashboard.routes.profile.billing.title")}
-            </CardTitle>
+            <CardTitle>Assinatura</CardTitle>
             <CardDescription>
-               {translate("dashboard.routes.profile.billing.description")}
+               Gerencie sua assinatura e informações de cobrança.
             </CardDescription>
          </CardHeader>
          <CardContent>

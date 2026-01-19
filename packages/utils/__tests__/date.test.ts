@@ -1,28 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { formatDate, getCurrentDate } from "../src/date";
+import { formatDate } from "../src/date";
 
 describe("date utilities", () => {
-   describe("getCurrentDate", () => {
-      it("should return current date object without timezone", () => {
-         const result = getCurrentDate();
-         expect(result).toHaveProperty("date");
-         expect(typeof result.date).toBe("string");
-         expect(result.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      });
-
-      it("should accept timezone parameter", () => {
-         const result = getCurrentDate("UTC");
-         expect(result).toHaveProperty("date");
-         expect(typeof result.date).toBe("string");
-         expect(result.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      });
-
-      it("should return different date for different timezones", () => {
-         const utcResult = getCurrentDate("UTC");
-         expect(utcResult.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      });
-   });
-
    describe("formatDate", () => {
       it("should format date with default format using UTC", () => {
          const date = new Date("2024-01-15T12:00:00Z");

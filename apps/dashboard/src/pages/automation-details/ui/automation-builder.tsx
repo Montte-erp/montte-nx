@@ -11,7 +11,11 @@ import { Button } from "@packages/ui/components/button";
 import { ScrollArea } from "@packages/ui/components/scroll-area";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { cn } from "@packages/ui/lib/utils";
-import { type ActionTab, getAction, getActionTabs } from "@packages/workflows/config/actions";
+import {
+   type ActionTab,
+   getAction,
+   getActionTabs,
+} from "@packages/workflows/config/actions";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
    addEdge,
@@ -41,17 +45,17 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useTRPC } from "@/integrations/clients";
-import {
-   createDefaultActionNode,
-   createDefaultConditionNode,
-   createDefaultTriggerNode,
-} from "../lib/flow-serialization";
 import type {
    ActionNodeData,
    AutomationEdge,
    AutomationNode,
-} from "../lib/types";
+} from "@/features/automations/hooks/use-flow-serialization";
+import {
+   createDefaultActionNode,
+   createDefaultConditionNode,
+   createDefaultTriggerNode,
+} from "@/features/automations/hooks/use-flow-serialization";
+import { useTRPC } from "@/integrations/clients";
 import { AutomationCanvas } from "./automation-canvas";
 import { AutomationVersionHistoryView } from "./automation-version-history-view";
 import type { ViewMode } from "./canvas-toolbar";

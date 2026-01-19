@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import {
    Card,
@@ -29,15 +28,10 @@ import { useTRPC } from "@/integrations/clients";
 function RecentInvitesCardHeader() {
    return (
       <CardHeader className="">
-         <CardTitle className="">
-            {translate(
-               "dashboard.routes.organization.recent-invites-section.title",
-            )}
-         </CardTitle>
+         <CardTitle className="">Convites Recentes</CardTitle>
          <CardDescription>
-            {translate(
-               "dashboard.routes.organization.recent-invites-section.description",
-            )}
+            Uma lista dos convites mais recentes enviados para ingressar na
+            organização.
          </CardDescription>
       </CardHeader>
    );
@@ -116,13 +110,9 @@ function RecentInvitesSkeleton() {
 
 function RecentInvitesErrorFallback({ error }: { error: Error }) {
    const ErrorFallbackComponent = createErrorFallback({
-      errorDescription: translate(
-         "dashboard.routes.organization.recent-invites-section.state.error.description",
-      ),
-      errorTitle: translate(
-         "dashboard.routes.organization.recent-invites-section.state.error.title",
-      ),
-      retryText: translate("common.actions.retry"),
+      errorDescription: "Não foi possível carregar os convites recentes.",
+      errorTitle: "Erro ao Carregar Convites",
+      retryText: "Tentar novamente",
    });
 
    return (

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Alert, AlertDescription } from "@packages/ui/components/alert";
 import { Button } from "@packages/ui/components/button";
 import { Skeleton } from "@packages/ui/components/skeleton";
@@ -96,9 +95,9 @@ function ActionButtonsContent({
    const handleDelete = () => {
       openAlertDialog({
          actionLabel: "Excluir",
-         cancelLabel: translate("common.actions.cancel"),
+         cancelLabel: "Cancelar",
          description:
-            "Tem certeza que deseja excluir este parceiro comercial? Esta ação não pode ser desfeita.",
+            "Tem certeza que deseja excluir este parceiro comercial? Esta acao nao pode ser desfeita.",
          onAction: async () => {
             await deleteMutation.mutateAsync({ id: counterpartyId });
          },

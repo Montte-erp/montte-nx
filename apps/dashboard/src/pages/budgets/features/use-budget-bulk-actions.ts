@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTRPC } from "@/integrations/clients";
@@ -40,17 +39,12 @@ export function useBudgetBulkActions(options?: UseBudgetBulkActionsOptions) {
       try {
          await activateMutation.mutateAsync({ ids });
          toast.success(
-            translate(
-               "dashboard.routes.budgets.bulk-actions.activated-success",
-               {
-                  count: ids.length,
-               },
-            ),
+            ids.length === 1
+               ? "1 orçamento ativado"
+               : `${ids.length} orçamentos ativados`,
          );
       } catch {
-         toast.error(
-            translate("dashboard.routes.budgets.bulk-actions.activated-error"),
-         );
+         toast.error("Erro ao ativar orçamentos");
       }
    };
 
@@ -60,17 +54,12 @@ export function useBudgetBulkActions(options?: UseBudgetBulkActionsOptions) {
       try {
          await deactivateMutation.mutateAsync({ ids });
          toast.success(
-            translate(
-               "dashboard.routes.budgets.bulk-actions.deactivated-success",
-               { count: ids.length },
-            ),
+            ids.length === 1
+               ? "1 orçamento desativado"
+               : `${ids.length} orçamentos desativados`,
          );
       } catch {
-         toast.error(
-            translate(
-               "dashboard.routes.budgets.bulk-actions.deactivated-error",
-            ),
-         );
+         toast.error("Erro ao desativar orçamentos");
       }
    };
 
@@ -80,14 +69,12 @@ export function useBudgetBulkActions(options?: UseBudgetBulkActionsOptions) {
       try {
          await deleteMutation.mutateAsync({ ids });
          toast.success(
-            translate("dashboard.routes.budgets.bulk-actions.deleted-success", {
-               count: ids.length,
-            }),
+            ids.length === 1
+               ? "1 orçamento excluído"
+               : `${ids.length} orçamentos excluídos`,
          );
       } catch {
-         toast.error(
-            translate("dashboard.routes.budgets.bulk-actions.deleted-error"),
-         );
+         toast.error("Erro ao excluir orçamentos");
       }
    };
 

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Announcement,
    AnnouncementTag,
@@ -26,9 +25,9 @@ function TagMetadataCardErrorFallback(props: FallbackProps) {
       <Card>
          <CardContent className="pt-6">
             {createErrorFallback({
-               errorDescription: "Failed to load tag metadata",
-               errorTitle: "Error",
-               retryText: translate("common.actions.retry"),
+               errorDescription: "Falha ao carregar metadados da tag",
+               errorTitle: "Erro",
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>
@@ -69,12 +68,8 @@ function TagMetadataCardContent() {
    return (
       <Card>
          <CardHeader>
-            <CardTitle className="text-base">
-               {translate("common.form.metadata.title")}
-            </CardTitle>
-            <CardDescription>
-               {translate("common.form.metadata.description")}
-            </CardDescription>
+            <CardTitle className="text-base">Metadados</CardTitle>
+            <CardDescription>Informações da categoria</CardDescription>
          </CardHeader>
          <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
@@ -94,7 +89,7 @@ function TagMetadataCardContent() {
                <Announcement>
                   <AnnouncementTag className="flex items-center gap-1.5">
                      <Palette className="size-3.5" />
-                     {translate("common.form.color.label")}
+                     Cor
                   </AnnouncementTag>
                   <AnnouncementTitle>
                      <div
@@ -107,7 +102,7 @@ function TagMetadataCardContent() {
                <Announcement>
                   <AnnouncementTag className="flex items-center gap-1.5">
                      <Calendar className="size-3.5" />
-                     {translate("common.form.created-at.label")}
+                     Data de Criação
                   </AnnouncementTag>
                   <AnnouncementTitle>
                      {formatDate(new Date(tag.createdAt), "DD MMM YYYY")}

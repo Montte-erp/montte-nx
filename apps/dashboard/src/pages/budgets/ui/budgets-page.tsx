@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    ToggleGroup,
@@ -34,32 +33,32 @@ function BudgetsPageContent() {
    const periodChips = [
       {
          icon: InfinityIcon,
-         label: translate("dashboard.routes.budgets.filters.all"),
+         label: "Todos",
          value: "" as const,
       },
       {
          icon: Calendar,
-         label: translate("dashboard.routes.budgets.form.period.daily"),
+         label: "Diário",
          value: "daily" as const,
       },
       {
          icon: CalendarRange,
-         label: translate("dashboard.routes.budgets.form.period.weekly"),
+         label: "Semanal",
          value: "weekly" as const,
       },
       {
          icon: CalendarDays,
-         label: translate("dashboard.routes.budgets.form.period.monthly"),
+         label: "Mensal",
          value: "monthly" as const,
       },
       {
          icon: RotateCcw,
-         label: translate("dashboard.routes.budgets.form.period.quarterly"),
+         label: "Trimestral",
          value: "quarterly" as const,
       },
       {
          icon: CalendarDays,
-         label: translate("dashboard.routes.budgets.form.period.yearly"),
+         label: "Anual",
          value: "yearly" as const,
       },
    ];
@@ -72,13 +71,11 @@ function BudgetsPageContent() {
                   onClick={() => openSheet({ children: <ManageBudgetForm /> })}
                >
                   <Plus className="size-4" />
-                  {translate(
-                     "dashboard.routes.budgets.actions-toolbar.actions.add-new",
-                  )}
+                  Novo orçamento
                </Button>
             }
-            description={translate("dashboard.routes.budgets.page.description")}
-            title={translate("dashboard.routes.budgets.page.title")}
+            description="Gerencie seus orçamentos e acompanhe a evolução dos seus gastos"
+            title="Orçamentos"
          />
 
          <ToggleGroup

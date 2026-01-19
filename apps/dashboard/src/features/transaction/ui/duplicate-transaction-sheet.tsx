@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Choicebox,
@@ -39,6 +38,24 @@ type DateOption = "same-day" | "today" | "custom";
 
 const dateOptions: DateOption[] = ["same-day", "today", "custom"];
 
+const dateOptionTexts: Record<
+   DateOption,
+   { title: string; description: string }
+> = {
+   "same-day": {
+      title: "Mesmo dia da transação",
+      description: "Usar a mesma data da transação original",
+   },
+   today: {
+      title: "Hoje",
+      description: "Usar a data de hoje para a duplicação",
+   },
+   custom: {
+      title: "Data específica",
+      description: "Escolha uma data específica para a duplicação",
+   },
+};
+
 export function DuplicateTransactionSheet({
    transaction,
 }: DuplicateTransactionSheetProps) {
@@ -50,20 +67,12 @@ export function DuplicateTransactionSheet({
    const createTransactionMutation = useMutation(
       trpc.transactions.create.mutationOptions({
          onSuccess: () => {
-            toast.success(
-               translate(
-                  "dashboard.routes.transactions.notifications.create-success",
-               ),
-            );
+            toast.success("Transação criada com sucesso");
             closeSheet();
          },
          onError: (error) => {
             console.error("Failed to duplicate transaction:", error);
-            toast.error(
-               translate(
-                  "dashboard.routes.transactions.notifications.create-error",
-               ),
-            );
+            toast.error("Falha ao criar transação");
          },
       }),
    );
@@ -107,15 +116,9 @@ export function DuplicateTransactionSheet({
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               {translate(
-                  "dashboard.routes.transactions.features.duplicate.title",
-               )}
-            </SheetTitle>
+            <SheetTitle>Duplicar Transação</SheetTitle>
             <SheetDescription>
-               {translate(
-                  "dashboard.routes.transactions.features.duplicate.description",
-               )}
+               Crie uma cópia desta transação com os mesmos dados.
             </SheetDescription>
          </SheetHeader>
 
@@ -129,14 +132,10 @@ export function DuplicateTransactionSheet({
                      <ChoiceboxItem id={option} key={option} value={option}>
                         <ChoiceboxItemHeader>
                            <ChoiceboxItemTitle>
-                              {translate(
-                                 `dashboard.routes.transactions.features.duplicate.date-options.${option}.title`,
-                              )}
+                              {dateOptionTexts[option].title}
                            </ChoiceboxItemTitle>
                            <ChoiceboxItemDescription>
-                              {translate(
-                                 `dashboard.routes.transactions.features.duplicate.date-options.${option}.description`,
-                              )}
+                              {dateOptionTexts[option].description}
                            </ChoiceboxItemDescription>
                         </ChoiceboxItemHeader>
                         <ChoiceboxIndicator id={option} />
@@ -149,9 +148,7 @@ export function DuplicateTransactionSheet({
                      className="w-full"
                      date={customDate}
                      onSelect={setCustomDate}
-                     placeholder={translate(
-                        "dashboard.routes.transactions.features.duplicate.date-options.custom.title",
-                     )}
+                     placeholder="Data específica"
                   />
                )}
             </div>
@@ -160,10 +157,8 @@ export function DuplicateTransactionSheet({
          <SheetFooter>
             <Button disabled={isSubmitDisabled} onClick={handleSubmit}>
                {createTransactionMutation.isPending
-                  ? translate("common.actions.loading")
-                  : translate(
-                       "dashboard.routes.transactions.features.duplicate.submit",
-                    )}
+                  ? "Carregando..."
+                  : "Duplicar Transação"}
             </Button>
          </SheetFooter>
       </>

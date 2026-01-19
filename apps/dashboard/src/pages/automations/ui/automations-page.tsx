@@ -18,16 +18,16 @@ import {
    Zap,
 } from "lucide-react";
 import { toast } from "sonner";
-import { UpgradeRequired } from "@/components/upgrade-required";
 import { DefaultHeader } from "@/default/default-header";
-import { useActiveOrganization } from "@/hooks/use-active-organization";
-import { usePlanFeatures } from "@/hooks/use-plan-features";
-import { useTRPC } from "@/integrations/clients";
 import {
    AutomationsListProvider,
    type TriggerTypeFilter,
    useAutomationsList,
-} from "../features/automations-list-context";
+} from "@/features/automations/hooks/use-automations-list-context";
+import { usePlanFeatures } from "@/features/billing/lib/use-plan-features";
+import { UpgradeRequired } from "@/features/billing/ui/upgrade-required";
+import { useActiveOrganization } from "@/hooks/use-active-organization";
+import { useTRPC } from "@/integrations/clients";
 import { AutomationsListSection } from "./automations-list-section";
 
 function generateRandomName(): string {

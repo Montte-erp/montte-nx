@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Card,
@@ -42,31 +41,23 @@ import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";
 import { SessionDetailsForm } from "../features/session-details-form";
-import {
-   useRevokeAllSessions,
-   useRevokeOtherSessions,
-} from "../features/use-session-actions";
+import { useSessionActions } from "../features/use-session-actions";
 
 function SessionsSectionErrorFallback(props: FallbackProps) {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               {translate("dashboard.routes.profile.sessions.title")}
-            </CardTitle>
+            <CardTitle>Sessões ativas</CardTitle>
             <CardDescription>
-               {translate("dashboard.routes.profile.sessions.description")}
+               Visualize e gerencie suas sessões de login ativas.
             </CardDescription>
          </CardHeader>
          <CardContent>
             {createErrorFallback({
-               errorDescription: translate(
-                  "dashboard.routes.profile.sessions.state.error.description",
-               ),
-               errorTitle: translate(
-                  "dashboard.routes.profile.sessions.state.error.title",
-               ),
-               retryText: translate("common.actions.retry"),
+               errorDescription:
+                  "Ocorreu um erro ao carregar suas sessões ativas.",
+               errorTitle: "Erro ao carregar",
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>
@@ -122,20 +113,15 @@ function SessionsSectionContent() {
       trpc.session.getSession.queryOptions(),
    );
 
-   const { revokeOtherSessions, isRevoking: isRevokingOthers } =
-      useRevokeOtherSessions();
-   const { revokeAllSessions, isRevoking: isRevokingAll } =
-      useRevokeAllSessions();
+   const { revokeOtherSessions, revokeAllSessions } = useSessionActions();
 
    return (
       <TooltipProvider>
          <Card>
             <CardHeader>
-               <CardTitle>
-                  {translate("dashboard.routes.profile.sessions.title")}
-               </CardTitle>
+               <CardTitle>Sessões ativas</CardTitle>
                <CardDescription>
-                  {translate("dashboard.routes.profile.sessions.description")}
+                  Visualize e gerencie suas sessões de login ativas.
                </CardDescription>
                <CardAction>
                   <DropdownMenu>
@@ -143,9 +129,7 @@ function SessionsSectionContent() {
                         <TooltipTrigger asChild>
                            <DropdownMenuTrigger asChild>
                               <Button
-                                 aria-label={translate(
-                                    "dashboard.routes.profile.sessions.actions.title",
-                                 )}
+                                 aria-label="Gerenciar sessões"
                                  size="icon"
                                  variant="ghost"
                               >
@@ -153,39 +137,25 @@ function SessionsSectionContent() {
                               </Button>
                            </DropdownMenuTrigger>
                         </TooltipTrigger>
-                        <TooltipContent>
-                           {translate(
-                              "dashboard.routes.profile.sessions.actions.title",
-                           )}
-                        </TooltipContent>
+                        <TooltipContent>Gerenciar sessões</TooltipContent>
                      </Tooltip>
                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel>
-                           {translate(
-                              "dashboard.routes.profile.sessions.actions.title",
-                           )}
-                        </DropdownMenuLabel>
+                        <DropdownMenuLabel>Gerenciar sessões</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuGroup>
                            <DropdownMenuItem
-                              disabled={isRevokingOthers}
-                              onClick={revokeOtherSessions}
+                              onClick={() => revokeOtherSessions()}
                               variant="destructive"
                            >
                               <Trash2 className="w-4 h-4 mr-2" />
-                              {translate(
-                                 "dashboard.routes.profile.sessions.actions.revoke-others",
-                              )}
+                              Revogar outras sessões
                            </DropdownMenuItem>
                            <DropdownMenuItem
-                              disabled={isRevokingAll}
-                              onClick={revokeAllSessions}
+                              onClick={() => revokeAllSessions()}
                               variant="destructive"
                            >
                               <Trash2 className="w-4 h-4 mr-2 text-destructive" />
-                              {translate(
-                                 "dashboard.routes.profile.sessions.actions.revoke-all",
-                              )}
+                              Revogar todas as sessões
                            </DropdownMenuItem>
                         </DropdownMenuGroup>
                      </DropdownMenuContent>
@@ -203,16 +173,10 @@ function SessionsSectionContent() {
                            <ItemContent className="truncate">
                               <ItemTitle>
                                  {session.userAgent ||
-                                    translate(
-                                       "dashboard.routes.profile.sessions.item.unknown-device",
-                                    )}
+                                    "Dispositivo desconhecido"}
                               </ItemTitle>
                               <ItemDescription>
-                                 <span>
-                                    {translate(
-                                       "dashboard.routes.profile.sessions.item.ip-address",
-                                    )}
-                                 </span>
+                                 <span>Endereço IP</span>
                                  <span>:</span>
                                  <span> {session.ipAddress || "-"}</span>
                               </ItemDescription>

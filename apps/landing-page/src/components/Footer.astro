@@ -1,0 +1,96 @@
+---
+import { ArrowRight } from "@lucide/astro";
+import { Button } from "@packages/ui/components/button";
+import { Input } from "@packages/ui/components/input";
+import { Separator } from "@packages/ui/components/separator";
+import Logo from "@/components/Logo.astro";
+import LogoCloud from "@/components/LogoCloud.astro";
+
+const companyLinks: { href: string; title: string; external?: boolean }[] = [
+   { href: "/blog", title: "Blog" },
+];
+
+const helpLinks: { href: string; title: string; external?: boolean }[] = [
+   { href: "/terms", title: "Termos de Uso" },
+   { href: "/privacy", title: "Politica de Privacidade" },
+];
+
+const year = new Date().getFullYear();
+---
+
+<footer class="bg-muted">
+   <div class="mx-auto grid max-w-7xl grid-cols-6 gap-4  px-8 py-18 md:py-28  container   overflow-hidden">
+      <div class="col-span-full flex flex-col items-start gap-4 lg:col-span-2">
+         <a href="/">
+            <div class="flex items-center gap-3">
+               <Logo size={34} class="text-primary" />
+               <span class="text-xl font-semibold">Montte</span>
+            </div>
+         </a>
+         <p class="text-muted-foreground">
+            Simplifique sua vida financeira. Acompanhe gastos, gerencie orçamentos e tome decisões inteligentes com total segurança e privacidade.
+         </p>
+       <Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
+      </div>
+
+      <div class="col-span-full grid grid-cols-2 gap-6 sm:grid-cols-4 lg:col-span-4 lg:gap-8">
+         <div class="flex flex-col gap-5">
+            <div class="text-lg font-medium">Empresa</div>
+            <ul class="text-muted-foreground space-y-3">
+               {companyLinks.map((link) => (
+                  <li>
+                     <a
+                        href={link.href}
+                        target={link.external ? "_blank" : "_self"}
+                        rel={link.external ? "noopener noreferrer" : undefined}
+                     >
+                        {link.title}
+                     </a>
+                  </li>
+               ))}
+            </ul>
+         </div>
+
+         <div class="flex flex-col gap-5">
+            <div class="text-lg font-medium">Ajuda</div>
+            <ul class="text-muted-foreground space-y-3">
+               {helpLinks.map((link) => (
+                  <li>
+                     <a
+                        href={link.href}
+                        target={link.external ? "_blank" : "_self"}
+                        rel={link.external ? "noopener noreferrer" : undefined}
+                     >
+                        {link.title}
+                     </a>
+                  </li>
+               ))}
+            </ul>
+         </div>
+
+         <div class="col-span-full flex flex-col gap-5 sm:col-span-2">
+            <div>
+               <p class="mb-3 text-lg font-medium">Inscreva-se na newsletter</p>
+               <form class="flex gap-2" action="#" method="POST">
+                  <Input
+                     type="email"
+                     name="email"
+                     required
+                     placeholder="Seu e-mail..."
+                  />
+                  <Button type="submit" size="icon" className="rounded-lg">
+                     <ArrowRight class="size-4" aria-hidden="true" />
+                  </Button>
+               </form>
+            </div>
+            <LogoCloud variant="compact" />
+         </div>
+      </div>
+   </div>
+
+       <Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
+
+      <p class="text-center font-medium text-balance py-4">
+         ©{year} <a class="text-primary" href="/">Montte</a>, By <a href="https://f-o-t.dev" target="_blank" rel="noopener noreferrer">F-O-T</a>.
+      </p>
+</footer>

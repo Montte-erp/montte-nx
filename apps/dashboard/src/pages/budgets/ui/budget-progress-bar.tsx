@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Tooltip,
    TooltipContent,
@@ -79,26 +78,17 @@ export function BudgetProgressBar({
             </TooltipTrigger>
             <TooltipContent className="space-y-1">
                <p>
-                  <span className="font-medium">
-                     {translate("dashboard.routes.budgets.progress.spent")}:
-                  </span>{" "}
+                  <span className="font-medium">Gasto:</span>{" "}
                   {formatCurrency(spent)} ({percentage.toFixed(1)}%)
                </p>
                {scheduled > 0 && (
                   <p>
-                     <span className="font-medium">
-                        {translate(
-                           "dashboard.routes.budgets.progress.scheduled",
-                        )}
-                        :
-                     </span>{" "}
+                     <span className="font-medium">Agendado:</span>{" "}
                      {formatCurrency(scheduled)}
                   </p>
                )}
                <p>
-                  <span className="font-medium">
-                     {translate("dashboard.routes.budgets.progress.available")}:
-                  </span>{" "}
+                  <span className="font-medium">Disponível:</span>{" "}
                   {formatCurrency(available)}
                </p>
             </TooltipContent>

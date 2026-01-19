@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import {
    Card,
@@ -14,12 +13,11 @@ import {
    ChartLegendContent,
    ChartTooltip,
 } from "@packages/ui/components/chart";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { formatDate } from "@packages/utils/date";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useMemo } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { ErrorBoundary } from "react-error-boundary";
 import {
    Area,
    AreaChart,
@@ -33,15 +31,11 @@ import {
 } from "recharts";
 import { useTRPC } from "@/integrations/clients";
 
-function BankAccountChartsErrorFallback(props: FallbackProps) {
+function BankAccountChartsErrorFallback() {
    return (
-      <div className="grid gap-4 h-min">
-         {createErrorFallback({
-            errorDescription:
-               "Failed to load bank account charts. Please try again later.",
-            errorTitle: "Error loading charts",
-            retryText: "Retry",
-         })(props)}
+      <div className="p-4 text-center text-sm text-destructive">
+         Falha ao carregar gráficos da conta bancária. Tente novamente mais
+         tarde.
       </div>
    );
 }
@@ -220,8 +214,8 @@ function BankAccountTypeDistributionChart({
          }
       }
 
-      const incomeLabel = translate("common.charts.labels.income");
-      const expensesLabel = translate("common.charts.labels.expenses");
+      const incomeLabel = "Receita";
+      const expensesLabel = "Despesas";
 
       const chartData = [
          {
@@ -374,8 +368,8 @@ function BankAccountEvolutionChart({
             };
          }
 
-         const incomeLabel = translate("common.charts.labels.income");
-         const expensesLabel = translate("common.charts.labels.expenses");
+         const incomeLabel = "Receita";
+         const expensesLabel = "Despesas";
 
          if (granularity === "monthly") {
             const monthlyData = new Map<

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import { Alert, AlertDescription } from "@packages/ui/components/alert";
 import { Badge } from "@packages/ui/components/badge";
@@ -83,8 +82,7 @@ function InstallmentsCardContent({ billId }: { billId: string }) {
          <CardHeader>
             <CardTitle className="flex items-center gap-2">
                <CalendarDays className="size-5" />
-               {translate("dashboard.routes.bills.details.installments.title")}{" "}
-               ({bill.installmentNumber}/{bill.totalInstallments})
+               Parcelas ({bill.installmentNumber}/{bill.totalInstallments})
             </CardTitle>
          </CardHeader>
          <CardContent>
@@ -111,9 +109,7 @@ function InstallmentsCardContent({ billId }: { billId: string }) {
                                  Parcela {installment.installmentNumber}
                                  {isCurrent && (
                                     <Badge className="ml-2" variant="secondary">
-                                       {translate(
-                                          "dashboard.routes.bills.details.installments.current",
-                                       )}
+                                       Atual
                                     </Badge>
                                  )}
                               </p>
@@ -132,13 +128,7 @@ function InstallmentsCardContent({ billId }: { billId: string }) {
                               )}
                            </span>
                            <Badge variant={isPaid ? "default" : "secondary"}>
-                              {isPaid
-                                 ? translate(
-                                      "dashboard.routes.bills.details.installments.paid",
-                                   )
-                                 : translate(
-                                      "dashboard.routes.bills.details.installments.pending",
-                                   )}
+                              {isPaid ? "Pago" : "Pendente"}
                            </Badge>
                         </div>
                      </div>
@@ -154,10 +144,8 @@ function InstallmentsCardContent({ billId }: { billId: string }) {
                      variant="ghost"
                   >
                      {showAllInstallments
-                        ? translate("common.actions.show-less")
-                        : translate(
-                             "dashboard.routes.bills.details.installments.viewAll",
-                          )}
+                        ? "Mostrar menos"
+                        : "Ver todas as parcelas"}
                   </Button>
                )}
             </div>

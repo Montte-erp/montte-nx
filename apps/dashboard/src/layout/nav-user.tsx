@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Avatar,
    AvatarFallback,
@@ -30,7 +29,14 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useRouter } from "@tanstack/react-router";
-import { BadgeCheck, Bell, CreditCard, LogOut, Sparkles } from "lucide-react";
+import {
+   BadgeCheck,
+   Bell,
+   ChevronRight,
+   CreditCard,
+   LogOut,
+   Sparkles,
+} from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
@@ -42,7 +48,6 @@ import {
    type Session,
    useTRPC,
 } from "@/integrations/clients";
-import { LanguageCommand } from "./language-command";
 import { ThemeSwitcher } from "./theme-provider";
 
 function NavUserCredenza({
@@ -61,11 +66,7 @@ function NavUserCredenza({
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               {translate("dashboard.layout.nav-user.greeting", {
-                  name: session.user.name,
-               })}
-            </CredenzaTitle>
+            <CredenzaTitle>{`Olá, ${session.user.name}`}</CredenzaTitle>
             <CredenzaDescription className="truncate">
                {session.user.email}
             </CredenzaDescription>
@@ -84,7 +85,7 @@ function NavUserCredenza({
                      to="/$slug/settings/billing"
                   >
                      <Sparkles className="size-4" />
-                     {translate("dashboard.layout.nav-user.main.upgrade")}
+                     Atualizar para Pro
                   </Link>
                </Button>
             )}
@@ -101,7 +102,7 @@ function NavUserCredenza({
                      to="/$slug/settings/profile"
                   >
                      <BadgeCheck className="size-4" />
-                     {translate("dashboard.layout.nav-user.main.account")}
+                     Conta
                   </Link>
                </Button>
                <Button
@@ -115,7 +116,7 @@ function NavUserCredenza({
                      to="/$slug/settings/billing"
                   >
                      <CreditCard className="size-4" />
-                     {translate("dashboard.layout.nav-user.main.billing")}
+                     Cobrança
                   </Link>
                </Button>
                <Button
@@ -129,28 +130,18 @@ function NavUserCredenza({
                      to="/$slug/settings/notifications"
                   >
                      <Bell className="size-4" />
-                     {translate("dashboard.layout.nav-user.main.notifications")}
+                     Notificações
                   </Link>
                </Button>
             </div>
 
             <div className="space-y-3">
                <span className="text-sm font-medium text-muted-foreground">
-                  {translate("dashboard.layout.nav-user.preferences.label")}
+                  Preferencias
                </span>
                <div className="flex items-center justify-between">
-                  <span className="text-sm">
-                     {translate("dashboard.layout.nav-user.preferences.theme")}
-                  </span>
+                  <span className="text-sm">Tema</span>
                   <ThemeSwitcher />
-               </div>
-               <div className="flex items-center justify-between gap-8">
-                  <span className="text-sm">
-                     {translate(
-                        "dashboard.layout.nav-user.preferences.language",
-                     )}
-                  </span>
-                  <LanguageCommand />
                </div>
             </div>
          </CredenzaBody>
@@ -162,7 +153,7 @@ function NavUserCredenza({
                variant="destructive"
             >
                <LogOut className="size-4" />
-               {translate("dashboard.layout.nav-user.actions.logout")}
+               Sair
             </Button>
          </CredenzaFooter>
       </>
@@ -184,7 +175,7 @@ function NavUserSkeleton() {
       <SidebarMenu>
          <SidebarMenuItem>
             <SidebarMenuButton className="pointer-events-none" size="lg">
-               <Skeleton className="h-8 w-8 rounded-lg mr-3" />
+               <Skeleton className="h-8 w-8 rounded-lg" />
                <div className="grid flex-1 text-left text-sm leading-tight">
                   <Skeleton className="h-4 w-24 mb-1" />
                   <Skeleton className="h-3 w-32" />
@@ -219,10 +210,7 @@ function NavUserContent() {
                toast.error(error.message, { id: "logout" });
             },
             onRequest: () => {
-               toast.loading(
-                  translate("dashboard.layout.nav-user.messages.logging-out"),
-                  { id: "logout" },
-               );
+               toast.loading("Saindo...", { id: "logout" });
             },
             onSuccess: async () => {
                await queryClient.invalidateQueries({
@@ -231,12 +219,7 @@ function NavUserContent() {
                router.navigate({
                   to: "/auth/sign-in",
                });
-               toast.success(
-                  translate(
-                     "dashboard.layout.nav-user.messages.logout-success",
-                  ),
-                  { id: "logout" },
-               );
+               toast.success("Você saiu com sucesso!", { id: "logout" });
             },
          },
       });
@@ -246,15 +229,11 @@ function NavUserContent() {
    const handleLogoutClick = useCallback(() => {
       closeCredenza();
       openAlertDialog({
-         actionLabel: translate("dashboard.layout.nav-user.actions.logout"),
-         cancelLabel: translate("common.actions.cancel"),
-         description: translate(
-            "dashboard.layout.nav-user.logout-confirmation.description",
-         ),
+         actionLabel: "Sair",
+         cancelLabel: "Cancelar",
+         description: "Tem certeza que deseja sair da sua conta?",
          onAction: handleLogout,
-         title: translate(
-            "dashboard.layout.nav-user.logout-confirmation.title",
-         ),
+         title: "Confirmar saída",
          variant: "destructive",
       });
    }, [closeCredenza, openAlertDialog, handleLogout]);
@@ -292,30 +271,12 @@ function NavUserContent() {
       return (
          <SidebarMenu>
             <SidebarMenuItem>
-               <Avatar
-                  className="border-border border-2 cursor-pointer"
+               <SidebarMenuButton
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                   onClick={handleOpenCredenza}
+                  size="lg"
                >
-                  <AvatarImage
-                     alt={session?.user.name}
-                     src={session?.user.image ?? ""}
-                  />
-                  <AvatarFallback className="rounded-lg">
-                     {session?.user.name?.charAt(0) || "?"}
-                  </AvatarFallback>
-               </Avatar>
-            </SidebarMenuItem>
-         </SidebarMenu>
-      );
-   }
-
-   // Desktop: Use DropdownMenu
-   return (
-      <SidebarMenu>
-         <SidebarMenuItem>
-            <DropdownMenu>
-               <DropdownMenuTrigger asChild>
-                  <Avatar className="border-border border-2 cursor-pointer">
+                  <Avatar className="h-8 w-8 rounded-lg">
                      <AvatarImage
                         alt={session?.user.name}
                         src={session?.user.image ?? ""}
@@ -324,6 +285,50 @@ function NavUserContent() {
                         {session?.user.name?.charAt(0) || "?"}
                      </AvatarFallback>
                   </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                     <span className="truncate font-medium">
+                        {session?.user.name}
+                     </span>
+                     <span className="truncate text-xs text-muted-foreground">
+                        {session?.user.email}
+                     </span>
+                  </div>
+                  <ChevronRight className="ml-auto size-4" />
+               </SidebarMenuButton>
+            </SidebarMenuItem>
+         </SidebarMenu>
+      );
+   }
+
+   // Desktop: Use DropdownMenu in sidebar footer
+   return (
+      <SidebarMenu>
+         <SidebarMenuItem>
+            <DropdownMenu>
+               <DropdownMenuTrigger asChild>
+                  <SidebarMenuButton
+                     className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                     size="lg"
+                  >
+                     <Avatar className="h-8 w-8 rounded-lg">
+                        <AvatarImage
+                           alt={session?.user.name}
+                           src={session?.user.image ?? ""}
+                        />
+                        <AvatarFallback className="rounded-lg">
+                           {session?.user.name?.charAt(0) || "?"}
+                        </AvatarFallback>
+                     </Avatar>
+                     <div className="grid flex-1 text-left text-sm leading-tight">
+                        <span className="truncate font-medium">
+                           {session?.user.name}
+                        </span>
+                        <span className="truncate text-xs text-muted-foreground">
+                           {session?.user.email}
+                        </span>
+                     </div>
+                     <ChevronRight className="ml-auto size-4" />
+                  </SidebarMenuButton>
                </DropdownMenuTrigger>
                <DropdownMenuContent
                   align="end"
@@ -365,9 +370,7 @@ function NavUserContent() {
                                  to="/$slug/settings/billing"
                               >
                                  <Sparkles />
-                                 {translate(
-                                    "dashboard.layout.nav-user.main.upgrade",
-                                 )}
+                                 Atualizar para Pro
                               </Link>
                            </DropdownMenuItem>
                         </DropdownMenuGroup>
@@ -383,7 +386,7 @@ function NavUserContent() {
                            to="/$slug/settings/profile"
                         >
                            <BadgeCheck />
-                           {translate("dashboard.layout.nav-user.main.account")}
+                           Conta
                         </Link>
                      </DropdownMenuItem>
                      <DropdownMenuItem asChild>
@@ -392,7 +395,7 @@ function NavUserContent() {
                            to="/$slug/settings/billing"
                         >
                            <CreditCard />
-                           {translate("dashboard.layout.nav-user.main.billing")}
+                           Cobrança
                         </Link>
                      </DropdownMenuItem>
                      <DropdownMenuItem asChild>
@@ -401,34 +404,18 @@ function NavUserContent() {
                            to="/$slug/settings/notifications"
                         >
                            <Bell />
-                           {translate(
-                              "dashboard.layout.nav-user.main.notifications",
-                           )}
+                           Notificações
                         </Link>
                      </DropdownMenuItem>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
 
                   {/* Preferences */}
-                  <DropdownMenuLabel>
-                     {translate("dashboard.layout.nav-user.preferences.label")}
-                  </DropdownMenuLabel>
+                  <DropdownMenuLabel>Preferencias</DropdownMenuLabel>
                   <div className="px-2 py-1.5 space-y-2">
                      <div className="flex items-center justify-between">
-                        <span className="text-sm">
-                           {translate(
-                              "dashboard.layout.nav-user.preferences.theme",
-                           )}
-                        </span>
+                        <span className="text-sm">Tema</span>
                         <ThemeSwitcher />
-                     </div>
-                     <div className="flex items-center justify-between">
-                        <span className="text-sm">
-                           {translate(
-                              "dashboard.layout.nav-user.preferences.language",
-                           )}
-                        </span>
-                        <LanguageCommand />
                      </div>
                   </div>
                   <DropdownMenuSeparator />
@@ -436,7 +423,7 @@ function NavUserContent() {
                   {/* Logout */}
                   <DropdownMenuItem onClick={handleLogoutClick}>
                      <LogOut />
-                     {translate("dashboard.layout.nav-user.actions.logout")}
+                     Sair
                   </DropdownMenuItem>
                </DropdownMenuContent>
             </DropdownMenu>

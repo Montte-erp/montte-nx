@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTRPC } from "@/integrations/clients";
@@ -24,14 +23,12 @@ export function useTagBulkActions(options?: UseTagBulkActionsOptions) {
       try {
          await deleteMutation.mutateAsync({ ids });
          toast.success(
-            translate("dashboard.routes.tags.bulk-actions.deleted-success", {
-               count: ids.length,
-            }),
+            ids.length === 1
+               ? "1 tag excluída com sucesso"
+               : `${ids.length} tags excluídas com sucesso`,
          );
       } catch {
-         toast.error(
-            translate("dashboard.routes.tags.bulk-actions.deleted-error"),
-         );
+         toast.error("Falha ao excluir tags");
       }
    };
 

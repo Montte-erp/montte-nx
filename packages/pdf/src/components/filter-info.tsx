@@ -1,5 +1,5 @@
-import type { FilterMetadata } from "@packages/database/schemas/custom-reports";
 import { StyleSheet, Text, View } from "@react-pdf/renderer";
+import type { FilterMetadata } from "../types";
 
 type FilterInfoProps = {
    filterMetadata?: FilterMetadata;

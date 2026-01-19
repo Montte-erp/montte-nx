@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { cn } from "@packages/ui/lib/utils";
 import { Slot } from "@radix-ui/react-slot";
@@ -145,10 +144,7 @@ const defineStepper = <const Steps extends Stepperize.Step[]>(
                            className="text-sm text-muted-foreground whitespace-nowrap"
                            date-component="stepper-step-counter"
                         >
-                           {translate("common.actions.step-indicator", {
-                              current: currentIndex + 1,
-                              total: totalSteps,
-                           })}
+                           {`Passo ${currentIndex + 1} de ${totalSteps}`}
                         </span>
                      </div>
                   </nav>

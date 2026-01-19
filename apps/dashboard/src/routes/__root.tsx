@@ -1,9 +1,4 @@
 import { clientEnv } from "@packages/environment/client";
-import { NotFoundComponent } from "@/default/not-found";
-import { QueryProvider, useTRPC } from "@/integrations/clients";
-import { ThemeProvider } from "@/layout/theme-provider";
-import "@packages/localization";
-import { translate } from "@packages/localization";
 import { PostHogWrapper, PosthogRouterTracker } from "@packages/posthog/client";
 import { Toaster } from "@packages/ui/components/sonner";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +10,9 @@ import {
    useLocation,
 } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
+import { NotFound } from "@/default/not-found";
+import { QueryProvider, useTRPC } from "@/integrations/clients";
+import { ThemeProvider } from "@/layout/theme-provider";
 
 // Lazy load devtools - excluded from production bundle
 const TanStackRouterDevtools = import.meta.env.PROD
@@ -45,11 +43,12 @@ export const Route = createRootRoute({
       ],
       meta: [
          {
-            content: translate("common.brand.description"),
+            content:
+               "Gestão financeira completa para você e seus negócios. Simples, transparente e Open Source.",
             name: "description",
          },
          {
-            title: translate("common.brand.name"),
+            title: "Montte",
          },
       ],
    }),
@@ -58,11 +57,7 @@ export const Route = createRootRoute({
          throw redirect({ to: "/auth/sign-in" });
       }
    },
-   notFoundComponent: () => (
-      <div className="h-screen w-screen">
-         <NotFoundComponent />
-      </div>
-   ),
+   notFoundComponent: NotFound,
    staticData: {
       breadcrumb: "Home",
    },

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    SidebarGroup,
    SidebarGroupContent,
@@ -7,7 +6,7 @@ import {
    SidebarMenuItem,
 } from "@packages/ui/components/sidebar";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Bell, CreditCard, Lock, Settings2, Shield, User } from "lucide-react";
+import { Bell, CreditCard, Settings2, Shield, User } from "lucide-react";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 
 const settingsNavItems = [
@@ -15,37 +14,31 @@ const settingsNavItems = [
       href: "/$slug/settings/profile",
       icon: User,
       id: "profile",
-      title: translate("dashboard.routes.settings.nav.profile"),
+      title: "Perfil",
    },
    {
       href: "/$slug/settings/security",
       icon: Shield,
       id: "security",
-      title: translate("dashboard.routes.settings.nav.security"),
+      title: "Segurança",
    },
    {
       href: "/$slug/settings/preferences",
       icon: Settings2,
       id: "preferences",
-      title: translate("dashboard.routes.settings.nav.preferences"),
-   },
-   {
-      href: "/$slug/settings/encryption",
-      icon: Lock,
-      id: "encryption",
-      title: translate("dashboard.routes.settings.nav.encryption"),
+      title: "Preferências",
    },
    {
       href: "/$slug/settings/notifications",
       icon: Bell,
       id: "notifications",
-      title: translate("dashboard.routes.settings.nav.notifications"),
+      title: "Notificações",
    },
    {
       href: "/$slug/settings/billing",
       icon: CreditCard,
       id: "billing",
-      title: translate("dashboard.routes.settings.nav.billing"),
+      title: "Assinatura",
    },
 ];
 

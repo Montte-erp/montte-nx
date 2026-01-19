@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Empty,
@@ -30,11 +29,10 @@ import { OrganizationOverviewStatsCard } from "./organization-overview-stats-car
 
 function OrganizationPageErrorFallback(props: FallbackProps) {
    return createErrorFallback({
-      errorDescription: translate(
-         "dashboard.routes.organization.state.error.description",
-      ),
-      errorTitle: translate("dashboard.routes.organization.state.error.title"),
-      retryText: translate("common.actions.retry"),
+      errorDescription:
+         "Não foi possível carregar as informações da organização. Tente novamente.",
+      errorTitle: "Erro ao Carregar Organização",
+      retryText: "Tentar novamente",
    })(props);
 }
 
@@ -83,15 +81,10 @@ function OrganizationContent() {
                      <EmptyMedia variant="icon">
                         <Building className="size-12 text-muted-foreground" />
                      </EmptyMedia>
-                     <EmptyTitle>
-                        {translate(
-                           "dashboard.routes.organization.state.empty.title",
-                        )}
-                     </EmptyTitle>
+                     <EmptyTitle>Nenhuma organização ainda</EmptyTitle>
                      <EmptyDescription>
-                        {translate(
-                           "dashboard.routes.organization.state.empty.description",
-                        )}
+                        Crie sua primeira organização para começar a colaborar
+                        com sua equipe e gerenciar suas finanças juntos.
                      </EmptyDescription>
                   </EmptyHeader>
                   <EmptyContent>
@@ -108,18 +101,12 @@ function OrganizationContent() {
                               variant="default"
                            >
                               <Plus className="size-4" />
-                              {translate(
-                                 "dashboard.routes.organization.state.empty.action",
-                              )}
+                              Criar Organização
                            </Button>
                         </TooltipTrigger>
                         {hasReachedLimit && (
                            <TooltipContent>
-                              <p>
-                                 {translate(
-                                    "dashboard.routes.organization.state.limit-reached",
-                                 )}
-                              </p>
+                              <p>Você atingiu o limite de organizações</p>
                            </TooltipContent>
                         )}
                      </Tooltip>
@@ -133,8 +120,8 @@ function OrganizationContent() {
    return (
       <main className="flex flex-col gap-6">
          <DefaultHeader
-            description={translate("dashboard.routes.organization.description")}
-            title={translate("dashboard.routes.organization.title")}
+            description="Gerencie sua organização"
+            title="Organização"
          />
 
          <OrganizationOverviewStatsCard />

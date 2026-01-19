@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { DateRangePickerPopover } from "@packages/ui/components/date-range-picker-popover";
 import {
@@ -21,6 +20,7 @@ import { FileText, Home, Plus } from "lucide-react";
 import { Suspense, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { DefaultHeader } from "@/default/default-header";
+import { useDetailTabName } from "@/features/custom-dashboard/hooks/use-detail-tab-name";
 import { TransactionListProvider } from "@/features/transaction/lib/transaction-list-context";
 import { ManageTransactionForm } from "@/features/transaction/ui/manage-transaction-form";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
@@ -83,12 +83,13 @@ function CategoryContent() {
       trpc.categories.getById.queryOptions({ id: categoryId }),
    );
 
-   if (!categoryId) {
+   useDetailTabName(category?.name);
+
+   if (!categoryId || typeof categoryId !== "string") {
       return (
-         <CategoryPageError
-            error={new Error("Invalid category ID")}
-            resetErrorBoundary={() => {}}
-         />
+         <div className="p-4 text-center text-sm text-destructive">
+            ID da categoria inválido
+         </div>
       );
    }
 
@@ -112,14 +113,10 @@ function CategoryContent() {
                   }
                >
                   <Plus className="size-4" />
-                  {translate(
-                     "dashboard.routes.transactions.features.add-new.title",
-                  )}
+                  Adicionar Nova Transação
                </Button>
             }
-            description={translate(
-               "dashboard.routes.categories.details-section.description",
-            )}
+            description="Detalhes da categoria"
             title={category.name}
          />
 
@@ -135,7 +132,7 @@ function CategoryContent() {
             <DateRangePickerPopover
                endDate={customDateRange.endDate}
                onRangeChange={handleCustomDateChange}
-               placeholder={translate("common.form.date-range.custom")}
+               placeholder="Personalizado"
                startDate={customDateRange.startDate}
             />
          </div>

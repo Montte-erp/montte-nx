@@ -1,0 +1,24 @@
+---
+export const prerender = true;
+
+import { getCollection, render } from "astro:content";
+import BlogPost from "@/layouts/BlogPost.astro";
+
+export async function getStaticPaths() {
+   const posts = await getCollection("blog", ({ data }) => !data.draft);
+   return posts.map((post) => ({
+      params: { slug: post.id },
+      props: { post },
+   }));
+}
+
+const { post } = Astro.props;
+const { Content, headings } = await render(post);
+
+// Filter to only h2 headings for TOC
+const tocHeadings = headings.filter((h) => h.depth === 2);
+---
+
+<BlogPost post={post} headings={tocHeadings}>
+	<Content />
+</BlogPost>

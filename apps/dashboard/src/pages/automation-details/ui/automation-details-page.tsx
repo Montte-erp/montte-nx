@@ -13,11 +13,18 @@ import { Check, Loader2, Settings, XCircle } from "lucide-react";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
+import type {
+   AutomationEdge,
+   AutomationNode,
+} from "@/features/automations/hooks/use-flow-serialization";
+import {
+   flowDataToSchema,
+   schemaToFlowData,
+} from "@/features/automations/hooks/use-flow-serialization";
+import { useDetailTabName } from "@/features/custom-dashboard/hooks/use-detail-tab-name";
 import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
 import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";
-import { flowDataToSchema, schemaToFlowData } from "../lib/flow-serialization";
-import type { AutomationEdge, AutomationNode } from "../lib/types";
 import { AutomationBuilder } from "./automation-builder";
 import { AutomationSettingsForm } from "./automation-settings-form";
 import type { ViewMode } from "./canvas-toolbar";
@@ -109,6 +116,8 @@ function AutomationDetailsContent({ automationId }: { automationId: string }) {
    const { data: automation } = useSuspenseQuery(
       trpc.automations.getById.queryOptions({ id: automationId }),
    );
+
+   useDetailTabName(automation?.name);
 
    const [settings, setSettings] = useState<AutomationSettings>({
       description: automation.description || "",

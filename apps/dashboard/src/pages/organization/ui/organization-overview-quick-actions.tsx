@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { QuickAccessCard } from "@packages/ui/components/quick-access-card";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
@@ -21,47 +20,33 @@ export function OrganizationOverviewQuickActions() {
 
    const quickActions = [
       {
-         description: translate(
-            "dashboard.routes.organization.quick-actions.invite-member.description",
-         ),
+         description: "Envie um convite para um novo membro",
          icon: <UserPlus className="size-6" />,
          onClick: () => openSheet({ children: <SendInvitationForm /> }),
-         title: translate(
-            "dashboard.routes.organization.quick-actions.invite-member.title",
-         ),
+         title: "Convidar Membro",
       },
       {
-         description: translate(
-            "dashboard.routes.organization.quick-actions.manage-members.description",
-         ),
+         description: "Visualize e gerencie todos os membros",
          icon: <Users className="size-6" />,
          onClick: () =>
             router.navigate({
                params: { slug: activeOrganization.slug },
                to: "/$slug/organization/members",
             }),
-         title: translate(
-            "dashboard.routes.organization.quick-actions.manage-members.title",
-         ),
+         title: "Gerenciar Membros",
       },
       {
-         description: translate(
-            "dashboard.routes.organization.quick-actions.view-invites.description",
-         ),
+         description: "Visualize convites pendentes e enviados",
          icon: <Mail className="size-6" />,
          onClick: () =>
             router.navigate({
                params: { slug: activeOrganization.slug },
                to: "/$slug/organization/invites",
             }),
-         title: translate(
-            "dashboard.routes.organization.quick-actions.view-invites.title",
-         ),
+         title: "Ver Convites",
       },
       {
-         description: translate(
-            "dashboard.routes.organization.quick-actions.settings.description",
-         ),
+         description: "Edite as configurações da organização",
          icon: <Settings className="size-6" />,
          onClick: () =>
             openSheet({
@@ -71,9 +56,7 @@ export function OrganizationOverviewQuickActions() {
                   />
                ),
             }),
-         title: translate(
-            "dashboard.routes.organization.quick-actions.settings.title",
-         ),
+         title: "Configurações",
       },
    ];
 

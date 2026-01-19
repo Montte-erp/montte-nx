@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import {
    Announcement,
@@ -8,39 +7,22 @@ import {
 } from "@packages/ui/components/announcement";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
-import {
-   Card,
-   CardContent,
-   CardDescription,
-   CardFooter,
-   CardHeader,
-   CardTitle,
-} from "@packages/ui/components/card";
-import { CollapsibleTrigger } from "@packages/ui/components/collapsible";
-import { Separator } from "@packages/ui/components/separator";
-import {
-   Tooltip,
-   TooltipContent,
-   TooltipTrigger,
-} from "@packages/ui/components/tooltip";
 import { useIsMobile } from "@packages/ui/hooks/use-mobile";
-import { Link } from "@tanstack/react-router";
 import type { ColumnDef, Row } from "@tanstack/react-table";
 import {
    Calendar,
    CheckCircle,
-   ChevronDown,
    CircleDashed,
-   Edit,
-   Eye,
    Power,
    RefreshCw,
    Target,
-   Trash2,
    TrendingDown,
    TrendingUp,
    Wallet,
 } from "lucide-react";
+import { EntityActions, ViewDetailsButton } from "@/components/entity-actions";
+import { EntityExpandedContent } from "@/components/entity-expanded-content";
+import { EntityMobileCard } from "@/components/entity-mobile-card";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useSheet } from "@/hooks/use-sheet";
 import { ManageBudgetForm } from "../features/manage-budget-form";
@@ -50,84 +32,18 @@ import { useToggleBudgetStatus } from "../features/use-toggle-budget-status";
 type Budget = RouterOutput["budgets"]["getAllPaginated"]["budgets"][0];
 
 const periodLabels: Record<string, string> = {
-   custom: translate("dashboard.routes.budgets.form.period.custom"),
-   daily: translate("dashboard.routes.budgets.form.period.daily"),
-   monthly: translate("dashboard.routes.budgets.form.period.monthly"),
-   quarterly: translate("dashboard.routes.budgets.form.period.quarterly"),
-   weekly: translate("dashboard.routes.budgets.form.period.weekly"),
-   yearly: translate("dashboard.routes.budgets.form.period.yearly"),
+   custom: "Personalizado",
+   daily: "Diário",
+   monthly: "Mensal",
+   quarterly: "Trimestral",
+   weekly: "Semanal",
+   yearly: "Anual",
 };
 
 const regimeLabels: Record<string, string> = {
-   accrual: translate("dashboard.routes.budgets.form.regime.accrual"),
-   cash: translate("dashboard.routes.budgets.form.regime.cash"),
+   accrual: "Regime de competência",
+   cash: "Regime de caixa",
 };
-
-function BudgetActionsCell({ budget }: { budget: Budget }) {
-   const { activeOrganization } = useActiveOrganization();
-   const { openSheet } = useSheet();
-   const { deleteBudget } = useDeleteBudget({ budget });
-
-   return (
-      <div className="flex justify-end gap-1">
-         <Tooltip>
-            <TooltipTrigger asChild>
-               <Button asChild size="icon" variant="outline">
-                  <Link
-                     params={{
-                        budgetId: budget.id,
-                        slug: activeOrganization.slug,
-                     }}
-                     to="/$slug/budgets/$budgetId"
-                  >
-                     <Eye className="size-4" />
-                  </Link>
-               </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-               {translate(
-                  "dashboard.routes.budgets.list-section.actions.view-details",
-               )}
-            </TooltipContent>
-         </Tooltip>
-         <Tooltip>
-            <TooltipTrigger asChild>
-               <Button
-                  onClick={() =>
-                     openSheet({
-                        children: <ManageBudgetForm budget={budget} />,
-                     })
-                  }
-                  size="icon"
-                  variant="outline"
-               >
-                  <Edit className="size-4" />
-               </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-               {translate("dashboard.routes.budgets.list-section.actions.edit")}
-            </TooltipContent>
-         </Tooltip>
-         <Tooltip>
-            <TooltipTrigger asChild>
-               <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={deleteBudget}
-                  size="icon"
-                  variant="outline"
-               >
-                  <Trash2 className="size-4" />
-               </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-               {translate(
-                  "dashboard.routes.budgets.list-section.actions.delete",
-               )}
-            </TooltipContent>
-         </Tooltip>
-      </div>
-   );
-}
 
 export function createBudgetColumns(): ColumnDef<Budget>[] {
    return [
@@ -150,7 +66,7 @@ export function createBudgetColumns(): ColumnDef<Budget>[] {
             );
          },
          enableSorting: true,
-         header: translate("dashboard.routes.budgets.table.name"),
+         header: "Nome",
       },
       {
          accessorKey: "amount",
@@ -168,7 +84,7 @@ export function createBudgetColumns(): ColumnDef<Budget>[] {
             );
          },
          enableSorting: true,
-         header: translate("dashboard.routes.budgets.table.amount"),
+         header: "Valor",
       },
       {
          accessorKey: "progress",
@@ -208,7 +124,7 @@ export function createBudgetColumns(): ColumnDef<Budget>[] {
                </Announcement>
             );
          },
-         header: translate("dashboard.routes.budgets.table.progress"),
+         header: "Progresso",
       },
       {
          accessorKey: "isActive",
@@ -229,18 +145,30 @@ export function createBudgetColumns(): ColumnDef<Budget>[] {
                      <StatusIcon className="size-3.5" />
                   </AnnouncementTag>
                   <AnnouncementTitle>
-                     {isActive
-                        ? translate("dashboard.routes.budgets.status.active")
-                        : translate("dashboard.routes.budgets.status.inactive")}
+                     {isActive ? "Ativo" : "Inativo"}
                   </AnnouncementTitle>
                </Announcement>
             );
          },
          enableSorting: true,
-         header: translate("dashboard.routes.budgets.table.status"),
+         header: "Status",
       },
       {
-         cell: ({ row }) => <BudgetActionsCell budget={row.original} />,
+         cell: ({ row }) => {
+            const budget = row.original;
+            const { activeOrganization } = useActiveOrganization();
+            return (
+               <ViewDetailsButton
+                  detailsLink={{
+                     params: {
+                        budgetId: budget.id,
+                        slug: activeOrganization.slug,
+                     },
+                     to: "/$slug/budgets/$budgetId",
+                  }}
+               />
+            );
+         },
          header: "",
          id: "actions",
       },
@@ -272,178 +200,117 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
 
    const rolloverColor = budget.rollover ? "#3b82f6" : "#6b7280";
 
-   const handleEditClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
+   const detailsLink = {
+      params: {
+         budgetId: budget.id,
+         slug: activeOrganization.slug,
+      },
+      to: "/$slug/budgets/$budgetId" as const,
+   };
+
+   const handleEdit = () => {
       openSheet({
          children: <ManageBudgetForm budget={budget} />,
       });
    };
 
-   const handleDeleteClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      deleteBudget();
-   };
-
-   const handleToggleStatusClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      toggleStatus();
-   };
-
    const statusToggleElement = (
       <Button
          disabled={isUpdating}
-         onClick={handleToggleStatusClick}
+         onClick={(e) => {
+            e.stopPropagation();
+            toggleStatus();
+         }}
          size="sm"
          variant="outline"
       >
          <Power className="size-4" />
-         {budget.isActive
-            ? translate("dashboard.routes.budgets.status.active")
-            : translate("dashboard.routes.budgets.status.inactive")}
+         {budget.isActive ? "Ativo" : "Inativo"}
       </Button>
    );
 
-   if (isMobile) {
-      return (
-         <div className="p-4 space-y-4">
-            {/* All Info Section */}
-            <div className="space-y-4">
-               {/* Announcements */}
-               <div className="flex flex-wrap items-center gap-2">
-                  <Announcement>
-                     <AnnouncementTag className="flex items-center gap-1.5">
-                        <Calendar className="size-3.5" />
-                     </AnnouncementTag>
-                     <AnnouncementTitle>
-                        {periodLabels[budget.periodType]}
-                     </AnnouncementTitle>
-                  </Announcement>
+   const announcementsContent = (
+      <div className="flex flex-wrap items-center gap-2">
+         <Announcement>
+            <AnnouncementTag className="flex items-center gap-1.5">
+               <Calendar className="size-3.5" />
+            </AnnouncementTag>
+            <AnnouncementTitle>
+               {periodLabels[budget.periodType]}
+            </AnnouncementTitle>
+         </Announcement>
 
-                  <Announcement>
-                     <AnnouncementTag
-                        className="flex items-center gap-1.5"
-                        style={{
-                           backgroundColor: `${rolloverColor}20`,
-                           color: rolloverColor,
-                        }}
-                     >
-                        <RefreshCw className="size-3.5" />
-                     </AnnouncementTag>
-                     <AnnouncementTitle>
-                        {budget.rollover ? "Rollover ativo" : "Sem rollover"}
-                     </AnnouncementTitle>
-                  </Announcement>
+         <Announcement>
+            <AnnouncementTag
+               className="flex items-center gap-1.5"
+               style={{
+                  backgroundColor: `${rolloverColor}20`,
+                  color: rolloverColor,
+               }}
+            >
+               <RefreshCw className="size-3.5" />
+            </AnnouncementTag>
+            <AnnouncementTitle>
+               {budget.rollover ? "Rollover ativo" : "Sem rollover"}
+            </AnnouncementTitle>
+         </Announcement>
 
-                  <Announcement>
-                     <AnnouncementTag>Regime</AnnouncementTag>
-                     <AnnouncementTitle>
-                        {regimeLabels[budget.regime] ?? budget.regime}
-                     </AnnouncementTitle>
-                  </Announcement>
-               </div>
+         <Announcement>
+            <AnnouncementTag>Regime</AnnouncementTag>
+            <AnnouncementTitle>
+               {regimeLabels[budget.regime] ?? budget.regime}
+            </AnnouncementTitle>
+         </Announcement>
 
-               {/* Stats */}
-               <div className="flex flex-wrap items-center gap-2">
-                  <Announcement>
-                     <AnnouncementTag className="flex items-center gap-1.5">
-                        <Target className="size-3.5" />
-                        {translate("dashboard.routes.budgets.stats.total")}
-                     </AnnouncementTag>
-                     <AnnouncementTitle>
-                        {formatDecimalCurrency(totalAmount)}
-                     </AnnouncementTitle>
-                  </Announcement>
+         <div className="h-4 w-px bg-border" />
 
-                  <Announcement>
-                     <AnnouncementTag
-                        className="flex items-center gap-1.5"
-                        style={{
-                           backgroundColor: "#ef444420",
-                           color: "#ef4444",
-                        }}
-                     >
-                        <TrendingUp className="size-3.5" />
-                        {translate("dashboard.routes.budgets.stats.spent")}
-                     </AnnouncementTag>
-                     <AnnouncementTitle>
-                        {formatDecimalCurrency(spent)} ({Math.round(percentage)}%)
-                     </AnnouncementTitle>
-                  </Announcement>
+         <Announcement>
+            <AnnouncementTag className="flex items-center gap-1.5">
+               <Target className="size-3.5" />
+               Total
+            </AnnouncementTag>
+            <AnnouncementTitle>
+               {formatDecimalCurrency(totalAmount)}
+            </AnnouncementTitle>
+         </Announcement>
 
-                  <Announcement>
-                     <AnnouncementTag
-                        className="flex items-center gap-1.5"
-                        style={{
-                           backgroundColor: "#10b98120",
-                           color: "#10b981",
-                        }}
-                     >
-                        <Wallet className="size-3.5" />
-                        {translate("dashboard.routes.budgets.stats.available")}
-                     </AnnouncementTag>
-                     <AnnouncementTitle>
-                        {formatDecimalCurrency(available)}
-                     </AnnouncementTitle>
-                  </Announcement>
-               </div>
-            </div>
+         <Announcement>
+            <AnnouncementTag
+               className="flex items-center gap-1.5"
+               style={{
+                  backgroundColor: "#ef444420",
+                  color: "#ef4444",
+               }}
+            >
+               <TrendingUp className="size-3.5" />
+               Gasto
+            </AnnouncementTag>
+            <AnnouncementTitle>
+               {formatDecimalCurrency(spent)} ({Math.round(percentage)}%)
+            </AnnouncementTitle>
+         </Announcement>
 
-            <Separator />
+         <Announcement>
+            <AnnouncementTag
+               className="flex items-center gap-1.5"
+               style={{
+                  backgroundColor: "#10b98120",
+                  color: "#10b981",
+               }}
+            >
+               <Wallet className="size-3.5" />
+               Disponível
+            </AnnouncementTag>
+            <AnnouncementTitle>
+               {formatDecimalCurrency(available)}
+            </AnnouncementTitle>
+         </Announcement>
+      </div>
+   );
 
-            {/* Actions Only */}
-            <div className="space-y-2">
-               {statusToggleElement}
-               <Button
-                  asChild
-                  className="w-full justify-start"
-                  size="sm"
-                  variant="outline"
-               >
-                  <Link
-                     params={{
-                        budgetId: budget.id,
-                        slug: activeOrganization.slug,
-                     }}
-                     to="/$slug/budgets/$budgetId"
-                  >
-                     <Eye className="size-4" />
-                     {translate(
-                        "dashboard.routes.budgets.list-section.actions.view-details",
-                     )}
-                  </Link>
-               </Button>
-               <Button
-                  className="w-full justify-start"
-                  onClick={handleEditClick}
-                  size="sm"
-                  variant="outline"
-               >
-                  <Edit className="size-4" />
-                  {translate(
-                     "dashboard.routes.budgets.list-section.actions.edit",
-                  )}
-               </Button>
-               <Button
-                  className="w-full justify-start"
-                  onClick={handleDeleteClick}
-                  size="sm"
-                  variant="destructive"
-               >
-                  <Trash2 className="size-4" />
-                  {translate(
-                     "dashboard.routes.budgets.list-section.actions.delete",
-                  )}
-               </Button>
-            </div>
-         </div>
-      );
-   }
-
-   return (
-      <div className="p-4 space-y-4">
-         {/* All Info Section */}
+   const mobileAnnouncementsContent = (
+      <div className="space-y-4">
          <div className="flex flex-wrap items-center gap-2">
-            {/* Announcements */}
             <Announcement>
                <AnnouncementTag className="flex items-center gap-1.5">
                   <Calendar className="size-3.5" />
@@ -474,14 +341,13 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
                   {regimeLabels[budget.regime] ?? budget.regime}
                </AnnouncementTitle>
             </Announcement>
+         </div>
 
-            <div className="h-4 w-px bg-border" />
-
-            {/* Stats */}
+         <div className="flex flex-wrap items-center gap-2">
             <Announcement>
                <AnnouncementTag className="flex items-center gap-1.5">
                   <Target className="size-3.5" />
-                  {translate("dashboard.routes.budgets.stats.total")}
+                  Total
                </AnnouncementTag>
                <AnnouncementTitle>
                   {formatDecimalCurrency(totalAmount)}
@@ -497,7 +363,7 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
                   }}
                >
                   <TrendingUp className="size-3.5" />
-                  {translate("dashboard.routes.budgets.stats.spent")}
+                  Gasto
                </AnnouncementTag>
                <AnnouncementTitle>
                   {formatDecimalCurrency(spent)} ({Math.round(percentage)}%)
@@ -513,45 +379,60 @@ export function BudgetExpandedContent({ row }: BudgetExpandedContentProps) {
                   }}
                >
                   <Wallet className="size-3.5" />
-                  {translate("dashboard.routes.budgets.stats.available")}
+                  Disponível
                </AnnouncementTag>
                <AnnouncementTitle>
                   {formatDecimalCurrency(available)}
                </AnnouncementTitle>
             </Announcement>
          </div>
-
-         <Separator />
-
-         {/* Actions Only */}
-         <div className="flex items-center gap-2">
-            {statusToggleElement}
-            <Button asChild size="sm" variant="outline">
-               <Link
-                  params={{
-                     budgetId: budget.id,
-                     slug: activeOrganization.slug,
-                  }}
-                  to="/$slug/budgets/$budgetId"
-               >
-                  <Eye className="size-4" />
-                  {translate(
-                     "dashboard.routes.budgets.list-section.actions.view-details",
-                  )}
-               </Link>
-            </Button>
-            <Button onClick={handleEditClick} size="sm" variant="outline">
-               <Edit className="size-4" />
-               {translate("dashboard.routes.budgets.list-section.actions.edit")}
-            </Button>
-            <Button onClick={handleDeleteClick} size="sm" variant="destructive">
-               <Trash2 className="size-4" />
-               {translate(
-                  "dashboard.routes.budgets.list-section.actions.delete",
-               )}
-            </Button>
-         </div>
       </div>
+   );
+
+   if (isMobile) {
+      return (
+         <EntityExpandedContent
+            actions={
+               <div className="space-y-2">
+                  {statusToggleElement}
+                  <EntityActions
+                     detailsLink={detailsLink}
+                     labels={{
+                        delete: "Excluir orçamento",
+                        edit: "Editar orçamento",
+                     }}
+                     onDelete={deleteBudget}
+                     onEdit={handleEdit}
+                     variant="mobile"
+                  />
+               </div>
+            }
+         >
+            {mobileAnnouncementsContent}
+         </EntityExpandedContent>
+      );
+   }
+
+   return (
+      <EntityExpandedContent
+         actions={
+            <div className="flex items-center gap-2">
+               {statusToggleElement}
+               <EntityActions
+                  detailsLink={detailsLink}
+                  labels={{
+                     delete: "Excluir",
+                     edit: "Editar",
+                  }}
+                  onDelete={deleteBudget}
+                  onEdit={handleEdit}
+                  variant="full"
+               />
+            </div>
+         }
+      >
+         {announcementsContent}
+      </EntityExpandedContent>
    );
 }
 
@@ -575,61 +456,39 @@ export function BudgetMobileCard({
    const percentage = totalAmount > 0 ? (spent / totalAmount) * 100 : 0;
 
    return (
-      <Card className={isExpanded ? "rounded-b-none border-b-0" : ""}>
-         <CardHeader>
-            <div className="flex items-center gap-3">
-               <div
-                  className="size-10 rounded-lg flex items-center justify-center text-white font-semibold text-sm"
-                  style={{ backgroundColor: budget.color || "#6366f1" }}
-               >
-                  {budget.name.substring(0, 2).toUpperCase()}
+      <EntityMobileCard
+         content={
+            <>
+               <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">
+                     {formatDecimalCurrency(spent)} /{" "}
+                     {formatDecimalCurrency(totalAmount)}
+                  </span>
+                  <span
+                     className={`text-sm font-medium ${percentage >= 100 ? "text-destructive" : ""}`}
+                  >
+                     {Math.round(percentage)}%
+                  </span>
                </div>
-               <div className="flex-1">
-                  <CardTitle className="text-base">{budget.name}</CardTitle>
-                  <CardDescription>
-                     {periodLabels[budget.periodType]}
-                  </CardDescription>
+               <div className="flex gap-2 mt-3">
+                  <Badge variant={budget.isActive ? "default" : "secondary"}>
+                     {budget.isActive ? "Ativo" : "Inativo"}
+                  </Badge>
                </div>
+            </>
+         }
+         icon={
+            <div
+               className="size-10 rounded-lg flex items-center justify-center text-white font-semibold text-sm"
+               style={{ backgroundColor: budget.color || "#6366f1" }}
+            >
+               {budget.name.substring(0, 2).toUpperCase()}
             </div>
-         </CardHeader>
-         <CardContent className="space-y-3">
-            <div className="flex justify-between items-center">
-               <span className="text-sm text-muted-foreground">
-                  {formatDecimalCurrency(spent)} / {formatDecimalCurrency(totalAmount)}
-               </span>
-               <span
-                  className={`text-sm font-medium ${percentage >= 100 ? "text-destructive" : ""}`}
-               >
-                  {Math.round(percentage)}%
-               </span>
-            </div>
-            <div className="flex gap-2">
-               <Badge variant={budget.isActive ? "default" : "secondary"}>
-                  {budget.isActive
-                     ? translate("dashboard.routes.budgets.status.active")
-                     : translate("dashboard.routes.budgets.status.inactive")}
-               </Badge>
-            </div>
-         </CardContent>
-         <CardFooter>
-            <CollapsibleTrigger asChild>
-               <Button
-                  className="w-full"
-                  onClick={(e) => {
-                     e.stopPropagation();
-                     toggleExpanded();
-                  }}
-                  variant="outline"
-               >
-                  {isExpanded
-                     ? translate("common.actions.less-info")
-                     : translate("common.actions.more-info")}
-                  <ChevronDown
-                     className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-                  />
-               </Button>
-            </CollapsibleTrigger>
-         </CardFooter>
-      </Card>
+         }
+         isExpanded={isExpanded}
+         subtitle={periodLabels[budget.periodType]}
+         title={budget.name}
+         toggleExpanded={toggleExpanded}
+      />
    );
 }

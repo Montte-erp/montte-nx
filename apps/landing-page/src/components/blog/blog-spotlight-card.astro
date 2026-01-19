@@ -1,0 +1,73 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { ArrowRight } from "@lucide/astro";
+
+interface Props {
+   post: CollectionEntry<"blog">;
+}
+
+const { post } = Astro.props;
+const { title, description, categoria, image } = post.data;
+
+const categoryLabels: Record<string, string> = {
+   tutoriais: "Tutoriais",
+   dicas: "Dicas",
+   atualizacoes: "Atualizacoes",
+   "casos-de-uso": "Casos de Uso",
+   "financas-pessoais": "Financas Pessoais",
+};
+
+const categoryLabel = categoria
+   ? categoryLabels[categoria] || categoria
+   : "Destaque";
+---
+
+<a
+	href={`/blog/${post.id}`}
+	class="group flex h-full flex-col overflow-hidden rounded-xl border border-border/30 bg-card transition-all hover:border-primary/30 hover:shadow-lg"
+>
+	<div class="border-b border-border/20 px-4 py-2">
+		<span class="text-xs font-medium text-muted-foreground">
+			{categoryLabel}
+		</span>
+	</div>
+	<div class="flex flex-1 items-center justify-center bg-muted/30 p-8">
+		{
+			image ? (
+				<img
+					src={image.src}
+					alt={image.alt}
+					class="h-24 w-24 object-contain transition-transform duration-300 group-hover:scale-105"
+				/>
+			) : (
+				<svg
+					class="h-24 w-24 text-foreground"
+					viewBox="0 0 100 100"
+					fill="currentColor"
+				>
+					<rect x="20" y="60" width="60" height="30" />
+					<polygon points="50,10 80,50 20,50" />
+					<rect x="35" y="30" width="30" height="25" fill="white" />
+				</svg>
+			)
+		}
+	</div>
+	<div class="flex flex-col p-4">
+		<h3
+			class="mb-2 line-clamp-2 text-base font-semibold text-foreground transition-colors group-hover:text-primary"
+		>
+			{title}
+		</h3>
+		<p class="mb-4 line-clamp-3 text-sm text-muted-foreground">
+			{description}
+		</p>
+		<span
+			class="inline-flex items-center gap-1 text-sm font-medium text-foreground transition-colors group-hover:text-primary"
+		>
+			Descobrir mais
+			<ArrowRight
+				class="h-4 w-4 transition-transform group-hover:translate-x-1"
+			/>
+		</span>
+	</div>
+</a>

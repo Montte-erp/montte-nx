@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Card,
    CardContent,
@@ -18,9 +17,8 @@ import {
 } from "@packages/ui/components/item";
 import { Switch } from "@packages/ui/components/switch";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { Activity, Globe, Moon } from "lucide-react";
+import { Activity, Moon } from "lucide-react";
 import { betterAuthClient, useTRPC } from "@/integrations/clients";
-import { LanguageCommand } from "@/layout/language-command";
 import { ThemeSwitcher } from "@/layout/theme-provider";
 
 export function PreferencesSection() {
@@ -42,11 +40,9 @@ export function PreferencesSection() {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               {translate("dashboard.routes.profile.preferences.title")}
-            </CardTitle>
+            <CardTitle>Preferências</CardTitle>
             <CardDescription>
-               {translate("dashboard.routes.profile.preferences.description")}
+               Gerencie suas preferências de conta.
             </CardDescription>
          </CardHeader>
          <CardContent className="flex-1 overflow-y-auto">
@@ -57,43 +53,14 @@ export function PreferencesSection() {
                      <Moon className="size-4" />
                   </ItemMedia>
                   <ItemContent className="truncate">
-                     <ItemTitle>
-                        {translate(
-                           "dashboard.routes.profile.preferences.items.theme.title",
-                        )}
-                     </ItemTitle>
+                     <ItemTitle>Tema</ItemTitle>
                      <ItemDescription>
-                        {translate(
-                           "dashboard.routes.profile.preferences.items.theme.description",
-                        )}
+                        Escolha entre o modo claro, escuro ou siga o do seu
+                        sistema.
                      </ItemDescription>
                   </ItemContent>
                   <ItemActions>
                      <ThemeSwitcher />
-                  </ItemActions>
-               </Item>
-
-               <ItemSeparator />
-
-               {/* Language Selection */}
-               <Item>
-                  <ItemMedia variant="icon">
-                     <Globe className="size-4" />
-                  </ItemMedia>
-                  <ItemContent className="truncate">
-                     <ItemTitle>
-                        {translate(
-                           "dashboard.routes.profile.preferences.items.language.title",
-                        )}
-                     </ItemTitle>
-                     <ItemDescription>
-                        {translate(
-                           "dashboard.routes.profile.preferences.items.language.description",
-                        )}
-                     </ItemDescription>
-                  </ItemContent>
-                  <ItemActions>
-                     <LanguageCommand />
                   </ItemActions>
                </Item>
 
@@ -105,15 +72,10 @@ export function PreferencesSection() {
                      <Activity className="size-4" />
                   </ItemMedia>
                   <ItemContent className="truncate">
-                     <ItemTitle>
-                        {translate(
-                           "dashboard.routes.profile.preferences.items.telemetry.title",
-                        )}
-                     </ItemTitle>
+                     <ItemTitle>Telemetria</ItemTitle>
                      <ItemDescription>
-                        {translate(
-                           "dashboard.routes.profile.preferences.items.telemetry.description",
-                        )}
+                        Permita a coleta de dados de uso para melhorar o
+                        produto.
                      </ItemDescription>
                   </ItemContent>
                   <ItemActions>

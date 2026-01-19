@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Card, CardContent } from "@packages/ui/components/card";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
@@ -23,6 +22,7 @@ import type { RowSelectionState } from "@tanstack/react-table";
 import { Search, Shield, Trash2, Users } from "lucide-react";
 import { Fragment, useState } from "react";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { MembersExpandedContent } from "./members-expanded-content";
 import { MembersFilterBar } from "./members-filter-bar";
 import { MembersMobileCard } from "./members-mobile-card";
 import { createMemberColumns, type Member } from "./members-table-columns";
@@ -36,6 +36,14 @@ type MembersDataTableProps = {
       onRoleFilterChange: (value: string) => void;
       hasActiveFilters: boolean;
       onClearFilters: () => void;
+   };
+   pagination?: {
+      currentPage: number;
+      totalPages: number;
+      totalCount: number;
+      pageSize: number;
+      onPageChange: (page: number) => void;
+      onPageSizeChange?: (pageSize: number) => void;
    };
    onChangeRole?: (member: Member) => void;
    onRemove?: (memberId: string) => void;
@@ -72,6 +80,7 @@ export function MembersDataTableSkeleton() {
 export function MembersDataTable({
    members,
    filters,
+   pagination,
    onChangeRole,
    onRemove,
    onBulkRemove,
@@ -93,13 +102,11 @@ export function MembersDataTable({
       if (!onRemove) return;
 
       openAlertDialog({
-         actionLabel: translate(
-            "dashboard.routes.organization.members-table.actions.remove",
-         ),
-         cancelLabel: translate("common.actions.cancel"),
-         description: `${translate("common.headers.delete-confirmation.description")} ${member.user.name}?`,
+         actionLabel: "Remover",
+         cancelLabel: "Cancelar",
+         description: `Tem certeza que deseja excluir ${member.user.name}?`,
          onAction: () => onRemove(member.id),
-         title: translate("common.headers.delete-confirmation.title"),
+         title: "Confirmar exclusão",
          variant: "destructive",
       });
    };
@@ -108,19 +115,14 @@ export function MembersDataTable({
       if (!onBulkRemove || selectedIds.length === 0) return;
 
       openAlertDialog({
-         actionLabel: translate(
-            "dashboard.routes.organization.members-table.bulk-actions.remove",
-         ),
-         cancelLabel: translate("common.actions.cancel"),
-         description: translate(
-            "common.headers.delete-confirmation.description-bulk",
-            { count: selectedIds.length },
-         ),
+         actionLabel: "Remover selecionados",
+         cancelLabel: "Cancelar",
+         description: `Tem certeza que deseja excluir ${selectedIds.length} itens selecionados?`,
          onAction: () => {
             onBulkRemove(selectedIds);
             setRowSelection({});
          },
-         title: translate("common.headers.delete-confirmation.title"),
+         title: "Confirmar exclusão",
          variant: "destructive",
       });
    };
@@ -152,15 +154,10 @@ export function MembersDataTable({
                      <EmptyMedia variant="icon">
                         <Users className="size-12 text-muted-foreground" />
                      </EmptyMedia>
-                     <EmptyTitle>
-                        {translate(
-                           "dashboard.routes.organization.members-table.empty",
-                        )}
-                     </EmptyTitle>
+                     <EmptyTitle>Nenhum membro encontrado</EmptyTitle>
                      <EmptyDescription>
-                        {translate(
-                           "dashboard.routes.organization.members-table.description",
-                        )}
+                        Convide membros para sua organização para começar a
+                        colaborar.
                      </EmptyDescription>
                   </EmptyContent>
                </Empty>
@@ -177,9 +174,7 @@ export function MembersDataTable({
                   <InputGroup className="sm:max-w-md">
                      <InputGroupInput
                         onChange={(e) => filters.onSearchChange(e.target.value)}
-                        placeholder={translate(
-                           "dashboard.routes.organization.members-table.filters.search",
-                        )}
+                        placeholder="Buscar por nome ou email..."
                         value={filters.searchTerm}
                      />
                      <InputGroupAddon>
@@ -197,9 +192,7 @@ export function MembersDataTable({
 
                {filteredMembers.length === 0 ? (
                   <div className="py-8 text-center text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.organization.members-table.empty",
-                     )}
+                     Nenhum membro encontrado
                   </div>
                ) : (
                   <DataTable
@@ -211,8 +204,16 @@ export function MembersDataTable({
                      enableRowSelection
                      getRowId={(row) => row.id}
                      onRowSelectionChange={setRowSelection}
+                     pagination={pagination}
                      renderMobileCard={(props) => (
                         <MembersMobileCard
+                           {...props}
+                           onChangeRole={onChangeRole}
+                           onRemove={handleRemoveMember}
+                        />
+                     )}
+                     renderSubComponent={(props) => (
+                        <MembersExpandedContent
                            {...props}
                            onChangeRole={onChangeRole}
                            onRemove={handleRemoveMember}
@@ -232,9 +233,7 @@ export function MembersDataTable({
                disabled
                icon={<Shield className="size-3.5" />}
             >
-               {translate(
-                  "dashboard.routes.organization.members-table.bulk-actions.change-role",
-               )}
+               Alterar cargo
             </SelectionActionButton>
             {onBulkRemove && (
                <SelectionActionButton
@@ -242,9 +241,7 @@ export function MembersDataTable({
                   onClick={handleBulkRemove}
                   variant="destructive"
                >
-                  {translate(
-                     "dashboard.routes.organization.members-table.bulk-actions.remove",
-                  )}
+                  Remover selecionados
                </SelectionActionButton>
             )}
          </SelectionActionBar>

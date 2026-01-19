@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    DropdownMenu,
@@ -39,11 +38,7 @@ function TeamActionsCell({ team, slug, onEdit, onDelete }: TeamActionsProps) {
                      </Button>
                   </DropdownMenuTrigger>
                </TooltipTrigger>
-               <TooltipContent>
-                  {translate(
-                     "dashboard.routes.organization.teams-table.columns.actions",
-                  )}
-               </TooltipContent>
+               <TooltipContent>Ações</TooltipContent>
             </Tooltip>
             <DropdownMenuContent align="end">
                <DropdownMenuItem asChild>
@@ -52,17 +47,13 @@ function TeamActionsCell({ team, slug, onEdit, onDelete }: TeamActionsProps) {
                      to="/$slug/organization/teams/$teamId"
                   >
                      <Eye className="size-4 mr-2" />
-                     {translate(
-                        "dashboard.routes.organization.teams-table.actions.view",
-                     )}
+                     Visualizar
                   </Link>
                </DropdownMenuItem>
                {onEdit && (
                   <DropdownMenuItem onClick={() => onEdit(team)}>
                      <Edit className="size-4 mr-2" />
-                     {translate(
-                        "dashboard.routes.organization.teams-table.actions.edit",
-                     )}
+                     Editar
                   </DropdownMenuItem>
                )}
                {onDelete && (
@@ -73,9 +64,7 @@ function TeamActionsCell({ team, slug, onEdit, onDelete }: TeamActionsProps) {
                         onClick={() => onDelete(team)}
                      >
                         <Trash2 className="size-4 mr-2" />
-                        {translate(
-                           "dashboard.routes.organization.teams-table.actions.delete",
-                        )}
+                        Excluir
                      </DropdownMenuItem>
                   </>
                )}
@@ -105,9 +94,7 @@ export function createTeamColumns(
             );
          },
          enableSorting: false,
-         header: translate(
-            "dashboard.routes.organization.teams-table.columns.name",
-         ),
+         header: "Nome",
       },
       {
          accessorKey: "description",
@@ -120,9 +107,7 @@ export function createTeamColumns(
             );
          },
          enableSorting: false,
-         header: translate(
-            "dashboard.routes.organization.teams-table.columns.description",
-         ),
+         header: "Descrição",
       },
       {
          accessorKey: "createdAt",
@@ -135,9 +120,7 @@ export function createTeamColumns(
             );
          },
          enableSorting: false,
-         header: translate(
-            "dashboard.routes.organization.teams-table.columns.created",
-         ),
+         header: "Criado em",
       },
       {
          cell: ({ row }) => (

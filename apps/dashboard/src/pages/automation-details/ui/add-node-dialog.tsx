@@ -8,8 +8,9 @@ import {
    CommandList,
 } from "@packages/ui/components/command";
 import { cn } from "@packages/ui/lib/utils";
+import { getAction } from "@packages/workflows/config/actions";
+import { getTriggerLabel } from "@packages/workflows/triggers/definitions";
 import { Filter, Play, Zap } from "lucide-react";
-import { ACTION_TYPE_LABELS, TRIGGER_TYPE_LABELS } from "../lib/types";
 
 type NodeOption = {
    type: "trigger" | "condition" | "action";
@@ -24,14 +25,14 @@ const triggerOptions: NodeOption[] = [
       data: { triggerType: "transaction.created" },
       description: "Quando uma nova transação é criada",
       keywords: ["transação", "criada", "nova", "trigger", "gatilho"],
-      label: TRIGGER_TYPE_LABELS["transaction.created"],
+      label: getTriggerLabel("transaction.created"),
       type: "trigger",
    },
    {
       data: { triggerType: "transaction.updated" },
       description: "Quando uma transação é modificada",
       keywords: ["transação", "atualizada", "modificada", "trigger", "gatilho"],
-      label: TRIGGER_TYPE_LABELS["transaction.updated"],
+      label: getTriggerLabel("transaction.updated"),
       type: "trigger",
    },
    {
@@ -41,7 +42,7 @@ const triggerOptions: NodeOption[] = [
       },
       description: "Executa todos os dias no horário configurado",
       keywords: ["agendamento", "diário", "schedule", "daily", "horário"],
-      label: TRIGGER_TYPE_LABELS["schedule.daily"],
+      label: getTriggerLabel("schedule.daily"),
       type: "trigger",
    },
    {
@@ -51,7 +52,7 @@ const triggerOptions: NodeOption[] = [
       },
       description: "Executa uma vez por semana",
       keywords: ["agendamento", "semanal", "schedule", "weekly", "semana"],
-      label: TRIGGER_TYPE_LABELS["schedule.weekly"],
+      label: getTriggerLabel("schedule.weekly"),
       type: "trigger",
    },
    {
@@ -67,7 +68,7 @@ const triggerOptions: NodeOption[] = [
          "biweekly",
          "quinzena",
       ],
-      label: TRIGGER_TYPE_LABELS["schedule.biweekly"],
+      label: getTriggerLabel("schedule.biweekly"),
       type: "trigger",
    },
    {
@@ -81,7 +82,7 @@ const triggerOptions: NodeOption[] = [
       },
       description: "Executa em padrão CRON personalizado",
       keywords: ["agendamento", "custom", "cron", "personalizado"],
-      label: TRIGGER_TYPE_LABELS["schedule.custom"],
+      label: getTriggerLabel("schedule.custom"),
       type: "trigger",
    },
 ];
@@ -108,70 +109,70 @@ const actionOptions: NodeOption[] = [
       data: { actionType: "set_category" },
       description: "Atribuir uma categoria",
       keywords: ["categoria", "definir", "atribuir"],
-      label: ACTION_TYPE_LABELS.set_category,
+      label: getAction("set_category").label,
       type: "action",
    },
    {
       data: { actionType: "add_tag" },
       description: "Adicionar tags à transação",
       keywords: ["tag", "etiqueta", "adicionar", "marcador"],
-      label: ACTION_TYPE_LABELS.add_tag,
+      label: getAction("add_tag").label,
       type: "action",
    },
    {
       data: { actionType: "remove_tag" },
       description: "Remover tags da transação",
       keywords: ["tag", "etiqueta", "remover", "marcador"],
-      label: ACTION_TYPE_LABELS.remove_tag,
+      label: getAction("remove_tag").label,
       type: "action",
    },
    {
       data: { actionType: "set_cost_center" },
       description: "Atribuir um centro de custo",
       keywords: ["centro", "custo", "definir", "atribuir"],
-      label: ACTION_TYPE_LABELS.set_cost_center,
+      label: getAction("set_cost_center").label,
       type: "action",
    },
    {
       data: { actionType: "update_description" },
       description: "Modificar texto da descrição",
       keywords: ["descrição", "texto", "modificar", "atualizar"],
-      label: ACTION_TYPE_LABELS.update_description,
+      label: getAction("update_description").label,
       type: "action",
    },
    {
       data: { actionType: "send_push_notification" },
       description: "Enviar uma notificação push",
       keywords: ["notificação", "push", "enviar", "alerta"],
-      label: ACTION_TYPE_LABELS.send_push_notification,
+      label: getAction("send_push_notification").label,
       type: "action",
    },
    {
       data: { actionType: "send_email" },
       description: "Enviar um e-mail",
       keywords: ["email", "e-mail", "enviar", "correio"],
-      label: ACTION_TYPE_LABELS.send_email,
+      label: getAction("send_email").label,
       type: "action",
    },
    {
       data: { actionType: "create_transaction" },
       description: "Criar uma nova transação",
       keywords: ["transação", "criar", "nova", "adicionar"],
-      label: ACTION_TYPE_LABELS.create_transaction,
+      label: getAction("create_transaction").label,
       type: "action",
    },
    {
       data: { actionType: "mark_as_transfer" },
       description: "Marcar transação como transferência para outra conta",
       keywords: ["transferência", "transfer", "marcar", "conta", "mover"],
-      label: ACTION_TYPE_LABELS.mark_as_transfer,
+      label: getAction("mark_as_transfer").label,
       type: "action",
    },
    {
       data: { actionType: "stop_execution" },
       description: "Parar execução da regra",
       keywords: ["parar", "stop", "interromper", "cancelar"],
-      label: ACTION_TYPE_LABELS.stop_execution,
+      label: getAction("stop_execution").label,
       type: "action",
    },
    {
@@ -186,7 +187,7 @@ const actionOptions: NodeOption[] = [
          "pagar",
          "receber",
       ],
-      label: ACTION_TYPE_LABELS.fetch_bills_report,
+      label: getAction("fetch_bills_report").label,
       type: "action",
    },
 ];

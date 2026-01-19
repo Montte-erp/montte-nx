@@ -1,0 +1,74 @@
+---
+import { Check } from "@lucide/astro";
+
+interface Props {
+   eyebrow?: string;
+   title: string;
+   description: string;
+   image: string;
+   imageAlt: string;
+   bullets?: string[];
+   reverse?: boolean;
+}
+
+const {
+   eyebrow,
+   title,
+   description,
+   image,
+   imageAlt,
+   bullets = [],
+   reverse = false,
+} = Astro.props;
+---
+
+<section class="py-16 md:py-24 border-t border-border/10">
+   <div class="container mx-auto px-4 sm:px-6">
+      <div class={`grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center ${reverse ? 'lg:flex-row-reverse' : ''}`}>
+         <!-- Image -->
+         <div class={`relative ${reverse ? 'lg:order-2' : 'lg:order-1'}`}>
+            <div class="relative rounded-2xl overflow-hidden border border-border/20 bg-card shadow-xl">
+               <img
+                  src={image}
+                  alt={imageAlt}
+                  class="w-full h-auto"
+                  loading="lazy"
+               />
+            </div>
+            <!-- Decorative gradient -->
+            <div class="absolute -inset-4 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 rounded-3xl -z-10 blur-2xl"></div>
+         </div>
+
+         <!-- Content -->
+         <div class={`flex flex-col gap-6 ${reverse ? 'lg:order-1' : 'lg:order-2'}`}>
+
+            {eyebrow && (
+               <span class="text-sm font-bold uppercase tracking-widest text-primary">
+                  {eyebrow}
+               </span>
+            )}
+
+            <h2 class="inline-block max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-foreground md:text-4xl">
+               {title}
+            </h2>
+
+            <p class="max-w-sm text-foreground/70 sm:max-w-xl sm:text-xl">
+               {description}
+            </p>
+
+            {bullets.length > 0 && (
+               <ul class="flex flex-col gap-4 mt-2">
+                  {bullets.map((bullet) => (
+                     <li class="flex items-start gap-3">
+                        <div class="size-6 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                           <Check class="size-3.5 text-primary" />
+                        </div>
+                        <span class="text-foreground">{bullet}</span>
+                     </li>
+                  ))}
+               </ul>
+            )}
+         </div>
+      </div>
+   </div>
+</section>

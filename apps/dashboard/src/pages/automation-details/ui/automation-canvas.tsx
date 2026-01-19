@@ -34,11 +34,14 @@ import {
    type ActionCategory,
    getUniqueCategories,
 } from "@packages/workflows/config/actions";
-import { DeletableEdge } from "../edges/deletable-edge";
-import type { AutomationEdge, AutomationNode } from "../lib/types";
-import { ActionNode } from "../nodes/action-node";
-import { ConditionNode } from "../nodes/condition-node";
-import { TriggerNode } from "../nodes/trigger-node";
+import { DeletableEdge } from "@/features/automations/edges/deletable-edge";
+import type {
+   AutomationEdge,
+   AutomationNode,
+} from "@/features/automations/hooks/use-flow-serialization";
+import { ActionNode } from "@/features/automations/nodes/action-node";
+import { ConditionNode } from "@/features/automations/nodes/condition-node";
+import { TriggerNode } from "@/features/automations/nodes/trigger-node";
 import {
    ActionPickerDialog,
    type PickerMode,

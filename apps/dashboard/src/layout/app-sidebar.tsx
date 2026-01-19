@@ -2,16 +2,23 @@ import { Separator } from "@packages/ui/components/separator";
 import {
    Sidebar,
    SidebarContent,
+   SidebarFooter,
    SidebarHeader,
    SidebarMenu,
    SidebarMenuButton,
    SidebarMenuItem,
+   useSidebar,
 } from "@packages/ui/components/sidebar";
 import { Link, useParams } from "@tanstack/react-router";
+import { PanelLeft } from "lucide-react";
 import type * as React from "react";
+import { NavNotifications } from "@/features/notifications/ui/nav-notifications";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { NavMain } from "./nav-main";
+import { NavUser } from "./nav-user";
 import { OrganizationSwitcher } from "./organization-switcher";
+import { SubmenuProvider } from "./sidebar-submenu-context";
+import { SidebarSubmenuPanel } from "./sidebar-submenu-panel";
 
 function MontteBranding() {
    const { slug } = useParams({ strict: false }) as { slug: string };
@@ -56,23 +63,50 @@ function MontteBranding() {
    );
 }
 
+function SidebarCollapseButton() {
+   const { toggleSidebar, state } = useSidebar();
+
+   const tooltipText = state === "expanded" ? "Ocultar" : "Abrir";
+
+   return (
+      <SidebarMenu>
+         <SidebarMenuItem>
+            <SidebarMenuButton onClick={toggleSidebar} tooltip={tooltipText}>
+               <PanelLeft />
+               <span>{tooltipText}</span>
+            </SidebarMenuButton>
+         </SidebarMenuItem>
+      </SidebarMenu>
+   );
+}
+
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
    const { activeSubscription } = useActiveOrganization();
 
-   const hasProSubscription =
-      activeSubscription?.plan?.toLowerCase() === "pro" &&
+   const hasOrgSwitcher =
+      (activeSubscription?.plan?.toLowerCase() === "pro" ||
+         activeSubscription?.plan?.toLowerCase() === "erp") &&
       (activeSubscription?.status === "active" ||
          activeSubscription?.status === "trialing");
 
    return (
-      <Sidebar collapsible="icon" {...props}>
-         <SidebarHeader>
-            {hasProSubscription ? <OrganizationSwitcher /> : <MontteBranding />}
-         </SidebarHeader>
-         <SidebarContent>
-            <Separator />
-            <NavMain />
-         </SidebarContent>
-      </Sidebar>
+      <SubmenuProvider>
+         <Sidebar collapsible="icon" {...props}>
+            <SidebarHeader>
+               {hasOrgSwitcher ? <OrganizationSwitcher /> : <MontteBranding />}
+            </SidebarHeader>
+            <SidebarContent>
+               <Separator />
+               <NavMain />
+            </SidebarContent>
+            <SidebarFooter>
+               <Separator />
+               <SidebarCollapseButton />
+               <NavNotifications />
+               <NavUser />
+            </SidebarFooter>
+         </Sidebar>
+         <SidebarSubmenuPanel />
+      </SubmenuProvider>
    );
 }

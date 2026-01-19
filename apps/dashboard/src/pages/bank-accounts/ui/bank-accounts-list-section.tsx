@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import { Card, CardContent } from "@packages/ui/components/card";
 import { DataTable } from "@packages/ui/components/data-table";
@@ -9,7 +8,6 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import {
    InputGroup,
    InputGroupAddon,
@@ -25,7 +23,7 @@ import { keepPreviousData, useSuspenseQuery } from "@tanstack/react-query";
 import type { RowSelectionState } from "@tanstack/react-table";
 import { Building, Check, Search, Trash2, X } from "lucide-react";
 import { Fragment, Suspense, useEffect, useMemo, useState } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { ErrorBoundary } from "react-error-boundary";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useTRPC } from "@/integrations/clients";
 import { useBankAccountBulkActions } from "../features/use-bank-account-bulk-actions";
@@ -35,18 +33,11 @@ import {
    createBankAccountColumns,
 } from "./bank-accounts-table-columns";
 
-function BankAccountsListErrorFallback(props: FallbackProps) {
+function BankAccountsListErrorFallback() {
    return (
-      <Card>
-         <CardContent className="pt-6">
-            {createErrorFallback({
-               errorDescription:
-                  "Failed to load bank accounts. Please try again later.",
-               errorTitle: "Error loading bank accounts",
-               retryText: "Retry",
-            })(props)}
-         </CardContent>
-      </Card>
+      <div className="p-4 text-center text-sm text-destructive">
+         Falha ao carregar contas bancárias. Tente novamente mais tarde.
+      </div>
    );
 }
 
@@ -186,7 +177,7 @@ function BankAccountsListContent({
                <InputGroup className="sm:max-w-md">
                   <InputGroupInput
                      onChange={(e) => setSearchTerm(e.target.value)}
-                     placeholder={translate("common.form.search.placeholder")}
+                     placeholder="Buscar..."
                      value={searchTerm}
                   />
                   <InputGroupAddon>
@@ -202,19 +193,13 @@ function BankAccountsListContent({
                         </EmptyMedia>
                         <EmptyTitle>
                            {hasActiveFilters
-                              ? translate(
-                                   "dashboard.routes.bank-accounts.list-section.state.empty.title",
-                                )
-                              : translate(
-                                   "dashboard.routes.bank-accounts.list-section.state.empty.title",
-                                )}
+                              ? "Nenhuma conta encontrada"
+                              : "Nenhuma conta encontrada"}
                         </EmptyTitle>
                         <EmptyDescription>
                            {hasActiveFilters
                               ? "Nenhuma conta encontrada com os filtros aplicados"
-                              : translate(
-                                   "dashboard.routes.bank-accounts.list-section.state.empty.description",
-                                )}
+                              : "Cadastre sua primeira conta bancária para começar."}
                         </EmptyDescription>
                      </EmptyContent>
                   </Empty>
@@ -283,50 +268,30 @@ function BankAccountsListContent({
                icon={<Check className="size-3.5" />}
                onClick={() =>
                   openAlertDialog({
-                     actionLabel: translate(
-                        "dashboard.routes.bank-accounts.bulk-actions.confirm",
-                     ),
-                     cancelLabel: translate("common.actions.cancel"),
-                     description: translate(
-                        "dashboard.routes.bank-accounts.bulk-actions.activate-confirm-description",
-                        { count: selectedIds.length },
-                     ),
+                     actionLabel: "Confirmar",
+                     cancelLabel: "Cancelar",
+                     description: `Tem certeza que deseja ativar ${selectedIds.length} conta(s)?`,
                      onAction: () => markAsActive(selectedIds),
-                     title: translate(
-                        "dashboard.routes.bank-accounts.bulk-actions.activate-confirm-title",
-                        { count: selectedIds.length },
-                     ),
+                     title: `Ativar ${selectedIds.length} conta(s)`,
                   })
                }
             >
-               {translate(
-                  "dashboard.routes.bank-accounts.bulk-actions.activate",
-               )}
+               Ativar
             </SelectionActionButton>
             <SelectionActionButton
                disabled={isLoading}
                icon={<X className="size-3.5" />}
                onClick={() =>
                   openAlertDialog({
-                     actionLabel: translate(
-                        "dashboard.routes.bank-accounts.bulk-actions.confirm",
-                     ),
-                     cancelLabel: translate("common.actions.cancel"),
-                     description: translate(
-                        "dashboard.routes.bank-accounts.bulk-actions.deactivate-confirm-description",
-                        { count: selectedIds.length },
-                     ),
+                     actionLabel: "Confirmar",
+                     cancelLabel: "Cancelar",
+                     description: `Tem certeza que deseja desativar ${selectedIds.length} conta(s)?`,
                      onAction: () => markAsInactive(selectedIds),
-                     title: translate(
-                        "dashboard.routes.bank-accounts.bulk-actions.deactivate-confirm-title",
-                        { count: selectedIds.length },
-                     ),
+                     title: `Desativar ${selectedIds.length} conta(s)`,
                   })
                }
             >
-               {translate(
-                  "dashboard.routes.bank-accounts.bulk-actions.deactivate",
-               )}
+               Desativar
             </SelectionActionButton>
             <SelectionActionButton
                disabled={
@@ -338,25 +303,17 @@ function BankAccountsListContent({
                icon={<Trash2 className="size-3.5" />}
                onClick={() =>
                   openAlertDialog({
-                     actionLabel: translate(
-                        "dashboard.routes.bank-accounts.bulk-actions.delete",
-                     ),
-                     cancelLabel: translate("common.actions.cancel"),
-                     description: translate(
-                        "dashboard.routes.bank-accounts.bulk-actions.delete-confirm-description",
-                        { count: selectedIds.length },
-                     ),
+                     actionLabel: "Excluir",
+                     cancelLabel: "Cancelar",
+                     description: `Tem certeza que deseja excluir ${selectedIds.length} conta(s)? Esta ação não pode ser desfeita.`,
                      onAction: () => deleteSelected(selectedIds),
-                     title: translate(
-                        "dashboard.routes.bank-accounts.bulk-actions.delete-confirm-title",
-                        { count: selectedIds.length },
-                     ),
+                     title: `Excluir ${selectedIds.length} conta(s)`,
                      variant: "destructive",
                   })
                }
                variant="destructive"
             >
-               {translate("dashboard.routes.bank-accounts.bulk-actions.delete")}
+               Excluir
             </SelectionActionButton>
          </SelectionActionBar>
       </>

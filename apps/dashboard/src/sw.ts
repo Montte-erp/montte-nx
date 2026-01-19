@@ -329,7 +329,6 @@ self.addEventListener("message", (event: ExtendableMessageEvent) => {
 });
 
 self.addEventListener("install", (event: ExtendableEvent) => {
-   console.log("Service Worker installing...");
    event.waitUntil(
       caches.open(APP_SHELL_CACHE).then((cache) => {
          return cache.addAll(["/", "/offline.html", "/favicon.svg"]);
@@ -338,7 +337,6 @@ self.addEventListener("install", (event: ExtendableEvent) => {
 });
 
 self.addEventListener("activate", (event: ExtendableEvent) => {
-   console.log("Service Worker activating...");
    event.waitUntil(
       caches
          .keys()
@@ -355,7 +353,6 @@ self.addEventListener("activate", (event: ExtendableEvent) => {
                      );
                   })
                   .map((cacheName) => {
-                     console.log("Deleting old cache:", cacheName);
                      return caches.delete(cacheName);
                   }),
             );

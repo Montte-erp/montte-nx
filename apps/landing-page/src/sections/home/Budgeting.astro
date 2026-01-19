@@ -1,0 +1,59 @@
+---
+import { FeatureCarousel } from "@/components/feature-carousel";
+
+const budgetFeatures = [
+   {
+      id: "orcamentos-por-periodo",
+      title: "Orcamentos por Periodo",
+      description:
+         "Crie orcamentos diarios, semanais, mensais, trimestrais ou anuais. Defina limites de gastos por categoria e acompanhe o progresso.",
+      image: "https://placehold.co/350x478/151925/22c55e?text=Orcamentos",
+      width: "narrow" as const,
+   },
+   {
+      id: "progresso-tempo-real",
+      title: "Progresso em Tempo Real",
+      description:
+         "Visualize quanto ja gastou versus o planejado. Barras de progresso coloridas indicam quando voce esta proximo do limite.",
+      image: "https://placehold.co/725x478/151925/22c55e?text=Progresso+Budget",
+      width: "wide" as const,
+   },
+   {
+      id: "metas-poupanca",
+      title: "Metas de Poupanca",
+      description:
+         "Defina metas de economia e acompanhe sua evolucao. Veja quanto falta para atingir seu objetivo financeiro.",
+      image: "https://placehold.co/350x478/151925/22c55e?text=Meta+Poupanca",
+      width: "narrow" as const,
+   },
+   {
+      id: "limite-gastos",
+      title: "Limite de Gastos",
+      description:
+         "Estabeleca tetos de despesas por categoria. Receba alertas visuais quando estiver proximo de estourar o orcamento.",
+      image: "https://placehold.co/725x478/151925/22c55e?text=Limite+Gastos",
+      width: "wide" as const,
+   },
+   {
+      id: "quitacao-dividas",
+      title: "Quitacao de Dividas",
+      description:
+         "Crie metas para quitar dividas e acompanhe o progresso. Visualize quanto ja pagou e quanto falta para ficar livre.",
+      image: "https://placehold.co/350x478/151925/22c55e?text=Quitar+Divida",
+      width: "narrow" as const,
+   },
+];
+---
+
+<section id="budgeting" class="py-16 md:py-24 overflow-hidden relative">
+   <FeatureCarousel
+      items={budgetFeatures}
+      badge="Orcamentos e Metas"
+      title="Planeje. Acompanhe. Conquiste."
+      subtitle="Defina orcamentos por periodo e metas financeiras claras. Acompanhe seu progresso e tome decisoes informadas."
+      ctaText="Ver recursos de analise"
+      ctaHref="/features/budgeting"
+      benefitText="Transforme sonhos em metas alcancaveis."
+      client:load
+   />
+</section>

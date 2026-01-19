@@ -7,57 +7,96 @@ import {
    Wallet,
    Zap,
 } from "@lucide/astro";
-import { BillingToggle } from "@/components/BillingToggle";
 ---
 
 <!-- LEFT SIDEBAR NAV -->
-<aside class="lg:w-64 shrink-0">
+<aside class="hidden lg:block lg:w-64 shrink-0">
    <div class="lg:sticky lg:top-24 space-y-6">
        <!-- Category Navigation -->
-       <nav class="space-y-1">
+       <nav class="space-y-1" role="navigation" aria-label="Navegacao de categorias">
           <div class="text-xs uppercase font-bold tracking-widest text-muted-foreground/60 mb-3 px-3">Plataforma</div>
 
-           <a href="#core" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm hover:bg-muted/50 transition-colors group">
+           <a href="#core" data-section="core" class="sidebar-link flex items-center gap-3 px-3 py-3 rounded-lg text-sm hover:bg-muted/50 transition-colors group">
              <Wallet class="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
              <span class="text-muted-foreground group-hover:text-foreground font-medium">Gestão de Caixa</span>
           </a>
 
-           <a href="#planning" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm hover:bg-muted/50 transition-colors group">
+           <a href="#planning" data-section="planning" class="sidebar-link flex items-center gap-3 px-3 py-3 rounded-lg text-sm hover:bg-muted/50 transition-colors group">
              <LayoutDashboard class="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
              <span class="text-muted-foreground group-hover:text-foreground font-medium">Previsibilidade</span>
           </a>
 
-           <a href="#automation" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm hover:bg-muted/50 transition-colors group">
+           <a href="#automation" data-section="automation" class="sidebar-link flex items-center gap-3 px-3 py-3 rounded-lg text-sm hover:bg-muted/50 transition-colors group">
              <Zap class="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
               <span class="text-muted-foreground group-hover:text-foreground font-medium">Automação Inteligente</span>
            </a>
 
-            <a href="#analytics" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm hover:bg-muted/50 transition-colors group">
+            <a href="#analytics" data-section="analytics" class="sidebar-link flex items-center gap-3 px-3 py-3 rounded-lg text-sm hover:bg-muted/50 transition-colors group">
              <ChartPie class="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
-             <span class="text-muted-foreground group-hover:text-foreground font-medium">Relatórios e DRE</span>
+             <span class="text-muted-foreground group-hover:text-foreground font-medium">Dashboards Personalizados</span>
            </a>
 
            <div class="text-xs uppercase font-bold tracking-widest text-muted-foreground/60 mb-3 mt-6 px-3">Organização</div>
 
-            <a href="#team" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm hover:bg-muted/50 transition-colors group">
+            <a href="#team" data-section="team" class="sidebar-link flex items-center gap-3 px-3 py-3 rounded-lg text-sm hover:bg-muted/50 transition-colors group">
              <Users class="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
              <span class="text-muted-foreground group-hover:text-foreground font-medium">Time e Permissões</span>
           </a>
 
           <div class="text-xs uppercase font-bold tracking-widest text-muted-foreground/60 mb-3 mt-6 px-3">Corporativo</div>
 
-           <a href="#enterprise" class="flex items-center gap-3 px-3 py-3 rounded-lg text-sm hover:bg-muted/50 transition-colors group">
+           <a href="#enterprise" data-section="enterprise" class="sidebar-link flex items-center gap-3 px-3 py-3 rounded-lg text-sm hover:bg-muted/50 transition-colors group">
              <Lock class="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
              <span class="text-muted-foreground group-hover:text-foreground font-medium">Segurança e SLA</span>
           </a>
        </nav>
-
-      <!-- Billing Toggle (Sidebar) -->
-      <div class="p-4 rounded-xl bg-gradient-to-br from-card to-muted/30 border border-border shadow-sm">
-         <div class="mb-3">
-            <span class="text-sm font-semibold text-foreground">Período de cobrança</span>
-         </div>
-         <BillingToggle client:load id="pricing-toggle-sidebar" showDiscount={false} />
-      </div>
    </div>
 </aside>
+
+<script>
+  function initSidebarScrollSpy() {
+    const sections = ['core', 'planning', 'automation', 'analytics', 'team', 'enterprise'];
+    const navLinks = document.querySelectorAll('.sidebar-link');
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            navLinks.forEach((link) => {
+              const sectionId = link.getAttribute('data-section');
+              const isActive = sectionId === entry.target.id;
+              
+              if (isActive) {
+                link.classList.add('bg-primary/10');
+                link.querySelector('svg')?.classList.add('text-primary');
+                link.querySelector('svg')?.classList.remove('text-muted-foreground');
+                link.querySelector('span')?.classList.add('text-foreground');
+                link.querySelector('span')?.classList.remove('text-muted-foreground');
+                link.setAttribute('aria-current', 'true');
+              } else {
+                link.classList.remove('bg-primary/10');
+                link.querySelector('svg')?.classList.remove('text-primary');
+                link.querySelector('svg')?.classList.add('text-muted-foreground');
+                link.querySelector('span')?.classList.remove('text-foreground');
+                link.querySelector('span')?.classList.add('text-muted-foreground');
+                link.removeAttribute('aria-current');
+              }
+            });
+          }
+        });
+      },
+      { rootMargin: '-20% 0px -60% 0px' }
+    );
+    
+    sections.forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) observer.observe(element);
+    });
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSidebarScrollSpy);
+  } else {
+    initSidebarScrollSpy();
+  }
+</script>

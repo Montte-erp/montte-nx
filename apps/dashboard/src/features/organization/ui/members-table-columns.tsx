@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    DropdownMenu,
@@ -46,25 +45,17 @@ function MemberActionsCell({
                      </Button>
                   </DropdownMenuTrigger>
                </TooltipTrigger>
-               <TooltipContent>
-                  {translate(
-                     "dashboard.routes.organization.members-table.columns.actions",
-                  )}
-               </TooltipContent>
+               <TooltipContent>Ações</TooltipContent>
             </Tooltip>
             <DropdownMenuContent align="end">
                <DropdownMenuItem disabled>
                   <Eye className="size-4 mr-2" />
-                  {translate(
-                     "dashboard.routes.organization.members-table.actions.view",
-                  )}
+                  Visualizar
                </DropdownMenuItem>
                {!isOwner && onChangeRole && (
                   <DropdownMenuItem onClick={() => onChangeRole(member)}>
                      <Shield className="size-4 mr-2" />
-                     {translate(
-                        "dashboard.routes.organization.members-table.actions.change-role",
-                     )}
+                     Alterar cargo
                   </DropdownMenuItem>
                )}
                {!isOwner && onRemove && (
@@ -75,9 +66,7 @@ function MemberActionsCell({
                         onClick={() => onRemove(member)}
                      >
                         <Trash2 className="size-4 mr-2" />
-                        {translate(
-                           "dashboard.routes.organization.members-table.actions.remove",
-                        )}
+                        Remover
                      </DropdownMenuItem>
                   </>
                )}
@@ -106,9 +95,7 @@ export function createMemberColumns(
             );
          },
          enableSorting: false,
-         header: translate(
-            "dashboard.routes.organization.members-table.columns.name",
-         ),
+         header: "Nome",
          id: "name",
       },
       {
@@ -118,9 +105,7 @@ export function createMemberColumns(
             return <RoleBadge role={role} />;
          },
          enableSorting: false,
-         header: translate(
-            "dashboard.routes.organization.members-table.columns.role",
-         ),
+         header: "Cargo",
          id: "role",
       },
       {
@@ -134,9 +119,7 @@ export function createMemberColumns(
             );
          },
          enableSorting: false,
-         header: translate(
-            "dashboard.routes.organization.members-table.columns.joined",
-         ),
+         header: "Entrou em",
          id: "joined",
       },
       {

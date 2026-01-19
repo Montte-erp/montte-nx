@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
@@ -198,21 +197,13 @@ export function MarkAsTransferForm({
 
                   <FieldGroup>
                      <Field>
-                        <FieldLabel>
-                           {translate("common.form.to-account.label")}
-                        </FieldLabel>
+                        <FieldLabel>Conta de Destino</FieldLabel>
                         <Combobox
-                           emptyMessage={translate(
-                              "common.form.search.no-results",
-                           )}
+                           emptyMessage="Nenhum resultado encontrado"
                            onValueChange={setSelectedBankAccountId}
                            options={bankAccountOptions}
-                           placeholder={translate(
-                              "common.form.to-account.placeholder",
-                           )}
-                           searchPlaceholder={translate(
-                              "common.form.search.label",
-                           )}
+                           placeholder="Selecione a conta de destino"
+                           searchPlaceholder="Pesquisar"
                            value={selectedBankAccountId}
                         />
                      </Field>

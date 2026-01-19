@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Choicebox,
@@ -38,6 +37,24 @@ type RefundTransactionSheetProps = {
 type DateOption = "same-day" | "today" | "custom";
 
 const dateOptions: DateOption[] = ["same-day", "today", "custom"];
+
+const dateOptionTexts: Record<
+   DateOption,
+   { title: string; description: string }
+> = {
+   "same-day": {
+      title: "Mesmo dia da transação",
+      description: "Usar a mesma data da transação original",
+   },
+   today: {
+      title: "Hoje",
+      description: "Usar a data de hoje para o estorno",
+   },
+   custom: {
+      title: "Data específica",
+      description: "Escolha uma data específica para o estorno",
+   },
+};
 
 export function RefundTransactionSheet({
    transaction,
@@ -79,11 +96,7 @@ export function RefundTransactionSheet({
          type: refundType,
       });
 
-      toast.success(
-         translate(
-            "dashboard.routes.transactions.notifications.create-success",
-         ),
-      );
+      toast.success("Transação criada com sucesso");
       closeSheet();
    };
 
@@ -94,15 +107,9 @@ export function RefundTransactionSheet({
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               {translate(
-                  "dashboard.routes.transactions.features.refund.title",
-               )}
-            </SheetTitle>
+            <SheetTitle>Estornar Transação</SheetTitle>
             <SheetDescription>
-               {translate(
-                  "dashboard.routes.transactions.features.refund.description",
-               )}
+               Crie uma transação de estorno para reverter esta transação.
             </SheetDescription>
          </SheetHeader>
 
@@ -116,14 +123,10 @@ export function RefundTransactionSheet({
                      <ChoiceboxItem id={option} key={option} value={option}>
                         <ChoiceboxItemHeader>
                            <ChoiceboxItemTitle>
-                              {translate(
-                                 `dashboard.routes.transactions.features.refund.date-options.${option}.title`,
-                              )}
+                              {dateOptionTexts[option].title}
                            </ChoiceboxItemTitle>
                            <ChoiceboxItemDescription>
-                              {translate(
-                                 `dashboard.routes.transactions.features.refund.date-options.${option}.description`,
-                              )}
+                              {dateOptionTexts[option].description}
                            </ChoiceboxItemDescription>
                         </ChoiceboxItemHeader>
                         <ChoiceboxIndicator id={option} />
@@ -136,9 +139,7 @@ export function RefundTransactionSheet({
                      className="w-full"
                      date={customDate}
                      onSelect={setCustomDate}
-                     placeholder={translate(
-                        "dashboard.routes.transactions.features.refund.date-options.custom.title",
-                     )}
+                     placeholder="Data específica"
                   />
                )}
             </div>
@@ -147,10 +148,8 @@ export function RefundTransactionSheet({
          <SheetFooter>
             <Button disabled={isSubmitDisabled} onClick={handleSubmit}>
                {createTransactionMutation.isPending
-                  ? translate("common.actions.loading")
-                  : translate(
-                       "dashboard.routes.transactions.features.refund.submit",
-                    )}
+                  ? "Carregando..."
+                  : "Criar Estorno"}
             </Button>
          </SheetFooter>
       </>

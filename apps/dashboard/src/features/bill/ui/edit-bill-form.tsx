@@ -1,5 +1,4 @@
 import type { Bill } from "@packages/database/repositories/bill-repository";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { DatePicker } from "@packages/ui/components/date-picker";
 import {
@@ -29,8 +28,8 @@ export type EditBillFormProps = {
 };
 
 const editBillSchema = z.object({
-   amount: z.number().min(0.01, translate("common.validation.required")),
-   description: z.string().min(1, translate("common.validation.required")),
+   amount: z.number().min(0.01, "Este campo é obrigatório."),
+   description: z.string().min(1, "Este campo é obrigatório."),
    dueDate: z.date(),
    issueDate: z.date().or(z.undefined()),
 });
@@ -83,14 +82,8 @@ export function EditBillForm({ bill }: EditBillFormProps) {
    return (
       <form className="flex flex-col h-full" onSubmit={handleSubmit}>
          <SheetHeader>
-            <SheetTitle>
-               {translate("dashboard.routes.bills.features.edit-bill.title")}
-            </SheetTitle>
-            <SheetDescription>
-               {translate(
-                  "dashboard.routes.bills.features.edit-bill.description",
-               )}
-            </SheetDescription>
+            <SheetTitle>Editar Conta</SheetTitle>
+            <SheetDescription>Atualize os detalhes da conta</SheetDescription>
          </SheetHeader>
 
          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -102,7 +95,7 @@ export function EditBillForm({ bill }: EditBillFormProps) {
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.description.label")}
+                              Descrição
                            </FieldLabel>
                            <Textarea
                               id={field.name}
@@ -110,9 +103,7 @@ export function EditBillForm({ bill }: EditBillFormProps) {
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
                               }
-                              placeholder={translate(
-                                 "common.form.description.placeholder",
-                              )}
+                              placeholder="Digite a descrição"
                               value={field.state.value || ""}
                            />
                            {isInvalid && (
@@ -131,9 +122,7 @@ export function EditBillForm({ bill }: EditBillFormProps) {
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.amount.label")}
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Valor</FieldLabel>
                            <MoneyInput
                               id={field.name}
                               onBlur={field.handleBlur}
@@ -161,18 +150,14 @@ export function EditBillForm({ bill }: EditBillFormProps) {
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate(
-                                 "dashboard.routes.bills.features.create-bill.fields.dueDate",
-                              )}
+                              Data de Vencimento
                            </FieldLabel>
                            <DatePicker
                               date={field.state.value}
                               onSelect={(date) =>
                                  field.handleChange(date ?? new Date())
                               }
-                              placeholder={translate(
-                                 "common.form.date.placeholder",
-                              )}
+                              placeholder="Selecione uma data"
                            />
                            {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
@@ -188,16 +173,12 @@ export function EditBillForm({ bill }: EditBillFormProps) {
                   {(field) => (
                      <Field>
                         <FieldLabel htmlFor={field.name}>
-                           {translate(
-                              "dashboard.routes.bills.features.create-bill.fields.issueDate",
-                           )}
+                           Data de Emissão
                         </FieldLabel>
                         <DatePicker
                            date={field.state.value}
                            onSelect={(date) => field.handleChange(date)}
-                           placeholder={translate(
-                              "common.form.date.placeholder",
-                           )}
+                           placeholder="Selecione uma data"
                         />
                      </Field>
                   )}
@@ -218,9 +199,7 @@ export function EditBillForm({ bill }: EditBillFormProps) {
                      disabled={!canSubmit || isSubmitting || isPending}
                      type="submit"
                   >
-                     {isPending
-                        ? translate("common.actions.loading")
-                        : translate("common.actions.save")}
+                     {isPending ? "Carregando..." : "Salvar"}
                   </Button>
                )}
             </form.Subscribe>

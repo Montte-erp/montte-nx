@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import {
    Announcement,
    AnnouncementTag,
@@ -13,14 +12,11 @@ import {
    CardTitle,
 } from "@packages/ui/components/card";
 import { formatDate } from "@packages/utils/date";
-import { Calendar, Clock, FolderOpen, Target } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Calendar, Clock, FolderOpen, Layers, Tag } from "lucide-react";
+import { useTRPC } from "@/integrations/clients";
 
 type Budget = RouterOutput["budgets"]["getById"];
-type BudgetTarget =
-   | { type: "category"; categoryId: string }
-   | { type: "categories"; categoryIds: string[] }
-   | { type: "tag"; tagId: string }
-   | { type: "cost_center"; costCenterId: string };
 
 interface BudgetInformationSectionProps {
    budget: Budget;
@@ -34,65 +30,99 @@ function formatBudgetDate(date: Date | string | null): string {
 export function BudgetInformationSection({
    budget,
 }: BudgetInformationSectionProps) {
+   const trpc = useTRPC();
+   const { data: tags = [] } = useQuery(trpc.tags.getAll.queryOptions());
+   const { data: categories = [] } = useQuery(
+      trpc.categories.getAll.queryOptions(),
+   );
+
    const periodLabels: Record<string, string> = {
-      custom: translate("dashboard.routes.budgets.form.period.custom"),
-      daily: translate("dashboard.routes.budgets.form.period.daily"),
-      monthly: translate("dashboard.routes.budgets.form.period.monthly"),
-      quarterly: translate("dashboard.routes.budgets.form.period.quarterly"),
-      weekly: translate("dashboard.routes.budgets.form.period.weekly"),
-      yearly: translate("dashboard.routes.budgets.form.period.yearly"),
+      custom: "Personalizado",
+      daily: "Diário",
+      monthly: "Mensal",
+      quarterly: "Trimestral",
+      weekly: "Semanal",
+      yearly: "Anual",
    };
 
-   const targetTypeLabels: Record<string, string> = {
-      categories: translate("dashboard.routes.budgets.form.target.categories"),
-      category: translate("dashboard.routes.budgets.form.target.category"),
-      cost_center: translate(
-         "dashboard.routes.budgets.form.target.cost_center",
-      ),
-      tag: translate("dashboard.routes.budgets.form.target.tag"),
-   };
-
-   const target = budget.target as BudgetTarget;
-   const targetLabel = targetTypeLabels[target.type] ?? "-";
+   // Find the tag associated with this budget
+   const linkedTag = tags.find((tag) => tag.id === budget.tagId);
+   const tagLabel = linkedTag?.name ?? "Tag não encontrada";
+   const tagColor = linkedTag?.color ?? "#6b7280";
    const periodLabel =
       periodLabels[budget.periodType as string] ?? periodLabels.monthly ?? "-";
+
+   // Get linked categories from metadata
+   const linkedCategoryIds =
+      (budget.metadata as { linkedCategoryIds?: string[] })
+         ?.linkedCategoryIds ?? [];
+   const linkedCategories = categories.filter((cat) =>
+      linkedCategoryIds.includes(cat.id),
+   );
 
    return (
       <Card>
          <CardHeader>
             <CardTitle>Informações</CardTitle>
-            <CardDescription>Detalhes e configurações do orçamento</CardDescription>
+            <CardDescription>
+               Detalhes e configurações do orçamento
+            </CardDescription>
          </CardHeader>
          <CardContent>
             <div className="flex flex-wrap gap-2">
                <Announcement>
-                  <AnnouncementTag className="flex items-center gap-1.5">
-                     <Target className="size-3.5" />
-                     {translate(
-                        "dashboard.routes.budgets.details.information.target",
-                     )}
+                  <AnnouncementTag
+                     className="flex items-center gap-1.5"
+                     style={{
+                        backgroundColor: `${tagColor}20`,
+                        color: tagColor,
+                     }}
+                  >
+                     <Tag className="size-3.5" />
+                     Tag
                   </AnnouncementTag>
-                  <AnnouncementTitle>{targetLabel}</AnnouncementTitle>
+                  <AnnouncementTitle>{tagLabel}</AnnouncementTitle>
                </Announcement>
 
                <Announcement>
                   <AnnouncementTag className="flex items-center gap-1.5">
                      <Calendar className="size-3.5" />
-                     {translate(
-                        "dashboard.routes.budgets.details.information.period",
-                     )}
+                     Período
                   </AnnouncementTag>
                   <AnnouncementTitle>{periodLabel}</AnnouncementTitle>
                </Announcement>
+
+               {linkedCategories.length > 0 && (
+                  <Announcement>
+                     <AnnouncementTag className="flex items-center gap-1.5">
+                        <Layers className="size-3.5" />
+                        Categorias
+                     </AnnouncementTag>
+                     <AnnouncementTitle>
+                        <div className="flex flex-wrap gap-1">
+                           {linkedCategories.map((cat) => (
+                              <span
+                                 className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+                                 key={cat.id}
+                                 style={{
+                                    backgroundColor: `${cat.color}20`,
+                                    color: cat.color,
+                                 }}
+                              >
+                                 {cat.name}
+                              </span>
+                           ))}
+                        </div>
+                     </AnnouncementTitle>
+                  </Announcement>
+               )}
 
                <div className="h-4 w-px bg-border" />
 
                <Announcement>
                   <AnnouncementTag className="flex items-center gap-1.5">
                      <Clock className="size-3.5" />
-                     {translate(
-                        "dashboard.routes.budgets.details.information.created-at",
-                     )}
+                     Criado em
                   </AnnouncementTag>
                   <AnnouncementTitle>
                      {formatBudgetDate(budget.createdAt)}
@@ -102,9 +132,7 @@ export function BudgetInformationSection({
                <Announcement>
                   <AnnouncementTag className="flex items-center gap-1.5">
                      <FolderOpen className="size-3.5" />
-                     {translate(
-                        "dashboard.routes.budgets.details.information.updated-at",
-                     )}
+                     Atualizado em
                   </AnnouncementTag>
                   <AnnouncementTitle>
                      {formatBudgetDate(budget.updatedAt)}

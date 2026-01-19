@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import {
    Announcement,
@@ -66,11 +65,7 @@ function TransactionActionsCell({
                   </Link>
                </Button>
             </TooltipTrigger>
-            <TooltipContent>
-               {translate(
-                  "dashboard.routes.transactions.list-section.actions.view-details",
-               )}
-            </TooltipContent>
+            <TooltipContent>Ver detalhes</TooltipContent>
          </Tooltip>
       </div>
    );
@@ -158,9 +153,7 @@ export function createSimilarTransactionColumns(
             );
          },
          enableSorting: false,
-         header: translate(
-            "dashboard.routes.transactions.table.columns.description",
-         ),
+         header: "Descricao",
          maxSize: 180,
       },
       {
@@ -188,9 +181,7 @@ export function createSimilarTransactionColumns(
             );
          },
          enableSorting: false,
-         header: translate(
-            "dashboard.routes.transactions.table.columns.category",
-         ),
+         header: "Categoria",
          id: "category",
       },
       {
@@ -199,7 +190,7 @@ export function createSimilarTransactionColumns(
             return formatDate(new Date(row.getValue("date")), "DD MMM YYYY");
          },
          enableSorting: false,
-         header: translate("dashboard.routes.transactions.table.columns.date"),
+         header: "Data",
       },
       {
          accessorKey: "amount",
@@ -215,9 +206,7 @@ export function createSimilarTransactionColumns(
             );
          },
          enableSorting: false,
-         header: translate(
-            "dashboard.routes.transactions.table.columns.amount",
-         ),
+         header: "Valor",
       },
       {
          cell: ({ row }) => (
@@ -295,9 +284,7 @@ export function createTransactionColumns(
             );
          },
          enableSorting: false,
-         header: translate(
-            "dashboard.routes.transactions.table.columns.description",
-         ),
+         header: "Descricao",
 
          maxSize: 200,
       },
@@ -326,9 +313,7 @@ export function createTransactionColumns(
             );
          },
          enableSorting: false,
-         header: translate(
-            "dashboard.routes.transactions.table.columns.category",
-         ),
+         header: "Categoria",
          id: "category",
       },
       {
@@ -338,7 +323,7 @@ export function createTransactionColumns(
          },
          enableSorting: false,
 
-         header: translate("dashboard.routes.transactions.table.columns.date"),
+         header: "Data",
       },
       {
          accessorKey: "amount",
@@ -354,9 +339,7 @@ export function createTransactionColumns(
             );
          },
          enableSorting: true,
-         header: translate(
-            "dashboard.routes.transactions.table.columns.amount",
-         ),
+         header: "Valor",
       },
       {
          cell: ({ row }) => (

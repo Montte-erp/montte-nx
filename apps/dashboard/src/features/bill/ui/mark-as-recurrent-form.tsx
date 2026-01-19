@@ -1,5 +1,4 @@
 import type { BillWithRelations } from "@packages/database/repositories/bill-repository";
-import { translate } from "@packages/localization";
 import {
    Alert,
    AlertDescription,
@@ -76,30 +75,44 @@ export function MarkAsRecurrentForm({
    >(undefined);
 
    const frequencyLabels: Record<string, string> = {
-      annual: translate(
-         "dashboard.routes.bills.features.create-bill.recurrence.annual",
-      ),
-      monthly: translate(
-         "dashboard.routes.bills.features.create-bill.recurrence.monthly",
-      ),
-      quarterly: translate(
-         "dashboard.routes.bills.features.create-bill.recurrence.quarterly",
-      ),
-      semiannual: translate(
-         "dashboard.routes.bills.features.create-bill.recurrence.semiannual",
-      ),
+      annual: "Anual",
+      monthly: "Mensal",
+      quarterly: "Trimestral",
+      semiannual: "Semestral",
+   };
+
+   const frequencyOptionLabels: Record<
+      string,
+      { title: string; description: string }
+   > = {
+      monthly: { title: "Mensal", description: "Repete todo mês" },
+      quarterly: { title: "Trimestral", description: "Repete a cada 3 meses" },
+      semiannual: { title: "Semestral", description: "Repete a cada 6 meses" },
+      annual: { title: "Anual", description: "Repete todo ano" },
    };
 
    const occurrenceLabels: Record<string, string> = {
-      auto: translate(
-         "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.auto.title",
-      ),
-      count: translate(
-         "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.count.title",
-      ),
-      "until-date": translate(
-         "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.until-date.title",
-      ),
+      auto: "Automático",
+      count: "Número de vezes",
+      "until-date": "Até uma data",
+   };
+
+   const occurrenceOptionLabels: Record<
+      string,
+      { title: string; description: string }
+   > = {
+      auto: {
+         title: "Automático",
+         description: "Usa padrão baseado na frequência",
+      },
+      count: {
+         title: "Número de vezes",
+         description: "Define quantidade específica",
+      },
+      "until-date": {
+         title: "Até uma data",
+         description: "Repete até a data escolhida",
+      },
    };
 
    const createBillMutation = useMutation(
@@ -111,11 +124,7 @@ export function MarkAsRecurrentForm({
             queryClient.invalidateQueries({
                queryKey: trpc.bills.getAllPaginated.queryKey(),
             });
-            toast.success(
-               translate(
-                  "dashboard.routes.bills.features.mark-as-recurrent.success",
-               ),
-            );
+            toast.success("Recorrência criada com sucesso");
             onSuccess?.();
          },
       }),
@@ -163,15 +172,9 @@ export function MarkAsRecurrentForm({
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               {translate(
-                  "dashboard.routes.bills.features.mark-as-recurrent.title",
-               )}
-            </SheetTitle>
+            <SheetTitle>Tornar Recorrente</SheetTitle>
             <SheetDescription>
-               {translate(
-                  "dashboard.routes.bills.features.mark-as-recurrent.description",
-               )}
+               Configure a recorrência para criar contas automaticamente
             </SheetDescription>
          </SheetHeader>
 
@@ -201,18 +204,12 @@ export function MarkAsRecurrentForm({
                            )}
                         </div>
                         <div className="text-left">
-                           <div className="font-medium">
-                              {translate(
-                                 "dashboard.routes.bills.features.create-bill.recurrence-step.frequency.title",
-                              )}
-                           </div>
+                           <div className="font-medium">Frequência</div>
                            <div className="text-sm text-muted-foreground">
                               {recurrencePattern &&
                               activeSection !== "frequency"
                                  ? frequencyLabels[recurrencePattern]
-                                 : translate(
-                                      "dashboard.routes.bills.features.create-bill.recurrence-step.frequency.description",
-                                   )}
+                                 : "Escolha com que frequência a conta se repete"}
                            </div>
                         </div>
                      </div>
@@ -239,14 +236,13 @@ export function MarkAsRecurrentForm({
                               >
                                  <ChoiceboxItemHeader>
                                     <ChoiceboxItemTitle>
-                                       {translate(
-                                          `dashboard.routes.bills.features.create-bill.recurrence-step.frequency.options.${option}.title`,
-                                       )}
+                                       {frequencyOptionLabels[option]?.title}
                                     </ChoiceboxItemTitle>
                                     <ChoiceboxItemDescription>
-                                       {translate(
-                                          `dashboard.routes.bills.features.create-bill.recurrence-step.frequency.options.${option}.description`,
-                                       )}
+                                       {
+                                          frequencyOptionLabels[option]
+                                             ?.description
+                                       }
                                     </ChoiceboxItemDescription>
                                  </ChoiceboxItemHeader>
                                  <ChoiceboxIndicator id={`freq-${option}`} />
@@ -290,11 +286,7 @@ export function MarkAsRecurrentForm({
                            )}
                         </div>
                         <div className="text-left">
-                           <div className="font-medium">
-                              {translate(
-                                 "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.title",
-                              )}
-                           </div>
+                           <div className="font-medium">Quantidade</div>
                            <div className="text-sm text-muted-foreground">
                               {occurrenceType &&
                               activeSection !== "occurrence" ? (
@@ -307,9 +299,7 @@ export function MarkAsRecurrentForm({
                                        ` (${occurrenceUntilDate.toLocaleDateString("pt-BR")})`}
                                  </>
                               ) : (
-                                 translate(
-                                    "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.description",
-                                 )
+                                 "Defina quantas vezes a conta será criada"
                               )}
                            </div>
                         </div>
@@ -340,14 +330,13 @@ export function MarkAsRecurrentForm({
                               >
                                  <ChoiceboxItemHeader>
                                     <ChoiceboxItemTitle>
-                                       {translate(
-                                          `dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.${option}.title`,
-                                       )}
+                                       {occurrenceOptionLabels[option]?.title}
                                     </ChoiceboxItemTitle>
                                     <ChoiceboxItemDescription>
-                                       {translate(
-                                          `dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.${option}.description`,
-                                       )}
+                                       {
+                                          occurrenceOptionLabels[option]
+                                             ?.description
+                                       }
                                     </ChoiceboxItemDescription>
                                  </ChoiceboxItemHeader>
                                  <ChoiceboxIndicator id={`occ-${option}`} />
@@ -357,11 +346,7 @@ export function MarkAsRecurrentForm({
 
                         {occurrenceType === "count" && (
                            <div className="space-y-2">
-                              <Label>
-                                 {translate(
-                                    "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.count.input-label",
-                                 )}
-                              </Label>
+                              <Label>Quantidade de repetições</Label>
                               <Input
                                  max={365}
                                  min={1}
@@ -399,7 +384,7 @@ export function MarkAsRecurrentForm({
                                  size="sm"
                                  type="button"
                               >
-                                 {translate("common.actions.confirm")}
+                                 Confirmar
                               </Button>
                            </div>
                         )}
@@ -428,28 +413,17 @@ export function MarkAsRecurrentForm({
                   activeSection === "review" && (
                      <Alert>
                         <CalendarCheck className="h-4 w-4" />
-                        <AlertTitle>
-                           {translate(
-                              "dashboard.routes.bills.features.create-bill.recurrence-step.preview.title",
-                           )}
-                        </AlertTitle>
+                        <AlertTitle>Resumo</AlertTitle>
                         <AlertDescription>
-                           {translate(
-                              "dashboard.routes.bills.features.create-bill.recurrence-step.preview.message",
-                              {
-                                 frequency: frequencyLabels[recurrencePattern],
-                                 type:
-                                    occurrenceType === "auto"
-                                       ? translate(
-                                            "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.auto.title",
-                                         )
-                                       : occurrenceType === "count"
-                                         ? `${occurrenceCount}x`
-                                         : occurrenceUntilDate?.toLocaleDateString(
-                                              "pt-BR",
-                                           ) || "",
-                              },
-                           )}
+                           {`${frequencyLabels[recurrencePattern]} - ${
+                              occurrenceType === "auto"
+                                 ? "Automático"
+                                 : occurrenceType === "count"
+                                   ? `${occurrenceCount}x`
+                                   : occurrenceUntilDate?.toLocaleDateString(
+                                        "pt-BR",
+                                     ) || ""
+                           }`}
                         </AlertDescription>
                      </Alert>
                   )}
@@ -463,10 +437,8 @@ export function MarkAsRecurrentForm({
                onClick={handleSubmit}
             >
                {createBillMutation.isPending
-                  ? translate("common.actions.loading")
-                  : translate(
-                       "dashboard.routes.bills.features.mark-as-recurrent.submit",
-                    )}
+                  ? "Carregando..."
+                  : "Criar Recorrência"}
             </Button>
          </SheetFooter>
       </>

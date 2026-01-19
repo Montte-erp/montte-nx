@@ -1,5 +1,4 @@
 import type { BillWithRelations } from "@packages/database/repositories/bill-repository";
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Combobox } from "@packages/ui/components/combobox";
@@ -9,7 +8,6 @@ import {
    FieldGroup,
    FieldLabel,
 } from "@packages/ui/components/field";
-import { MultiSelect } from "@packages/ui/components/multi-select";
 import {
    SheetDescription,
    SheetFooter,
@@ -18,11 +16,13 @@ import {
 } from "@packages/ui/components/sheet";
 import { getRandomColor } from "@packages/utils/colors";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Tag, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { CostCenterCombobox } from "@/features/cost-center/ui/cost-center-combobox";
 import type { IconName } from "@/features/icon-selector/lib/available-icons";
 import { IconDisplay } from "@/features/icon-selector/ui/icon-display";
+import { TagMultiSelect } from "@/features/tag/ui/tag-multi-select";
 import { useTRPC } from "@/integrations/clients";
 
 type Bill = BillWithRelations;
@@ -87,12 +87,7 @@ export function ChangeBillCategoryForm({
    const updateBillMutation = useMutation(
       trpc.bills.update.mutationOptions({
          onError: (error) => {
-            toast.error(
-               error.message ||
-                  translate(
-                     "dashboard.routes.bills.features.change-category.error",
-                  ),
-            );
+            toast.error(error.message || "Erro ao atualizar categorização");
          },
          onSuccess: () => {
             queryClient.invalidateQueries({
@@ -104,11 +99,7 @@ export function ChangeBillCategoryForm({
             queryClient.invalidateQueries({
                queryKey: trpc.bills.getBillTags.queryKey({ billId: bill.id }),
             });
-            toast.success(
-               translate(
-                  "dashboard.routes.bills.features.change-category.success",
-               ),
-            );
+            toast.success("Categorização atualizada com sucesso");
             onSuccess?.();
          },
       }),
@@ -225,20 +216,6 @@ export function ChangeBillCategoryForm({
       value: category.id,
    }));
 
-   const tagOptions = tags.map((tag) => ({
-      icon: <Tag className="size-4" style={{ color: tag.color }} />,
-      label: tag.name,
-      value: tag.id,
-   }));
-
-   const costCenterOptions = [
-      { label: translate("common.form.none"), value: "" },
-      ...costCenters.map((cc) => ({
-         label: cc.code ? `${cc.name} (${cc.code})` : cc.name,
-         value: cc.id,
-      })),
-   ];
-
    const isLoading = updateBillMutation.isPending;
    const isCreating =
       createCategoryMutation.isPending ||
@@ -248,15 +225,9 @@ export function ChangeBillCategoryForm({
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               {translate(
-                  "dashboard.routes.bills.features.change-category.title",
-               )}
-            </SheetTitle>
+            <SheetTitle>Categorizar Conta</SheetTitle>
             <SheetDescription>
-               {translate(
-                  "dashboard.routes.bills.features.change-category.description",
-               )}
+               Associe categoria, tags e centro de custo a esta conta
             </SheetDescription>
          </SheetHeader>
 
@@ -264,40 +235,31 @@ export function ChangeBillCategoryForm({
             <div className="space-y-4 py-4">
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        {translate("common.form.category.label")}
-                     </FieldLabel>
+                     <FieldLabel>Categoria</FieldLabel>
                      <Combobox
                         className="w-full justify-between"
-                        createLabel={translate("common.form.category.create")}
+                        createLabel="Criar categoria"
                         disabled={isLoading || isCreating}
-                        emptyMessage={translate(
-                           "common.form.search.no-results",
-                        )}
+                        emptyMessage="Nenhum resultado encontrado"
                         onCreate={handleCreateCategory}
                         onValueChange={(value) =>
                            setSelectedCategoryId(value || "")
                         }
                         options={categoryOptions}
-                        placeholder={translate(
-                           "common.form.category.placeholder",
-                        )}
-                        searchPlaceholder={translate(
-                           "common.form.search.label",
-                        )}
+                        placeholder="Selecione uma categoria"
+                        searchPlaceholder="Pesquisar"
                         value={selectedCategoryId}
                      />
                      <FieldDescription>
-                        {translate("common.form.category.description")}
+                        Agrupe suas transações por tipo de gasto ou receita para
+                        análises detalhadas
                      </FieldDescription>
                   </Field>
                </FieldGroup>
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        {translate("common.form.tags.label")}
-                     </FieldLabel>
+                     <FieldLabel>Tags</FieldLabel>
                      {selectedTagIds.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mb-2">
                            {selectedTagIds.map((tagId) => {
@@ -326,53 +288,37 @@ export function ChangeBillCategoryForm({
                            })}
                         </div>
                      )}
-                     <MultiSelect
+                     <TagMultiSelect
                         className="flex-1"
-                        createLabel={translate("common.form.tags.create")}
-                        emptyMessage={translate(
-                           "common.form.search.no-results",
-                        )}
                         onChange={(val) => setSelectedTagIds(val)}
                         onCreate={handleCreateTag}
-                        options={tagOptions}
-                        placeholder={translate("common.form.tags.placeholder")}
+                        placeholder="Selecione as tags"
                         selected={selectedTagIds}
+                        tags={tags}
                      />
                      <FieldDescription>
-                        {translate("common.form.tags.description")}
+                        Adicione marcadores personalizados para filtrar e
+                        organizar suas transações
                      </FieldDescription>
                   </Field>
                </FieldGroup>
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        {translate("common.form.cost-center.label")}
-                     </FieldLabel>
-                     <Combobox
+                     <FieldLabel>Centro de Custo</FieldLabel>
+                     <CostCenterCombobox
                         className="w-full justify-between"
-                        createLabel={translate(
-                           "common.form.cost-center.create",
-                        )}
+                        costCenters={costCenters}
                         disabled={isLoading || isCreating}
-                        emptyMessage={translate(
-                           "common.form.search.no-results",
-                        )}
                         onCreate={handleCreateCostCenter}
                         onValueChange={(value) =>
                            setSelectedCostCenterId(value || "")
                         }
-                        options={costCenterOptions}
-                        placeholder={translate(
-                           "common.form.cost-center.placeholder",
-                        )}
-                        searchPlaceholder={translate(
-                           "common.form.search.label",
-                        )}
                         value={selectedCostCenterId}
                      />
                      <FieldDescription>
-                        {translate("common.form.cost-center.description")}
+                        Associe a departamentos, projetos ou áreas para controle
+                        orçamentário
                      </FieldDescription>
                   </Field>
                </FieldGroup>
@@ -385,9 +331,7 @@ export function ChangeBillCategoryForm({
                disabled={isLoading || isCreating}
                onClick={handleSubmit}
             >
-               {isLoading
-                  ? translate("common.actions.loading")
-                  : translate("common.actions.save")}
+               {isLoading ? "Carregando..." : "Salvar"}
             </Button>
          </SheetFooter>
       </>

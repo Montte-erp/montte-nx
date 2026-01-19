@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Command,
@@ -73,7 +72,7 @@ export function IconSelector({
                   </>
                ) : (
                   <span className="text-muted-foreground">
-                     {translate("common.form.icon.placeholder")}
+                     Selecione um icone
                   </span>
                )}
             </Button>
@@ -82,11 +81,13 @@ export function IconSelector({
             <Command>
                <CommandInput
                   onValueChange={setSearch}
-                  placeholder="Search icons..."
+                  placeholder="Pesquisar ícones..."
                   value={search}
                />
                <CommandList className="">
-                  {!hasResults && <CommandEmpty>No icon found.</CommandEmpty>}
+                  {!hasResults && (
+                     <CommandEmpty>Nenhum ícone encontrado.</CommandEmpty>
+                  )}
                   {Object.entries(filteredCategories).map(
                      ([category, icons]) => (
                         <CommandGroup heading={category} key={category}>

@@ -1,5 +1,4 @@
 import type { BillWithRelations } from "@packages/database/repositories/bill-repository";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { DatePicker } from "@packages/ui/components/date-picker";
 import {
@@ -64,12 +63,7 @@ function CompleteBillSheetContent({
    const completeBillMutation = useMutation(
       trpc.bills.complete.mutationOptions({
          onError: (error) => {
-            toast.error(
-               error.message ||
-                  translate(
-                     "dashboard.routes.bills.features.complete-bill.error",
-                  ),
-            );
+            toast.error(error.message || "Erro ao completar conta");
          },
          onSuccess: () => {
             queryClient.invalidateQueries({
@@ -79,11 +73,9 @@ function CompleteBillSheetContent({
                queryKey: trpc.bills.getAllPaginated.queryKey(),
             });
             toast.success(
-               translate(
-                  isExpense
-                     ? "dashboard.routes.bills.features.complete-bill.success-payment"
-                     : "dashboard.routes.bills.features.complete-bill.success-receipt",
-               ),
+               isExpense
+                  ? "Pagamento registrado com sucesso"
+                  : "Recebimento registrado com sucesso",
             );
             onClose();
          },
@@ -108,18 +100,12 @@ function CompleteBillSheetContent({
       <div className="flex flex-col h-full">
          <SheetHeader>
             <SheetTitle>
-               {translate(
-                  isExpense
-                     ? "dashboard.routes.bills.features.complete-bill.title-expense"
-                     : "dashboard.routes.bills.features.complete-bill.title-income",
-               )}
+               {isExpense ? "Registrar Pagamento" : "Registrar Recebimento"}
             </SheetTitle>
             <SheetDescription>
-               {translate(
-                  isExpense
-                     ? "dashboard.routes.bills.features.complete-bill.description-expense"
-                     : "dashboard.routes.bills.features.complete-bill.description-income",
-               )}
+               {isExpense
+                  ? "Confirme os detalhes do pagamento desta conta"
+                  : "Confirme os detalhes do recebimento desta conta"}
             </SheetDescription>
          </SheetHeader>
 
@@ -127,16 +113,12 @@ function CompleteBillSheetContent({
             {/* Bill Summary Card */}
             <div className="p-4 bg-muted/50 rounded-lg space-y-3">
                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  {translate(
-                     "dashboard.routes.bills.features.complete-bill.summary",
-                  )}
+                  Resumo
                </p>
                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                      <span className="text-sm text-muted-foreground">
-                        {translate(
-                           "dashboard.routes.bills.table.columns.description",
-                        )}
+                        Descrição
                      </span>
                      <span className="font-medium text-sm truncate max-w-[200px]">
                         {bill.description}
@@ -145,9 +127,7 @@ function CompleteBillSheetContent({
                   <Separator />
                   <div className="flex items-center justify-between">
                      <span className="text-sm text-muted-foreground">
-                        {translate(
-                           "dashboard.routes.bills.table.columns.dueDate",
-                        )}
+                        Vencimento
                      </span>
                      <span className="text-sm">
                         {formatDate(new Date(bill.dueDate), "DD/MM/YYYY")}
@@ -156,9 +136,7 @@ function CompleteBillSheetContent({
                   <Separator />
                   <div className="flex items-center justify-between">
                      <span className="text-sm text-muted-foreground">
-                        {translate(
-                           "dashboard.routes.bills.table.columns.amount",
-                        )}
+                        Valor
                      </span>
                      <AmountAnnouncement
                         amount={Number(bill.amount)}
@@ -170,9 +148,7 @@ function CompleteBillSheetContent({
                         <Separator />
                         <div className="flex items-center justify-between">
                            <span className="text-sm text-muted-foreground">
-                              {translate(
-                                 "dashboard.routes.bills.features.create-bill.fields.category",
-                              )}
+                              Categoria
                            </span>
                            <CategoryAnnouncement
                               category={{
@@ -192,11 +168,9 @@ function CompleteBillSheetContent({
                <FieldGroup>
                   <Field>
                      <FieldLabel>
-                        {translate(
-                           isExpense
-                              ? "dashboard.routes.bills.features.complete-bill.completion-date-expense"
-                              : "dashboard.routes.bills.features.complete-bill.completion-date-income",
-                        )}
+                        {isExpense
+                           ? "Data do Pagamento"
+                           : "Data do Recebimento"}
                      </FieldLabel>
                      <DatePicker
                         className="w-full"
@@ -210,21 +184,13 @@ function CompleteBillSheetContent({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        {translate(
-                           "dashboard.routes.bills.features.complete-bill.bank-account",
-                        )}
-                     </FieldLabel>
+                     <FieldLabel>Conta Bancária (Opcional)</FieldLabel>
                      <Select
                         onValueChange={setBankAccountId}
                         value={bankAccountId}
                      >
                         <SelectTrigger>
-                           <SelectValue
-                              placeholder={translate(
-                                 "dashboard.routes.bills.features.create-bill.placeholders.bankAccount",
-                              )}
-                           />
+                           <SelectValue placeholder="Selecione uma conta bancária" />
                         </SelectTrigger>
                         <SelectContent>
                            {bankAccounts.map((account) => (
@@ -235,9 +201,8 @@ function CompleteBillSheetContent({
                         </SelectContent>
                      </Select>
                      <FieldDescription>
-                        {translate(
-                           "dashboard.routes.bills.features.complete-bill.bank-account-description",
-                        )}
+                        Selecione a conta bancária usada para este{" "}
+                        {isExpense ? "pagamento" : "recebimento"}
                      </FieldDescription>
                   </Field>
                </FieldGroup>
@@ -256,12 +221,10 @@ function CompleteBillSheetContent({
                   <Check className="size-4" />
                )}
                {completeBillMutation.isPending
-                  ? translate("common.actions.loading")
-                  : translate(
-                       isExpense
-                          ? "dashboard.routes.bills.features.complete-bill.confirm-payment"
-                          : "dashboard.routes.bills.features.complete-bill.confirm-receipt",
-                    )}
+                  ? "Carregando..."
+                  : isExpense
+                    ? "Confirmar Pagamento"
+                    : "Confirmar Recebimento"}
             </Button>
          </SheetFooter>
       </div>

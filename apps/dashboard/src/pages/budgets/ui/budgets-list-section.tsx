@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import { Button } from "@packages/ui/components/button";
 import { Card, CardContent } from "@packages/ui/components/card";
@@ -58,13 +57,10 @@ function BudgetsListErrorFallback(props: FallbackProps) {
       <Card>
          <CardContent className="pt-6">
             {createErrorFallback({
-               errorDescription: translate(
-                  "dashboard.routes.budgets.list-section.state.error.description",
-               ),
-               errorTitle: translate(
-                  "dashboard.routes.budgets.list-section.state.error.title",
-               ),
-               retryText: translate("common.actions.retry"),
+               errorDescription:
+                  "Não foi possível carregar os orçamentos. Tente novamente.",
+               errorTitle: "Erro ao carregar orçamentos",
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>
@@ -200,9 +196,7 @@ function BudgetsListContent() {
                   <InputGroup className="flex-1 sm:max-w-md">
                      <InputGroupInput
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder={translate(
-                           "common.form.search.placeholder",
-                        )}
+                        placeholder="Digite para pesquisar"
                         value={searchTerm}
                      />
                      <InputGroupAddon>
@@ -252,10 +246,7 @@ function BudgetsListContent() {
                   <div className="flex flex-wrap items-center gap-3">
                      <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.budgets.filters.status",
-                           )}
-                           :
+                           Status:
                         </span>
                         <ToggleGroup
                            onValueChange={setStatusFilter}
@@ -270,18 +261,14 @@ function BudgetsListContent() {
                               value="active"
                            >
                               <CheckCircle className="size-3.5" />
-                              {translate(
-                                 "dashboard.routes.budgets.status.active",
-                              )}
+                              Ativo
                            </ToggleGroupItem>
                            <ToggleGroupItem
                               className="gap-1.5 data-[state=on]:bg-transparent data-[state=on]:border-muted-foreground data-[state=on]:text-muted-foreground"
                               value="inactive"
                            >
                               <CircleDashed className="size-3.5" />
-                              {translate(
-                                 "dashboard.routes.budgets.status.inactive",
-                              )}
+                              Inativo
                            </ToggleGroupItem>
                         </ToggleGroup>
                      </div>
@@ -296,7 +283,7 @@ function BudgetsListContent() {
                               variant="outline"
                            >
                               <X className="size-3" />
-                              {translate("common.actions.clear-filters")}
+                              Limpar filtros
                            </Button>
                         </>
                      )}
@@ -309,15 +296,10 @@ function BudgetsListContent() {
                         <EmptyMedia variant="icon">
                            <Inbox className="size-12 text-muted-foreground" />
                         </EmptyMedia>
-                        <EmptyTitle>
-                           {translate(
-                              "dashboard.routes.budgets.list-section.state.empty.title",
-                           )}
-                        </EmptyTitle>
+                        <EmptyTitle>Nenhum orçamento encontrado</EmptyTitle>
                         <EmptyDescription>
-                           {translate(
-                              "dashboard.routes.budgets.list-section.state.empty.description",
-                           )}
+                           Crie seu primeiro orçamento para começar a controlar
+                           seus gastos
                         </EmptyDescription>
                      </EmptyContent>
                   </Empty>
@@ -358,74 +340,53 @@ function BudgetsListContent() {
                icon={<Check className="size-3.5" />}
                onClick={() =>
                   openAlertDialog({
-                     actionLabel: translate(
-                        "dashboard.routes.budgets.bulk-actions.confirm",
-                     ),
-                     description: translate(
-                        "dashboard.routes.budgets.bulk-actions.activate-confirm-description",
-                        { count: selectedIds.length },
-                     ),
+                     actionLabel: "Confirmar",
+                     description:
+                        "Os orçamentos selecionados serão ativados e passarão a ser considerados no controle de gastos.",
                      onAction: async () => {
                         await markAsActive(selectedIds);
                      },
-                     title: translate(
-                        "dashboard.routes.budgets.bulk-actions.activate-confirm-title",
-                        { count: selectedIds.length },
-                     ),
+                     title: `Ativar ${selectedIds.length} orçamentos`,
                   })
                }
             >
-               {translate("dashboard.routes.budgets.bulk-actions.activate")}
+               Ativar
             </SelectionActionButton>
             <SelectionActionButton
                disabled={isLoading}
                icon={<X className="size-3.5" />}
                onClick={() =>
                   openAlertDialog({
-                     actionLabel: translate(
-                        "dashboard.routes.budgets.bulk-actions.confirm",
-                     ),
-                     description: translate(
-                        "dashboard.routes.budgets.bulk-actions.deactivate-confirm-description",
-                        { count: selectedIds.length },
-                     ),
+                     actionLabel: "Confirmar",
+                     description:
+                        "Os orçamentos selecionados serão desativados e não serão mais considerados no controle de gastos.",
                      onAction: async () => {
                         await markAsInactive(selectedIds);
                      },
-                     title: translate(
-                        "dashboard.routes.budgets.bulk-actions.deactivate-confirm-title",
-                        { count: selectedIds.length },
-                     ),
+                     title: `Desativar ${selectedIds.length} orçamentos`,
                   })
                }
             >
-               {translate("dashboard.routes.budgets.bulk-actions.deactivate")}
+               Desativar
             </SelectionActionButton>
             <SelectionActionButton
                disabled={isLoading}
                icon={<Trash2 className="size-3.5" />}
                onClick={() =>
                   openAlertDialog({
-                     actionLabel: translate(
-                        "dashboard.routes.budgets.bulk-actions.delete",
-                     ),
-                     description: translate(
-                        "dashboard.routes.budgets.bulk-actions.delete-confirm-description",
-                        { count: selectedIds.length },
-                     ),
+                     actionLabel: "Excluir",
+                     description:
+                        "Os orçamentos selecionados serão excluídos permanentemente. Esta ação não pode ser desfeita.",
                      onAction: async () => {
                         await deleteSelected(selectedIds);
                      },
-                     title: translate(
-                        "dashboard.routes.budgets.bulk-actions.delete-confirm-title",
-                        { count: selectedIds.length },
-                     ),
+                     title: `Excluir ${selectedIds.length} orçamentos`,
                      variant: "destructive",
                   })
                }
                variant="destructive"
             >
-               {translate("dashboard.routes.budgets.bulk-actions.delete")}
+               Excluir
             </SelectionActionButton>
          </SelectionActionBar>
       </>

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    CredenzaBody,
@@ -44,30 +43,30 @@ export function BudgetFilterCredenza({
 
    const orderByOptions = [
       {
-         label: translate("common.form.name.label"),
+         label: "Nome",
          value: "name" as const,
       },
       {
-         label: translate("dashboard.routes.budgets.form.amount.label"),
+         label: "Valor limite",
          value: "amount" as const,
       },
       {
-         label: translate("common.form.created-at.label"),
+         label: "Data de Criação",
          value: "createdAt" as const,
       },
       {
-         label: translate("common.form.updated-at.label"),
+         label: "Data de Atualização",
          value: "updatedAt" as const,
       },
    ];
 
    const orderDirectionOptions = [
       {
-         label: translate("common.form.sort-ascending.label"),
+         label: "Crescente",
          value: "asc" as const,
       },
       {
-         label: translate("common.form.sort-descending.label"),
+         label: "Decrescente",
          value: "desc" as const,
       },
    ];
@@ -87,13 +86,9 @@ export function BudgetFilterCredenza({
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               {translate("dashboard.routes.budgets.features.filter.title")}
-            </CredenzaTitle>
+            <CredenzaTitle>Filtrar orçamentos</CredenzaTitle>
             <CredenzaDescription>
-               {translate(
-                  "dashboard.routes.budgets.features.filter.description",
-               )}
+               Filtre os orçamentos por diferentes critérios
             </CredenzaDescription>
          </CredenzaHeader>
          <CredenzaBody>
@@ -105,16 +100,14 @@ export function BudgetFilterCredenza({
                         onClick={clearFilters}
                      >
                         <X className="size-4" />
-                        {translate("common.actions.clear-filters")}
+                        Limpar filtros
                      </Button>
                   </div>
                )}
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        {translate("common.form.sort-by.label")}
-                     </FieldLabel>
+                     <FieldLabel>Ordenar por</FieldLabel>
                      <Select
                         onValueChange={(
                            value: "name" | "createdAt" | "updatedAt" | "amount",
@@ -122,11 +115,7 @@ export function BudgetFilterCredenza({
                         value={orderBy}
                      >
                         <SelectTrigger>
-                           <SelectValue
-                              placeholder={translate(
-                                 "common.form.sort-by.placeholder",
-                              )}
-                           />
+                           <SelectValue placeholder="Selecione o campo" />
                         </SelectTrigger>
                         <SelectContent>
                            {orderByOptions.map((option) => (
@@ -144,9 +133,7 @@ export function BudgetFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        {translate("common.form.order-direction.label")}
-                     </FieldLabel>
+                     <FieldLabel>Direção da Ordenação</FieldLabel>
                      <Select
                         onValueChange={(value: "asc" | "desc") =>
                            onOrderDirectionChange(value)
@@ -154,11 +141,7 @@ export function BudgetFilterCredenza({
                         value={orderDirection}
                      >
                         <SelectTrigger>
-                           <SelectValue
-                              placeholder={translate(
-                                 "common.form.order-direction.placeholder",
-                              )}
-                           />
+                           <SelectValue placeholder="Selecione a direção" />
                         </SelectTrigger>
                         <SelectContent>
                            {orderDirectionOptions.map((option) => (
@@ -176,11 +159,7 @@ export function BudgetFilterCredenza({
 
                <FieldGroup>
                   <Field>
-                     <FieldLabel>
-                        {translate(
-                           "dashboard.routes.transactions.features.filter.page-size.label",
-                        )}
-                     </FieldLabel>
+                     <FieldLabel>Itens por Página</FieldLabel>
                      <Select
                         onValueChange={(value) =>
                            onPageSizeChange?.(Number(value))

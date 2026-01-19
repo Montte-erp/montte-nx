@@ -16,6 +16,7 @@
       "@packages/database": "workspace:*",
       "@packages/pdf": "workspace:*",
       "@packages/queue": "workspace:*",
+      "@packages/utils": "workspace:*",
       "zod": "catalog:validation"
    },
    "devDependencies": {
@@ -23,6 +24,10 @@
       "typescript": "catalog:development"
    },
    "exports": {
+      "./budget-events": {
+         "default": "./src/budget-events.ts",
+         "types": "./dist/src/budget-events.d.ts"
+      },
       "./actions/handlers/*": {
          "default": "./src/actions/handlers/*.ts",
          "types": "./dist/src/actions/handlers/*.d.ts"

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Empty,
@@ -98,23 +97,8 @@ function BudgetContent() {
       return null;
    }
 
-   const target = budget.target as
-      | { type: "category"; categoryId: string }
-      | { type: "categories"; categoryIds: string[] }
-      | { type: "tag"; tagId: string }
-      | { type: "cost_center"; costCenterId: string };
-
-   const defaultCategoryIds =
-      target.type === "category"
-         ? [target.categoryId]
-         : target.type === "categories"
-           ? target.categoryIds
-           : [];
-
-   const defaultTagIds = target.type === "tag" ? [target.tagId] : [];
-
-   const defaultCostCenterId =
-      target.type === "cost_center" ? target.costCenterId : "";
+   // Use the budget's tagId for default tag
+   const defaultTagIds = [budget.tagId];
 
    return (
       <main className="space-y-6">
@@ -125,8 +109,6 @@ function BudgetContent() {
                      openSheet({
                         children: (
                            <ManageTransactionForm
-                              defaultCategoryIds={defaultCategoryIds}
-                              defaultCostCenterId={defaultCostCenterId}
                               defaultTagIds={defaultTagIds}
                            />
                         ),
@@ -134,14 +116,10 @@ function BudgetContent() {
                   }
                >
                   <Plus className="size-4" />
-                  {translate(
-                     "dashboard.routes.transactions.features.add-new.title",
-                  )}
+                  Adicionar Nova Transação
                </Button>
             }
-            description={translate(
-               "dashboard.routes.budgets.details.page.description",
-            )}
+            description="Acompanhe o progresso e detalhes deste orçamento"
             title={budget.name}
          />
 
@@ -237,9 +215,7 @@ function BudgetPageError({ error, resetErrorBoundary }: FallbackProps) {
                   <EmptyMedia variant="icon">
                      <FileText className="size-12 text-destructive" />
                   </EmptyMedia>
-                  <EmptyTitle>
-                     {translate("dashboard.routes.budgets.details.error.title")}
-                  </EmptyTitle>
+                  <EmptyTitle>Erro ao carregar orçamento</EmptyTitle>
                   <EmptyDescription>{error?.message}</EmptyDescription>
                   <div className="mt-6 flex gap-2 justify-center">
                      <Button
@@ -253,16 +229,14 @@ function BudgetPageError({ error, resetErrorBoundary }: FallbackProps) {
                         variant="outline"
                      >
                         <Home className="size-4 mr-2" />
-                        {translate(
-                           "dashboard.routes.budgets.details.error.back",
-                        )}
+                        Voltar para Orçamentos
                      </Button>
                      <Button
                         onClick={resetErrorBoundary}
                         size="default"
                         variant="default"
                      >
-                        {translate("common.actions.retry")}
+                        Tentar novamente
                      </Button>
                   </div>
                </EmptyContent>

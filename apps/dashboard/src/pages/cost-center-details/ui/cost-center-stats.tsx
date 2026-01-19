@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Card,
    CardContent,
@@ -92,33 +91,21 @@ function CostCenterStatsContent({
    return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
          <StatsCard
-            description={translate(
-               "dashboard.routes.transactions.stats-section.total.description",
-            )}
-            title={translate(
-               "dashboard.routes.transactions.stats-section.total.title",
-            )}
+            description="Veja o total acumulado de todas as suas transações."
+            title="Total de Transações"
             value={data.pagination.totalCount}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.transactions.stats-section.income.description",
-            )}
-            title={translate(
-               "dashboard.routes.transactions.stats-section.income.title",
-            )}
+            description="Veja o total acumulado de todas as suas receitas."
+            title="Total de Receitas"
             value={new Intl.NumberFormat("pt-BR", {
                currency: "BRL",
                style: "currency",
             }).format(income)}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.transactions.stats-section.expense.description",
-            )}
-            title={translate(
-               "dashboard.routes.transactions.stats-section.expense.title",
-            )}
+            description="Veja o total acumulado de todas as suas despesas."
+            title="Total de Despesas"
             value={new Intl.NumberFormat("pt-BR", {
                currency: "BRL",
                style: "currency",

@@ -1,5 +1,4 @@
 import type { Tag } from "@packages/database/repositories/tag-repository";
-import { translate } from "@packages/localization";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -18,10 +17,10 @@ export function useDeleteTag({
    const deleteTagMutation = useMutation(
       trpc.tags.delete.mutationOptions({
          onError: (error) => {
-            toast.error(error.message || "Failed to delete tag");
+            toast.error(error.message || "Falha ao excluir tag");
          },
          onSuccess: () => {
-            toast.success("Tag deleted successfully");
+            toast.success("Tag excluída com sucesso");
             onSuccess?.();
          },
       }),
@@ -29,17 +28,14 @@ export function useDeleteTag({
 
    const deleteTag = () => {
       openAlertDialog({
-         actionLabel: translate(
-            "dashboard.routes.tags.list-section.actions.delete-tag",
-         ),
-         cancelLabel: translate("common.actions.cancel"),
-         description: translate(
-            "common.headers.delete-confirmation.description",
-         ),
+         actionLabel: "Excluir tag",
+         cancelLabel: "Cancelar",
+         description:
+            "Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.",
          onAction: async () => {
             await deleteTagMutation.mutateAsync({ id: tag.id });
          },
-         title: translate("common.headers.delete-confirmation.title"),
+         title: "Confirmar Exclusão",
          variant: "destructive",
       });
    };

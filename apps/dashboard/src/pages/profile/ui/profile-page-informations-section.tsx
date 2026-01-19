@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Avatar,
    AvatarFallback,
@@ -23,22 +22,17 @@ function ProfileInformationErrorFallback(props: FallbackProps) {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               {translate("dashboard.routes.profile.information.title")}
-            </CardTitle>
+            <CardTitle>Informações do perfil</CardTitle>
             <CardDescription>
-               {translate("dashboard.routes.profile.information.description")}
+               Atualize suas informações pessoais e de conta.
             </CardDescription>
          </CardHeader>
          <CardContent>
             {createErrorFallback({
-               errorDescription: translate(
-                  "dashboard.routes.profile.information.state.error.description",
-               ),
-               errorTitle: translate(
-                  "dashboard.routes.profile.information.state.error.title",
-               ),
-               retryText: translate("common.actions.retry"),
+               errorDescription:
+                  "Ocorreu um erro ao carregar suas informações de perfil.",
+               errorTitle: "Erro ao carregar",
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>
@@ -76,11 +70,9 @@ function ProfileInformationContent() {
    return (
       <Card className="w-full h-full">
          <CardHeader>
-            <CardTitle>
-               {translate("dashboard.routes.profile.information.title")}
-            </CardTitle>
+            <CardTitle>Informações do perfil</CardTitle>
             <CardDescription>
-               {translate("dashboard.routes.profile.information.description")}
+               Atualize suas informações pessoais e de conta.
             </CardDescription>
          </CardHeader>
          <CardContent className="grid place-items-center gap-4">

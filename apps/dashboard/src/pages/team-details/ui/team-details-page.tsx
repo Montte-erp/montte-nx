@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -14,6 +13,7 @@ import { useParams, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, Users } from "lucide-react";
 import { Suspense } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { useDetailTabName } from "@/features/custom-dashboard/hooks/use-detail-tab-name";
 import { TeamExpenseSplitsCard } from "@/features/expense-split/ui/team-expense-splits-card";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useTRPC } from "@/integrations/clients";
@@ -31,6 +31,8 @@ function TeamDetailsContent() {
    const { data: team } = useSuspenseQuery(
       trpc.organizationTeams.getTeamById.queryOptions({ teamId }),
    );
+
+   useDetailTabName(team?.name);
 
    const handleDeleteSuccess = () => {
       router.navigate({
@@ -172,7 +174,7 @@ function TeamDetailsPageError({ error, resetErrorBoundary }: FallbackProps) {
                         size="default"
                         variant="default"
                      >
-                        {translate("common.actions.retry")}
+                        Tentar novamente
                      </Button>
                   </div>
                </EmptyContent>

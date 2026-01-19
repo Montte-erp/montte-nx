@@ -1,0 +1,69 @@
+---
+import { Button } from "@packages/ui/components/button";
+import dashboardsDark from "@/assets/hero-carousel/dashboards-dark.png";
+import dashboardsLight from "@/assets/hero-carousel/dashboards-light.png";
+import transactionsDark from "@/assets/hero-carousel/transactions-dark.png";
+
+import transactionsLight from "@/assets/hero-carousel/transactions-light.png";
+import { HeroCarousel } from "@/components/hero-carousel";
+import LogoCloud from "@/components/LogoCloud.astro";
+import LogoWithText from "@/components/LogoWithText.astro";
+
+const heroSlides = [
+   {
+      id: "transactions",
+      label: "Gerencie suas transações de forma inteligente",
+      imageLightUrl: transactionsLight.src,
+      imageDarkUrl: transactionsDark.src,
+   },
+   {
+      id: "dashboards",
+      label: "Visualize seus dados com dashboards personalizados",
+      imageLightUrl: dashboardsLight.src,
+      imageDarkUrl: dashboardsDark.src,
+   },
+];
+---
+
+<section  class="relative px-8 py-18 md:py-28 flex flex-col gap-12 items-center container max-w-7xl mx-auto overflow-hidden">
+
+   <div class="w-full flex flex-col md:flex-row gap-12 items-center md:justify-between z-10">
+      <div class="text-center md:text-left flex flex-col gap-12">
+
+         <!-- Mobile Brand Label -->
+         <div class="flex md:hidden w-full justify-center ">
+            <LogoWithText size="md" />
+         </div>
+
+   <h1 class="
+            inline-block font-semibold tracking-tight text-3xl sm:text-4xl lg:text-5xl leading-tight max-w-3xl text-foreground ">
+            Controle total das suas finanças, de forma simples
+
+         </h1>
+
+   <p class="
+      sm:text-xl  max-w-sm sm:max-w-xl text-foreground/70
+">
+
+            Acompanhe gastos, gerencie contas e alcance suas metas financeiras com uma plataforma intuitiva e segura. Tudo em um só lugar.
+         </p>
+
+         <div class="">
+            <div class="">
+               <a href="https://app.montte.co/auth/sign-in" target="_blank" rel="noopener noreferrer">
+                  <Button size="lg" >
+                     <span >Começar Grátis</span>
+                  </Button>
+               </a>
+            </div>
+         </div>
+      </div>
+
+
+      <div class="w-full max-w-lg md:max-w-2xl ">
+                     <HeroCarousel items={heroSlides} client:load />
+
+      </div>
+   </div>
+<LogoCloud/>
+</section>

@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import {
    Card,
    CardContent,
@@ -64,11 +63,7 @@ function BudgetTransactionsErrorFallback({ error }: FallbackProps) {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               {translate(
-                  "dashboard.routes.budgets.details.transactions.title",
-               )}
-            </CardTitle>
+            <CardTitle>Transações do Orçamento</CardTitle>
          </CardHeader>
          <CardContent>
             <Empty>
@@ -76,44 +71,13 @@ function BudgetTransactionsErrorFallback({ error }: FallbackProps) {
                   <EmptyMedia variant="icon">
                      <Receipt className="size-12 text-destructive" />
                   </EmptyMedia>
-                  <EmptyTitle>
-                     {translate(
-                        "dashboard.routes.budgets.details.transactions.error.title",
-                     )}
-                  </EmptyTitle>
+                  <EmptyTitle>Erro ao carregar transações</EmptyTitle>
                   <EmptyDescription>{error?.message}</EmptyDescription>
                </EmptyContent>
             </Empty>
          </CardContent>
       </Card>
    );
-}
-
-function getBudgetCategoryIds(budget: Budget): string[] | undefined {
-   if (!budget.target) return undefined;
-   if (budget.target.type === "category" && budget.target.categoryId) {
-      return [budget.target.categoryId];
-   }
-   if (budget.target.type === "categories" && budget.target.categoryIds) {
-      return budget.target.categoryIds;
-   }
-   return undefined;
-}
-
-function getBudgetTagId(budget: Budget): string | undefined {
-   if (!budget.target) return undefined;
-   if (budget.target.type === "tag" && budget.target.tagId) {
-      return budget.target.tagId;
-   }
-   return undefined;
-}
-
-function getBudgetCostCenterId(budget: Budget): string | undefined {
-   if (!budget.target) return undefined;
-   if (budget.target.type === "cost_center" && budget.target.costCenterId) {
-      return budget.target.costCenterId;
-   }
-   return undefined;
 }
 
 function BudgetTransactionsContent({
@@ -145,16 +109,20 @@ function BudgetTransactionsContent({
       setCurrentPage(1);
    }, [dateKey]);
 
-   const categoryIds = getBudgetCategoryIds(budget);
-   const tagId = getBudgetTagId(budget);
-   const costCenterId = getBudgetCostCenterId(budget);
+   // Use the budget's tagId for filtering transactions
+   const tagId = budget.tagId;
+
+   // Get linked category IDs from budget metadata for filtering
+   const linkedCategoryIds =
+      (budget.metadata as { linkedCategoryIds?: string[] })
+         ?.linkedCategoryIds ?? [];
 
    const [transactionsQuery, categoriesQuery] = useSuspenseQueries({
       queries: [
          trpc.transactions.getAllPaginated.queryOptions(
             {
-               categoryIds,
-               costCenterId,
+               categoryIds:
+                  linkedCategoryIds.length > 0 ? linkedCategoryIds : undefined,
                endDate: endDate?.toISOString(),
                limit: pageSize,
                page: currentPage,
@@ -181,15 +149,9 @@ function BudgetTransactionsContent({
       return (
          <Card>
             <CardHeader>
-               <CardTitle>
-                  {translate(
-                     "dashboard.routes.budgets.details.transactions.title",
-                  )}
-               </CardTitle>
+               <CardTitle>Transações do Orçamento</CardTitle>
                <CardDescription>
-                  {translate(
-                     "dashboard.routes.budgets.details.transactions.description",
-                  )}
+                  Transações que afetam este orçamento no período selecionado
                </CardDescription>
             </CardHeader>
             <CardContent>
@@ -198,15 +160,10 @@ function BudgetTransactionsContent({
                      <EmptyMedia variant="icon">
                         <Receipt className="size-12 text-muted-foreground" />
                      </EmptyMedia>
-                     <EmptyTitle>
-                        {translate(
-                           "dashboard.routes.budgets.details.transactions.empty.title",
-                        )}
-                     </EmptyTitle>
+                     <EmptyTitle>Nenhuma transação encontrada</EmptyTitle>
                      <EmptyDescription>
-                        {translate(
-                           "dashboard.routes.budgets.details.transactions.empty.description",
-                        )}
+                        Não há transações que afetam este orçamento no período
+                        selecionado
                      </EmptyDescription>
                   </EmptyContent>
                </Empty>
@@ -218,12 +175,8 @@ function BudgetTransactionsContent({
    return (
       <TransactionList
          categories={categories}
-         emptyStateDescription={translate(
-            "dashboard.routes.budgets.details.transactions.empty.description",
-         )}
-         emptyStateTitle={translate(
-            "dashboard.routes.budgets.details.transactions.empty.title",
-         )}
+         emptyStateDescription="Não há transações que afetam este orçamento no período selecionado"
+         emptyStateTitle="Nenhuma transação encontrada"
          filters={{
             onSearchChange: setSearchTerm,
             searchTerm,

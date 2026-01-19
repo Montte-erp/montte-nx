@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Card,
    CardContent,
@@ -6,23 +5,18 @@ import {
    CardHeader,
    CardTitle,
 } from "@packages/ui/components/card";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { StatsCard } from "@packages/ui/components/stats-card";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { ErrorBoundary } from "react-error-boundary";
 import { useTRPC } from "@/integrations/clients";
 
-function CategoryStatsErrorFallback(props: FallbackProps) {
+function CategoryStatsErrorFallback() {
    return (
-      <div className="grid gap-4 h-min">
-         {createErrorFallback({
-            errorDescription:
-               "Failed to load category stats. Please try again later.",
-            errorTitle: "Error loading stats",
-            retryText: "Retry",
-         })(props)}
+      <div className="p-4 text-center text-sm text-destructive">
+         Falha ao carregar estatísticas da categoria. Tente novamente mais
+         tarde.
       </div>
    );
 }
@@ -92,33 +86,21 @@ function CategoryStatsContent({
    return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
          <StatsCard
-            description={translate(
-               "dashboard.routes.transactions.stats-section.total.description",
-            )}
-            title={translate(
-               "dashboard.routes.transactions.stats-section.total.title",
-            )}
+            description="Veja o total acumulado de todas as suas transações."
+            title="Total de Transações"
             value={data.pagination.totalCount}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.transactions.stats-section.income.description",
-            )}
-            title={translate(
-               "dashboard.routes.transactions.stats-section.income.title",
-            )}
+            description="Veja o total acumulado de todas as suas receitas."
+            title="Total de Receitas"
             value={new Intl.NumberFormat("pt-BR", {
                currency: "BRL",
                style: "currency",
             }).format(income)}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.transactions.stats-section.expense.description",
-            )}
-            title={translate(
-               "dashboard.routes.transactions.stats-section.expense.title",
-            )}
+            description="Veja o total acumulado de todas as suas despesas."
+            title="Total de Despesas"
             value={new Intl.NumberFormat("pt-BR", {
                currency: "BRL",
                style: "currency",

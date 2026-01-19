@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Alert, AlertDescription } from "@packages/ui/components/alert";
 import { Badge } from "@packages/ui/components/badge";
 import {
@@ -90,9 +89,7 @@ function InfoCardContent({ billId }: { billId: string }) {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               {translate("dashboard.routes.bills.details.info.title")}
-            </CardTitle>
+            <CardTitle>Informações Adicionais</CardTitle>
          </CardHeader>
          <CardContent className="grid gap-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -101,9 +98,7 @@ function InfoCardContent({ billId }: { billId: string }) {
                      <FileText className="size-4 text-muted-foreground" />
                      <div>
                         <p className="text-xs text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.bills.features.create-bill.fields.issueDate",
-                           )}
+                           Data de Emissão
                         </p>
                         <p className="text-sm font-medium">
                            {formatDate(new Date(bill.issueDate), "DD/MM/YYYY")}
@@ -117,7 +112,7 @@ function InfoCardContent({ billId }: { billId: string }) {
                      <CheckCircle2 className="size-4 text-green-500" />
                      <div>
                         <p className="text-xs text-muted-foreground">
-                           {translate("dashboard.routes.bills.completedOn")}
+                           Concluído em
                         </p>
                         <p className="text-sm font-medium">
                            {formatDate(
@@ -150,9 +145,7 @@ function InfoCardContent({ billId }: { billId: string }) {
                      <Building className="size-4 text-muted-foreground" />
                      <div>
                         <p className="text-xs text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.bills.features.create-bill.fields.bankAccount",
-                           )}
+                           Conta Bancária (Opcional)
                         </p>
                         <p className="text-sm font-medium">
                            {bill.bankAccount.name}
@@ -166,9 +159,7 @@ function InfoCardContent({ billId }: { billId: string }) {
                      <User className="size-4 text-muted-foreground" />
                      <div>
                         <p className="text-xs text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.bills.features.create-bill.fields.counterparty",
-                           )}
+                           Fornecedor/Cliente
                         </p>
                         <p className="text-sm font-medium">
                            {bill.counterparty?.name}
@@ -182,7 +173,7 @@ function InfoCardContent({ billId }: { billId: string }) {
                      <Layers className="size-4 text-muted-foreground" />
                      <div>
                         <p className="text-xs text-muted-foreground">
-                           {translate("common.form.cost-center.label")}
+                           Centro de Custo
                         </p>
                         <p className="text-sm font-medium">
                            {bill.costCenter.code
@@ -197,9 +188,7 @@ function InfoCardContent({ billId }: { billId: string }) {
                   <div className="flex items-center gap-3">
                      <Tags className="size-4 text-muted-foreground" />
                      <div>
-                        <p className="text-xs text-muted-foreground">
-                           {translate("common.form.tags.label")}
-                        </p>
+                        <p className="text-xs text-muted-foreground">Tags</p>
                         <div className="flex gap-1 flex-wrap mt-0.5">
                            {billTags.map((tag) => (
                               <Badge
@@ -221,9 +210,7 @@ function InfoCardContent({ billId }: { billId: string }) {
                   <Separator />
                   <div>
                      <p className="text-xs text-muted-foreground mb-1">
-                        {translate(
-                           "dashboard.routes.bills.features.create-bill.fields.notes",
-                        )}
+                        Observações
                      </p>
                      <p className="text-sm">{bill.notes}</p>
                   </div>

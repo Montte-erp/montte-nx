@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import { Alert, AlertDescription } from "@packages/ui/components/alert";
 import {
@@ -66,48 +65,29 @@ function MetadataCardContent({ budgetId }: { budgetId: string }) {
    const createdAt = formatDate(new Date(budget.createdAt), "DD/MM/YYYY");
 
    const periodLabels: Record<string, string> = {
-      custom: translate("dashboard.routes.budgets.form.period.custom"),
-      daily: translate("dashboard.routes.budgets.form.period.daily"),
-      monthly: translate("dashboard.routes.budgets.form.period.monthly"),
-      quarterly: translate("dashboard.routes.budgets.form.period.quarterly"),
-      weekly: translate("dashboard.routes.budgets.form.period.weekly"),
-      yearly: translate("dashboard.routes.budgets.form.period.yearly"),
+      custom: "Personalizado",
+      daily: "Diário",
+      monthly: "Mensal",
+      quarterly: "Trimestral",
+      weekly: "Semanal",
+      yearly: "Anual",
    };
 
    const regimeLabels: Record<string, string> = {
-      accrual: translate("dashboard.routes.budgets.form.regime.accrual"),
-      cash: translate("dashboard.routes.budgets.form.regime.cash"),
-   };
-
-   const targetTypeLabels: Record<string, string> = {
-      categories: translate("dashboard.routes.budgets.form.target.categories"),
-      category: translate("dashboard.routes.budgets.form.target.category"),
-      cost_center: translate(
-         "dashboard.routes.budgets.form.target.cost_center",
-      ),
-      tag: translate("dashboard.routes.budgets.form.target.tag"),
+      accrual: "Regime de competência",
+      cash: "Regime de caixa",
    };
 
    const periodLabel = periodLabels[budget.periodType] ?? budget.periodType;
    const regimeLabel = regimeLabels[budget.regime] ?? budget.regime;
-   const targetLabel = budget.target?.type
-      ? targetTypeLabels[budget.target.type]
-      : "-";
+   const targetLabel = "Tag";
 
    const StatusIcon = budget.isActive ? CheckCircle : CircleDashed;
    const statusColor = budget.isActive ? "#10b981" : "#6b7280";
-   const statusLabel = budget.isActive
-      ? translate("dashboard.routes.budgets.status.active")
-      : translate("dashboard.routes.budgets.status.inactive");
+   const statusLabel = budget.isActive ? "Ativo" : "Inativo";
 
    const rolloverColor = budget.rollover ? "#3b82f6" : "#6b7280";
-   const rolloverLabel = budget.rollover
-      ? translate(
-           "dashboard.routes.budgets.details.information.rollover-enabled",
-        )
-      : translate(
-           "dashboard.routes.budgets.details.information.rollover-disabled",
-        );
+   const rolloverLabel = budget.rollover ? "Ativado" : "Desativado";
 
    return (
       <Card className="h-fit">

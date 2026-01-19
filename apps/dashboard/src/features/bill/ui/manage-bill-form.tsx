@@ -1,5 +1,4 @@
 import type { Bill } from "@packages/database/repositories/bill-repository";
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import {
    Alert,
@@ -390,10 +389,10 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
 
    const billSchema = z.object({
       // Required fields
-      amount: z.number().min(0.01, translate("common.validation.required")),
+      amount: z.number().min(0.01, "Campo obrigatório"),
       billCategory: z.enum(["payable", "receivable"]).nullable(),
       billMode: z.enum(["onetime", "recurring", "installment"]).nullable(),
-      description: z.string().min(1, translate("common.validation.required")),
+      description: z.string().min(1, "Campo obrigatório"),
       type: z.enum(["expense", "income"]),
 
       // Optional string fields (allow undefined or empty)
@@ -536,26 +535,19 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
 
    const modeTexts = useMemo(() => {
       const createTexts = {
-         description: translate(
-            "dashboard.routes.bills.features.create-bill.description",
-         ),
-         title: translate("dashboard.routes.bills.features.create-bill.title"),
+         description: "Adicione uma nova conta a pagar ou a receber",
+         title: "Nova Conta",
       };
 
       const editTexts = {
-         description: translate(
-            "dashboard.routes.bills.features.edit-bill.description",
-         ),
-         title: translate("dashboard.routes.bills.features.edit-bill.title"),
+         description: "Atualize os detalhes da conta",
+         title: "Editar Conta",
       };
 
       const fromTransactionTexts = {
-         description: translate(
-            "dashboard.routes.bills.features.from-transaction.description",
-         ),
-         title: translate(
-            "dashboard.routes.bills.features.from-transaction.title",
-         ),
+         description:
+            "Crie uma conta a pagar/receber recorrente baseada nesta transação",
+         title: "Criar Conta a partir de Transação",
       };
 
       if (isEditMode) return editTexts;
@@ -600,25 +592,17 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
    function BillTypeStep() {
       const billCategoryOptions = [
          {
-            description: translate(
-               "dashboard.routes.bills.features.create-bill.steps.bill-type.options.payable.description",
-            ),
+            description: "Despesas e contas que você precisa pagar",
             icon: ArrowUpRight,
             iconColor: "text-red-500",
-            title: translate(
-               "dashboard.routes.bills.features.create-bill.steps.bill-type.options.payable.title",
-            ),
+            title: "A Pagar",
             value: "payable" as BillCategory,
          },
          {
-            description: translate(
-               "dashboard.routes.bills.features.create-bill.steps.bill-type.options.receivable.description",
-            ),
+            description: "Receitas e valores que você vai receber",
             icon: ArrowDownLeft,
             iconColor: "text-emerald-500",
-            title: translate(
-               "dashboard.routes.bills.features.create-bill.steps.bill-type.options.receivable.title",
-            ),
+            title: "A Receber",
             value: "receivable" as BillCategory,
          },
       ];
@@ -627,9 +611,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
          <div className="space-y-4">
             <div className="text-center mb-6">
                <p className="text-sm text-muted-foreground">
-                  {translate(
-                     "dashboard.routes.bills.features.create-bill.steps.bill-type.question",
-                  )}
+                  Que tipo de conta você deseja criar?
                </p>
             </div>
 
@@ -688,33 +670,21 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
    function BillModeStep() {
       const billModeOptions = [
          {
-            description: translate(
-               "dashboard.routes.bills.features.create-bill.steps.bill-mode.options.onetime.description",
-            ),
+            description: "Pagamento ou recebimento único",
             icon: Receipt,
-            title: translate(
-               "dashboard.routes.bills.features.create-bill.steps.bill-mode.options.onetime.title",
-            ),
+            title: "Única",
             value: "onetime" as BillMode,
          },
          {
-            description: translate(
-               "dashboard.routes.bills.features.create-bill.steps.bill-mode.options.recurring.description",
-            ),
+            description: "Conta fixa que se repete (mensal, trimestral, etc.)",
             icon: Repeat,
-            title: translate(
-               "dashboard.routes.bills.features.create-bill.steps.bill-mode.options.recurring.title",
-            ),
+            title: "Recorrente",
             value: "recurring" as BillMode,
          },
          {
-            description: translate(
-               "dashboard.routes.bills.features.create-bill.steps.bill-mode.options.installment.description",
-            ),
+            description: "Dividida em várias parcelas com datas específicas",
             icon: CalendarDays,
-            title: translate(
-               "dashboard.routes.bills.features.create-bill.steps.bill-mode.options.installment.title",
-            ),
+            title: "Parcelada",
             value: "installment" as BillMode,
          },
       ];
@@ -723,9 +693,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
          <div className="space-y-4">
             <div className="text-center mb-6">
                <p className="text-sm text-muted-foreground">
-                  {translate(
-                     "dashboard.routes.bills.features.create-bill.steps.bill-mode.question",
-                  )}
+                  Como esta conta será paga/recebida?
                </p>
             </div>
 
@@ -797,7 +765,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.description.label")}
+                              Descrição
                            </FieldLabel>
                            <Textarea
                               id={field.name}
@@ -805,9 +773,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
                               }
-                              placeholder={translate(
-                                 "common.form.description.placeholder",
-                              )}
+                              placeholder="Digite a descrição"
                               value={field.state.value || ""}
                            />
                            {isInvalid && (
@@ -826,9 +792,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.amount.label")}
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Valor</FieldLabel>
                            <MoneyInput
                               id={field.name}
                               onBlur={field.handleBlur}
@@ -851,7 +815,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
             {/* Optional Fields Separator */}
             <div className="pt-2 pb-1">
                <span className="text-xs text-muted-foreground uppercase tracking-wide">
-                  {translate("common.form.optional")}
+                  Opcional
                </span>
             </div>
 
@@ -860,16 +824,12 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                   {(field) => (
                      <Field>
                         <FieldLabel htmlFor={field.name}>
-                           {translate(
-                              "dashboard.routes.bills.features.create-bill.fields.dueDate",
-                           )}
+                           Data de Vencimento
                         </FieldLabel>
                         <DatePicker
                            date={field.state.value}
                            onSelect={(date) => field.handleChange(date)}
-                           placeholder={translate(
-                              "common.form.date.placeholder",
-                           )}
+                           placeholder="Selecione uma data"
                         />
                      </Field>
                   )}
@@ -881,16 +841,12 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                   {(field) => (
                      <Field>
                         <FieldLabel htmlFor={field.name}>
-                           {translate(
-                              "dashboard.routes.bills.features.create-bill.fields.issueDate",
-                           )}
+                           Data de Emissão
                         </FieldLabel>
                         <DatePicker
                            date={field.state.value}
                            onSelect={(date) => field.handleChange(date)}
-                           placeholder={translate(
-                              "common.form.date.placeholder",
-                           )}
+                           placeholder="Selecione uma data"
                         />
                      </Field>
                   )}
@@ -902,15 +858,13 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                   {(field) => (
                      <Field>
                         <FieldLabel htmlFor={field.name}>
-                           {translate("common.form.notes.label")}
+                           Observações
                         </FieldLabel>
                         <Textarea
                            id={field.name}
                            onBlur={field.handleBlur}
                            onChange={(e) => field.handleChange(e.target.value)}
-                           placeholder={translate(
-                              "common.form.notes.placeholder",
-                           )}
+                           placeholder="Digite suas observações"
                            value={field.state.value}
                         />
                      </Field>
@@ -934,45 +888,23 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
    const intervalOptions = ["monthly", "biweekly", "weekly", "custom"] as const;
 
    const frequencyLabels: Record<string, string> = {
-      annual: translate(
-         "dashboard.routes.bills.features.create-bill.recurrence.annual",
-      ),
-      monthly: translate(
-         "dashboard.routes.bills.features.create-bill.recurrence.monthly",
-      ),
-      quarterly: translate(
-         "dashboard.routes.bills.features.create-bill.recurrence.quarterly",
-      ),
-      semiannual: translate(
-         "dashboard.routes.bills.features.create-bill.recurrence.semiannual",
-      ),
+      annual: "Anual",
+      monthly: "Mensal",
+      quarterly: "Trimestral",
+      semiannual: "Semestral",
    };
 
    const occurrenceLabels: Record<string, string> = {
-      auto: translate(
-         "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.auto.title",
-      ),
-      count: translate(
-         "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.count.title",
-      ),
-      "until-date": translate(
-         "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.until-date.title",
-      ),
+      auto: "Automático",
+      count: "Número de vezes",
+      "until-date": "Até uma data",
    };
 
    const intervalLabels: Record<string, string> = {
-      biweekly: translate(
-         "dashboard.routes.bills.features.create-bill.installments.intervalOptions.biweekly",
-      ),
-      custom: translate(
-         "dashboard.routes.bills.features.create-bill.installments.intervalOptions.custom",
-      ),
-      monthly: translate(
-         "dashboard.routes.bills.features.create-bill.installments.intervalOptions.monthly",
-      ),
-      weekly: translate(
-         "dashboard.routes.bills.features.create-bill.installments.intervalOptions.weekly",
-      ),
+      biweekly: "Quinzenal (15 dias)",
+      custom: "Personalizado",
+      monthly: "Mensal (30 dias)",
+      weekly: "Semanal (7 dias)",
    };
 
    function RecurrenceStep() {
@@ -1003,6 +935,40 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
          },
          [],
       );
+
+      const frequencyOptionLabels: Record<
+         string,
+         { title: string; description: string }
+      > = {
+         monthly: { title: "Mensal", description: "Repete todo mês" },
+         quarterly: {
+            title: "Trimestral",
+            description: "Repete a cada 3 meses",
+         },
+         semiannual: {
+            title: "Semestral",
+            description: "Repete a cada 6 meses",
+         },
+         annual: { title: "Anual", description: "Repete todo ano" },
+      };
+
+      const occurrenceOptionLabels: Record<
+         string,
+         { title: string; description: string }
+      > = {
+         auto: {
+            title: "Automático",
+            description: "Usa padrão baseado na frequência",
+         },
+         count: {
+            title: "Número de vezes",
+            description: "Define quantidade específica",
+         },
+         "until-date": {
+            title: "Até uma data",
+            description: "Repete até a data escolhida",
+         },
+      };
 
       return (
          <form.Subscribe
@@ -1074,9 +1040,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                        </div>
                                        <div className="text-left">
                                           <div className="font-medium">
-                                             {translate(
-                                                "dashboard.routes.bills.features.create-bill.recurrence-step.frequency.title",
-                                             )}
+                                             Frequência
                                           </div>
                                           <div className="text-sm text-muted-foreground">
                                              {recurrencePattern &&
@@ -1084,9 +1048,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                                 ? frequencyLabels[
                                                      recurrencePattern
                                                   ]
-                                                : translate(
-                                                     "dashboard.routes.bills.features.create-bill.recurrence-step.frequency.description",
-                                                  )}
+                                                : "Escolha com que frequência a conta se repete"}
                                           </div>
                                        </div>
                                     </div>
@@ -1122,14 +1084,18 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                                       >
                                                          <ChoiceboxItemHeader>
                                                             <ChoiceboxItemTitle>
-                                                               {translate(
-                                                                  `dashboard.routes.bills.features.create-bill.recurrence-step.frequency.options.${option}.title`,
-                                                               )}
+                                                               {
+                                                                  frequencyOptionLabels[
+                                                                     option
+                                                                  ]?.title
+                                                               }
                                                             </ChoiceboxItemTitle>
                                                             <ChoiceboxItemDescription>
-                                                               {translate(
-                                                                  `dashboard.routes.bills.features.create-bill.recurrence-step.frequency.options.${option}.description`,
-                                                               )}
+                                                               {
+                                                                  frequencyOptionLabels[
+                                                                     option
+                                                                  ]?.description
+                                                               }
                                                             </ChoiceboxItemDescription>
                                                          </ChoiceboxItemHeader>
                                                          <ChoiceboxIndicator
@@ -1183,9 +1149,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                        </div>
                                        <div className="text-left">
                                           <div className="font-medium">
-                                             {translate(
-                                                "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.title",
-                                             )}
+                                             Quantidade
                                           </div>
                                           <div className="text-sm text-muted-foreground">
                                              {occurrenceType &&
@@ -1206,9 +1170,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                                       ` (${occurrenceUntilDate.toLocaleDateString("pt-BR")})`}
                                                 </>
                                              ) : (
-                                                translate(
-                                                   "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.description",
-                                                )
+                                                "Defina quantas vezes a conta será criada"
                                              )}
                                           </div>
                                        </div>
@@ -1249,14 +1211,18 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                                       >
                                                          <ChoiceboxItemHeader>
                                                             <ChoiceboxItemTitle>
-                                                               {translate(
-                                                                  `dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.${option}.title`,
-                                                               )}
+                                                               {
+                                                                  occurrenceOptionLabels[
+                                                                     option
+                                                                  ]?.title
+                                                               }
                                                             </ChoiceboxItemTitle>
                                                             <ChoiceboxItemDescription>
-                                                               {translate(
-                                                                  `dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.${option}.description`,
-                                                               )}
+                                                               {
+                                                                  occurrenceOptionLabels[
+                                                                     option
+                                                                  ]?.description
+                                                               }
                                                             </ChoiceboxItemDescription>
                                                          </ChoiceboxItemHeader>
                                                          <ChoiceboxIndicator
@@ -1272,9 +1238,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                        {occurrenceType === "count" && (
                                           <div className="space-y-2">
                                              <Label>
-                                                {translate(
-                                                   "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.count.input-label",
-                                                )}
+                                                Quantidade de repetições
                                              </Label>
                                              <form.Field name="occurrenceCount">
                                                 {(field) => (
@@ -1321,9 +1285,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                                 size="sm"
                                                 type="button"
                                              >
-                                                {translate(
-                                                   "common.actions.confirm",
-                                                )}
+                                                Confirmar
                                              </Button>
                                           </div>
                                        )}
@@ -1361,31 +1323,17 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                               recurringSection === "review" && (
                                  <Alert>
                                     <CalendarCheck className="h-4 w-4" />
-                                    <AlertTitle>
-                                       {translate(
-                                          "dashboard.routes.bills.features.create-bill.recurrence-step.preview.title",
-                                       )}
-                                    </AlertTitle>
+                                    <AlertTitle>Resumo</AlertTitle>
                                     <AlertDescription>
-                                       {translate(
-                                          "dashboard.routes.bills.features.create-bill.recurrence-step.preview.message",
-                                          {
-                                             frequency:
-                                                frequencyLabels[
-                                                   recurrencePattern
-                                                ],
-                                             type:
-                                                occurrenceType === "auto"
-                                                   ? translate(
-                                                        "dashboard.routes.bills.features.create-bill.recurrence-step.occurrence.options.auto.title",
-                                                     )
-                                                   : occurrenceType === "count"
-                                                     ? `${occurrenceCount}x`
-                                                     : occurrenceUntilDate?.toLocaleDateString(
-                                                          "pt-BR",
-                                                       ) || "",
-                                          },
-                                       )}
+                                       {`${frequencyLabels[recurrencePattern]} - ${
+                                          occurrenceType === "auto"
+                                             ? "Automático"
+                                             : occurrenceType === "count"
+                                               ? `${occurrenceCount}x`
+                                               : occurrenceUntilDate?.toLocaleDateString(
+                                                    "pt-BR",
+                                                 ) || ""
+                                       }`}
                                     </AlertDescription>
                                  </Alert>
                               )}
@@ -1423,17 +1371,13 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                        </div>
                                        <div className="text-left">
                                           <div className="font-medium">
-                                             {translate(
-                                                "dashboard.routes.bills.features.create-bill.installments.count",
-                                             )}
+                                             Número de parcelas
                                           </div>
                                           <div className="text-sm text-muted-foreground">
                                              {installmentSection !== "count" &&
                                              installmentCount > 0
                                                 ? `${installmentCount}x`
-                                                : translate(
-                                                     "dashboard.routes.bills.features.create-bill.recurrence-step.installment.count.description",
-                                                  )}
+                                                : "Defina em quantas parcelas será dividido"}
                                           </div>
                                        </div>
                                     </div>
@@ -1571,9 +1515,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                        </div>
                                        <div className="text-left">
                                           <div className="font-medium">
-                                             {translate(
-                                                "dashboard.routes.bills.features.create-bill.installments.interval",
-                                             )}
+                                             Intervalo entre parcelas
                                           </div>
                                           <div className="text-sm text-muted-foreground">
                                              {installmentSection !==
@@ -1582,9 +1524,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                                 ? intervalLabels[
                                                      installmentIntervalType
                                                   ]
-                                                : translate(
-                                                     "dashboard.routes.bills.features.create-bill.recurrence-step.installment.interval.description",
-                                                  )}
+                                                : "Escolha o intervalo entre as parcelas"}
                                           </div>
                                        </div>
                                     </div>
@@ -1645,11 +1585,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                        {installmentIntervalType ===
                                           "custom" && (
                                           <div className="space-y-2">
-                                             <Label>
-                                                {translate(
-                                                   "dashboard.routes.bills.features.create-bill.installments.customDays",
-                                                )}
-                                             </Label>
+                                             <Label>Dias personalizados</Label>
                                              <form.Field name="installmentCustomDays">
                                                 {(field) => (
                                                    <Input
@@ -1700,9 +1636,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                                 size="sm"
                                                 type="button"
                                              >
-                                                {translate(
-                                                   "common.actions.confirm",
-                                                )}
+                                                Confirmar
                                              </Button>
                                           </div>
                                        )}
@@ -1744,9 +1678,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                        </div>
                                        <div className="text-left">
                                           <div className="font-medium">
-                                             {translate(
-                                                "dashboard.routes.bills.features.create-bill.installments.amountType",
-                                             )}
+                                             Valores das parcelas
                                           </div>
                                           <div className="text-sm text-muted-foreground">
                                              {installmentSection !==
@@ -1754,15 +1686,9 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                              installmentAmountType
                                                 ? installmentAmountType ===
                                                   "equal"
-                                                   ? translate(
-                                                        "dashboard.routes.bills.features.create-bill.installments.amountEqual",
-                                                     )
-                                                   : translate(
-                                                        "dashboard.routes.bills.features.create-bill.installments.amountCustom",
-                                                     )
-                                                : translate(
-                                                     "dashboard.routes.bills.features.create-bill.recurrence-step.installment.amounts.description",
-                                                  )}
+                                                   ? "Iguais"
+                                                   : "Personalizados"
+                                                : "Como os valores serão distribuídos"}
                                           </div>
                                        </div>
                                     </div>
@@ -1799,14 +1725,11 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                                 >
                                                    <ChoiceboxItemHeader>
                                                       <ChoiceboxItemTitle>
-                                                         {translate(
-                                                            "dashboard.routes.bills.features.create-bill.installments.amountEqual",
-                                                         )}
+                                                         Iguais
                                                       </ChoiceboxItemTitle>
                                                       <ChoiceboxItemDescription>
-                                                         {translate(
-                                                            "dashboard.routes.bills.features.create-bill.recurrence-step.installment.amounts.equal-description",
-                                                         )}
+                                                         Divide o valor total em
+                                                         parcelas iguais
                                                       </ChoiceboxItemDescription>
                                                    </ChoiceboxItemHeader>
                                                    <ChoiceboxIndicator id="amount-equal" />
@@ -1817,14 +1740,12 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                                 >
                                                    <ChoiceboxItemHeader>
                                                       <ChoiceboxItemTitle>
-                                                         {translate(
-                                                            "dashboard.routes.bills.features.create-bill.installments.amountCustom",
-                                                         )}
+                                                         Personalizados
                                                       </ChoiceboxItemTitle>
                                                       <ChoiceboxItemDescription>
-                                                         {translate(
-                                                            "dashboard.routes.bills.features.create-bill.recurrence-step.installment.amounts.custom-description",
-                                                         )}
+                                                         Define um valor
+                                                         diferente para cada
+                                                         parcela
                                                       </ChoiceboxItemDescription>
                                                    </ChoiceboxItemHeader>
                                                    <ChoiceboxIndicator id="amount-custom" />
@@ -1847,13 +1768,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                                          <FieldLabel
                                                             htmlFor={`installment-amount-${index}`}
                                                          >
-                                                            {translate(
-                                                               "dashboard.routes.bills.features.create-bill.installments.installmentLabel",
-                                                               {
-                                                                  number:
-                                                                     index + 1,
-                                                               },
-                                                            )}
+                                                            {`Parcela ${index + 1}`}
                                                          </FieldLabel>
                                                          <MoneyInput
                                                             id={`installment-amount-${index}`}
@@ -1898,9 +1813,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                              >
                                                 <div className="flex justify-between">
                                                    <span className="text-muted-foreground">
-                                                      {translate(
-                                                         "dashboard.routes.bills.features.create-bill.installments.validation.total",
-                                                      )}
+                                                      Total
                                                    </span>
                                                    <span
                                                       className={`font-medium ${
@@ -1921,26 +1834,8 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                                 {!isCustomAmountsValid && (
                                                    <div className="text-destructive text-xs">
                                                       {amountDifference > 0
-                                                         ? translate(
-                                                              "dashboard.routes.bills.features.create-bill.installments.validation.remaining",
-                                                              {
-                                                                 amount:
-                                                                    formatDecimalCurrency(
-                                                                       amountDifference,
-                                                                    ),
-                                                              },
-                                                           )
-                                                         : translate(
-                                                              "dashboard.routes.bills.features.create-bill.installments.validation.excess",
-                                                              {
-                                                                 amount:
-                                                                    formatDecimalCurrency(
-                                                                       Math.abs(
-                                                                          amountDifference,
-                                                                       ),
-                                                                    ),
-                                                              },
-                                                           )}
+                                                         ? `Falta ${formatDecimalCurrency(amountDifference)}`
+                                                         : `Excesso de ${formatDecimalCurrency(Math.abs(amountDifference))}`}
                                                    </div>
                                                 )}
                                              </div>
@@ -1964,9 +1859,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
          <div className="space-y-4">
             {/* Optional hint */}
             <p className="text-sm text-muted-foreground">
-               {translate(
-                  "dashboard.routes.bills.features.create-bill.steps.categorization.optional-hint",
-               )}
+               Todos os campos abaixo são opcionais
             </p>
 
             <FieldGroup>
@@ -1982,7 +1875,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.category.label")}
+                              Categoria
                            </FieldLabel>
                            <Popover
                               onOpenChange={setCategoryComboboxOpen}
@@ -2007,9 +1900,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                        </div>
                                     ) : (
                                        <span className="text-muted-foreground">
-                                          {translate(
-                                             "common.form.category.placeholder",
-                                          )}
+                                          Selecione uma categoria
                                        </span>
                                     )}
                                     <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -2017,16 +1908,10 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                               </PopoverTrigger>
                               <PopoverContent className="w-full p-0">
                                  <Command>
-                                    <CommandInput
-                                       placeholder={translate(
-                                          "common.form.search.placeholder",
-                                       )}
-                                    />
+                                    <CommandInput placeholder="Buscar..." />
                                     <CommandList>
                                        <CommandEmpty>
-                                          {translate(
-                                             "common.form.search.no-results",
-                                          )}
+                                          Nenhum resultado encontrado
                                        </CommandEmpty>
                                        <CommandGroup>
                                           {categories.map((category) => (
@@ -2103,9 +1988,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate(
-                                 "dashboard.routes.bills.features.create-bill.fields.counterparty",
-                              )}
+                              Fornecedor/Cliente
                            </FieldLabel>
                            <Popover
                               onOpenChange={setCounterpartyComboboxOpen}
@@ -2122,9 +2005,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                        <span>{selectedCounterparty.name}</span>
                                     ) : (
                                        <span className="text-muted-foreground">
-                                          {translate(
-                                             "dashboard.routes.bills.features.create-bill.placeholders.counterparty",
-                                          )}
+                                          Selecione um fornecedor/cliente
                                        </span>
                                     )}
                                     <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -2134,16 +2015,12 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                  <Command shouldFilter={false}>
                                     <CommandInput
                                        onValueChange={setCounterpartySearch}
-                                       placeholder={translate(
-                                          "common.form.search.placeholder",
-                                       )}
+                                       placeholder="Buscar..."
                                        value={counterpartySearch}
                                     />
                                     <CommandList>
                                        <CommandEmpty>
-                                          {translate(
-                                             "common.form.search.no-results",
-                                          )}
+                                          Nenhum resultado encontrado
                                        </CommandEmpty>
                                        <CommandGroup>
                                           {filteredCounterparties.map((cp) => (
@@ -2190,10 +2067,8 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                                       }
                                                    >
                                                       <Plus className="mr-2 h-4 w-4" />
-                                                      {translate(
-                                                         "dashboard.routes.bills.features.create-bill.quick-create-counterparty",
-                                                      )}{" "}
-                                                      "{counterpartySearch}"
+                                                      Criar "
+                                                      {counterpartySearch}"
                                                    </CommandItem>
                                                 )}
                                              </form.Subscribe>
@@ -2220,7 +2095,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.bank.label")}
+                              Conta Bancária
                            </FieldLabel>
                            <Select
                               onValueChange={(value) =>
@@ -2229,11 +2104,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                               value={field.state.value}
                            >
                               <SelectTrigger id={field.name}>
-                                 <SelectValue
-                                    placeholder={translate(
-                                       "common.form.bank.placeholder",
-                                    )}
-                                 />
+                                 <SelectValue placeholder="Selecione uma conta" />
                               </SelectTrigger>
                               <SelectContent>
                                  {activeBankAccounts.map((account) => (
@@ -2264,7 +2135,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.cost-center.label")}
+                              Centro de Custo
                            </FieldLabel>
                            <Select
                               onValueChange={(value) =>
@@ -2275,11 +2146,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                               value={field.state.value || "none"}
                            >
                               <SelectTrigger id={field.name}>
-                                 <SelectValue
-                                    placeholder={translate(
-                                       "common.form.cost-center.placeholder",
-                                    )}
-                                 />
+                                 <SelectValue placeholder="Selecione um centro de custo" />
                               </SelectTrigger>
                               <SelectContent>
                                  <SelectItem value="none">-</SelectItem>
@@ -2314,9 +2181,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
 
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.tags.label")}
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Tags</FieldLabel>
                            <Popover>
                               <PopoverTrigger asChild>
                                  <Button
@@ -2339,9 +2204,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                        </div>
                                     ) : (
                                        <span className="text-muted-foreground">
-                                          {translate(
-                                             "common.form.tags.placeholder",
-                                          )}
+                                          Selecione as tags
                                        </span>
                                     )}
                                     <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -2349,16 +2212,10 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                               </PopoverTrigger>
                               <PopoverContent className="w-full p-0">
                                  <Command>
-                                    <CommandInput
-                                       placeholder={translate(
-                                          "common.form.search.placeholder",
-                                       )}
-                                    />
+                                    <CommandInput placeholder="Buscar..." />
                                     <CommandList>
                                        <CommandEmpty>
-                                          {translate(
-                                             "common.form.search.no-results",
-                                          )}
+                                          Nenhum resultado encontrado
                                        </CommandEmpty>
                                        <CommandGroup>
                                           {tags.map((tag) => {
@@ -2427,9 +2284,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                               return (
                                  <Field data-invalid={isInvalid}>
                                     <FieldLabel htmlFor={field.name}>
-                                       {translate(
-                                          "dashboard.routes.bills.features.create-bill.fields.interestTemplate",
-                                       )}
+                                       Template de Juros
                                     </FieldLabel>
                                     <Select
                                        onValueChange={(value) =>
@@ -2438,11 +2293,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                        value={field.state.value}
                                     >
                                        <SelectTrigger id={field.name}>
-                                          <SelectValue
-                                             placeholder={translate(
-                                                "dashboard.routes.bills.features.create-bill.placeholders.interestTemplate",
-                                             )}
-                                          />
+                                          <SelectValue placeholder="Selecione um template" />
                                        </SelectTrigger>
                                        <SelectContent>
                                           {interestTemplates.map((template) => (
@@ -2507,13 +2358,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                         {modeTexts.title}
                         {isEditMode && bill?.installmentGroupId && (
                            <Badge variant="secondary">
-                              {translate(
-                                 "dashboard.routes.bills.features.create-bill.installments.badge",
-                                 {
-                                    current: bill.installmentNumber,
-                                    total: bill.totalInstallments,
-                                 },
-                              )}
+                              {`Parcela ${bill.installmentNumber}/${bill.totalInstallments}`}
                            </Badge>
                         )}
                      </SheetTitle>
@@ -2561,7 +2406,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                     }}
                                     type="button"
                                  >
-                                    {translate("common.actions.next")}
+                                    Próximo
                                  </Button>
                               )}
                            </form.Subscribe>
@@ -2583,7 +2428,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                        type="button"
                                        variant="ghost"
                                     >
-                                       {translate("common.actions.previous")}
+                                       Anterior
                                     </Button>
                                     <Button
                                        className="w-full"
@@ -2595,7 +2440,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                        }}
                                        type="button"
                                     >
-                                       {translate("common.actions.next")}
+                                       Próximo
                                     </Button>
                                  </>
                               )}
@@ -2629,7 +2474,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                           type="button"
                                           variant="ghost"
                                        >
-                                          {translate("common.actions.previous")}
+                                          Anterior
                                        </Button>
                                     )}
                                     <Button
@@ -2646,7 +2491,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                        }}
                                        type="button"
                                     >
-                                       {translate("common.actions.next")}
+                                       Próximo
                                     </Button>
                                  </>
                               )}
@@ -2687,7 +2532,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                           type="button"
                                           variant="ghost"
                                        >
-                                          {translate("common.actions.previous")}
+                                          Anterior
                                        </Button>
                                        <Button
                                           className="w-full"
@@ -2699,31 +2544,13 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                           }}
                                           type="button"
                                        >
-                                          {translate("common.actions.next")}
+                                          Próximo
                                        </Button>
                                        {!isCustomAmountsValid && (
                                           <p className="text-xs text-destructive text-center">
                                              {amountDifference > 0
-                                                ? translate(
-                                                     "dashboard.routes.bills.features.create-bill.installments.validation.remaining",
-                                                     {
-                                                        amount:
-                                                           formatDecimalCurrency(
-                                                              amountDifference,
-                                                           ),
-                                                     },
-                                                  )
-                                                : translate(
-                                                     "dashboard.routes.bills.features.create-bill.installments.validation.excess",
-                                                     {
-                                                        amount:
-                                                           formatDecimalCurrency(
-                                                              Math.abs(
-                                                                 amountDifference,
-                                                              ),
-                                                           ),
-                                                     },
-                                                  )}
+                                                ? `Falta ${formatDecimalCurrency(amountDifference)}`
+                                                : `Excesso de ${formatDecimalCurrency(Math.abs(amountDifference))}`}
                                           </p>
                                        )}
                                     </>
@@ -2749,7 +2576,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                        type="button"
                                        variant="ghost"
                                     >
-                                       {translate("common.actions.previous")}
+                                       Anterior
                                     </Button>
                                     <Button
                                        className="w-full"
@@ -2760,7 +2587,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                        }
                                        type="submit"
                                     >
-                                       {translate("common.actions.submit")}
+                                       Salvar
                                     </Button>
                                  </>
                               )}
@@ -2777,7 +2604,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                  type="button"
                                  variant="ghost"
                               >
-                                 {translate("common.actions.previous")}
+                                 Anterior
                               </Button>
                               <Button
                                  className="w-full"
@@ -2788,7 +2615,7 @@ export function ManageBillForm({ bill, fromTransaction }: ManageBillFormProps) {
                                  }}
                                  type="button"
                               >
-                                 {translate("common.actions.next")}
+                                 Próximo
                               </Button>
                            </>
                         )}

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Announcement,
    AnnouncementTag,
@@ -34,23 +33,17 @@ const TRANSACTION_TYPE_CONFIG = {
    expense: {
       color: "#ef4444",
       icon: ArrowUpRight,
-      label: translate(
-         "dashboard.routes.transactions.list-section.types.expense",
-      ),
+      label: "Despesa",
    },
    income: {
       color: "#10b981",
       icon: ArrowDownLeft,
-      label: translate(
-         "dashboard.routes.transactions.list-section.types.income",
-      ),
+      label: "Receita",
    },
    transfer: {
       color: "#3b82f6",
       icon: ArrowLeftRight,
-      label: translate(
-         "dashboard.routes.transactions.list-section.types.transfer",
-      ),
+      label: "Transferência",
    },
 };
 
@@ -61,7 +54,7 @@ function CategoryMetadataCardErrorFallback(props: FallbackProps) {
             {createErrorFallback({
                errorDescription: "Failed to load category metadata",
                errorTitle: "Error",
-               retryText: translate("common.actions.retry"),
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>
@@ -109,12 +102,8 @@ function CategoryMetadataCardContent() {
    return (
       <Card>
          <CardHeader>
-            <CardTitle className="text-base">
-               {translate("common.form.metadata.title")}
-            </CardTitle>
-            <CardDescription>
-               {translate("common.form.metadata.description")}
-            </CardDescription>
+            <CardTitle className="text-base">Metadados</CardTitle>
+            <CardDescription>Informações da categoria</CardDescription>
          </CardHeader>
          <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
@@ -137,7 +126,7 @@ function CategoryMetadataCardContent() {
                <Announcement>
                   <AnnouncementTag className="flex items-center gap-1.5">
                      <Palette className="size-3.5" />
-                     {translate("common.form.color.label")}
+                     Cor
                   </AnnouncementTag>
                   <AnnouncementTitle>
                      <div
@@ -150,7 +139,7 @@ function CategoryMetadataCardContent() {
                <Announcement>
                   <AnnouncementTag className="flex items-center gap-1.5">
                      <Tag className="size-3.5" />
-                     {translate("common.form.icon.label")}
+                     Ícone
                   </AnnouncementTag>
                   <AnnouncementTitle>
                      {category.icon || "Wallet"}
@@ -160,7 +149,7 @@ function CategoryMetadataCardContent() {
                <Announcement>
                   <AnnouncementTag className="flex items-center gap-1.5">
                      <Calendar className="size-3.5" />
-                     {translate("common.form.created-at.label")}
+                     Data de Criação
                   </AnnouncementTag>
                   <AnnouncementTitle>
                      {formatDate(new Date(category.createdAt), "DD MMM YYYY")}
@@ -169,9 +158,7 @@ function CategoryMetadataCardContent() {
             </div>
 
             <div className="pt-2 border-t">
-               <p className="text-sm text-muted-foreground mb-2">
-                  {translate("common.form.type.label")}
-               </p>
+               <p className="text-sm text-muted-foreground mb-2">Tipo</p>
                <div className="flex flex-wrap gap-2">
                   {types.map((type) => {
                      const config =

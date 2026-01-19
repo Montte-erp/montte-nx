@@ -22,7 +22,7 @@ import { Textarea } from "@packages/ui/components/textarea";
 import type { ActionField } from "@packages/workflows/schemas/action-field.schema";
 import { Pencil, Tag } from "lucide-react";
 import { useState } from "react";
-import { useDataSourceOptions } from "../hooks/use-data-source-options";
+import { useDataSourceOptions } from "@/features/automations/hooks/use-data-source-options";
 import { EmailBuilderDialog } from "./email-builder/email-builder-dialog";
 
 type DynamicFieldRendererProps = {

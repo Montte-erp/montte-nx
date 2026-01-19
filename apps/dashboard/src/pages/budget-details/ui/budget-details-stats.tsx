@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { StatsCard } from "@packages/ui/components/stats-card";
 
 type Budget = RouterOutput["budgets"]["getById"];
@@ -23,12 +22,12 @@ export function BudgetDetailsStats({ budget }: BudgetDetailsStatsProps) {
    const available = progress.available;
 
    const periodLabels: Record<string, string> = {
-      custom: translate("dashboard.routes.budgets.form.period.custom"),
-      daily: translate("dashboard.routes.budgets.form.period.daily"),
-      monthly: translate("dashboard.routes.budgets.form.period.monthly"),
-      quarterly: translate("dashboard.routes.budgets.form.period.quarterly"),
-      weekly: translate("dashboard.routes.budgets.form.period.weekly"),
-      yearly: translate("dashboard.routes.budgets.form.period.yearly"),
+      custom: "Personalizado",
+      daily: "Diário",
+      monthly: "Mensal",
+      quarterly: "Trimestral",
+      weekly: "Semanal",
+      yearly: "Anual",
    };
 
    const daysRemaining = currentPeriod
@@ -44,22 +43,18 @@ export function BudgetDetailsStats({ budget }: BudgetDetailsStatsProps) {
    const isNearLimit = percentage >= 80 && percentage < 100;
 
    const utilizationDescription = isOverBudget
-      ? translate("dashboard.routes.budgets.progress.over-budget")
+      ? "Acima do limite"
       : isNearLimit
-        ? translate("dashboard.routes.budgets.stats.budgets-near-limit.title")
+        ? "Próximos do limite"
         : "No caminho certo";
 
-   const periodLabel =
-      periodLabels[budget.periodType as string] ||
-      translate("dashboard.routes.budgets.form.period.monthly");
+   const periodLabel = periodLabels[budget.periodType as string] || "Mensal";
 
    return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
          <StatsCard
             description={utilizationDescription}
-            title={translate(
-               "dashboard.routes.budgets.stats.average-utilization.title",
-            )}
+            title="Utilização média"
             value={`${percentage.toFixed(1)}%`}
          />
          <StatsCard

@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -44,8 +43,8 @@ export function BudgetActionButtons({
    );
 
    const regimeLabels: Record<string, string> = {
-      accrual: translate("dashboard.routes.budgets.form.regime.accrual"),
-      cash: translate("dashboard.routes.budgets.form.regime.cash"),
+      accrual: "Regime de competência",
+      cash: "Regime de caixa",
    };
 
    return (
@@ -60,7 +59,7 @@ export function BudgetActionButtons({
             variant="outline"
          >
             <Edit className="size-4" />
-            {translate("dashboard.routes.budgets.details.actions.edit")}
+            Editar
          </Button>
 
          <Button
@@ -70,7 +69,7 @@ export function BudgetActionButtons({
             variant="outline"
          >
             <Trash2 className="size-4" />
-            {translate("dashboard.routes.budgets.details.actions.delete")}
+            Excluir
          </Button>
 
          <div className="h-4 w-px bg-border" />
@@ -83,11 +82,9 @@ export function BudgetActionButtons({
             variant="outline"
          >
             <CircleDot className="size-4" />
-            {translate("dashboard.routes.budgets.details.information.status")}
+            Status
             <Badge variant={budget.isActive ? "default" : "secondary"}>
-               {budget.isActive
-                  ? translate("dashboard.routes.budgets.status.active")
-                  : translate("dashboard.routes.budgets.status.inactive")}
+               {budget.isActive ? "Ativo" : "Inativo"}
             </Badge>
          </Button>
 
@@ -99,15 +96,9 @@ export function BudgetActionButtons({
             variant="outline"
          >
             <RefreshCw className="size-4" />
-            {translate("dashboard.routes.budgets.details.information.rollover")}
+            Acumulação
             <Badge variant={budget.rollover ? "default" : "secondary"}>
-               {budget.rollover
-                  ? translate(
-                       "dashboard.routes.budgets.details.information.rollover-enabled",
-                    )
-                  : translate(
-                       "dashboard.routes.budgets.details.information.rollover-disabled",
-                    )}
+               {budget.rollover ? "Ativado" : "Desativado"}
             </Badge>
          </Button>
 
@@ -120,10 +111,8 @@ export function BudgetActionButtons({
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
                {budget.regime === "cash"
-                  ? translate("dashboard.routes.budgets.regime-tooltip.cash")
-                  : translate(
-                       "dashboard.routes.budgets.regime-tooltip.accrual",
-                    )}
+                  ? "Regime de caixa: o orçamento é consumido na data do pagamento. Configurado a nível da organização."
+                  : "Regime de competência: o orçamento é consumido na data da emissão/compra. Configurado a nível da organização."}
             </TooltipContent>
          </Tooltip>
       </div>

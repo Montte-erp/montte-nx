@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Empty,
@@ -14,6 +13,7 @@ import { Home, Receipt } from "lucide-react";
 import { Suspense } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { DefaultHeader } from "@/default/default-header";
+import { useDetailTabName } from "@/features/custom-dashboard/hooks/use-detail-tab-name";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useTRPC } from "@/integrations/clients";
 import { TransactionActionButtons } from "./transaction-action-buttons";
@@ -35,6 +35,8 @@ function TransactionContent() {
    const { data: transaction } = useSuspenseQuery(
       trpc.transactions.getById.queryOptions({ id: transactionId }),
    );
+
+   useDetailTabName(transaction?.description);
 
    const handleDeleteSuccess = () => {
       router.navigate({
@@ -132,11 +134,7 @@ function TransactionPageError({ error, resetErrorBoundary }: FallbackProps) {
                   <EmptyMedia variant="icon">
                      <Receipt className="size-12 text-destructive" />
                   </EmptyMedia>
-                  <EmptyTitle>
-                     {translate(
-                        "dashboard.routes.transactions.details.error.title",
-                     )}
-                  </EmptyTitle>
+                  <EmptyTitle>Falha ao carregar transação</EmptyTitle>
                   <EmptyDescription>{error?.message}</EmptyDescription>
                   <div className="mt-6 flex gap-2 justify-center">
                      <Button
@@ -150,16 +148,14 @@ function TransactionPageError({ error, resetErrorBoundary }: FallbackProps) {
                         variant="outline"
                      >
                         <Home className="size-4 mr-2" />
-                        {translate(
-                           "dashboard.routes.transactions.details.error.back",
-                        )}
+                        Voltar para Transações
                      </Button>
                      <Button
                         onClick={resetErrorBoundary}
                         size="default"
                         variant="default"
                      >
-                        {translate("common.actions.retry")}
+                        Tentar novamente
                      </Button>
                   </div>
                </EmptyContent>

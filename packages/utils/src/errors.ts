@@ -130,8 +130,20 @@ export class APIError extends TRPCError {
          case 404:
             code = ErrorCodes.NOT_FOUND;
             break;
+         case 405:
+            code = ErrorCodes.METHOD_NOT_SUPPORTED;
+            break;
+         case 408:
+            code = ErrorCodes.TIMEOUT;
+            break;
          case 409:
             code = ErrorCodes.CONFLICT;
+            break;
+         case 412:
+            code = ErrorCodes.PRECONDITION_FAILED;
+            break;
+         case 413:
+            code = ErrorCodes.PAYLOAD_TOO_LARGE;
             break;
          case 422:
             code = ErrorCodes.UNPROCESSABLE_CONTENT;

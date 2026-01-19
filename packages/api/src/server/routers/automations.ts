@@ -59,6 +59,12 @@ const triggerTypeSchema = z.enum([
    "budget.threshold_reached",
    "budget.period_end",
    "budget.overspent",
+   "anomaly.spending_spike",
+   "anomaly.unusual_category",
+   "anomaly.large_transaction",
+   "goal.milestone_reached",
+   "goal.at_risk",
+   "goal.completed",
 ]);
 
 const scheduleTriggerConfigSchema = z.object({
@@ -174,24 +180,30 @@ const actionConfigSchema = z.object({
    pdfPageSize: z.enum(["A4", "Letter"]).optional(),
    htmlTableStyle: z.enum(["default", "striped", "bordered"]).optional(),
    // generate_custom_report config
-   reportType: z.enum([
-      "dre_gerencial",
-      "dre_fiscal",
-      "budget_vs_actual",
-      "spending_trends",
-      "cash_flow_forecast",
-      "counterparty_analysis",
-   ]).optional(),
-   periodType: z.enum(["previous_month", "previous_week", "current_month", "custom"]).optional(),
+   reportType: z
+      .enum([
+         "dre_gerencial",
+         "dre_fiscal",
+         "budget_vs_actual",
+         "spending_trends",
+         "cash_flow_forecast",
+         "counterparty_analysis",
+      ])
+      .optional(),
+   periodType: z
+      .enum(["previous_month", "previous_week", "current_month", "custom"])
+      .optional(),
    daysBack: z.number().optional(),
    forecastDays: z.number().min(7).max(365).optional(),
-   filterConfig: z.object({
-      bankAccountIds: z.array(z.string()).optional(),
-      categoryIds: z.array(z.string()).optional(),
-      costCenterIds: z.array(z.string()).optional(),
-      tagIds: z.array(z.string()).optional(),
-      includeTransfers: z.boolean().optional(),
-   }).optional(),
+   filterConfig: z
+      .object({
+         bankAccountIds: z.array(z.string()).optional(),
+         categoryIds: z.array(z.string()).optional(),
+         costCenterIds: z.array(z.string()).optional(),
+         tagIds: z.array(z.string()).optional(),
+         includeTransfers: z.boolean().optional(),
+      })
+      .optional(),
    saveReport: z.boolean().optional(),
    reportName: z.string().optional(),
    // fetch_budget_report config

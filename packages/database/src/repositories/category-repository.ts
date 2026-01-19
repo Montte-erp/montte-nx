@@ -7,6 +7,11 @@ import {
    transactionCategory,
 } from "../schemas/categories";
 import { transaction } from "../schemas/transactions";
+import {
+   buildPaginationMeta,
+   calculateOffset,
+   type PaginationOptions,
+} from "../utils/pagination";
 
 export type Category = typeof category.$inferSelect;
 export type NewCategory = typeof category.$inferInsert;
@@ -102,13 +107,7 @@ export async function findCategoriesByTransactionType(
 export async function findCategoriesByOrganizationIdPaginated(
    dbClient: DatabaseInstance,
    organizationId: string,
-   options: {
-      page?: number;
-      limit?: number;
-      orderBy?: "name" | "createdAt" | "updatedAt";
-      orderDirection?: "asc" | "desc";
-      search?: string;
-   } = {},
+   options: PaginationOptions<"name" | "createdAt" | "updatedAt"> = {},
 ) {
    const {
       page = 1,
@@ -118,7 +117,7 @@ export async function findCategoriesByOrganizationIdPaginated(
       search,
    } = options;
 
-   const offset = (page - 1) * limit;
+   const offset = calculateOffset(page, limit);
 
    try {
       const baseWhereCondition = eq(category.organizationId, organizationId);
@@ -143,18 +142,9 @@ export async function findCategoriesByOrganizationIdPaginated(
             .then((result) => result.length),
       ]);
 
-      const totalPages = Math.ceil(totalCount / limit);
-
       return {
          categories,
-         pagination: {
-            currentPage: page,
-            hasNextPage: page < totalPages,
-            hasPreviousPage: page > 1,
-            limit,
-            totalCount,
-            totalPages,
-         },
+         pagination: buildPaginationMeta(totalCount, page, limit),
       };
    } catch (err) {
       propagateError(err);

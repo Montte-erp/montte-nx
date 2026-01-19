@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { captureClientEvent } from "@packages/posthog/client";
 import {
    Alert,
@@ -69,11 +68,9 @@ export function ErrorReportCredenza({ error }: ErrorReportCredenzaProps) {
    if (submitted) {
       return (
          <CredenzaHeader>
-            <CredenzaTitle>
-               {translate("common.error-report.submitted-title")}
-            </CredenzaTitle>
+            <CredenzaTitle>Relatorio enviado</CredenzaTitle>
             <CredenzaDescription>
-               {translate("common.error-report.submitted-description")}
+               Obrigado por nos ajudar a melhorar!
             </CredenzaDescription>
          </CredenzaHeader>
       );
@@ -82,11 +79,10 @@ export function ErrorReportCredenza({ error }: ErrorReportCredenzaProps) {
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>
-               {translate("common.error-report.title")}
-            </CredenzaTitle>
+            <CredenzaTitle>Relatar erro</CredenzaTitle>
             <CredenzaDescription>
-               {translate("common.error-report.description")}
+               Ajude-nos a melhorar relatando este erro. Suas informacoes serao
+               enviadas anonimamente.
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -96,7 +92,7 @@ export function ErrorReportCredenza({ error }: ErrorReportCredenzaProps) {
                   <AlertCircle className="size-4" />
                   <AlertTitle>{error.message}</AlertTitle>
                   <AlertDescription className="flex gap-2">
-                     <span>{translate("common.error-report.error-id")}:</span>
+                     <span>ID do erro:</span>
                      <span>{error.errorId.slice(0, 8)}</span>
                   </AlertDescription>
                </Alert>
@@ -105,11 +101,7 @@ export function ErrorReportCredenza({ error }: ErrorReportCredenzaProps) {
                   {(field) => (
                      <FieldGroup>
                         <Field>
-                           <FieldLabel>
-                              {translate(
-                                 "common.error-report.additional-details",
-                              )}
-                           </FieldLabel>
+                           <FieldLabel>Detalhes adicionais</FieldLabel>
                            <Textarea
                               id={field.name}
                               name={field.name}
@@ -117,9 +109,7 @@ export function ErrorReportCredenza({ error }: ErrorReportCredenzaProps) {
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
                               }
-                              placeholder={translate(
-                                 "common.error-report.additional-details-placeholder",
-                              )}
+                              placeholder="Descreva o que estava fazendo quando o erro ocorreu..."
                               rows={4}
                               value={field.state.value}
                            />
@@ -132,7 +122,7 @@ export function ErrorReportCredenza({ error }: ErrorReportCredenzaProps) {
 
          <CredenzaFooter>
             <Button onClick={() => closeCredenza()} variant="outline">
-               {translate("common.actions.close")}
+               Fechar
             </Button>
             <form.Subscribe>
                {(formState) => (
@@ -141,8 +131,8 @@ export function ErrorReportCredenza({ error }: ErrorReportCredenzaProps) {
                      onClick={() => form.handleSubmit()}
                   >
                      {formState.isSubmitting
-                        ? translate("common.actions.sending")
-                        : translate("common.error-report.send-report")}
+                        ? "Enviando..."
+                        : "Enviar relatorio"}
                   </Button>
                )}
             </form.Subscribe>

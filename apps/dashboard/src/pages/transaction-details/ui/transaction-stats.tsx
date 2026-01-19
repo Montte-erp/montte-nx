@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import {
    Card,
@@ -27,11 +26,9 @@ function StatsErrorFallback(props: FallbackProps) {
    return (
       <div className="grid gap-4 h-min">
          {createErrorFallback({
-            errorDescription: translate(
-               "dashboard.routes.transactions.details.error.load-stats",
-            ),
+            errorDescription: "Falha ao carregar estatísticas",
             errorTitle: "Error loading stats",
-            retryText: translate("common.actions.retry"),
+            retryText: "Tentar novamente",
          })(props)}
       </div>
    );
@@ -102,15 +99,9 @@ function StatsContent({ transactionId }: { transactionId: string }) {
    const formattedDate = formatDate(new Date(data.date), "DD MMMM YYYY");
 
    const typeLabels: Record<string, string> = {
-      expense: translate(
-         "dashboard.routes.transactions.list-section.types.expense",
-      ),
-      income: translate(
-         "dashboard.routes.transactions.list-section.types.income",
-      ),
-      transfer: translate(
-         "dashboard.routes.transactions.list-section.types.transfer",
-      ),
+      expense: "Despesa",
+      income: "Receita",
+      transfer: "Transferência",
    };
 
    const createdAt = formatDate(new Date(data.createdAt), "DD/MM/YYYY");
@@ -122,9 +113,7 @@ function StatsContent({ transactionId }: { transactionId: string }) {
          <Card>
             <CardHeader className="pb-2">
                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {translate(
-                     "dashboard.routes.transactions.details.stats.amount.title",
-                  )}
+                  Valor
                </CardTitle>
             </CardHeader>
             <CardContent>
@@ -135,9 +124,7 @@ function StatsContent({ transactionId }: { transactionId: string }) {
                   {formattedAmount}
                </div>
                <p className="text-xs text-muted-foreground mt-1">
-                  {translate(
-                     "dashboard.routes.transactions.details.stats.amount.description",
-                  )}
+                  Valor total da transação
                </p>
             </CardContent>
          </Card>
@@ -145,9 +132,7 @@ function StatsContent({ transactionId }: { transactionId: string }) {
          <Card>
             <CardHeader className="pb-2">
                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {translate(
-                     "dashboard.routes.transactions.details.stats.type.title",
-                  )}
+                  Tipo
                </CardTitle>
             </CardHeader>
             <CardContent>
@@ -167,9 +152,7 @@ function StatsContent({ transactionId }: { transactionId: string }) {
          <Card>
             <CardHeader className="pb-2">
                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {translate(
-                     "dashboard.routes.transactions.details.stats.bank-account.title",
-                  )}
+                  Conta Bancária
                </CardTitle>
             </CardHeader>
             <CardContent>
@@ -190,9 +173,7 @@ function StatsContent({ transactionId }: { transactionId: string }) {
          <Card>
             <CardHeader className="pb-2">
                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {translate(
-                     "dashboard.routes.transactions.details.stats.created.title",
-                  )}
+                  Criado em
                </CardTitle>
             </CardHeader>
             <CardContent>
@@ -201,9 +182,7 @@ function StatsContent({ transactionId }: { transactionId: string }) {
                   <span className="text-lg font-semibold">{createdAt}</span>
                </div>
                <p className="text-xs text-muted-foreground mt-1 ml-7">
-                  {translate(
-                     "dashboard.routes.transactions.details.stats.created.description",
-                  )}
+                  Data de registro no sistema
                </p>
             </CardContent>
          </Card>

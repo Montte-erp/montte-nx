@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import { Alert, AlertDescription } from "@packages/ui/components/alert";
 import {
@@ -78,20 +77,20 @@ function MetadataCardContent({ billId }: { billId: string }) {
          return {
             color: "text-green-600",
             icon: CheckCircle2,
-            label: translate("dashboard.routes.bills.status.paid"),
+            label: "Paga",
          };
       }
       if (isOverdue) {
          return {
             color: "text-destructive",
             icon: AlertCircle,
-            label: translate("dashboard.routes.bills.status.overdue"),
+            label: "Vencida",
          };
       }
       return {
          color: "text-amber-600",
          icon: Clock,
-         label: translate("dashboard.routes.bills.status.pending"),
+         label: "Pendente",
       };
    };
 
@@ -159,9 +158,7 @@ function MetadataCardContent({ billId }: { billId: string }) {
                <Announcement>
                   <AnnouncementTag>Tipo</AnnouncementTag>
                   <AnnouncementTitle>
-                     {bill.type === "expense"
-                        ? translate("dashboard.routes.bills.type.payable")
-                        : translate("dashboard.routes.bills.type.receivable")}
+                     {bill.type === "expense" ? "A Pagar" : "A Receber"}
                   </AnnouncementTitle>
                </Announcement>
             </div>

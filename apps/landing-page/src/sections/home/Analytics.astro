@@ -1,0 +1,59 @@
+---
+import { FeatureCarousel } from "@/components/feature-carousel";
+
+const analyticsFeatures = [
+   {
+      id: "dashboards-personalizados",
+      title: "Dashboards Personalizados",
+      description:
+         "Crie dashboards sob medida com widgets arrastaveis. Organize suas informacoes mais importantes em uma unica tela.",
+      image: "https://placehold.co/350x478/151925/22c55e?text=Dashboards",
+      width: "narrow" as const,
+   },
+   {
+      id: "graficos-interativos",
+      title: "Graficos Interativos",
+      description:
+         "Visualize seus dados em graficos de linha, barra, pizza, Sankey e heatmaps. Clique para fazer drill-down e explorar detalhes.",
+      image: "https://placehold.co/725x478/151925/22c55e?text=Graficos+Interativos",
+      width: "wide" as const,
+   },
+   {
+      id: "exportacao-pdf",
+      title: "Exportacao em PDF",
+      description:
+         "Exporte seus dashboards como relatorios PDF prontos para compartilhar. Perfeito para reunioes, auditorias e prestacao de contas.",
+      image: "https://placehold.co/350x478/151925/22c55e?text=Exportar+PDF",
+      width: "narrow" as const,
+   },
+   {
+      id: "drill-down-categoria",
+      title: "Drill-Down por Categoria",
+      description:
+         "Clique em qualquer ponto do grafico para aprofundar a analise. Va do resumo ate a transacao individual em segundos.",
+      image: "https://placehold.co/725x478/151925/22c55e?text=Drill-Down",
+      width: "wide" as const,
+   },
+   {
+      id: "widgets-customizaveis",
+      title: "Widgets Customizaveis",
+      description:
+         "Escolha entre diversos tipos de widgets para montar seu painel ideal. Redimensione e posicione como preferir.",
+      image: "https://placehold.co/350x478/151925/22c55e?text=Widgets",
+      width: "narrow" as const,
+   },
+];
+---
+
+<section id="analytics" class="py-16 md:py-24 overflow-hidden relative">
+   <FeatureCarousel
+      items={analyticsFeatures}
+      badge="Dashboards e Analises"
+      title="Visualize. Entenda. Decida."
+      subtitle="Crie dashboards personalizados com graficos interativos e exporte como PDF para compartilhar com sua equipe."
+      ctaText="Explorar dashboards"
+      ctaHref="/features/analytics"
+      benefitText="Tome decisoes baseadas em dados, nao em intuicao."
+      client:load
+   />
+</section>

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -15,6 +14,7 @@ import { useParams, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, Building2, FileText, User, Users } from "lucide-react";
 import { Suspense } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { useDetailTabName } from "@/features/custom-dashboard/hooks/use-detail-tab-name";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useTRPC } from "@/integrations/clients";
 import { CounterpartyActionButtons } from "./counterparty-action-buttons";
@@ -49,6 +49,19 @@ function getTypeColor(type: string): string {
    }
 }
 
+function getTypeLabel(type: string): string {
+   switch (type) {
+      case "client":
+         return "Cliente";
+      case "supplier":
+         return "Fornecedor";
+      case "both":
+         return "Cliente e Fornecedor";
+      default:
+         return type;
+   }
+}
+
 function CounterpartyContent() {
    const params = useParams({ strict: false });
    const counterpartyId =
@@ -60,6 +73,8 @@ function CounterpartyContent() {
    const { data: counterparty } = useSuspenseQuery(
       trpc.counterparties.getById.queryOptions({ id: counterpartyId }),
    );
+
+   useDetailTabName(counterparty?.name);
 
    const handleDeleteSuccess = () => {
       router.navigate({
@@ -112,11 +127,7 @@ function CounterpartyContent() {
                         variant="outline"
                      >
                         {getTypeIcon(counterparty.type)}
-                        {translate(
-                           `dashboard.routes.counterparties.form.type.${counterparty.type}` as Parameters<
-                              typeof translate
-                           >[0],
-                        )}
+                        {getTypeLabel(counterparty.type)}
                      </Badge>
                      {!counterparty.isActive && (
                         <Badge variant="secondary">Inativo</Badge>
@@ -201,11 +212,7 @@ function CounterpartyPageError({ error, resetErrorBoundary }: FallbackProps) {
                   <EmptyMedia variant="icon">
                      <FileText className="size-12 text-destructive" />
                   </EmptyMedia>
-                  <EmptyTitle>
-                     {translate(
-                        "dashboard.routes.counterparties.list-section.state.error.title",
-                     )}
-                  </EmptyTitle>
+                  <EmptyTitle>Erro ao carregar parceiro</EmptyTitle>
                   <EmptyDescription>{error?.message}</EmptyDescription>
                   <div className="mt-6 flex gap-2 justify-center">
                      <Button
@@ -226,7 +233,7 @@ function CounterpartyPageError({ error, resetErrorBoundary }: FallbackProps) {
                         size="default"
                         variant="default"
                      >
-                        {translate("common.actions.retry")}
+                        Tentar novamente
                      </Button>
                   </div>
                </EmptyContent>

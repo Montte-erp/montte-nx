@@ -1,21 +1,19 @@
-import { translate } from "@packages/localization";
-import { formatDecimalCurrency } from "@packages/money";
 import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { StatsCard } from "@packages/ui/components/stats-card";
-import { useSuspenseQueries } from "@tanstack/react-query";
-import { Suspense, useMemo } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { Suspense } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { useTRPC } from "@/integrations/clients";
 
 function CategoriesStatsErrorFallback(props: FallbackProps) {
    return (
-      <div className="grid gap-4 h-min">
+      <div className="grid gap-4 h-min ">
          {createErrorFallback({
             errorDescription:
-               "Failed to load categories stats. Please try again later.",
-            errorTitle: "Error loading stats",
-            retryText: "Retry",
+               "Falha ao carregar estatísticas de categorias. Tente novamente mais tarde.",
+            errorTitle: "Erro ao carregar estatísticas",
+            retryText: "Tentar novamente",
          })(props)}
       </div>
    );
@@ -40,65 +38,24 @@ function CategoriesStatsSkeleton() {
 
 function CategoriesStatsContent() {
    const trpc = useTRPC();
-
-   const [statsQuery, breakdownQuery] = useSuspenseQueries({
-      queries: [
-         trpc.categories.getStats.queryOptions(),
-         trpc.categories.getBreakdown.queryOptions(),
-      ],
-   });
-
-   const { totalIncome, totalExpenses } = useMemo(() => {
-      const breakdown = breakdownQuery.data ?? [];
-      return breakdown.reduce(
-         (acc, item) => ({
-            totalExpenses: acc.totalExpenses + (item.expenses || 0),
-            totalIncome: acc.totalIncome + (item.income || 0),
-         }),
-         { totalExpenses: 0, totalIncome: 0 },
-      );
-   }, [breakdownQuery.data]);
-
-   const stats = statsQuery.data;
+   const { data: stats } = useSuspenseQuery(
+      trpc.categories.getStats.queryOptions(),
+   );
 
    return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-         <StatsCard
-            description={translate(
-               "dashboard.routes.categories.stats.total-categories.description",
-            )}
-            title={translate(
-               "dashboard.routes.categories.stats.total-categories.title",
-            )}
-            value={stats.totalCategories}
-         />
-         <StatsCard
-            description={translate(
-               "dashboard.routes.categories.stats.total-income.description",
-            )}
-            title={translate(
-               "dashboard.routes.categories.stats.total-income.title",
-            )}
-            value={`+${formatDecimalCurrency(totalIncome)}`}
-         />
-         <StatsCard
-            description={translate(
-               "dashboard.routes.categories.stats.total-expenses.description",
-            )}
-            title={translate(
-               "dashboard.routes.categories.stats.total-expenses.title",
-            )}
-            value={`-${formatDecimalCurrency(totalExpenses)}`}
-         />
-         <StatsCard
-            description={translate(
-               "dashboard.routes.categories.stats.most-spending.description",
-            )}
-            title={translate(
-               "dashboard.routes.categories.stats.most-spending.title",
-            )}
-            value={stats.categoryWithMostTransactions || "N/A"}
-         />
+      <div className="grid gap-4 h-min">
+         <div className="grid grid-cols-2 gap-4">
+            <StatsCard
+               description="Número total de categorias que você criou."
+               title="Total de categorias"
+               value={stats.totalCategories}
+            />
+            <StatsCard
+               description="A categoria onde você mais gastou dinheiro este mês."
+               title="Categoria com maiores gastos"
+               value={stats.categoryWithMostTransactions || "N/A"}
+            />
+         </div>
       </div>
    );
 }

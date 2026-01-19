@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Card,
    CardContent,
@@ -24,26 +23,17 @@ function AccountConfigurationErrorFallback(props: FallbackProps) {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               {translate(
-                  "dashboard.routes.profile.account-configuration.title",
-               )}
-            </CardTitle>
+            <CardTitle>Configurações da Conta</CardTitle>
             <CardDescription>
-               {translate(
-                  "dashboard.routes.profile.account-configuration.description",
-               )}
+               Configure sua conta e preferências.
             </CardDescription>
          </CardHeader>
          <CardContent>
             {createErrorFallback({
-               errorDescription: translate(
-                  "dashboard.routes.profile.account-configuration.state.error.description",
-               ),
-               errorTitle: translate(
-                  "dashboard.routes.profile.account-configuration.state.error.title",
-               ),
-               retryText: translate("common.actions.retry"),
+               errorDescription:
+                  "Ocorreu um erro ao carregar suas configurações.",
+               errorTitle: "Erro ao carregar",
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>
@@ -84,15 +74,9 @@ function AccountConfigurationContent() {
    return (
       <Card>
          <CardHeader>
-            <CardTitle>
-               {translate(
-                  "dashboard.routes.profile.account-configuration.title",
-               )}
-            </CardTitle>
+            <CardTitle>Configurações da Conta</CardTitle>
             <CardDescription>
-               {translate(
-                  "dashboard.routes.profile.account-configuration.description",
-               )}
+               Configure sua conta e preferências.
             </CardDescription>
          </CardHeader>
 
@@ -102,15 +86,9 @@ function AccountConfigurationContent() {
                   <DollarSign className="size-4" />
                </ItemMedia>
                <ItemContent>
-                  <ItemTitle>
-                     {translate(
-                        "dashboard.routes.profile.account-configuration.items.currency.title",
-                     )}
-                  </ItemTitle>
+                  <ItemTitle>Moeda</ItemTitle>
                   <ItemDescription>
-                     {translate(
-                        "dashboard.routes.profile.account-configuration.items.currency.description",
-                     )}
+                     Selecione a moeda padrão para suas transações.
                   </ItemDescription>
                </ItemContent>
                <CurrencyCommand />

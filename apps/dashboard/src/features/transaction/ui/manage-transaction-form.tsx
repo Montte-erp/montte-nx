@@ -1,12 +1,10 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import {
    Alert,
    AlertDescription,
    AlertTitle,
 } from "@packages/ui/components/alert";
 import { Button } from "@packages/ui/components/button";
-import { Combobox } from "@packages/ui/components/combobox";
 import { DatePicker } from "@packages/ui/components/date-picker";
 import {
    Field,
@@ -16,7 +14,6 @@ import {
    FieldLabel,
 } from "@packages/ui/components/field";
 import { MoneyInput } from "@packages/ui/components/money-input";
-import { MultiSelect } from "@packages/ui/components/multi-select";
 import {
    Select,
    SelectContent,
@@ -45,7 +42,7 @@ import { getRandomColor } from "@packages/utils/colors";
 import { formatDate } from "@packages/utils/date";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Info, Tag, XCircle } from "lucide-react";
+import { AlertTriangle, Info, XCircle } from "lucide-react";
 import {
    type FormEvent,
    useCallback,
@@ -56,8 +53,9 @@ import {
 import { toast } from "sonner";
 import { z } from "zod";
 
-import type { IconName } from "@/features/icon-selector/lib/available-icons";
-import { IconDisplay } from "@/features/icon-selector/ui/icon-display";
+import { CategoryMultiSelect } from "@/features/category/ui/category-multi-select";
+import { CostCenterCombobox } from "@/features/cost-center/ui/cost-center-combobox";
+import { TagMultiSelect } from "@/features/tag/ui/tag-multi-select";
 import { useSheet } from "@/hooks/use-sheet";
 import { useTRPC } from "@/integrations/clients";
 
@@ -132,22 +130,14 @@ export function ManageTransactionForm({
    const modeTexts = useMemo(() => {
       if (isEditMode) {
          return {
-            description: translate(
-               "dashboard.routes.transactions.features.edit.description",
-            ),
-            title: translate(
-               "dashboard.routes.transactions.features.edit.title",
-            ),
+            description: "Modifique os detalhes da transação selecionada.",
+            title: "Editar Transação",
          };
       }
 
       return {
-         description: translate(
-            "dashboard.routes.transactions.features.add-new.description",
-         ),
-         title: translate(
-            "dashboard.routes.transactions.features.add-new.title",
-         ),
+         description: "Adicione uma nova transação ao seu registro financeiro.",
+         title: "Adicionar Nova Transação",
       };
    }, [isEditMode]);
 
@@ -206,12 +196,12 @@ export function ManageTransactionForm({
       updateTransactionMutation.isPending;
 
    const transactionSchema = z.object({
-      amount: z.number().min(1, translate("common.validation.required")),
-      bankAccountId: z.string().min(1, translate("common.validation.required")),
+      amount: z.number().min(1, "Este campo é obrigatório."),
+      bankAccountId: z.string().min(1, "Este campo é obrigatório."),
       categoryIds: z.array(z.string()),
       costCenterId: z.string(),
-      date: z.date({ message: translate("common.validation.required") }),
-      description: z.string().min(1, translate("common.validation.required")),
+      date: z.date({ message: "Este campo é obrigatório." }),
+      description: z.string().min(1, "Este campo é obrigatório."),
       tagIds: z.array(z.string()),
       type: z.enum(["expense", "income"]),
    });
@@ -231,11 +221,7 @@ export function ManageTransactionForm({
             type: values.type,
          });
 
-         toast.success(
-            translate(
-               "dashboard.routes.transactions.notifications.create-success",
-            ),
-         );
+         toast.success("Transação criada com sucesso");
          resetForm();
          setBudgetImpactParams(null);
          closeSheet();
@@ -264,11 +250,7 @@ export function ManageTransactionForm({
             id: transaction.id,
          });
 
-         toast.success(
-            translate(
-               "dashboard.routes.transactions.notifications.update-success",
-            ),
-         );
+         toast.success("Transação atualizada com sucesso");
          closeSheet();
       },
       [transaction, updateTransactionMutation, closeSheet],
@@ -310,11 +292,9 @@ export function ManageTransactionForm({
                error,
             );
             toast.error(
-               translate(
-                  isEditMode
-                     ? "dashboard.routes.transactions.notifications.update-error"
-                     : "dashboard.routes.transactions.notifications.create-error",
-               ),
+               isEditMode
+                  ? "Falha ao atualizar transação"
+                  : "Falha ao criar transação",
             );
          }
       },
@@ -408,12 +388,6 @@ export function ManageTransactionForm({
    const { data: budgetImpactWarnings = [] } = useQuery({
       ...trpc.budgets.checkBudgetImpact.queryOptions({
          amount: budgetImpactParams?.amount ?? 0,
-         categoryIds:
-            budgetImpactParams?.categoryIds &&
-            budgetImpactParams.categoryIds.length > 0
-               ? budgetImpactParams.categoryIds
-               : undefined,
-         costCenterId: budgetImpactParams?.costCenterId || undefined,
          excludeTransactionId: transaction?.id,
          tagIds:
             budgetImpactParams?.tagIds && budgetImpactParams.tagIds.length > 0
@@ -422,40 +396,6 @@ export function ManageTransactionForm({
       }),
       enabled: shouldCheckBudgetImpact,
    });
-
-   const categoryOptions = useMemo(
-      () =>
-         categories.map((category) => {
-            const iconName = (category.icon || "Wallet") as IconName;
-            return {
-               icon: <IconDisplay iconName={iconName} size={16} />,
-               label: category.name,
-               value: category.id,
-            };
-         }),
-      [categories],
-   );
-
-   const tagOptions = useMemo(
-      () =>
-         tags.map((tag) => ({
-            icon: <Tag className="size-4" style={{ color: tag.color }} />,
-            label: tag.name,
-            value: tag.id,
-         })),
-      [tags],
-   );
-
-   const costCenterOptions = useMemo(
-      () => [
-         { label: translate("common.form.cost-center.none"), value: "" },
-         ...costCenters.map((cc) => ({
-            label: cc.code ? `${cc.name} (${cc.code})` : cc.name,
-            value: cc.id,
-         })),
-      ],
-      [costCenters],
-   );
 
    function DetailsStep() {
       return (
@@ -468,7 +408,7 @@ export function ManageTransactionForm({
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.description.label")}
+                              Descrição
                            </FieldLabel>
                            <Textarea
                               id={field.name}
@@ -476,9 +416,7 @@ export function ManageTransactionForm({
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
                               }
-                              placeholder={translate(
-                                 "common.form.description.placeholder",
-                              )}
+                              placeholder="Digite a descrição"
                               value={field.state.value}
                            />
                            {isInvalid && (
@@ -497,9 +435,7 @@ export function ManageTransactionForm({
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.amount.label")}
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Valor</FieldLabel>
                            <MoneyInput
                               id={field.name}
                               onBlur={field.handleBlur}
@@ -526,9 +462,7 @@ export function ManageTransactionForm({
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.bank.label")}
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Banco</FieldLabel>
                            <Select
                               onOpenChange={(open) => {
                                  if (!open) field.handleBlur();
@@ -539,11 +473,7 @@ export function ManageTransactionForm({
                               value={field.state.value}
                            >
                               <SelectTrigger id={field.name}>
-                                 <SelectValue
-                                    placeholder={translate(
-                                       "common.form.bank.placeholder",
-                                    )}
-                                 />
+                                 <SelectValue placeholder="Selecione seu banco" />
                               </SelectTrigger>
                               <SelectContent>
                                  {bankAccounts.map((account) => (
@@ -572,9 +502,7 @@ export function ManageTransactionForm({
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.type.label")}
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Tipo</FieldLabel>
                            <Select
                               onValueChange={(value) => {
                                  const typedValue = value as
@@ -590,15 +518,9 @@ export function ManageTransactionForm({
                               </SelectTrigger>
                               <SelectContent>
                                  <SelectItem value="expense">
-                                    {translate(
-                                       "dashboard.routes.transactions.list-section.types.expense",
-                                    )}
+                                    Despesa
                                  </SelectItem>
-                                 <SelectItem value="income">
-                                    {translate(
-                                       "dashboard.routes.transactions.list-section.types.income",
-                                    )}
-                                 </SelectItem>
+                                 <SelectItem value="income">Receita</SelectItem>
                               </SelectContent>
                            </Select>
                            {isInvalid && (
@@ -617,17 +539,13 @@ export function ManageTransactionForm({
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.date.label")}
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Data</FieldLabel>
                            <DatePicker
                               date={field.state.value}
                               onSelect={(date) =>
                                  field.handleChange(date || new Date())
                               }
-                              placeholder={translate(
-                                 "common.form.date.placeholder",
-                              )}
+                              placeholder="Selecione uma data"
                            />
                            {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
@@ -652,26 +570,19 @@ export function ManageTransactionForm({
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.category.label")}
+                              Categoria
                            </FieldLabel>
-                           <MultiSelect
+                           <CategoryMultiSelect
+                              categories={categories}
                               className="flex-1"
-                              createLabel={translate(
-                                 "common.form.category.create",
-                              )}
-                              emptyMessage={translate(
-                                 "common.form.search.no-results",
-                              )}
                               onChange={(val) => field.handleChange(val)}
                               onCreate={handleCreateCategory}
-                              options={categoryOptions}
-                              placeholder={translate(
-                                 "common.form.category.placeholder",
-                              )}
+                              placeholder="Selecione uma categoria"
                               selected={field.state.value || []}
                            />
                            <FieldDescription>
-                              {translate("common.form.category.description")}
+                              Agrupe suas transações por tipo de gasto ou
+                              receita para análises detalhadas
                            </FieldDescription>
                            {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
@@ -687,30 +598,19 @@ export function ManageTransactionForm({
                   {(field) => (
                      <Field>
                         <FieldLabel htmlFor={field.name}>
-                           {translate("common.form.cost-center.label")}
+                           Centro de Custo
                         </FieldLabel>
-                        <Combobox
+                        <CostCenterCombobox
                            className="w-full justify-between"
-                           createLabel={translate(
-                              "common.form.cost-center.create",
-                           )}
+                           costCenters={costCenters}
                            disabled={isCreating}
-                           emptyMessage={translate(
-                              "common.form.search.no-results",
-                           )}
                            onCreate={handleCreateCostCenter}
                            onValueChange={(value) => field.handleChange(value)}
-                           options={costCenterOptions}
-                           placeholder={translate(
-                              "common.form.cost-center.placeholder",
-                           )}
-                           searchPlaceholder={translate(
-                              "common.form.search.label",
-                           )}
                            value={field.state.value}
                         />
                         <FieldDescription>
-                           {translate("common.form.cost-center.description")}
+                           Associe a departamentos, projetos ou áreas para
+                           controle orçamentário
                         </FieldDescription>
                      </Field>
                   )}
@@ -721,25 +621,18 @@ export function ManageTransactionForm({
                <form.Field name="tagIds">
                   {(field) => (
                      <Field>
-                        <FieldLabel htmlFor={field.name}>
-                           {translate("common.form.tags.label")}
-                        </FieldLabel>
-                        <MultiSelect
+                        <FieldLabel htmlFor={field.name}>Tags</FieldLabel>
+                        <TagMultiSelect
                            className="flex-1"
-                           createLabel={translate("common.form.tags.create")}
-                           emptyMessage={translate(
-                              "common.form.search.no-results",
-                           )}
                            onChange={(val) => field.handleChange(val)}
                            onCreate={handleCreateTag}
-                           options={tagOptions}
-                           placeholder={translate(
-                              "common.form.tags.placeholder",
-                           )}
+                           placeholder="Selecione as tags"
                            selected={field.state.value || []}
+                           tags={tags}
                         />
                         <FieldDescription>
-                           {translate("common.form.tags.description")}
+                           Adicione marcadores personalizados para filtrar e
+                           organizar suas transações
                         </FieldDescription>
                      </Field>
                   )}
@@ -855,7 +748,7 @@ export function ManageTransactionForm({
                                  }}
                                  type="button"
                               >
-                                 {translate("common.actions.next")}
+                                 Próximo
                               </Button>
                            )}
                         </form.Subscribe>
@@ -893,7 +786,7 @@ export function ManageTransactionForm({
                                        type="button"
                                        variant="ghost"
                                     >
-                                       {translate("common.actions.previous")}
+                                       Voltar
                                     </Button>
                                     {hasAnyCategorization ? (
                                        <Button
@@ -906,7 +799,7 @@ export function ManageTransactionForm({
                                           }
                                           type="submit"
                                        >
-                                          {translate("common.actions.submit")}
+                                          Enviar
                                        </Button>
                                     ) : (
                                        <Button
@@ -919,7 +812,7 @@ export function ManageTransactionForm({
                                           type="submit"
                                           variant="outline"
                                        >
-                                          {translate("common.actions.skip")}
+                                          Pular
                                        </Button>
                                     )}
                                  </>

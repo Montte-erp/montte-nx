@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Card,
    CardContent,
@@ -6,23 +5,18 @@ import {
    CardHeader,
    CardTitle,
 } from "@packages/ui/components/card";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { StatsCard } from "@packages/ui/components/stats-card";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { ErrorBoundary } from "react-error-boundary";
 import { useTRPC } from "@/integrations/clients";
 
-function BankAccountStatsErrorFallback(props: FallbackProps) {
+function BankAccountStatsErrorFallback() {
    return (
-      <div className="grid gap-4 h-min">
-         {createErrorFallback({
-            errorDescription:
-               "Failed to load bank account stats. Please try again later.",
-            errorTitle: "Error loading stats",
-            retryText: "Retry",
-         })(props)}
+      <div className="p-4 text-center text-sm text-destructive">
+         Falha ao carregar estatísticas da conta bancária. Tente novamente mais
+         tarde.
       </div>
    );
 }
@@ -102,36 +96,24 @@ function BankAccountStatsContent({
    return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
          <StatsCard
-            description={translate(
-               "dashboard.routes.bank-accounts.stats-section.current-balance.description",
-            )}
-            title={translate(
-               "dashboard.routes.bank-accounts.stats-section.current-balance.title",
-            )}
+            description="Saldo calculado atual"
+            title="Saldo"
             value={new Intl.NumberFormat("pt-BR", {
                currency: "BRL",
                style: "currency",
             }).format(balance)}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-income.description",
-            )}
-            title={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-income.title",
-            )}
+            description="Receita total"
+            title="Receita"
             value={new Intl.NumberFormat("pt-BR", {
                currency: "BRL",
                style: "currency",
             }).format(income)}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-expenses.description",
-            )}
-            title={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-expenses.title",
-            )}
+            description="Despesas totais"
+            title="Despesas"
             value={new Intl.NumberFormat("pt-BR", {
                currency: "BRL",
                style: "currency",

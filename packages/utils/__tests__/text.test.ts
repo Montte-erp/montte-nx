@@ -1,8 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
-   calculateReadabilityScore,
    calculateReadTimeMinutes,
-   calculateTextStats,
    countWords,
    createCodeFromName,
    createDescriptionFromText,
@@ -10,7 +8,6 @@ import {
    formatStringForDisplay,
    generateRandomSuffix,
    getInitials,
-   getKeywordsFromText,
 } from "../src/text";
 
 describe("text utilities", () => {
@@ -68,55 +65,6 @@ describe("text utilities", () => {
          const text = "Verylongwordwithoutspaces";
          const result = createDescriptionFromText({ maxLength: 15, text });
          expect(result.endsWith("...")).toBe(true);
-      });
-   });
-
-   describe("getKeywordsFromText", () => {
-      it("should extract keywords from text", () => {
-         const text = "This is a test text about keywords and testing";
-         const result = getKeywordsFromText({ text });
-         expect(result).toContain("this");
-         expect(result).toContain("test");
-         expect(result).toContain("text");
-         expect(result).toContain("keywords");
-      });
-
-      it("should filter words by minimum length", () => {
-         const text = "This is a test with some longer words";
-         const result = getKeywordsFromText({ minLength: 5, text });
-         expect(result).toContain("longer");
-         expect(result).toContain("words");
-         expect(result).not.toContain("this");
-         expect(result).not.toContain("test");
-      });
-
-      it("should limit to top 10 keywords", () => {
-         const text =
-            "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12";
-         const result = getKeywordsFromText({ minLength: 3, text });
-         expect(result.length).toBeLessThanOrEqual(10);
-      });
-
-      it("should sort by frequency", () => {
-         const text = "apple apple apple banana banana cherry";
-         const result = getKeywordsFromText({ minLength: 4, text });
-         expect(result[0]).toBe("apple");
-         expect(result[1]).toBe("banana");
-      });
-
-      it("should remove special characters", () => {
-         const text = "hello! world? test.";
-         const result = getKeywordsFromText({ minLength: 4, text });
-         expect(result).toContain("hello");
-         expect(result).toContain("world");
-      });
-
-      it("should use default minLength", () => {
-         const text = "cat dog elephant";
-         const result = getKeywordsFromText({ text });
-         expect(result).not.toContain("cat");
-         expect(result).not.toContain("dog");
-         expect(result).toContain("elephant");
       });
    });
 
@@ -228,70 +176,6 @@ describe("text utilities", () => {
       it("should handle multiple underscores", () => {
          const result = formatStringForDisplay("one_two_three");
          expect(result).toBe("One Two Three");
-      });
-   });
-
-   describe("calculateTextStats", () => {
-      it("should calculate content statistics", () => {
-         const content = "This is a test content with ten words in total";
-         const result = calculateTextStats(content);
-         expect(result.wordsCount).toBe("10");
-         expect(result.readTimeMinutes).toBe("1");
-      });
-
-      it("should handle empty content", () => {
-         const result = calculateTextStats("");
-         expect(result.wordsCount).toBe("0");
-         expect(result.readTimeMinutes).toBe("0");
-      });
-   });
-
-   describe("calculateReadabilityScore", () => {
-      it("should calculate readability score", () => {
-         const text =
-            "This is a simple text for testing readability score calculation.";
-         const result = calculateReadabilityScore({ text });
-         expect(result).toHaveProperty("score");
-         expect(result).toHaveProperty("level");
-         expect(typeof result.score).toBe("number");
-         expect(typeof result.level).toBe("string");
-      });
-
-      it("should return Very Easy for simple text", () => {
-         const text = "The cat sat. The dog ran. It was fun.";
-         const result = calculateReadabilityScore({ text });
-         expect(["Very Easy", "Easy", "Fairly Easy"]).toContain(result.level);
-      });
-
-      it("should return harder level for complex text", () => {
-         const text =
-            "The implementation of sophisticated algorithms necessitates comprehensive understanding of computational complexity and theoretical foundations.";
-         const result = calculateReadabilityScore({ text });
-         expect(typeof result.level).toBe("string");
-      });
-
-      it("should handle text with various punctuation", () => {
-         const text = "Hello! How are you? I am fine.";
-         const result = calculateReadabilityScore({ text });
-         expect(result).toHaveProperty("score");
-      });
-
-      it("should handle words ending with e", () => {
-         const text = "The snake made a mistake by the lake.";
-         const result = calculateReadabilityScore({ text });
-         expect(result).toHaveProperty("score");
-      });
-
-      it("should handle words ending with le", () => {
-         const text = "The simple table was stable and able.";
-         const result = calculateReadabilityScore({ text });
-         expect(result).toHaveProperty("score");
-      });
-
-      it("should handle short words", () => {
-         const text = "I am a go to man.";
-         const result = calculateReadabilityScore({ text });
-         expect(result).toHaveProperty("score");
       });
    });
 

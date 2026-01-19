@@ -1,0 +1,45 @@
+---
+export const prerender = true;
+
+import { Separator } from "@packages/ui/components/separator";
+import CTA from "@/components/CTA.astro";
+import Footer from "@/components/Footer.astro";
+import StickyNavbar from "@/components/StickyNavbar.astro";
+import Layout from "@/layouts/Landing.astro";
+import EnterpriseCollaboration from "@/sections/enterprise/EnterpriseCollaboration.astro";
+import EnterpriseCosts from "@/sections/enterprise/EnterpriseCosts.astro";
+import EnterpriseFAQ from "@/sections/enterprise/EnterpriseFAQ.astro";
+import EnterpriseHero from "@/sections/enterprise/EnterpriseHero.astro";
+import EnterpriseOptimization from "@/sections/enterprise/EnterpriseOptimization.astro";
+import EnterprisePerformance from "@/sections/enterprise/EnterprisePerformance.astro";
+import EnterpriseSupport from "@/sections/enterprise/EnterpriseSupport.astro";
+---
+
+<Layout>
+   <div class="flex flex-col gap-2">
+      <StickyNavbar />
+
+      <EnterpriseHero />
+
+      <!-- Performance Section -->
+      <EnterprisePerformance />
+      <!-- Collaboration Section -->
+
+       <Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
+       <EnterpriseCollaboration />
+       <Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
+
+       <EnterpriseSupport />
+
+       <Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
+
+       <EnterpriseOptimization />
+
+       <EnterpriseCosts />
+
+       <Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
+       <EnterpriseFAQ />
+      <CTA />
+      <Footer />
+   </div>
+</Layout>

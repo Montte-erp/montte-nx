@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTRPC } from "@/integrations/clients";
@@ -15,18 +14,10 @@ export function useInterestTemplateBulkActions(
    const deleteMutation = useMutation(
       trpc.interestTemplates.deleteMany.mutationOptions({
          onError: () => {
-            toast.error(
-               translate(
-                  "dashboard.routes.interest-templates.bulk-actions.deleted-error",
-               ),
-            );
+            toast.error("Falha ao excluir templates de juros");
          },
          onSuccess: () => {
-            toast.success(
-               translate(
-                  "dashboard.routes.interest-templates.bulk-actions.deleted-success",
-               ),
-            );
+            toast.success("Templates de juros excluídos com sucesso");
             options?.onSuccess?.();
          },
       }),

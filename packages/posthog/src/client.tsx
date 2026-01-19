@@ -5,7 +5,10 @@ import posthog from "posthog-js";
 import { PostHogProvider, usePostHog } from "posthog-js/react";
 import { useCallback, useEffect, useState } from "react";
 
-type PosthogEnv = Pick<ClientEnv, "VITE_POSTHOG_HOST" | "VITE_POSTHOG_KEY" | "VITE_POSTHOG_UI_HOST">;
+type PosthogEnv = Pick<
+   ClientEnv,
+   "VITE_POSTHOG_HOST" | "VITE_POSTHOG_KEY" | "VITE_POSTHOG_UI_HOST"
+>;
 
 export function getReactPosthogConfig(env: PosthogEnv) {
    return {

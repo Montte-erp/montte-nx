@@ -8,7 +8,7 @@ import {
    category,
    costCenter,
    counterparty,
-   customReport,
+   dashboard,
    interestTemplate,
    member,
    notification,
@@ -48,9 +48,7 @@ async function deleteOrganizationScopedData(
       tx
          .delete(automationRule)
          .where(eq(automationRule.organizationId, organizationId)),
-      tx
-         .delete(customReport)
-         .where(eq(customReport.organizationId, organizationId)),
+      tx.delete(dashboard).where(eq(dashboard.organizationId, organizationId)),
       tx
          .delete(interestTemplate)
          .where(eq(interestTemplate.organizationId, organizationId)),
@@ -64,7 +62,7 @@ async function deleteOrganizationScopedData(
  * Delete all user data from the database across all organizations they belong to.
  * This includes: transactions, bills, budgets, categories, tags,
  * bank accounts, cost centers, counterparties, notifications,
- * custom reports, organizations (if no remaining members), and memberships.
+ * dashboards, organizations (if no remaining members), and memberships.
  *
  * User-specific auth data (sessions, accounts, etc) will cascade via onDelete: "cascade".
  */

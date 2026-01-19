@@ -1,5 +1,4 @@
 import type { BankAccount } from "@packages/database/repositories/bank-account-repository";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Field,
@@ -43,21 +42,14 @@ export function ManageBankAccountForm({
 
    const modeTexts = useMemo(() => {
       const createTexts = {
-         description: translate(
-            "dashboard.routes.profile.features.create-bank-account.description",
-         ),
-         title: translate(
-            "dashboard.routes.profile.features.create-bank-account.title",
-         ),
+         description:
+            "Crie sua conta bancária para começar a fazer transações.",
+         title: "Criar conta bancária",
       };
 
       const editTexts = {
-         description: translate(
-            "dashboard.routes.profile.features.edit-bank-account.description",
-         ),
-         title: translate(
-            "dashboard.routes.profile.features.edit-bank-account.title",
-         ),
+         description: "Edite os detalhes da sua conta bancária existente.",
+         title: "Editar conta bancária",
       };
 
       return isEditMode ? editTexts : createTexts;
@@ -80,11 +72,11 @@ export function ManageBankAccountForm({
    );
 
    const schema = z.object({
-      bank: z.string().min(1, translate("common.validation.required")),
+      bank: z.string().min(1, "Este campo é obrigatório."),
       name: z.string(),
       type: z
          .enum(["", "checking", "savings", "investment"])
-         .refine((val) => val !== "", translate("common.validation.required")),
+         .refine((val) => val !== "", "Este campo é obrigatório."),
    });
 
    const form = useForm({
@@ -156,9 +148,7 @@ export function ManageBankAccountForm({
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate(
-                                 "common.form.bank-account-nickname.label",
-                              )}
+                              Apelido da Conta
                            </FieldLabel>
                            <Input
                               aria-invalid={isInvalid}
@@ -168,15 +158,12 @@ export function ManageBankAccountForm({
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
                               }
-                              placeholder={translate(
-                                 "common.form.bank-account-nickname.placeholder",
-                              )}
+                              placeholder="Ex: Conta Salário, Banco Principal"
                               value={field.state.value}
                            />
                            <FieldDescription>
-                              {translate(
-                                 "common.form.bank-account-nickname.description",
-                              )}
+                              Opcional. Use para identificar facilmente esta
+                              conta, como 'Conta Salário' ou 'Banco Principal'
                            </FieldDescription>
                            {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
@@ -194,9 +181,7 @@ export function ManageBankAccountForm({
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.bank.label")}
-                           </FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Banco</FieldLabel>
                            <BankAccountCombobox
                               onBlur={field.handleBlur}
                               onValueChange={field.handleChange}
@@ -219,7 +204,7 @@ export function ManageBankAccountForm({
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              {translate("common.form.account-type.label")}
+                              Tipo de Conta
                            </FieldLabel>
                            <Select
                               onValueChange={(value) =>
@@ -234,27 +219,17 @@ export function ManageBankAccountForm({
                               value={field.state.value}
                            >
                               <SelectTrigger>
-                                 <SelectValue
-                                    placeholder={translate(
-                                       "common.form.account-type.placeholder",
-                                    )}
-                                 />
+                                 <SelectValue placeholder="Selecione o tipo de conta" />
                               </SelectTrigger>
                               <SelectContent>
                                  <SelectItem value="checking">
-                                    {translate(
-                                       "dashboard.routes.profile.bank-accounts.types.checking",
-                                    )}
+                                    Conta corrente
                                  </SelectItem>
                                  <SelectItem value="savings">
-                                    {translate(
-                                       "dashboard.routes.profile.bank-accounts.types.savings",
-                                    )}
+                                    Conta poupança
                                  </SelectItem>
                                  <SelectItem value="investment">
-                                    {translate(
-                                       "dashboard.routes.profile.bank-accounts.types.investment",
-                                    )}
+                                    Conta de investimento
                                  </SelectItem>
                               </SelectContent>
                            </Select>

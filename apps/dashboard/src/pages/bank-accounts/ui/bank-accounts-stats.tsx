@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import {
    Card,
@@ -7,23 +6,18 @@ import {
    CardHeader,
    CardTitle,
 } from "@packages/ui/components/card";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { StatsCard } from "@packages/ui/components/stats-card";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { ErrorBoundary } from "react-error-boundary";
 import { useTRPC } from "@/integrations/clients";
 
-function BankAccountsStatsErrorFallback(props: FallbackProps) {
+function BankAccountsStatsErrorFallback() {
    return (
-      <div className="grid gap-4 h-min">
-         {createErrorFallback({
-            errorDescription:
-               "Failed to load bank accounts stats. Please try again later.",
-            errorTitle: "Error loading stats",
-            retryText: "Retry",
-         })(props)}
+      <div className="p-4 text-center text-sm text-destructive">
+         Falha ao carregar estatísticas das contas bancárias. Tente novamente
+         mais tarde.
       </div>
    );
 }
@@ -77,39 +71,23 @@ function BankAccountsStatsContent({
    return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-min">
          <StatsCard
-            description={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-balance.description",
-            )}
-            title={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-balance.title",
-            )}
+            description="Soma de todas as contas"
+            title="Saldo Total"
             value={formatDecimalCurrency(stats.totalBalance)}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-accounts.description",
-            )}
-            title={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-accounts.title",
-            )}
+            description="Quantidade de contas cadastradas"
+            title="Total de Contas"
             value={stats.totalAccounts}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-income.description",
-            )}
-            title={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-income.title",
-            )}
+            description="Soma de todas as receitas"
+            title="Total de Receitas"
             value={formatDecimalCurrency(stats.totalIncome)}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-expenses.description",
-            )}
-            title={translate(
-               "dashboard.routes.bank-accounts.stats-section.total-expenses.title",
-            )}
+            description="Soma de todas as despesas"
+            title="Total de Despesas"
             value={formatDecimalCurrency(stats.totalExpenses)}
          />
       </div>

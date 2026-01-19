@@ -1,5 +1,4 @@
 import type { InterestTemplate } from "@packages/database/repositories/interest-template-repository";
-import { translate } from "@packages/localization";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -18,14 +17,10 @@ export function useDeleteInterestTemplate({
    const deleteTemplateMutation = useMutation(
       trpc.interestTemplates.delete.mutationOptions({
          onError: () => {
-            toast.error(
-               translate("dashboard.routes.interest-templates.delete.error"),
-            );
+            toast.error("Falha ao excluir modelo de juros");
          },
          onSuccess: () => {
-            toast.success(
-               translate("dashboard.routes.interest-templates.delete.success"),
-            );
+            toast.success("Modelo de juros excluido com sucesso");
             onSuccess?.();
          },
       }),
@@ -33,19 +28,14 @@ export function useDeleteInterestTemplate({
 
    const deleteInterestTemplate = () => {
       openAlertDialog({
-         actionLabel: translate(
-            "dashboard.routes.interest-templates.bulk-actions.delete",
-         ),
-         cancelLabel: translate("common.actions.cancel"),
-         description: translate(
-            "dashboard.routes.interest-templates.delete.confirm-description",
-         ),
+         actionLabel: "Excluir",
+         cancelLabel: "Cancelar",
+         description:
+            "Tem certeza que deseja excluir este modelo de juros? Esta acao nao pode ser desfeita.",
          onAction: async () => {
             await deleteTemplateMutation.mutateAsync({ id: template.id });
          },
-         title: translate(
-            "dashboard.routes.interest-templates.delete.confirm-title",
-         ),
+         title: "Confirmar exclusao",
          variant: "destructive",
       });
    };

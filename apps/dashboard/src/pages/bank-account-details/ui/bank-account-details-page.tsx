@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Empty,
@@ -34,6 +33,7 @@ import { Suspense, useMemo, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { DefaultHeader } from "@/default/default-header";
 import { ManageBankAccountForm } from "@/features/bank-account/ui/manage-bank-account-form";
+import { useDetailTabName } from "@/features/custom-dashboard/hooks/use-detail-tab-name";
 import { BankAccountPermissionsSheet } from "@/features/permissions/ui/bank-account-permissions-sheet";
 import { TransactionListProvider } from "@/features/transaction/lib/transaction-list-context";
 import { ManageTransactionForm } from "@/features/transaction/ui/manage-transaction-form";
@@ -114,6 +114,8 @@ function BankAccountContent() {
       trpc.categories.getAll.queryOptions(),
    );
 
+   useDetailTabName(bankAccount?.name || "Conta Bancária");
+
    const handleDeleteSuccess = () => {
       router.navigate({
          params: { slug: activeOrganization.slug },
@@ -125,12 +127,11 @@ function BankAccountContent() {
       bankAccount,
       onSuccess: handleDeleteSuccess,
    });
-   if (!bankAccountId) {
+   if (!bankAccountId || typeof bankAccountId !== "string") {
       return (
-         <BankAccountPageError
-            error={new Error("Invalid bank account ID")}
-            resetErrorBoundary={() => {}}
-         />
+         <div className="p-4 text-center text-sm text-destructive">
+            ID da conta bancária inválido
+         </div>
       );
    }
 
@@ -148,14 +149,10 @@ function BankAccountContent() {
                   }
                >
                   <Plus className="size-4" />
-                  {translate(
-                     "dashboard.routes.transactions.features.add-new.title",
-                  )}
+                  Adicionar Nova Transação
                </Button>
             }
-            description={translate(
-               "dashboard.routes.transactions.list-section.description",
-            )}
+            description="Veja todas as suas transações financeiras aqui."
             title={bankAccount.name || "Conta Bancária"}
          />
 
@@ -209,11 +206,7 @@ function BankAccountContent() {
                </TooltipTrigger>
                {!canDelete && (
                   <TooltipContent>
-                     <p>
-                        {translate(
-                           "dashboard.routes.bank-accounts.delete.error-last-account",
-                        )}
-                     </p>
+                     <p>Você deve ter pelo menos uma conta bancária.</p>
                   </TooltipContent>
                )}
             </Tooltip>

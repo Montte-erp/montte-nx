@@ -1,5 +1,4 @@
 import type { Category } from "@packages/database/repositories/category-repository";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    ColorPicker,
@@ -52,26 +51,18 @@ export function ManageCategoryForm({ category }: ManageCategoryFormProps) {
 
    const modeTexts = useMemo(() => {
       const createTexts = {
-         description: translate(
-            "dashboard.routes.categories.features.create-category.description",
-         ),
-         title: translate(
-            "dashboard.routes.categories.features.create-category.title",
-         ),
+         description:
+            "Adicione uma nova categoria para organizar suas transações.",
+         title: "Criar Nova Categoria",
       };
 
       const editTexts = {
-         description: translate(
-            "dashboard.routes.categories.features.edit-category.description",
-            { name: category?.name || "" },
-         ),
-         title: translate(
-            "dashboard.routes.categories.features.edit-category.title",
-         ),
+         description: "Atualize os detalhes da sua categoria.",
+         title: "Editar Categoria",
       };
 
       return isEditMode ? editTexts : createTexts;
-   }, [isEditMode, category?.name]);
+   }, [isEditMode]);
 
    const createCategoryMutation = useMutation(
       trpc.categories.create.mutationOptions({
@@ -158,17 +149,13 @@ export function ManageCategoryForm({ category }: ManageCategoryFormProps) {
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel>
-                              {translate("common.form.name.label")}
-                           </FieldLabel>
+                           <FieldLabel>Nome</FieldLabel>
                            <Input
                               onBlur={field.handleBlur}
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
                               }
-                              placeholder={translate(
-                                 "common.form.name.placeholder",
-                              )}
+                              placeholder="Digite seu nome completo"
                               value={field.state.value}
                            />
                            {isInvalid && (
@@ -187,9 +174,7 @@ export function ManageCategoryForm({ category }: ManageCategoryFormProps) {
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel>
-                              {translate("common.form.color.label")}
-                           </FieldLabel>
+                           <FieldLabel>Cor</FieldLabel>
 
                            <Popover>
                               <PopoverTrigger asChild>
@@ -263,13 +248,12 @@ export function ManageCategoryForm({ category }: ManageCategoryFormProps) {
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel>
-                              {translate("common.form.icon.label")}
-                           </FieldLabel>
+                           <FieldLabel>Ícone</FieldLabel>
                            <IconSelector
                               onValueChange={field.handleChange}
-                              value={field.state.value}
+                              value={field.state.value ?? undefined}
                            />
+                           <FieldDescription>Opcional</FieldDescription>
                            {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
                            )}
@@ -286,17 +270,14 @@ export function ManageCategoryForm({ category }: ManageCategoryFormProps) {
                         field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel>
-                              {translate("common.form.transaction-types.label")}
-                           </FieldLabel>
+                           <FieldLabel>Tipos de Transação</FieldLabel>
                            <TransactionTypesSelector
                               onChange={field.handleChange}
                               value={field.state.value || []}
                            />
                            <FieldDescription>
-                              {translate(
-                                 "common.form.transaction-types.description",
-                              )}
+                              Selecione os tipos de transação permitidos para
+                              esta categoria.
                            </FieldDescription>
                            {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />

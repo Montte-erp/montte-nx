@@ -1,5 +1,4 @@
 import type { BillWithRelations } from "@packages/database/repositories/bill-repository";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { Link } from "@tanstack/react-router";
 import {
@@ -58,20 +57,18 @@ export function BillActions({
                <CompleteBillDialog bill={bill}>
                   <Button size="sm" variant="outline">
                      <Wallet className="size-4" />
-                     {bill.type === "expense"
-                        ? translate("dashboard.routes.bills.actions.pay")
-                        : translate("dashboard.routes.bills.actions.receive")}
+                     {bill.type === "expense" ? "Pagar" : "Receber"}
                   </Button>
                </CompleteBillDialog>
                <Button onClick={handleEdit} size="sm" variant="outline">
                   <Pencil className="size-4" />
-                  {translate("dashboard.routes.bills.actions.edit")}
+                  Editar
                </Button>
             </>
          ) : (
             <Button onClick={handleEditMetadata} size="sm" variant="outline">
                <Pencil className="size-4" />
-               {translate("dashboard.routes.bills.actions.edit-metadata")}
+               Editar
             </Button>
          )}
 
@@ -83,26 +80,24 @@ export function BillActions({
                   to="/$slug/bills/$billId"
                >
                   <Eye className="size-4" />
-                  {translate(
-                     "dashboard.routes.bills.list-section.actions.view-details",
-                  )}
+                  Ver Detalhes
                </Link>
             </Button>
          )}
 
          <Button onClick={handleDuplicate} size="sm" variant="outline">
             <Copy className="size-4" />
-            {translate("dashboard.routes.bills.actions.duplicate")}
+            Duplicar
          </Button>
 
          <Button onClick={handleLinkFile} size="sm" variant="outline">
             <Paperclip className="size-4" />
-            {translate("dashboard.routes.bills.actions.link-file")}
+            Anexar Arquivo
          </Button>
 
          <Button onClick={handleChangeCategory} size="sm" variant="outline">
             <FolderOpen className="size-4" />
-            {translate("dashboard.routes.bills.actions.change-category")}
+            Categorizar
          </Button>
 
          {/* Separator */}
@@ -117,9 +112,7 @@ export function BillActions({
                   variant="outline"
                >
                   <CalendarDays className="size-4" />
-                  {translate(
-                     "dashboard.routes.bills.actions.mark-as-recurrent",
-                  )}
+                  Tornar Recorrente
                </Button>
                <Button
                   onClick={handleCreateInstallments}
@@ -127,9 +120,7 @@ export function BillActions({
                   variant="outline"
                >
                   <Split className="size-4" />
-                  {translate(
-                     "dashboard.routes.bills.actions.create-installments",
-                  )}
+                  Criar Parcelas
                </Button>
                {/* Separator */}
                <div className="h-4 w-px bg-border" />
@@ -145,9 +136,7 @@ export function BillActions({
                   variant="outline"
                >
                   <Repeat className="size-4" />
-                  {translate(
-                     "dashboard.routes.bills.actions.manage-recurrence",
-                  )}
+                  Gerenciar Recorrência
                </Button>
                {/* Separator */}
                <div className="h-4 w-px bg-border" />
@@ -163,9 +152,7 @@ export function BillActions({
                   variant="outline"
                >
                   <Layers className="size-4" />
-                  {translate(
-                     "dashboard.routes.bills.actions.view-installments",
-                  )}
+                  Ver Parcelas
                </Button>
                {/* Separator */}
                <div className="h-4 w-px bg-border" />
@@ -175,7 +162,7 @@ export function BillActions({
          {/* Destructive Action */}
          <Button onClick={handleDelete} size="sm" variant="destructive">
             <Trash2 className="size-4" />
-            {translate("dashboard.routes.bills.actions.delete")}
+            Excluir
          </Button>
       </div>
    );

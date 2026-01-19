@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -109,13 +108,11 @@ function CounterpartiesPageContent() {
                   }
                >
                   <Plus className="size-4" />
-                  {translate("dashboard.routes.counterparties.actions.add-new")}
+                  Adicionar Cadastro
                </Button>
             }
-            description={translate(
-               "dashboard.routes.counterparties.description",
-            )}
-            title={translate("dashboard.routes.counterparties.title")}
+            description="Gerencie seus clientes, fornecedores e parceiros comerciais"
+            title="Fornecedores e Clientes"
          />
 
          <Suspense fallback={<CounterpartyFilterBarSkeleton />}>

@@ -1,0 +1,85 @@
+---
+import { FAQTabs } from "@/components/faq-tabs";
+
+const categories = [
+   { id: "pricing", label: "Preços e Planos" },
+   { id: "infrastructure", label: "Infraestrutura" },
+   { id: "security", label: "Segurança" },
+   { id: "migration", label: "Migração e Suporte" },
+];
+
+const faqItems = [
+   {
+      answer:
+         "O plano Free é gratuito para sempre com 1 usuário. O plano Básico custa R$ 19/mês e inclui 2 usuários, anexos de comprovantes e funcionalidades de IA (em breve). O plano ERP custa R$ 150/mês com usuários ilimitados, centros de custo, fornecedores, automações e suporte prioritário. Contrate anualmente e ganhe desconto.",
+      category: "pricing",
+      id: "enterprise-faq-1",
+      question: "Qual é o custo dos planos?",
+   },
+   {
+      answer:
+         "Sim. Oferecemos período de teste de 14 dias no plano Básico e 7 dias no plano ERP, com acesso completo aos recursos. Não é necessário cadastrar cartão de crédito. Também agendamos demonstrações personalizadas ao vivo, onde configuramos o sistema com cenários reais do seu negócio. Agende pelo chat ou pelo e-mail comercial@montte.com.br.",
+      category: "pricing",
+      id: "enterprise-faq-5",
+      question: "Posso testar antes de contratar?",
+   },
+   {
+      answer:
+         "Sim. Por ser open-source, você pode realizar self-hosting na sua conta AWS, Google Cloud ou Azure. Fornecemos scripts de implantação, atualizações contínuas e documentação técnica completa. Você mantém controle total sobre onde os dados residem, o que é ideal para conformidade com a LGPD ou políticas corporativas de governança. Consulte nossa equipe para discutir arquitetura dedicada.",
+      category: "infrastructure",
+      id: "enterprise-faq-2",
+      question: "Posso hospedar o Montte na minha própria infraestrutura?",
+   },
+   {
+      answer:
+         "Oferecemos suporte para importação de arquivos OFX/CSV e integrações com os principais bancos brasileiros. Exportamos dados para contabilidade nos formatos SPED, DRE e DFC. Integrações personalizadas com ERP, CRM, BI ou sistemas legados podem ser desenvolvidas sob demanda. Como o código é aberto, sua equipe técnica também pode contribuir ou construir conectores proprietários.",
+      category: "infrastructure",
+      id: "enterprise-faq-6",
+      question: "E se precisarmos de integrações personalizadas?",
+   },
+   {
+      answer:
+         "Estamos em processo de certificação SOC 2 Type II (previsão para o segundo trimestre de 2026). Já implementamos as melhores práticas de segurança: criptografia AES-256 em repouso e TLS 1.3 em trânsito, autenticação multifator (MFA), logs de auditoria imutáveis e backups automáticos diários com retenção de 90 dias. Por sermos open-source, você pode auditar o código-fonte a qualquer momento ou contratar auditorias independentes.",
+      category: "security",
+      id: "enterprise-faq-4",
+      question: "O Montte possui certificações de segurança?",
+   },
+   {
+      answer:
+         "Sim. Clientes do plano ERP possuem SLA de 99,9% de disponibilidade garantido contratualmente. Isso inclui monitoramento 24/7 com alertas automáticos, equipe de plantão para incidentes críticos e janelas de manutenção programadas previamente. Em caso de violação do SLA, aplicamos créditos proporcionais automaticamente na sua próxima fatura.",
+      category: "security",
+      id: "enterprise-faq-7",
+      question: "Vocês oferecem SLA de disponibilidade?",
+   },
+   {
+      answer:
+         "Importamos históricos através de arquivos OFX, CSVs ou planilhas do seu sistema atual. Mapeamos categorias personalizadas, centros de custo e estrutura contábil do seu negócio. O processo inclui treinamento prático para CFO, controller, contador e gerentes financeiros. A migração típica leva de 7 a 14 dias úteis, com suporte dedicado em todas as etapas.",
+      category: "migration",
+      id: "enterprise-faq-3",
+      question: "Como funciona a migração dos dados atuais?",
+   },
+   {
+      answer:
+         "Clientes do plano Básico possuem suporte por e-mail. Clientes do plano ERP possuem suporte prioritário via e-mail (suporte@montte.com.br), chat ao vivo e telefone/WhatsApp em horário comercial (9h às 18h, dias úteis). SLA de resposta: até 2 horas para incidentes críticos (P0), 4 horas para alta prioridade (P1) e 8 horas para demais casos.",
+      category: "migration",
+      id: "enterprise-faq-8",
+      question: "Qual é o nível de suporte oferecido?",
+   },
+];
+---
+
+<section id="faq" class="py-16 md:py-24">
+   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="mb-12 space-y-4 md:mb-16">
+         <span class="text-primary text-sm font-medium uppercase">FAQ</span>
+         <h2 class="text-2xl font-semibold md:text-3xl lg:text-4xl">
+            Perguntas Frequentes
+         </h2>
+         <p class="text-muted-foreground text-lg max-w-2xl">
+            Tire suas duvidas sobre o Montte e como ele pode ajudar voce a organizar suas financas.
+         </p>
+      </div>
+
+      <FAQTabs client:load categories={categories} items={faqItems} />
+   </div>
+</section>

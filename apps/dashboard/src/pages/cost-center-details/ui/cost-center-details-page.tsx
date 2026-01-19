@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Empty,
@@ -22,6 +21,7 @@ import { Edit, Home, Landmark, Plus, Trash2 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { DefaultHeader } from "@/default/default-header";
+import { useDetailTabName } from "@/features/custom-dashboard/hooks/use-detail-tab-name";
 import { TransactionListProvider } from "@/features/transaction/lib/transaction-list-context";
 import { ManageTransactionForm } from "@/features/transaction/ui/manage-transaction-form";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
@@ -78,6 +78,8 @@ function CostCenterContent() {
       trpc.costCenters.getById.queryOptions({ id: costCenterId }),
    );
 
+   useDetailTabName(costCenter?.name);
+
    const handleDeleteSuccess = () => {
       router.navigate({
          params: { slug: activeOrganization.slug },
@@ -118,9 +120,7 @@ function CostCenterContent() {
                   }
                >
                   <Plus className="size-4" />
-                  {translate(
-                     "dashboard.routes.transactions.features.add-new.title",
-                  )}
+                  Adicionar Nova Transação
                </Button>
             }
             description="Visualize detalhes e estatísticas do centro de custo"

@@ -1,10 +1,9 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { Plus } from "lucide-react";
-import { UpgradeRequired } from "@/components/upgrade-required";
 import { DefaultHeader } from "@/default/default-header";
-import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { usePlanFeatures } from "@/features/billing/lib/use-plan-features";
+import { UpgradeRequired } from "@/features/billing/ui/upgrade-required";
 import { useSheet } from "@/hooks/use-sheet";
 import { CostCenterListProvider } from "../features/cost-center-list-context";
 import { ManageCostCenterForm } from "../features/manage-cost-center-form";
@@ -37,15 +36,11 @@ export function CostCentersPage() {
                         }
                      >
                         <Plus className="size-4" />
-                        {translate("common.actions.add")}
+                        Adicionar
                      </Button>
                   }
-                  description={translate(
-                     "dashboard.routes.cost-centers.list-section.description",
-                  )}
-                  title={translate(
-                     "dashboard.routes.cost-centers.list-section.title",
-                  )}
+                  description="Visualize e gerencie seus centros de custo aqui."
+                  title="Seus centros de custo"
                />
                <CostCentersStats />
                <CostCentersListSection />

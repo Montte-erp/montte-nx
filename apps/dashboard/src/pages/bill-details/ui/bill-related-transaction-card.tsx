@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import { Alert, AlertDescription } from "@packages/ui/components/alert";
 import { Badge } from "@packages/ui/components/badge";
@@ -70,9 +69,7 @@ function RelatedTransactionCardContent({ billId }: { billId: string }) {
          <CardHeader>
             <CardTitle className="flex items-center gap-2">
                <Receipt className="size-5" />
-               {translate(
-                  "dashboard.routes.bills.details.related-transaction.title",
-               )}
+               Transação Relacionada
             </CardTitle>
          </CardHeader>
          <CardContent>

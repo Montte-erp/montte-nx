@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useSuspenseQueries } from "@tanstack/react-query";
@@ -94,17 +93,11 @@ function TransactionsPageContent() {
                   }
                >
                   <Plus className="size-4" />
-                  {translate(
-                     "dashboard.routes.transactions.features.add-new.title",
-                  )}
+                  Adicionar Nova Transação
                </Button>
             }
-            description={translate(
-               "dashboard.routes.transactions.list-section.description",
-            )}
-            title={translate(
-               "dashboard.routes.transactions.list-section.title",
-            )}
+            description="Veja todas as suas transações financeiras aqui."
+            title="Lista de Transações"
          />
 
          <Suspense fallback={<TransactionFilterBarSkeleton />}>

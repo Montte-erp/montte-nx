@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -22,9 +21,7 @@ export function useToggleRollover({
    const updateMutation = useMutation(
       trpc.budgets.update.mutationOptions({
          onError: () => {
-            toast.error(
-               translate("dashboard.routes.budgets.notifications.error"),
-            );
+            toast.error("Erro ao atualizar orçamento");
          },
          onSuccess: () => {
             onSuccess?.();
@@ -34,32 +31,18 @@ export function useToggleRollover({
 
    const toggleRollover = () => {
       openAlertDialog({
-         actionLabel: translate(
-            "dashboard.routes.budgets.rollover-toggle.confirm",
-         ),
-         cancelLabel: translate(
-            "dashboard.routes.budgets.rollover-toggle.cancel",
-         ),
+         actionLabel: "Confirmar",
+         cancelLabel: "Cancelar",
          description: budget.rollover
-            ? translate(
-                 "dashboard.routes.budgets.rollover-toggle.disable-description",
-              )
-            : translate(
-                 "dashboard.routes.budgets.rollover-toggle.enable-description",
-              ),
+            ? "O saldo não utilizado não será mais acumulado para o próximo período. O orçamento será reiniciado a cada período."
+            : "O saldo não utilizado será acumulado para o próximo período. Isso permite que você economize para usar depois.",
          onAction: async () => {
             await updateMutation.mutateAsync({
                data: { rollover: !budget.rollover },
                id: budget.id,
             });
          },
-         title: budget.rollover
-            ? translate(
-                 "dashboard.routes.budgets.rollover-toggle.disable-title",
-              )
-            : translate(
-                 "dashboard.routes.budgets.rollover-toggle.enable-title",
-              ),
+         title: budget.rollover ? "Desativar acumulação" : "Ativar acumulação",
       });
    };
 

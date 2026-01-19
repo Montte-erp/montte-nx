@@ -1,0 +1,204 @@
+---
+export const prerender = true;
+
+import Footer from "@/components/Footer.astro";
+import StickyNavbar from "@/components/StickyNavbar.astro";
+import Layout from "@/layouts/Landing.astro";
+---
+
+<Layout>
+   <div class="flex flex-col">
+      <StickyNavbar />
+      <main class="py-36">
+         <div class="mx-auto max-w-4xl px-6 prose dark:prose-invert">
+            <h1>Termos de Uso do Montte</h1>
+            <p>
+               <strong>Ultima Atualizacao:</strong> 22 de dezembro de 2025
+            </p>
+
+            <p>
+               Bem-vindo ao Montte! Estes Termos de Uso ("Termos") regem seu
+               uso do site, aplicativo e servicos do Montte (coletivamente, o "Servico").
+               Ao acessar ou usar nosso Servico, voce concorda em estar vinculado a
+               estes Termos.
+            </p>
+
+            <h2>1. Descricao do Servico</h2>
+            <p>
+               Montte e uma plataforma de gerenciamento financeiro pessoal e empresarial que oferece:
+            </p>
+            <ul>
+               <li>Gerenciamento de contas bancarias e saldos</li>
+               <li>Registro e categorizacao de transacoes financeiras (receitas, despesas e transferencias)</li>
+               <li>Importacao de extratos bancarios no formato OFX</li>
+               <li>Controle de contas a pagar e a receber com suporte a parcelas e recorrencia</li>
+               <li>Definicao e acompanhamento de orcamentos por categoria, tag ou centro de custo</li>
+               <li>Gerenciamento de organizacoes com convites para membros e equipes</li>
+               <li>Divisao de despesas entre categorias</li>
+               <li>Relatorios e exportacao de dados em formatos OFX, CSV e PDF</li>
+               <li>Notificacoes push para alertas de orcamento e lembretes de contas</li>
+               <li>Criptografia ponta a ponta opcional para dados sensiveis</li>
+               <li>Automacoes e workflows personalizados</li>
+            </ul>
+
+            <h2>2. Contas de Usuario</h2>
+            <p>
+               Para acessar o Servico, voce deve criar uma conta usando email, link magico,
+               codigo OTP ou autenticacao via Google. Voce e responsavel por:
+            </p>
+            <ul>
+               <li>Manter a seguranca das suas credenciais de acesso</li>
+               <li>Todas as atividades que ocorrem sob sua conta</li>
+               <li>Habilitar autenticacao de dois fatores (2FA) para maior seguranca</li>
+               <li>Notificar-nos imediatamente sobre qualquer uso nao autorizado</li>
+            </ul>
+
+            <h2>3. Organizacoes e Colaboracao</h2>
+            <p>
+               O Montte permite criar organizacoes para gerenciar financas em grupo.
+               Ao criar ou participar de uma organizacao:
+            </p>
+            <ul>
+               <li>Voce pode convidar membros por email para colaborar</li>
+               <li>Membros podem ter diferentes niveis de permissao (proprietario, administrador, membro)</li>
+               <li>Equipes podem ser criadas para organizar membros</li>
+               <li>O proprietario da organizacao e responsavel pelo uso adequado por todos os membros</li>
+            </ul>
+
+            <h2>4. Conteudo e Dados do Usuario</h2>
+            <p>
+               Voce mantem total propriedade dos dados financeiros que insere, importa
+               ou cria usando o Servico ("Dados do Usuario"). Ao usar o Servico:
+            </p>
+            <ul>
+               <li>Voce nos concede licenca para processar seus dados exclusivamente para operar o Servico</li>
+               <li>Voce pode exportar seus dados a qualquer momento nos formatos OFX, CSV ou PDF</li>
+               <li>Voce pode solicitar a exclusao completa da sua conta e dados</li>
+               <li>Voce e responsavel pela precisao e legalidade dos dados inseridos</li>
+            </ul>
+
+            <h2>5. Anexos e Arquivos</h2>
+            <p>
+               O Servico permite anexar arquivos a transacoes e contas:
+            </p>
+            <ul>
+               <li>Formatos permitidos: PDF, JPEG, PNG e WebP</li>
+               <li>Tamanho maximo por arquivo: 10MB</li>
+               <li>Voce e responsavel por garantir que nao envia arquivos maliciosos ou ilegais</li>
+            </ul>
+
+            <h2>6. Criptografia Ponta a Ponta</h2>
+            <p>
+               O Montte oferece criptografia ponta a ponta (E2E) opcional para proteger
+               dados sensiveis. Ao ativar esta funcionalidade:
+            </p>
+            <ul>
+               <li>Seus dados serao criptografados com uma frase-senha que so voce conhece</li>
+               <li>Nos nao temos acesso a sua frase-senha ou aos dados criptografados</li>
+               <li>Se voce perder sua frase-senha, seus dados criptografados serao permanentemente inacessiveis</li>
+               <li>Voce e o unico responsavel por manter sua frase-senha segura</li>
+            </ul>
+
+            <h2>7. Uso Aceitavel</h2>
+            <p>
+               Voce concorda em nao usar o Servico para:
+            </p>
+            <ul>
+               <li>Atividades ilegais, fraudulentas ou de lavagem de dinheiro</li>
+               <li>Armazenar informacoes falsas ou enganosas</li>
+               <li>Tentar acessar dados de outros usuarios ou organizacoes sem autorizacao</li>
+               <li>Distribuir malware, spam ou outros codigos maliciosos</li>
+               <li>Sobrecarregar ou interferir na infraestrutura do Servico</li>
+               <li>Violar direitos de propriedade intelectual de terceiros</li>
+            </ul>
+
+            <h2>8. Modelo de Precos</h2>
+            <p>
+               Durante a fase Alpha, o Montte e completamente gratuito. Apos o lancamento oficial:
+            </p>
+            <ul>
+               <li>Ofereceremos planos pagos processados via Stripe para usuarios da infraestrutura gerenciada</li>
+               <li>O Montte sera sempre gratuito para self-host, pois o codigo e open source</li>
+               <li>Alteracoes de precos serao comunicadas com antecedencia minima de 30 dias</li>
+            </ul>
+
+            <h2>9. Software Open Source</h2>
+            <p>
+               O codigo-fonte da plataforma Montte esta disponivel sob a
+               Licenca Apache-2.0. Estes Termos regem seu uso do Servico
+               hospedado em nossa infraestrutura, enquanto a Licenca Apache-2.0 rege
+               seu uso do software auto-hospedado.
+            </p>
+
+            <h2>10. Encerramento de Conta</h2>
+            <p>
+               Voce pode encerrar sua conta a qualquer momento atraves das configuracoes
+               da sua conta. O processo de exclusao:
+            </p>
+            <ul>
+               <li>Remove permanentemente seus dados pessoais e financeiros</li>
+               <li>Remove sua participacao em organizacoes (organizacoes com outros membros continuam existindo)</li>
+               <li>Pode levar ate 30 dias para ser completamente processado</li>
+            </ul>
+            <p>
+               Podemos suspender ou encerrar sua conta por violacao destes Termos,
+               atividades fraudulentas ou comportamento prejudicial a outros usuarios.
+            </p>
+
+            <h2>11. Isencao de Garantias</h2>
+            <p>
+               O Servico e fornecido "COMO ESTA" e "CONFORME DISPONIVEL". Nao garantimos que:
+            </p>
+            <ul>
+               <li>O Servico sera ininterrupto ou livre de erros</li>
+               <li>Os dados financeiros refletem sua situacao real (voce e responsavel pela verificacao)</li>
+               <li>O Servico atende a requisitos regulatorios especificos do seu pais ou setor</li>
+            </ul>
+            <p>
+               O Montte nao e uma instituicao financeira e nao fornece aconselhamento financeiro,
+               contabil ou tributario. Consulte profissionais qualificados para tais orientacoes.
+            </p>
+
+            <h2>12. Limitacao de Responsabilidade</h2>
+            <p>
+               Na extensao maxima permitida por lei, o Montte nao sera
+               responsavel por:
+            </p>
+            <ul>
+               <li>Danos indiretos, incidentais, especiais ou consequenciais</li>
+               <li>Perda de dados devido a falhas de hardware, software ou conectividade</li>
+               <li>Acoes tomadas com base em informacoes do Servico</li>
+               <li>Perda de acesso a dados criptografados por esquecimento da frase-senha</li>
+            </ul>
+
+            <h2>13. Lei Aplicavel</h2>
+            <p>
+               Estes Termos serao regidos pelas leis da Republica Federativa do Brasil,
+               incluindo o Codigo de Defesa do Consumidor e a Lei Geral de Protecao de Dados (LGPD).
+               Disputas serao resolvidas no foro da comarca do seu domicilio.
+            </p>
+
+            <h2>14. Alteracoes nos Termos</h2>
+            <p>
+               Podemos atualizar estes Termos periodicamente. Voce sera notificado sobre
+               alteracoes significativas por email ou aviso no Servico. O uso continuado
+               apos as alteracoes constitui aceitacao dos novos Termos.
+            </p>
+
+            <h2>15. Contato</h2>
+            <p>
+               Para duvidas sobre estes Termos, entre em contato:
+            </p>
+            <ul>
+               <li>
+                  Repositorio GitHub: <a href="https://github.com/F-O-T/montte-nx" target="_blank" rel="noopener noreferrer">
+                     github.com/F-O-T/montte-nx
+                  </a>
+               </li>
+               <li>Issues: Para relatar problemas ou sugestoes</li>
+            </ul>
+         </div>
+      </main>
+      <Footer />
+   </div>
+</Layout>

@@ -23,6 +23,7 @@ export const AVAILABLE_ICONS = {
    Dumbbell: LucideIcons.Dumbbell,
    FileText: LucideIcons.FileText,
    Film: LucideIcons.Film,
+   FolderOpen: LucideIcons.FolderOpen,
    Fuel: LucideIcons.Fuel,
    Gamepad: LucideIcons.Gamepad,
    Gift: LucideIcons.Gift,
@@ -93,6 +94,7 @@ export const ICON_CATEGORIES = {
    Other: [
       "Archive",
       "Droplet",
+      "FolderOpen",
       "Globe",
       "MapPin",
       "Paintbrush",

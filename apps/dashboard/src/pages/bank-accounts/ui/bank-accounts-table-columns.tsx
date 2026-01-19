@@ -1,5 +1,4 @@
 import type { BankAccount } from "@packages/database/repositories/bank-account-repository";
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import {
    Announcement,
@@ -8,27 +7,12 @@ import {
 } from "@packages/ui/components/announcement";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
-import {
-   Card,
-   CardContent,
-   CardDescription,
-   CardFooter,
-   CardHeader,
-   CardTitle,
-} from "@packages/ui/components/card";
-import { CollapsibleTrigger } from "@packages/ui/components/collapsible";
-import {
-   Tooltip,
-   TooltipContent,
-   TooltipTrigger,
-} from "@packages/ui/components/tooltip";
 import { formatDate } from "@packages/utils/date";
 import { Link } from "@tanstack/react-router";
 import type { ColumnDef, Row } from "@tanstack/react-table";
 import {
    ArrowDownLeft,
    ArrowUpRight,
-   ChevronDown,
    Download,
    Edit,
    Eye,
@@ -53,40 +37,13 @@ function getAccountTypeIcon(type: string | null | undefined) {
    }
 }
 
+import { ViewDetailsButton } from "@/components/entity-actions";
+import { EntityMobileCard } from "@/components/entity-mobile-card";
 import { ManageBankAccountForm } from "@/features/bank-account/ui/manage-bank-account-form";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useSheet } from "@/hooks/use-sheet";
 import { useDeleteBankAccount } from "@/pages/bank-account-details/features/use-delete-bank-account";
 import { useToggleBankAccountStatus } from "@/pages/bank-accounts/features/use-toggle-bank-account-status";
-
-function BankAccountActionsCell({ account }: { account: BankAccount }) {
-   const { activeOrganization } = useActiveOrganization();
-
-   return (
-      <div className="flex justify-end gap-1">
-         <Tooltip>
-            <TooltipTrigger asChild>
-               <Button asChild size="icon" variant="outline">
-                  <Link
-                     params={{
-                        bankAccountId: account.id,
-                        slug: activeOrganization.slug,
-                     }}
-                     to="/$slug/bank-accounts/$bankAccountId"
-                  >
-                     <Eye className="size-4" />
-                  </Link>
-               </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-               {translate(
-                  "dashboard.routes.bank-accounts.list-section.actions.view-details",
-               )}
-            </TooltipContent>
-         </Tooltip>
-      </div>
-   );
-}
 
 export function createBankAccountColumns(): ColumnDef<BankAccount>[] {
    return [
@@ -149,13 +106,7 @@ export function createBankAccountColumns(): ColumnDef<BankAccount>[] {
                      <StatusIcon className="size-3.5" />
                   </AnnouncementTag>
                   <AnnouncementTitle style={{ color }}>
-                     {isActive
-                        ? translate(
-                             "dashboard.routes.bank-accounts.status.active",
-                          )
-                        : translate(
-                             "dashboard.routes.bank-accounts.status.inactive",
-                          )}
+                     {isActive ? "Ativa" : "Inativa"}
                   </AnnouncementTitle>
                </Announcement>
             );
@@ -175,7 +126,21 @@ export function createBankAccountColumns(): ColumnDef<BankAccount>[] {
          header: "Criado em",
       },
       {
-         cell: ({ row }) => <BankAccountActionsCell account={row.original} />,
+         cell: ({ row }) => {
+            const account = row.original;
+            const { activeOrganization } = useActiveOrganization();
+            return (
+               <ViewDetailsButton
+                  detailsLink={{
+                     params: {
+                        bankAccountId: account.id,
+                        slug: activeOrganization.slug,
+                     },
+                     to: "/$slug/bank-accounts/$bankAccountId",
+                  }}
+               />
+            );
+         },
          header: "",
          id: "actions",
       },
@@ -183,9 +148,9 @@ export function createBankAccountColumns(): ColumnDef<BankAccount>[] {
 }
 
 const typeMap: Record<string, string> = {
-   checking: translate("dashboard.routes.bank-accounts.types.checking"),
-   investment: translate("dashboard.routes.bank-accounts.types.investment"),
-   savings: translate("dashboard.routes.bank-accounts.types.savings"),
+   checking: "Conta corrente",
+   investment: "Conta de investimento",
+   savings: "Conta poupança",
 };
 
 interface BankAccountExpandedContentProps {
@@ -223,15 +188,14 @@ export function BankAccountExpandedContent({
       deleteBankAccount();
    };
 
-   // Common stats row for both mobile and desktop
+   // Bank accounts have custom actions (Import/Export, Status toggle) that don't fit EntityActions
+   // We keep the existing pattern but use proper structure
    const statsRow = (
       <div className="flex flex-wrap items-center gap-2">
          <Announcement>
             <AnnouncementTag className="flex items-center gap-1.5">
                <Wallet className="size-3.5" />
-               {translate(
-                  "dashboard.routes.bank-accounts.stats-section.current-balance.title",
-               )}
+               Saldo Atual
             </AnnouncementTag>
             <AnnouncementTitle>
                {formatDecimalCurrency(balance)}
@@ -243,9 +207,7 @@ export function BankAccountExpandedContent({
          <Announcement>
             <AnnouncementTag className="flex items-center gap-1.5">
                <ArrowDownLeft className="size-3.5 text-emerald-500" />
-               {translate(
-                  "dashboard.routes.bank-accounts.stats-section.total-income.title",
-               )}
+               Total de Receitas
             </AnnouncementTag>
             <AnnouncementTitle className="text-emerald-500">
                +{formatDecimalCurrency(income)}
@@ -257,9 +219,7 @@ export function BankAccountExpandedContent({
          <Announcement>
             <AnnouncementTag className="flex items-center gap-1.5">
                <ArrowUpRight className="size-3.5 text-destructive" />
-               {translate(
-                  "dashboard.routes.bank-accounts.stats-section.total-expenses.title",
-               )}
+               Total de Despesas
             </AnnouncementTag>
             <AnnouncementTitle className="text-destructive">
                -{formatDecimalCurrency(expenses)}
@@ -268,7 +228,6 @@ export function BankAccountExpandedContent({
       </div>
    );
 
-   // Common actions row for both mobile and desktop
    const actionsRow = (
       <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
          <Button
@@ -292,9 +251,7 @@ export function BankAccountExpandedContent({
                to="/$slug/bank-accounts/$bankAccountId"
             >
                <Eye className="size-4" />
-               {translate(
-                  "dashboard.routes.bank-accounts.list-section.actions.view-details",
-               )}
+               Ver detalhes
             </Link>
          </Button>
          <Button asChild size="sm" variant="outline">
@@ -323,9 +280,7 @@ export function BankAccountExpandedContent({
          </Button>
          <Button onClick={handleEdit} size="sm" variant="outline">
             <Edit className="size-4" />
-            {translate(
-               "dashboard.routes.bank-accounts.list-section.actions.edit",
-            )}
+            Editar
          </Button>
          <Button
             disabled={!canDelete}
@@ -334,9 +289,7 @@ export function BankAccountExpandedContent({
             variant="destructive"
          >
             <Trash2 className="size-4" />
-            {translate(
-               "dashboard.routes.bank-accounts.list-section.actions.delete",
-            )}
+            Excluir
          </Button>
       </div>
    );
@@ -371,60 +324,43 @@ export function BankAccountMobileCard({
    const AccountTypeIcon = getAccountTypeIcon(account.type);
 
    return (
-      <Card className={isExpanded ? "rounded-b-none border-b-0" : ""}>
-         <CardHeader>
-            <CardDescription>{account.name}</CardDescription>
-            <CardTitle>{account.bank}</CardTitle>
-            <CardDescription>
-               <Badge variant="outline">{formatDecimalCurrency(balance)}</Badge>
-            </CardDescription>
-         </CardHeader>
-         <CardContent className="flex flex-wrap items-center gap-2">
-            <Announcement>
-               <AnnouncementTag
-                  style={{
-                     backgroundColor: `${statusColor}20`,
-                     color: statusColor,
-                  }}
-               >
-                  <StatusIcon className="size-3.5" />
-               </AnnouncementTag>
-               <AnnouncementTitle style={{ color: statusColor }}>
-                  {isActive
-                     ? translate("dashboard.routes.bank-accounts.status.active")
-                     : translate(
-                          "dashboard.routes.bank-accounts.status.inactive",
-                       )}
-               </AnnouncementTitle>
-            </Announcement>
-            <Announcement>
-               <AnnouncementTag className="flex items-center gap-1.5">
-                  <AccountTypeIcon className="size-3.5" />
-               </AnnouncementTag>
-               <AnnouncementTitle>
-                  {typeMap[account.type] || account.type}
-               </AnnouncementTitle>
-            </Announcement>
-         </CardContent>
-         <CardFooter>
-            <CollapsibleTrigger asChild>
-               <Button
-                  className="w-full"
-                  onClick={(e) => {
-                     e.stopPropagation();
-                     toggleExpanded();
-                  }}
-                  variant="outline"
-               >
-                  {isExpanded
-                     ? translate("common.actions.less-info")
-                     : translate("common.actions.more-info")}
-                  <ChevronDown
-                     className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-                  />
-               </Button>
-            </CollapsibleTrigger>
-         </CardFooter>
-      </Card>
+      <EntityMobileCard
+         content={
+            <div className="flex flex-wrap items-center gap-2">
+               <Announcement>
+                  <AnnouncementTag
+                     style={{
+                        backgroundColor: `${statusColor}20`,
+                        color: statusColor,
+                     }}
+                  >
+                     <StatusIcon className="size-3.5" />
+                  </AnnouncementTag>
+                  <AnnouncementTitle style={{ color: statusColor }}>
+                     {isActive ? "Ativa" : "Inativa"}
+                  </AnnouncementTitle>
+               </Announcement>
+               <Announcement>
+                  <AnnouncementTag className="flex items-center gap-1.5">
+                     <AccountTypeIcon className="size-3.5" />
+                  </AnnouncementTag>
+                  <AnnouncementTitle>
+                     {typeMap[account.type] || account.type}
+                  </AnnouncementTitle>
+               </Announcement>
+            </div>
+         }
+         icon={
+            <div className="size-10 rounded-sm flex items-center justify-center bg-muted">
+               <Landmark className="size-5" />
+            </div>
+         }
+         isExpanded={isExpanded}
+         subtitle={
+            <Badge variant="outline">{formatDecimalCurrency(balance)}</Badge>
+         }
+         title={account.bank ?? account.name}
+         toggleExpanded={toggleExpanded}
+      />
    );
 }

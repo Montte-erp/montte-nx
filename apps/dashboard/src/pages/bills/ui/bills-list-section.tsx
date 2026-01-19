@@ -1,5 +1,4 @@
 import type { BillWithRelations } from "@packages/database/repositories/bill-repository";
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import { Card, CardContent } from "@packages/ui/components/card";
 import { DataTable } from "@packages/ui/components/data-table";
@@ -10,7 +9,6 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import {
    InputGroup,
    InputGroupAddon,
@@ -26,7 +24,7 @@ import { keepPreviousData, useSuspenseQueries } from "@tanstack/react-query";
 import type { RowSelectionState } from "@tanstack/react-table";
 import { Receipt, Search, Trash2, Wallet } from "lucide-react";
 import { Fragment, Suspense, useEffect, useState } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { ErrorBoundary } from "react-error-boundary";
 import { useBillList } from "@/features/bill/lib/bill-list-context";
 import { useBillBulkActions } from "@/features/bill/lib/use-bill-bulk-actions";
 import {
@@ -43,18 +41,11 @@ type BillsListSectionProps = {
    type?: "payable" | "receivable";
 };
 
-function BillsListErrorFallback(props: FallbackProps) {
+function BillsListErrorFallback() {
    return (
-      <Card>
-         <CardContent className="pt-6">
-            {createErrorFallback({
-               errorDescription:
-                  "Failed to load bills. Please try again later.",
-               errorTitle: "Error loading bills",
-               retryText: "Retry",
-            })(props)}
-         </CardContent>
-      </Card>
+      <div className="p-4 text-center text-sm text-destructive">
+         Falha ao carregar contas. Tente novamente mais tarde.
+      </div>
    );
 }
 
@@ -225,7 +216,7 @@ function BillsListContent({ type }: BillsListSectionProps) {
                <InputGroup className="sm:max-w-md">
                   <InputGroupInput
                      onChange={(e) => setSearchTerm(e.target.value)}
-                     placeholder={translate("common.form.search.placeholder")}
+                     placeholder="Digite para pesquisar"
                      value={searchTerm}
                   />
                   <InputGroupAddon>
@@ -239,19 +230,13 @@ function BillsListContent({ type }: BillsListSectionProps) {
                         <EmptyMedia variant="icon">
                            <Receipt className="size-12 text-muted-foreground" />
                         </EmptyMedia>
-                        <EmptyTitle>
-                           {translate(
-                              "dashboard.routes.bills.list-section.state.empty.title",
-                           )}
-                        </EmptyTitle>
+                        <EmptyTitle>Nenhuma conta encontrada</EmptyTitle>
                         <EmptyDescription>
                            {debouncedSearchTerm ||
                            categoryFilter !== "all" ||
                            statusFilter !== "all"
                               ? "Nenhuma conta encontrada com os filtros aplicados"
-                              : translate(
-                                   "dashboard.routes.bills.list-section.state.empty.description",
-                                )}
+                              : "Crie sua primeira conta usando a barra de ações rápidas acima para começar a gerenciar suas contas."}
                         </EmptyDescription>
                      </EmptyContent>
                   </Empty>
@@ -305,7 +290,7 @@ function BillsListContent({ type }: BillsListSectionProps) {
                      })
                   }
                >
-                  {translate("dashboard.routes.bills.bulk-actions.complete")}
+                  Pagar/Receber
                </SelectionActionButton>
             )}
             <SelectionActionButton
@@ -313,26 +298,18 @@ function BillsListContent({ type }: BillsListSectionProps) {
                icon={<Trash2 className="size-3.5" />}
                onClick={() =>
                   openAlertDialog({
-                     actionLabel: translate(
-                        "dashboard.routes.bills.bulk-actions.delete",
-                     ),
-                     description: translate(
-                        "dashboard.routes.bills.bulk-actions.delete-confirm-description",
-                        { count: selectedIds.length },
-                     ),
+                     actionLabel: "Excluir",
+                     description: `Tem certeza que deseja excluir ${selectedIds.length} conta(s)? Esta ação não pode ser desfeita.`,
                      onAction: async () => {
                         await deleteSelected(selectedIds);
                      },
-                     title: translate(
-                        "dashboard.routes.bills.bulk-actions.delete-confirm-title",
-                        { count: selectedIds.length },
-                     ),
+                     title: `Excluir ${selectedIds.length} conta(s)`,
                      variant: "destructive",
                   })
                }
                variant="destructive"
             >
-               {translate("dashboard.routes.bills.bulk-actions.delete")}
+               Excluir
             </SelectionActionButton>
          </SelectionActionBar>
       </>

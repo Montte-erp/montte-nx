@@ -1,5 +1,4 @@
 import type { BillWithRelations } from "@packages/database/repositories/bill-repository";
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -64,11 +63,7 @@ function BillActionsCell({ bill }: { bill: Bill }) {
                   </Link>
                </Button>
             </TooltipTrigger>
-            <TooltipContent>
-               {translate(
-                  "dashboard.routes.bills.list-section.actions.view-details",
-               )}
-            </TooltipContent>
+            <TooltipContent>Ver Detalhes</TooltipContent>
          </Tooltip>
       </div>
    );
@@ -101,7 +96,7 @@ export function createBillColumns(categories: Category[]): ColumnDef<Bill>[] {
             );
          },
          enableSorting: true,
-         header: translate("dashboard.routes.bills.table.columns.description"),
+         header: "Descrição",
       },
       {
          id: "category",
@@ -122,9 +117,7 @@ export function createBillColumns(categories: Category[]): ColumnDef<Bill>[] {
             );
          },
          enableSorting: false,
-         header: translate(
-            "dashboard.routes.bills.features.create-bill.fields.category",
-         ),
+         header: "Categoria",
       },
       {
          accessorKey: "dueDate",
@@ -133,7 +126,7 @@ export function createBillColumns(categories: Category[]): ColumnDef<Bill>[] {
             return formatDate(date, "DD/MM/YYYY");
          },
          enableSorting: true,
-         header: translate("dashboard.routes.bills.table.columns.dueDate"),
+         header: "Vencimento",
       },
       {
          accessorKey: "status",
@@ -143,7 +136,7 @@ export function createBillColumns(categories: Category[]): ColumnDef<Bill>[] {
 
             return <StatusAnnouncement status={status} />;
          },
-         header: translate("dashboard.routes.bills.table.columns.status"),
+         header: "Status",
       },
 
       {
@@ -158,7 +151,7 @@ export function createBillColumns(categories: Category[]): ColumnDef<Bill>[] {
             );
          },
          enableSorting: true,
-         header: translate("dashboard.routes.bills.table.columns.amount"),
+         header: "Valor",
       },
       {
          cell: ({ row }) => {
@@ -201,8 +194,7 @@ export function BillMobileCard({
             </CardDescription>
             <CardTitle className="truncate">{bill.description}</CardTitle>
             <CardDescription>
-               {translate("dashboard.routes.bills.table.columns.dueDate")}:{" "}
-               {formatDate(new Date(bill.dueDate), "DD/MM/YYYY")}
+               Vencimento: {formatDate(new Date(bill.dueDate), "DD/MM/YYYY")}
             </CardDescription>
          </CardHeader>
          <CardContent className="flex flex-wrap gap-2">
@@ -230,9 +222,7 @@ export function BillMobileCard({
                   }}
                   variant="outline"
                >
-                  {isExpanded
-                     ? translate("common.actions.less-info")
-                     : translate("common.actions.more-info")}
+                  {isExpanded ? "Menos info" : "Mais info"}
                   <ChevronDown
                      className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
                   />
@@ -280,9 +270,7 @@ export function BillExpandedContent({
          <div className="p-4 space-y-4">
             <div className="space-y-3">
                <div className="flex flex-col gap-1">
-                  <p className="text-xs text-muted-foreground">
-                     {translate("dashboard.routes.bills.table.columns.amount")}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Valor</p>
                   <AmountAnnouncement
                      amount={Number(bill.amount)}
                      isPositive={bill.type === "income"}
@@ -290,17 +278,13 @@ export function BillExpandedContent({
                </div>
                <Separator />
                <div className="flex flex-col gap-1">
-                  <p className="text-xs text-muted-foreground">
-                     {translate("dashboard.routes.bills.table.columns.type")}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Tipo</p>
                   <TypeAnnouncement type={bill.type as "expense" | "income"} />
                </div>
                <Separator />
                <InfoItem
                   icon={Calendar}
-                  label={translate(
-                     "dashboard.routes.bills.table.columns.dueDate",
-                  )}
+                  label="Vencimento"
                   value={formatDate(new Date(bill.dueDate), "DD/MM/YYYY")}
                />
                {bill.issueDate && (
@@ -308,9 +292,7 @@ export function BillExpandedContent({
                      <Separator />
                      <InfoItem
                         icon={FileText}
-                        label={translate(
-                           "dashboard.routes.bills.features.create-bill.fields.issueDate",
-                        )}
+                        label="Data de Emissão"
                         value={formatDate(
                            new Date(bill.issueDate),
                            "DD/MM/YYYY",
@@ -320,11 +302,7 @@ export function BillExpandedContent({
                )}
                <Separator />
                <div className="flex flex-col gap-1">
-                  <p className="text-xs text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.bills.features.create-bill.fields.category",
-                     )}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Categoria</p>
                   <CategoryAnnouncement
                      category={{
                         color: category?.color || "#6b7280",
@@ -350,9 +328,7 @@ export function BillExpandedContent({
                      <Separator />
                      <InfoItem
                         icon={Building}
-                        label={translate(
-                           "dashboard.routes.bills.features.create-bill.fields.bankAccount",
-                        )}
+                        label="Conta Bancária (Opcional)"
                         value={bill.bankAccount.name}
                      />
                   </>
@@ -362,9 +338,7 @@ export function BillExpandedContent({
                      <Separator />
                      <InfoItem
                         icon={User}
-                        label={translate(
-                           "dashboard.routes.bills.features.create-bill.fields.counterparty",
-                        )}
+                        label="Fornecedor/Cliente"
                         value={bill.counterparty?.name}
                      />
                   </>
@@ -374,9 +348,7 @@ export function BillExpandedContent({
                      <Separator />
                      <InfoItem
                         icon={FileText}
-                        label={translate(
-                           "dashboard.routes.bills.features.create-bill.fields.notes",
-                        )}
+                        label="Observações"
                         value={
                            <span className="truncate max-w-[200px]">
                               {bill.notes}
@@ -405,9 +377,7 @@ export function BillExpandedContent({
          {/* Metadata Section */}
          <div className="flex flex-wrap items-center gap-6">
             <div className="flex flex-col gap-1">
-               <p className="text-xs text-muted-foreground">
-                  {translate("dashboard.routes.bills.table.columns.amount")}
-               </p>
+               <p className="text-xs text-muted-foreground">Valor</p>
                <AmountAnnouncement
                   amount={Number(bill.amount)}
                   isPositive={bill.type === "income"}
@@ -415,15 +385,13 @@ export function BillExpandedContent({
             </div>
             <Separator className="h-8" orientation="vertical" />
             <div className="flex flex-col gap-1">
-               <p className="text-xs text-muted-foreground">
-                  {translate("dashboard.routes.bills.table.columns.type")}
-               </p>
+               <p className="text-xs text-muted-foreground">Tipo</p>
                <TypeAnnouncement type={bill.type as "expense" | "income"} />
             </div>
             <Separator className="h-8" orientation="vertical" />
             <InfoItem
                icon={Calendar}
-               label={translate("dashboard.routes.bills.table.columns.dueDate")}
+               label="Vencimento"
                value={formatDate(new Date(bill.dueDate), "DD/MM/YYYY")}
             />
             {bill.issueDate && (
@@ -431,20 +399,14 @@ export function BillExpandedContent({
                   <Separator className="h-8" orientation="vertical" />
                   <InfoItem
                      icon={FileText}
-                     label={translate(
-                        "dashboard.routes.bills.features.create-bill.fields.issueDate",
-                     )}
+                     label="Data de Emissão"
                      value={formatDate(new Date(bill.issueDate), "DD/MM/YYYY")}
                   />
                </>
             )}
             <Separator className="h-8" orientation="vertical" />
             <div className="flex flex-col gap-1">
-               <p className="text-xs text-muted-foreground">
-                  {translate(
-                     "dashboard.routes.bills.features.create-bill.fields.category",
-                  )}
-               </p>
+               <p className="text-xs text-muted-foreground">Categoria</p>
                <CategoryAnnouncement
                   category={{
                      color: category?.color || "#6b7280",
@@ -470,9 +432,7 @@ export function BillExpandedContent({
                   <Separator className="h-8" orientation="vertical" />
                   <InfoItem
                      icon={Building}
-                     label={translate(
-                        "dashboard.routes.bills.features.create-bill.fields.bankAccount",
-                     )}
+                     label="Conta Bancária (Opcional)"
                      value={bill.bankAccount.name}
                   />
                </>
@@ -482,9 +442,7 @@ export function BillExpandedContent({
                   <Separator className="h-8" orientation="vertical" />
                   <InfoItem
                      icon={User}
-                     label={translate(
-                        "dashboard.routes.bills.features.create-bill.fields.counterparty",
-                     )}
+                     label="Fornecedor/Cliente"
                      value={bill.counterparty?.name}
                   />
                </>

@@ -5,7 +5,6 @@ import { createTransactionHandler } from "./handlers/create-transaction";
 import { fetchBillsReportHandler } from "./handlers/fetch-bills-report";
 import { fetchBudgetReportHandler } from "./handlers/fetch-budget-report";
 import { formatDataHandler } from "./handlers/format-data";
-import { generateCustomReportHandler } from "./handlers/generate-custom-report";
 import { markAsTransferHandler } from "./handlers/mark-as-transfer";
 import { removeTagHandler } from "./handlers/remove-tag";
 import { sendEmailHandler } from "./handlers/send-email";
@@ -62,7 +61,6 @@ export function initializeDefaultHandlers(): void {
    registerActionHandler(fetchBillsReportHandler);
    registerActionHandler(formatDataHandler);
    registerActionHandler(stopExecutionHandler);
-   registerActionHandler(generateCustomReportHandler);
    registerActionHandler(fetchBudgetReportHandler);
    registerActionHandler(checkBudgetStatusHandler);
 }

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Card,
@@ -10,6 +9,7 @@ import {
    CardTitle,
 } from "@packages/ui/components/card";
 import { Checkbox } from "@packages/ui/components/checkbox";
+import { CollapsibleTrigger } from "@packages/ui/components/collapsible";
 import {
    DropdownMenu,
    DropdownMenuContent,
@@ -18,9 +18,8 @@ import {
    DropdownMenuTrigger,
 } from "@packages/ui/components/dropdown-menu";
 import { formatDate } from "@packages/utils/date";
-import { Link } from "@tanstack/react-router";
 import type { Row } from "@tanstack/react-table";
-import { Edit, Eye, MoreVertical, Trash2, Users } from "lucide-react";
+import { ChevronDown, Edit, MoreVertical, Trash2, Users } from "lucide-react";
 import type { Team } from "./teams-table-columns";
 
 type TeamsMobileCardProps = {
@@ -35,14 +34,16 @@ type TeamsMobileCardProps = {
 
 export function TeamsMobileCard({
    row,
-   slug,
+   isExpanded,
+   toggleExpanded,
+   canExpand = true,
    onEdit,
    onDelete,
 }: TeamsMobileCardProps) {
    const team = row.original;
 
    return (
-      <Card className="py-4">
+      <Card className={isExpanded ? "rounded-b-none py-4" : "py-4"}>
          <CardHeader className="flex items-center gap-2">
             <div className="flex size-10 items-center justify-center rounded-md border bg-muted shrink-0">
                <Users className="size-4" />
@@ -62,58 +63,50 @@ export function TeamsMobileCard({
          </CardHeader>
          <CardContent>
             <p className="text-xs text-muted-foreground">
-               {translate(
-                  "dashboard.routes.organization.teams-table.columns.created",
-               )}
-               : {formatDate(new Date(team.createdAt), "DD MMM YYYY")}
+               Criado em: {formatDate(new Date(team.createdAt), "DD MMM YYYY")}
             </p>
          </CardContent>
-         <CardFooter className="flex gap-2">
-            <Button asChild className="flex-1" variant="outline">
-               <Link
-                  params={{ slug, teamId: team.id }}
-                  to="/$slug/organization/teams/$teamId"
-               >
-                  <Eye className="size-4 mr-2" />
-                  {translate(
-                     "dashboard.routes.organization.teams-table.actions.view",
-                  )}
-               </Link>
-            </Button>
-            {(onEdit || onDelete) && (
-               <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                     <Button size="icon" variant="outline">
-                        <MoreVertical className="size-4" />
-                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                     {onEdit && (
-                        <DropdownMenuItem onClick={() => onEdit(team)}>
-                           <Edit className="size-4 mr-2" />
-                           {translate(
-                              "dashboard.routes.organization.teams-table.actions.edit",
-                           )}
-                        </DropdownMenuItem>
-                     )}
-                     {onDelete && (
-                        <>
-                           <DropdownMenuSeparator />
-                           <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => onDelete(team)}
-                           >
-                              <Trash2 className="size-4 mr-2" />
-                              {translate(
-                                 "dashboard.routes.organization.teams-table.actions.delete",
-                              )}
+         {canExpand && (
+            <CardFooter className="flex gap-2">
+               {(onEdit || onDelete) && (
+                  <DropdownMenu>
+                     <DropdownMenuTrigger asChild>
+                        <Button size="icon" variant="outline">
+                           <MoreVertical className="size-4" />
+                        </Button>
+                     </DropdownMenuTrigger>
+                     <DropdownMenuContent align="start">
+                        {onEdit && (
+                           <DropdownMenuItem onClick={() => onEdit(team)}>
+                              <Edit className="size-4 mr-2" />
+                              Editar
                            </DropdownMenuItem>
-                        </>
-                     )}
-                  </DropdownMenuContent>
-               </DropdownMenu>
-            )}
-         </CardFooter>
+                        )}
+                        {onDelete && (
+                           <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                 className="text-destructive"
+                                 onClick={() => onDelete(team)}
+                              >
+                                 <Trash2 className="size-4 mr-2" />
+                                 Excluir
+                              </DropdownMenuItem>
+                           </>
+                        )}
+                     </DropdownMenuContent>
+                  </DropdownMenu>
+               )}
+               <CollapsibleTrigger asChild onClick={toggleExpanded}>
+                  <Button className="flex-1" variant="outline">
+                     <ChevronDown
+                        className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                     />
+                     Mais
+                  </Button>
+               </CollapsibleTrigger>
+            </CardFooter>
+         )}
       </Card>
    );
 }

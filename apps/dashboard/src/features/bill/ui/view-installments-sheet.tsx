@@ -1,5 +1,4 @@
 import type { BillWithRelations } from "@packages/database/repositories/bill-repository";
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import { Badge } from "@packages/ui/components/badge";
 import {
@@ -29,7 +28,7 @@ function StatusBadge({ status }: { status: BillStatus }) {
       return (
          <Badge className="gap-1 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
             <Check className="size-3" />
-            {translate("dashboard.routes.bills.status.paid")}
+            Paga
          </Badge>
       );
    }
@@ -37,14 +36,14 @@ function StatusBadge({ status }: { status: BillStatus }) {
       return (
          <Badge className="gap-1" variant="destructive">
             <AlertCircle className="size-3" />
-            {translate("dashboard.routes.bills.status.overdue")}
+            Vencida
          </Badge>
       );
    }
    return (
       <Badge className="gap-1" variant="secondary">
          <Clock className="size-3" />
-         {translate("dashboard.routes.bills.status.pending")}
+         Pendente
       </Badge>
    );
 }
@@ -69,15 +68,9 @@ export function ViewInstallmentsSheet({ bill }: ViewInstallmentsSheetProps) {
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               {translate(
-                  "dashboard.routes.bills.features.view-installments.title",
-               )}
-            </SheetTitle>
+            <SheetTitle>Parcelas</SheetTitle>
             <SheetDescription>
-               {translate(
-                  "dashboard.routes.bills.features.view-installments.description",
-               )}
+               Visualize todas as parcelas desta conta
             </SheetDescription>
          </SheetHeader>
 
@@ -85,21 +78,13 @@ export function ViewInstallmentsSheet({ bill }: ViewInstallmentsSheetProps) {
             {/* Summary */}
             <div className="py-4 border-b space-y-2">
                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.bills.features.view-installments.total-amount",
-                     )}
-                  </span>
+                  <span className="text-muted-foreground">Valor Total</span>
                   <span className="font-medium">
                      {formatDecimalCurrency(totalAmount)}
                   </span>
                </div>
                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.bills.features.view-installments.progress",
-                     )}
-                  </span>
+                  <span className="text-muted-foreground">Progresso</span>
                   <span className="font-medium">
                      {completedCount} / {totalCount}
                   </span>
@@ -127,29 +112,19 @@ export function ViewInstallmentsSheet({ bill }: ViewInstallmentsSheetProps) {
                              <div className="space-y-1">
                                 <div className="flex items-center gap-2">
                                    <span className="font-medium text-sm">
-                                      {translate(
-                                         "dashboard.routes.bills.features.view-installments.installment-number",
-                                         {
-                                            current: index + 1,
-                                            total: totalCount,
-                                         },
-                                      )}
+                                      {`Parcela ${index + 1}/${totalCount}`}
                                    </span>
                                    {isCurrent && (
                                       <Badge
                                          className="text-xs"
                                          variant="outline"
                                       >
-                                         {translate(
-                                            "dashboard.routes.bills.features.view-installments.current",
-                                         )}
+                                         Atual
                                       </Badge>
                                    )}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
-                                   {translate(
-                                      "dashboard.routes.bills.features.view-installments.due-date",
-                                   )}{" "}
+                                   Vencimento:{" "}
                                    {formatDate(
                                       new Date(installment.dueDate),
                                       "DD/MM/YYYY",

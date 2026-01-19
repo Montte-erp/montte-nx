@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import {
    Card,
@@ -215,8 +214,8 @@ function TagTypeDistributionChart({
          }
       }
 
-      const incomeLabel = translate("common.charts.labels.income");
-      const expensesLabel = translate("common.charts.labels.expenses");
+      const incomeLabel = "Receita";
+      const expensesLabel = "Despesas";
 
       const chartData = [
          {
@@ -400,8 +399,8 @@ function TagMonthlyTrendChart({
 
       const chartData = sortedMonths.map(([_, data]) => data);
 
-      const incomeLabel = translate("common.charts.labels.income");
-      const expensesLabel = translate("common.charts.labels.expenses");
+      const incomeLabel = "Receita";
+      const expensesLabel = "Despesas";
 
       const config: ChartConfig = {
          expense: {

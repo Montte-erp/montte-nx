@@ -1,0 +1,91 @@
+---
+import { Image } from "astro:assets";
+import { Button } from "@packages/ui/components/button";
+
+interface Props {
+   eyebrow: string;
+   title: string;
+   description: string;
+   image: ImageMetadata | string;
+   imageAlt: string;
+   primaryCta?: {
+      label: string;
+      href: string;
+   };
+   secondaryCta?: {
+      label: string;
+      href: string;
+   };
+}
+
+const {
+   eyebrow,
+   title,
+   description,
+   image,
+   imageAlt,
+   primaryCta,
+   secondaryCta,
+} = Astro.props;
+---
+
+<Fragment>
+	<!-- Hero Section -->
+	<section class="relative px-8 py-18 md:py-28 flex flex-col gap-12 items-center container max-w-7xl mx-auto overflow-hidden">
+		<div class="flex flex-col gap-6 items-center text-center">
+			<p class="text-base uppercase font-bold text-center tracking-[0.20em] text-primary">
+				{eyebrow}
+			</p>
+
+			<h1 class="inline-block font-semibold tracking-tight text-center text-4xl sm:text-6xl lg:text-7xl leading-tight max-w-3xl text-foreground">
+				{title}
+			</h1>
+
+			<p class="sm:text-xl text-center max-w-sm sm:max-w-xl text-foreground/70">
+				{description}
+			</p>
+
+			{(primaryCta || secondaryCta) && (
+				<div class="flex flex-col sm:flex-row gap-4 items-center">
+					{primaryCta && (
+						<a href={primaryCta.href}>
+							<Button size="lg">
+								{primaryCta.label}
+							</Button>
+						</a>
+					)}
+					{secondaryCta && (
+						<a href={secondaryCta.href}>
+							<Button size="lg" variant="outline">
+								{secondaryCta.label}
+							</Button>
+						</a>
+					)}
+				</div>
+			)}
+		</div>
+	</section>
+
+	<!-- Hero Screenshot -->
+	<section class="pb-16 md:pb-24 container mx-auto px-4 sm:px-6">
+		<div class="relative mx-auto">
+			<div class="rounded-2xl overflow-hidden border border-border/20 bg-card shadow-2xl">
+				{typeof image === "string" ? (
+					<img
+						src={image}
+						alt={imageAlt}
+						class="w-full h-auto"
+					/>
+				) : (
+					<Image
+						src={image}
+						alt={imageAlt}
+						inferSize
+						class="w-full h-auto"
+					/>
+				)}
+			</div>
+			<div class="absolute -inset-4 bg-gradient-to-r from-primary/10 via-transparent to-primary/10 rounded-3xl -z-10 blur-3xl"></div>
+		</div>
+	</section>
+</Fragment>

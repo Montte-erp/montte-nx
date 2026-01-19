@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { formatDecimalCurrency } from "@packages/money";
 import {
    Card,
@@ -467,8 +466,8 @@ function CostCenterTypeDistributionChart() {
          }
       }
 
-      const incomeLabel = translate("common.charts.labels.income");
-      const expensesLabel = translate("common.charts.labels.expenses");
+      const incomeLabel = "Receita";
+      const expensesLabel = "Despesas";
 
       const data = [
          {

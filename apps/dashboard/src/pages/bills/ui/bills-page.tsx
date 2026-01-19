@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useSuspenseQueries } from "@tanstack/react-query";
@@ -135,25 +134,19 @@ function BillsPageContent() {
    const getHeaderContent = () => {
       if (billType === "payable") {
          return {
-            description: translate(
-               "dashboard.routes.bills.views.payables.description",
-            ),
-            title: translate("dashboard.routes.bills.views.payables.title"),
+            description: "Gerencie suas despesas futuras",
+            title: "Contas a Pagar",
          };
       }
       if (billType === "receivable") {
          return {
-            description: translate(
-               "dashboard.routes.bills.views.receivables.description",
-            ),
-            title: translate("dashboard.routes.bills.views.receivables.title"),
+            description: "Gerencie suas receitas futuras",
+            title: "Contas a Receber",
          };
       }
       return {
-         description: translate(
-            "dashboard.routes.bills.views.allBills.description",
-         ),
-         title: translate("dashboard.routes.bills.views.allBills.title"),
+         description: "Gerencie suas contas a pagar e a receber",
+         title: "Contas a Pagar e Receber",
       };
    };
 
@@ -171,9 +164,7 @@ function BillsPageContent() {
                   }
                >
                   <Plus className="size-4" />
-                  {translate(
-                     "dashboard.routes.bills.list-section.actions.add-new",
-                  )}
+                  Nova Conta
                </Button>
             }
             description={description}

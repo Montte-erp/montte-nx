@@ -1,6 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useTRPC } from "@/integrations/clients";
+
+const STORAGE_KEY = "bill-reminder-last-check";
+const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 interface UseBillReminderCheckOptions {
    enabled?: boolean;
@@ -12,23 +15,26 @@ export function useBillReminderCheck(
 ) {
    const { enabled = true, reminderDaysBefore } = options;
    const trpc = useTRPC();
-   const hasCheckedRef = useRef(false);
 
    const checkMutation = useMutation(
       trpc.pushNotifications.checkBillReminders.mutationOptions(),
    );
 
    useEffect(() => {
-      if (!enabled || hasCheckedRef.current) {
-         return;
+      if (!enabled) return;
+
+      const lastCheck = localStorage.getItem(STORAGE_KEY);
+      const now = Date.now();
+
+      if (lastCheck && now - parseInt(lastCheck, 10) < CHECK_INTERVAL_MS) {
+         return; // Skip if checked recently
       }
 
-      hasCheckedRef.current = true;
-
+      localStorage.setItem(STORAGE_KEY, now.toString());
       checkMutation.mutate(
          reminderDaysBefore ? { reminderDaysBefore } : undefined,
       );
-   }, [enabled, reminderDaysBefore, checkMutation]);
+   }, [enabled, reminderDaysBefore, checkMutation.mutate]); // Remove checkMutation from deps
 
    return {
       error: checkMutation.error,

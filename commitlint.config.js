@@ -17,7 +17,6 @@ export default {
                "database",
                "environment",
                "files",
-               "localization",
                "payment",
                "posthog",
                "rag",

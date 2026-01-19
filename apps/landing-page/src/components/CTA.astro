@@ -1,0 +1,89 @@
+---
+import { Image } from "astro:assets";
+import { ArrowRight } from "@lucide/astro";
+import { Button } from "@packages/ui/components/button";
+
+// Seus assets originais
+import transactionsCard from "@/assets/cards/automation-preview.png";
+import dreCard from "@/assets/cards/report-preview.png";
+
+interface Props {
+   title?: string[];
+   buttonText?: string;
+}
+
+const {
+   title = ["Sua operação", "No piloto automático"],
+   buttonText = "Falar com Especialista",
+} = Astro.props;
+---
+
+<section id="cta" class="relative px-4 py-16 md:py-24 flex flex-col items-center container max-w-7xl mx-auto overflow-hidden">
+   <div class="w-full max-w-[1200px]">
+
+      <!-- Container Principal (Estilo Dark Navy) -->
+      <div class="relative overflow-hidden rounded-[2.5rem] border border-[#2A3042] bg-[#151925] shadow-2xl shadow-black/40">
+
+         <!-- Efeitos de Fundo (Glows) -->
+         <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary/10 blur-[120px] rounded-full pointer-events-none"></div>
+         <div class="absolute bottom-0 right-0 w-[400px] h-[400px] bg-emerald-500/5 blur-[100px] rounded-full pointer-events-none"></div>
+
+         <!-- Conteúdo Centralizado -->
+         <div class="relative z-10 px-6 py-16 sm:px-16 sm:py-24 lg:py-28 lg:px-24 text-center">
+
+            <!-- Título Principal -->
+            <h2 class="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight text-white mb-8 leading-[1.1]">
+               {title.map((line, i) => (
+                  <span class={i === 1 ? "text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600 block mt-2" : "block"}>
+                     {line}
+                  </span>
+               ))}
+            </h2>
+
+            <!-- Subtítulo -->
+            <p class="text-lg text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
+               Comece hoje mesmo a transformar a gestão financeira do seu negócio.
+               Organização total, sem perder tempo com planilhas.
+            </p>
+
+            <!-- Botões -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+               <a href="/signup">
+                  <Button
+                     size="lg"
+                     className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground text-base h-14 px-10 shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] group"
+                  >
+                     {buttonText}
+                     <ArrowRight class="ml-2 size-5 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Button>
+               </a>
+            </div>
+
+         </div>
+
+         <!-- IMAGEM 1: Transactions (Bottom Left) -->
+         <!-- Adicionada rotação e sombra para integrar ao design -->
+         <div class="absolute -bottom-12 -left-12 lg:-bottom-16 lg:left-10 w-64 lg:w-80 hidden md:block pointer-events-none">
+             <div class="rounded-xl overflow-hidden border border-[#2A3042] shadow-2xl bg-[#1C202E] rotate-6 hover:rotate-3 transition-transform duration-700">
+               <Image
+                  src={transactionsCard}
+                  alt="Prévia de Transações"
+                  class="w-full h-auto object-cover opacity-90"
+               />
+            </div>
+         </div>
+
+         <!-- IMAGEM 2: DRE (Top Right) -->
+         <div class="absolute -top-12 -right-12 lg:top-10 lg:-right-16 w-64 lg:w-80 hidden md:block pointer-events-none">
+             <div class="rounded-xl overflow-hidden border border-[#2A3042] shadow-2xl bg-[#1C202E] -rotate-6 hover:-rotate-3 transition-transform duration-700">
+               <Image
+                  src={dreCard}
+                  alt="Prévia de Dashboards"
+                  class="w-full h-auto object-cover opacity-90"
+               />
+            </div>
+         </div>
+
+      </div>
+   </div>
+</section>

@@ -15,7 +15,6 @@ COPY packages/ui/package.json ./packages/ui/
 COPY packages/posthog/package.json ./packages/posthog/
 COPY packages/utils/package.json ./packages/utils/
 COPY packages/environment/package.json ./packages/environment/
-COPY packages/localization/package.json ./packages/localization/
 COPY packages/money/package.json ./packages/money/
 COPY libraries/money/package.json ./libraries/money/
 COPY tooling/typescript/package.json ./tooling/typescript/

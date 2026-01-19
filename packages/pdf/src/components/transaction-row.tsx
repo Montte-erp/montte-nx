@@ -1,5 +1,5 @@
-import type { TransactionSnapshot } from "@packages/database/schemas/custom-reports";
 import { StyleSheet, Text, View } from "@react-pdf/renderer";
+import type { TransactionSnapshot } from "../types";
 
 type TransactionRowProps = {
    transaction: TransactionSnapshot;

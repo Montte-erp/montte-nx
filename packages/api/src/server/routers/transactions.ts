@@ -39,9 +39,10 @@ import {
    streamFileForProxy,
    verifyFileExists,
 } from "@packages/files/client";
-import { checkBudgetAlertsAfterTransaction, emitBudgetWorkflowEvents } from "@packages/notifications/budget-alerts";
+import { checkBudgetAlertsAfterTransaction } from "@packages/notifications/budget-alerts";
 import { APIError } from "@packages/utils/errors";
 import { validateCategorySplits as validateSplits } from "@packages/utils/split";
+import { emitBudgetWorkflowEvents } from "@packages/workflows/budget-events";
 import { enqueueWorkflowEvent } from "@packages/workflows/queue/producer";
 import {
    createTransactionCreatedEvent,

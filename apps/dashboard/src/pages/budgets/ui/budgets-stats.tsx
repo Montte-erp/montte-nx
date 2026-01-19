@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Card,
    CardContent,
@@ -18,13 +17,10 @@ function BudgetsStatsErrorFallback(props: FallbackProps) {
    return (
       <div className="grid gap-4 h-min">
          {createErrorFallback({
-            errorDescription: translate(
-               "dashboard.routes.budgets.list-section.state.error.description",
-            ),
-            errorTitle: translate(
-               "dashboard.routes.budgets.list-section.state.error.title",
-            ),
-            retryText: translate("common.actions.retry"),
+            errorDescription:
+               "Não foi possível carregar os orçamentos. Tente novamente.",
+            errorTitle: "Erro ao carregar orçamentos",
+            retryText: "Tentar novamente",
          })(props)}
       </div>
    );
@@ -71,39 +67,23 @@ function BudgetsStatsContent() {
    return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
          <StatsCard
-            description={translate(
-               "dashboard.routes.budgets.stats.total-budgets.description",
-            )}
-            title={translate(
-               "dashboard.routes.budgets.stats.total-budgets.title",
-            )}
+            description="Número de orçamentos ativos"
+            title="Total de orçamentos"
             value={stats.activeBudgets}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.budgets.stats.total-budgeted.description",
-            )}
-            title={translate(
-               "dashboard.routes.budgets.stats.total-budgeted.title",
-            )}
+            description="Soma de todos os limites"
+            title="Total orçado"
             value={formatCurrency(stats.totalBudgeted)}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.budgets.stats.total-spent.description",
-            )}
-            title={translate(
-               "dashboard.routes.budgets.stats.total-spent.title",
-            )}
+            description="Soma de todos os gastos realizados"
+            title="Total gasto"
             value={formatCurrency(stats.totalSpent)}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.budgets.stats.total-available.description",
-            )}
-            title={translate(
-               "dashboard.routes.budgets.stats.total-available.title",
-            )}
+            description="Quanto ainda pode ser gasto"
+            title="Total disponível"
             value={formatCurrency(stats.totalAvailable)}
          />
       </div>

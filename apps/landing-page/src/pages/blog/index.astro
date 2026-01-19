@@ -1,0 +1,156 @@
+---
+export const prerender = true;
+
+import { getCollection } from "astro:content";
+import BlogCard from "@/components/blog/blog-card.astro";
+import BlogCategoryFilter from "@/components/blog/blog-category-filter.astro";
+import BlogSpotlightCard from "@/components/blog/blog-spotlight-card.astro";
+import Footer from "@/components/Footer.astro";
+import StickyNavbar from "@/components/StickyNavbar.astro";
+import Layout from "@/layouts/Landing.astro";
+
+// Configuration
+const INITIAL_POSTS = 6;
+
+// Get query parameters
+const url = Astro.url;
+const categoryParam = url.searchParams.get("categoria");
+
+// Get all published posts sorted by date
+const allPosts = (await getCollection("blog", ({ data }) => !data.draft)).sort(
+   (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
+
+// Get unique categories from posts
+const categories = [
+   ...new Set(allPosts.map((post) => post.data.categoria).filter(Boolean)),
+] as string[];
+
+// Spotlight post is always the most recent
+const spotlightPost = allPosts[0];
+
+// Posts for the grid (all posts, will be filtered by category if specified)
+const gridPosts = categoryParam
+   ? allPosts.filter((post) => post.data.categoria === categoryParam)
+   : allPosts;
+
+const hasMorePosts = gridPosts.length > INITIAL_POSTS;
+---
+
+<Layout>
+	<StickyNavbar />
+
+	<main class="pt-24 pb-16">
+		<div class="container mx-auto max-w-7xl px-4 sm:px-6">
+			<!-- Header Section -->
+			<header class="mb-20">
+				<div class="grid gap-8 lg:grid-cols-[1fr_320px] lg:items-start">
+					<div class="flex flex-col justify-center">
+						<h1 class="text-4xl font-bold text-foreground md:text-5xl">
+							Melhores Artigos
+						</h1>
+						<p class="mt-4 max-w-md text-lg text-muted-foreground">
+							Conteudo de qualidade sobre gestao financeira,
+							produtividade e dicas para organizar suas financas.
+						</p>
+					</div>
+					{
+						spotlightPost && (
+							<div class="hidden lg:block">
+								<BlogSpotlightCard post={spotlightPost} />
+							</div>
+						)
+					}
+				</div>
+			</header>
+
+			{
+				allPosts.length === 0 ? (
+					<div class="py-16 text-center">
+						<p class="text-muted-foreground">
+							Nenhum post disponivel ainda. Em breve teremos
+							novidades!
+						</p>
+					</div>
+				) : (
+					<section>
+						<div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+							<h2 class="text-2xl font-bold text-foreground">
+								Todos os Artigos
+							</h2>
+							<BlogCategoryFilter
+								categories={categories}
+								activeCategory={categoryParam}
+							/>
+						</div>
+
+						{gridPosts.length === 0 ? (
+							<div class="py-16 text-center rounded-lg border border-border/20 bg-muted/30">
+								<p class="text-muted-foreground">
+									Nenhum artigo encontrado nesta categoria.
+								</p>
+							</div>
+						) : (
+							<>
+								<div
+									id="blog-grid"
+									class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+									data-initial-count={INITIAL_POSTS}
+								>
+									{gridPosts.map((post, index) => (
+										<BlogCard
+											post={post}
+											hidden={index >= INITIAL_POSTS}
+										/>
+									))}
+								</div>
+
+								{hasMorePosts && (
+									<div class="mt-12 flex justify-center">
+										<button
+											id="load-more-btn"
+											type="button"
+											class="rounded-md bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+										>
+											Carregar mais
+										</button>
+									</div>
+								)}
+							</>
+						)}
+					</section>
+				)
+			}
+		</div>
+	</main>
+
+	<Footer />
+</Layout>
+
+<script>
+	const grid = document.getElementById("blog-grid");
+	const loadMoreBtn = document.getElementById("load-more-btn");
+
+	if (grid && loadMoreBtn) {
+		const cards = grid.querySelectorAll("[data-blog-card]");
+		const initialCount = parseInt(grid.dataset.initialCount || "6", 10);
+		let visibleCount = initialCount;
+
+		loadMoreBtn.addEventListener("click", () => {
+			const nextBatch = Array.from(cards).slice(
+				visibleCount,
+				visibleCount + initialCount,
+			);
+
+			nextBatch.forEach((card) => {
+				card.classList.remove("hidden");
+			});
+
+			visibleCount += nextBatch.length;
+
+			if (visibleCount >= cards.length) {
+				loadMoreBtn.style.display = "none";
+			}
+		});
+	}
+</script>

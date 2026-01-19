@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import {
    Card,
    CardContent,
@@ -18,13 +17,9 @@ function CounterpartiesStatsErrorFallback(props: FallbackProps) {
    return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-min">
          {createErrorFallback({
-            errorDescription: translate(
-               "dashboard.routes.counterparties.stats.error.description",
-            ),
-            errorTitle: translate(
-               "dashboard.routes.counterparties.stats.error.title",
-            ),
-            retryText: translate("common.actions.retry"),
+            errorDescription: "Não foi possível carregar as estatísticas",
+            errorTitle: "Erro ao carregar estatísticas",
+            retryText: "Tentar novamente",
          })(props)}
       </div>
    );
@@ -64,39 +59,23 @@ function CounterpartiesStatsContent() {
    return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-min">
          <StatsCard
-            description={translate(
-               "dashboard.routes.counterparties.stats.total.description",
-            )}
-            title={translate(
-               "dashboard.routes.counterparties.stats.total.title",
-            )}
+            description="Total de cadastros"
+            title="Total"
             value={stats?.total ?? 0}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.counterparties.stats.clients.description",
-            )}
-            title={translate(
-               "dashboard.routes.counterparties.stats.clients.title",
-            )}
+            description="Cadastros de clientes"
+            title="Clientes"
             value={stats?.totalClients ?? 0}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.counterparties.stats.suppliers.description",
-            )}
-            title={translate(
-               "dashboard.routes.counterparties.stats.suppliers.title",
-            )}
+            description="Cadastros de fornecedores"
+            title="Fornecedores"
             value={stats?.totalSuppliers ?? 0}
          />
          <StatsCard
-            description={translate(
-               "dashboard.routes.counterparties.stats.active.description",
-            )}
-            title={translate(
-               "dashboard.routes.counterparties.stats.active.title",
-            )}
+            description="Cadastros ativos"
+            title="Ativos"
             value={stats?.totalActive ?? 0}
          />
       </div>

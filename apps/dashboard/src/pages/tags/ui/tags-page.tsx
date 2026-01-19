@@ -1,12 +1,11 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Plus } from "lucide-react";
 import { Suspense } from "react";
-import { UpgradeRequired } from "@/components/upgrade-required";
 import { DefaultHeader } from "@/default/default-header";
-import { usePlanFeatures } from "@/hooks/use-plan-features";
+import { usePlanFeatures } from "@/features/billing/lib/use-plan-features";
+import { UpgradeRequired } from "@/features/billing/ui/upgrade-required";
 import { useSheet } from "@/hooks/use-sheet";
 import { ManageTagForm } from "../features/manage-tag-form";
 import { TagListProvider, useTagList } from "../features/tag-list-context";
@@ -89,20 +88,14 @@ function TagsPageContent() {
          <DefaultHeader
             actions={
                <Button
-                  onClick={() =>
-                     openSheet({ children: <ManageTagForm /> })
-                  }
+                  onClick={() => openSheet({ children: <ManageTagForm /> })}
                >
                   <Plus className="size-4" />
-                  {translate(
-                     "dashboard.routes.tags.actions-toolbar.actions.add-new",
-                  )}
+                  Adicionar nova tag
                </Button>
             }
-            description={translate(
-               "dashboard.routes.tags.list-section.description",
-            )}
-            title={translate("dashboard.routes.tags.list-section.title")}
+            description="Visualize e gerencie suas tags aqui."
+            title="Suas tags"
          />
 
          <Suspense fallback={<TagFilterBarSkeleton />}>

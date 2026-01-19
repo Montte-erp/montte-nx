@@ -1,12 +1,17 @@
-"use client";
-
 import { Button } from "@packages/ui/components/button";
+import {
+   Carousel,
+   type CarouselApi,
+   CarouselContent,
+   CarouselItem,
+} from "@packages/ui/components/carousel";
 import { cn } from "@packages/ui/lib/utils";
-import useEmblaCarousel from "embla-carousel-react";
+import Autoplay from "embla-carousel-autoplay";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-interface CarouselItem {
+export interface FeatureCard {
+   id: string;
    title: string;
    description: string;
    image: string;
@@ -14,194 +19,217 @@ interface CarouselItem {
    href?: string;
 }
 
-interface FeatureCarouselProps {
-   label?: string;
+interface FeatureCarouselHeaderProps {
+   badge: string;
    title: string;
-   description?: string;
+   subtitle: string;
    ctaText: string;
    ctaHref: string;
-   benefitStatement?: string;
-   items: CarouselItem[];
+   benefitText: string;
+}
+
+interface FeatureCarouselProps extends FeatureCarouselHeaderProps {
+   items: FeatureCard[];
+   autoplayInterval?: number;
+   className?: string;
 }
 
 export function FeatureCarousel({
-   label,
+   items,
+   autoplayInterval = 4000,
+   className,
+   badge,
    title,
-   description,
+   subtitle,
    ctaText,
    ctaHref,
-   benefitStatement,
-   items,
+   benefitText,
 }: FeatureCarouselProps) {
-   const [emblaRef, emblaApi] = useEmblaCarousel({
-      align: "start",
-      containScroll: "trimSnaps",
-      dragFree: true,
-   });
-
+   const [api, setApi] = useState<CarouselApi>();
    const [canScrollPrev, setCanScrollPrev] = useState(false);
-   const [canScrollNext, setCanScrollNext] = useState(true);
+   const autoplayRef = useRef(
+      Autoplay({
+         delay: autoplayInterval,
+         stopOnMouseEnter: true,
+         stopOnInteraction: false,
+      }),
+   );
 
-   const scrollPrev = useCallback(() => {
-      emblaApi?.scrollPrev();
-   }, [emblaApi]);
+   // Last real item index (0-indexed, spacers are not CarouselItems)
+   const lastItemIndex = items.length - 1;
 
+   // Track scroll state
+   const onSelect = useCallback((api: CarouselApi) => {
+      if (!api) return;
+      const index = api.selectedScrollSnap();
+      setCanScrollPrev(index > 0);
+   }, []);
+
+   // Custom scroll next that rewinds at end
    const scrollNext = useCallback(() => {
-      emblaApi?.scrollNext();
-   }, [emblaApi]);
+      if (!api) return;
+      const currentIndex = api.selectedScrollSnap();
+      if (currentIndex >= lastItemIndex) {
+         // At end, rewind to start
+         api.scrollTo(0);
+      } else {
+         api.scrollNext();
+      }
+   }, [api, lastItemIndex]);
 
-   const onSelect = useCallback(() => {
-      if (!emblaApi) return;
-      setCanScrollPrev(emblaApi.canScrollPrev());
-      setCanScrollNext(emblaApi.canScrollNext());
-   }, [emblaApi]);
+   // Custom scroll prev
+   const scrollPrev = useCallback(() => {
+      if (!api) return;
+      api.scrollPrev();
+   }, [api]);
 
    useEffect(() => {
-      if (!emblaApi) return;
-      onSelect();
-      emblaApi.on("select", onSelect);
-      emblaApi.on("reInit", onSelect);
-      return () => {
-         emblaApi.off("select", onSelect);
-         emblaApi.off("reInit", onSelect);
+      if (!api) return;
+      onSelect(api);
+      api.on("reInit", onSelect);
+      api.on("select", onSelect);
+
+      // Handle autoplay rewind when reaching the end
+      const handleSettle = () => {
+         const currentIndex = api.selectedScrollSnap();
+         if (currentIndex >= lastItemIndex) {
+            setTimeout(() => {
+               api.scrollTo(0);
+            }, autoplayInterval);
+         }
       };
-   }, [emblaApi, onSelect]);
+      api.on("settle", handleSettle);
+
+      return () => {
+         api.off("select", onSelect);
+         api.off("reInit", onSelect);
+         api.off("settle", handleSettle);
+      };
+   }, [api, onSelect, autoplayInterval, lastItemIndex]);
 
    return (
       <div className="relative">
-         <div className="relative z-30 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-               <div className="space-y-4">
-                  {label && (
-                     <span className="text-sm font-medium uppercase tracking-wider text-primary">
-                        {label}
-                     </span>
-                  )}
-                  <h2 className="text-2xl font-semibold md:text-3xl lg:text-4xl">
+         {/* Header */}
+         <div className="container mx-auto mb-12 max-w-7xl px-4">
+            <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+               <div className="flex flex-col items-start space-y-4">
+                  <span className="text-sm font-bold uppercase tracking-widest text-primary">
+                     {badge}
+                  </span>
+                  <h2 className="inline-block max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-foreground md:text-4xl">
                      {title}
                   </h2>
-                  {description && (
-                     <p className="max-w-2xl text-lg text-muted-foreground">
-                        {description}
-                     </p>
-                  )}
+                  <p className="max-w-sm text-foreground/70 sm:max-w-xl sm:text-xl">
+                     {subtitle}
+                  </p>
                </div>
-               <div className="flex items-center">
-                  <div className="hidden items-center md:flex">
+               <div className="flex items-center gap-4">
+                  <a href={ctaHref}>
+                     <Button variant="outline">{ctaText}</Button>
+                  </a>
+                  <div className="hidden items-center gap-2 md:flex">
                      <Button
-                        className="mr-2 size-9 shrink-0 rounded-full"
+                        className="rounded-full"
                         disabled={!canScrollPrev}
                         onClick={scrollPrev}
                         size="icon"
                         variant="outline"
                      >
                         <ChevronLeft className="size-4" />
-                        <span className="sr-only">Anterior</span>
                      </Button>
                      <Button
-                        className="size-9 shrink-0 rounded-full"
-                        disabled={!canScrollNext}
+                        className="rounded-full"
                         onClick={scrollNext}
                         size="icon"
                         variant="outline"
                      >
                         <ChevronRight className="size-4" />
-                        <span className="sr-only">Proximo</span>
                      </Button>
-                     <div className="mx-5 h-[18px] w-[1px] shrink-0 bg-border" />
                   </div>
-                  <a href={ctaHref}>
-                     <Button
-                        className="shrink-0 rounded-full px-4 py-2 text-sm"
-                        variant="outline"
+               </div>
+            </div>
+         </div>
+
+         <Carousel
+            className={cn("w-full", className)}
+            opts={{
+               align: "start",
+               loop: false,
+               skipSnaps: false,
+               containScroll: "keepSnaps",
+            }}
+            plugins={[autoplayRef.current]}
+            setApi={setApi}
+         >
+            <CarouselContent className="gap-4">
+               {/* Spacer to align first card with header container */}
+               <div className="min-w-[max(calc((100vw-1280px)/2),1rem)] shrink-0" />
+               {items.map((item) => (
+                  <CarouselItem
+                     className={cn(
+                        "basis-auto",
+                        item.width === "wide"
+                           ? "md:basis-[725px]"
+                           : "md:basis-[350px]",
+                     )}
+                     key={item.id}
+                  >
+                     <a
+                        className={cn(
+                           "group relative z-10 block shrink-0 overflow-hidden rounded-xl border border-border bg-card transition hover:scale-[1.01] hover:shadow-lg",
+                           "min-h-[420px] max-w-[85vw] select-none sm:max-w-none md:max-h-[478px] md:min-h-[478px]",
+                           item.width === "wide" ? "w-[725px]" : "w-[350px]",
+                        )}
+                        href={item.href || "#"}
                      >
-                        {ctaText}
-                        <ChevronRight className="size-4" />
-                     </Button>
-                  </a>
-               </div>
-            </div>
-         </div>
+                        <img
+                           alt={item.title}
+                           className="pointer-events-none h-auto w-full object-contain"
+                           draggable={false}
+                           loading="lazy"
+                           src={item.image}
+                        />
+                        <div className="absolute inset-x-6 bottom-8 md:inset-x-8">
+                           <h3 className="font-medium text-foreground">
+                              {item.title}
+                           </h3>
+                           <p className="mt-3 text-muted-foreground">
+                              {item.description}
+                           </p>
+                        </div>
+                     </a>
+                  </CarouselItem>
+               ))}
+               {/* Trailing spacer to allow last item to scroll into view */}
+               <div className="min-w-[max(calc((100vw-1280px)/2),1rem)] shrink-0" />
+            </CarouselContent>
+         </Carousel>
 
-         <div className="mt-9 w-full max-w-[100vw]">
-            <div className="overflow-hidden" ref={emblaRef}>
-               <div className="flex gap-5 py-1 pl-4 sm:pl-6 lg:pl-[max(calc((100vw-1280px)/2+2rem),2rem)]">
-                  {items.map((item, index) => (
-                     <CarouselCard item={item} key={index} />
-                  ))}
-                  <div className="w-4 shrink-0 sm:w-6 lg:w-[max(calc((100vw-1280px)/2),2rem)]" />
-               </div>
-            </div>
-         </div>
-
-         {benefitStatement && (
-            <div className="mx-auto mt-8 max-w-7xl px-4 sm:px-6 lg:px-8">
-               <p className="text-lg font-medium italic text-muted-foreground">
-                  "{benefitStatement}"
-               </p>
-            </div>
-         )}
-
-         <div className="pointer-events-none absolute inset-0 z-20 hidden items-center justify-between lg:flex">
+         {/* Gradient overlays */}
+         <div className="pointer-events-none absolute bottom-0 top-[calc(theme(spacing.12)+1rem+100px)] z-20 flex w-full justify-center">
+            {/* Left fade gradient */}
             <button
-               aria-label="Anterior"
-               className={cn(
-                  "pointer-events-auto h-full w-[calc((100vw-1280px)/2)] bg-linear-to-r from-background via-background/70 to-transparent",
-                  !canScrollPrev && "cursor-default opacity-0",
-               )}
+               aria-label="Previous"
+               className="pointer-events-auto hidden h-full grow bg-gradient-to-r from-background from-0% via-background/70 via-50% to-transparent disabled:cursor-default not-disabled:cursor-pointer md:block"
                disabled={!canScrollPrev}
                onClick={scrollPrev}
                type="button"
             />
-            <div className="w-[1280px] shrink-0" />
+            {/* Center spacer - visible content area */}
+            <div className="w-full shrink-0 md:w-[min(1126px,calc(100vw-8rem))]" />
+            {/* Right fade gradient */}
             <button
-               aria-label="Proximo"
-               className={cn(
-                  "pointer-events-auto h-full w-[calc((100vw-1280px)/2)] bg-gradient-to-l from-background via-background/70 to-transparent",
-                  !canScrollNext && "cursor-default opacity-0",
-               )}
-               disabled={!canScrollNext}
+               aria-label="Next"
+               className="pointer-events-auto hidden h-full grow cursor-pointer bg-gradient-to-l from-background from-0% via-background/70 via-50% to-transparent md:block"
                onClick={scrollNext}
                type="button"
             />
          </div>
-      </div>
-   );
-}
 
-function CarouselCard({ item }: { item: CarouselItem }) {
-   const widthClass = item.width === "wide" ? "w-[725px]" : "w-[350px]";
-
-   const content = (
-      <div
-         className={cn(
-            "group relative z-10 shrink-0 overflow-hidden rounded-xl border border-border bg-card transition",
-            "min-h-[420px] max-w-[85vw] select-none sm:max-w-none md:max-h-[478px] md:min-h-[478px]",
-            "hover:scale-[1.01] hover:shadow-lg",
-            widthClass,
-         )}
-      >
-         <img
-            alt={item.title}
-            className="pointer-events-none h-auto w-full object-contain"
-            draggable={false}
-            loading="lazy"
-            src={item.image}
-         />
-         <div className="absolute inset-x-6 bottom-8 md:inset-x-8">
-            <h3 className="font-medium text-foreground">{item.title}</h3>
-            <p className="mt-3 text-muted-foreground">{item.description}</p>
+         {/* Benefit Statement */}
+         <div className="container mx-auto mt-8 max-w-7xl px-4">
+            <p className="text-sm text-muted-foreground">{benefitText}</p>
          </div>
       </div>
    );
-
-   if (item.href) {
-      return (
-         <a className="block" draggable={false} href={item.href}>
-            {content}
-         </a>
-      );
-   }
-
-   return content;
 }

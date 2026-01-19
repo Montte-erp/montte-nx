@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Card, CardContent } from "@packages/ui/components/card";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
@@ -41,13 +40,10 @@ function TagsListErrorFallback(props: FallbackProps) {
       <Card>
          <CardContent className="pt-6">
             {createErrorFallback({
-               errorDescription: translate(
-                  "dashboard.routes.tags.list-section.state.error.description",
-               ),
-               errorTitle: translate(
-                  "dashboard.routes.tags.list-section.state.error.title",
-               ),
-               retryText: translate("common.actions.retry"),
+               errorDescription:
+                  "Falha ao carregar tags. Tente novamente mais tarde.",
+               errorTitle: "Erro ao carregar tags",
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>
@@ -155,7 +151,7 @@ function TagsListContent() {
                      onChange={(e) => {
                         setSearchTerm(e.target.value);
                      }}
-                     placeholder={translate("common.form.search.placeholder")}
+                     placeholder="Digite para pesquisar"
                      value={searchTerm}
                   />
                   <InputGroupAddon>
@@ -169,15 +165,10 @@ function TagsListContent() {
                         <EmptyMedia variant="icon">
                            <Inbox className="size-6" />
                         </EmptyMedia>
-                        <EmptyTitle>
-                           {translate(
-                              "dashboard.routes.tags.list-section.state.empty.title",
-                           )}
-                        </EmptyTitle>
+                        <EmptyTitle>Nenhuma tag ainda</EmptyTitle>
                         <EmptyDescription>
-                           {translate(
-                              "dashboard.routes.tags.list-section.state.empty.description",
-                           )}
+                           Crie sua primeira tag usando a barra de ações rápidas
+                           acima para começar a organizar suas transações.
                         </EmptyDescription>
                      </EmptyContent>
                   </Empty>
@@ -221,25 +212,23 @@ function TagsListContent() {
                icon={<Trash2 className="size-3.5" />}
                onClick={() =>
                   openAlertDialog({
-                     actionLabel: translate(
-                        "dashboard.routes.tags.bulk-actions.delete",
-                     ),
-                     cancelLabel: translate("common.actions.cancel"),
-                     description: translate(
-                        "dashboard.routes.tags.bulk-actions.delete-confirm-description",
-                        { count: selectedIds.length },
-                     ),
+                     actionLabel: "Excluir",
+                     cancelLabel: "Cancelar",
+                     description:
+                        selectedIds.length === 1
+                           ? "Esta ação não pode ser desfeita. Isso excluirá permanentemente 1 tag e removerá a associação de todas as transações vinculadas."
+                           : `Esta ação não pode ser desfeita. Isso excluirá permanentemente ${selectedIds.length} tags e removerá a associação de todas as transações vinculadas.`,
                      onAction: () => deleteSelected(selectedIds),
-                     title: translate(
-                        "dashboard.routes.tags.bulk-actions.delete-confirm-title",
-                        { count: selectedIds.length },
-                     ),
+                     title:
+                        selectedIds.length === 1
+                           ? "Excluir 1 tag?"
+                           : `Excluir ${selectedIds.length} tags?`,
                      variant: "destructive",
                   })
                }
                variant="destructive"
             >
-               {translate("dashboard.routes.tags.bulk-actions.delete")}
+               Excluir
             </SelectionActionButton>
          </SelectionActionBar>
       </>

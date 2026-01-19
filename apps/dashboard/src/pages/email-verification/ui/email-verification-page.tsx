@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Field,
@@ -25,13 +24,7 @@ export function EmailVerificationPage() {
       select: (s) => s.email,
    });
    const schema = z.object({
-      otp: z
-         .string()
-         .min(
-            6,
-            translate("common.validation.min-length").replace("{min}", "6"),
-         )
-         .max(6),
+      otp: z.string().min(6, "O campo deve ter no mínimo 6 caracteres.").max(6),
    });
 
    const router = useRouter();
@@ -47,18 +40,10 @@ export function EmailVerificationPage() {
                toast.error(error.message);
             },
             onRequest: () => {
-               toast.loading(
-                  translate(
-                     "dashboard.routes.email-verification.messages.requesting",
-                  ),
-               );
+               toast.loading("Enviando código...");
             },
             onSuccess: () => {
-               toast.success(
-                  translate(
-                     "dashboard.routes.email-verification.messages.resend-success",
-                  ),
-               );
+               toast.success("Código reenviado com sucesso!");
             },
          },
       );
@@ -76,18 +61,10 @@ export function EmailVerificationPage() {
                   toast.error(error.message);
                },
                onRequest: () => {
-                  toast.loading(
-                     translate(
-                        "dashboard.routes.email-verification.messages.verifying",
-                     ),
-                  );
+                  toast.loading("Verificando código...");
                },
                onSuccess: () => {
-                  toast.success(
-                     translate(
-                        "dashboard.routes.email-verification.messages.success",
-                     ),
-                  );
+                  toast.success("Email verificado com sucesso!");
                   router.navigate({
                      params: { slug: "_" },
                      to: "/$slug/home",
@@ -125,10 +102,10 @@ export function EmailVerificationPage() {
       <section className="space-y-6 w-full">
          <div className="text-center space-y-2">
             <h1 className="text-3xl font-semibold font-serif">
-               {translate("dashboard.routes.email-verification.title")}
+               Verificação de Email
             </h1>
             <p className="text-muted-foreground text-sm">
-               {translate("dashboard.routes.email-verification.description")}
+               Digite o código de verificação enviado para seu email.
             </p>
          </div>
 
@@ -150,9 +127,7 @@ export function EmailVerificationPage() {
                               className="flex flex-col items-center"
                               data-invalid={isInvalid}
                            >
-                              <FieldLabel>
-                                 {translate("common.form.otp.label")}
-                              </FieldLabel>
+                              <FieldLabel>Código OTP</FieldLabel>
                               <InputOTP
                                  aria-invalid={isInvalid}
                                  autoComplete="one-time-code"
@@ -196,7 +171,7 @@ export function EmailVerificationPage() {
                         }
                         type="submit"
                      >
-                        {translate("common.actions.submit")}
+                        Enviar
                      </Button>
                   )}
                </form.Subscribe>
@@ -209,7 +184,7 @@ export function EmailVerificationPage() {
                onClick={handleResendEmail}
                variant="link"
             >
-               {translate("dashboard.routes.email-verification.actions.resend")}
+               Reenviar Código
             </Button>
          </div>
       </section>

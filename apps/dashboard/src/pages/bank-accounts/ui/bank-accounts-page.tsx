@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { Plus } from "lucide-react";
 import { useState } from "react";
@@ -32,17 +31,11 @@ export function BankAccountsPage() {
                   }
                >
                   <Plus className="size-4" />
-                  {translate(
-                     "dashboard.routes.bank-accounts.list-section.actions.add-new",
-                  )}
+                  Nova Conta Bancária
                </Button>
             }
-            description={translate(
-               "dashboard.routes.bank-accounts.list-section.description",
-            )}
-            title={translate(
-               "dashboard.routes.bank-accounts.list-section.title",
-            )}
+            description="Veja todas as suas contas bancárias aqui."
+            title="Contas Bancárias"
          />
          <BankAccountsFilterBar
             hasActiveFilters={hasActiveFilters}

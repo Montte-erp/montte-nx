@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import {
    Card,
@@ -41,8 +40,8 @@ import {
 } from "lucide-react";
 import { Suspense } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
-import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
-import { usePushNotifications } from "@/hooks/use-push-notifications";
+import { useNotificationPreferences } from "@/features/notifications/hooks/use-notification-preferences";
+import { usePushNotifications } from "@/features/notifications/hooks/use-push-notifications";
 
 interface NotificationPreferences {
    budgetAlerts: boolean;
@@ -97,13 +96,9 @@ function NotificationsSectionErrorFallback(props: FallbackProps) {
    return (
       <Card className="h-full">
          <CardHeader>
-            <CardTitle>
-               {translate("dashboard.routes.settings.notifications.title")}
-            </CardTitle>
+            <CardTitle>Notificações Push</CardTitle>
             <CardDescription>
-               {translate(
-                  "dashboard.routes.settings.notifications.description",
-               )}
+               Receba notificações em tempo real sobre suas finanças.
             </CardDescription>
          </CardHeader>
          <CardContent>
@@ -111,7 +106,7 @@ function NotificationsSectionErrorFallback(props: FallbackProps) {
                errorDescription:
                   "Não foi possível carregar as configurações de notificações. Tente novamente.",
                errorTitle: "Erro ao carregar notificações",
-               retryText: translate("common.actions.retry"),
+               retryText: "Tentar novamente",
             })(props)}
          </CardContent>
       </Card>
@@ -137,11 +132,7 @@ function NotificationsEmptyState({
             <div className="md:col-span-2 lg:col-span-2">
                <Card className="h-full">
                   <CardHeader>
-                     <CardTitle>
-                        {translate(
-                           "dashboard.routes.settings.notifications.title",
-                        )}
-                     </CardTitle>
+                     <CardTitle>Notificações Push</CardTitle>
                      <CardDescription>
                         Configure como você deseja receber alertas e lembretes
                      </CardDescription>
@@ -208,9 +199,7 @@ function NotificationTypesCard({
    return (
       <Card className="h-full">
          <CardHeader>
-            <CardTitle>
-               {translate("dashboard.routes.settings.notifications.title")}
-            </CardTitle>
+            <CardTitle>Notificações Push</CardTitle>
             <CardDescription>
                Configure como você deseja receber alertas e lembretes
                importantes
@@ -224,15 +213,9 @@ function NotificationTypesCard({
                      <Wallet className="size-4" />
                   </ItemMedia>
                   <ItemContent className="min-w-0">
-                     <ItemTitle>
-                        {translate(
-                           "dashboard.routes.settings.notifications.items.budget.title",
-                        )}
-                     </ItemTitle>
+                     <ItemTitle>Alertas de orçamento</ItemTitle>
                      <ItemDescription className="line-clamp-2">
-                        {translate(
-                           "dashboard.routes.settings.notifications.items.budget.description",
-                        )}
+                        Quando você atingir limites do orçamento
                      </ItemDescription>
                   </ItemContent>
                   <ItemActions>
@@ -240,9 +223,7 @@ function NotificationTypesCard({
                         <Loader2 className="size-4 animate-spin text-muted-foreground" />
                      ) : (
                         <Switch
-                           aria-label={translate(
-                              "dashboard.routes.settings.notifications.items.budget.title",
-                           )}
+                           aria-label="Alertas de orçamento"
                            checked={preferences.budgetAlerts}
                            onCheckedChange={(v) =>
                               updatePreference("budgetAlerts", v)
@@ -260,15 +241,9 @@ function NotificationTypesCard({
                      <Receipt className="size-4" />
                   </ItemMedia>
                   <ItemContent className="min-w-0">
-                     <ItemTitle>
-                        {translate(
-                           "dashboard.routes.settings.notifications.items.bills.title",
-                        )}
-                     </ItemTitle>
+                     <ItemTitle>Lembretes de contas</ItemTitle>
                      <ItemDescription className="line-clamp-2">
-                        {translate(
-                           "dashboard.routes.settings.notifications.items.bills.description",
-                        )}
+                        Antes do vencimento de contas recorrentes
                      </ItemDescription>
                   </ItemContent>
                   <ItemActions>
@@ -276,9 +251,7 @@ function NotificationTypesCard({
                         <Loader2 className="size-4 animate-spin text-muted-foreground" />
                      ) : (
                         <Switch
-                           aria-label={translate(
-                              "dashboard.routes.settings.notifications.items.bills.title",
-                           )}
+                           aria-label="Lembretes de contas"
                            checked={preferences.billReminders}
                            onCheckedChange={(v) =>
                               updatePreference("billReminders", v)
@@ -296,15 +269,9 @@ function NotificationTypesCard({
                      <AlertTriangle className="size-4" />
                   </ItemMedia>
                   <ItemContent className="min-w-0">
-                     <ItemTitle>
-                        {translate(
-                           "dashboard.routes.settings.notifications.items.overdue.title",
-                        )}
-                     </ItemTitle>
+                     <ItemTitle>Contas vencidas</ItemTitle>
                      <ItemDescription className="line-clamp-2">
-                        {translate(
-                           "dashboard.routes.settings.notifications.items.overdue.description",
-                        )}
+                        Quando houver contas em atraso
                      </ItemDescription>
                   </ItemContent>
                   <ItemActions>
@@ -312,9 +279,7 @@ function NotificationTypesCard({
                         <Loader2 className="size-4 animate-spin text-muted-foreground" />
                      ) : (
                         <Switch
-                           aria-label={translate(
-                              "dashboard.routes.settings.notifications.items.overdue.title",
-                           )}
+                           aria-label="Contas vencidas"
                            checked={preferences.overdueAlerts}
                            onCheckedChange={(v) =>
                               updatePreference("overdueAlerts", v)
@@ -332,15 +297,9 @@ function NotificationTypesCard({
                      <CreditCard className="size-4" />
                   </ItemMedia>
                   <ItemContent className="min-w-0">
-                     <ItemTitle>
-                        {translate(
-                           "dashboard.routes.settings.notifications.items.transactions.title",
-                        )}
-                     </ItemTitle>
+                     <ItemTitle>Novas transações</ItemTitle>
                      <ItemDescription className="line-clamp-2">
-                        {translate(
-                           "dashboard.routes.settings.notifications.items.transactions.description",
-                        )}
+                        Quando transações forem adicionadas
                      </ItemDescription>
                   </ItemContent>
                   <ItemActions>
@@ -348,9 +307,7 @@ function NotificationTypesCard({
                         <Loader2 className="size-4 animate-spin text-muted-foreground" />
                      ) : (
                         <Switch
-                           aria-label={translate(
-                              "dashboard.routes.settings.notifications.items.transactions.title",
-                           )}
+                           aria-label="Novas transações"
                            checked={preferences.transactionAlerts}
                            onCheckedChange={(v) =>
                               updatePreference("transactionAlerts", v)
@@ -412,19 +369,11 @@ function NotificationOverviewCard({
                      )}
                   </ItemMedia>
                   <ItemContent className="min-w-0">
-                     <ItemTitle>
-                        {translate(
-                           "dashboard.routes.settings.notifications.items.enable.title",
-                        )}
-                     </ItemTitle>
+                     <ItemTitle>Ativar notificações</ItemTitle>
                      <ItemDescription className="line-clamp-2">
                         {isEnabled
-                           ? translate(
-                                "dashboard.routes.settings.notifications.items.enable.enabled",
-                             )
-                           : translate(
-                                "dashboard.routes.settings.notifications.items.enable.disabled",
-                             )}
+                           ? "Você receberá alertas sobre transações, orçamentos e lembretes."
+                           : "Ative para receber alertas importantes no seu dispositivo."}
                      </ItemDescription>
                   </ItemContent>
                   <ItemActions>
@@ -432,9 +381,7 @@ function NotificationOverviewCard({
                         <Loader2 className="size-4 animate-spin text-muted-foreground" />
                      ) : (
                         <Switch
-                           aria-label={translate(
-                              "dashboard.routes.settings.notifications.items.enable.title",
-                           )}
+                           aria-label="Ativar notificações"
                            checked={isEnabled}
                            onCheckedChange={toggle}
                         />
@@ -471,9 +418,7 @@ function NotificationsSectionContent() {
    if (!isSupported) {
       return (
          <NotificationsEmptyState
-            description={translate(
-               "dashboard.routes.settings.notifications.not-supported",
-            )}
+            description="Seu navegador não suporta notificações push."
             icon={Smartphone}
             title="Navegador não suportado"
          />
@@ -483,9 +428,7 @@ function NotificationsSectionContent() {
    if (!isPushEnabled) {
       return (
          <NotificationsEmptyState
-            description={translate(
-               "dashboard.routes.settings.notifications.not-configured",
-            )}
+            description="Notificações push não estão configuradas no servidor."
             icon={BellOff}
             title="Notificações não configuradas"
          />
@@ -495,9 +438,7 @@ function NotificationsSectionContent() {
    if (permission === "denied") {
       return (
          <NotificationsEmptyState
-            description={translate(
-               "dashboard.routes.settings.notifications.blocked",
-            )}
+            description="Você bloqueou as notificações. Para receber notificações, permita nas configurações do seu navegador."
             icon={ShieldOff}
             title="Notificações bloqueadas"
          />

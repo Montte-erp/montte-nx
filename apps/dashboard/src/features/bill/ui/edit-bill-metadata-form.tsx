@@ -1,5 +1,4 @@
 import type { BillWithRelations } from "@packages/database/repositories/bill-repository";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { Combobox } from "@packages/ui/components/combobox";
 import {
@@ -54,12 +53,7 @@ export function EditBillMetadataForm({
    const updateBillMutation = useMutation(
       trpc.bills.update.mutationOptions({
          onError: (error) => {
-            toast.error(
-               error.message ||
-                  translate(
-                     "dashboard.routes.bills.features.edit-metadata.error",
-                  ),
-            );
+            toast.error(error.message || "Erro ao atualizar conta");
          },
          onSuccess: () => {
             queryClient.invalidateQueries({
@@ -68,11 +62,7 @@ export function EditBillMetadataForm({
             queryClient.invalidateQueries({
                queryKey: trpc.bills.getAllPaginated.queryKey(),
             });
-            toast.success(
-               translate(
-                  "dashboard.routes.bills.features.edit-metadata.success",
-               ),
-            );
+            toast.success("Conta atualizada com sucesso");
             onSuccess?.();
             closeSheet();
          },
@@ -96,11 +86,7 @@ export function EditBillMetadataForm({
          }
 
          if (Object.keys(updateData).length === 0) {
-            toast.info(
-               translate(
-                  "dashboard.routes.bills.features.edit-metadata.no-changes",
-               ),
-            );
+            toast.info("Nenhuma alteração detectada");
             closeSheet();
             return;
          }
@@ -118,7 +104,7 @@ export function EditBillMetadataForm({
    const isLoading = updateBillMutation.isPending;
 
    const counterpartyOptions = [
-      { label: translate("common.form.none"), value: "" },
+      { label: "Nenhum", value: "" },
       ...counterparties.map((cp) => ({
          label: cp.name,
          value: cp.id,
@@ -137,15 +123,9 @@ export function EditBillMetadataForm({
    return (
       <form className="h-full flex flex-col" onSubmit={handleSubmit}>
          <SheetHeader>
-            <SheetTitle>
-               {translate(
-                  "dashboard.routes.bills.features.edit-metadata.title",
-               )}
-            </SheetTitle>
+            <SheetTitle>Editar Conta</SheetTitle>
             <SheetDescription>
-               {translate(
-                  "dashboard.routes.bills.features.edit-metadata.description",
-               )}
+               Atualize o fornecedor/cliente e observações desta conta.
             </SheetDescription>
          </SheetHeader>
 
@@ -160,25 +140,17 @@ export function EditBillMetadataForm({
                         return (
                            <Field data-invalid={isInvalid}>
                               <FieldLabel htmlFor={field.name}>
-                                 {translate(
-                                    "dashboard.routes.bills.features.create-bill.fields.counterparty",
-                                 )}
+                                 Fornecedor/Cliente
                               </FieldLabel>
                               <Combobox
                                  className="w-full justify-between"
-                                 emptyMessage={translate(
-                                    "common.form.search.no-results",
-                                 )}
+                                 emptyMessage="Nenhum resultado encontrado"
                                  onValueChange={(value) =>
                                     field.handleChange(value || "")
                                  }
                                  options={counterpartyOptions}
-                                 placeholder={translate(
-                                    "dashboard.routes.bills.features.create-bill.placeholders.counterparty",
-                                 )}
-                                 searchPlaceholder={translate(
-                                    "common.form.search.label",
-                                 )}
+                                 placeholder="Nome do fornecedor ou cliente"
+                                 searchPlaceholder="Pesquisar"
                                  value={field.state.value}
                               />
                               {isInvalid && (
@@ -199,16 +171,14 @@ export function EditBillMetadataForm({
                         return (
                            <Field data-invalid={isInvalid}>
                               <FieldLabel htmlFor={field.name}>
-                                 {translate("common.form.notes.label")}
+                                 Observações
                               </FieldLabel>
                               <Textarea
                                  className="min-h-[100px]"
                                  onChange={(e) =>
                                     field.handleChange(e.target.value)
                                  }
-                                 placeholder={translate(
-                                    "common.form.notes.placeholder",
-                                 )}
+                                 placeholder="Digite suas observações"
                                  value={field.state.value}
                               />
                               {isInvalid && (
@@ -234,9 +204,7 @@ export function EditBillMetadataForm({
                      disabled={isSubmitting || isLoading}
                      type="submit"
                   >
-                     {isLoading
-                        ? translate("common.actions.loading")
-                        : translate("common.actions.save")}
+                     {isLoading ? "Carregando..." : "Salvar"}
                   </Button>
                </SheetFooter>
             )}

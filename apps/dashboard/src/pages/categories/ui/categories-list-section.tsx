@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Card, CardContent } from "@packages/ui/components/card";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
@@ -8,7 +7,6 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import {
    InputGroup,
    InputGroupAddon,
@@ -24,7 +22,7 @@ import { keepPreviousData, useSuspenseQuery } from "@tanstack/react-query";
 import type { RowSelectionState } from "@tanstack/react-table";
 import { Inbox, Search, Trash2 } from "lucide-react";
 import { Fragment, Suspense, useEffect, useMemo, useState } from "react";
-import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
+import { ErrorBoundary } from "react-error-boundary";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useTRPC } from "@/integrations/clients";
@@ -36,21 +34,11 @@ import {
    createCategoryColumns,
 } from "./categories-table-columns";
 
-function CategoriesListErrorFallback(props: FallbackProps) {
+function CategoriesListErrorFallback() {
    return (
-      <Card>
-         <CardContent className="pt-6">
-            {createErrorFallback({
-               errorDescription: translate(
-                  "dashboard.routes.categories.list-section.state.error.description",
-               ),
-               errorTitle: translate(
-                  "dashboard.routes.categories.list-section.state.error.title",
-               ),
-               retryText: translate("common.actions.retry"),
-            })(props)}
-         </CardContent>
-      </Card>
+      <div className="p-4 text-center text-sm text-destructive">
+         Erro ao carregar categorias
+      </div>
    );
 }
 
@@ -184,7 +172,7 @@ function CategoriesListContent() {
                      onChange={(e) => {
                         setSearchTerm(e.target.value);
                      }}
-                     placeholder={translate("common.form.search.placeholder")}
+                     placeholder="Digite para pesquisar"
                      value={searchTerm}
                   />
                   <InputGroupAddon>
@@ -199,15 +187,11 @@ function CategoriesListContent() {
                         <EmptyMedia variant="icon">
                            <Inbox className="size-6" />
                         </EmptyMedia>
-                        <EmptyTitle>
-                           {translate(
-                              "dashboard.routes.categories.list-section.state.empty.title",
-                           )}
-                        </EmptyTitle>
+                        <EmptyTitle>Nenhuma categoria ainda</EmptyTitle>
                         <EmptyDescription>
-                           {translate(
-                              "dashboard.routes.categories.list-section.state.empty.description",
-                           )}
+                           Crie sua primeira categoria usando a barra de ações
+                           rápidas acima para começar a organizar suas
+                           transações.
                         </EmptyDescription>
                      </EmptyContent>
                   </Empty>
@@ -275,25 +259,17 @@ function CategoriesListContent() {
                icon={<Trash2 className="size-3.5" />}
                onClick={() =>
                   openAlertDialog({
-                     actionLabel: translate(
-                        "dashboard.routes.categories.bulk-actions.delete",
-                     ),
-                     cancelLabel: translate("common.actions.cancel"),
-                     description: translate(
-                        "dashboard.routes.categories.bulk-actions.delete-confirm-description",
-                        { count: selectedIds.length },
-                     ),
+                     actionLabel: "Excluir",
+                     cancelLabel: "Cancelar",
+                     description: `Esta ação não pode ser desfeita. Isso excluirá permanentemente ${selectedIds.length} ${selectedIds.length === 1 ? "categoria" : "categorias"} e removerá a associação de todas as transações vinculadas.`,
                      onAction: () => deleteSelected(selectedIds),
-                     title: translate(
-                        "dashboard.routes.categories.bulk-actions.delete-confirm-title",
-                        { count: selectedIds.length },
-                     ),
+                     title: `Excluir ${selectedIds.length} ${selectedIds.length === 1 ? "categoria" : "categorias"}?`,
                      variant: "destructive",
                   })
                }
                variant="destructive"
             >
-               {translate("dashboard.routes.categories.bulk-actions.delete")}
+               Excluir
             </SelectionActionButton>
          </SelectionActionBar>
       </>

@@ -1,4 +1,3 @@
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import {
    Dropzone,
@@ -226,15 +225,10 @@ export function LinkFileForm({ transaction, onSuccess }: LinkFileFormProps) {
    return (
       <>
          <SheetHeader>
-            <SheetTitle>
-               {translate(
-                  "dashboard.routes.transactions.link-file.sheet.title",
-               )}
-            </SheetTitle>
+            <SheetTitle>Anexar Arquivos</SheetTitle>
             <SheetDescription>
-               {translate(
-                  "dashboard.routes.transactions.link-file.sheet.description",
-               )}
+               Anexe arquivos a esta transacao. Formatos aceitos: PDF, JPG, PNG,
+               WebP.
             </SheetDescription>
          </SheetHeader>
 
@@ -332,9 +326,7 @@ export function LinkFileForm({ transaction, onSuccess }: LinkFileFormProps) {
                   <Upload className="size-4" />
                   {hasExistingAttachments
                      ? "Adicionar mais arquivos"
-                     : translate(
-                          "dashboard.routes.transactions.link-file.select-file",
-                       )}
+                     : "Selecionar arquivos"}
                </p>
                <Dropzone
                   accept={ACCEPTED_FILE_TYPES}
@@ -423,16 +415,12 @@ export function LinkFileForm({ transaction, onSuccess }: LinkFileFormProps) {
                {isUploading ? (
                   <>
                      <Loader2 className="size-4 animate-spin" />
-                     {translate(
-                        "dashboard.routes.transactions.link-file.uploading",
-                     )}
+                     Enviando...
                   </>
                ) : (
                   <>
                      <Upload className="size-4" />
-                     {translate(
-                        "dashboard.routes.transactions.link-file.upload",
-                     )}
+                     Enviar arquivos
                      {hasPendingFiles && ` (${pendingFiles.length})`}
                   </>
                )}

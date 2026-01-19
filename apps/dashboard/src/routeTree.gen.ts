@@ -27,6 +27,7 @@ import { Route as SlugDashboardRouteImport } from './routes/$slug/_dashboard'
 import { Route as AuthSignInIndexRouteImport } from './routes/auth/sign-in/index'
 import { Route as AuthSignInEmailRouteImport } from './routes/auth/sign-in/email'
 import { Route as SlugDashboardSettingsRouteImport } from './routes/$slug/_dashboard/settings'
+import { Route as SlugDashboardSearchRouteImport } from './routes/$slug/_dashboard/search'
 import { Route as SlugDashboardProfileRouteImport } from './routes/$slug/_dashboard/profile'
 import { Route as SlugDashboardPlansRouteImport } from './routes/$slug/_dashboard/plans'
 import { Route as SlugDashboardOrganizationRouteImport } from './routes/$slug/_dashboard/organization'
@@ -37,7 +38,9 @@ import { Route as SlugDashboardTagsIndexRouteImport } from './routes/$slug/_dash
 import { Route as SlugDashboardSettingsIndexRouteImport } from './routes/$slug/_dashboard/settings/index'
 import { Route as SlugDashboardOrganizationIndexRouteImport } from './routes/$slug/_dashboard/organization/index'
 import { Route as SlugDashboardInterestTemplatesIndexRouteImport } from './routes/$slug/_dashboard/interest-templates/index'
-import { Route as SlugDashboardCustomReportsIndexRouteImport } from './routes/$slug/_dashboard/custom-reports.index'
+import { Route as SlugDashboardInsightsIndexRouteImport } from './routes/$slug/_dashboard/insights.index'
+import { Route as SlugDashboardGoalsIndexRouteImport } from './routes/$slug/_dashboard/goals/index'
+import { Route as SlugDashboardDashboardsIndexRouteImport } from './routes/$slug/_dashboard/dashboards.index'
 import { Route as SlugDashboardCounterpartiesIndexRouteImport } from './routes/$slug/_dashboard/counterparties/index'
 import { Route as SlugDashboardCostCentersIndexRouteImport } from './routes/$slug/_dashboard/cost-centers/index'
 import { Route as SlugDashboardCategoriesIndexRouteImport } from './routes/$slug/_dashboard/categories/index'
@@ -52,13 +55,14 @@ import { Route as SlugDashboardSettingsSecurityRouteImport } from './routes/$slu
 import { Route as SlugDashboardSettingsProfileRouteImport } from './routes/$slug/_dashboard/settings/profile'
 import { Route as SlugDashboardSettingsPreferencesRouteImport } from './routes/$slug/_dashboard/settings/preferences'
 import { Route as SlugDashboardSettingsNotificationsRouteImport } from './routes/$slug/_dashboard/settings/notifications'
-import { Route as SlugDashboardSettingsEncryptionRouteImport } from './routes/$slug/_dashboard/settings/encryption'
 import { Route as SlugDashboardSettingsBillingRouteImport } from './routes/$slug/_dashboard/settings/billing'
 import { Route as SlugDashboardOrganizationTeamsRouteImport } from './routes/$slug/_dashboard/organization/teams'
 import { Route as SlugDashboardOrganizationMembersRouteImport } from './routes/$slug/_dashboard/organization/members'
 import { Route as SlugDashboardOrganizationInvitesRouteImport } from './routes/$slug/_dashboard/organization/invites'
 import { Route as SlugDashboardInterestTemplatesInterestTemplateIdRouteImport } from './routes/$slug/_dashboard/interest-templates/$interestTemplateId'
-import { Route as SlugDashboardCustomReportsReportIdRouteImport } from './routes/$slug/_dashboard/custom-reports.$reportId'
+import { Route as SlugDashboardInsightsInsightIdRouteImport } from './routes/$slug/_dashboard/insights.$insightId'
+import { Route as SlugDashboardGoalsGoalIdRouteImport } from './routes/$slug/_dashboard/goals/$goalId'
+import { Route as SlugDashboardDashboardsDashboardIdRouteImport } from './routes/$slug/_dashboard/dashboards.$dashboardId'
 import { Route as SlugDashboardCounterpartiesCounterpartyIdRouteImport } from './routes/$slug/_dashboard/counterparties/$counterpartyId'
 import { Route as SlugDashboardCostCentersCostCenterIdRouteImport } from './routes/$slug/_dashboard/cost-centers/$costCenterId'
 import { Route as SlugDashboardCategoriesCategoryIdRouteImport } from './routes/$slug/_dashboard/categories/$categoryId'
@@ -157,6 +161,11 @@ const SlugDashboardSettingsRoute = SlugDashboardSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => SlugDashboardRoute,
 } as any)
+const SlugDashboardSearchRoute = SlugDashboardSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => SlugDashboardRoute,
+} as any)
 const SlugDashboardProfileRoute = SlugDashboardProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -212,10 +221,21 @@ const SlugDashboardInterestTemplatesIndexRoute =
     path: '/interest-templates/',
     getParentRoute: () => SlugDashboardRoute,
   } as any)
-const SlugDashboardCustomReportsIndexRoute =
-  SlugDashboardCustomReportsIndexRouteImport.update({
-    id: '/custom-reports/',
-    path: '/custom-reports/',
+const SlugDashboardInsightsIndexRoute =
+  SlugDashboardInsightsIndexRouteImport.update({
+    id: '/insights/',
+    path: '/insights/',
+    getParentRoute: () => SlugDashboardRoute,
+  } as any)
+const SlugDashboardGoalsIndexRoute = SlugDashboardGoalsIndexRouteImport.update({
+  id: '/goals/',
+  path: '/goals/',
+  getParentRoute: () => SlugDashboardRoute,
+} as any)
+const SlugDashboardDashboardsIndexRoute =
+  SlugDashboardDashboardsIndexRouteImport.update({
+    id: '/dashboards/',
+    path: '/dashboards/',
     getParentRoute: () => SlugDashboardRoute,
   } as any)
 const SlugDashboardCounterpartiesIndexRoute =
@@ -300,12 +320,6 @@ const SlugDashboardSettingsNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => SlugDashboardSettingsRoute,
   } as any)
-const SlugDashboardSettingsEncryptionRoute =
-  SlugDashboardSettingsEncryptionRouteImport.update({
-    id: '/encryption',
-    path: '/encryption',
-    getParentRoute: () => SlugDashboardSettingsRoute,
-  } as any)
 const SlugDashboardSettingsBillingRoute =
   SlugDashboardSettingsBillingRouteImport.update({
     id: '/billing',
@@ -336,10 +350,22 @@ const SlugDashboardInterestTemplatesInterestTemplateIdRoute =
     path: '/interest-templates/$interestTemplateId',
     getParentRoute: () => SlugDashboardRoute,
   } as any)
-const SlugDashboardCustomReportsReportIdRoute =
-  SlugDashboardCustomReportsReportIdRouteImport.update({
-    id: '/custom-reports/$reportId',
-    path: '/custom-reports/$reportId',
+const SlugDashboardInsightsInsightIdRoute =
+  SlugDashboardInsightsInsightIdRouteImport.update({
+    id: '/insights/$insightId',
+    path: '/insights/$insightId',
+    getParentRoute: () => SlugDashboardRoute,
+  } as any)
+const SlugDashboardGoalsGoalIdRoute =
+  SlugDashboardGoalsGoalIdRouteImport.update({
+    id: '/goals/$goalId',
+    path: '/goals/$goalId',
+    getParentRoute: () => SlugDashboardRoute,
+  } as any)
+const SlugDashboardDashboardsDashboardIdRoute =
+  SlugDashboardDashboardsDashboardIdRouteImport.update({
+    id: '/dashboards/$dashboardId',
+    path: '/dashboards/$dashboardId',
     getParentRoute: () => SlugDashboardRoute,
   } as any)
 const SlugDashboardCounterpartiesCounterpartyIdRoute =
@@ -411,6 +437,7 @@ export interface FileRoutesByFullPath {
   '/$slug/organization': typeof SlugDashboardOrganizationRouteWithChildren
   '/$slug/plans': typeof SlugDashboardPlansRoute
   '/$slug/profile': typeof SlugDashboardProfileRoute
+  '/$slug/search': typeof SlugDashboardSearchRoute
   '/$slug/settings': typeof SlugDashboardSettingsRouteWithChildren
   '/auth/sign-in/email': typeof AuthSignInEmailRoute
   '/auth/sign-in/': typeof AuthSignInIndexRoute
@@ -421,13 +448,14 @@ export interface FileRoutesByFullPath {
   '/$slug/categories/$categoryId': typeof SlugDashboardCategoriesCategoryIdRoute
   '/$slug/cost-centers/$costCenterId': typeof SlugDashboardCostCentersCostCenterIdRoute
   '/$slug/counterparties/$counterpartyId': typeof SlugDashboardCounterpartiesCounterpartyIdRoute
-  '/$slug/custom-reports/$reportId': typeof SlugDashboardCustomReportsReportIdRoute
+  '/$slug/dashboards/$dashboardId': typeof SlugDashboardDashboardsDashboardIdRoute
+  '/$slug/goals/$goalId': typeof SlugDashboardGoalsGoalIdRoute
+  '/$slug/insights/$insightId': typeof SlugDashboardInsightsInsightIdRoute
   '/$slug/interest-templates/$interestTemplateId': typeof SlugDashboardInterestTemplatesInterestTemplateIdRoute
   '/$slug/organization/invites': typeof SlugDashboardOrganizationInvitesRoute
   '/$slug/organization/members': typeof SlugDashboardOrganizationMembersRoute
   '/$slug/organization/teams': typeof SlugDashboardOrganizationTeamsRouteWithChildren
   '/$slug/settings/billing': typeof SlugDashboardSettingsBillingRoute
-  '/$slug/settings/encryption': typeof SlugDashboardSettingsEncryptionRoute
   '/$slug/settings/notifications': typeof SlugDashboardSettingsNotificationsRoute
   '/$slug/settings/preferences': typeof SlugDashboardSettingsPreferencesRoute
   '/$slug/settings/profile': typeof SlugDashboardSettingsProfileRoute
@@ -442,7 +470,9 @@ export interface FileRoutesByFullPath {
   '/$slug/categories': typeof SlugDashboardCategoriesIndexRoute
   '/$slug/cost-centers': typeof SlugDashboardCostCentersIndexRoute
   '/$slug/counterparties': typeof SlugDashboardCounterpartiesIndexRoute
-  '/$slug/custom-reports': typeof SlugDashboardCustomReportsIndexRoute
+  '/$slug/dashboards': typeof SlugDashboardDashboardsIndexRoute
+  '/$slug/goals': typeof SlugDashboardGoalsIndexRoute
+  '/$slug/insights': typeof SlugDashboardInsightsIndexRoute
   '/$slug/interest-templates': typeof SlugDashboardInterestTemplatesIndexRoute
   '/$slug/organization/': typeof SlugDashboardOrganizationIndexRoute
   '/$slug/settings/': typeof SlugDashboardSettingsIndexRoute
@@ -468,6 +498,7 @@ export interface FileRoutesByTo {
   '/$slug/manage-plan': typeof SlugDashboardManagePlanRoute
   '/$slug/plans': typeof SlugDashboardPlansRoute
   '/$slug/profile': typeof SlugDashboardProfileRoute
+  '/$slug/search': typeof SlugDashboardSearchRoute
   '/auth/sign-in/email': typeof AuthSignInEmailRoute
   '/auth/sign-in': typeof AuthSignInIndexRoute
   '/$slug/automations/$automationId': typeof SlugDashboardAutomationsAutomationIdRoute
@@ -477,13 +508,14 @@ export interface FileRoutesByTo {
   '/$slug/categories/$categoryId': typeof SlugDashboardCategoriesCategoryIdRoute
   '/$slug/cost-centers/$costCenterId': typeof SlugDashboardCostCentersCostCenterIdRoute
   '/$slug/counterparties/$counterpartyId': typeof SlugDashboardCounterpartiesCounterpartyIdRoute
-  '/$slug/custom-reports/$reportId': typeof SlugDashboardCustomReportsReportIdRoute
+  '/$slug/dashboards/$dashboardId': typeof SlugDashboardDashboardsDashboardIdRoute
+  '/$slug/goals/$goalId': typeof SlugDashboardGoalsGoalIdRoute
+  '/$slug/insights/$insightId': typeof SlugDashboardInsightsInsightIdRoute
   '/$slug/interest-templates/$interestTemplateId': typeof SlugDashboardInterestTemplatesInterestTemplateIdRoute
   '/$slug/organization/invites': typeof SlugDashboardOrganizationInvitesRoute
   '/$slug/organization/members': typeof SlugDashboardOrganizationMembersRoute
   '/$slug/organization/teams': typeof SlugDashboardOrganizationTeamsRouteWithChildren
   '/$slug/settings/billing': typeof SlugDashboardSettingsBillingRoute
-  '/$slug/settings/encryption': typeof SlugDashboardSettingsEncryptionRoute
   '/$slug/settings/notifications': typeof SlugDashboardSettingsNotificationsRoute
   '/$slug/settings/preferences': typeof SlugDashboardSettingsPreferencesRoute
   '/$slug/settings/profile': typeof SlugDashboardSettingsProfileRoute
@@ -498,7 +530,9 @@ export interface FileRoutesByTo {
   '/$slug/categories': typeof SlugDashboardCategoriesIndexRoute
   '/$slug/cost-centers': typeof SlugDashboardCostCentersIndexRoute
   '/$slug/counterparties': typeof SlugDashboardCounterpartiesIndexRoute
-  '/$slug/custom-reports': typeof SlugDashboardCustomReportsIndexRoute
+  '/$slug/dashboards': typeof SlugDashboardDashboardsIndexRoute
+  '/$slug/goals': typeof SlugDashboardGoalsIndexRoute
+  '/$slug/insights': typeof SlugDashboardInsightsIndexRoute
   '/$slug/interest-templates': typeof SlugDashboardInterestTemplatesIndexRoute
   '/$slug/organization': typeof SlugDashboardOrganizationIndexRoute
   '/$slug/settings': typeof SlugDashboardSettingsIndexRoute
@@ -528,6 +562,7 @@ export interface FileRoutesById {
   '/$slug/_dashboard/organization': typeof SlugDashboardOrganizationRouteWithChildren
   '/$slug/_dashboard/plans': typeof SlugDashboardPlansRoute
   '/$slug/_dashboard/profile': typeof SlugDashboardProfileRoute
+  '/$slug/_dashboard/search': typeof SlugDashboardSearchRoute
   '/$slug/_dashboard/settings': typeof SlugDashboardSettingsRouteWithChildren
   '/auth/sign-in/email': typeof AuthSignInEmailRoute
   '/auth/sign-in/': typeof AuthSignInIndexRoute
@@ -538,13 +573,14 @@ export interface FileRoutesById {
   '/$slug/_dashboard/categories/$categoryId': typeof SlugDashboardCategoriesCategoryIdRoute
   '/$slug/_dashboard/cost-centers/$costCenterId': typeof SlugDashboardCostCentersCostCenterIdRoute
   '/$slug/_dashboard/counterparties/$counterpartyId': typeof SlugDashboardCounterpartiesCounterpartyIdRoute
-  '/$slug/_dashboard/custom-reports/$reportId': typeof SlugDashboardCustomReportsReportIdRoute
+  '/$slug/_dashboard/dashboards/$dashboardId': typeof SlugDashboardDashboardsDashboardIdRoute
+  '/$slug/_dashboard/goals/$goalId': typeof SlugDashboardGoalsGoalIdRoute
+  '/$slug/_dashboard/insights/$insightId': typeof SlugDashboardInsightsInsightIdRoute
   '/$slug/_dashboard/interest-templates/$interestTemplateId': typeof SlugDashboardInterestTemplatesInterestTemplateIdRoute
   '/$slug/_dashboard/organization/invites': typeof SlugDashboardOrganizationInvitesRoute
   '/$slug/_dashboard/organization/members': typeof SlugDashboardOrganizationMembersRoute
   '/$slug/_dashboard/organization/teams': typeof SlugDashboardOrganizationTeamsRouteWithChildren
   '/$slug/_dashboard/settings/billing': typeof SlugDashboardSettingsBillingRoute
-  '/$slug/_dashboard/settings/encryption': typeof SlugDashboardSettingsEncryptionRoute
   '/$slug/_dashboard/settings/notifications': typeof SlugDashboardSettingsNotificationsRoute
   '/$slug/_dashboard/settings/preferences': typeof SlugDashboardSettingsPreferencesRoute
   '/$slug/_dashboard/settings/profile': typeof SlugDashboardSettingsProfileRoute
@@ -559,7 +595,9 @@ export interface FileRoutesById {
   '/$slug/_dashboard/categories/': typeof SlugDashboardCategoriesIndexRoute
   '/$slug/_dashboard/cost-centers/': typeof SlugDashboardCostCentersIndexRoute
   '/$slug/_dashboard/counterparties/': typeof SlugDashboardCounterpartiesIndexRoute
-  '/$slug/_dashboard/custom-reports/': typeof SlugDashboardCustomReportsIndexRoute
+  '/$slug/_dashboard/dashboards/': typeof SlugDashboardDashboardsIndexRoute
+  '/$slug/_dashboard/goals/': typeof SlugDashboardGoalsIndexRoute
+  '/$slug/_dashboard/insights/': typeof SlugDashboardInsightsIndexRoute
   '/$slug/_dashboard/interest-templates/': typeof SlugDashboardInterestTemplatesIndexRoute
   '/$slug/_dashboard/organization/': typeof SlugDashboardOrganizationIndexRoute
   '/$slug/_dashboard/settings/': typeof SlugDashboardSettingsIndexRoute
@@ -589,6 +627,7 @@ export interface FileRouteTypes {
     | '/$slug/organization'
     | '/$slug/plans'
     | '/$slug/profile'
+    | '/$slug/search'
     | '/$slug/settings'
     | '/auth/sign-in/email'
     | '/auth/sign-in/'
@@ -599,13 +638,14 @@ export interface FileRouteTypes {
     | '/$slug/categories/$categoryId'
     | '/$slug/cost-centers/$costCenterId'
     | '/$slug/counterparties/$counterpartyId'
-    | '/$slug/custom-reports/$reportId'
+    | '/$slug/dashboards/$dashboardId'
+    | '/$slug/goals/$goalId'
+    | '/$slug/insights/$insightId'
     | '/$slug/interest-templates/$interestTemplateId'
     | '/$slug/organization/invites'
     | '/$slug/organization/members'
     | '/$slug/organization/teams'
     | '/$slug/settings/billing'
-    | '/$slug/settings/encryption'
     | '/$slug/settings/notifications'
     | '/$slug/settings/preferences'
     | '/$slug/settings/profile'
@@ -620,7 +660,9 @@ export interface FileRouteTypes {
     | '/$slug/categories'
     | '/$slug/cost-centers'
     | '/$slug/counterparties'
-    | '/$slug/custom-reports'
+    | '/$slug/dashboards'
+    | '/$slug/goals'
+    | '/$slug/insights'
     | '/$slug/interest-templates'
     | '/$slug/organization/'
     | '/$slug/settings/'
@@ -646,6 +688,7 @@ export interface FileRouteTypes {
     | '/$slug/manage-plan'
     | '/$slug/plans'
     | '/$slug/profile'
+    | '/$slug/search'
     | '/auth/sign-in/email'
     | '/auth/sign-in'
     | '/$slug/automations/$automationId'
@@ -655,13 +698,14 @@ export interface FileRouteTypes {
     | '/$slug/categories/$categoryId'
     | '/$slug/cost-centers/$costCenterId'
     | '/$slug/counterparties/$counterpartyId'
-    | '/$slug/custom-reports/$reportId'
+    | '/$slug/dashboards/$dashboardId'
+    | '/$slug/goals/$goalId'
+    | '/$slug/insights/$insightId'
     | '/$slug/interest-templates/$interestTemplateId'
     | '/$slug/organization/invites'
     | '/$slug/organization/members'
     | '/$slug/organization/teams'
     | '/$slug/settings/billing'
-    | '/$slug/settings/encryption'
     | '/$slug/settings/notifications'
     | '/$slug/settings/preferences'
     | '/$slug/settings/profile'
@@ -676,7 +720,9 @@ export interface FileRouteTypes {
     | '/$slug/categories'
     | '/$slug/cost-centers'
     | '/$slug/counterparties'
-    | '/$slug/custom-reports'
+    | '/$slug/dashboards'
+    | '/$slug/goals'
+    | '/$slug/insights'
     | '/$slug/interest-templates'
     | '/$slug/organization'
     | '/$slug/settings'
@@ -705,6 +751,7 @@ export interface FileRouteTypes {
     | '/$slug/_dashboard/organization'
     | '/$slug/_dashboard/plans'
     | '/$slug/_dashboard/profile'
+    | '/$slug/_dashboard/search'
     | '/$slug/_dashboard/settings'
     | '/auth/sign-in/email'
     | '/auth/sign-in/'
@@ -715,13 +762,14 @@ export interface FileRouteTypes {
     | '/$slug/_dashboard/categories/$categoryId'
     | '/$slug/_dashboard/cost-centers/$costCenterId'
     | '/$slug/_dashboard/counterparties/$counterpartyId'
-    | '/$slug/_dashboard/custom-reports/$reportId'
+    | '/$slug/_dashboard/dashboards/$dashboardId'
+    | '/$slug/_dashboard/goals/$goalId'
+    | '/$slug/_dashboard/insights/$insightId'
     | '/$slug/_dashboard/interest-templates/$interestTemplateId'
     | '/$slug/_dashboard/organization/invites'
     | '/$slug/_dashboard/organization/members'
     | '/$slug/_dashboard/organization/teams'
     | '/$slug/_dashboard/settings/billing'
-    | '/$slug/_dashboard/settings/encryption'
     | '/$slug/_dashboard/settings/notifications'
     | '/$slug/_dashboard/settings/preferences'
     | '/$slug/_dashboard/settings/profile'
@@ -736,7 +784,9 @@ export interface FileRouteTypes {
     | '/$slug/_dashboard/categories/'
     | '/$slug/_dashboard/cost-centers/'
     | '/$slug/_dashboard/counterparties/'
-    | '/$slug/_dashboard/custom-reports/'
+    | '/$slug/_dashboard/dashboards/'
+    | '/$slug/_dashboard/goals/'
+    | '/$slug/_dashboard/insights/'
     | '/$slug/_dashboard/interest-templates/'
     | '/$slug/_dashboard/organization/'
     | '/$slug/_dashboard/settings/'
@@ -882,6 +932,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SlugDashboardSettingsRouteImport
       parentRoute: typeof SlugDashboardRoute
     }
+    '/$slug/_dashboard/search': {
+      id: '/$slug/_dashboard/search'
+      path: '/search'
+      fullPath: '/$slug/search'
+      preLoaderRoute: typeof SlugDashboardSearchRouteImport
+      parentRoute: typeof SlugDashboardRoute
+    }
     '/$slug/_dashboard/profile': {
       id: '/$slug/_dashboard/profile'
       path: '/profile'
@@ -952,11 +1009,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SlugDashboardInterestTemplatesIndexRouteImport
       parentRoute: typeof SlugDashboardRoute
     }
-    '/$slug/_dashboard/custom-reports/': {
-      id: '/$slug/_dashboard/custom-reports/'
-      path: '/custom-reports'
-      fullPath: '/$slug/custom-reports'
-      preLoaderRoute: typeof SlugDashboardCustomReportsIndexRouteImport
+    '/$slug/_dashboard/insights/': {
+      id: '/$slug/_dashboard/insights/'
+      path: '/insights'
+      fullPath: '/$slug/insights'
+      preLoaderRoute: typeof SlugDashboardInsightsIndexRouteImport
+      parentRoute: typeof SlugDashboardRoute
+    }
+    '/$slug/_dashboard/goals/': {
+      id: '/$slug/_dashboard/goals/'
+      path: '/goals'
+      fullPath: '/$slug/goals'
+      preLoaderRoute: typeof SlugDashboardGoalsIndexRouteImport
+      parentRoute: typeof SlugDashboardRoute
+    }
+    '/$slug/_dashboard/dashboards/': {
+      id: '/$slug/_dashboard/dashboards/'
+      path: '/dashboards'
+      fullPath: '/$slug/dashboards'
+      preLoaderRoute: typeof SlugDashboardDashboardsIndexRouteImport
       parentRoute: typeof SlugDashboardRoute
     }
     '/$slug/_dashboard/counterparties/': {
@@ -1057,13 +1128,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SlugDashboardSettingsNotificationsRouteImport
       parentRoute: typeof SlugDashboardSettingsRoute
     }
-    '/$slug/_dashboard/settings/encryption': {
-      id: '/$slug/_dashboard/settings/encryption'
-      path: '/encryption'
-      fullPath: '/$slug/settings/encryption'
-      preLoaderRoute: typeof SlugDashboardSettingsEncryptionRouteImport
-      parentRoute: typeof SlugDashboardSettingsRoute
-    }
     '/$slug/_dashboard/settings/billing': {
       id: '/$slug/_dashboard/settings/billing'
       path: '/billing'
@@ -1099,11 +1163,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SlugDashboardInterestTemplatesInterestTemplateIdRouteImport
       parentRoute: typeof SlugDashboardRoute
     }
-    '/$slug/_dashboard/custom-reports/$reportId': {
-      id: '/$slug/_dashboard/custom-reports/$reportId'
-      path: '/custom-reports/$reportId'
-      fullPath: '/$slug/custom-reports/$reportId'
-      preLoaderRoute: typeof SlugDashboardCustomReportsReportIdRouteImport
+    '/$slug/_dashboard/insights/$insightId': {
+      id: '/$slug/_dashboard/insights/$insightId'
+      path: '/insights/$insightId'
+      fullPath: '/$slug/insights/$insightId'
+      preLoaderRoute: typeof SlugDashboardInsightsInsightIdRouteImport
+      parentRoute: typeof SlugDashboardRoute
+    }
+    '/$slug/_dashboard/goals/$goalId': {
+      id: '/$slug/_dashboard/goals/$goalId'
+      path: '/goals/$goalId'
+      fullPath: '/$slug/goals/$goalId'
+      preLoaderRoute: typeof SlugDashboardGoalsGoalIdRouteImport
+      parentRoute: typeof SlugDashboardRoute
+    }
+    '/$slug/_dashboard/dashboards/$dashboardId': {
+      id: '/$slug/_dashboard/dashboards/$dashboardId'
+      path: '/dashboards/$dashboardId'
+      fullPath: '/$slug/dashboards/$dashboardId'
+      preLoaderRoute: typeof SlugDashboardDashboardsDashboardIdRouteImport
       parentRoute: typeof SlugDashboardRoute
     }
     '/$slug/_dashboard/counterparties/$counterpartyId': {
@@ -1205,7 +1283,6 @@ const SlugDashboardOrganizationRouteWithChildren =
 
 interface SlugDashboardSettingsRouteChildren {
   SlugDashboardSettingsBillingRoute: typeof SlugDashboardSettingsBillingRoute
-  SlugDashboardSettingsEncryptionRoute: typeof SlugDashboardSettingsEncryptionRoute
   SlugDashboardSettingsNotificationsRoute: typeof SlugDashboardSettingsNotificationsRoute
   SlugDashboardSettingsPreferencesRoute: typeof SlugDashboardSettingsPreferencesRoute
   SlugDashboardSettingsProfileRoute: typeof SlugDashboardSettingsProfileRoute
@@ -1215,7 +1292,6 @@ interface SlugDashboardSettingsRouteChildren {
 
 const SlugDashboardSettingsRouteChildren: SlugDashboardSettingsRouteChildren = {
   SlugDashboardSettingsBillingRoute: SlugDashboardSettingsBillingRoute,
-  SlugDashboardSettingsEncryptionRoute: SlugDashboardSettingsEncryptionRoute,
   SlugDashboardSettingsNotificationsRoute:
     SlugDashboardSettingsNotificationsRoute,
   SlugDashboardSettingsPreferencesRoute: SlugDashboardSettingsPreferencesRoute,
@@ -1235,6 +1311,7 @@ interface SlugDashboardRouteChildren {
   SlugDashboardOrganizationRoute: typeof SlugDashboardOrganizationRouteWithChildren
   SlugDashboardPlansRoute: typeof SlugDashboardPlansRoute
   SlugDashboardProfileRoute: typeof SlugDashboardProfileRoute
+  SlugDashboardSearchRoute: typeof SlugDashboardSearchRoute
   SlugDashboardSettingsRoute: typeof SlugDashboardSettingsRouteWithChildren
   SlugDashboardAutomationsAutomationIdRoute: typeof SlugDashboardAutomationsAutomationIdRoute
   SlugDashboardBankAccountsBankAccountIdRoute: typeof SlugDashboardBankAccountsBankAccountIdRoute
@@ -1243,7 +1320,9 @@ interface SlugDashboardRouteChildren {
   SlugDashboardCategoriesCategoryIdRoute: typeof SlugDashboardCategoriesCategoryIdRoute
   SlugDashboardCostCentersCostCenterIdRoute: typeof SlugDashboardCostCentersCostCenterIdRoute
   SlugDashboardCounterpartiesCounterpartyIdRoute: typeof SlugDashboardCounterpartiesCounterpartyIdRoute
-  SlugDashboardCustomReportsReportIdRoute: typeof SlugDashboardCustomReportsReportIdRoute
+  SlugDashboardDashboardsDashboardIdRoute: typeof SlugDashboardDashboardsDashboardIdRoute
+  SlugDashboardGoalsGoalIdRoute: typeof SlugDashboardGoalsGoalIdRoute
+  SlugDashboardInsightsInsightIdRoute: typeof SlugDashboardInsightsInsightIdRoute
   SlugDashboardInterestTemplatesInterestTemplateIdRoute: typeof SlugDashboardInterestTemplatesInterestTemplateIdRoute
   SlugDashboardTagsTagIdRoute: typeof SlugDashboardTagsTagIdRoute
   SlugDashboardTransactionsTransactionIdRoute: typeof SlugDashboardTransactionsTransactionIdRoute
@@ -1254,7 +1333,9 @@ interface SlugDashboardRouteChildren {
   SlugDashboardCategoriesIndexRoute: typeof SlugDashboardCategoriesIndexRoute
   SlugDashboardCostCentersIndexRoute: typeof SlugDashboardCostCentersIndexRoute
   SlugDashboardCounterpartiesIndexRoute: typeof SlugDashboardCounterpartiesIndexRoute
-  SlugDashboardCustomReportsIndexRoute: typeof SlugDashboardCustomReportsIndexRoute
+  SlugDashboardDashboardsIndexRoute: typeof SlugDashboardDashboardsIndexRoute
+  SlugDashboardGoalsIndexRoute: typeof SlugDashboardGoalsIndexRoute
+  SlugDashboardInsightsIndexRoute: typeof SlugDashboardInsightsIndexRoute
   SlugDashboardInterestTemplatesIndexRoute: typeof SlugDashboardInterestTemplatesIndexRoute
   SlugDashboardTagsIndexRoute: typeof SlugDashboardTagsIndexRoute
   SlugDashboardTransactionsIndexRoute: typeof SlugDashboardTransactionsIndexRoute
@@ -1266,6 +1347,7 @@ const SlugDashboardRouteChildren: SlugDashboardRouteChildren = {
   SlugDashboardOrganizationRoute: SlugDashboardOrganizationRouteWithChildren,
   SlugDashboardPlansRoute: SlugDashboardPlansRoute,
   SlugDashboardProfileRoute: SlugDashboardProfileRoute,
+  SlugDashboardSearchRoute: SlugDashboardSearchRoute,
   SlugDashboardSettingsRoute: SlugDashboardSettingsRouteWithChildren,
   SlugDashboardAutomationsAutomationIdRoute:
     SlugDashboardAutomationsAutomationIdRoute,
@@ -1279,8 +1361,10 @@ const SlugDashboardRouteChildren: SlugDashboardRouteChildren = {
     SlugDashboardCostCentersCostCenterIdRoute,
   SlugDashboardCounterpartiesCounterpartyIdRoute:
     SlugDashboardCounterpartiesCounterpartyIdRoute,
-  SlugDashboardCustomReportsReportIdRoute:
-    SlugDashboardCustomReportsReportIdRoute,
+  SlugDashboardDashboardsDashboardIdRoute:
+    SlugDashboardDashboardsDashboardIdRoute,
+  SlugDashboardGoalsGoalIdRoute: SlugDashboardGoalsGoalIdRoute,
+  SlugDashboardInsightsInsightIdRoute: SlugDashboardInsightsInsightIdRoute,
   SlugDashboardInterestTemplatesInterestTemplateIdRoute:
     SlugDashboardInterestTemplatesInterestTemplateIdRoute,
   SlugDashboardTagsTagIdRoute: SlugDashboardTagsTagIdRoute,
@@ -1293,7 +1377,9 @@ const SlugDashboardRouteChildren: SlugDashboardRouteChildren = {
   SlugDashboardCategoriesIndexRoute: SlugDashboardCategoriesIndexRoute,
   SlugDashboardCostCentersIndexRoute: SlugDashboardCostCentersIndexRoute,
   SlugDashboardCounterpartiesIndexRoute: SlugDashboardCounterpartiesIndexRoute,
-  SlugDashboardCustomReportsIndexRoute: SlugDashboardCustomReportsIndexRoute,
+  SlugDashboardDashboardsIndexRoute: SlugDashboardDashboardsIndexRoute,
+  SlugDashboardGoalsIndexRoute: SlugDashboardGoalsIndexRoute,
+  SlugDashboardInsightsIndexRoute: SlugDashboardInsightsIndexRoute,
   SlugDashboardInterestTemplatesIndexRoute:
     SlugDashboardInterestTemplatesIndexRoute,
   SlugDashboardTagsIndexRoute: SlugDashboardTagsIndexRoute,

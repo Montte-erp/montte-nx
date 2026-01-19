@@ -1,4 +1,3 @@
-import type { SupportedLng } from "@packages/localization";
 import {
    NavigationMenu,
    NavigationMenuContent,
@@ -12,7 +11,6 @@ import { cn } from "@packages/ui/lib/utils";
 import {
    BarChart3,
    CalendarCheck,
-   Code,
    PiggyBank,
    Receipt,
    Users,
@@ -22,7 +20,6 @@ import { menuItems, productItems } from "../data/menu-items";
 
 interface NavMenuProps extends ComponentProps<"nav"> {
    orientation?: "horizontal" | "vertical";
-   lang?: SupportedLng;
 }
 
 const productIcons: Record<string, typeof Receipt> = {
@@ -30,7 +27,6 @@ const productIcons: Record<string, typeof Receipt> = {
    "/features/bill-tracking": CalendarCheck,
    "/features/budgeting": PiggyBank,
    "/features/collaboration": Users,
-   "/features/open-source": Code,
    "/features/smart-transactions": Receipt,
 };
 
@@ -75,10 +71,56 @@ function ListItem({
    );
 }
 
-export const NavMenu = ({
-   orientation = "horizontal",
-   lang: _lang = "pt-BR",
-}: NavMenuProps) => {
+function FeaturedItem({
+   title,
+   description,
+   href,
+}: {
+   title: string;
+   description: string;
+   href: string;
+}) {
+   return (
+      <li className="row-span-3">
+         <NavigationMenuLink asChild>
+            <a
+               className="flex h-full w-full select-none flex-col rounded-md bg-gradient-to-b from-primary/10 to-primary/5 no-underline outline-none transition-colors hover:from-primary/20 hover:to-primary/10 focus:shadow-md overflow-hidden"
+               href={href}
+            >
+               <div className="flex-1 relative min-h-[120px]">
+                  <img
+                     alt={title}
+                     className="absolute inset-0 w-full h-full object-cover dark:block hidden"
+                     src="https://placehold.co/400x200/151925/22c55e?text=Transacoes"
+                  />
+                  <img
+                     alt={title}
+                     className="absolute inset-0 w-full h-full object-cover dark:hidden block"
+                     src="https://placehold.co/400x200/e8f5e9/22c55e?text=Transacoes"
+                  />
+               </div>
+               <div className="p-4">
+                  <div className="mb-1 text-base font-medium text-foreground">
+                     {title}
+                  </div>
+                  <p className="text-sm leading-snug text-muted-foreground">
+                     {description}
+                  </p>
+               </div>
+            </a>
+         </NavigationMenuLink>
+      </li>
+   );
+}
+
+export const NavMenu = ({ orientation = "horizontal" }: NavMenuProps) => {
+   // Split product items: first one is featured, rest are in grid
+   const [featuredItem, ...gridItems] = productItems;
+
+   if (!featuredItem) {
+      return null;
+   }
+
    return (
       <NavigationMenu
          className={orientation === "vertical" ? "flex-col items-start" : ""}
@@ -95,8 +137,13 @@ export const NavMenu = ({
                   Produto
                </NavigationMenuTrigger>
                <NavigationMenuContent>
-                  <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] md:grid-cols-2">
-                     {productItems.map((item) => {
+                  <ul className="grid gap-3 p-4 md:w-[450px] lg:w-[550px] md:grid-cols-[1fr_1fr_1fr]">
+                     <FeaturedItem
+                        description={featuredItem.description}
+                        href={featuredItem.href}
+                        title={featuredItem.name}
+                     />
+                     {gridItems.map((item) => {
                         const Icon = productIcons[item.href];
                         return (
                            <ListItem

@@ -1,15 +1,5 @@
-import { translate } from "@packages/localization";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
-import {
-   Card,
-   CardContent,
-   CardDescription,
-   CardFooter,
-   CardHeader,
-   CardTitle,
-} from "@packages/ui/components/card";
-import { CollapsibleTrigger } from "@packages/ui/components/collapsible";
 import { Separator } from "@packages/ui/components/separator";
 import {
    Tooltip,
@@ -19,24 +9,22 @@ import {
 import { useIsMobile } from "@packages/ui/hooks/use-mobile";
 import { cn } from "@packages/ui/lib/utils";
 import { formatDate } from "@packages/utils/date";
-import { Link } from "@tanstack/react-router";
 import type { ColumnDef, Row } from "@tanstack/react-table";
 import {
    Building2,
    Calendar,
    CheckCircle2,
-   ChevronDown,
    Copy,
-   Edit,
-   Eye,
    Mail,
    Phone,
-   Trash2,
    User,
    Users,
    XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { EntityActions, ViewDetailsButton } from "@/components/entity-actions";
+import { ResponsiveEntityExpandedContent } from "@/components/entity-expanded-content";
+import { EntityMobileCard } from "@/components/entity-mobile-card";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useSheet } from "@/hooks/use-sheet";
 import type { Counterparty } from "@/pages/counterparties/ui/counterparties-page";
@@ -69,84 +57,22 @@ function getTypeColor(type: string): string {
    }
 }
 
+function getTypeLabel(type: string): string {
+   switch (type) {
+      case "client":
+         return "Cliente";
+      case "supplier":
+         return "Fornecedor";
+      case "both":
+         return "Ambos";
+      default:
+         return type;
+   }
+}
+
 function copyToClipboard(text: string) {
    navigator.clipboard.writeText(text);
    toast.success("Copiado para a área de transferência");
-}
-
-function CounterpartyActionsCell({
-   counterparty,
-}: {
-   counterparty: Counterparty;
-}) {
-   const { activeOrganization } = useActiveOrganization();
-   const { deleteCounterparty } = useDeleteCounterparty({ counterparty });
-   const { openSheet } = useSheet();
-   return (
-      <div className="flex justify-end gap-1">
-         <Tooltip>
-            <TooltipTrigger asChild>
-               <Button asChild size="icon" variant="outline">
-                  <Link
-                     params={{
-                        counterpartyId: counterparty.id,
-                        slug: activeOrganization.slug,
-                     }}
-                     to="/$slug/counterparties/$counterpartyId"
-                  >
-                     <Eye className="size-4" />
-                  </Link>
-               </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-               {translate(
-                  "dashboard.routes.counterparties.list-section.actions.view-details",
-               )}
-            </TooltipContent>
-         </Tooltip>
-         <Tooltip>
-            <TooltipTrigger asChild>
-               <Button
-                  onClick={() =>
-                     openSheet({
-                        children: (
-                           <ManageCounterpartyForm
-                              counterparty={counterparty}
-                           />
-                        ),
-                     })
-                  }
-                  size="icon"
-                  variant="outline"
-               >
-                  <Edit className="size-4" />
-               </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-               {translate(
-                  "dashboard.routes.counterparties.list-section.actions.edit-counterparty",
-               )}
-            </TooltipContent>
-         </Tooltip>
-         <Tooltip>
-            <TooltipTrigger asChild>
-               <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={deleteCounterparty}
-                  size="icon"
-                  variant="outline"
-               >
-                  <Trash2 className="size-4" />
-               </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-               {translate(
-                  "dashboard.routes.counterparties.list-section.actions.delete-counterparty",
-               )}
-            </TooltipContent>
-         </Tooltip>
-      </div>
-   );
 }
 
 export function createCounterpartyColumns(
@@ -189,9 +115,7 @@ export function createCounterpartyColumns(
             );
          },
          enableSorting: true,
-         header: translate(
-            "dashboard.routes.counterparties.table.columns.name",
-         ),
+         header: "Nome",
       },
       {
          accessorKey: "document",
@@ -224,9 +148,7 @@ export function createCounterpartyColumns(
                </div>
             );
          },
-         header: translate(
-            "dashboard.routes.counterparties.form.document.label",
-         ),
+         header: "Documento",
       },
       {
          accessorKey: "type",
@@ -241,18 +163,12 @@ export function createCounterpartyColumns(
                   variant="outline"
                >
                   {getTypeIcon(counterparty.type)}
-                  {translate(
-                     `dashboard.routes.counterparties.form.type.${counterparty.type}` as Parameters<
-                        typeof translate
-                     >[0],
-                  )}
+                  {getTypeLabel(counterparty.type)}
                </Badge>
             );
          },
          enableSorting: true,
-         header: translate(
-            "dashboard.routes.counterparties.table.columns.type",
-         ),
+         header: "Tipo",
       },
       {
          accessorKey: "isActive",
@@ -289,14 +205,24 @@ export function createCounterpartyColumns(
             );
          },
          enableSorting: true,
-         header: translate(
-            "dashboard.routes.counterparties.table.columns.created-at",
-         ),
+         header: "Criado em",
       },
       {
-         cell: ({ row }) => (
-            <CounterpartyActionsCell counterparty={row.original} />
-         ),
+         cell: ({ row }) => {
+            const counterparty = row.original;
+            const { activeOrganization } = useActiveOrganization();
+            return (
+               <ViewDetailsButton
+                  detailsLink={{
+                     params: {
+                        counterpartyId: counterparty.id,
+                        slug: activeOrganization.slug,
+                     },
+                     to: "/$slug/counterparties/$counterpartyId",
+                  }}
+               />
+            );
+         },
          header: "",
          id: "actions",
       },
@@ -315,265 +241,155 @@ export function CounterpartyExpandedContent({
    const isMobile = useIsMobile();
    const { deleteCounterparty } = useDeleteCounterparty({ counterparty });
    const { openSheet } = useSheet();
-   if (isMobile) {
-      return (
-         <div className="p-4 space-y-4">
-            <div className="space-y-3">
-               {counterparty.email && (
-                  <>
-                     <div className="flex items-center gap-2">
-                        <Mail className="size-4 text-muted-foreground" />
-                        <div>
-                           <p className="text-xs text-muted-foreground">
-                              {translate(
-                                 "dashboard.routes.counterparties.form.email.label",
-                              )}
-                           </p>
-                           <p className="text-sm font-medium">
-                              {counterparty.email}
-                           </p>
-                        </div>
-                     </div>
-                     <Separator />
-                  </>
-               )}
-               {counterparty.phone && (
-                  <>
-                     <div className="flex items-center gap-2">
-                        <Phone className="size-4 text-muted-foreground" />
-                        <div>
-                           <p className="text-xs text-muted-foreground">
-                              {translate(
-                                 "dashboard.routes.counterparties.form.phone.label",
-                              )}
-                           </p>
-                           <p className="text-sm font-medium">
-                              {counterparty.phone}
-                           </p>
-                        </div>
-                     </div>
-                     <Separator />
-                  </>
-               )}
-               {counterparty.document && (
-                  <>
-                     <div className="flex items-center gap-2">
-                        <User className="size-4 text-muted-foreground" />
-                        <div>
-                           <p className="text-xs text-muted-foreground">
-                              {translate(
-                                 "dashboard.routes.counterparties.form.document.label",
-                              )}
-                           </p>
-                           <p className="text-sm font-medium">
-                              {counterparty.document}
-                           </p>
-                        </div>
-                     </div>
-                     <Separator />
-                  </>
-               )}
+
+   const detailsLink = {
+      params: {
+         counterpartyId: counterparty.id,
+         slug: activeOrganization.slug,
+      },
+      to: "/$slug/counterparties/$counterpartyId" as const,
+   };
+
+   const handleEdit = () => {
+      openSheet({
+         children: <ManageCounterpartyForm counterparty={counterparty} />,
+      });
+   };
+
+   const mobileContent = (
+      <div className="space-y-3">
+         {counterparty.email && (
+            <>
                <div className="flex items-center gap-2">
-                  <Calendar className="size-4 text-muted-foreground" />
+                  <Mail className="size-4 text-muted-foreground" />
                   <div>
-                     <p className="text-xs text-muted-foreground">
-                        {translate(
-                           "dashboard.routes.counterparties.table.columns.created-at",
-                        )}
-                     </p>
+                     <p className="text-xs text-muted-foreground">E-mail</p>
+                     <p className="text-sm font-medium">{counterparty.email}</p>
+                  </div>
+               </div>
+               <Separator />
+            </>
+         )}
+         {counterparty.phone && (
+            <>
+               <div className="flex items-center gap-2">
+                  <Phone className="size-4 text-muted-foreground" />
+                  <div>
+                     <p className="text-xs text-muted-foreground">Telefone</p>
+                     <p className="text-sm font-medium">{counterparty.phone}</p>
+                  </div>
+               </div>
+               <Separator />
+            </>
+         )}
+         {counterparty.document && (
+            <>
+               <div className="flex items-center gap-2">
+                  <User className="size-4 text-muted-foreground" />
+                  <div>
+                     <p className="text-xs text-muted-foreground">Documento</p>
                      <p className="text-sm font-medium">
-                        {formatDate(
-                           new Date(counterparty.createdAt),
-                           "DD MMM YYYY",
-                        )}
+                        {counterparty.document}
                      </p>
                   </div>
                </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2">
-               <Button
-                  asChild
-                  className="w-full justify-start"
-                  size="sm"
-                  variant="outline"
-               >
-                  <Link
-                     params={{
-                        counterpartyId: counterparty.id,
-                        slug: activeOrganization.slug,
-                     }}
-                     to="/$slug/counterparties/$counterpartyId"
-                  >
-                     <Eye className="size-4" />
-                     {translate(
-                        "dashboard.routes.counterparties.list-section.actions.view-details",
-                     )}
-                  </Link>
-               </Button>
-               <Button
-                  className="w-full justify-start"
-                  onClick={(e) => {
-                     e.stopPropagation();
-                     openSheet({
-                        children: (
-                           <ManageCounterpartyForm
-                              counterparty={counterparty}
-                           />
-                        ),
-                     });
-                  }}
-                  size="sm"
-                  variant="outline"
-               >
-                  <Edit className="size-4" />
-                  {translate(
-                     "dashboard.routes.counterparties.list-section.actions.edit-counterparty",
-                  )}
-               </Button>
-               <Button
-                  className="w-full justify-start"
-                  onClick={(e) => {
-                     e.stopPropagation();
-                     deleteCounterparty();
-                  }}
-                  size="sm"
-                  variant="destructive"
-               >
-                  <Trash2 className="size-4" />
-                  {translate(
-                     "dashboard.routes.counterparties.list-section.actions.delete-counterparty",
-                  )}
-               </Button>
-            </div>
-         </div>
-      );
-   }
-
-   return (
-      <div className="p-4 flex items-center justify-between gap-6">
-         <div className="flex items-center gap-6">
-            {counterparty.email && (
-               <>
-                  <div className="flex items-center gap-2">
-                     <Mail className="size-4 text-muted-foreground" />
-                     <div>
-                        <p className="text-xs text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.counterparties.form.email.label",
-                           )}
-                        </p>
-                        <p className="text-sm font-medium">
-                           {counterparty.email}
-                        </p>
-                     </div>
-                  </div>
-                  <Separator className="h-8" orientation="vertical" />
-               </>
-            )}
-            {counterparty.phone && (
-               <>
-                  <div className="flex items-center gap-2">
-                     <Phone className="size-4 text-muted-foreground" />
-                     <div>
-                        <p className="text-xs text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.counterparties.form.phone.label",
-                           )}
-                        </p>
-                        <p className="text-sm font-medium">
-                           {counterparty.phone}
-                        </p>
-                     </div>
-                  </div>
-                  <Separator className="h-8" orientation="vertical" />
-               </>
-            )}
-            {counterparty.document && (
-               <>
-                  <div className="flex items-center gap-2">
-                     <User className="size-4 text-muted-foreground" />
-                     <div>
-                        <p className="text-xs text-muted-foreground">
-                           {translate(
-                              "dashboard.routes.counterparties.form.document.label",
-                           )}
-                        </p>
-                        <p className="text-sm font-medium">
-                           {counterparty.document}
-                        </p>
-                     </div>
-                  </div>
-                  <Separator className="h-8" orientation="vertical" />
-               </>
-            )}
-            <div className="flex items-center gap-2">
-               <Calendar className="size-4 text-muted-foreground" />
-               <div>
-                  <p className="text-xs text-muted-foreground">
-                     {translate(
-                        "dashboard.routes.counterparties.table.columns.created-at",
-                     )}
-                  </p>
-                  <p className="text-sm font-medium">
-                     {formatDate(
-                        new Date(counterparty.createdAt),
-                        "DD MMM YYYY",
-                     )}
-                  </p>
-               </div>
-            </div>
-         </div>
-
+               <Separator />
+            </>
+         )}
          <div className="flex items-center gap-2">
-            <Button asChild size="sm" variant="outline">
-               <Link
-                  params={{
-                     counterpartyId: counterparty.id,
-                     slug: activeOrganization.slug,
-                  }}
-                  to="/$slug/counterparties/$counterpartyId"
-               >
-                  <Eye className="size-4" />
-                  {translate(
-                     "dashboard.routes.counterparties.list-section.actions.view-details",
-                  )}
-               </Link>
-            </Button>
-            <Button
-               onClick={(e) => {
-                  e.stopPropagation();
-                  openSheet({
-                     children: (
-                        <ManageCounterpartyForm counterparty={counterparty} />
-                     ),
-                  });
-               }}
-               size="sm"
-               variant="outline"
-            >
-               <Edit className="size-4" />
-               {translate(
-                  "dashboard.routes.counterparties.list-section.actions.edit-counterparty",
-               )}
-            </Button>
-            <Button
-               onClick={(e) => {
-                  e.stopPropagation();
-                  deleteCounterparty();
-               }}
-               size="sm"
-               variant="destructive"
-            >
-               <Trash2 className="size-4" />
-               {translate(
-                  "dashboard.routes.counterparties.list-section.actions.delete-counterparty",
-               )}
-            </Button>
+            <Calendar className="size-4 text-muted-foreground" />
+            <div>
+               <p className="text-xs text-muted-foreground">Criado em</p>
+               <p className="text-sm font-medium">
+                  {formatDate(new Date(counterparty.createdAt), "DD MMM YYYY")}
+               </p>
+            </div>
          </div>
       </div>
+   );
+
+   const desktopContent = (
+      <div className="flex items-center gap-6">
+         {counterparty.email && (
+            <>
+               <div className="flex items-center gap-2">
+                  <Mail className="size-4 text-muted-foreground" />
+                  <div>
+                     <p className="text-xs text-muted-foreground">E-mail</p>
+                     <p className="text-sm font-medium">{counterparty.email}</p>
+                  </div>
+               </div>
+               <Separator className="h-8" orientation="vertical" />
+            </>
+         )}
+         {counterparty.phone && (
+            <>
+               <div className="flex items-center gap-2">
+                  <Phone className="size-4 text-muted-foreground" />
+                  <div>
+                     <p className="text-xs text-muted-foreground">Telefone</p>
+                     <p className="text-sm font-medium">{counterparty.phone}</p>
+                  </div>
+               </div>
+               <Separator className="h-8" orientation="vertical" />
+            </>
+         )}
+         {counterparty.document && (
+            <>
+               <div className="flex items-center gap-2">
+                  <User className="size-4 text-muted-foreground" />
+                  <div>
+                     <p className="text-xs text-muted-foreground">Documento</p>
+                     <p className="text-sm font-medium">
+                        {counterparty.document}
+                     </p>
+                  </div>
+               </div>
+               <Separator className="h-8" orientation="vertical" />
+            </>
+         )}
+         <div className="flex items-center gap-2">
+            <Calendar className="size-4 text-muted-foreground" />
+            <div>
+               <p className="text-xs text-muted-foreground">Criado em</p>
+               <p className="text-sm font-medium">
+                  {formatDate(new Date(counterparty.createdAt), "DD MMM YYYY")}
+               </p>
+            </div>
+         </div>
+      </div>
+   );
+
+   return (
+      <ResponsiveEntityExpandedContent
+         desktopActions={
+            <EntityActions
+               detailsLink={detailsLink}
+               labels={{
+                  delete: "Excluir cadastro",
+                  edit: "Editar cadastro",
+               }}
+               onDelete={deleteCounterparty}
+               onEdit={handleEdit}
+               variant="full"
+            />
+         }
+         desktopContent={desktopContent}
+         isMobile={isMobile}
+         mobileActions={
+            <EntityActions
+               detailsLink={detailsLink}
+               labels={{
+                  delete: "Excluir cadastro",
+                  edit: "Editar cadastro",
+               }}
+               onDelete={deleteCounterparty}
+               onEdit={handleEdit}
+               variant="mobile"
+            />
+         }
+         mobileContent={mobileContent}
+      />
    );
 }
 
@@ -591,40 +407,9 @@ export function CounterpartyMobileCard({
    const counterparty = row.original;
 
    return (
-      <Card className={isExpanded ? "rounded-b-none border-b-0" : ""}>
-         <CardHeader>
-            <div className="flex items-center gap-3">
-               <div
-                  className={cn(
-                     "size-10 rounded-sm flex items-center justify-center border",
-                     getTypeColor(counterparty.type),
-                  )}
-               >
-                  {getTypeIcon(counterparty.type)}
-               </div>
-               <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                     <CardTitle className="text-base truncate">
-                        {counterparty.name}
-                     </CardTitle>
-                     {!counterparty.isActive && (
-                        <Badge
-                           className="shrink-0 text-[10px] px-1.5 py-0"
-                           variant="secondary"
-                        >
-                           Inativo
-                        </Badge>
-                     )}
-                  </div>
-                  <CardDescription className="truncate">
-                     {counterparty.document ||
-                        counterparty.email ||
-                        formatDate(
-                           new Date(counterparty.createdAt),
-                           "DD MMM YYYY",
-                        )}
-                  </CardDescription>
-               </div>
+      <EntityMobileCard
+         content={
+            <div className="flex items-center justify-between">
                <Badge
                   className={cn(
                      "shrink-0 gap-1 border",
@@ -633,34 +418,36 @@ export function CounterpartyMobileCard({
                   variant="outline"
                >
                   {getTypeIcon(counterparty.type)}
-                  {translate(
-                     `dashboard.routes.counterparties.form.type.${counterparty.type}` as Parameters<
-                        typeof translate
-                     >[0],
-                  )}
+                  {getTypeLabel(counterparty.type)}
                </Badge>
+               {!counterparty.isActive && (
+                  <Badge
+                     className="shrink-0 text-[10px] px-1.5 py-0"
+                     variant="secondary"
+                  >
+                     Inativo
+                  </Badge>
+               )}
             </div>
-         </CardHeader>
-         <CardContent />
-         <CardFooter>
-            <CollapsibleTrigger asChild>
-               <Button
-                  className="w-full"
-                  onClick={(e) => {
-                     e.stopPropagation();
-                     toggleExpanded();
-                  }}
-                  variant="outline"
-               >
-                  {isExpanded
-                     ? translate("common.actions.less-info")
-                     : translate("common.actions.more-info")}
-                  <ChevronDown
-                     className={`size-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-                  />
-               </Button>
-            </CollapsibleTrigger>
-         </CardFooter>
-      </Card>
+         }
+         icon={
+            <div
+               className={cn(
+                  "size-10 rounded-sm flex items-center justify-center border",
+                  getTypeColor(counterparty.type),
+               )}
+            >
+               {getTypeIcon(counterparty.type)}
+            </div>
+         }
+         isExpanded={isExpanded}
+         subtitle={
+            counterparty.document ||
+            counterparty.email ||
+            formatDate(new Date(counterparty.createdAt), "DD MMM YYYY")
+         }
+         title={counterparty.name}
+         toggleExpanded={toggleExpanded}
+      />
    );
 }

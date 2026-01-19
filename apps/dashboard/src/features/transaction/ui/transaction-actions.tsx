@@ -1,5 +1,4 @@
 import type { RouterOutput } from "@packages/api/client";
-import { translate } from "@packages/localization";
 import { Button } from "@packages/ui/components/button";
 import { Link } from "@tanstack/react-router";
 import {
@@ -78,7 +77,7 @@ export function TransactionActions({
 
          <Button onClick={handleLinkFile} size="sm" variant="outline">
             <Paperclip className="size-4" />
-            {translate("dashboard.routes.transactions.link-file.button")}
+            Anexar Arquivo
          </Button>
 
          {/* Separator */}
@@ -100,27 +99,19 @@ export function TransactionActions({
          {/* Group 2: Management Actions */}
          <Button onClick={handleEdit} size="sm" variant="outline">
             <Pencil className="size-4" />
-            {variant === "full"
-               ? translate("dashboard.routes.transactions.features.edit.title")
-               : "Editar"}
+            {variant === "full" ? "Editar Transação" : "Editar"}
          </Button>
          <Button onClick={handleDuplicate} size="sm" variant="outline">
             <Copy className="size-4" />
-            {translate(
-               "dashboard.routes.transactions.list-section.actions.duplicate",
-            )}
+            Duplicar
          </Button>
          <Button onClick={handleRefund} size="sm" variant="outline">
             <RotateCcw className="size-4" />
-            {translate(
-               "dashboard.routes.transactions.list-section.actions.refund",
-            )}
+            Estornar
          </Button>
          <Button onClick={handleCreateRecurrence} size="sm" variant="outline">
             <CalendarPlus className="size-4" />
-            {translate(
-               "dashboard.routes.transactions.list-section.actions.create-bill",
-            )}
+            Criar Recorrencia
          </Button>
 
          {/* Separator */}
