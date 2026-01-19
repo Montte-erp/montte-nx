@@ -30,7 +30,6 @@ COPY packages/encryption/package.json ./packages/encryption/
 COPY packages/api/package.json ./packages/api/
 COPY libraries/ofx/package.json ./libraries/ofx/
 COPY packages/authentication/package.json ./packages/authentication/
-COPY packages/localization/package.json ./packages/localization/
 COPY packages/utils/package.json ./packages/utils/
 COPY packages/database/package.json ./packages/database/
 COPY packages/environment/package.json ./packages/environment/
