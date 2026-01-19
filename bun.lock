@@ -440,7 +440,6 @@
       "dependencies": {
         "@packages/database": "workspace:*",
         "@packages/utils": "workspace:*",
-        "@packages/workflows": "workspace:*",
         "web-push": "^3.6.7",
       },
       "devDependencies": {
@@ -640,6 +639,7 @@
         "@packages/database": "workspace:*",
         "@packages/pdf": "workspace:*",
         "@packages/queue": "workspace:*",
+        "@packages/utils": "workspace:*",
         "zod": "catalog:validation",
       },
       "devDependencies": {
