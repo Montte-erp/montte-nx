@@ -20,6 +20,7 @@ import { dashboardRouter } from "./routers/dashboards";
 import { expenseSplitsRouter } from "./routers/expense-splits";
 import { goalsRouter } from "./routers/goals";
 import { interestTemplateRouter } from "./routers/interest-templates";
+import { inventoryRouter } from "./routers/inventory";
 import { notificationRouter } from "./routers/notifications";
 import { onboardingRouter } from "./routers/onboarding";
 import { organizationRouter } from "./routers/organization";
@@ -51,6 +52,7 @@ export const appRouter = router({
    expenseSplits: expenseSplitsRouter,
    goals: goalsRouter,
    interestTemplates: interestTemplateRouter,
+   inventory: inventoryRouter,
    notifications: notificationRouter,
    onboarding: onboardingRouter,
    organization: organizationRouter,
