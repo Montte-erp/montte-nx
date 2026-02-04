@@ -37,6 +37,7 @@ import { Route as SlugDashboardTransactionsIndexRouteImport } from './routes/$sl
 import { Route as SlugDashboardTagsIndexRouteImport } from './routes/$slug/_dashboard/tags/index'
 import { Route as SlugDashboardSettingsIndexRouteImport } from './routes/$slug/_dashboard/settings/index'
 import { Route as SlugDashboardOrganizationIndexRouteImport } from './routes/$slug/_dashboard/organization/index'
+import { Route as SlugDashboardInventoryIndexRouteImport } from './routes/$slug/_dashboard/inventory/index'
 import { Route as SlugDashboardInterestTemplatesIndexRouteImport } from './routes/$slug/_dashboard/interest-templates/index'
 import { Route as SlugDashboardInsightsIndexRouteImport } from './routes/$slug/_dashboard/insights.index'
 import { Route as SlugDashboardGoalsIndexRouteImport } from './routes/$slug/_dashboard/goals/index'
@@ -59,6 +60,7 @@ import { Route as SlugDashboardSettingsBillingRouteImport } from './routes/$slug
 import { Route as SlugDashboardOrganizationTeamsRouteImport } from './routes/$slug/_dashboard/organization/teams'
 import { Route as SlugDashboardOrganizationMembersRouteImport } from './routes/$slug/_dashboard/organization/members'
 import { Route as SlugDashboardOrganizationInvitesRouteImport } from './routes/$slug/_dashboard/organization/invites'
+import { Route as SlugDashboardInventoryItemIdRouteImport } from './routes/$slug/_dashboard/inventory/$itemId'
 import { Route as SlugDashboardInterestTemplatesInterestTemplateIdRouteImport } from './routes/$slug/_dashboard/interest-templates/$interestTemplateId'
 import { Route as SlugDashboardInsightsInsightIdRouteImport } from './routes/$slug/_dashboard/insights.$insightId'
 import { Route as SlugDashboardGoalsGoalIdRouteImport } from './routes/$slug/_dashboard/goals/$goalId'
@@ -215,6 +217,12 @@ const SlugDashboardOrganizationIndexRoute =
     path: '/',
     getParentRoute: () => SlugDashboardOrganizationRoute,
   } as any)
+const SlugDashboardInventoryIndexRoute =
+  SlugDashboardInventoryIndexRouteImport.update({
+    id: '/inventory/',
+    path: '/inventory/',
+    getParentRoute: () => SlugDashboardRoute,
+  } as any)
 const SlugDashboardInterestTemplatesIndexRoute =
   SlugDashboardInterestTemplatesIndexRouteImport.update({
     id: '/interest-templates/',
@@ -344,6 +352,12 @@ const SlugDashboardOrganizationInvitesRoute =
     path: '/invites',
     getParentRoute: () => SlugDashboardOrganizationRoute,
   } as any)
+const SlugDashboardInventoryItemIdRoute =
+  SlugDashboardInventoryItemIdRouteImport.update({
+    id: '/inventory/$itemId',
+    path: '/inventory/$itemId',
+    getParentRoute: () => SlugDashboardRoute,
+  } as any)
 const SlugDashboardInterestTemplatesInterestTemplateIdRoute =
   SlugDashboardInterestTemplatesInterestTemplateIdRouteImport.update({
     id: '/interest-templates/$interestTemplateId',
@@ -452,6 +466,7 @@ export interface FileRoutesByFullPath {
   '/$slug/goals/$goalId': typeof SlugDashboardGoalsGoalIdRoute
   '/$slug/insights/$insightId': typeof SlugDashboardInsightsInsightIdRoute
   '/$slug/interest-templates/$interestTemplateId': typeof SlugDashboardInterestTemplatesInterestTemplateIdRoute
+  '/$slug/inventory/$itemId': typeof SlugDashboardInventoryItemIdRoute
   '/$slug/organization/invites': typeof SlugDashboardOrganizationInvitesRoute
   '/$slug/organization/members': typeof SlugDashboardOrganizationMembersRoute
   '/$slug/organization/teams': typeof SlugDashboardOrganizationTeamsRouteWithChildren
@@ -474,6 +489,7 @@ export interface FileRoutesByFullPath {
   '/$slug/goals': typeof SlugDashboardGoalsIndexRoute
   '/$slug/insights': typeof SlugDashboardInsightsIndexRoute
   '/$slug/interest-templates': typeof SlugDashboardInterestTemplatesIndexRoute
+  '/$slug/inventory': typeof SlugDashboardInventoryIndexRoute
   '/$slug/organization/': typeof SlugDashboardOrganizationIndexRoute
   '/$slug/settings/': typeof SlugDashboardSettingsIndexRoute
   '/$slug/tags': typeof SlugDashboardTagsIndexRoute
@@ -512,6 +528,7 @@ export interface FileRoutesByTo {
   '/$slug/goals/$goalId': typeof SlugDashboardGoalsGoalIdRoute
   '/$slug/insights/$insightId': typeof SlugDashboardInsightsInsightIdRoute
   '/$slug/interest-templates/$interestTemplateId': typeof SlugDashboardInterestTemplatesInterestTemplateIdRoute
+  '/$slug/inventory/$itemId': typeof SlugDashboardInventoryItemIdRoute
   '/$slug/organization/invites': typeof SlugDashboardOrganizationInvitesRoute
   '/$slug/organization/members': typeof SlugDashboardOrganizationMembersRoute
   '/$slug/organization/teams': typeof SlugDashboardOrganizationTeamsRouteWithChildren
@@ -534,6 +551,7 @@ export interface FileRoutesByTo {
   '/$slug/goals': typeof SlugDashboardGoalsIndexRoute
   '/$slug/insights': typeof SlugDashboardInsightsIndexRoute
   '/$slug/interest-templates': typeof SlugDashboardInterestTemplatesIndexRoute
+  '/$slug/inventory': typeof SlugDashboardInventoryIndexRoute
   '/$slug/organization': typeof SlugDashboardOrganizationIndexRoute
   '/$slug/settings': typeof SlugDashboardSettingsIndexRoute
   '/$slug/tags': typeof SlugDashboardTagsIndexRoute
@@ -577,6 +595,7 @@ export interface FileRoutesById {
   '/$slug/_dashboard/goals/$goalId': typeof SlugDashboardGoalsGoalIdRoute
   '/$slug/_dashboard/insights/$insightId': typeof SlugDashboardInsightsInsightIdRoute
   '/$slug/_dashboard/interest-templates/$interestTemplateId': typeof SlugDashboardInterestTemplatesInterestTemplateIdRoute
+  '/$slug/_dashboard/inventory/$itemId': typeof SlugDashboardInventoryItemIdRoute
   '/$slug/_dashboard/organization/invites': typeof SlugDashboardOrganizationInvitesRoute
   '/$slug/_dashboard/organization/members': typeof SlugDashboardOrganizationMembersRoute
   '/$slug/_dashboard/organization/teams': typeof SlugDashboardOrganizationTeamsRouteWithChildren
@@ -599,6 +618,7 @@ export interface FileRoutesById {
   '/$slug/_dashboard/goals/': typeof SlugDashboardGoalsIndexRoute
   '/$slug/_dashboard/insights/': typeof SlugDashboardInsightsIndexRoute
   '/$slug/_dashboard/interest-templates/': typeof SlugDashboardInterestTemplatesIndexRoute
+  '/$slug/_dashboard/inventory/': typeof SlugDashboardInventoryIndexRoute
   '/$slug/_dashboard/organization/': typeof SlugDashboardOrganizationIndexRoute
   '/$slug/_dashboard/settings/': typeof SlugDashboardSettingsIndexRoute
   '/$slug/_dashboard/tags/': typeof SlugDashboardTagsIndexRoute
@@ -642,6 +662,7 @@ export interface FileRouteTypes {
     | '/$slug/goals/$goalId'
     | '/$slug/insights/$insightId'
     | '/$slug/interest-templates/$interestTemplateId'
+    | '/$slug/inventory/$itemId'
     | '/$slug/organization/invites'
     | '/$slug/organization/members'
     | '/$slug/organization/teams'
@@ -664,6 +685,7 @@ export interface FileRouteTypes {
     | '/$slug/goals'
     | '/$slug/insights'
     | '/$slug/interest-templates'
+    | '/$slug/inventory'
     | '/$slug/organization/'
     | '/$slug/settings/'
     | '/$slug/tags'
@@ -702,6 +724,7 @@ export interface FileRouteTypes {
     | '/$slug/goals/$goalId'
     | '/$slug/insights/$insightId'
     | '/$slug/interest-templates/$interestTemplateId'
+    | '/$slug/inventory/$itemId'
     | '/$slug/organization/invites'
     | '/$slug/organization/members'
     | '/$slug/organization/teams'
@@ -724,6 +747,7 @@ export interface FileRouteTypes {
     | '/$slug/goals'
     | '/$slug/insights'
     | '/$slug/interest-templates'
+    | '/$slug/inventory'
     | '/$slug/organization'
     | '/$slug/settings'
     | '/$slug/tags'
@@ -766,6 +790,7 @@ export interface FileRouteTypes {
     | '/$slug/_dashboard/goals/$goalId'
     | '/$slug/_dashboard/insights/$insightId'
     | '/$slug/_dashboard/interest-templates/$interestTemplateId'
+    | '/$slug/_dashboard/inventory/$itemId'
     | '/$slug/_dashboard/organization/invites'
     | '/$slug/_dashboard/organization/members'
     | '/$slug/_dashboard/organization/teams'
@@ -788,6 +813,7 @@ export interface FileRouteTypes {
     | '/$slug/_dashboard/goals/'
     | '/$slug/_dashboard/insights/'
     | '/$slug/_dashboard/interest-templates/'
+    | '/$slug/_dashboard/inventory/'
     | '/$slug/_dashboard/organization/'
     | '/$slug/_dashboard/settings/'
     | '/$slug/_dashboard/tags/'
@@ -1002,6 +1028,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SlugDashboardOrganizationIndexRouteImport
       parentRoute: typeof SlugDashboardOrganizationRoute
     }
+    '/$slug/_dashboard/inventory/': {
+      id: '/$slug/_dashboard/inventory/'
+      path: '/inventory'
+      fullPath: '/$slug/inventory'
+      preLoaderRoute: typeof SlugDashboardInventoryIndexRouteImport
+      parentRoute: typeof SlugDashboardRoute
+    }
     '/$slug/_dashboard/interest-templates/': {
       id: '/$slug/_dashboard/interest-templates/'
       path: '/interest-templates'
@@ -1155,6 +1188,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/$slug/organization/invites'
       preLoaderRoute: typeof SlugDashboardOrganizationInvitesRouteImport
       parentRoute: typeof SlugDashboardOrganizationRoute
+    }
+    '/$slug/_dashboard/inventory/$itemId': {
+      id: '/$slug/_dashboard/inventory/$itemId'
+      path: '/inventory/$itemId'
+      fullPath: '/$slug/inventory/$itemId'
+      preLoaderRoute: typeof SlugDashboardInventoryItemIdRouteImport
+      parentRoute: typeof SlugDashboardRoute
     }
     '/$slug/_dashboard/interest-templates/$interestTemplateId': {
       id: '/$slug/_dashboard/interest-templates/$interestTemplateId'
@@ -1324,6 +1364,7 @@ interface SlugDashboardRouteChildren {
   SlugDashboardGoalsGoalIdRoute: typeof SlugDashboardGoalsGoalIdRoute
   SlugDashboardInsightsInsightIdRoute: typeof SlugDashboardInsightsInsightIdRoute
   SlugDashboardInterestTemplatesInterestTemplateIdRoute: typeof SlugDashboardInterestTemplatesInterestTemplateIdRoute
+  SlugDashboardInventoryItemIdRoute: typeof SlugDashboardInventoryItemIdRoute
   SlugDashboardTagsTagIdRoute: typeof SlugDashboardTagsTagIdRoute
   SlugDashboardTransactionsTransactionIdRoute: typeof SlugDashboardTransactionsTransactionIdRoute
   SlugDashboardAutomationsIndexRoute: typeof SlugDashboardAutomationsIndexRoute
@@ -1337,6 +1378,7 @@ interface SlugDashboardRouteChildren {
   SlugDashboardGoalsIndexRoute: typeof SlugDashboardGoalsIndexRoute
   SlugDashboardInsightsIndexRoute: typeof SlugDashboardInsightsIndexRoute
   SlugDashboardInterestTemplatesIndexRoute: typeof SlugDashboardInterestTemplatesIndexRoute
+  SlugDashboardInventoryIndexRoute: typeof SlugDashboardInventoryIndexRoute
   SlugDashboardTagsIndexRoute: typeof SlugDashboardTagsIndexRoute
   SlugDashboardTransactionsIndexRoute: typeof SlugDashboardTransactionsIndexRoute
 }
@@ -1367,6 +1409,7 @@ const SlugDashboardRouteChildren: SlugDashboardRouteChildren = {
   SlugDashboardInsightsInsightIdRoute: SlugDashboardInsightsInsightIdRoute,
   SlugDashboardInterestTemplatesInterestTemplateIdRoute:
     SlugDashboardInterestTemplatesInterestTemplateIdRoute,
+  SlugDashboardInventoryItemIdRoute: SlugDashboardInventoryItemIdRoute,
   SlugDashboardTagsTagIdRoute: SlugDashboardTagsTagIdRoute,
   SlugDashboardTransactionsTransactionIdRoute:
     SlugDashboardTransactionsTransactionIdRoute,
@@ -1382,6 +1425,7 @@ const SlugDashboardRouteChildren: SlugDashboardRouteChildren = {
   SlugDashboardInsightsIndexRoute: SlugDashboardInsightsIndexRoute,
   SlugDashboardInterestTemplatesIndexRoute:
     SlugDashboardInterestTemplatesIndexRoute,
+  SlugDashboardInventoryIndexRoute: SlugDashboardInventoryIndexRoute,
   SlugDashboardTagsIndexRoute: SlugDashboardTagsIndexRoute,
   SlugDashboardTransactionsIndexRoute: SlugDashboardTransactionsIndexRoute,
 }
