@@ -1,0 +1,76 @@
+---
+// apps/landing-page/src/sections/home/ProblemComplexERPs.astro
+import { FeatureCarousel } from "@/components/feature-carousel";
+
+const features = [
+	{
+		id: "gratis-para-sempre",
+		title: "Grátis Para Sempre",
+		description:
+			"Todas as funcionalidades essenciais sem custo. Sem cartão de crédito, sem surpresas, sem pegadinhas. Use quanto tempo quiser.",
+		image:
+			"https://placehold.co/725x478/151925/8b5cf6?text=Gratis+Forever",
+		width: "wide" as const,
+	},
+	{
+		id: "setup-rapido",
+		title: "Configuração em Minutos",
+		description:
+			"Cadastro rápido, importação de dados e pronto para usar. Sem consultorias caras, sem treinamentos intermináveis.",
+		image: "https://placehold.co/350x478/151925/8b5cf6?text=Setup+Rapido",
+		width: "narrow" as const,
+	},
+	{
+		id: "interface-moderna",
+		title: "Interface Moderna",
+		description:
+			"Design intuitivo e responsivo. Funciona em qualquer dispositivo, tão simples quanto os apps que você usa todo dia.",
+		image: "https://placehold.co/350x478/151925/8b5cf6?text=UI+Moderna",
+		width: "narrow" as const,
+	},
+	{
+		id: "colaboracao-ilimitada",
+		title: "Colaboração Ilimitada",
+		description:
+			"Adicione quantos usuários precisar, sem custo extra. Times inteiros trabalhando juntos, com controle de permissões granular.",
+		image:
+			"https://placehold.co/725x478/151925/8b5cf6?text=Colaboracao",
+		width: "wide" as const,
+	},
+];
+---
+
+<section
+	id="problem-complex-erps"
+	class="py-16 md:py-24 overflow-hidden relative"
+>
+	<div class="container mx-auto max-w-7xl px-4 mb-12">
+		<div class="max-w-3xl">
+			<h2 class="text-3xl md:text-4xl font-bold text-foreground mb-4">
+				ERPs caros e complexos demais para seu negócio?
+			</h2>
+			<p class="text-lg text-muted-foreground mb-8">
+				Mensalidades que pesam no caixa, implementação que leva meses, interfaces confusas. Ferramentas empresariais não precisam ser assim.
+			</p>
+			<div class="border-l-4 border-primary pl-6">
+				<h3 class="text-2xl font-semibold text-foreground mb-2">
+					ERP moderno e acessível
+				</h3>
+				<p class="text-muted-foreground">
+					Todas as funcionalidades que você precisa, zero complexidade. Comece grátis hoje, escale quando precisar, pague apenas pelo que usar.
+				</p>
+			</div>
+		</div>
+	</div>
+
+	<FeatureCarousel
+		items={features}
+		badge="Acessível e Simples"
+		title="Poder de ERP empresarial. Simplicidade de aplicativo moderno."
+		subtitle="Gestão completa sem mensalidades absurdas, implementações eternas ou interfaces confusas."
+		ctaText="Começar grátis"
+		ctaHref="/auth/sign-up"
+		benefitText="Economize milhares em licenças e treinamentos. Comece em minutos, não em meses."
+		client:load
+	/>
+</section>

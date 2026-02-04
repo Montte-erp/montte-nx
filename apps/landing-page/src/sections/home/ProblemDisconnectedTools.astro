@@ -1,0 +1,83 @@
+---
+// apps/landing-page/src/sections/home/ProblemDisconnectedTools.astro
+import { FeatureCarousel } from "@/components/feature-carousel";
+
+const features = [
+	{
+		id: "gestao-financeira-completa",
+		title: "Gestão Financeira Completa",
+		description:
+			"Transações, contas a pagar/receber, conciliação bancária e fluxo de caixa em um só lugar. Tudo conectado e sincronizado.",
+		image:
+			"https://placehold.co/725x478/151925/3b82f6?text=Gestao+Financeira",
+		width: "wide" as const,
+	},
+	{
+		id: "estoque-integrado",
+		title: "Estoque Integrado",
+		description:
+			"Controle de produtos, movimentações e custos integrado às finanças. Saldo em tempo real sem retrabalho.",
+		image: "https://placehold.co/350x478/151925/3b82f6?text=Estoque",
+		width: "narrow" as const,
+	},
+	{
+		id: "multi-organizacao",
+		title: "Multi-Organização",
+		description:
+			"Gerencie múltiplas empresas em uma conta. Troque de contexto com um clique, relatórios consolidados quando precisar.",
+		image: "https://placehold.co/350x478/151925/3b82f6?text=Multi-Org",
+		width: "narrow" as const,
+	},
+	{
+		id: "centros-custo",
+		title: "Centros de Custo",
+		description:
+			"Organize despesas por departamento, projeto ou filial. Visão clara de onde o dinheiro está sendo usado.",
+		image: "https://placehold.co/725x478/151925/3b82f6?text=Centros+Custo",
+		width: "wide" as const,
+	},
+	{
+		id: "dashboards-unificados",
+		title: "Dashboards Unificados",
+		description:
+			"Todos os indicadores em painéis customizáveis. Finanças, estoque e operações em visualizações intuitivas.",
+		image: "https://placehold.co/350x478/151925/3b82f6?text=Dashboards",
+		width: "narrow" as const,
+	},
+];
+---
+
+<section
+	id="problem-disconnected-tools"
+	class="py-16 md:py-24 overflow-hidden relative"
+>
+	<div class="container mx-auto max-w-7xl px-4 mb-12">
+		<div class="max-w-3xl">
+			<h2 class="text-3xl md:text-4xl font-bold text-foreground mb-4">
+				Ferramentas desconectadas gerando retrabalho?
+			</h2>
+			<p class="text-lg text-muted-foreground mb-8">
+				Um sistema para finanças, outro para estoque, planilhas para relatórios. Dados duplicados, informações desatualizadas, decisões baseadas em suposições.
+			</p>
+			<div class="border-l-4 border-primary pl-6">
+				<h3 class="text-2xl font-semibold text-foreground mb-2">
+					Plataforma unificada para todo seu negócio
+				</h3>
+				<p class="text-muted-foreground">
+					Finanças, estoque, multi-organização e centros de custo trabalhando juntos. Uma fonte única de verdade para decisões rápidas e precisas.
+				</p>
+			</div>
+		</div>
+	</div>
+
+	<FeatureCarousel
+		items={features}
+		badge="Plataforma Unificada"
+		title="Tudo conectado. Dados sempre atualizados."
+		subtitle="Elimine silos de informação e tenha visão completa do seu negócio em tempo real."
+		ctaText="Ver integrações"
+		ctaHref="/features/integrations"
+		benefitText="Decisões baseadas em dados reais, não em planilhas desatualizadas."
+		client:load
+	/>
+</section>
