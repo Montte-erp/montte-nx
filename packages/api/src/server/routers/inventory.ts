@@ -15,7 +15,6 @@ import {
    updateInventoryItem,
 } from "@packages/database/repositories/inventory-repository";
 import { APIError } from "@packages/utils/errors";
-import { z } from "zod";
 import {
    addItemUomSchema,
    createItemSchema,
@@ -87,7 +86,7 @@ export const inventoryRouter = router({
          return deleteInventoryItem(resolvedCtx.db, input.id, organizationId);
       }),
 
-   getById: protectedProcedure
+   getItem: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
          const resolvedCtx = await ctx;
@@ -117,6 +116,8 @@ export const inventoryRouter = router({
             limit: input.pageSize,
             search: input.search,
             type: input.type,
+            orderBy: input.orderBy,
+            orderDirection: input.orderDirection,
          });
       }),
 
@@ -150,6 +151,28 @@ export const inventoryRouter = router({
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
          const resolvedCtx = await ctx;
+         const organizationId = resolvedCtx.organizationId;
+
+         // First, we need to verify the UoM belongs to an item in this org
+         // Query the inventory_item_uom table to get the inventoryItemId
+         const uom = await resolvedCtx.db.query.inventoryItemUom.findFirst({
+            where: (fields, { eq }) => eq(fields.id, input.id),
+         });
+
+         if (!uom) {
+            throw APIError.notFound("Unit of measure not found");
+         }
+
+         // Verify the parent item belongs to this organization
+         const item = await getInventoryItem(
+            resolvedCtx.db,
+            uom.inventoryItemId,
+            organizationId,
+         );
+
+         if (!item) {
+            throw APIError.notFound("Item not found or access denied");
+         }
 
          return removeItemUom(resolvedCtx.db, input.id);
       }),
@@ -324,6 +347,28 @@ export const inventoryRouter = router({
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
          const resolvedCtx = await ctx;
+         const organizationId = resolvedCtx.organizationId;
+
+         // Query to get inventoryItemId from the link
+         const link =
+            await resolvedCtx.db.query.inventoryItemCounterparty.findFirst({
+               where: (fields, { eq }) => eq(fields.id, input.id),
+            });
+
+         if (!link) {
+            throw APIError.notFound("Counterparty link not found");
+         }
+
+         // Verify the parent item belongs to this organization
+         const item = await getInventoryItem(
+            resolvedCtx.db,
+            link.inventoryItemId,
+            organizationId,
+         );
+
+         if (!item) {
+            throw APIError.notFound("Item not found or access denied");
+         }
 
          return unlinkItemCounterparty(resolvedCtx.db, input.id);
       }),
