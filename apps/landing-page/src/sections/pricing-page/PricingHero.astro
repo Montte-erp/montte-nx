@@ -3,6 +3,7 @@ import { Image } from "astro:assets";
 import pricingHeroDark from "@/assets/background/pricing-hero-dark.png";
 import pricingHeroLight from "@/assets/background/pricing-hero-light.png";
 import { BillingToggle } from "@/components/BillingToggle";
+import { VariantText } from "@/components/VariantText";
 ---
 
 <link rel="preload" as="image" href={pricingHeroLight.src} type="image/png">
@@ -35,13 +36,27 @@ import { BillingToggle } from "@/components/BillingToggle";
 			<span class="text-primary">Planos</span> e Preços
 		</p>
 
-		<h1 class="inline-block font-semibold tracking-tight text-center text-4xl sm:text-6xl lg:text-7xl leading-tight max-w-3xl text-foreground">
-			Controle financeiro sem complicação
-		</h1>
+		<VariantText
+			as="h1"
+			className="inline-block font-semibold tracking-tight text-center text-4xl sm:text-6xl lg:text-7xl leading-tight max-w-3xl text-foreground"
+			variantA="Uma plataforma. Todas as ferramentas."
+			variantB="ERP sem complicação. Sem mensalidade para sempre."
+			variantC="ERP bonito. E funcional."
+			variantD="Gestão financeira + controle de estoque integrados"
+			pageName="pricing"
+			client:load
+		/>
 
-		<p class="sm:text-xl text-center max-w-sm sm:max-w-xl text-foreground/70">
-			Grátis para uso pessoal. Planos pagos para equipes e empresas.
-		</p>
+		<VariantText
+			as="p"
+			className="sm:text-xl text-center max-w-sm sm:max-w-xl text-foreground/70"
+			variantA="Grátis para uso pessoal. Planos empresariais com recursos ilimitados."
+			variantB="Comece grátis e escale conforme cresce. Sem pegadinhas."
+			variantC="Porque ferramentas de gestão não precisam ser feias e complicadas."
+			variantD="A única ferramenta que conecta seu inventário às suas finanças."
+			pageName="pricing"
+			client:load
+		/>
 
 		<BillingToggle client:load id="pricing-toggle" showDiscount={true} />
 	</div>
