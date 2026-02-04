@@ -5,31 +5,27 @@ import { Separator } from "@packages/ui/components/separator";
 import CTA from "@/components/CTA.astro";
 import Footer from "@/components/Footer.astro";
 import StickyNavbar from "@/components/StickyNavbar.astro";
-import UseCases from "@/components/UseCases.astro";
 import Layout from "@/layouts/Landing.astro";
-import Analytics from "@/sections/home/Analytics.astro";
-import BillTracking from "@/sections/home/BillTracking.astro";
-import Budgeting from "@/sections/home/Budgeting.astro";
 import Hero from "@/sections/home/HomeHero.astro";
-import Showcase from "@/sections/home/Showcase.astro";
-import Workspaces from "@/sections/home/Workspaces.astro";
+import ProblemComplexERPs from "@/sections/home/ProblemComplexERPs.astro";
+import ProblemDisconnectedTools from "@/sections/home/ProblemDisconnectedTools.astro";
+import ProblemManualWork from "@/sections/home/ProblemManualWork.astro";
+import ProblemNoVisibility from "@/sections/home/ProblemNoVisibility.astro";
 ---
 
 <Layout>
    <div class="flex flex-col">
       <StickyNavbar />
       <Hero />
-      <Showcase />
-<Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
-      <BillTracking />
-<Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
-      <Workspaces />
-<Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
-      <Budgeting />
-<Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
-      <Analytics />
-<Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
-      <UseCases />
+      <Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
+      <ProblemManualWork />
+      <Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
+      <ProblemDisconnectedTools />
+      <Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
+      <ProblemNoVisibility />
+      <Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
+      <ProblemComplexERPs />
+      <Separator className="bg-gradient-to-r from-transparent via-primary/20 to-transparent"/>
       <CTA title={["Suas finanças", "Sob controle total"]} buttonText="Começar Grátis" />
       <Footer />
    </div>
