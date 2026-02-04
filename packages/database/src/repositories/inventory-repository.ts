@@ -5,9 +5,8 @@ import {
 	of as moneyOf,
 	toDatabase as moneyToDatabase,
 } from "@f-o-t/money";
-import { convert, of as uomOf } from "@f-o-t/uom";
 import { AppError, propagateError } from "@packages/utils/errors";
-import { and, asc, desc, eq, ilike, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import {
 	inventoryItem,
@@ -16,6 +15,10 @@ import {
 	stockLot,
 	stockMovement,
 } from "../schemas/inventory";
+import {
+	buildPaginationMeta,
+	calculateOffset,
+} from "../utils/pagination";
 
 // =============================================================================
 // Types
@@ -53,9 +56,15 @@ export async function createInventoryItem(
 	data: NewInventoryItem,
 ) {
 	try {
+		// Generate search index
+		const searchIndex = [data.name, data.sku]
+			.filter(Boolean)
+			.join(" ")
+			.toLowerCase();
+
 		const result = await dbClient
 			.insert(inventoryItem)
-			.values(data)
+			.values({ ...data, searchIndex })
 			.returning();
 
 		if (!result[0]) {
@@ -105,9 +114,18 @@ export async function updateInventoryItem(
 			throw AppError.database("Inventory item not found");
 		}
 
+		// Generate search index if name or sku changed
+		const searchIndex =
+			data.name || data.sku
+				? [data.name ?? existing.name, data.sku ?? existing.sku]
+						.filter(Boolean)
+						.join(" ")
+						.toLowerCase()
+				: undefined;
+
 		const result = await dbClient
 			.update(inventoryItem)
-			.set(data)
+			.set(searchIndex ? { ...data, searchIndex } : data)
 			.where(eq(inventoryItem.id, id))
 			.returning();
 
@@ -224,7 +242,7 @@ export async function listInventoryItems(
 		orderDirection = "asc",
 	} = options;
 
-	const offset = (page - 1) * limit;
+	const offset = calculateOffset(page, limit);
 
 	try {
 		const buildWhereCondition = () => {
@@ -241,7 +259,7 @@ export async function listInventoryItems(
 			return and(...conditions);
 		};
 
-		const [items, totalCount] = await Promise.all([
+		const [items, totalCountResult] = await Promise.all([
 			dbClient.query.inventoryItem.findMany({
 				limit,
 				offset,
@@ -255,25 +273,18 @@ export async function listInventoryItems(
 					defaultCounterparty: true,
 				},
 			}),
-			dbClient.query.inventoryItem
-				.findMany({
-					where: buildWhereCondition,
-				})
-				.then((result) => result.length),
+			dbClient
+				.select({ count: count() })
+				.from(inventoryItem)
+				.where(buildWhereCondition()),
 		]);
 
-		const totalPages = Math.ceil(totalCount / limit);
+		const totalCount = totalCountResult[0]?.count || 0;
 
 		return {
 			data: items,
 			total: totalCount,
-			pagination: {
-				currentPage: page,
-				totalPages,
-				limit,
-				hasNextPage: page < totalPages,
-				hasPreviousPage: page > 1,
-			},
+			pagination: buildPaginationMeta(totalCount, page, limit),
 		};
 	} catch (err) {
 		propagateError(err);
@@ -394,7 +405,7 @@ export async function recordStockMovement(
 						amount: data.unitCost,
 						currency: data.currency,
 					});
-					const incomingValue = multiply(incomingCost, incomingQty);
+					const incomingValue = multiply(incomingCost, incomingQty.toString());
 
 					const newTotalQty = BigInt(currentLevel) + incomingQty;
 					const newTotalValue = currentValuation
@@ -441,7 +452,7 @@ export async function recordStockMovement(
 					tx,
 					item.id,
 					BigInt(data.quantity),
-					item.valuationMethod,
+					item.valuationMethod as "fifo" | "weighted_average",
 				);
 			}
 
@@ -482,10 +493,15 @@ export async function getStockMovements(
 	} = {},
 ) {
 	const { page = 1, limit = 10 } = options;
-	const offset = (page - 1) * limit;
+	const offset = calculateOffset(page, limit);
 
 	try {
-		const [movements, totalCount] = await Promise.all([
+		const whereCondition = and(
+			eq(stockMovement.inventoryItemId, itemId),
+			eq(stockMovement.organizationId, organizationId),
+		);
+
+		const [movements, totalCountResult] = await Promise.all([
 			dbClient.query.stockMovement.findMany({
 				limit,
 				offset,
@@ -501,29 +517,18 @@ export async function getStockMovements(
 					transaction: true,
 				},
 			}),
-			dbClient.query.stockMovement
-				.findMany({
-					where: (m, { eq, and }) =>
-						and(
-							eq(m.inventoryItemId, itemId),
-							eq(m.organizationId, organizationId),
-						),
-				})
-				.then((result) => result.length),
+			dbClient
+				.select({ count: count() })
+				.from(stockMovement)
+				.where(whereCondition),
 		]);
 
-		const totalPages = Math.ceil(totalCount / limit);
+		const totalCount = totalCountResult[0]?.count || 0;
 
 		return {
 			data: movements,
 			total: totalCount,
-			pagination: {
-				currentPage: page,
-				totalPages,
-				limit,
-				hasNextPage: page < totalPages,
-				hasPreviousPage: page > 1,
-			},
+			pagination: buildPaginationMeta(totalCount, page, limit),
 		};
 	} catch (err) {
 		propagateError(err);
@@ -617,14 +622,14 @@ export async function getStockValuation(
 				return moneyOf("0", item.currency);
 			}
 
-			let totalValue = moneyOf("0", lots[0].currency);
+			let totalValue = moneyOf("0", lots[0]!.currency);
 			for (const lot of lots) {
 				const lotCost = moneyFromDatabase({
 					amount: lot.unitCost,
 					currency: lot.currency,
 				});
 				const lotQty = BigInt(lot.remainingQuantity);
-				const lotValue = multiply(lotCost, lotQty);
+				const lotValue = multiply(lotCost, lotQty.toString());
 				totalValue = {
 					amount: totalValue.amount + lotValue.amount,
 					currency: totalValue.currency,
@@ -644,14 +649,14 @@ export async function getStockValuation(
 			return moneyOf("0", item.currency);
 		}
 
-		const lot = lots[0];
+		const lot = lots[0]!;
 		const avgCost = moneyFromDatabase({
 			amount: lot.unitCost,
 			currency: lot.currency,
 		});
 		const qty = BigInt(lot.remainingQuantity);
 
-		return multiply(avgCost, qty);
+		return multiply(avgCost, qty.toString());
 	} catch (err) {
 		propagateError(err);
 		throw AppError.database(
@@ -671,6 +676,15 @@ export async function consumeStock(
 	valuationMethod: "fifo" | "weighted_average",
 ) {
 	try {
+		// Get the item to access currency
+		const item = await dbClient.query.inventoryItem.findFirst({
+			where: (item, { eq }) => eq(item.id, itemId),
+		});
+
+		if (!item) {
+			throw AppError.database("Inventory item not found");
+		}
+
 		if (valuationMethod === "fifo") {
 			// Get oldest lots first
 			const lots = await dbClient.query.stockLot.findMany({
@@ -678,8 +692,12 @@ export async function consumeStock(
 				orderBy: (lot) => asc(lot.date),
 			});
 
+			if (lots.length === 0) {
+				throw AppError.validation("No stock available");
+			}
+
 			let remaining = quantity;
-			let totalCost = moneyOf("0", lots[0]?.currency || "BRL");
+			let totalCost = moneyOf("0", item.currency);
 			let consumedQty = 0n;
 
 			for (const lot of lots) {
@@ -692,7 +710,7 @@ export async function consumeStock(
 					amount: lot.unitCost,
 					currency: lot.currency,
 				});
-				const consumeCost = multiply(lotCost, toConsume);
+				const consumeCost = multiply(lotCost, toConsume.toString());
 
 				totalCost = {
 					amount: totalCost.amount + consumeCost.amount,
@@ -740,7 +758,7 @@ export async function consumeStock(
 			throw AppError.validation("No stock available");
 		}
 
-		const lot = lots[0];
+		const lot = lots[0]!;
 		const currentQty = BigInt(lot.remainingQuantity);
 
 		if (currentQty < quantity) {
