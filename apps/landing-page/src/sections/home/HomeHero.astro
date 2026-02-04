@@ -8,6 +8,7 @@ import transactionsLight from "@/assets/hero-carousel/transactions-light.png";
 import { HeroCarousel } from "@/components/hero-carousel";
 import LogoCloud from "@/components/LogoCloud.astro";
 import LogoWithText from "@/components/LogoWithText.astro";
+import { VariantText } from "@/components/VariantText";
 
 const heroSlides = [
    {
@@ -35,18 +36,29 @@ const heroSlides = [
             <LogoWithText size="md" />
          </div>
 
-   <h1 class="
-            inline-block font-semibold tracking-tight text-3xl sm:text-4xl lg:text-5xl leading-tight max-w-3xl text-foreground ">
-            Controle total das suas finanças, de forma simples
+   <VariantText
+            as="h1"
+            className="inline-block font-semibold tracking-tight text-3xl sm:text-4xl lg:text-5xl leading-tight max-w-3xl text-foreground"
+            variantA="Gerencie seu negócio inteiro em um só lugar"
+            variantB="ERP que não precisa de manual"
+            variantC="Gestão empresarial que não parece software de 2005"
+            variantD="Do estoque ao caixa, tudo conectado"
+            fallback="Gerencie seu negócio inteiro em um só lugar"
+            pageName="homepage"
+            client:load
+         />
 
-         </h1>
-
-   <p class="
-      sm:text-xl  max-w-sm sm:max-w-xl text-foreground/70
-">
-
-            Acompanhe gastos, gerencie contas e alcance suas metas financeiras com uma plataforma intuitiva e segura. Tudo em um só lugar.
-         </p>
+         <VariantText
+            as="p"
+            className="sm:text-xl max-w-sm sm:max-w-xl text-foreground/70"
+            variantA="Finanças, estoque, automações e relatórios. Tudo que você precisa para crescer sem complicação."
+            variantB="Gestão empresarial simples o suficiente para uso pessoal, poderosa o suficiente para seu negócio crescer."
+            variantC="Interface linda, experiência rápida, recursos poderosos. O ERP que você realmente vai querer usar."
+            variantD="Controle produtos, movimentações e finanças em tempo real. Decisões mais inteligentes para seu negócio."
+            fallback="Finanças, estoque, automações e relatórios. Tudo que você precisa para crescer sem complicação."
+            pageName="homepage"
+            client:load
+         />
 
          <div class="">
             <div class="">
