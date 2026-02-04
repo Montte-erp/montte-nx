@@ -44,19 +44,25 @@ export const inventoryItem = pgTable(
 	],
 );
 
-export const inventoryItemUom = pgTable("inventory_item_uom", {
-	id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-	inventoryItemId: uuid("inventory_item_id")
-		.notNull()
-		.references(() => inventoryItem.id, { onDelete: "cascade" }),
-	unit: text("unit").notNull(),
-	conversionFactor: text("conversion_factor").notNull(),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-	updatedAt: timestamp("updated_at")
-		.defaultNow()
-		.$onUpdate(() => new Date())
-		.notNull(),
-});
+export const inventoryItemUom = pgTable(
+	"inventory_item_uom",
+	{
+		id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
+		inventoryItemId: uuid("inventory_item_id")
+			.notNull()
+			.references(() => inventoryItem.id, { onDelete: "cascade" }),
+		unit: text("unit").notNull(),
+		conversionFactor: text("conversion_factor").notNull(),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+		updatedAt: timestamp("updated_at")
+			.defaultNow()
+			.$onUpdate(() => new Date())
+			.notNull(),
+	},
+	(table) => [
+		index("inventory_item_uom_inventory_item_id_idx").on(table.inventoryItemId),
+	],
+);
 
 export const stockMovement = pgTable(
 	"stock_movement",
@@ -95,24 +101,30 @@ export const stockMovement = pgTable(
 	],
 );
 
-export const stockLot = pgTable("stock_lot", {
-	id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-	inventoryItemId: uuid("inventory_item_id")
-		.notNull()
-		.references(() => inventoryItem.id, { onDelete: "cascade" }),
-	remainingQuantity: text("remaining_quantity").notNull(),
-	unitCost: text("unit_cost").notNull(),
-	currency: text("currency").notNull(), // ISO 4217
-	date: timestamp("date").notNull(),
-	stockMovementId: uuid("stock_movement_id")
-		.notNull()
-		.references(() => stockMovement.id),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-	updatedAt: timestamp("updated_at")
-		.defaultNow()
-		.$onUpdate(() => new Date())
-		.notNull(),
-});
+export const stockLot = pgTable(
+	"stock_lot",
+	{
+		id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
+		inventoryItemId: uuid("inventory_item_id")
+			.notNull()
+			.references(() => inventoryItem.id, { onDelete: "cascade" }),
+		remainingQuantity: text("remaining_quantity").notNull(),
+		unitCost: text("unit_cost").notNull(),
+		currency: text("currency").notNull(), // ISO 4217
+		date: timestamp("date").notNull(),
+		stockMovementId: uuid("stock_movement_id")
+			.notNull()
+			.references(() => stockMovement.id),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+		updatedAt: timestamp("updated_at")
+			.defaultNow()
+			.$onUpdate(() => new Date())
+			.notNull(),
+	},
+	(table) => [
+		index("stock_lot_inventory_item_id_idx").on(table.inventoryItemId),
+	],
+);
 
 export const inventoryItemCounterparty = pgTable(
 	"inventory_item_counterparty",
@@ -136,6 +148,14 @@ export const inventoryItemCounterparty = pgTable(
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
+	(table) => [
+		index("inventory_item_counterparty_inventory_item_id_idx").on(
+			table.inventoryItemId,
+		),
+		index("inventory_item_counterparty_counterparty_id_idx").on(
+			table.counterpartyId,
+		),
+	],
 );
 
 // Relations
