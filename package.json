@@ -182,5 +182,8 @@
          "packages/*",
          "apps/*"
       ]
+   },
+   "dependencies": {
+      "@f-o-t/uom": "^1.0.0"
    }
 }
