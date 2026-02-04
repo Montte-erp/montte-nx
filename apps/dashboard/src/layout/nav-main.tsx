@@ -28,6 +28,7 @@ import {
    Landmark,
    type LucideIcon,
    MoreHorizontal,
+   Package,
    PanelTop,
    Percent,
    Receipt,
@@ -169,6 +170,12 @@ export function NavMain() {
             id: "bills",
             title: "Contas a Pagar",
             url: "/$slug/bills",
+         },
+         {
+            icon: Package,
+            id: "inventory",
+            title: "Inventário",
+            url: "/$slug/inventory",
          },
          ...(canAccessCounterparties
             ? [
