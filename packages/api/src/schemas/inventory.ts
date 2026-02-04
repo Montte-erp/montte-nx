@@ -2,13 +2,13 @@ import { z } from "zod";
 
 // Helper validators for BigInt-safe numeric strings
 const numericStringSchema = z.string().refine(
-	(val) => /^\d+$/.test(val) && BigInt(val) >= 0n,
+	(val) => /^\d+(\.\d+)?$/.test(val) && Number(val) >= 0,
 	{ message: "Must be a valid non-negative numeric string" },
 );
 
 const monetaryAmountSchema = z.string().refine(
-	(val) => /^\d+$/.test(val),
-	{ message: "Must be a valid monetary amount (minor units as string)" },
+	(val) => /^\d+$/.test(val) && BigInt(val) >= 0n,
+	{ message: "Must be a valid non-negative monetary amount (minor units as string)" },
 );
 
 // Basic ID schemas
