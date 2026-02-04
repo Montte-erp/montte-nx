@@ -5,6 +5,7 @@ import { Button } from "@packages/ui/components/button";
 import enterpriseHeroDark from "@/assets/background/enterprise-hero-dark.png";
 import enterpriseHeroLight from "@/assets/background/enterprise-hero-light.png";
 import LogoCloud from "@/components/LogoCloud.astro";
+import { VariantText } from "@/components/VariantText";
 ---
 
 	<link rel="preload" as="image" href={enterpriseHeroLight.src} type="image/png">
@@ -36,19 +37,27 @@ import LogoCloud from "@/components/LogoCloud.astro";
 <span class="text-primary">Montte</span> Empresas
          </p>
 
-   <h1 class="
- inline-block font-semibold tracking-tight text-center text-4xl sm:text-6xl lg:text-7xl leading-tight max-w-3xl text-foreground
-">
-Gestão financeira para equipes em crescimento
-         </h1>
+   <VariantText
+      as="h1"
+      className="inline-block font-semibold tracking-tight text-center text-4xl sm:text-6xl lg:text-7xl leading-tight max-w-3xl text-foreground"
+      variantA="Plataforma completa de gestão empresarial"
+      variantB="ERP moderno para equipes que não querem perder tempo"
+      variantC="Software de gestão que seu time vai adorar usar"
+      variantD="Visibilidade total: do estoque ao resultado financeiro"
+      pageName="enterprise"
+      client:load
+   />
 
-   <p class="
-      sm:text-xl text-center max-w-sm sm:max-w-xl text-foreground/70
-">
-
-Membros ilimitados, automações inteligentes e dashboards avançados.
-Tudo que sua equipe precisa para crescer com controle financeiro.
-         </p>
+   <VariantText
+      as="p"
+      className="sm:text-xl text-center max-w-sm sm:max-w-xl text-foreground/70"
+      variantA="Substitua múltiplas ferramentas por uma solução integrada e moderna."
+      variantB="Configure em minutos. Use em segundos. Cresça sem limites."
+      variantC="UX moderna, onboarding rápido, produtividade desde o primeiro dia."
+      variantD="Rastreie produtos, custos e margens em uma única plataforma."
+      pageName="enterprise"
+      client:load
+   />
 
     <Button className=" flex items-center gap-2 w-full sm:w-2/6"  size="lg">
             <MessageSquare class="size-4" />
