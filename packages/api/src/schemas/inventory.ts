@@ -1,3 +1,4 @@
+import { CurrencyCodeSchema } from "@f-o-t/money";
 import { z } from "zod";
 
 // Helper validators for BigInt-safe numeric strings
@@ -7,8 +8,8 @@ const numericStringSchema = z.string().refine(
 );
 
 const monetaryAmountSchema = z.string().refine(
-	(val) => /^\d+$/.test(val) && BigInt(val) >= 0n,
-	{ message: "Must be a valid non-negative monetary amount (minor units as string)" },
+	(val) => /^\d+(\.\d+)?$/.test(val) && Number(val) >= 0,
+	{ message: "Must be a non-negative decimal string" },
 );
 
 // Basic ID schemas
@@ -33,7 +34,7 @@ export const createItemSchema = z.object({
 	baseUnit: z.string(),
 	baseUnitScale: z.number().int().min(0).default(2),
 	valuationMethod: valuationMethodSchema,
-	currency: z.string().length(3).toUpperCase(),
+	currency: CurrencyCodeSchema,
 	reorderPoint: numericStringSchema.optional(),
 	defaultCounterpartyId: z.string().uuid().optional(),
 });
@@ -62,9 +63,9 @@ export const recordMovementSchema = z.object({
 	type: movementTypeSchema,
 	reason: movementReasonSchema,
 	quantity: numericStringSchema,
-	unit: z.string().optional(),
+	unit: z.string().min(1).max(50).optional(), // Must match baseUnit or registered UoM (validated at repository level)
 	unitCost: monetaryAmountSchema,
-	currency: z.string().length(3).toUpperCase(),
+	currency: CurrencyCodeSchema,
 	counterpartyId: z.string().uuid().optional(),
 	transactionId: z.string().uuid().optional(),
 	date: z.coerce.date(),
@@ -87,7 +88,7 @@ export const linkCounterpartySchema = z.object({
 	counterpartyId: z.string().uuid(),
 	role: counterpartyRoleSchema,
 	unitPrice: monetaryAmountSchema,
-	currency: z.string().length(3).toUpperCase(),
+	currency: CurrencyCodeSchema,
 	minOrderQuantity: numericStringSchema.optional(),
 	leadTimeDays: z.number().int().min(0).optional(),
 	notes: z.string().optional(),
