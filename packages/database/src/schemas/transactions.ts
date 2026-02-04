@@ -13,6 +13,7 @@ import { organization } from "./auth";
 import { bankAccount } from "./bank-accounts";
 import { transactionCategory } from "./categories";
 import { costCenter } from "./cost-centers";
+import { stockMovement } from "./inventory";
 import { transactionTag } from "./tags";
 
 export type CategorySplit = {
@@ -96,4 +97,5 @@ export const transactionRelations = relations(transaction, ({ one, many }) => ({
    }),
    transactionCategories: many(transactionCategory),
    transactionTags: many(transactionTag),
+   stockMovements: many(stockMovement),
 }));

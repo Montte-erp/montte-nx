@@ -14,6 +14,7 @@ export * from "./schemas/encryption";
 export * from "./schemas/expense-splits";
 export * from "./schemas/goals";
 export * from "./schemas/interest-templates";
+export * from "./schemas/inventory";
 export * from "./schemas/notification-preferences";
 export * from "./schemas/notifications";
 export * from "./schemas/push-subscriptions";

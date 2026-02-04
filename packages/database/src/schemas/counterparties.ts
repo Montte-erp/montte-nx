@@ -13,6 +13,7 @@ import {
 import { organization } from "./auth";
 import { bankAccount } from "./bank-accounts";
 import { bill } from "./bills";
+import { inventoryItemCounterparty, stockMovement } from "./inventory";
 
 // Enums for counterparty
 export const documentTypeEnum = pgEnum("document_type", [
@@ -131,6 +132,8 @@ export const counterpartyRelations = relations(
          fields: [counterparty.organizationId],
          references: [organization.id],
       }),
+      inventoryItemCounterparties: many(inventoryItemCounterparty),
+      stockMovements: many(stockMovement),
    }),
 );
 
