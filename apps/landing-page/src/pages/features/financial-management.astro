@@ -1,106 +1,67 @@
 ---
 export const prerender = true;
 
+import { FeatureCarousel } from "@/components/feature-carousel";
 import CTA from "@/components/CTA.astro";
 import Footer from "@/components/Footer.astro";
-import FeatureDeepDive from "@/components/features/FeatureDeepDive.astro";
-import FeatureHero from "@/components/features/FeatureHero.astro";
 import StickyNavbar from "@/components/StickyNavbar.astro";
-import UseCases from "@/components/UseCases.astro";
 import Layout from "@/layouts/Landing.astro";
+
+const features = [
+   {
+      id: "quick-entry",
+      title: "Entrada Rápida",
+      description: "Adicione transações em segundos com atalhos de teclado, categorias inteligentes e formulários otimizados.",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Lancamento+Rapido",
+      width: "narrow" as const,
+   },
+   {
+      id: "smart-split",
+      title: "Rateio Inteligente",
+      description: "Divida transações entre múltiplas categorias com valores fixos ou percentuais para relatórios precisos.",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Rateio+de+Categorias",
+      width: "narrow" as const,
+   },
+   {
+      id: "attachments",
+      title: "Anexos e Comprovantes",
+      description: "Arraste e solte notas fiscais e recibos. Tudo organizado e pronto para auditoria.",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Anexos+e+Comprovantes",
+      width: "narrow" as const,
+   },
+   {
+      id: "bank-import",
+      title: "Importação Bancária",
+      description: "Importe extratos CSV ou OFX de qualquer banco brasileiro com mapeamento automático.",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Importacao+CSV+OFX",
+      width: "wide" as const,
+   },
+   {
+      id: "filters",
+      title: "Filtros e Análise",
+      description: "Filtros poderosos por período, categoria, conta e tags com estatísticas em tempo real.",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Filtros+e+Estatisticas",
+      width: "narrow" as const,
+   },
+];
 ---
 
 <Layout>
-   <div class="flex flex-col bg-background">
+   <div class="flex flex-col">
       <StickyNavbar />
-
-      <FeatureHero
-         eyebrow="Gestao de Transacoes"
-         title="Controle financeiro completo para seu negócio"
-         description="Das transações diárias aos relatórios fiscais. Gerencie receitas, despesas, contas a pagar e receber em um só lugar."
-         image="https://placehold.co/1200x700/151925/22c55e?text=Tela+de+Transacoes"
-         imageAlt="Visao geral da tela de transacoes do Montte"
-      />
-
-      <!-- Feature Deep Dives -->
-      <FeatureDeepDive
-         eyebrow="Entrada Rapida"
-         title="Adicione transacoes em segundos, nao minutos."
-         description="Interface otimizada para entrada de dados rapida. Use atalhos de teclado, categorias inteligentes que aprendem com seus habitos, e uma experiencia mobile-first que funciona em qualquer dispositivo. Pare de perder tempo digitando e foque no que importa."
-         image="https://placehold.co/600x400/151925/22c55e?text=Lancamento+Rapido"
-         imageAlt="Formulario de lancamento rapido de transacoes"
-         bullets={[
-            "Atalhos de teclado para acoes frequentes",
-            "Categorias sugeridas baseadas no historico",
-            "Formulario otimizado para mobile e desktop",
-            "Salvamento automatico de rascunhos",
-         ]}
-      />
-
-      <FeatureDeepDive
-         eyebrow="Rateio Inteligente"
-         title="Divida uma transacao entre multiplas categorias."
-         description="Comprou no supermercado e pegou itens de limpeza junto com comida? Rateie a compra entre as categorias corretas. Defina valores fixos ou percentuais, e tenha relatorios precisos de onde seu dinheiro realmente vai."
-         image="https://placehold.co/600x400/151925/22c55e?text=Rateio+de+Categorias"
-         imageAlt="Modal de rateio de transacao entre categorias"
-         bullets={[
-            "Divisao por valor fixo ou percentual",
-            "Suporte a multiplas categorias por transacao",
-            "Ideal para compras mistas e centros de custo",
-            "Relatorios refletem a divisao corretamente",
-         ]}
-         reverse={true}
-      />
-
-      <FeatureDeepDive
-         eyebrow="Documentacao Completa"
-         title="Anexe comprovantes e nunca perca um recibo."
-         description="Arraste e solte notas fiscais, recibos e comprovantes diretamente nas transacoes. Suporte a PDF, imagens e documentos. Tudo organizado, pesquisavel e pronto para quando o contador pedir ou para sua propria auditoria."
-         image="https://placehold.co/600x400/151925/22c55e?text=Anexos+e+Comprovantes"
-         imageAlt="Interface de upload e visualizacao de anexos"
-         bullets={[
-            "Drag-and-drop de arquivos",
-            "Suporte a PDF, PNG, JPG e mais",
-            "Preview inline sem sair da transacao",
-            "Historico completo para auditoria",
-         ]}
-      />
-
-      <FeatureDeepDive
-         eyebrow="Importacao Automatizada"
-         title="Importe extratos de qualquer banco brasileiro."
-         description="Conecte-se com seu banco atraves de arquivos CSV ou OFX. O sistema mapeia as colunas automaticamente, detecta transacoes duplicadas e sugere categorias baseadas na descricao. Meses de transacoes importadas em minutos."
-         image="https://placehold.co/600x400/151925/22c55e?text=Importacao+CSV+OFX"
-         imageAlt="Wizard de importacao de extratos bancarios"
-         bullets={[
-            "Compativel com todos os bancos brasileiros",
-            "Mapeamento inteligente de colunas",
-            "Deteccao automatica de duplicatas",
-            "Categorizacao sugerida por IA",
-         ]}
-         reverse={true}
-      />
-
-      <FeatureDeepDive
-         eyebrow="Analise em Tempo Real"
-         title="Filtre, busque e entenda suas financas."
-         description="Filtros poderosos por periodo, tipo, categoria, conta bancaria ou tags. Veja estatisticas de receitas e despesas atualizadas em tempo real conforme voce filtra. Encontre qualquer transacao em segundos, mesmo com milhares de registros."
-         image="https://placehold.co/600x400/151925/22c55e?text=Filtros+e+Estatisticas"
-         imageAlt="Painel de filtros e estatisticas de transacoes"
-         bullets={[
-            "Filtros combinados por data, categoria, conta",
-            "Busca full-text em descricoes e notas",
-            "Estatisticas atualizadas em tempo real",
-            "Exportacao de resultados filtrados",
-         ]}
-      />
-
-      <!-- Use Cases -->
-      <UseCases />
-
-      <!-- Final CTA -->
+      <section class="py-16 md:py-24">
+         <FeatureCarousel
+            items={features}
+            badge="Gestão Financeira"
+            title="Controle financeiro completo para seu negócio"
+            subtitle="Das transações diárias aos relatórios fiscais. Gerencie receitas, despesas, contas a pagar e receber em um só lugar."
+            ctaText="Começar Grátis"
+            ctaHref="https://app.montte.co/auth/sign-up"
+            benefitText="Sistema completo de gestão financeira com categorização inteligente, anexos de documentos e análise em tempo real."
+            client:load
+         />
+      </section>
       <CTA />
-
       <Footer />
    </div>
 </Layout>

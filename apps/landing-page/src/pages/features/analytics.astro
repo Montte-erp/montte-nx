@@ -1,106 +1,67 @@
 ---
 export const prerender = true;
 
+import { FeatureCarousel } from "@/components/feature-carousel";
 import CTA from "@/components/CTA.astro";
 import Footer from "@/components/Footer.astro";
-import FeatureDeepDive from "@/components/features/FeatureDeepDive.astro";
-import FeatureHero from "@/components/features/FeatureHero.astro";
 import StickyNavbar from "@/components/StickyNavbar.astro";
-import UseCases from "@/components/UseCases.astro";
 import Layout from "@/layouts/Landing.astro";
+
+const features = [
+   {
+      id: "custom-dashboards",
+      title: "Dashboards Personalizados",
+      description: "Crie dashboards sob medida com widgets arrastáveis e templates prontos para começar rápido.",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Dashboards+Personalizados",
+      width: "wide" as const,
+   },
+   {
+      id: "interactive-charts",
+      title: "Gráficos Interativos",
+      description: "Mais de 10 tipos de gráficos com drill-down, comparação entre períodos e filtros dinâmicos.",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Graficos+Interativos",
+      width: "narrow" as const,
+   },
+   {
+      id: "pdf-export",
+      title: "Exportação em PDF",
+      description: "Exporte dashboards completos como PDFs profissionais para reuniões e auditorias.",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Exportacao+PDF",
+      width: "narrow" as const,
+   },
+   {
+      id: "drill-down",
+      title: "Drill-Down Inteligente",
+      description: "Do resumo mensal até a transação individual com poucos cliques e filtros mantidos.",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Drill-Down+Categorias",
+      width: "narrow" as const,
+   },
+   {
+      id: "widgets",
+      title: "Widgets Customizáveis",
+      description: "Diversos tipos de widgets redimensionáveis com configuração de cores, títulos e descrições.",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Widgets+Customizaveis",
+      width: "narrow" as const,
+   },
+];
 ---
 
 <Layout>
-	<div class="flex flex-col bg-background">
-		<StickyNavbar />
-
-		<FeatureHero
-			eyebrow="Dashboards e Analises"
-			title="Analytics e Relatórios Gerenciais"
-			description="Dashboards personalizados, relatórios DRE, gráficos interativos. Transforme dados em decisões estratégicas."
-			image="https://placehold.co/1200x700/151925/22c55e?text=Dashboard+de+Analises"
-			imageAlt="Visao geral do dashboard de analises do Montte"
-		/>
-
-		<!-- Feature Deep Dives -->
-		<FeatureDeepDive
-			eyebrow="Dashboards Personalizados"
-			title="Monte a tela perfeita para suas necessidades."
-			description="Crie dashboards sob medida com widgets arrastaveis. Organize suas informacoes mais importantes em uma unica tela, com a flexibilidade de reorganizar e personalizar cada elemento. Cada membro do time pode ter seu proprio dashboard otimizado para suas tarefas."
-			image="https://placehold.co/600x400/151925/22c55e?text=Dashboards+Personalizados"
-			imageAlt="Interface de criacao de dashboards personalizados"
-			bullets={[
-				"Widgets arrastaveis e redimensionaveis",
-				"Templates prontos para comecar rapido",
-				"Dashboards compartilhaveis com o time",
-				"Atualizacao em tempo real dos dados",
-			]}
-		/>
-
-		<FeatureDeepDive
-			eyebrow="Graficos Interativos"
-			title="Explore seus dados com visualizacoes poderosas."
-			description="Visualize seus dados em graficos de linha, barra, pizza, Sankey e heatmaps. Cada grafico e interativo - clique para fazer drill-down, filtre por periodo, e exporte os dados quando precisar. Descubra padroes que passariam despercebidos em planilhas."
-			image="https://placehold.co/600x400/151925/22c55e?text=Graficos+Interativos"
-			imageAlt="Exemplos de graficos interativos disponiveis"
-			bullets={[
-				"Mais de 10 tipos de graficos disponiveis",
-				"Drill-down com um clique em qualquer ponto",
-				"Comparacao entre periodos diferentes",
-				"Filtros dinamicos por categoria e conta",
-			]}
-			reverse={true}
-		/>
-
-		<FeatureDeepDive
-			eyebrow="Exportacao em PDF"
-			title="Compartilhe seus dashboards como relatorios profissionais."
-			description="Exporte qualquer dashboard como um PDF pronto para apresentar. Perfeito para reunioes com investidores, auditorias, prestacao de contas e relatorios gerenciais. Mantenha o historico de relatorios exportados para referencia futura."
-			image="https://placehold.co/600x400/151925/22c55e?text=Exportacao+PDF"
-			imageAlt="Exemplo de dashboard exportado como PDF"
-			bullets={[
-				"Exporte dashboards completos com um clique",
-				"Layout otimizado para impressao",
-				"Inclua periodo e filtros aplicados",
-				"Perfeito para reunioes e auditorias",
-			]}
-		/>
-
-		<FeatureDeepDive
-			eyebrow="Drill-Down por Categoria"
-			title="Do resumo ao detalhe em segundos."
-			description="Clique em qualquer ponto do grafico para aprofundar a analise. Va do resumo mensal ate a transacao individual com poucos cliques. Entenda exatamente onde seu dinheiro esta indo sem perder tempo navegando entre telas diferentes."
-			image="https://placehold.co/600x400/151925/22c55e?text=Drill-Down+Categorias"
-			imageAlt="Demonstracao do drill-down por categoria"
-			bullets={[
-				"Navegacao hierarquica intuitiva",
-				"Filtros mantidos durante exploracao",
-				"Volte ao nivel anterior com um clique",
-				"Exporte dados de qualquer nivel",
-			]}
-			reverse={true}
-		/>
-
-		<FeatureDeepDive
-			eyebrow="Widgets Customizaveis"
-			title="Escolha exatamente o que voce quer ver."
-			description="Monte seu dashboard ideal com uma variedade de widgets. Graficos de linha, barras, pizza, indicadores numericos, tabelas e muito mais. Redimensione e posicione cada widget como preferir para criar a visualizacao perfeita."
-			image="https://placehold.co/600x400/151925/22c55e?text=Widgets+Customizaveis"
-			imageAlt="Galeria de widgets disponiveis"
-			bullets={[
-				"Diversos tipos de widgets disponiveis",
-				"Redimensione e posicione livremente",
-				"Configure cores e estilos",
-				"Adicione titulos e descricoes",
-			]}
-		/>
-
-		<!-- Use Cases -->
-		<UseCases />
-
-		<!-- Final CTA -->
-		<CTA />
-
-		<Footer />
-	</div>
+   <div class="flex flex-col">
+      <StickyNavbar />
+      <section class="py-16 md:py-24">
+         <FeatureCarousel
+            items={features}
+            badge="Analytics"
+            title="Analytics e Relatórios Gerenciais"
+            subtitle="Dashboards personalizados, relatórios DRE, gráficos interativos. Transforme dados em decisões estratégicas."
+            ctaText="Começar Grátis"
+            ctaHref="https://app.montte.co/auth/sign-up"
+            benefitText="Ferramentas avançadas de análise com dashboards personalizáveis, gráficos interativos e exportação profissional em PDF."
+            client:load
+         />
+      </section>
+      <CTA />
+      <Footer />
+   </div>
 </Layout>

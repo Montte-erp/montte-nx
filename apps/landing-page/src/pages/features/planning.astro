@@ -1,106 +1,67 @@
 ---
 export const prerender = true;
 
+import { FeatureCarousel } from "@/components/feature-carousel";
 import CTA from "@/components/CTA.astro";
 import Footer from "@/components/Footer.astro";
-import FeatureDeepDive from "@/components/features/FeatureDeepDive.astro";
-import FeatureHero from "@/components/features/FeatureHero.astro";
 import StickyNavbar from "@/components/StickyNavbar.astro";
-import UseCases from "@/components/UseCases.astro";
 import Layout from "@/layouts/Landing.astro";
+
+const features = [
+   {
+      id: "budgets",
+      title: "Orçamentos Flexíveis",
+      description: "Crie orçamentos diários, semanais, mensais ou anuais com limites por categoria e rollover de saldo.",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Orcamentos+por+Periodo",
+      width: "narrow" as const,
+   },
+   {
+      id: "realtime-progress",
+      title: "Progresso em Tempo Real",
+      description: "Acompanhe gastos com indicadores visuais por cor e projeções automáticas até o fim do período.",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Progresso+Tempo+Real",
+      width: "narrow" as const,
+   },
+   {
+      id: "savings-goals",
+      title: "Metas de Poupança",
+      description: "Defina objetivos financeiros, acompanhe evolução e celebre marcos com visualizações motivadoras.",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Metas+de+Poupanca",
+      width: "wide" as const,
+   },
+   {
+      id: "spending-limits",
+      title: "Alertas de Limites",
+      description: "Receba notificações quando se aproximar dos limites de gastos (50%, 75%, 90%, 100%).",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Limite+de+Gastos",
+      width: "narrow" as const,
+   },
+   {
+      id: "debt-payoff",
+      title: "Quitação de Dívidas",
+      description: "Planeje quitação de dívidas com estratégias bola de neve ou avalanche e simulação de pagamentos.",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Quitacao+de+Dividas",
+      width: "narrow" as const,
+   },
+];
 ---
 
 <Layout>
-	<div class="flex flex-col bg-background">
-		<StickyNavbar />
-
-		<FeatureHero
-			eyebrow="Orcamentos e Metas"
-			title="Planejamento e Controle Empresarial"
-			description="Orçamentos, metas, centros de custo e previsões. Planeje o futuro do seu negócio com dados confiáveis."
-			image="https://placehold.co/1200x700/151925/22c55e?text=Tela+de+Orcamentos"
-			imageAlt="Visao geral da tela de orcamentos do Montte"
-		/>
-
-		<!-- Feature Deep Dives -->
-		<FeatureDeepDive
-			eyebrow="Orcamentos por Periodo"
-			title="Controle seus gastos em qualquer horizonte de tempo."
-			description="Crie orcamentos diarios, semanais, mensais, trimestrais ou anuais. Defina limites de gastos por categoria e acompanhe o progresso automaticamente. O sistema se adapta ao seu ciclo financeiro, seja ele qual for."
-			image="https://placehold.co/600x400/151925/22c55e?text=Orcamentos+por+Periodo"
-			imageAlt="Interface de criacao de orcamentos por periodo"
-			bullets={[
-				"Periodos flexiveis: diario ate anual",
-				"Limites por categoria ou subcategoria",
-				"Rollover de saldo nao utilizado",
-				"Comparacao com periodos anteriores",
-			]}
-		/>
-
-		<FeatureDeepDive
-			eyebrow="Progresso em Tempo Real"
-			title="Saiba exatamente onde voce esta a qualquer momento."
-			description="Visualize quanto ja gastou versus o planejado com barras de progresso intuitivas. Cores indicam claramente quando voce esta no verde, se aproximando do limite, ou ja estourou. Nunca mais seja pego de surpresa no fim do mes."
-			image="https://placehold.co/600x400/151925/22c55e?text=Progresso+Tempo+Real"
-			imageAlt="Barras de progresso mostrando status do orcamento"
-			bullets={[
-				"Indicadores visuais por cor (verde/amarelo/vermelho)",
-				"Atualizacao instantanea a cada transacao",
-				"Projecao de gastos ate o fim do periodo",
-				"Alertas configuravei por percentual",
-			]}
-			reverse={true}
-		/>
-
-		<FeatureDeepDive
-			eyebrow="Metas de Poupanca"
-			title="Transforme sonhos em objetivos alcancaveis."
-			description="Defina metas de economia para viagens, reserva de emergencia, ou qualquer objetivo. Acompanhe sua evolucao com visualizacoes motivadoras. Veja quanto falta, quanto tempo vai levar, e celebre cada marco atingido."
-			image="https://placehold.co/600x400/151925/22c55e?text=Metas+de+Poupanca"
-			imageAlt="Painel de metas de poupanca com progresso"
-			bullets={[
-				"Metas com prazo ou valor definido",
-				"Contribuicoes automaticas ou manuais",
-				"Projecao de quando atingira o objetivo",
-				"Celebracao de marcos (25%, 50%, 75%)",
-			]}
-		/>
-
-		<FeatureDeepDive
-			eyebrow="Limite de Gastos"
-			title="Estabeleca tetos e evite surpresas desagradaveis."
-			description="Configure alertas visuais quando estiver proximo de estourar o orcamento. Receba notificacoes por email ou push antes de ultrapassar seus limites. Tome decisoes conscientes sobre cada gasto adicional."
-			image="https://placehold.co/600x400/151925/22c55e?text=Limite+de+Gastos"
-			imageAlt="Configuracao de limites e alertas de gastos"
-			bullets={[
-				"Alertas em 50%, 75%, 90% e 100%",
-				"Notificacoes por email e push",
-				"Bloqueio opcional de categorias",
-				"Historico de estouros para analise",
-			]}
-			reverse={true}
-		/>
-
-		<FeatureDeepDive
-			eyebrow="Quitacao de Dividas"
-			title="Livre-se das dividas com um plano claro."
-			description="Crie metas para quitar dividas e acompanhe o progresso. Visualize quanto ja pagou, quanto falta, e quando estara livre. Use estrategias como bola de neve ou avalanche para otimizar sua quitacao."
-			image="https://placehold.co/600x400/151925/22c55e?text=Quitacao+de+Dividas"
-			imageAlt="Painel de acompanhamento de quitacao de dividas"
-			bullets={[
-				"Estrategias bola de neve e avalanche",
-				"Simulacao de pagamentos extras",
-				"Economia de juros calculada",
-				"Projecao de data de quitacao",
-			]}
-		/>
-
-		<!-- Use Cases -->
-		<UseCases />
-
-		<!-- Final CTA -->
-		<CTA />
-
-		<Footer />
-	</div>
+   <div class="flex flex-col">
+      <StickyNavbar />
+      <section class="py-16 md:py-24">
+         <FeatureCarousel
+            items={features}
+            badge="Planejamento"
+            title="Planejamento e Controle Empresarial"
+            subtitle="Orçamentos, metas, centros de custo e previsões. Planeje o futuro do seu negócio com dados confiáveis."
+            ctaText="Começar Grátis"
+            ctaHref="https://app.montte.co/auth/sign-up"
+            benefitText="Ferramentas completas de planejamento financeiro com orçamentos flexíveis, metas e controle de gastos em tempo real."
+            client:load
+         />
+      </section>
+      <CTA />
+      <Footer />
+   </div>
 </Layout>

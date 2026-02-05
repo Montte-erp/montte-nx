@@ -1,92 +1,60 @@
 ---
 export const prerender = true;
 
+import { FeatureCarousel } from "@/components/feature-carousel";
 import CTA from "@/components/CTA.astro";
 import Footer from "@/components/Footer.astro";
-import FeatureDeepDive from "@/components/features/FeatureDeepDive.astro";
-import FeatureHero from "@/components/features/FeatureHero.astro";
 import StickyNavbar from "@/components/StickyNavbar.astro";
-import UseCases from "@/components/UseCases.astro";
 import Layout from "@/layouts/Landing.astro";
+
+const features = [
+   {
+      id: "workspaces",
+      title: "Múltiplas Organizações",
+      description: "Gerencie finanças pessoais e empresariais em workspaces separados com alternância rápida.",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Multiplas+Organizacoes",
+      width: "narrow" as const,
+   },
+   {
+      id: "team-invites",
+      title: "Convites e Time",
+      description: "Convide sócios e colaboradores com credenciais próprias e registro de auditoria completo.",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Convites+e+Time",
+      width: "wide" as const,
+   },
+   {
+      id: "permissions",
+      title: "Permissões Granulares",
+      description: "Controle quem pode ver ou editar cada conta bancária com papéis predefinidos ou customizados.",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Permissoes+por+Conta",
+      width: "narrow" as const,
+   },
+   {
+      id: "automation-rules",
+      title: "Regras de Automação",
+      description: "Categorização automática baseada em padrões com aplicação retroativa e sugestões inteligentes.",
+      image: "https://placehold.co/600x400/151925/22c55e?text=Automacoes",
+      width: "narrow" as const,
+   },
+];
 ---
 
 <Layout>
-	<div class="flex flex-col bg-background">
-		<StickyNavbar />
-
-		<FeatureHero
-			eyebrow="Colaboracao e Seguranca"
-			title="Automação e Workflows Inteligentes"
-			description="Regras visuais, categorização automática, notificações e integrações. Elimine trabalho manual com automações que funcionam."
-			image="https://placehold.co/1200x700/151925/22c55e?text=Tela+de+Colaboracao"
-			imageAlt="Visao geral das configuracoes de colaboracao do Montte"
-		/>
-
-		<!-- Feature Deep Dives -->
-		<FeatureDeepDive
-			eyebrow="Multiplas Organizacoes"
-			title="Separe suas financas sem complicacao."
-			description="Gerencie financas pessoais e empresariais em workspaces completamente separados. Alterne entre organizacoes com um clique, sem risco de misturar dados. Ideal para quem tem mais de um negocio ou quer separar vida pessoal e profissional."
-			image="https://placehold.co/600x400/151925/22c55e?text=Multiplas+Organizacoes"
-			imageAlt="Seletor de organizacoes e workspaces"
-			bullets={[
-				"Workspaces independentes e isolados",
-				"Alternancia rapida entre organizacoes",
-				"Configuracoes especificas por workspace",
-				"Relatorios consolidados quando necessario",
-			]}
-		/>
-
-		<FeatureDeepDive
-			eyebrow="Convites e Time"
-			title="Traga seu time para dentro da plataforma."
-			description="Convide socios, contadores e colaboradores por e-mail. Cada pessoa acessa com suas proprias credenciais, mantendo um registro de auditoria de quem fez o que. Colabore em tempo real sem compartilhar senhas ou planilhas."
-			image="https://placehold.co/600x400/151925/22c55e?text=Convites+e+Time"
-			imageAlt="Tela de gerenciamento de membros do time"
-			bullets={[
-				"Convite por e-mail com link seguro",
-				"Cada usuario com credenciais proprias",
-				"Registro de auditoria de acoes",
-				"Remocao de acesso instantanea",
-			]}
-			reverse={true}
-		/>
-
-		<FeatureDeepDive
-			eyebrow="Permissoes por Conta"
-			title="Controle granular de quem ve o que."
-			description="Defina quem pode ver ou editar cada conta bancaria. Proteja informacoes sensiveis com controle de acesso por recurso. Seu contador pode ver apenas o necessario, enquanto socios tem visao completa."
-			image="https://placehold.co/600x400/151925/22c55e?text=Permissoes+por+Conta"
-			imageAlt="Configuracao de permissoes por conta bancaria"
-			bullets={[
-				"Permissoes de leitura ou edicao",
-				"Controle por conta bancaria",
-				"Papeis predefinidos (Admin, Editor, Leitor)",
-				"Permissoes customizadas quando necessario",
-			]}
-		/>
-
-		<FeatureDeepDive
-			eyebrow="Automacoes"
-			title="Deixe o sistema trabalhar por voce."
-			description="Crie regras para categorizar transacoes automaticamente baseado em padroes. Economize tempo com fluxos de trabalho inteligentes que aprendem com seus habitos e aplicam as mesmas regras consistentemente."
-			image="https://placehold.co/600x400/151925/22c55e?text=Automacoes"
-			imageAlt="Configuracao de regras de automacao"
-			bullets={[
-				"Regras baseadas em descricao ou valor",
-				"Categorizacao automatica de transacoes",
-				"Aplicacao retroativa em historico",
-				"Sugestoes inteligentes de novas regras",
-			]}
-			reverse={true}
-		/>
-
-		<!-- Use Cases -->
-		<UseCases />
-
-		<!-- Final CTA -->
-		<CTA />
-
-		<Footer />
-	</div>
+   <div class="flex flex-col">
+      <StickyNavbar />
+      <section class="py-16 md:py-24">
+         <FeatureCarousel
+            items={features}
+            badge="Automação"
+            title="Automação e Workflows Inteligentes"
+            subtitle="Regras visuais, categorização automática, notificações e integrações. Elimine trabalho manual com automações que funcionam."
+            ctaText="Começar Grátis"
+            ctaHref="https://app.montte.co/auth/sign-up"
+            benefitText="Automatize tarefas repetitivas com regras inteligentes, colabore com seu time e gerencie permissões de forma granular."
+            client:load
+         />
+      </section>
+      <CTA />
+      <Footer />
+   </div>
 </Layout>
