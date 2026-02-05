@@ -4,6 +4,9 @@
    "exclude": ["**/*.test.ts", "**/__tests__/**"],
    "references": [
     {
+      "path": "../../libraries/money"
+    },
+    {
       "path": "../encryption"
     },
     {

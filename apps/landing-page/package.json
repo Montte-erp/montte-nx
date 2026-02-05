@@ -29,12 +29,12 @@
    "license": "Apache-2.0",
    "name": "landing-page",
    "scripts": {
-      "astro": "bunx --bun astro",
-      "build": "bunx --bun astro build",
-      "check": "bunx --bun biome check --write ./src",
-      "dev": "bunx astro dev --port 4322",
-      "preview": "bunx --bun astro preview",
-      "typecheck": "bunx --bun astro check"
+      "astro": "bun x --bun astro",
+      "build": "bun x --bun astro build",
+      "check": "bun x --bun biome check --write ./src",
+      "dev": "bun x astro dev --port 4322",
+      "preview": "bun x --bun astro preview",
+      "typecheck": "bun x --bun astro check"
    },
    "type": "module",
    "version": "0.8.1"

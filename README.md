@@ -32,6 +32,30 @@
     -   Track by type, industry, and status
     -   Filter by date ranges and custom attributes
 
+### 📦 Inventory & Stock Management
+-   **Inventory Items**:
+    -   Track products, raw materials, and assets
+    -   **SKU Management**: Unique identifiers per organization
+    -   **Multiple Item Types**: Products, materials, and fixed assets
+    -   **Flexible Units of Measure (UoM)**: Base units with alternate conversion factors (e.g., 1 box = 12 units)
+    -   **Reorder Points**: Low-stock alerts and threshold tracking
+-   **Stock Movements**:
+    -   Record entries, exits, and adjustments
+    -   **Movement Reasons**: Purchase, sale, return, damage, correction, production
+    -   **Transaction Linking**: Optional link to financial transactions
+    -   **Counterparty Tracking**: Associate movements with suppliers/customers
+    -   **Complete History**: Paginated movement logs with filtering
+-   **Stock Valuation**:
+    -   **FIFO (First In, First Out)**: Lot-based tracking with automatic consumption
+    -   **Weighted Average**: Dynamic average cost calculation
+    -   **Multi-Currency Support**: Track costs in different currencies
+    -   Real-time stock value calculation
+-   **Supplier & Client Integration**:
+    -   **Pricing Catalogs**: Per-item supplier/client pricing
+    -   **Lead Times**: Track delivery times by supplier
+    -   **Minimum Order Quantities**: Configure MOQ per supplier-item pair
+    -   **Default Suppliers**: Set preferred suppliers per item
+
 ### 📊 Planning & Control
 -   **Budget Management**:
     -   Set targets by categories, tags, or cost centers
@@ -172,6 +196,7 @@ Shared internal libraries organized by concern. All packages use explicit export
 | -------------- | -------------------------------------- |
 | `csv`          | CSV parsing and batch processing       |
 | `encryption`   | E2E encryption with NaCl (TweetNaCl)   |
+| `money`        | Precise monetary calculations (BigInt) |
 | `notifications`| Push notifications and alerts          |
 | `ofx`          | OFX file parsing and processing        |
 | `pdf`          | PDF report generation                  |
@@ -207,6 +232,7 @@ The dashboard organizes functionality into feature modules, each with its own ho
 | `file-upload`     | File uploads with compression                |
 | `icon-selector`   | Icon picker for categories/accounts          |
 | `import`          | CSV/OFX import with duplicate detection      |
+| `inventory`       | Stock tracking, movements, and valuation     |
 | `notifications`   | Push notification preferences                |
 | `organization`    | Team and member management                   |
 | `permissions`     | Bank account access control                  |

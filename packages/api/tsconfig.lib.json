@@ -28,6 +28,9 @@
       "path": "../stripe/tsconfig.lib.json"
     },
     {
+      "path": "../../libraries/money"
+    },
+    {
       "path": "../utils/tsconfig.lib.json"
     },
     {
