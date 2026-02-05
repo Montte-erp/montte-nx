@@ -1,49 +1,47 @@
 ---
-// apps/landing-page/src/sections/home/ProblemNoVisibility.astro
 import { FeatureCarousel } from "@/components/feature-carousel";
 
 const features = [
-	{
-		id: "rastreamento-produtos",
-		title: "Rastreamento de Produtos",
-		description:
-			"Cada item com código único, localização e histórico completo. Saiba exatamente o que tem, onde está e quanto vale.",
-		image: "https://placehold.co/350x478/151925/f59e0b?text=Rastreamento",
-		width: "narrow" as const,
-	},
-	{
-		id: "movimentacoes-detalhadas",
-		title: "Movimentações Detalhadas",
-		description:
-			"Registro automático de entradas, saídas, transferências e ajustes. Auditoria completa de cada mudança no estoque.",
-		image: "https://placehold.co/725x478/151925/f59e0b?text=Movimentacoes",
-		width: "wide" as const,
-	},
-	{
-		id: "custeio-fifo-medio",
-		title: "Custeio FIFO e Médio",
-		description:
-			"Cálculo automático de custos por FIFO ou média ponderada. Margem de lucro precisa em cada venda.",
-		image: "https://placehold.co/350x478/151925/f59e0b?text=Custeio",
-		width: "narrow" as const,
-	},
-	{
-		id: "alertas-reposicao",
-		title: "Alertas de Reposição",
-		description:
-			"Notificações automáticas quando estoque atingir ponto de pedido. Nunca mais perca vendas por falta de produto.",
-		image: "https://placehold.co/725x478/151925/f59e0b?text=Alertas",
-		width: "wide" as const,
-	},
-	{
-		id: "integracao-fornecedores",
-		title: "Integração com Fornecedores",
-		description:
-			"Conecte com fornecedores para pedidos automáticos. Receba atualizações de preço e disponibilidade em tempo real.",
-		image:
-			"https://placehold.co/350x478/151925/f59e0b?text=Fornecedores",
-		width: "narrow" as const,
-	},
+   {
+      id: "rastreamento-produtos",
+      title: "Rastreamento de Produtos",
+      description:
+         "Cada item com código único, localização e histórico completo. Saiba exatamente o que tem, onde está e quanto vale.",
+      image: "https://placehold.co/350x478/151925/f59e0b?text=Rastreamento",
+      width: "narrow" as const,
+   },
+   {
+      id: "movimentacoes-detalhadas",
+      title: "Movimentações Detalhadas",
+      description:
+         "Registro automático de entradas, saídas, transferências e ajustes. Auditoria completa de cada mudança no estoque.",
+      image: "https://placehold.co/725x478/151925/f59e0b?text=Movimentacoes",
+      width: "wide" as const,
+   },
+   {
+      id: "custeio-fifo-medio",
+      title: "Custeio FIFO e Médio",
+      description:
+         "Cálculo automático de custos por FIFO ou média ponderada. Margem de lucro precisa em cada venda.",
+      image: "https://placehold.co/350x478/151925/f59e0b?text=Custeio",
+      width: "narrow" as const,
+   },
+   {
+      id: "alertas-reposicao",
+      title: "Alertas de Reposição",
+      description:
+         "Notificações automáticas quando estoque atingir ponto de pedido. Nunca mais perca vendas por falta de produto.",
+      image: "https://placehold.co/725x478/151925/f59e0b?text=Alertas",
+      width: "wide" as const,
+   },
+   {
+      id: "integracao-fornecedores",
+      title: "Integração com Fornecedores",
+      description:
+         "Conecte com fornecedores para pedidos automáticos. Receba atualizações de preço e disponibilidade em tempo real.",
+      image: "https://placehold.co/350x478/151925/f59e0b?text=Fornecedores",
+      width: "narrow" as const,
+   },
 ];
 ---
 
@@ -51,25 +49,6 @@ const features = [
 	id="problem-no-visibility"
 	class="py-16 md:py-24 overflow-hidden relative"
 >
-	<div class="container mx-auto max-w-7xl px-4 mb-12">
-		<div class="max-w-3xl">
-			<h2 class="text-3xl md:text-4xl font-bold text-foreground mb-4">
-				Vendendo às cegas sem controle de estoque?
-			</h2>
-			<p class="text-lg text-muted-foreground mb-8">
-				Produtos acabando sem aviso, custos estimados no "achômetro", margem de lucro desconhecida. Impossível crescer sem saber o que você realmente tem.
-			</p>
-			<div class="border-l-4 border-primary pl-6">
-				<h3 class="text-2xl font-semibold text-foreground mb-2">
-					Visibilidade total em tempo real
-				</h3>
-				<p class="text-muted-foreground">
-					Controle preciso de produtos, movimentações e custos. Rastreamento completo desde a entrada até a venda, com alertas inteligentes e relatórios detalhados.
-				</p>
-			</div>
-		</div>
-	</div>
-
 	<FeatureCarousel
 		items={features}
 		badge="Controle de Estoque"

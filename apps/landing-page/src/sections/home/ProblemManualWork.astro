@@ -1,71 +1,51 @@
 ---
-// apps/landing-page/src/sections/home/ProblemManualWork.astro
 import { FeatureCarousel } from "@/components/feature-carousel";
 
 const features = [
-	{
-		id: "editor-visual-regras",
-		title: "Editor Visual de Regras",
-		description:
-			"Crie workflows arrastar-e-soltar sem código. Interface React Flow intuitiva para montar automações complexas.",
-		image: "https://placehold.co/350x478/151925/22c55e?text=Editor+Visual",
-		width: "narrow" as const,
-	},
-	{
-		id: "categorizacao-automatica",
-		title: "Categorização Automática",
-		description:
-			"Regras aprendem e categorizam transações automaticamente. Configure uma vez, economize horas toda semana.",
-		image: "https://placehold.co/725x478/151925/22c55e?text=Auto+Categoria",
-		width: "wide" as const,
-	},
-	{
-		id: "importacao-csv-ofx",
-		title: "Importação CSV/OFX",
-		description:
-			"Importe extratos bancários com detecção de duplicatas. Compatível com todos os bancos brasileiros.",
-		image: "https://placehold.co/350x478/151925/22c55e?text=Importar",
-		width: "narrow" as const,
-	},
-	{
-		id: "notificacoes-inteligentes",
-		title: "Notificações Inteligentes",
-		description:
-			"Alertas automáticos de vencimentos e metas. Push notifications e email configuráveis por regra.",
-		image: "https://placehold.co/725x478/151925/22c55e?text=Notificacoes",
-		width: "wide" as const,
-	},
-	{
-		id: "templates-reutilizaveis",
-		title: "Templates Reutilizáveis",
-		description:
-			"Crie modelos para transações e contas recorrentes. Um clique para lançar despesas fixas mensais.",
-		image: "https://placehold.co/350x478/151925/22c55e?text=Templates",
-		width: "narrow" as const,
-	},
+   {
+      id: "editor-visual-regras",
+      title: "Editor Visual de Regras",
+      description:
+         "Crie workflows arrastar-e-soltar sem código. Interface React Flow intuitiva para montar automações complexas.",
+      image: "https://placehold.co/350x478/151925/22c55e?text=Editor+Visual",
+      width: "narrow" as const,
+   },
+   {
+      id: "categorizacao-automatica",
+      title: "Categorização Automática",
+      description:
+         "Regras aprendem e categorizam transações automaticamente. Configure uma vez, economize horas toda semana.",
+      image: "https://placehold.co/725x478/151925/22c55e?text=Auto+Categoria",
+      width: "wide" as const,
+   },
+   {
+      id: "importacao-csv-ofx",
+      title: "Importação CSV/OFX",
+      description:
+         "Importe extratos bancários com detecção de duplicatas. Compatível com todos os bancos brasileiros.",
+      image: "https://placehold.co/350x478/151925/22c55e?text=Importar",
+      width: "narrow" as const,
+   },
+   {
+      id: "notificacoes-inteligentes",
+      title: "Notificações Inteligentes",
+      description:
+         "Alertas automáticos de vencimentos e metas. Push notifications e email configuráveis por regra.",
+      image: "https://placehold.co/725x478/151925/22c55e?text=Notificacoes",
+      width: "wide" as const,
+   },
+   {
+      id: "templates-reutilizaveis",
+      title: "Templates Reutilizáveis",
+      description:
+         "Crie modelos para transações e contas recorrentes. Um clique para lançar despesas fixas mensais.",
+      image: "https://placehold.co/350x478/151925/22c55e?text=Templates",
+      width: "narrow" as const,
+   },
 ];
 ---
 
 <section id="problem-manual-work" class="py-16 md:py-24 overflow-hidden relative">
-	<div class="container mx-auto max-w-7xl px-4 mb-12">
-		<div class="max-w-3xl">
-			<h2 class="text-3xl md:text-4xl font-bold text-foreground mb-4">
-				Cansado de planilhas e trabalho manual?
-			</h2>
-			<p class="text-lg text-muted-foreground mb-8">
-				Horas perdidas digitando dados, erros de fórmula, versões conflitantes. Seu tempo vale mais do que isso.
-			</p>
-			<div class="border-l-4 border-primary pl-6">
-				<h3 class="text-2xl font-semibold text-foreground mb-2">
-					Automatize o que for repetitivo
-				</h3>
-				<p class="text-muted-foreground">
-					Da categorização inteligente de transações às regras de workflow visuais. Menos digitação, mais controle.
-				</p>
-			</div>
-		</div>
-	</div>
-
 	<FeatureCarousel
 		items={features}
 		badge="Automação Inteligente"
