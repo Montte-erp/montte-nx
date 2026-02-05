@@ -1,67 +1,102 @@
 ---
 export const prerender = true;
 
-import { FeatureCarousel } from "@/components/feature-carousel";
 import CTA from "@/components/CTA.astro";
 import Footer from "@/components/Footer.astro";
+import FeatureDeepDive from "@/components/features/FeatureDeepDive.astro";
+import FeatureHero from "@/components/features/FeatureHero.astro";
 import StickyNavbar from "@/components/StickyNavbar.astro";
 import Layout from "@/layouts/Landing.astro";
-
-const features = [
-   {
-      id: "bills-payable",
-      title: "Contas a Pagar",
-      description: "Gerencie despesas futuras com lembretes automáticos, filtros por status e anexo de boletos.",
-      image: "https://placehold.co/600x400/151925/22c55e?text=Contas+a+Pagar",
-      width: "narrow" as const,
-   },
-   {
-      id: "bills-receivable",
-      title: "Contas a Receber",
-      description: "Acompanhe receitas previstas, identifique inadimplentes e projete recebimentos futuros.",
-      image: "https://placehold.co/600x400/151925/22c55e?text=Contas+a+Receber",
-      width: "wide" as const,
-   },
-   {
-      id: "installments",
-      title: "Parcelamentos",
-      description: "Controle compras parceladas e visualize todas as parcelas futuras com cálculo automático.",
-      image: "https://placehold.co/600x400/151925/22c55e?text=Parcelamentos",
-      width: "narrow" as const,
-   },
-   {
-      id: "recurring",
-      title: "Contas Recorrentes",
-      description: "Automatize lançamentos que se repetem (aluguel, assinaturas) com geração automática.",
-      image: "https://placehold.co/600x400/151925/22c55e?text=Contas+Recorrentes",
-      width: "narrow" as const,
-   },
-   {
-      id: "batch-payment",
-      title: "Baixa em Lote",
-      description: "Pague múltiplas contas de uma só vez com registro automático de transações.",
-      image: "https://placehold.co/600x400/151925/22c55e?text=Baixa+em+Lote",
-      width: "narrow" as const,
-   },
-];
 ---
 
 <Layout>
-   <div class="flex flex-col">
-      <StickyNavbar />
-      <section class="py-16 md:py-24">
-         <FeatureCarousel
-            items={features}
-            badge="Estoque"
-            title="Inventário e Gestão de Estoque"
-            subtitle="Controle completo de produtos, materiais e ativos. Rastreamento em tempo real, avaliação FIFO/Média, alertas automáticos."
-            ctaText="Começar Grátis"
-            ctaHref="https://app.montte.co/auth/sign-up"
-            benefitText="Sistema completo de gestão de contas a pagar e receber com controle de parcelamentos, recorrências e pagamentos em lote."
-            client:load
-         />
-      </section>
-      <CTA />
-      <Footer />
-   </div>
+	<div class="flex flex-col bg-background">
+		<StickyNavbar />
+
+		<FeatureHero
+			eyebrow="Contas a Pagar e Receber"
+			title="Inventário e Gestão de Estoque"
+			description="Controle completo de produtos, materiais e ativos. Rastreamento em tempo real, avaliação FIFO/Média, alertas automáticos."
+			image="https://placehold.co/1200x700/151925/22c55e?text=Tela+de+Contas"
+			imageAlt="Visao geral da tela de contas a pagar e receber do Montte"
+		/>
+
+		<!-- Feature Deep Dives -->
+		<FeatureDeepDive
+			eyebrow="Contas a Pagar"
+			title="Nunca mais perca um vencimento."
+			description="Gerencie todas as suas despesas futuras em um so lugar. Filtre por status, categoria ou fornecedor e tenha visibilidade completa do que esta por vir. Receba lembretes antes do vencimento e evite multas e juros desnecessarios."
+			image="https://placehold.co/600x400/151925/22c55e?text=Contas+a+Pagar"
+			imageAlt="Lista de contas a pagar com filtros e status"
+			bullets={[
+				"Lembretes automaticos antes do vencimento",
+				"Filtros por status, categoria e fornecedor",
+				"Anexo de boletos e comprovantes",
+				"Historico completo de pagamentos",
+			]}
+		/>
+
+		<FeatureDeepDive
+			eyebrow="Contas a Receber"
+			title="Acompanhe suas receitas previstas com precisao."
+			description="Visualize todas as suas receitas futuras e mantenha o controle do seu fluxo de caixa. Acompanhe clientes inadimplentes, envie lembretes de cobranca e tenha estatisticas de recebimentos para planejar melhor."
+			image="https://placehold.co/600x400/151925/22c55e?text=Contas+a+Receber"
+			imageAlt="Painel de contas a receber com estatisticas"
+			bullets={[
+				"Estatisticas de taxa de recebimento",
+				"Identificacao de clientes inadimplentes",
+				"Lembretes de cobranca automaticos",
+				"Projecao de recebimentos futuros",
+			]}
+			reverse={true}
+		/>
+
+		<FeatureDeepDive
+			eyebrow="Parcelamentos"
+			title="Controle total sobre compras parceladas."
+			description="Cadastre compras parceladas com facilidade e visualize todas as parcelas futuras. Saiba exatamente quanto esta comprometido nos proximos meses e tome decisoes conscientes antes de parcelar novamente."
+			image="https://placehold.co/600x400/151925/22c55e?text=Parcelamentos"
+			imageAlt="Gestao de compras parceladas e parcelas futuras"
+			bullets={[
+				"Cadastro rapido de parcelamentos",
+				"Visualizacao de todas as parcelas futuras",
+				"Calculo automatico do valor total",
+				"Alerta de comprometimento de renda",
+			]}
+		/>
+
+		<FeatureDeepDive
+			eyebrow="Contas Recorrentes"
+			title="Automatize lancamentos que se repetem."
+			description="Configure contas que se repetem automaticamente - aluguel, assinaturas, mensalidades e mais. O sistema gera os lancamentos futuros sem esforco, liberando seu tempo para focar no que importa."
+			image="https://placehold.co/600x400/151925/22c55e?text=Contas+Recorrentes"
+			imageAlt="Configuracao de contas recorrentes"
+			bullets={[
+				"Frequencia flexivel (semanal, mensal, anual)",
+				"Geracao automatica de lancamentos",
+				"Reajuste programado de valores",
+				"Pausa e retomada quando necessario",
+			]}
+			reverse={true}
+		/>
+
+		<FeatureDeepDive
+			eyebrow="Baixa em Lote"
+			title="Pague multiplas contas de uma so vez."
+			description="Selecione varias contas vencidas ou a vencer e registre o pagamento em massa. Economize tempo no fechamento do mes e mantenha seus registros sempre atualizados sem esforco repetitivo."
+			image="https://placehold.co/600x400/151925/22c55e?text=Baixa+em+Lote"
+			imageAlt="Interface de baixa em lote de contas"
+			bullets={[
+				"Selecao multipla de contas",
+				"Pagamento parcial ou total",
+				"Registro de forma de pagamento",
+				"Geracao automatica de transacoes",
+			]}
+		/>
+
+		<!-- Final CTA -->
+		<CTA />
+
+		<Footer />
+	</div>
 </Layout>
