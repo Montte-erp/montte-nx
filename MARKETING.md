@@ -2,17 +2,24 @@
 
 ## O que é
 
-Montte é um app de controle financeiro que funciona para pessoas, famílias e empresas. Você registra suas receitas e despesas, acompanha contas a pagar, cria orçamentos e vê relatórios do seu dinheiro.
+Montte é um ERP open-source que nasceu dentro do Soma Hub, o primeiro hub de inovação da Chapada Diamantina. Precisávamos organizar tudo — financeiro, estoque da cafeteria, contas a pagar, eventos — e nenhuma ferramenta resolvia. Então construímos a nossa.
+
+Hoje o Montte serve empresas que precisam de gestão financeira, controle de estoque, automações e dashboards num só lugar, com código aberto e dados criptografados.
 
 ## O que faz
 
-- **Registra transações**: Entradas, saídas e transferências entre contas
-- **Controla contas a pagar**: Mostra o que está pendente, pago ou vencido
-- **Cria orçamentos**: Define limites de gastos por categoria
-- **Gera relatórios**: Gráficos e dashboards para entender seus gastos
-- **Importa extratos**: Aceita arquivos OFX do seu banco
-- **Automatiza tarefas**: Regras que categorizam transações automaticamente
-- **Permite colaboração**: Convide família ou equipe para gerenciar juntos
+- **Gestão financeira completa**: Transações, fluxo de caixa, transferências entre contas
+- **Controle de estoque**: Itens, unidades de medida, lotes, movimentações e valoração
+- **Contas a pagar/receber**: Pendentes, pagas, vencidas, recorrentes e parceladas
+- **Orçamentos e metas**: Limites por categoria, períodos e acompanhamento de progresso
+- **Dashboards e insights**: Widgets customizáveis, gráficos, KPIs e anomalias
+- **Automações visuais**: Triggers, ações automáticas, agendamento — sem código
+- **Contrapartes**: Gestão de clientes e fornecedores com metadados financeiros
+- **Categorias, tags e centros de custo**: Classificação flexível
+- **Importação/exportação**: OFX, CSV e exportação PDF
+- **Gestão de equipes**: Organizações, times, convites e permissões por recurso
+- **Notificações**: Push notifications e alertas de vencimento
+- **Colaboração**: Múltiplos usuários por organização com controle de acesso
 
 ## Automação
 
@@ -37,10 +44,10 @@ O motor de automação elimina trabalho manual repetitivo. Você cria regras vis
 
 ## Para quem
 
-- **Pessoas**: Quer entender e controlar seus gastos pessoais
-- **Famílias**: Querem organizar o orçamento doméstico juntos
-- **Freelancers**: Precisam separar despesas pessoais das profissionais
-- **Pequenas empresas**: Precisam de controle de fluxo de caixa
+- **Pequenas e médias empresas**: Precisam de ERP completo (financeiro + estoque + automações)
+- **Hubs, coworkings e espaços compartilhados**: Operação complexa com múltiplas áreas
+- **Freelancers e consultores**: Precisam organizar finanças profissionais
+- **Empresários tech-savvy**: Querem código aberto e transparência nos dados
 
 ## Planos
 
@@ -59,5 +66,13 @@ O motor de automação elimina trabalho manual repetitivo. Você cria regras vis
 ## Segurança
 
 - Login com e-mail, Google ou link mágico
-- Dados criptografados
-- Controle de quem pode ver e editar cada informação
+- Criptografia AES-256-GCM no servidor (campos sensíveis como descrições e notas nunca ficam em texto plano no banco)
+- Busca em dados criptografados via blind index (HMAC-SHA256)
+- Controle de quem pode ver e editar cada informação (permissões por recurso)
+- Código aberto — auditável por qualquer pessoa
+
+## Origem
+
+Nasceu como solução interna do **Soma Hub** (Jacobina, BA) — o primeiro hub de inovação da Chapada Diamantina. O hub opera coworking, escritórios privativos, cafeteria, eventos, programas de mentoria jurídica e endereço virtual. Precisava de um sistema que organizasse tudo. Nenhuma ferramenta do mercado resolvia. Então construímos o Montte.
+
+Time: 2 pessoas. Estágio: Beta.
