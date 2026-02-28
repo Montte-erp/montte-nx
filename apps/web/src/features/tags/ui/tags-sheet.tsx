@@ -8,7 +8,7 @@ import {
 } from "@packages/ui/components/sheet";
 import { Spinner } from "@packages/ui/components/spinner";
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -54,19 +54,19 @@ export function TagSheet({ mode, tag, onSuccess }: TagSheetProps) {
 	const isPending = createMutation.isPending || updateMutation.isPending;
 	const isValid = name.trim().length > 0;
 
-	function handleColorPickerChange(value: string) {
+	const handleColorPickerChange = useCallback((value: string) => {
 		setColor(value);
 		setColorHex(value);
-	}
+	}, []);
 
-	function handleColorHexChange(value: string) {
+	const handleColorHexChange = useCallback((value: string) => {
 		setColorHex(value);
 		if (/^#[0-9a-fA-F]{6}$/.test(value)) {
 			setColor(value);
 		}
-	}
+	}, []);
 
-	function handleSubmit() {
+	const handleSubmit = useCallback(() => {
 		if (!isValid) return;
 
 		if (mode === "create") {
@@ -81,7 +81,7 @@ export function TagSheet({ mode, tag, onSuccess }: TagSheetProps) {
 				color,
 			});
 		}
-	}
+	}, [isValid, mode, name, color, tag, createMutation, updateMutation]);
 
 	const isCreate = mode === "create";
 

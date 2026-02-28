@@ -54,7 +54,7 @@ export function buildTransactionColumns(
 			cell: ({ row }) => {
 				const { type } = row.original;
 				if (type === "income") {
-					return <Badge variant="default" className="bg-green-600 hover:bg-green-700">Receita</Badge>;
+					return <Badge variant="outline" className="border-green-600 text-green-600 dark:border-green-500 dark:text-green-500">Receita</Badge>;
 				}
 				if (type === "expense") {
 					return <Badge variant="destructive">Despesa</Badge>;
@@ -69,7 +69,7 @@ export function buildTransactionColumns(
 				const { type, amount } = row.original;
 				if (type === "income") {
 					return (
-						<span className="text-sm font-medium text-green-600">
+						<span className="text-sm font-medium text-green-600 dark:text-green-500">
 							{formatBRL(amount)}
 						</span>
 					);

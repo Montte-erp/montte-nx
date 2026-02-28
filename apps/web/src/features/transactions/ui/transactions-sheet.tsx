@@ -15,8 +15,9 @@ import {
 } from "@packages/ui/components/sheet";
 import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { Suspense, useState } from "react";
+import { Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import type { TransactionRow } from "./transactions-columns";
@@ -60,11 +61,9 @@ function TagCheckboxList({ selectedTagIds, onToggle }: TagCheckboxListProps) {
 						key={tag.id}
 						className="flex items-center gap-2 cursor-pointer select-none"
 					>
-						<input
-							type="checkbox"
+						<Checkbox
 							checked={checked}
-							onChange={() => onToggle(tag.id)}
-							className="rounded border-border"
+							onCheckedChange={() => onToggle(tag.id)}
 						/>
 						{tag.color ? (
 							<span
@@ -118,23 +117,21 @@ function TransactionFormContent({
 	const [description, setDescription] = useState(
 		transaction?.description ?? "",
 	);
-	const [attachmentFileName, setAttachmentFileName] = useState("");
-
 	// Derived: subcategories for selected category
 	const selectedCategory = categories.find((c) => c.id === categoryId);
 	const subcategoryOptions = selectedCategory?.subcategories ?? [];
 
 	// When category changes, reset subcategory
-	function handleCategoryChange(value: string) {
+	const handleCategoryChange = useCallback((value: string) => {
 		setCategoryId(value);
 		setSubcategoryId("");
-	}
+	}, []);
 
-	function handleTagToggle(tagId: string) {
+	const handleTagToggle = useCallback((tagId: string) => {
 		setTagIds((prev) =>
 			prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId],
 		);
-	}
+	}, []);
 
 	const createMutation = useMutation(
 		orpc.transactions.create.mutationOptions({
@@ -170,7 +167,7 @@ function TransactionFormContent({
 		bankAccountId.length > 0 &&
 		(type !== "transfer" || destinationBankAccountId.length > 0);
 
-	function handleSubmit() {
+	const handleSubmit = useCallback(() => {
 		if (!isValid) return;
 
 		const payload = {
@@ -192,7 +189,7 @@ function TransactionFormContent({
 		} else if (transaction) {
 			updateMutation.mutate({ id: transaction.id, ...payload });
 		}
-	}
+	}, [isValid, isCreate, type, amount, date, bankAccountId, destinationBankAccountId, categoryId, subcategoryId, tagIds, description, createMutation, updateMutation, transaction]);
 
 	return (
 		<div className="flex h-full flex-col">
@@ -348,24 +345,6 @@ function TransactionFormContent({
 					/>
 				</div>
 
-				{/* Anexo */}
-				<div className="space-y-2 px-1">
-					<Label htmlFor="transaction-attachment">Anexo</Label>
-					<input
-						className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-						id="transaction-attachment"
-						onChange={(e) => {
-							const file = e.target.files?.[0];
-							setAttachmentFileName(file?.name ?? "");
-						}}
-						type="file"
-					/>
-					{attachmentFileName && (
-						<p className="text-xs text-muted-foreground">
-							Arquivo selecionado: {attachmentFileName} (upload via MinIO será implementado em breve)
-						</p>
-					)}
-				</div>
 			</div>
 
 			{/* Footer */}

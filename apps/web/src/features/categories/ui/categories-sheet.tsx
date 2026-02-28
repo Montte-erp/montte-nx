@@ -8,7 +8,7 @@ import {
 } from "@packages/ui/components/sheet";
 import { Spinner } from "@packages/ui/components/spinner";
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -53,7 +53,7 @@ export function CategorySheet({
 	const isValid = name.trim().length > 0;
 	const isCreate = mode === "create";
 
-	function handleSubmit() {
+	const handleSubmit = useCallback(() => {
 		if (!isValid) return;
 
 		if (mode === "create") {
@@ -61,7 +61,7 @@ export function CategorySheet({
 		} else if (category) {
 			updateMutation.mutate({ id: category.id, name: name.trim() });
 		}
-	}
+	}, [isValid, mode, name, category, createMutation, updateMutation]);
 
 	return (
 		<div className="flex h-full flex-col">

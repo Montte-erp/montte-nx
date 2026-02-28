@@ -20,7 +20,7 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeftRight, Plus, Trash2 } from "lucide-react";
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import {
@@ -190,7 +190,10 @@ function TransactionsList({ filters }: TransactionsListProps) {
 		[openAlertDialog, deleteMutation],
 	);
 
-	const columns = buildTransactionColumns(handleEdit, handleDelete);
+	const columns = useMemo(
+		() => buildTransactionColumns(handleEdit, handleDelete),
+		[handleEdit, handleDelete],
+	);
 
 	if (transactions.length === 0) {
 		return (

@@ -10,7 +10,7 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Tag, Plus } from "lucide-react";
+import { FolderOpen, Plus, Trash2 } from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
@@ -105,7 +105,7 @@ function CategoriesList() {
 			<Empty>
 				<EmptyHeader>
 					<EmptyMedia variant="icon">
-						<Tag className="size-6" />
+						<FolderOpen className="size-6" />
 					</EmptyMedia>
 					<EmptyTitle>Nenhuma categoria</EmptyTitle>
 					<EmptyDescription>
@@ -121,7 +121,7 @@ function CategoriesList() {
 			columns={columns}
 			data={categories}
 			getRowId={(row) => row.id}
-			renderMobileCard={({ row }) => (
+			renderMobileCard={({ row, toggleExpanded, isExpanded, canExpand }) => (
 				<div className="rounded-lg border bg-background p-4 space-y-3">
 					<div className="flex items-start justify-between gap-2">
 						<div className="flex items-center gap-2 min-w-0">
@@ -137,10 +137,30 @@ function CategoriesList() {
 							>
 								Editar
 							</Button>
+							{canExpand && (
+								<Button onClick={toggleExpanded} size="sm" variant="ghost">
+									{isExpanded ? "Ocultar" : "Mais"}
+								</Button>
+							)}
 						</div>
 					)}
 				</div>
 			)}
+			renderSubComponent={({ row }) =>
+				row.original.isDefault ? null : (
+					<div className="px-4 py-4 flex items-center gap-2 flex-wrap border-t">
+						<Button
+							className="text-destructive hover:text-destructive"
+							onClick={() => handleDelete(row.original)}
+							size="sm"
+							variant="ghost"
+						>
+							<Trash2 className="size-3 mr-2" />
+							Excluir
+						</Button>
+					</div>
+				)
+			}
 		/>
 	);
 }
