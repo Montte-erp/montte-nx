@@ -34,3 +34,10 @@ export * from "./schemas/roles";
 export * from "./schemas/sso";
 // Webhooks
 export * from "./schemas/webhooks";
+
+// Finance
+export * from "./schemas/bank-accounts";
+export * from "./schemas/categories";
+export * from "./schemas/subcategories";
+export * from "./schemas/tags";
+export * from "./schemas/transactions";
