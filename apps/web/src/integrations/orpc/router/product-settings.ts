@@ -2,13 +2,9 @@ import { ORPCError } from "@orpc/server";
 import {
    getProductSettings,
    updateAiDefaults as updateAiDefaultsRepo,
-   updateContentDefaults as updateContentDefaultsRepo,
-   updateFormsDefaults as updateFormsDefaultsRepo,
 } from "@packages/database/repositories/product-settings-repository";
 import {
    AIDefaultsSchema,
-   ContentDefaultsSchema,
-   FormsDefaultsSchema,
 } from "@packages/database/schemas/product-settings";
 import { protectedProcedure } from "../server";
 
@@ -34,48 +30,6 @@ export const getSettings = protectedProcedure.handler(async ({ context }) => {
       });
    }
 });
-
-/**
- * Update content defaults for the current team.
- * Merges new data with existing contentDefaults if settings exist.
- */
-export const updateContentDefaults = protectedProcedure
-   .input(ContentDefaultsSchema.partial())
-   .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-
-      try {
-         return await updateContentDefaultsRepo(db, teamId, input);
-      } catch (err) {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message:
-               err instanceof Error
-                  ? err.message
-                  : "Failed to update content defaults",
-         });
-      }
-   });
-
-/**
- * Update forms defaults for the current team.
- * Merges new data with existing formsDefaults if settings exist.
- */
-export const updateFormsDefaults = protectedProcedure
-   .input(FormsDefaultsSchema.partial())
-   .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-
-      try {
-         return await updateFormsDefaultsRepo(db, teamId, input);
-      } catch (err) {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message:
-               err instanceof Error
-                  ? err.message
-                  : "Failed to update forms defaults",
-         });
-      }
-   });
 
 /**
  * Update AI defaults for the current team.
