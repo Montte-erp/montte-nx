@@ -1,16 +1,9 @@
 import type { LucideIcon } from "lucide-react";
 import {
-   ClipboardList,
    Database,
-   FileText,
-   FlaskConical,
    House,
-   ImageIcon,
    LayoutDashboard,
-   Library,
    Lightbulb,
-   Network,
-   PenLine,
    Sparkles,
 } from "lucide-react";
 import type { SubSidebarSection } from "../hooks/use-sidebar-nav";
@@ -55,7 +48,7 @@ export const navGroups: NavGroupDef[] = [
          },
          {
             id: "chat",
-            label: "Contentta AI",
+            label: "Montte AI",
             icon: Sparkles,
             route: "/$slug/$teamSlug/chat",
          },
@@ -88,76 +81,6 @@ export const navGroups: NavGroupDef[] = [
             subPanel: "data-management",
             earlyAccessFlag: "data-management",
             earlyAccessStage: "beta" as const,
-         },
-      ],
-   },
-   {
-      id: "conteudo",
-      label: "Conteudo",
-      items: [
-         {
-            id: "content",
-            label: "Conteudos",
-            icon: FileText,
-            route: "/$slug/$teamSlug/content",
-            quickAction: { type: "create", target: "navigate" },
-            earlyAccessFlag: "content",
-            earlyAccessStage: "alpha" as const,
-         },
-         {
-            id: "writers",
-            label: "Escritores",
-            icon: PenLine,
-            route: "/$slug/$teamSlug/writers",
-            earlyAccessFlag: "content",
-            earlyAccessStage: "alpha" as const,
-         },
-         {
-            id: "clusters",
-            label: "Clusters",
-            icon: Network,
-            route: "/$slug/$teamSlug/clusters",
-            quickAction: { type: "create", target: "sheet" } as const,
-            earlyAccessFlag: "content-clusters",
-            earlyAccessStage: "alpha" as const,
-         },
-      ],
-   },
-   {
-      id: "ferramentas",
-      label: "Ferramentas",
-      items: [
-         {
-            id: "forms",
-            label: "Formularios",
-            icon: ClipboardList,
-            route: "/$slug/$teamSlug/forms",
-            quickAction: { type: "create", target: "navigate" },
-            earlyAccessFlag: "forms-beta",
-         },
-         {
-            id: "experiments",
-            label: "Experimentos",
-            icon: FlaskConical,
-            route: "/$slug/$teamSlug/experiments",
-            quickAction: { type: "create", target: "sheet" },
-            earlyAccessFlag: "experiments",
-            earlyAccessStage: "alpha" as const,
-         },
-      ],
-   },
-   {
-      id: "biblioteca",
-      label: "Biblioteca",
-      icon: Library,
-      items: [
-         {
-            id: "assets",
-            label: "Imagens",
-            icon: ImageIcon,
-            route: "/$slug/$teamSlug/assets",
-            earlyAccessFlag: "asset-bank",
-            earlyAccessStage: "alpha",
          },
       ],
    },
