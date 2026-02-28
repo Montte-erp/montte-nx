@@ -10,15 +10,17 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { FolderOpen, Plus } from "lucide-react";
+import { FolderOpen, LayoutGrid, LayoutList, Plus } from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
-import { PageHeader } from "@/components/page-header";
+import { DefaultHeader } from "@/components/default-header";
 import {
 	type CategoryRow,
 	buildCategoryColumns,
 } from "@/features/categories/ui/categories-columns";
 import { CategorySheet } from "@/features/categories/ui/categories-sheet";
+import { type ViewConfig, useViewSwitch } from "@/features/view-switch/hooks/use-view-switch";
+import { ViewSwitchDropdown } from "@/features/view-switch/ui/view-switch-dropdown";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -26,6 +28,11 @@ import { orpc } from "@/integrations/orpc/client";
 export const Route = createFileRoute(
 	"/_authenticated/$slug/$teamSlug/_dashboard/finance/categories",
 )({ component: CategoriesPage });
+
+const CATEGORY_VIEWS: [ViewConfig<"table" | "card">, ViewConfig<"table" | "card">] = [
+	{ id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
+	{ id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
+];
 
 // =============================================================================
 // Skeleton
@@ -48,7 +55,11 @@ function CategoriesSkeleton() {
 // List
 // =============================================================================
 
-function CategoriesList() {
+interface CategoriesListProps {
+	view: "table" | "card";
+}
+
+function CategoriesList({ view }: CategoriesListProps) {
 	const { openCredenza, closeCredenza } = useCredenza();
 	const { openAlertDialog } = useAlertDialog();
 
@@ -122,6 +133,48 @@ function CategoriesList() {
 		);
 	}
 
+	if (view === "card") {
+		return (
+			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+				{categories.map((category) => (
+					<div
+						className="rounded-lg border bg-background p-4 space-y-3"
+						key={category.id}
+					>
+						<div className="flex items-center gap-2 min-w-0">
+							{category.color && (
+								<span
+									className="size-4 rounded-full shrink-0"
+									style={{ backgroundColor: category.color }}
+								/>
+							)}
+							<p className="font-medium truncate">{category.name}</p>
+						</div>
+						{!category.isDefault && (
+							<div className="flex items-center gap-2">
+								<Button
+									onClick={() => handleEdit(category)}
+									size="sm"
+									variant="outline"
+								>
+									Editar
+								</Button>
+								<Button
+									className="text-destructive"
+									onClick={() => handleDelete(category)}
+									size="sm"
+									variant="ghost"
+								>
+									Excluir
+								</Button>
+							</div>
+						)}
+					</div>
+				))}
+			</div>
+		);
+	}
+
 	return (
 		<DataTable
 			columns={columns}
@@ -171,6 +224,10 @@ function CategoriesList() {
 
 function CategoriesPage() {
 	const { openCredenza, closeCredenza } = useCredenza();
+	const { currentView, setView, views } = useViewSwitch(
+		"finance:categories:view",
+		CATEGORY_VIEWS,
+	);
 
 	const handleCreate = useCallback(() => {
 		openCredenza({
@@ -180,7 +237,7 @@ function CategoriesPage() {
 
 	return (
 		<main className="flex flex-col gap-4">
-			<PageHeader
+			<DefaultHeader
 				actions={
 					<Button onClick={handleCreate} size="sm">
 						<Plus className="size-4 mr-1" />
@@ -189,9 +246,16 @@ function CategoriesPage() {
 				}
 				description="Gerencie as categorias das suas transações"
 				title="Categorias"
+				viewSwitch={
+					<ViewSwitchDropdown
+						currentView={currentView}
+						onViewChange={setView}
+						views={views}
+					/>
+				}
 			/>
 			<Suspense fallback={<CategoriesSkeleton />}>
-				<CategoriesList />
+				<CategoriesList view={currentView} />
 			</Suspense>
 		</main>
 	);
