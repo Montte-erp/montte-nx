@@ -41,12 +41,12 @@ export function OnboardingWizard({
       return s;
    }, [needsProfile, needsWorkspace]);
 
+   const { Stepper } = useMemo(() => defineStepper(...steps), [steps]);
+
    if (steps.length === 0) {
       navigate({ to: "/" });
       return null;
    }
-
-   const { Stepper } = useMemo(() => defineStepper(...steps), [steps]);
 
    const [workspaceSlug, setWorkspaceSlug] = useState<string | null>(
       activeOrg?.slug ?? null,
