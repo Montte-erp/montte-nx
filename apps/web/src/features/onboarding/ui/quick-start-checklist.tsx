@@ -22,7 +22,7 @@ import {
 } from "../task-definitions";
 import { QuickStartTask } from "./quick-start-task";
 
-const CHECKLIST_HIDDEN_STORAGE_KEY = "contentta:checklist_hidden";
+const CHECKLIST_HIDDEN_STORAGE_KEY = "montte:checklist_hidden";
 
 /**
  * Quick Start checklist card for the home page.
@@ -150,7 +150,7 @@ export function QuickStartChecklist() {
                <CardDescription>
                   {allCoreDone
                      ? "Voce concluiu os passos essenciais. Explore mais funcionalidades."
-                     : `Complete as tarefas abaixo para comecar a usar o Contentta. ${completedAllCount} de ${tasks.length} concluidas.`}
+                     : `Complete as tarefas abaixo para comecar a usar o Montte. ${completedAllCount} de ${tasks.length} concluidas.`}
                </CardDescription>
 
                {/* Progress bar */}

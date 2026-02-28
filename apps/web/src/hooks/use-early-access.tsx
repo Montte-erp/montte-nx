@@ -31,8 +31,8 @@ type EarlyAccessContextValue = {
    dismissBanner: () => void;
 };
 
-const BANNER_DISMISSED_KEY = "contentta:early-access-banner-dismissed";
-const ENROLLED_FEATURES_CACHE_KEY = "contentta:enrolled-features";
+const BANNER_DISMISSED_KEY = "montte:early-access-banner-dismissed";
+const ENROLLED_FEATURES_CACHE_KEY = "montte:enrolled-features";
 
 const EarlyAccessContext = createContext<EarlyAccessContextValue | null>(null);
 

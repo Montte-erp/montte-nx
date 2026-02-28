@@ -122,7 +122,7 @@ export function CreateKeyForm({ onSuccess }: CreateKeyFormProps) {
          <SheetHeader>
             <SheetTitle>Criar chave de API</SheetTitle>
             <SheetDescription>
-               Crie uma chave de API pessoal para acessar a API do Contentta.
+               Crie uma chave de API pessoal para acessar a API do Montte.
             </SheetDescription>
          </SheetHeader>
 

@@ -168,7 +168,7 @@ function ConsentPage() {
                <CardTitle className="text-xl">Autorizar acesso</CardTitle>
                <CardDescription>
                   <span className="font-medium text-foreground">{appName}</span>{" "}
-                  deseja acessar sua conta Contentta.
+                  deseja acessar sua conta Montte.
                </CardDescription>
             </CardHeader>
 

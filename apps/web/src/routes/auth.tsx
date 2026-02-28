@@ -32,11 +32,11 @@ function AuthLayout() {
             <div className="lg:hidden mb-8">
                <div className="flex items-center gap-2">
                   <img
-                     alt="Contentta"
+                     alt="Montte"
                      className="w-10 h-10"
                      src="/favicon.svg"
                   />
-                  <span className="text-xl font-semibold">Contentta</span>
+                  <span className="text-xl font-semibold">Montte</span>
                </div>
             </div>
 
@@ -62,12 +62,12 @@ function AuthLayout() {
             <div className="relative z-10">
                <div className="flex items-center gap-3">
                   <img
-                     alt="Contentta"
+                     alt="Montte"
                      className="w-10 h-10 brightness-0 invert"
                      src="/favicon.svg"
                   />
                   <span className="text-xl font-semibold text-white">
-                     Contentta
+                     Montte
                   </span>
                </div>
             </div>
@@ -353,7 +353,7 @@ function AuthLayout() {
 
             {/* Footer */}
             <div className="relative z-10 text-white/50 text-xs">
-               &copy; {new Date().getFullYear()} Contentta. Todos os direitos
+               &copy; {new Date().getFullYear()} Montte. Todos os direitos
                reservados
             </div>
          </aside>

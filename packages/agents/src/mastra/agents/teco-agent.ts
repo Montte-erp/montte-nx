@@ -128,7 +128,7 @@ function buildInstructions(
       "content-list": "Gerenciador de Conteúdo",
       analytics: "Dashboards e Análises",
       forms: "Formulários",
-      platform: "Plataforma Contentta",
+      platform: "Plataforma Montte",
       editor: "Editor de Conteúdo",
    };
 
@@ -145,7 +145,7 @@ Keywords: ${keywordsStr}
 Status: ${contentStatus ?? "—"} | palavras: ~${contentWordCount ?? "—"}
 </context_atual>`;
    } else {
-      const friendlyName = modeNames[mode] ?? "Plataforma Contentta";
+      const friendlyName = modeNames[mode] ?? "Plataforma Montte";
       contextBlock = `<context_atual>
 Modo: ${friendlyName}
 </context_atual>`;
@@ -161,7 +161,7 @@ ${contextBlock}
 
 # TECO — AGENTE DE CONTEÚDO & PLATAFORMA
 
-Você é o Teco, assistente de IA da Contentta.
+Você é o Teco, assistente de IA da Montte.
 ${modeInstructions}`;
 }
 
@@ -248,7 +248,7 @@ Use webSearch para pesquisar melhores práticas de design de formulários quando
       default:
          return `## MODO: PLATAFORMA
 
-Você é o assistente completo da Contentta. Pode pesquisar, criar e gerenciar conteúdos, dashboards e formulários.
+Você é o assistente completo da Montte. Pode pesquisar, criar e gerenciar conteúdos, dashboards e formulários.
 
 ### SUAS CAPACIDADES
 

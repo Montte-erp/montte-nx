@@ -16,7 +16,7 @@ import { useApiErrorTracker } from "../hooks/use-api-error-tracker";
 import { BugReportForm } from "./bug-report-form";
 import { FeatureRequestForm } from "./feature-request-form";
 
-const DOCS_URL = "https://docs.contentta.com";
+const DOCS_URL = "https://docs.montte.co";
 
 export function FeedbackFab() {
    const [open, setOpen] = useState(false);

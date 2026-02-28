@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 export type SubSidebarSection = "dashboards" | "insights" | "data-management";
 
-const PINNED_STORAGE_KEY = "contentta:sidebar-pinned";
+const PINNED_STORAGE_KEY = "montte:sidebar-pinned";
 
 function loadPinnedItems(): string[] {
    if (typeof window === "undefined") return [];

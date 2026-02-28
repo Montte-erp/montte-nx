@@ -11,7 +11,7 @@ export const env = createEnv({
       RESEND_API_KEY: z.string().optional(),
 
       // General
-      APP_URL: z.string().url().optional().default("https://app.contentta.co"),
+      APP_URL: z.string().url().optional().default("https://app.montte.co"),
       LOG_LEVEL: z
          .enum(["trace", "debug", "info", "warn", "error", "fatal"])
          .optional()

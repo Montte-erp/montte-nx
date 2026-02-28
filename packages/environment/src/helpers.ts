@@ -6,7 +6,7 @@ export const getDomain = () => {
       return process.env.APP_URL;
    }
    if (isProduction) {
-      return "https://app.contentta.co";
+      return "https://app.montte.co";
    }
 
    return "http://localhost:3000";

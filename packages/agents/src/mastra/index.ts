@@ -56,7 +56,7 @@ const mastraStorage = new PostgresStore({
 const observability = new Observability({
    configs: {
       posthog: {
-         serviceName: "contentta-agents",
+         serviceName: "montte-agents",
          exporters: [
             new PosthogExporter({
                apiKey: serverEnv.POSTHOG_KEY,

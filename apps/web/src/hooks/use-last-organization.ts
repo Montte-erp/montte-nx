@@ -1,6 +1,6 @@
 import { useSafeLocalStorage } from "@/hooks/use-local-storage";
 
-const STORAGE_KEY = "contentta:last-organization-slug";
+const STORAGE_KEY = "montte:last-organization-slug";
 
 export function useLastOrganization() {
    const [lastSlug, setLastSlug] = useSafeLocalStorage<string | null>(

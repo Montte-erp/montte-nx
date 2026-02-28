@@ -18,7 +18,7 @@ const baseMcpHandler = createMcpHandler(
       // Runtime compatible, types are structurally identical
       registerTools(server as unknown as Parameters<typeof registerTools>[0]);
    },
-   { serverInfo: { name: "contentta-mcp", version: "1.0.0" } },
+   { serverInfo: { name: "montte-mcp", version: "1.0.0" } },
    {
       basePath: "/mcp",
       redisUrl: env.REDIS_URL,

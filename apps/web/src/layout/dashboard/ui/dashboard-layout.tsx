@@ -55,7 +55,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
    const { pathname } = useLocation();
 
    const [sidebarCollapsed, setSidebarCollapsed] = useSafeLocalStorage<boolean>(
-      "contentta:sidebar-collapsed",
+      "montte:sidebar-collapsed",
       false,
    );
    const sidebarOpen = !sidebarCollapsed;

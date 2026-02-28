@@ -35,7 +35,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
             content: "width=device-width, initial-scale=1",
          },
          {
-            title: "Contentta",
+            title: "Montte",
          },
       ],
       links: [

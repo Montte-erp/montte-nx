@@ -156,7 +156,7 @@ export function OnboardingWizard({
                         </Stepper.Navigation>
                         <div className="flex shrink-0 items-center gap-2">
                            <img
-                              alt="Contentta"
+                              alt="Montte"
                               className="size-8 shrink-0 rounded-full"
                               src="/favicon.svg"
                            />
@@ -164,7 +164,7 @@ export function OnboardingWizard({
                               className="bg-muted text-muted-foreground"
                               variant="outline"
                            >
-                              app.contentta.co
+                              app.montte.co
                               {workspaceSlug ? `/${workspaceSlug}` : ""}
                               {projectSlug ? `/${projectSlug}` : ""}
                            </Badge>

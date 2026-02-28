@@ -77,7 +77,7 @@ export const addDomain = protectedProcedure
       }
 
       // Generate verification token
-      const verificationToken = `contentta-domain-verification-${crypto.randomUUID()}`;
+      const verificationToken = `montte-domain-verification-${crypto.randomUUID()}`;
 
       const [domain] = await db
          .insert(verifiedDomains)

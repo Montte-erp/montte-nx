@@ -40,7 +40,7 @@ export const env = createEnv({
       MINIO_ENDPOINT: z.string(),
       MINIO_ACCESS_KEY: z.string().optional(),
       MINIO_SECRET_KEY: z.string().optional(),
-      MINIO_BUCKET: z.string().optional().default("contentta"),
+      MINIO_BUCKET: z.string().optional().default("montte"),
 
       // AI Services (Optional)
       OPENROUTER_API_KEY: z.string().optional(),

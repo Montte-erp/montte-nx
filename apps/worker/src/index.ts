@@ -6,7 +6,7 @@ import { startScheduler } from "./scheduler";
 import { startWebhookDeliveryWorker } from "./workers/webhook-delivery";
 
 async function main(): Promise<void> {
-	console.log("[Worker] Starting Contentta Worker...");
+	console.log("[Worker] Starting Montte Worker...");
 
 	// 1. Initialize Redis
 	const redis = createRedisConnection(env.REDIS_URL);

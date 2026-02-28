@@ -202,7 +202,7 @@ function KeysTable({
                      <EmptyTitle>Nenhuma chave de API</EmptyTitle>
                      <EmptyDescription>
                         Crie uma chave de API pessoal para acessar a API do
-                        Contentta programaticamente.
+                        Montte programaticamente.
                      </EmptyDescription>
                   </EmptyHeader>
                </Empty>

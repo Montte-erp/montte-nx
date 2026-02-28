@@ -13,20 +13,20 @@ const content = {
    "email-verification": {
       description: "Use o código abaixo para confirmar seu endereço de e-mail.",
       footer: "Este código é válido por 10 minutos.",
-      preview: "Seu código de verificação Contentta",
+      preview: "Seu código de verificação Montte",
       title: "Confirme seu e-mail",
    },
    "forget-password": {
       description: "Use o código abaixo para redefinir sua senha.",
       footer:
          "Se você não solicitou a redefinição de senha, ignore este e-mail.",
-      preview: "Código para redefinir sua senha Contentta",
+      preview: "Código para redefinir sua senha Montte",
       title: "Redefinir senha",
    },
    "sign-in": {
       description: "Use o código abaixo para fazer login na sua conta.",
       footer: "Se você não solicitou o login, ignore este e-mail.",
-      preview: "Seu código de acesso Contentta",
+      preview: "Seu código de acesso Montte",
       title: "Código de acesso",
    },
 };

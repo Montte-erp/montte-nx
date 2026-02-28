@@ -57,7 +57,7 @@ export function WebhookSecretDialog({
                <AlertTriangle className="size-4 text-amber-600 mt-0.5 shrink-0" />
                <p className="text-xs text-amber-700 dark:text-amber-400">
                   Este segredo não será exibido novamente. Armazene-o com
-                  segurança para assinar eventos enviados pelo Contentta.
+                  segurança para assinar eventos enviados pelo Montte.
                </p>
             </div>
          </CredenzaBody>

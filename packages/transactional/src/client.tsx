@@ -18,7 +18,7 @@ export interface SendOrganizationInvitationOptions {
    teamName: string;
    inviteLink: string;
 }
-const name = "Contentta";
+const name = "Montte";
 export const sendOrganizationInvitation = async (
    client: Resend,
    {
@@ -29,9 +29,9 @@ export const sendOrganizationInvitation = async (
       inviteLink,
    }: SendOrganizationInvitationOptions,
 ) => {
-   const subject = `Convite para se juntar à equipe ${teamName} no Contentta`;
+   const subject = `Convite para se juntar à equipe ${teamName} no Montte`;
    await client.emails.send({
-      from: `${name} <suporte@mail.contentta.co>`,
+      from: `${name} <suporte@mail.montte.co>`,
       react: (
          <OrganizationInvitationEmail
             invitedByEmail={invitedByEmail}
@@ -62,7 +62,7 @@ export const sendEmailOTP = async (
       }
    };
    await client.emails.send({
-      from: `${name} <suporte@mail.contentta.co>`,
+      from: `${name} <suporte@mail.montte.co>`,
       react: <OTPEmail otp={otp} type={type} />,
       subject: getSubject(),
       to: email,
@@ -78,9 +78,9 @@ export const sendMagicLinkEmail = async (
    client: Resend,
    { email, magicLinkUrl }: SendMagicLinkEmailOptions,
 ) => {
-   const subject = "Acesse sua conta Contentta";
+   const subject = "Acesse sua conta Montte";
    await client.emails.send({
-      from: `${name} <suporte@mail.contentta.co>`,
+      from: `${name} <suporte@mail.montte.co>`,
       react: <MagicLinkEmail magicLinkUrl={magicLinkUrl} />,
       subject,
       to: email,
