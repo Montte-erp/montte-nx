@@ -1,5 +1,5 @@
 import { AppError, propagateError } from "@packages/utils/errors";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import { type NewSubcategory, subcategories, transactions } from "../schema";
 
@@ -13,6 +13,28 @@ export async function getSubcategory(db: DatabaseInstance, id: string) {
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to get subcategory");
+   }
+}
+
+export async function listSubcategoriesByCategoryId(
+   db: DatabaseInstance,
+   categoryId: string,
+   teamId: string,
+) {
+   try {
+      return await db
+         .select()
+         .from(subcategories)
+         .where(
+            and(
+               eq(subcategories.categoryId, categoryId),
+               eq(subcategories.teamId, teamId),
+            ),
+         )
+         .orderBy(subcategories.name);
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to list subcategories");
    }
 }
 
