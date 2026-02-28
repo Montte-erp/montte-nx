@@ -10,7 +10,7 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { FolderOpen, Plus, Trash2 } from "lucide-react";
+import { FolderOpen, Plus } from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
@@ -20,7 +20,7 @@ import {
 } from "@/features/categories/ui/categories-columns";
 import { CategorySheet } from "@/features/categories/ui/categories-sheet";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useSheet } from "@/hooks/use-sheet";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
@@ -49,7 +49,7 @@ function CategoriesSkeleton() {
 // =============================================================================
 
 function CategoriesList() {
-	const { openSheet, closeSheet } = useSheet();
+	const { openCredenza, closeCredenza } = useCredenza();
 	const { openAlertDialog } = useAlertDialog();
 
 	const { data: categories } = useSuspenseQuery(
@@ -69,17 +69,23 @@ function CategoriesList() {
 
 	const handleEdit = useCallback(
 		(category: CategoryRow) => {
-			openSheet({
+			openCredenza({
 				children: (
 					<CategorySheet
-						category={{ id: category.id, name: category.name }}
+						category={{
+							id: category.id,
+							name: category.name,
+							color: category.color,
+							icon: category.icon,
+							type: category.type,
+						}}
 						mode="edit"
-						onSuccess={closeSheet}
+						onSuccess={closeCredenza}
 					/>
 				),
 			});
 		},
-		[openSheet, closeSheet],
+		[openCredenza, closeCredenza],
 	);
 
 	const handleDelete = useCallback(
@@ -121,10 +127,16 @@ function CategoriesList() {
 			columns={columns}
 			data={categories}
 			getRowId={(row) => row.id}
-			renderMobileCard={({ row, toggleExpanded, isExpanded, canExpand }) => (
+			renderMobileCard={({ row }) => (
 				<div className="rounded-lg border bg-background p-4 space-y-3">
 					<div className="flex items-start justify-between gap-2">
 						<div className="flex items-center gap-2 min-w-0">
+							{row.original.color && (
+								<span
+									className="size-4 rounded-full shrink-0"
+									style={{ backgroundColor: row.original.color }}
+								/>
+							)}
 							<p className="font-medium truncate">{row.original.name}</p>
 						</div>
 					</div>
@@ -137,30 +149,18 @@ function CategoriesList() {
 							>
 								Editar
 							</Button>
-							{canExpand && (
-								<Button onClick={toggleExpanded} size="sm" variant="ghost">
-									{isExpanded ? "Ocultar" : "Mais"}
-								</Button>
-							)}
+							<Button
+								className="text-destructive"
+								onClick={() => handleDelete(row.original)}
+								size="sm"
+								variant="ghost"
+							>
+								Excluir
+							</Button>
 						</div>
 					)}
 				</div>
 			)}
-			renderSubComponent={({ row }) =>
-				row.original.isDefault ? null : (
-					<div className="px-4 py-4 flex items-center gap-2 flex-wrap border-t">
-						<Button
-							className="text-destructive hover:text-destructive"
-							onClick={() => handleDelete(row.original)}
-							size="sm"
-							variant="ghost"
-						>
-							<Trash2 className="size-3 mr-2" />
-							Excluir
-						</Button>
-					</div>
-				)
-			}
 		/>
 	);
 }
@@ -170,13 +170,13 @@ function CategoriesList() {
 // =============================================================================
 
 function CategoriesPage() {
-	const { openSheet, closeSheet } = useSheet();
+	const { openCredenza, closeCredenza } = useCredenza();
 
 	const handleCreate = useCallback(() => {
-		openSheet({
-			children: <CategorySheet mode="create" onSuccess={closeSheet} />,
+		openCredenza({
+			children: <CategorySheet mode="create" onSuccess={closeCredenza} />,
 		});
-	}, [openSheet, closeSheet]);
+	}, [openCredenza, closeCredenza]);
 
 	return (
 		<main className="flex flex-col gap-4">
