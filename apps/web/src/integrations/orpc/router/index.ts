@@ -5,7 +5,9 @@ import * as agentRouter from "./agent";
 import * as analyticsRouter from "./analytics";
 import * as annotationsRouter from "./annotations";
 import * as apiKeysRouter from "./api-keys";
+import * as bankAccountsRouter from "./bank-accounts";
 import * as billingRouter from "./billing";
+import * as categoriesRouter from "./categories";
 import * as chatRouter from "./chat";
 import * as dashboardsRouter from "./dashboards";
 import * as dataSourcesRouter from "./data-sources";
@@ -21,7 +23,10 @@ import * as propertyDefinitionsRouter from "./property-definitions";
 import * as rolesRouter from "./roles";
 import * as sessionRouter from "./session";
 import * as ssoRouter from "./sso";
+import * as subcategoriesRouter from "./subcategories";
+import * as tagsRouter from "./tags";
 import * as teamRouter from "./team";
+import * as transactionsRouter from "./transactions";
 import * as usageRouter from "./usage";
 import * as webhooksRouter from "./webhooks";
 
@@ -33,7 +38,9 @@ export default {
    analytics: analyticsRouter,
    annotations: annotationsRouter,
    apiKeys: apiKeysRouter,
+   bankAccounts: bankAccountsRouter,
    billing: billingRouter,
+   categories: categoriesRouter,
    chat: chatRouter,
    dashboards: dashboardsRouter,
    dataSources: dataSourcesRouter,
@@ -48,7 +55,10 @@ export default {
    roles: rolesRouter,
    session: sessionRouter,
    sso: ssoRouter,
+   subcategories: subcategoriesRouter,
+   tags: tagsRouter,
    team: teamRouter,
+   transactions: transactionsRouter,
    organization: organizationRouter,
    usage: usageRouter,
    webhooks: webhooksRouter,
