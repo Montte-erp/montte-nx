@@ -7,6 +7,8 @@ interface DefaultHeaderProps {
    actions?: ReactNode;
    /** Secondary actions shown below the title (e.g., filter chips) */
    secondaryActions?: ReactNode;
+   /** View switch dropdown rendered in the actions area, before route actions */
+   viewSwitch?: ReactNode;
 }
 
 export function DefaultHeader({
@@ -14,11 +16,17 @@ export function DefaultHeader({
    description,
    actions,
    secondaryActions,
+   viewSwitch,
 }: DefaultHeaderProps) {
    return (
       <div className="flex flex-col gap-4">
          <PageHeader
-            actions={actions}
+            actions={
+               <>
+                  {viewSwitch}
+                  {actions}
+               </>
+            }
             description={description}
             title={title}
          />
