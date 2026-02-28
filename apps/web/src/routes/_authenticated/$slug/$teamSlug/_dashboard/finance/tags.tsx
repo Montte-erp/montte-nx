@@ -1,0 +1,198 @@
+import { Button } from "@packages/ui/components/button";
+import { DataTable } from "@packages/ui/components/data-table";
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@packages/ui/components/empty";
+import { Skeleton } from "@packages/ui/components/skeleton";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { Plus, Tag, Trash2 } from "lucide-react";
+import { Suspense, useCallback } from "react";
+import { toast } from "sonner";
+import { PageHeader } from "@/components/page-header";
+import {
+	type TagRow,
+	buildTagColumns,
+} from "@/features/tags/ui/tags-columns";
+import { TagSheet } from "@/features/tags/ui/tags-sheet";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { useSheet } from "@/hooks/use-sheet";
+import { orpc } from "@/integrations/orpc/client";
+
+export const Route = createFileRoute(
+	"/_authenticated/$slug/$teamSlug/_dashboard/finance/tags",
+)({ component: TagsPage });
+
+// =============================================================================
+// Skeleton
+// =============================================================================
+
+function TagsSkeleton() {
+	return (
+		<div className="space-y-3">
+			{Array.from({ length: 5 }).map((_, index) => (
+				<Skeleton
+					className="h-12 w-full"
+					key={`skeleton-${index + 1}`}
+				/>
+			))}
+		</div>
+	);
+}
+
+// =============================================================================
+// List
+// =============================================================================
+
+function TagsList() {
+	const { openSheet, closeSheet } = useSheet();
+	const { openAlertDialog } = useAlertDialog();
+
+	const { data: tags } = useSuspenseQuery(
+		orpc.tags.getAll.queryOptions({}),
+	);
+
+	const deleteMutation = useMutation(
+		orpc.tags.remove.mutationOptions({
+			onSuccess: () => {
+				toast.success("Tag excluída com sucesso.");
+			},
+			onError: (error) => {
+				toast.error(error.message || "Erro ao excluir tag.");
+			},
+		}),
+	);
+
+	const handleEdit = useCallback(
+		(tag: TagRow) => {
+			openSheet({
+				children: (
+					<TagSheet
+						tag={tag}
+						mode="edit"
+						onSuccess={closeSheet}
+					/>
+				),
+			});
+		},
+		[openSheet, closeSheet],
+	);
+
+	const handleDelete = useCallback(
+		(tag: TagRow) => {
+			openAlertDialog({
+				title: "Excluir tag",
+				description: `Tem certeza que deseja excluir a tag "${tag.name}"? Esta ação não pode ser desfeita.`,
+				actionLabel: "Excluir",
+				cancelLabel: "Cancelar",
+				variant: "destructive",
+				onAction: async () => {
+					await deleteMutation.mutateAsync({ id: tag.id });
+				},
+			});
+		},
+		[openAlertDialog, deleteMutation],
+	);
+
+	const columns = buildTagColumns(handleEdit, handleDelete);
+
+	if (tags.length === 0) {
+		return (
+			<Empty>
+				<EmptyHeader>
+					<EmptyMedia variant="icon">
+						<Tag className="size-6" />
+					</EmptyMedia>
+					<EmptyTitle>Nenhuma tag</EmptyTitle>
+					<EmptyDescription>
+						Adicione uma tag para categorizar suas transações.
+					</EmptyDescription>
+				</EmptyHeader>
+			</Empty>
+		);
+	}
+
+	return (
+		<DataTable
+			columns={columns}
+			data={tags}
+			getRowId={(row) => row.id}
+			renderMobileCard={({ row, toggleExpanded, isExpanded, canExpand }) => (
+				<div className="rounded-lg border bg-background p-4 space-y-3">
+					<div className="flex items-start justify-between gap-2">
+						<div className="flex items-center gap-2 min-w-0">
+							<span
+								className="size-3 rounded-full shrink-0"
+								style={{ backgroundColor: row.original.color }}
+							/>
+							<p className="font-medium truncate">{row.original.name}</p>
+						</div>
+					</div>
+					<div className="flex items-center gap-2">
+						<Button
+							onClick={() => handleEdit(row.original)}
+							size="sm"
+							variant="outline"
+						>
+							Editar
+						</Button>
+						{canExpand && (
+							<Button onClick={toggleExpanded} size="sm" variant="ghost">
+								{isExpanded ? "Ocultar" : "Mais"}
+							</Button>
+						)}
+					</div>
+				</div>
+			)}
+			renderSubComponent={({ row }) => (
+				<div className="px-4 py-4 flex items-center gap-2 flex-wrap border-t">
+					<Button
+						className="text-destructive hover:text-destructive"
+						onClick={() => handleDelete(row.original)}
+						size="sm"
+						variant="ghost"
+					>
+						<Trash2 className="size-3 mr-2" />
+						Excluir
+					</Button>
+				</div>
+			)}
+		/>
+	);
+}
+
+// =============================================================================
+// Page
+// =============================================================================
+
+function TagsPage() {
+	const { openSheet, closeSheet } = useSheet();
+
+	function handleCreate() {
+		openSheet({
+			children: <TagSheet mode="create" onSuccess={closeSheet} />,
+		});
+	}
+
+	return (
+		<main className="flex flex-col gap-4">
+			<PageHeader
+				actions={
+					<Button onClick={handleCreate} size="sm">
+						<Plus className="size-4 mr-1" />
+						Nova Tag
+					</Button>
+				}
+				description="Gerencie suas tags para categorizar transações"
+				title="Tags"
+			/>
+			<Suspense fallback={<TagsSkeleton />}>
+				<TagsList />
+			</Suspense>
+		</main>
+	);
+}
