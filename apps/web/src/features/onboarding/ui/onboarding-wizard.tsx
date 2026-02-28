@@ -3,7 +3,7 @@ import { Button } from "@packages/ui/components/button";
 import { Spinner } from "@packages/ui/components/spinner";
 import { defineStepper } from "@packages/ui/components/stepper";
 import { useNavigate } from "@tanstack/react-router";
-import { useCallback, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { Session } from "@/integrations/better-auth/auth-client";
 import { ProfileStep } from "./profile-step";
 import type { StepHandle, StepState } from "./step-handle";
@@ -43,11 +43,6 @@ export function OnboardingWizard({
 
    const { Stepper } = useMemo(() => defineStepper(...steps), [steps]);
 
-   if (steps.length === 0) {
-      navigate({ to: "/" });
-      return null;
-   }
-
    const [workspaceSlug, setWorkspaceSlug] = useState<string | null>(
       activeOrg?.slug ?? null,
    );
@@ -82,6 +77,17 @@ export function OnboardingWizard({
       },
       [navigate],
    );
+
+   // Edge case: user already has name + org. Navigate away after render.
+   useEffect(() => {
+      if (steps.length === 0) {
+         navigate({ to: "/" });
+      }
+   }, [steps.length, navigate]);
+
+   if (steps.length === 0) {
+      return null;
+   }
 
    return (
       <Stepper.Provider
