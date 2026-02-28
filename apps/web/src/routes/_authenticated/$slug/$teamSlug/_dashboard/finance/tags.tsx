@@ -172,11 +172,11 @@ function TagsList() {
 function TagsPage() {
 	const { openSheet, closeSheet } = useSheet();
 
-	function handleCreate() {
+	const handleCreate = useCallback(() => {
 		openSheet({
 			children: <TagSheet mode="create" onSuccess={closeSheet} />,
 		});
-	}
+	}, [openSheet, closeSheet]);
 
 	return (
 		<main className="flex flex-col gap-4">
