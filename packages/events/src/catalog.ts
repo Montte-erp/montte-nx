@@ -8,16 +8,12 @@
 import type { Money } from "@f-o-t/money";
 
 export const EVENT_CATEGORIES = {
-   content: "content",
+   finance: "finance",
    ai: "ai",
-   form: "form",
-   seo: "seo",
-   experiment: "experiment",
    webhook: "webhook",
    dashboard: "dashboard",
    insight: "insight",
    system: "system",
-   writer: "writer",
 } as const;
 
 export type EventCategory =
