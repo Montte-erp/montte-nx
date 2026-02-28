@@ -5,8 +5,10 @@ import { DEFAULT_INSIGHTS } from "@packages/database/default-insights";
 import { createDefaultInsights } from "@packages/database/repositories/dashboard-repository";
 import { getInsightById } from "@packages/database/repositories/insight-repository";
 import { organization, team } from "@packages/database/schemas/auth";
+import { categories } from "@packages/database/schemas/categories";
 import { dashboards } from "@packages/database/schemas/dashboards";
 import { insights } from "@packages/database/schemas/insights";
+import { transactions } from "@packages/database/schemas/transactions";
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
@@ -43,7 +45,7 @@ export const getOnboardingStatus = protectedProcedure.handler(
          });
       }
 
-      const [insightCount, dashboardCount] = await Promise.all([
+      const [insightCount, categoryCount, transactionCount] = await Promise.all([
          db
             .select({ count: sql<number>`count(*)` })
             .from(insights)
@@ -51,8 +53,13 @@ export const getOnboardingStatus = protectedProcedure.handler(
             .then((rows) => Number(rows[0]?.count ?? 0)),
          db
             .select({ count: sql<number>`count(*)` })
-            .from(dashboards)
-            .where(eq(dashboards.organizationId, organizationId))
+            .from(categories)
+            .where(eq(categories.teamId, teamId))
+            .then((rows) => Number(rows[0]?.count ?? 0)),
+         db
+            .select({ count: sql<number>`count(*)` })
+            .from(transactions)
+            .where(eq(transactions.teamId, teamId))
             .then((rows) => Number(rows[0]?.count ?? 0)),
       ]);
 
@@ -60,7 +67,8 @@ export const getOnboardingStatus = protectedProcedure.handler(
       const autoDetected: Record<string, boolean> = {};
 
       if (insightCount > 0) autoDetected.create_insight = true;
-      if (dashboardCount > 0) autoDetected.create_dashboard = true;
+      if (categoryCount > 0) autoDetected.create_category = true;
+      if (transactionCount > 0) autoDetected.add_transaction = true;
 
       const tasks = { ...storedTasks, ...autoDetected };
 
@@ -123,7 +131,7 @@ export const skipTask = protectedProcedure
 export const completeOnboarding = protectedProcedure
    .input(
       z.object({
-         products: z.array(z.enum(["content", "forms", "analytics"])),
+         products: z.array(z.enum(["finance"])),
       }),
    )
    .handler(async ({ context, input }) => {
