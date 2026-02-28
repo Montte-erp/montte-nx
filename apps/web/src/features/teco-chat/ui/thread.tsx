@@ -40,7 +40,6 @@ import {
    SelectTrigger,
 } from "@packages/ui/components/select";
 import { cn } from "@packages/ui/lib/utils";
-import { useQuery } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import {
    ArrowDownIcon,
@@ -66,7 +65,6 @@ import {
    setChatModel,
    setChatThinkingBudget,
 } from "@/features/teco-chat/stores/chat-context-store";
-import { orpc } from "@/integrations/orpc/client";
 import { type ContextItem, ContextPicker } from "./context-picker";
 
 const MODEL_OPTIONS: ModelOption[] = Object.entries(CONTENT_MODELS).map(
@@ -271,26 +269,21 @@ const Composer: FC<ComposerProps> = () => {
    const thinkingBudget = useStore(chatContextStore, (s) => s.thinkingBudget);
    const prefillledForRef = useRef<string | null>(null);
 
-   const { data: contentData } = useQuery({
-      ...orpc.content.getById.queryOptions({ input: { id: contentId ?? "" } }),
-      enabled: !!contentId,
-   });
-
    useEffect(() => {
-      if (contentId && contentData && prefillledForRef.current !== contentId) {
+      if (contentId && prefillledForRef.current !== contentId) {
          prefillledForRef.current = contentId;
          setContextItems([
             {
                type: "current-document",
                id: contentId,
-               label: contentData.meta?.title ?? "Documento atual",
+               label: "Documento atual",
             },
          ]);
       } else if (!contentId) {
          prefillledForRef.current = null;
          setContextItems([]);
       }
-   }, [contentId, contentData]);
+   }, [contentId]);
 
    const handleContextSelect = (item: ContextItem) => {
       setContextItems((prev) =>
@@ -394,9 +387,7 @@ const Composer: FC<ComposerProps> = () => {
                <div className="flex items-center gap-0.5">
                   <ContextPicker
                      currentDocumentId={contentId ?? undefined}
-                     currentDocumentLabel={
-                        contentData?.meta?.title ?? "Documento atual"
-                     }
+                     currentDocumentLabel="Documento atual"
                      onSelect={handleContextSelect}
                   />
                </div>

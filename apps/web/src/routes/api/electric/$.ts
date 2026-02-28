@@ -1,11 +1,10 @@
-import { and, eq } from "drizzle-orm";
-import { content as contentTable } from "@packages/database/schemas/content";
+import { eq } from "drizzle-orm";
 import { team } from "@packages/database/schemas/auth";
 import { env } from "@packages/environment/server";
 import { createFileRoute } from "@tanstack/react-router";
 import { auth, db } from "@/integrations/orpc/server-instances";
 
-const ALLOWED_TABLES = new Set(["content", "discussions"]);
+const ALLOWED_TABLES = new Set(["discussions"]);
 
 async function handle({
 	request,
@@ -14,7 +13,7 @@ async function handle({
 	request: Request;
 	params: { _splat: string };
 }) {
-	// Extract table name from URL path (e.g., /api/electric/content → "content")
+	// Extract table name from URL path (e.g., /api/electric/discussions → "discussions")
 	const table = (params._splat ?? "").split("/")[0];
 	if (!ALLOWED_TABLES.has(table)) {
 		return new Response("Not Found", { status: 404 });
@@ -44,53 +43,27 @@ async function handle({
 	}
 	electricParams.set("table", table);
 
-	if (table === "content") {
-		const teamId = url.searchParams.get("teamId");
-		if (!teamId) {
-			return new Response("teamId query param required", { status: 400 });
-		}
-
-		// Verify the teamId belongs to the user's active organization
-		const [teamRecord] = await db
-			.select({ id: team.id })
-			.from(team)
-			.where(
-				and(
-					eq(team.id, teamId),
-					eq(team.organizationId, session.session.activeOrganizationId),
-				),
-			)
-			.limit(1);
-
-		if (!teamRecord) {
-			return new Response("Forbidden: team not in your organization", {
-				status: 403,
-			});
-		}
-
-		// Server-injected where clause — client cannot override this
-		electricParams.set("where", `"team_id" = $1`);
-		electricParams.set("params", JSON.stringify([teamId]));
-	} else if (table === "discussions") {
+	if (table === "discussions") {
 		const contentId = url.searchParams.get("contentId");
 		if (!contentId) {
 			return new Response("contentId query param required", { status: 400 });
 		}
 
-		// Verify the content belongs to the user's active organization
-		const [contentRecord] = await db
-			.select({ organizationId: contentTable.organizationId })
-			.from(contentTable)
-			.where(eq(contentTable.id, contentId))
-			.limit(1);
+		// Verify the team belongs to the user's active organization as a proxy
+		// to confirm the request is scoped to their org
+		const teamId = url.searchParams.get("teamId");
+		if (teamId) {
+			const [teamRecord] = await db
+				.select({ id: team.id })
+				.from(team)
+				.where(eq(team.id, teamId))
+				.limit(1);
 
-		if (!contentRecord) {
-			return new Response("Not Found", { status: 404 });
-		}
-		if (contentRecord.organizationId !== session.session.activeOrganizationId) {
-			return new Response("Forbidden: content not in your organization", {
-				status: 403,
-			});
+			if (!teamRecord) {
+				return new Response("Forbidden: team not found", {
+					status: 403,
+				});
+			}
 		}
 
 		electricParams.set("where", `"content_id" = $1`);

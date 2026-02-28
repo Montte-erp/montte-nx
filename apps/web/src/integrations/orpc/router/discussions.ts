@@ -1,5 +1,4 @@
 import { ORPCError } from "@orpc/server";
-import { getContentById } from "@packages/database/repositories/content-repository";
 import {
    addDiscussionReply,
    createDiscussion,
@@ -29,15 +28,7 @@ const contentRichSchema = z.array(z.record(z.string(), z.unknown()));
 export const getByContent = protectedProcedure
    .input(z.object({ contentId: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { organizationId, db } = context;
-
-      const content = await getContentById(db, input.contentId);
-
-      if (!content || content.organizationId !== organizationId) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Content not found.",
-         });
-      }
+      const { db } = context;
 
       const discussionList = await getDiscussionsByContent(db, input.contentId);
 
@@ -95,15 +86,7 @@ export const create = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const { organizationId, db, userId } = context;
-
-      const content = await getContentById(db, input.contentId);
-
-      if (!content || content.organizationId !== organizationId) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Content not found.",
-         });
-      }
+      const { db, userId } = context;
 
       const discussion = await createDiscussion(db, {
          contentId: input.contentId,

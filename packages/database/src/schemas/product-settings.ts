@@ -41,7 +41,7 @@ export const AIDefaultsSchema = z.object({
          "openrouter/moonshotai/kimi-k2.5",
          "openrouter/minimax/minimax-m2.5",
          "openrouter/z-ai/glm-5",
-         "openrouter/bytedance-seed/seed-1.6-flash",
+         "openrouter/bytedance-seed/seed-2.0-mini",
          "openrouter/liquid/lfm2-8b-a1b",
       ])
       .optional(),

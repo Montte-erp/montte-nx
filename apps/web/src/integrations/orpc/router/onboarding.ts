@@ -5,9 +5,7 @@ import { DEFAULT_INSIGHTS } from "@packages/database/default-insights";
 import { createDefaultInsights } from "@packages/database/repositories/dashboard-repository";
 import { getInsightById } from "@packages/database/repositories/insight-repository";
 import { organization, team } from "@packages/database/schemas/auth";
-import { content } from "@packages/database/schemas/content";
 import { dashboards } from "@packages/database/schemas/dashboards";
-import { forms } from "@packages/database/schemas/forms";
 import { insights } from "@packages/database/schemas/insights";
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -45,33 +43,7 @@ export const getOnboardingStatus = protectedProcedure.handler(
          });
       }
 
-      const [
-         contentCount,
-         publishedContentCount,
-         formCount,
-         insightCount,
-         dashboardCount,
-      ] = await Promise.all([
-         db
-            .select({ count: sql<number>`count(*)` })
-            .from(content)
-            .where(eq(content.organizationId, organizationId))
-            .then((rows) => Number(rows[0]?.count ?? 0)),
-         db
-            .select({ count: sql<number>`count(*)` })
-            .from(content)
-            .where(
-               and(
-                  eq(content.organizationId, organizationId),
-                  eq(content.status, "published"),
-               ),
-            )
-            .then((rows) => Number(rows[0]?.count ?? 0)),
-         db
-            .select({ count: sql<number>`count(*)` })
-            .from(forms)
-            .where(eq(forms.organizationId, organizationId))
-            .then((rows) => Number(rows[0]?.count ?? 0)),
+      const [insightCount, dashboardCount] = await Promise.all([
          db
             .select({ count: sql<number>`count(*)` })
             .from(insights)
@@ -87,9 +59,6 @@ export const getOnboardingStatus = protectedProcedure.handler(
       const storedTasks = currentTeam.onboardingTasks ?? {};
       const autoDetected: Record<string, boolean> = {};
 
-      if (contentCount > 0) autoDetected.create_content = true;
-      if (publishedContentCount > 0) autoDetected.publish_content = true;
-      if (formCount > 0) autoDetected.create_form = true;
       if (insightCount > 0) autoDetected.create_insight = true;
       if (dashboardCount > 0) autoDetected.create_dashboard = true;
 

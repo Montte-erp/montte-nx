@@ -8,15 +8,12 @@ import {
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
-import { content } from "./content";
 
 export const discussions = pgTable(
    "discussions",
    {
       id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-      contentId: uuid("content_id")
-         .notNull()
-         .references(() => content.id, { onDelete: "cascade" }),
+      contentId: uuid("content_id").notNull(),
       blockId: text("block_id").notNull(),
       userId: text("user_id").notNull(),
       documentContent: text("document_content"),
@@ -61,11 +58,7 @@ export const discussionReplies = pgTable(
    ],
 );
 
-export const discussionsRelations = relations(discussions, ({ one, many }) => ({
-   content: one(content, {
-      fields: [discussions.contentId],
-      references: [content.id],
-   }),
+export const discussionsRelations = relations(discussions, ({ many }) => ({
    replies: many(discussionReplies),
 }));
 

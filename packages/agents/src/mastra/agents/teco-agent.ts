@@ -19,11 +19,7 @@ import { editDescriptionTool } from "../tools/frontmatter/edit-description-tool"
 import { editKeywordsTool } from "../tools/frontmatter/edit-keywords-tool";
 import { editSlugTool } from "../tools/frontmatter/edit-slug-tool";
 import { editTitleTool } from "../tools/frontmatter/edit-title-tool";
-import { createContentTool } from "../tools/platform/create-content-tool";
 import { createDashboardTool } from "../tools/platform/create-dashboard-tool";
-import { createFormTool } from "../tools/platform/create-form-tool";
-import { deleteContentTool } from "../tools/platform/delete-content-tool";
-import { updateContentTool } from "../tools/platform/update-content-tool";
 import { searchPreviousContentTool } from "../tools/rag/search-previous-content-tool";
 import { relatedKeywordsTool } from "../tools/research/related-keywords-tool";
 import { serpAnalysisTool } from "../tools/research/serp-analysis-tool";
@@ -73,11 +69,7 @@ const seoTools = {
 };
 const analyzeTools = { analyzeContent: analyzeContentTool, readContentBody: readContentBodyTool };
 const crudTools = {
-   createContent: createContentTool,
    createDashboard: createDashboardTool,
-   createForm: createFormTool,
-   updateContent: updateContentTool,
-   deleteContent: deleteContentTool,
 };
 
 function getToolsForMode(mode: string) {
@@ -91,14 +83,13 @@ function getToolsForMode(mode: string) {
             ...analyzeTools,
             ...researchTools,
             ...ragTools,
-            updateContent: updateContentTool,
          };
       case "content-list":
-         return { ...researchTools, createContent: createContentTool };
+         return { ...researchTools };
       case "analytics":
          return { ...researchTools, createDashboard: createDashboardTool };
       case "forms":
-         return { ...researchTools, createForm: createFormTool };
+         return { ...researchTools };
       case "platform":
          return { ...researchTools, ...crudTools };
       default:

@@ -1,10 +1,8 @@
 import type { Action } from "@packages/database/schemas/actions";
 import type { Annotation } from "@packages/database/schemas/annotations";
-import type { Content } from "@packages/database/schemas/content";
 import type { Dashboard } from "@packages/database/schemas/dashboards";
 import type { DataSource } from "@packages/database/schemas/data-sources";
 import type { EventCatalogEntry } from "@packages/database/schemas/event-catalog";
-import type { Form } from "@packages/database/schemas/forms";
 import type { Insight } from "@packages/database/schemas/insights";
 import type { PersonalApiKey } from "@packages/database/schemas/personal-api-key";
 import type { PropertyDefinition } from "@packages/database/schemas/property-definitions";
@@ -15,9 +13,7 @@ import { TEST_ORG_ID, TEST_TEAM_ID, TEST_USER_ID } from "./create-test-context";
 // Shared Constants
 // =============================================================================
 
-export const CONTENT_ID = "a0a0a0a0-b1b1-4c2c-9d3d-e4e4e4e4e4e4";
 export const ENDPOINT_ID = "a0a0a0a0-b1b1-4c2c-9d3d-e4e4e4e4e4e4";
-export const FORM_ID = "a0a0a0a0-b1b1-4c2c-9d3d-e4e4e4e4e4e4";
 export const DASHBOARD_ID = "d0d0d0d0-e1e1-4f2f-a3a3-b4b4b4b4b4b4";
 export const INSIGHT_ID = "a0a0a0a0-b1b1-4c2c-a3a3-d4d4d4d4d4d4";
 export const KEY_ID = "a0a0a0a0-b1b1-4c2c-9d3d-e4e4e4e4e4e4";
@@ -30,28 +26,6 @@ export const EVENT_CATALOG_ID = "e4e4e4e4-f5f5-4a6a-a7d7-b8b8b8b8b8b8";
 // =============================================================================
 // Factory Functions
 // =============================================================================
-
-export function makeContent(overrides: Partial<Content> = {}): Content {
-	return {
-		id: CONTENT_ID,
-		organizationId: TEST_ORG_ID,
-		teamId: TEST_TEAM_ID,
-		createdByMemberId: "member-1",
-		body: "Hello world",
-		status: "draft",
-		shareStatus: "private",
-		draftOrigin: "manual",
-		meta: { title: "Test", description: "Desc", slug: "test" },
-		request: null,
-		stats: null,
-		writerId: null,
-		imageUrl: null,
-		clusterConfig: overrides?.clusterConfig ?? {},
-		createdAt: new Date("2026-01-01"),
-		updatedAt: new Date("2026-01-01"),
-		...overrides,
-	};
-}
 
 export function makeWebhookEndpoint(
 	overrides: Partial<WebhookEndpoint> = {},
@@ -69,27 +43,6 @@ export function makeWebhookEndpoint(
 		failureCount: 0,
 		lastSuccessAt: null,
 		lastFailureAt: null,
-		createdAt: new Date("2026-01-01"),
-		updatedAt: new Date("2026-01-01"),
-		...overrides,
-	};
-}
-
-export function makeForm(overrides: Partial<Form> = {}): Form {
-	return {
-		id: FORM_ID,
-		organizationId: TEST_ORG_ID,
-		teamId: TEST_TEAM_ID,
-		name: "Contact Form",
-		description: null,
-		fields: [{ id: "f1", type: "text", label: "Name", required: true }],
-		settings: {},
-		isActive: true,
-		title: null,
-		subtitle: null,
-		icon: null,
-		buttonText: "Enviar",
-		layout: "card",
 		createdAt: new Date("2026-01-01"),
 		updatedAt: new Date("2026-01-01"),
 		...overrides,

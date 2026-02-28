@@ -11,7 +11,6 @@ import {
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 import { member } from "./auth";
-import { content } from "./content";
 
 // Export format enum
 export const exportFormatEnum = pgEnum("export_format", ["md", "json", "html"]);
@@ -41,9 +40,7 @@ export const exportLog = pgTable(
    "export_log",
    {
       id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-      contentId: uuid("content_id")
-         .notNull()
-         .references(() => content.id, { onDelete: "cascade" }),
+      contentId: uuid("content_id").notNull(),
       memberId: uuid("member_id")
          .notNull()
          .references(() => member.id, { onDelete: "cascade" }),
@@ -65,10 +62,6 @@ export const exportLog = pgTable(
 );
 
 export const exportLogRelations = relations(exportLog, ({ one }) => ({
-   content: one(content, {
-      fields: [exportLog.contentId],
-      references: [content.id],
-   }),
    member: one(member, {
       fields: [exportLog.memberId],
       references: [member.id],

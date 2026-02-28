@@ -87,7 +87,6 @@ export function ManageOrganizationForm({
             await authClient.organization.createTeam({
                name: "Default",
                organizationId: result.data.id,
-               slug: createSlug("Default"),
             });
          }
          fileUpload.clearFile();
