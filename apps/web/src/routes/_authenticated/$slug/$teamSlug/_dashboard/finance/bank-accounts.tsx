@@ -8,10 +8,10 @@ import {
 	EmptyTitle,
 } from "@packages/ui/components/empty";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Landmark, Plus, Trash2 } from "lucide-react";
-import { Suspense, useMemo } from "react";
+import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import {
@@ -49,7 +49,6 @@ function BankAccountsSkeleton() {
 // =============================================================================
 
 function BankAccountsList() {
-	const queryClient = useQueryClient();
 	const { openSheet, closeSheet } = useSheet();
 	const { openAlertDialog } = useAlertDialog();
 
@@ -60,9 +59,6 @@ function BankAccountsList() {
 	const deleteMutation = useMutation(
 		orpc.bankAccounts.remove.mutationOptions({
 			onSuccess: () => {
-				queryClient.invalidateQueries({
-					queryKey: orpc.bankAccounts.getAll.queryOptions({}).queryKey,
-				});
 				toast.success("Conta bancária excluída com sucesso.");
 			},
 			onError: (error) => {
@@ -71,36 +67,38 @@ function BankAccountsList() {
 		}),
 	);
 
-	function handleEdit(account: BankAccountRow) {
-		openSheet({
-			children: (
-				<BankAccountSheet
-					account={account}
-					mode="edit"
-					onSuccess={closeSheet}
-				/>
-			),
-		});
-	}
-
-	function handleDelete(account: BankAccountRow) {
-		openAlertDialog({
-			title: "Excluir conta bancária",
-			description: `Tem certeza que deseja excluir a conta "${account.name}"? Esta ação não pode ser desfeita.`,
-			actionLabel: "Excluir",
-			cancelLabel: "Cancelar",
-			variant: "destructive",
-			onAction: async () => {
-				await deleteMutation.mutateAsync({ id: account.id });
-			},
-		});
-	}
-
-	const columns = useMemo(
-		() => buildBankAccountColumns(handleEdit, handleDelete),
-		// biome-ignore lint/correctness/useExhaustiveDependencies: handlers are stable within render
-		[],
+	const handleEdit = useCallback(
+		(account: BankAccountRow) => {
+			openSheet({
+				children: (
+					<BankAccountSheet
+						account={account}
+						mode="edit"
+						onSuccess={closeSheet}
+					/>
+				),
+			});
+		},
+		[openSheet, closeSheet],
 	);
+
+	const handleDelete = useCallback(
+		(account: BankAccountRow) => {
+			openAlertDialog({
+				title: "Excluir conta bancária",
+				description: `Tem certeza que deseja excluir a conta "${account.name}"? Esta ação não pode ser desfeita.`,
+				actionLabel: "Excluir",
+				cancelLabel: "Cancelar",
+				variant: "destructive",
+				onAction: async () => {
+					await deleteMutation.mutateAsync({ id: account.id });
+				},
+			});
+		},
+		[openAlertDialog, deleteMutation],
+	);
+
+	const columns = buildBankAccountColumns(handleEdit, handleDelete);
 
 	if (accounts.length === 0) {
 		return (

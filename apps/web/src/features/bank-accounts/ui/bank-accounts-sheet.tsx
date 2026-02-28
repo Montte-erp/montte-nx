@@ -14,7 +14,7 @@ import {
 	SheetTitle,
 } from "@packages/ui/components/sheet";
 import { Spinner } from "@packages/ui/components/spinner";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
@@ -46,8 +46,6 @@ export function BankAccountSheet({
 	account,
 	onSuccess,
 }: BankAccountSheetProps) {
-	const queryClient = useQueryClient();
-
 	const [name, setName] = useState(account?.name ?? "");
 	const [type, setType] = useState<
 		"checking" | "savings" | "credit_card" | "investment" | "cash" | "other"
@@ -61,9 +59,6 @@ export function BankAccountSheet({
 	const createMutation = useMutation(
 		orpc.bankAccounts.create.mutationOptions({
 			onSuccess: () => {
-				queryClient.invalidateQueries({
-					queryKey: orpc.bankAccounts.getAll.queryOptions({}).queryKey,
-				});
 				toast.success("Conta bancária criada com sucesso.");
 				onSuccess();
 			},
@@ -76,9 +71,6 @@ export function BankAccountSheet({
 	const updateMutation = useMutation(
 		orpc.bankAccounts.update.mutationOptions({
 			onSuccess: () => {
-				queryClient.invalidateQueries({
-					queryKey: orpc.bankAccounts.getAll.queryOptions({}).queryKey,
-				});
 				toast.success("Conta bancária atualizada com sucesso.");
 				onSuccess();
 			},
