@@ -1,5 +1,5 @@
 import { AppError, propagateError } from "@packages/utils/errors";
-import { and, desc, eq, gte, lte } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import {
    type NewTransaction,
@@ -23,17 +23,12 @@ export async function createTransaction(
    tagIds?: string[],
 ) {
    try {
-      const result = await db
+      const [transaction] = await db
          .insert(transactions)
          .values(data)
          .returning();
-      const transaction = result[0];
 
-      if (!transaction) {
-         throw AppError.database("Failed to create transaction");
-      }
-
-      if (tagIds && tagIds.length > 0) {
+      if (tagIds && tagIds.length > 0 && transaction) {
          await db.insert(transactionTags).values(
             tagIds.map((tagId) => ({ transactionId: transaction.id, tagId })),
          );
@@ -51,6 +46,35 @@ export async function listTransactions(
    filter: ListTransactionsFilter,
 ) {
    try {
+      if (filter.tagId) {
+         const taggedIds = await db
+            .select({ transactionId: transactionTags.transactionId })
+            .from(transactionTags)
+            .where(eq(transactionTags.tagId, filter.tagId));
+
+         if (taggedIds.length === 0) return [];
+
+         const conditions = [
+            eq(transactions.teamId, filter.teamId),
+            inArray(transactions.id, taggedIds.map((r) => r.transactionId)),
+         ];
+         if (filter.type) conditions.push(eq(transactions.type, filter.type));
+         if (filter.bankAccountId)
+            conditions.push(eq(transactions.bankAccountId, filter.bankAccountId));
+         if (filter.categoryId)
+            conditions.push(eq(transactions.categoryId, filter.categoryId));
+         if (filter.dateFrom)
+            conditions.push(gte(transactions.date, filter.dateFrom));
+         if (filter.dateTo)
+            conditions.push(lte(transactions.date, filter.dateTo));
+
+         return await db
+            .select()
+            .from(transactions)
+            .where(and(...conditions))
+            .orderBy(desc(transactions.date));
+      }
+
       const conditions = [eq(transactions.teamId, filter.teamId)];
       if (filter.type) conditions.push(eq(transactions.type, filter.type));
       if (filter.bankAccountId)
@@ -59,24 +83,14 @@ export async function listTransactions(
          conditions.push(eq(transactions.categoryId, filter.categoryId));
       if (filter.dateFrom)
          conditions.push(gte(transactions.date, filter.dateFrom));
-      if (filter.dateTo) conditions.push(lte(transactions.date, filter.dateTo));
+      if (filter.dateTo)
+         conditions.push(lte(transactions.date, filter.dateTo));
 
-      const rows = await db
+      return await db
          .select()
          .from(transactions)
          .where(and(...conditions))
          .orderBy(desc(transactions.date));
-
-      if (filter.tagId) {
-         const taggedIds = await db
-            .select({ transactionId: transactionTags.transactionId })
-            .from(transactionTags)
-            .where(eq(transactionTags.tagId, filter.tagId));
-         const idSet = new Set(taggedIds.map((r) => r.transactionId));
-         return rows.filter((r) => idSet.has(r.id));
-      }
-
-      return rows;
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to list transactions");
@@ -118,6 +132,10 @@ export async function updateTransaction(
          .set(data)
          .where(eq(transactions.id, id))
          .returning();
+
+      if (!updated) {
+         throw AppError.database("Transaction not found");
+      }
 
       if (tagIds !== undefined) {
          await db

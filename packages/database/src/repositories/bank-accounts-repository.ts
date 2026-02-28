@@ -1,5 +1,5 @@
 import { AppError, propagateError } from "@packages/utils/errors";
-import { and, desc, eq, sql, sum } from "drizzle-orm";
+import { and, desc, eq, or, sql, sum } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import {
    type NewBankAccount,
@@ -113,6 +113,11 @@ export async function updateBankAccount(
          .set(data)
          .where(eq(bankAccounts.id, id))
          .returning();
+
+      if (!updated) {
+         throw AppError.database("Bank account not found");
+      }
+
       return updated;
    } catch (err) {
       propagateError(err);
@@ -137,7 +142,12 @@ export async function bankAccountHasTransactions(
       const [row] = await db
          .select({ count: sql<number>`count(*)::int` })
          .from(transactions)
-         .where(eq(transactions.bankAccountId, accountId));
+         .where(
+            or(
+               eq(transactions.bankAccountId, accountId),
+               eq(transactions.destinationBankAccountId, accountId),
+            ),
+         );
       return (row?.count ?? 0) > 0;
    } catch (err) {
       propagateError(err);
