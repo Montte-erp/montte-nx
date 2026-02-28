@@ -17,6 +17,7 @@ import { Spinner } from "@packages/ui/components/spinner";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
+import { SwatchColorPicker } from "@/components/swatch-color-picker";
 import { orpc } from "@/integrations/orpc/client";
 
 interface BankAccountSheetProps {
@@ -51,7 +52,6 @@ export function BankAccountSheet({
 		"checking" | "savings" | "credit_card" | "investment" | "cash" | "other"
 	>(account?.type ?? "checking");
 	const [color, setColor] = useState(account?.color ?? "#6366f1");
-	const [colorHex, setColorHex] = useState(account?.color ?? "#6366f1");
 	const [initialBalance, setInitialBalance] = useState(
 		account?.initialBalance ?? "0",
 	);
@@ -82,18 +82,6 @@ export function BankAccountSheet({
 
 	const isPending = createMutation.isPending || updateMutation.isPending;
 	const isValid = name.trim().length > 0;
-
-	function handleColorPickerChange(value: string) {
-		setColor(value);
-		setColorHex(value);
-	}
-
-	function handleColorHexChange(value: string) {
-		setColorHex(value);
-		if (/^#[0-9a-fA-F]{6}$/.test(value)) {
-			setColor(value);
-		}
-	}
 
 	function handleSubmit() {
 		if (!isValid) return;
@@ -168,24 +156,8 @@ export function BankAccountSheet({
 
 				{/* Cor */}
 				<div className="space-y-2 px-1">
-					<Label htmlFor="account-color-hex">Cor</Label>
-					<div className="flex items-center gap-2">
-						<input
-							className="size-10 rounded-md border cursor-pointer p-0.5"
-							id="account-color"
-							onChange={(e) => handleColorPickerChange(e.target.value)}
-							type="color"
-							value={color}
-						/>
-						<Input
-							className="flex-1 font-mono"
-							id="account-color-hex"
-							maxLength={7}
-							onChange={(e) => handleColorHexChange(e.target.value)}
-							placeholder="#6366f1"
-							value={colorHex}
-						/>
-					</div>
+					<Label>Cor</Label>
+					<SwatchColorPicker onChange={setColor} value={color} />
 				</div>
 
 				{/* Saldo Inicial (create only) */}

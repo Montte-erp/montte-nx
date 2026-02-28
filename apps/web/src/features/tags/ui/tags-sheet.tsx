@@ -10,6 +10,7 @@ import { Spinner } from "@packages/ui/components/spinner";
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { SwatchColorPicker } from "@/components/swatch-color-picker";
 import { orpc } from "@/integrations/orpc/client";
 
 interface TagSheetProps {
@@ -25,7 +26,6 @@ interface TagSheetProps {
 export function TagSheet({ mode, tag, onSuccess }: TagSheetProps) {
 	const [name, setName] = useState(tag?.name ?? "");
 	const [color, setColor] = useState(tag?.color ?? "#6366f1");
-	const [colorHex, setColorHex] = useState(tag?.color ?? "#6366f1");
 
 	const createMutation = useMutation(
 		orpc.tags.create.mutationOptions({
@@ -53,18 +53,6 @@ export function TagSheet({ mode, tag, onSuccess }: TagSheetProps) {
 
 	const isPending = createMutation.isPending || updateMutation.isPending;
 	const isValid = name.trim().length > 0;
-
-	const handleColorPickerChange = useCallback((value: string) => {
-		setColor(value);
-		setColorHex(value);
-	}, []);
-
-	const handleColorHexChange = useCallback((value: string) => {
-		setColorHex(value);
-		if (/^#[0-9a-fA-F]{6}$/.test(value)) {
-			setColor(value);
-		}
-	}, []);
 
 	const handleSubmit = useCallback(() => {
 		if (!isValid) return;
@@ -110,24 +98,8 @@ export function TagSheet({ mode, tag, onSuccess }: TagSheetProps) {
 
 				{/* Cor */}
 				<div className="space-y-2 px-1">
-					<Label htmlFor="tag-color-hex">Cor</Label>
-					<div className="flex items-center gap-2">
-						<input
-							className="size-10 rounded-md border cursor-pointer p-0.5"
-							id="tag-color"
-							onChange={(e) => handleColorPickerChange(e.target.value)}
-							type="color"
-							value={color}
-						/>
-						<Input
-							className="flex-1 font-mono"
-							id="tag-color-hex"
-							maxLength={7}
-							onChange={(e) => handleColorHexChange(e.target.value)}
-							placeholder="#6366f1"
-							value={colorHex}
-						/>
-					</div>
+					<Label>Cor</Label>
+					<SwatchColorPicker onChange={setColor} value={color} />
 				</div>
 			</div>
 
