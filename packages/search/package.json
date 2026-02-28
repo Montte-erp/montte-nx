@@ -1,0 +1,37 @@
+{
+	"name": "@packages/search",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": {
+			"default": "./src/index.ts",
+			"types": "./dist/src/index.d.ts"
+		},
+		"./types": {
+			"default": "./src/types.ts",
+			"types": "./dist/src/types.d.ts"
+		},
+		"./providers/*": {
+			"default": "./src/providers/*.ts",
+			"types": "./dist/src/providers/*.d.ts"
+		}
+	},
+	"files": ["dist"],
+	"scripts": {
+		"build": "tsc --build",
+		"typecheck": "tsgo"
+	},
+	"dependencies": {
+		"@mendable/firecrawl-js": "catalog:search-providers",
+		"@packages/environment": "workspace:*",
+		"@packages/utils": "workspace:*",
+		"@tavily/core": "catalog:search-providers",
+		"exa-js": "catalog:search-providers",
+		"zod": "catalog:validation"
+	},
+	"devDependencies": {
+		"@tooling/typescript": "workspace:*",
+		"typescript": "catalog:development"
+	}
+}

@@ -1,0 +1,103 @@
+{
+   "dependencies": {
+      "@f-o-t/money": "catalog:fot",
+      "@orpc/server": "catalog:orpc",
+      "@packages/database": "workspace:*",
+      "@packages/posthog": "workspace:*",
+      "@packages/queue": "workspace:*",
+      "@packages/redis": "workspace:*",
+      "@packages/stripe": "workspace:*",
+      "bullmq": "catalog:workers",
+      "drizzle-orm": "catalog:database",
+      "ioredis": "catalog:workers",
+      "zod": "catalog:validation"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development"
+   },
+   "exports": {
+      "./catalog": {
+         "default": "./src/catalog.ts",
+         "types": "./dist/src/catalog.d.ts"
+      },
+      "./emit": {
+         "default": "./src/emit.ts",
+         "types": "./dist/src/emit.d.ts"
+      },
+      "./utils": {
+         "default": "./src/utils.ts",
+         "types": "./dist/src/utils.d.ts"
+      },
+      "./refresh-views": {
+         "default": "./src/refresh-views.ts",
+         "types": "./dist/src/refresh-views.d.ts"
+      },
+      "./clusters": {
+         "default": "./src/clusters.ts",
+         "types": "./dist/src/clusters.d.ts"
+      },
+      "./content": {
+         "default": "./src/content.ts",
+         "types": "./dist/src/content.d.ts"
+      },
+      "./ai": {
+         "default": "./src/ai.ts",
+         "types": "./dist/src/ai.d.ts"
+      },
+      "./forms": {
+         "default": "./src/forms.ts",
+         "types": "./dist/src/forms.d.ts"
+      },
+      "./seo": {
+         "default": "./src/seo.ts",
+         "types": "./dist/src/seo.d.ts"
+      },
+      "./experiments": {
+         "default": "./src/experiments.ts",
+         "types": "./dist/src/experiments.d.ts"
+      },
+      "./webhook": {
+         "default": "./src/webhook.ts",
+         "types": "./dist/src/webhook.d.ts"
+      },
+      "./dashboard": {
+         "default": "./src/dashboard.ts",
+         "types": "./dist/src/dashboard.d.ts"
+      },
+      "./insight": {
+         "default": "./src/insight.ts",
+         "types": "./dist/src/insight.d.ts"
+      },
+      "./credits": {
+         "default": "./src/credits.ts",
+         "types": "./dist/src/credits.d.ts"
+      },
+      "./reconcile": {
+         "default": "./src/reconcile.ts",
+         "types": "./dist/src/reconcile.d.ts"
+      },
+      "./assets": {
+         "default": "./src/assets.ts",
+         "types": "./dist/src/assets.d.ts"
+      },
+      "./writer": {
+         "default": "./src/writer.ts",
+         "types": "./dist/src/writer.d.ts"
+      }
+   },
+   "files": [
+      "dist"
+   ],
+   "license": "Apache-2.0",
+   "name": "@packages/events",
+   "private": true,
+   "scripts": {
+      "build": "tsc --build",
+      "check": "biome check --write ./src",
+      "test": "bun test --pass-with-no-tests",
+      "typecheck": "tsgo"
+   },
+   "type": "module",
+   "version": "0.1.0"
+}

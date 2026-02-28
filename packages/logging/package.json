@@ -1,0 +1,42 @@
+{
+   "name": "@packages/logging",
+   "version": "0.1.0",
+   "type": "module",
+   "private": true,
+   "license": "Apache-2.0",
+   "exports": {
+      ".": {
+         "default": "./src/logger.ts",
+         "types": "./dist/src/logger.d.ts"
+      },
+      "./server": {
+         "default": "./src/server.ts",
+         "types": "./dist/src/server.d.ts"
+      },
+      "./worker": {
+         "default": "./src/worker.ts",
+         "types": "./dist/src/worker.d.ts"
+      },
+      "./types": {
+         "default": "./src/types.ts",
+         "types": "./dist/src/types.d.ts"
+      }
+   },
+   "files": [
+      "dist"
+   ],
+   "scripts": {
+      "build": "tsc --build",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@logtail/pino": "catalog:logging",
+      "pino": "catalog:logging"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "@types/node": "^20",
+      "pino-pretty": "catalog:logging",
+      "typescript": "catalog:development"
+   }
+}

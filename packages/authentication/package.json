@@ -1,0 +1,59 @@
+{
+   "dependencies": {
+      "@better-auth/oauth-provider": "catalog:auth",
+      "@better-auth/stripe": "catalog:auth",
+      "@packages/database": "workspace:*",
+      "react": "catalog:react",
+      "react-dom": "catalog:react",
+      "@packages/environment": "workspace:*",
+      "@packages/stripe": "workspace:*",
+      "@packages/transactional": "workspace:*",
+      "better-auth": "catalog:auth",
+      "ioredis": "catalog:workers",
+      "@packages/redis": "workspace:*"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development"
+   },
+   "exports": {
+      "./client": {
+         "default": "./src/client.ts",
+         "types": "./dist/src/client.d.ts"
+      },
+      "./helpers": {
+         "default": "./src/helpers/index.ts",
+         "types": "./dist/src/helpers/index.d.ts"
+      },
+      "./server": {
+         "default": "./src/server.ts",
+         "types": "./dist/src/server.d.ts"
+      },
+      "./api-key-config": {
+         "default": "./src/api-key-config.ts",
+         "types": "./dist/src/api-key-config.d.ts"
+      },
+      "./cache": {
+         "default": "./src/cache.ts",
+         "types": "./dist/src/cache.d.ts"
+      },
+      "./redis-connection": {
+         "default": "./src/redis-connection.ts",
+         "types": "./dist/src/redis-connection.d.ts"
+      }
+   },
+   "files": [
+      "dist"
+   ],
+   "license": "Apache-2.0",
+   "name": "@packages/authentication",
+   "private": true,
+   "scripts": {
+      "auth-schema-generate": "npx @better-auth/cli@latest generate --config ./src/cli-config.ts --output ../database/src/schemas/auth.ts",
+      "build": "tsc --build",
+      "check": "biome check --write ./src",
+      "typecheck": "tsgo"
+   },
+   "type": "module",
+   "version": "0.8.1"
+}

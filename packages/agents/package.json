@@ -1,0 +1,57 @@
+{
+   "dependencies": {
+      "@f-o-t/markdown": "catalog:fot",
+      "@mastra/ai-sdk": "catalog:mastra",
+      "@mastra/core": "catalog:mastra",
+      "@mastra/memory": "catalog:mastra",
+      "@mastra/observability": "catalog:mastra",
+      "@mastra/pg": "catalog:mastra",
+      "@mastra/posthog": "catalog:mastra",
+      "@mastra/rag": "catalog:mastra",
+      "@packages/database": "workspace:*",
+      "@packages/environment": "workspace:*",
+      "@packages/files": "workspace:*",
+      "@packages/search": "workspace:*",
+      "@packages/utils": "workspace:*",
+      "ai": "catalog:mastra",
+      "zod": "catalog:validation"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "dotenv-cli": "catalog:enviroment",
+      "shx": "catalog:enviroment",
+      "typescript": "catalog:development"
+   },
+   "exports": {
+      ".": {
+         "default": "./src/mastra/index.ts",
+         "types": "./dist/src/mastra/index.d.ts"
+      },
+      "./mastra": {
+         "default": "./src/mastra/index.ts",
+         "types": "./dist/src/mastra/index.d.ts"
+      },
+      "./models": {
+         "default": "./src/models.ts",
+         "types": "./dist/src/models.d.ts"
+      },
+      "./rag/*": {
+         "default": "./src/mastra/rag/*.ts",
+         "types": "./dist/src/mastra/rag/*.d.ts"
+      }
+   },
+   "files": [
+      "dist"
+   ],
+   "license": "Apache-2.0",
+   "name": "@packages/agents",
+   "private": true,
+   "scripts": {
+      "build": "tsc --build",
+      "check": "biome check --write ./src",
+      "dev": "dotenv -e .env -- bunx mastra dev",
+      "typecheck": "tsgo"
+   },
+   "type": "module",
+   "version": "0.25.1"
+}

@@ -1,0 +1,43 @@
+{
+   "dependencies": {
+      "@packages/environment": "workspace:*",
+      "posthog-js": "catalog:analytics-client",
+      "posthog-node": "catalog:analytics-client"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development"
+   },
+   "exports": {
+      "./client": {
+         "default": "./src/client.tsx",
+         "types": "./dist/src/client.d.ts"
+      },
+      "./server": {
+         "default": "./src/server.ts",
+         "types": "./dist/src/server.d.ts"
+      },
+      "./early-access-ssr": {
+         "default": "./src/early-access-ssr.ts",
+         "types": "./dist/src/early-access-ssr.d.ts"
+      },
+      "./sdk/server": {
+         "default": "./src/sdk/server.ts",
+         "types": "./dist/src/sdk/server.d.ts"
+      }
+   },
+   "files": [
+      "dist"
+   ],
+   "license": "Apache-2.0",
+   "name": "@packages/posthog",
+   "private": true,
+   "scripts": {
+      "build": "tsc --build",
+      "check": "biome check --write ./src",
+      "test": "bun test",
+      "typecheck": "tsgo"
+   },
+   "type": "module",
+   "version": "0.8.1"
+}

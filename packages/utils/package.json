@@ -1,0 +1,66 @@
+{
+   "dependencies": {
+      "slugify": "catalog:ui",
+      "zod": "catalog:validation"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development"
+   },
+   "exports": {
+      "./array": {
+         "default": "./src/array.ts",
+         "types": "./dist/src/array.d.ts"
+      },
+      "./date": {
+         "default": "./src/date.ts",
+         "types": "./dist/src/date.d.ts"
+      },
+      "./diff": {
+         "default": "./src/diff.ts",
+         "types": "./dist/src/diff.d.ts"
+      },
+      "./errors": {
+         "default": "./src/errors.ts",
+         "types": "./dist/src/errors.d.ts"
+      },
+      "./file": {
+         "default": "./src/file.ts",
+         "types": "./dist/src/file.d.ts"
+      },
+      "./number": {
+         "default": "./src/numbers.ts",
+         "types": "./dist/src/numbers.d.ts"
+      },
+      "./object": {
+         "default": "./src/object.ts",
+         "types": "./dist/src/object.d.ts"
+      },
+      "./permissions": {
+         "default": "./src/permissions.ts",
+         "types": "./dist/src/permissions.d.ts"
+      },
+      "./sanitization": {
+         "default": "./src/sanitization.ts",
+         "types": "./dist/src/sanitization.d.ts"
+      },
+      "./text": {
+         "default": "./src/text.ts",
+         "types": "./dist/src/text.d.ts"
+      }
+   },
+   "files": [
+      "dist"
+   ],
+   "license": "Apache-2.0",
+   "name": "@packages/utils",
+   "private": true,
+   "scripts": {
+      "build": "tsc --build",
+      "check": "biome check --write ./src",
+      "test": "bun test",
+      "typecheck": "tsgo"
+   },
+   "type": "module",
+   "version": "0.28.0"
+}

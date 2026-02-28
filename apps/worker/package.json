@@ -1,0 +1,27 @@
+{
+   "name": "worker",
+   "version": "0.1.0",
+   "type": "module",
+   "private": true,
+   "scripts": {
+      "dev": "bun --watch src/index.ts",
+      "start": "bun src/index.ts",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@packages/database": "workspace:*",
+      "@packages/environment": "workspace:*",
+      "@packages/events": "workspace:*",
+      "@packages/logging": "workspace:*",
+      "@packages/queue": "workspace:*",
+      "@packages/redis": "workspace:*",
+      "bullmq": "catalog:workers",
+      "ioredis": "catalog:workers",
+      "node-cron": "catalog:workers"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "@types/node-cron": "catalog:workers",
+      "typescript": "catalog:development"
+   }
+}
