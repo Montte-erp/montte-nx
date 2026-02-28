@@ -1,4 +1,14 @@
+import { MoneyInput } from "@/components/money-input";
 import { Button } from "@packages/ui/components/button";
+import { Checkbox } from "@packages/ui/components/checkbox";
+import {
+	CredenzaBody,
+	CredenzaDescription,
+	CredenzaFooter,
+	CredenzaHeader,
+	CredenzaTitle,
+} from "@packages/ui/components/credenza";
+import { DatePicker } from "@packages/ui/components/date-picker";
 import { Input } from "@packages/ui/components/input";
 import { Label } from "@packages/ui/components/label";
 import {
@@ -8,35 +18,21 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@packages/ui/components/select";
-import {
-	SheetDescription,
-	SheetHeader,
-	SheetTitle,
-} from "@packages/ui/components/sheet";
 import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
-import { Checkbox } from "@packages/ui/components/checkbox";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import type { TransactionRow } from "./transactions-columns";
 
-// =============================================================================
-// Types
-// =============================================================================
-
 type TransactionType = "income" | "expense" | "transfer";
 
-interface TransactionSheetProps {
+interface TransactionFormProps {
 	mode: "create" | "edit";
 	transaction?: TransactionRow;
 	onSuccess: () => void;
 }
-
-// =============================================================================
-// Tag Checkbox List
-// =============================================================================
 
 interface TagCheckboxListProps {
 	selectedTagIds: string[];
@@ -79,15 +75,11 @@ function TagCheckboxList({ selectedTagIds, onToggle }: TagCheckboxListProps) {
 	);
 }
 
-// =============================================================================
-// Form Content (needs suspense for data fetching)
-// =============================================================================
-
 function TransactionFormContent({
 	mode,
 	transaction,
 	onSuccess,
-}: TransactionSheetProps) {
+}: TransactionFormProps) {
 	const isCreate = mode === "create";
 
 	const { data: bankAccounts } = useSuspenseQuery(
@@ -97,12 +89,16 @@ function TransactionFormContent({
 		orpc.categories.getAll.queryOptions({}),
 	);
 
-	// Form state
 	const [type, setType] = useState<TransactionType>(
 		transaction?.type ?? "income",
 	);
+	const [name, setName] = useState<string>(
+		(transaction as TransactionRow & { name?: string | null })?.name ?? "",
+	);
 	const [amount, setAmount] = useState(transaction?.amount ?? "");
-	const [date, setDate] = useState(transaction?.date ?? "");
+	const [date, setDate] = useState<Date | undefined>(
+		transaction?.date ? new Date(`${transaction.date}T12:00:00`) : undefined,
+	);
 	const [bankAccountId, setBankAccountId] = useState(
 		transaction?.bankAccountId ?? "",
 	);
@@ -117,11 +113,10 @@ function TransactionFormContent({
 	const [description, setDescription] = useState(
 		transaction?.description ?? "",
 	);
-	// Derived: subcategories for selected category
+
 	const selectedCategory = categories.find((c) => c.id === categoryId);
 	const subcategoryOptions = selectedCategory?.subcategories ?? [];
 
-	// When category changes, reset subcategory
 	const handleCategoryChange = useCallback((value: string) => {
 		setCategoryId(value);
 		setSubcategoryId("");
@@ -158,12 +153,13 @@ function TransactionFormContent({
 	);
 
 	const isPending = createMutation.isPending || updateMutation.isPending;
+	const dateStr = date ? date.toISOString().split("T")[0] : "";
 
 	const isValid =
 		type.length > 0 &&
 		amount.length > 0 &&
 		Number(amount) > 0 &&
-		date.length > 0 &&
+		dateStr.length > 0 &&
 		bankAccountId.length > 0 &&
 		(type !== "transfer" || destinationBankAccountId.length > 0);
 
@@ -172,8 +168,9 @@ function TransactionFormContent({
 
 		const payload = {
 			type,
+			name: name.trim() || null,
 			amount,
-			date,
+			date: dateStr,
 			bankAccountId,
 			destinationBankAccountId:
 				type === "transfer" ? destinationBankAccountId : null,
@@ -189,24 +186,37 @@ function TransactionFormContent({
 		} else if (transaction) {
 			updateMutation.mutate({ id: transaction.id, ...payload });
 		}
-	}, [isValid, isCreate, type, amount, date, bankAccountId, destinationBankAccountId, categoryId, subcategoryId, tagIds, description, createMutation, updateMutation, transaction]);
+	}, [isValid, isCreate, type, name, amount, dateStr, bankAccountId, destinationBankAccountId, categoryId, subcategoryId, tagIds, description, createMutation, updateMutation, transaction]);
+
+	const accountLabel = type === "transfer" ? "Conta de Origem" : "Conta";
 
 	return (
-		<div className="flex h-full flex-col">
-			<SheetHeader>
-				<SheetTitle>
+		<>
+			<CredenzaHeader>
+				<CredenzaTitle>
 					{isCreate ? "Nova Transação" : "Editar Transação"}
-				</SheetTitle>
-				<SheetDescription>
+				</CredenzaTitle>
+				<CredenzaDescription>
 					{isCreate
 						? "Registre uma nova transação financeira."
 						: "Atualize os dados da transação."}
-				</SheetDescription>
-			</SheetHeader>
+				</CredenzaDescription>
+			</CredenzaHeader>
 
-			<div className="flex-1 overflow-y-auto space-y-6 py-6">
+			<CredenzaBody className="space-y-4">
+				{/* Nome */}
+				<div className="space-y-2">
+					<Label htmlFor="transaction-name">Nome</Label>
+					<Input
+						id="transaction-name"
+						onChange={(e) => setName(e.target.value)}
+						placeholder="Ex: Almoço, Salário"
+						value={name}
+					/>
+				</div>
+
 				{/* Tipo */}
-				<div className="space-y-2 px-1">
+				<div className="space-y-2">
 					<Label htmlFor="transaction-type">Tipo</Label>
 					<Select
 						onValueChange={(v) => setType(v as TransactionType)}
@@ -224,33 +234,30 @@ function TransactionFormContent({
 				</div>
 
 				{/* Valor */}
-				<div className="space-y-2 px-1">
-					<Label htmlFor="transaction-amount">Valor (R$)</Label>
-					<Input
+				<div className="space-y-2">
+					<Label htmlFor="transaction-amount">Valor</Label>
+					<MoneyInput
+						disabled={isPending}
 						id="transaction-amount"
-						min="0.01"
-						onChange={(e) => setAmount(e.target.value)}
-						placeholder="0.00"
-						step="0.01"
-						type="number"
+						onChange={setAmount}
 						value={amount}
 					/>
 				</div>
 
 				{/* Data */}
-				<div className="space-y-2 px-1">
-					<Label htmlFor="transaction-date">Data</Label>
-					<Input
-						id="transaction-date"
-						onChange={(e) => setDate(e.target.value)}
-						type="date"
-						value={date}
+				<div className="space-y-2">
+					<Label>Data</Label>
+					<DatePicker
+						className="w-full"
+						date={date}
+						onSelect={setDate}
+						placeholder="Selecione a data"
 					/>
 				</div>
 
-				{/* Conta */}
-				<div className="space-y-2 px-1">
-					<Label htmlFor="transaction-account">Conta</Label>
+				{/* Conta (Origem) */}
+				<div className="space-y-2">
+					<Label htmlFor="transaction-account">{accountLabel}</Label>
 					<Select onValueChange={setBankAccountId} value={bankAccountId}>
 						<SelectTrigger id="transaction-account">
 							<SelectValue placeholder="Selecione a conta" />
@@ -265,9 +272,9 @@ function TransactionFormContent({
 					</Select>
 				</div>
 
-				{/* Conta de Destino (only for transfer) */}
+				{/* Conta de Destino (transfer only) */}
 				{type === "transfer" && (
-					<div className="space-y-2 px-1">
+					<div className="space-y-2">
 						<Label htmlFor="transaction-dest-account">Conta de Destino</Label>
 						<Select
 							onValueChange={setDestinationBankAccountId}
@@ -288,7 +295,7 @@ function TransactionFormContent({
 				)}
 
 				{/* Categoria */}
-				<div className="space-y-2 px-1">
+				<div className="space-y-2">
 					<Label htmlFor="transaction-category">Categoria</Label>
 					<Select onValueChange={handleCategoryChange} value={categoryId}>
 						<SelectTrigger id="transaction-category">
@@ -304,9 +311,9 @@ function TransactionFormContent({
 					</Select>
 				</div>
 
-				{/* Subcategoria (only when category selected and has subcategories) */}
+				{/* Subcategoria */}
 				{categoryId && subcategoryOptions.length > 0 && (
-					<div className="space-y-2 px-1">
+					<div className="space-y-2">
 						<Label htmlFor="transaction-subcategory">Subcategoria</Label>
 						<Select onValueChange={setSubcategoryId} value={subcategoryId}>
 							<SelectTrigger id="transaction-subcategory">
@@ -324,7 +331,7 @@ function TransactionFormContent({
 				)}
 
 				{/* Tags */}
-				<div className="space-y-2 px-1">
+				<div className="space-y-2">
 					<Label>Tags</Label>
 					<Suspense
 						fallback={<p className="text-sm text-muted-foreground">Carregando tags...</p>}
@@ -334,7 +341,7 @@ function TransactionFormContent({
 				</div>
 
 				{/* Observações */}
-				<div className="space-y-2 px-1">
+				<div className="space-y-2">
 					<Label htmlFor="transaction-description">Observações</Label>
 					<Textarea
 						id="transaction-description"
@@ -344,11 +351,9 @@ function TransactionFormContent({
 						value={description}
 					/>
 				</div>
+			</CredenzaBody>
 
-			</div>
-
-			{/* Footer */}
-			<div className="border-t pt-4 pb-2">
+			<CredenzaFooter>
 				<Button
 					className="w-full"
 					disabled={!isValid || isPending}
@@ -357,33 +362,29 @@ function TransactionFormContent({
 					{isPending ? <Spinner className="size-4 mr-2" /> : null}
 					{isCreate ? "Criar transação" : "Salvar alterações"}
 				</Button>
-			</div>
-		</div>
+			</CredenzaFooter>
+		</>
 	);
 }
-
-// =============================================================================
-// Main Export (wrapped in Suspense)
-// =============================================================================
 
 export function TransactionSheet({
 	mode,
 	transaction,
 	onSuccess,
-}: TransactionSheetProps) {
+}: TransactionFormProps) {
 	return (
 		<Suspense
 			fallback={
-				<div className="flex h-full flex-col">
-					<SheetHeader>
-						<SheetTitle>
+				<>
+					<CredenzaHeader>
+						<CredenzaTitle>
 							{mode === "create" ? "Nova Transação" : "Editar Transação"}
-						</SheetTitle>
-					</SheetHeader>
-					<div className="flex flex-1 items-center justify-center">
+						</CredenzaTitle>
+					</CredenzaHeader>
+					<CredenzaBody className="flex items-center justify-center py-8">
 						<Spinner className="size-6" />
-					</div>
-				</div>
+					</CredenzaBody>
+				</>
 			}
 		>
 			<TransactionFormContent
