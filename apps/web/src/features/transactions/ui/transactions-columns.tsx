@@ -8,6 +8,7 @@ export type TransactionRow = {
 	teamId: string;
 	type: "income" | "expense" | "transfer";
 	amount: string;
+	name: string | null;
 	description: string | null;
 	date: string;
 	bankAccountId: string;
@@ -49,6 +50,16 @@ export function buildTransactionColumns(
 			),
 		},
 		{
+			accessorKey: "name",
+			header: "Nome",
+			cell: ({ row }) => {
+				const { name, description } = row.original;
+				const label = name || description;
+				if (!label) return <span className="text-sm text-muted-foreground">—</span>;
+				return <span className="text-sm font-medium truncate max-w-[200px] block">{label}</span>;
+			},
+		},
+		{
 			accessorKey: "type",
 			header: "Tipo",
 			cell: ({ row }) => {
@@ -84,21 +95,6 @@ export function buildTransactionColumns(
 				return (
 					<span className="text-sm font-medium text-muted-foreground">
 						{formatBRL(amount)}
-					</span>
-				);
-			},
-		},
-		{
-			accessorKey: "description",
-			header: "Observações",
-			cell: ({ row }) => {
-				const { description } = row.original;
-				if (!description) {
-					return <span className="text-sm text-muted-foreground">—</span>;
-				}
-				return (
-					<span className="text-sm text-muted-foreground max-w-[200px] truncate block">
-						{description}
 					</span>
 				);
 			},
