@@ -1,10 +1,14 @@
 import type { LucideIcon } from "lucide-react";
 import {
+   ArrowLeftRight,
+   Building2,
    Database,
    House,
    LayoutDashboard,
    Lightbulb,
    Sparkles,
+   Tag,
+   Tags,
 } from "lucide-react";
 import type { SubSidebarSection } from "../hooks/use-sidebar-nav";
 
@@ -37,6 +41,36 @@ export type NavGroupDef = {
 };
 
 export const navGroups: NavGroupDef[] = [
+   {
+      id: "finance",
+      label: "Finanças",
+      items: [
+         {
+            id: "transactions",
+            label: "Transações",
+            icon: ArrowLeftRight,
+            route: "/$slug/$teamSlug/finance/transactions",
+         },
+         {
+            id: "bank-accounts",
+            label: "Contas Bancárias",
+            icon: Building2,
+            route: "/$slug/$teamSlug/finance/bank-accounts",
+         },
+         {
+            id: "categories",
+            label: "Categorias",
+            icon: Tag,
+            route: "/$slug/$teamSlug/finance/categories",
+         },
+         {
+            id: "tags",
+            label: "Tags",
+            icon: Tags,
+            route: "/$slug/$teamSlug/finance/tags",
+         },
+      ],
+   },
    {
       id: "main",
       items: [
