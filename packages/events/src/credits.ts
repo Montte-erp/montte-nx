@@ -37,10 +37,7 @@ function brl(amount: string): Money {
 export const POOL_CATEGORIES: Record<CreditPool, EventCategory[]> = {
    ai: [EVENT_CATEGORIES.ai],
    platform: [
-      EVENT_CATEGORIES.content,
-      EVENT_CATEGORIES.form,
-      EVENT_CATEGORIES.seo,
-      EVENT_CATEGORIES.experiment,
+      EVENT_CATEGORIES.finance,
       EVENT_CATEGORIES.dashboard,
       EVENT_CATEGORIES.insight,
       EVENT_CATEGORIES.webhook,
