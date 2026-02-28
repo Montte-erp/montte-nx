@@ -3,6 +3,19 @@ import { eq, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import { type NewSubcategory, subcategories, transactions } from "../schema";
 
+export async function getSubcategory(db: DatabaseInstance, id: string) {
+   try {
+      const [sub] = await db
+         .select()
+         .from(subcategories)
+         .where(eq(subcategories.id, id));
+      return sub ?? null;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to get subcategory");
+   }
+}
+
 export async function createSubcategory(
    db: DatabaseInstance,
    data: NewSubcategory,

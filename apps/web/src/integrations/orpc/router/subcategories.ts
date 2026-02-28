@@ -3,6 +3,7 @@ import { getCategory } from "@packages/database/repositories/categories-reposito
 import {
 	createSubcategory,
 	deleteSubcategory,
+	getSubcategory,
 	subcategoryHasTransactions,
 	updateSubcategory,
 } from "@packages/database/repositories/subcategories-repository";
@@ -35,14 +36,22 @@ export const create = protectedProcedure
 export const update = protectedProcedure
 	.input(z.object({ id: z.string().uuid() }).merge(subcategorySchema))
 	.handler(async ({ context, input }) => {
-		const { db } = context;
+		const { db, teamId } = context;
+		const sub = await getSubcategory(db, input.id);
+		if (!sub || sub.teamId !== teamId) {
+			throw new ORPCError("NOT_FOUND", { message: "Subcategoria não encontrada." });
+		}
 		return updateSubcategory(db, input.id, { name: input.name });
 	});
 
 export const remove = protectedProcedure
 	.input(z.object({ id: z.string().uuid() }))
 	.handler(async ({ context, input }) => {
-		const { db } = context;
+		const { db, teamId } = context;
+		const sub = await getSubcategory(db, input.id);
+		if (!sub || sub.teamId !== teamId) {
+			throw new ORPCError("NOT_FOUND", { message: "Subcategoria não encontrada." });
+		}
 		const hasTransactions = await subcategoryHasTransactions(db, input.id);
 		if (hasTransactions) {
 			throw new ORPCError("BAD_REQUEST", { message: "Não é possível excluir uma subcategoria com transações." });
