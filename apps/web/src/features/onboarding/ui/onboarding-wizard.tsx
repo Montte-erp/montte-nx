@@ -5,9 +5,7 @@ import { defineStepper } from "@packages/ui/components/stepper";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo, useRef, useState, useTransition } from "react";
 import type { Session } from "@/integrations/better-auth/auth-client";
-import { ProductsStep } from "./products-step";
 import { ProfileStep } from "./profile-step";
-import { ProjectStep } from "./project-step";
 import type { StepHandle, StepState } from "./step-handle";
 import { WorkspaceStep } from "./workspace-step";
 
@@ -26,13 +24,6 @@ interface OnboardingWizardProps {
    activeOrg: Organization | null;
 }
 
-type WizardState = {
-   organizationId: string | null;
-   organizationSlug: string | null;
-   teamId: string | null;
-   teamSlug: string | null;
-};
-
 export function OnboardingWizard({
    session,
    organizations: _organizations,
@@ -47,27 +38,22 @@ export function OnboardingWizard({
       const s: { id: string; title: string }[] = [];
       if (needsProfile) s.push({ id: "profile", title: "Perfil" });
       if (needsWorkspace) s.push({ id: "workspace", title: "Workspace" });
-      s.push({ id: "project", title: "Projeto" });
-      s.push({ id: "products", title: "Produtos" });
       return s;
    }, [needsProfile, needsWorkspace]);
 
-   const { Stepper } = useMemo(() => defineStepper(...steps), [steps]);
+   if (steps.length === 0) {
+      navigate({ to: "/" });
+      return null;
+   }
 
-   const [wizardState, setWizardState] = useState<WizardState>({
-      organizationId: activeOrg?.id ?? null,
-      organizationSlug: activeOrg?.slug ?? null,
-      teamId: null,
-      teamSlug: null,
-   });
+   const { Stepper } = useMemo(() => defineStepper(...steps), [steps]);
 
    const [workspaceSlug, setWorkspaceSlug] = useState<string | null>(
       activeOrg?.slug ?? null,
    );
-   const [projectSlug, setProjectSlug] = useState<string | null>(null);
 
    const stepRef = useRef<StepHandle>(null);
-   const [submitPending, startTransition] = useTransition();
+   const [, startTransition] = useTransition();
 
    const [stepState, setStepState] = useState<StepState>({
       canContinue: true,
@@ -80,46 +66,18 @@ export function OnboardingWizard({
 
    const handleProfileComplete = useCallback(
       (methods: { navigation: { next: () => void } }) => {
-         methods.navigation.next();
+         if (needsWorkspace) {
+            methods.navigation.next();
+         }
       },
-      [],
+      [needsWorkspace],
    );
 
    const handleWorkspaceComplete = useCallback(
-      (
-         result: { orgSlug: string; teamSlug: string },
-         methods: { navigation: { next: () => void } },
-      ) => {
-         setWizardState((prev) => ({
-            ...prev,
-            organizationSlug: result.orgSlug,
-            teamSlug: result.teamSlug,
-         }));
-         methods.navigation.next();
-      },
-      [],
-   );
-
-   const handleProjectComplete = useCallback(
-      (
-         team: { id: string; slug: string },
-         methods: { navigation: { next: () => void } },
-      ) => {
-         setWizardState((prev) => ({
-            ...prev,
-            teamId: team.id,
-            teamSlug: team.slug,
-         }));
-         methods.navigation.next();
-      },
-      [],
-   );
-
-   const handleOnboardingComplete = useCallback(
-      (slug: string, teamSlug: string) => {
+      ({ orgSlug, teamSlug }: { orgSlug: string; teamSlug: string }) => {
          navigate({
             to: "/$slug/$teamSlug/home",
-            params: { slug, teamSlug },
+            params: { slug: orgSlug, teamSlug },
          });
       },
       [navigate],
@@ -166,7 +124,6 @@ export function OnboardingWizard({
                            >
                               app.montte.co
                               {workspaceSlug ? `/${workspaceSlug}` : ""}
-                              {projectSlug ? `/${projectSlug}` : ""}
                            </Badge>
                         </div>
                      </div>
@@ -197,12 +154,7 @@ export function OnboardingWizard({
                               ? {
                                    workspace: () => (
                                       <WorkspaceStep
-                                         onNext={(result) =>
-                                            handleWorkspaceComplete(
-                                               result,
-                                               methods,
-                                            )
-                                         }
+                                         onNext={handleWorkspaceComplete}
                                          onSlugChange={setWorkspaceSlug}
                                          onStateChange={handleStepStateChange}
                                          ref={stepRef}
@@ -210,32 +162,6 @@ export function OnboardingWizard({
                                    ),
                                 }
                               : {}),
-                           project: () => (
-                              <ProjectStep
-                                 onNext={(team) =>
-                                    handleProjectComplete(team, methods)
-                                 }
-                                 onSlugChange={setProjectSlug}
-                                 onStateChange={handleStepStateChange}
-                                 organizationId={
-                                    wizardState.organizationId ?? ""
-                                 }
-                                 ref={stepRef}
-                              />
-                           ),
-                           products: () => (
-                              <ProductsStep
-                                 isPending={submitPending}
-                                 onComplete={handleOnboardingComplete}
-                                 onStateChange={handleStepStateChange}
-                                 organizationId={
-                                    wizardState.organizationId ?? ""
-                                 }
-                                 ref={stepRef}
-                                 teamId={wizardState.teamId ?? ""}
-                                 teamSlug={wizardState.teamSlug ?? ""}
-                              />
-                           ),
                         })}
                      </div>
                   </main>
