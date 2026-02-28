@@ -32,6 +32,7 @@ const transactionSchema = createInsertSchema(transactions)
       attachmentUrl: true,
    })
    .extend({
+      name: z.string().max(200).nullable().optional(),
       amount: z
          .string()
          .refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0, {

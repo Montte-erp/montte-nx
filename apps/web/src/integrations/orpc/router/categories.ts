@@ -16,7 +16,13 @@ import { protectedProcedure } from "../server";
 // Validation Schemas
 // =============================================================================
 
-const categorySchema = createInsertSchema(categories).pick({ name: true });
+const categorySchema = createInsertSchema(categories)
+   .pick({ name: true })
+   .extend({
+      color: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
+      icon: z.string().max(50).nullable().optional(),
+      type: z.enum(["income", "expense"]).nullable().optional(),
+   });
 
 // =============================================================================
 // Category Procedures
@@ -26,7 +32,14 @@ export const create = protectedProcedure
    .input(categorySchema)
    .handler(async ({ context, input }) => {
       const { db, teamId } = context;
-      return createCategory(db, { teamId, name: input.name, isDefault: false });
+      return createCategory(db, {
+         teamId,
+         name: input.name,
+         isDefault: false,
+         color: input.color ?? null,
+         icon: input.icon ?? null,
+         type: input.type ?? null,
+      });
    });
 
 export const getAll = protectedProcedure.handler(async ({ context }) => {
@@ -49,7 +62,12 @@ export const update = protectedProcedure
             message: "Categorias padrão não podem ser editadas.",
          });
       }
-      return updateCategory(db, input.id, { name: input.name });
+      return updateCategory(db, input.id, {
+         name: input.name,
+         color: input.color ?? null,
+         icon: input.icon ?? null,
+         type: input.type ?? null,
+      });
    });
 
 export const remove = protectedProcedure
