@@ -1,6 +1,10 @@
+import { BankAccountSheet } from "@/features/bank-accounts/ui/bank-accounts-sheet";
+import { CategorySheet } from "@/features/categories/ui/categories-sheet";
+import { TransactionSheet } from "@/features/transactions/ui/transactions-sheet";
+import { useCredenza } from "@/hooks/use-credenza";
+import { useSheet } from "@/hooks/use-sheet";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import { cn } from "@packages/ui/lib/utils";
-import { useNavigate, useParams } from "@tanstack/react-router";
 import { CheckCircle2, Lock } from "lucide-react";
 import type React from "react";
 import { useCallback } from "react";
@@ -21,15 +25,27 @@ export function QuickStartTask({
    isAutoDetected,
    onComplete,
 }: QuickStartTaskProps) {
-   const navigate = useNavigate();
-   const { slug, teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
+   const { openSheet, closeSheet } = useSheet();
+   const { openCredenza, closeCredenza } = useCredenza();
 
    const handleClick = useCallback(() => {
       if (isLocked || isCompleted) return;
-      navigate({ to: task.route, params: { slug, teamSlug } });
-   }, [isLocked, isCompleted, navigate, slug, teamSlug, task.route]);
+
+      if (task.id === "connect_bank_account") {
+         openSheet({
+            children: <BankAccountSheet mode="create" onSuccess={closeSheet} />,
+         });
+      } else if (task.id === "create_category") {
+         openCredenza({
+            children: <CategorySheet mode="create" onSuccess={closeCredenza} />,
+         });
+      } else if (task.id === "add_transaction") {
+         openCredenza({
+            children: <TransactionSheet mode="create" onSuccess={closeCredenza} />,
+         });
+      }
+      // explore tasks (create_insight) have no action
+   }, [isLocked, isCompleted, task.id, openSheet, closeSheet, openCredenza, closeCredenza]);
 
    const handleKeyDown = useCallback(
       (e: React.KeyboardEvent) => {
