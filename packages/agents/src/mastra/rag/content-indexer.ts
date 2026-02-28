@@ -107,7 +107,7 @@ export async function indexContent(
       }
 
       return {
-         contentId: content.id,
+         id: content.id,
          metadataIndexed: true,
          chunksIndexed,
       };
@@ -124,7 +124,7 @@ export async function indexContent(
  *
  * Call when content is unpublished, archived, or deleted
  */
-export async function removeContent(contentId: string): Promise<void> {
+export async function removeContent(id: string): Promise<void> {
    try {
       await initializeRagService();
       const store = pgVectorStore;
@@ -133,7 +133,7 @@ export async function removeContent(contentId: string): Promise<void> {
       try {
          await store.deleteVectors({
             indexName: CONTENT_METADATA_INDEX,
-            filter: { externalId: { $eq: contentId } },
+            filter: { externalId: { $eq: id } },
          });
       } catch {
          // Ignore if doesn't exist
@@ -143,7 +143,7 @@ export async function removeContent(contentId: string): Promise<void> {
       try {
          await store.deleteVectors({
             indexName: CONTENT_CHUNKS_INDEX,
-            filter: { externalId: { $eq: contentId } },
+            filter: { externalId: { $eq: id } },
          });
       } catch {
          // Ignore if doesn't exist
@@ -172,7 +172,7 @@ export async function batchIndexContent(
       } catch (err) {
          console.error(`Failed to index content ${content.id}:`, err);
          results.push({
-            contentId: content.id,
+            id: content.id,
             metadataIndexed: false,
             chunksIndexed: 0,
          });

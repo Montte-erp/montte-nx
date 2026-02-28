@@ -38,9 +38,7 @@ export const bankAccounts = pgTable(
          .defaultNow()
          .$onUpdate(() => new Date()),
    },
-   (table) => [
-      index("bank_accounts_team_id_idx").on(table.teamId),
-   ],
+   (table) => [index("bank_accounts_team_id_idx").on(table.teamId)],
 );
 
 export type BankAccount = typeof bankAccounts.$inferSelect;

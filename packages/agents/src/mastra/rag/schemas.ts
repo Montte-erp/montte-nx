@@ -12,7 +12,7 @@ export const contentToIndexSchema = z.object({
 export type ContentToIndex = z.infer<typeof contentToIndexSchema>;
 
 export const indexingResultSchema = z.object({
-   contentId: z.string(),
+   id: z.string(),
    metadataIndexed: z.boolean(),
    chunksIndexed: z.number(),
 });

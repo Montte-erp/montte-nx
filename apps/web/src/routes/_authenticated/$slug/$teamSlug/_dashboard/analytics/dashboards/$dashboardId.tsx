@@ -10,7 +10,9 @@ import { useSidebarSection } from "@/layout/dashboard/hooks/use-sidebar-nav";
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId",
 )({
-   loader: () => { setChatMode("analytics"); },
+   loader: () => {
+      setChatMode("analytics");
+   },
    component: DashboardViewPage,
 });
 

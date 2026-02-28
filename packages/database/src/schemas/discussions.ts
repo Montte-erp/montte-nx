@@ -13,7 +13,6 @@ export const discussions = pgTable(
    "discussions",
    {
       id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-      contentId: uuid("content_id").notNull(),
       blockId: text("block_id").notNull(),
       userId: text("user_id").notNull(),
       documentContent: text("document_content"),
@@ -27,10 +26,7 @@ export const discussions = pgTable(
          .defaultNow()
          .$onUpdate(() => new Date()),
    },
-   (table) => [
-      index("discussions_content_id_idx").on(table.contentId),
-      index("discussions_user_id_idx").on(table.userId),
-   ],
+   (table) => [index("discussions_user_id_idx").on(table.userId)],
 );
 
 export const discussionReplies = pgTable(

@@ -8,8 +8,8 @@ import {
 } from "@assistant-ui/react-ai-sdk";
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useMemo, useRef } from "react";
-import { client, orpc } from "@/integrations/orpc/client";
 import { chatContextStore } from "@/features/teco-chat/stores/chat-context-store";
+import { client, orpc } from "@/integrations/orpc/client";
 
 type RemoteThreadInitializeResponse = Awaited<
    ReturnType<RemoteThreadListAdapter["initialize"]>
@@ -104,7 +104,8 @@ export function useTecoRuntime({
             api: "/api/chat",
             body: async () => {
                const threadId = await ensureThread();
-               const { contextId, mode, workflow, model, thinkingBudget } = chatContextStore.state;
+               const { contextId, mode, workflow, model, thinkingBudget } =
+                  chatContextStore.state;
                return {
                   teamId,
                   threadId,

@@ -26,11 +26,11 @@ const contentRichSchema = z.array(z.record(z.string(), z.unknown()));
 // =============================================================================
 
 export const getByContent = protectedProcedure
-   .input(z.object({ contentId: z.string().uuid() }))
-   .handler(async ({ context, input }) => {
+   .input(z.object({}))
+   .handler(async ({ context }) => {
       const { db } = context;
 
-      const discussionList = await getDiscussionsByContent(db, input.contentId);
+      const discussionList = await getDiscussionsByContent(db);
 
       if (discussionList.length === 0) {
          return { discussions: [], users: {} };
@@ -79,7 +79,6 @@ export const getByContent = protectedProcedure
 export const create = protectedProcedure
    .input(
       z.object({
-         contentId: z.string().uuid(),
          blockId: z.string(),
          contentRich: contentRichSchema,
          documentContent: z.string().optional(),
@@ -89,7 +88,6 @@ export const create = protectedProcedure
       const { db, userId } = context;
 
       const discussion = await createDiscussion(db, {
-         contentId: input.contentId,
          blockId: input.blockId,
          userId,
          documentContent: input.documentContent,

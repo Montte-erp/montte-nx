@@ -67,7 +67,10 @@ const seoTools = {
    addExternalLinks: addExternalLinksTool,
    generateQuickAnswer: generateQuickAnswerTool,
 };
-const analyzeTools = { analyzeContent: analyzeContentTool, readContentBody: readContentBodyTool };
+const analyzeTools = {
+   analyzeContent: analyzeContentTool,
+   readContentBody: readContentBodyTool,
+};
 const crudTools = {
    createDashboard: createDashboardTool,
 };

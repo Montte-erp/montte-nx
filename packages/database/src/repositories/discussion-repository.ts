@@ -1,5 +1,5 @@
 import { AppError, propagateError } from "@packages/utils/errors";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import {
    discussionReplies,
@@ -28,18 +28,12 @@ export async function createDiscussion(
 
 export async function getDiscussionsByContent(
    db: DatabaseInstance,
-   contentId: string,
 ) {
    try {
       const rows = await db
          .select()
          .from(discussions)
-         .where(
-            and(
-               eq(discussions.contentId, contentId),
-               eq(discussions.isResolved, false),
-            ),
-         )
+         .where(eq(discussions.isResolved, false))
          .orderBy(asc(discussions.createdAt));
 
       if (rows.length === 0) return [];

@@ -11,7 +11,6 @@ import {
    CollapsibleTrigger,
 } from "@packages/ui/components/collapsible";
 import { cn } from "@packages/ui/lib/utils";
-import { TOOL_DISPLAY_LABELS } from "./tool-display-labels";
 import {
    AlertCircleIcon,
    CheckIcon,
@@ -20,6 +19,7 @@ import {
    XCircleIcon,
 } from "lucide-react";
 import { memo, useCallback, useRef, useState } from "react";
+import { TOOL_DISPLAY_LABELS } from "./tool-display-labels";
 
 const ANIMATION_DURATION = 200;
 

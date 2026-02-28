@@ -26,21 +26,21 @@
 
 export type { FormDefinition, FormField } from "./forms.ts";
 export {
-	MontteFormsClient,
 	createFormsClient,
+	MontteFormsClient,
 } from "./forms.ts";
 
 // ── Re-exports from Event Tracker ──────────────────────────────
 
 export {
-	MontteEventTracker,
 	createEventTracker,
 	createEventTracker as createTracker,
+	MontteEventTracker,
 } from "./events/client.ts";
 
 export type {
-	MontteSdkConfig,
 	EventBatch,
+	MontteSdkConfig,
 	TrackedEvent,
 } from "./events/types.ts";
 

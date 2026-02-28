@@ -168,7 +168,7 @@ export class MontteEventTracker {
 		}
 	}
 
-	autoTrackPageViews(contentId: string, contentSlug: string): void {
+	autoTrackPageViews(contentSlug: string): void {
 		if (!this.enabled) {
 			return;
 		}
@@ -185,7 +185,6 @@ export class MontteEventTracker {
 		this.sendTimeEvent = null;
 
 		this.track("content.page.view", {
-			contentId,
 			contentSlug,
 			pageUrl: typeof window !== "undefined" ? window.location.href : "",
 			pagePath: typeof window !== "undefined" ? window.location.pathname : "",
@@ -196,9 +195,9 @@ export class MontteEventTracker {
 		this.trackingAbortController = new AbortController();
 		const { signal } = this.trackingAbortController;
 
-		this.setupScrollTracking(contentId, signal);
-		this.setupTimeTracking(contentId, signal);
-		this.setupCtaTracking(contentId, signal);
+		this.setupScrollTracking(signal);
+		this.setupTimeTracking(signal);
+		this.setupCtaTracking(signal);
 	}
 
 	destroy(): void {
@@ -293,7 +292,7 @@ export class MontteEventTracker {
 
 	// ── Scroll Tracking ─────────────────────────────────────────
 
-	private setupScrollTracking(contentId: string, signal: AbortSignal): void {
+	private setupScrollTracking(signal: AbortSignal): void {
 		if (typeof window === "undefined") {
 			return;
 		}
@@ -330,7 +329,6 @@ export class MontteEventTracker {
 					if (scrollPercent >= milestone && !reached.has(milestone)) {
 						reached.add(milestone);
 						this.track("content.scroll.milestone", {
-							contentId,
 							depth: milestone,
 						});
 					}
@@ -343,7 +341,7 @@ export class MontteEventTracker {
 
 	// ── Time Tracking ───────────────────────────────────────────
 
-	private setupTimeTracking(contentId: string, signal: AbortSignal): void {
+	private setupTimeTracking(signal: AbortSignal): void {
 		if (typeof window === "undefined" || typeof document === "undefined") {
 			return;
 		}
@@ -384,7 +382,6 @@ export class MontteEventTracker {
 			updateActiveTime();
 			const totalMs = Date.now() - startTime;
 			this.track("content.time.spent", {
-				contentId,
 				durationSeconds: Math.round(totalMs / 1000),
 				activeTimeSeconds: Math.round(activeTime / 1000),
 			});
@@ -405,7 +402,7 @@ export class MontteEventTracker {
 
 	// ── CTA Tracking ────────────────────────────────────────────
 
-	private setupCtaTracking(contentId: string, signal: AbortSignal): void {
+	private setupCtaTracking(signal: AbortSignal): void {
 		if (typeof document === "undefined") {
 			return;
 		}
@@ -430,7 +427,6 @@ export class MontteEventTracker {
 			const ctaUrl = ctaElement.getAttribute("href") ?? "";
 
 			this.track("content.cta.click", {
-				contentId,
 				ctaId,
 				ctaLabel,
 				ctaUrl,
@@ -509,4 +505,4 @@ export function createEventTracker(
 	return new MontteEventTracker(config);
 }
 
-export type { MontteSdkConfig, EventBatch, TrackedEvent } from "./types.ts";
+export type { EventBatch, MontteSdkConfig, TrackedEvent } from "./types.ts";

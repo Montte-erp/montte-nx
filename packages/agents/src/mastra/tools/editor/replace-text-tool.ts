@@ -37,7 +37,10 @@ export const replaceTextTool = createTool({
       };
 
       const onBodyUpdate = context?.requestContext?.get("onBodyUpdate") as
-         | ((toolName: string, output: Record<string, unknown>) => Promise<void>)
+         | ((
+              toolName: string,
+              output: Record<string, unknown>,
+           ) => Promise<void>)
          | undefined;
 
       if (onBodyUpdate) {

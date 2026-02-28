@@ -9,7 +9,8 @@ function parseReviewSignal(text: string): {
    issues: string[];
 } {
    const match = text.match(/REVIEW_SIGNAL:\s*(\{.*?\})/s);
-   if (!match) return { approved: false, issues: ["Could not parse review signal"] };
+   if (!match)
+      return { approved: false, issues: ["Could not parse review signal"] };
    try {
       // biome-ignore lint/style/noNonNullAssertion: match[1] is guaranteed when match is truthy
       return JSON.parse(match[1]!) as { approved: boolean; issues: string[] };

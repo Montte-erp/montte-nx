@@ -232,7 +232,7 @@ describe("Montte SDK - Content", () => {
 		).rejects.toThrow();
 	});
 
-	it("content.getImage - gets content image by contentId", async () => {
+	it("content.getImage - gets content image", async () => {
 		const mockImage = {
 			contentType: "image/jpeg",
 			data: "https://presigned-url.example.com/image.jpg",
@@ -248,9 +248,7 @@ describe("Montte SDK - Content", () => {
 			host: "https://api.example.com",
 		});
 
-		const result = await sdk.content.getImage({
-			contentId: "content-123",
-		});
+		const result = await sdk.content.getImage({});
 
 		expect(result).toEqual(mockImage);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -265,9 +263,7 @@ describe("Montte SDK - Content", () => {
 			host: "https://api.example.com",
 		});
 
-		const result = await sdk.content.getImage({
-			contentId: "content-123",
-		});
+		const result = await sdk.content.getImage({});
 
 		expect(result).toBeNull();
 	});
@@ -481,7 +477,6 @@ describe("Montte SDK - Events", () => {
 		const result = await sdk.events.track({
 			eventName: "content.page.viewed",
 			properties: {
-				contentId: "content-123",
 				page: "/blog/my-post",
 			},
 		});
@@ -510,9 +505,7 @@ describe("Montte SDK - Events", () => {
 		const timestamp = Date.now();
 		await sdk.events.track({
 			eventName: "content.page.viewed",
-			properties: {
-				contentId: "content-123",
-			},
+			properties: {},
 			timestamp,
 		});
 
@@ -568,11 +561,11 @@ describe("Montte SDK - Events", () => {
 			events: [
 				{
 					eventName: "content.page.viewed",
-					properties: { contentId: "content-123" },
+					properties: {},
 				},
 				{
 					eventName: "content.page.scrolled",
-					properties: { contentId: "content-123", depth: 50 },
+					properties: { depth: 50 },
 					timestamp: Date.now(),
 				},
 			],
@@ -603,7 +596,7 @@ describe("Montte SDK - Events", () => {
 			events: [
 				{
 					eventName: "content.page.viewed",
-					properties: { contentId: "content-123" },
+					properties: {},
 				},
 				{
 					eventName: "invalid.event",

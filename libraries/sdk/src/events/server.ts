@@ -1,4 +1,4 @@
-import type { MontteSdkConfig, EventBatch } from "./types.ts";
+import type { EventBatch, MontteSdkConfig } from "./types.ts";
 
 const DEFAULT_API_URL = "https://sdk.montte.co";
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -8,9 +8,7 @@ export class MontteServerClient {
 	private readonly apiUrl: string;
 	private readonly timeout: number;
 
-	constructor(
-		config: Pick<MontteSdkConfig, "apiKey" | "apiUrl" | "timeout">,
-	) {
+	constructor(config: Pick<MontteSdkConfig, "apiKey" | "apiUrl" | "timeout">) {
 		if (!config.apiKey) {
 			throw new Error("apiKey is required to initialize MontteServerClient");
 		}
@@ -71,7 +69,6 @@ export class MontteServerClient {
 	}
 
 	async trackConversion(params: {
-		contentId?: string;
 		// Keep in sync with ExperimentTargetType in packages/events/src/experiments.ts
 		targetType?: "content" | "form" | "cluster";
 		targetId?: string;
@@ -80,16 +77,15 @@ export class MontteServerClient {
 		goalName: string;
 		goalValue?: number;
 	}): Promise<void> {
-		if (!params.contentId && !(params.targetType && params.targetId)) {
+		if (!(params.targetType && params.targetId)) {
 			throw new Error(
-				"Montte SDK: trackConversion requires either contentId or both targetType and targetId",
+				"Montte SDK: trackConversion requires both targetType and targetId",
 			);
 		}
 		return this.emitEvent("experiment.conversion", params);
 	}
 
 	async trackSeoAnalysis(params: {
-		contentId: string;
 		score: number;
 		keyword?: string;
 		keywordDensity?: number;
@@ -105,4 +101,4 @@ export function createServerClient(
 	return new MontteServerClient(config);
 }
 
-export type { MontteSdkConfig, EventBatch } from "./types.ts";
+export type { EventBatch, MontteSdkConfig } from "./types.ts";

@@ -79,12 +79,12 @@ async function reindexAllContent() {
 			if (result.metadataIndexed) {
 				indexed++;
 				console.log(
-					`[${indexed}/${publishedContent.length}] Indexed: ${batch.find((c) => c.id === result.contentId)?.title || result.contentId} (${result.chunksIndexed} chunks)`,
+					`[${indexed}/${publishedContent.length}] Indexed: ${batch.find((c) => c.id === result.id)?.title || result.id} (${result.chunksIndexed} chunks)`,
 				);
 			} else {
 				failed++;
 				console.error(
-					`[FAILED] ${batch.find((c) => c.id === result.contentId)?.title || result.contentId}`,
+					`[FAILED] ${batch.find((c) => c.id === result.id)?.title || result.id}`,
 				);
 			}
 		}

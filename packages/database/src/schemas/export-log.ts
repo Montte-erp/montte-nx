@@ -40,7 +40,6 @@ export const exportLog = pgTable(
    "export_log",
    {
       id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-      contentId: uuid("content_id").notNull(),
       memberId: uuid("member_id")
          .notNull()
          .references(() => member.id, { onDelete: "cascade" }),
@@ -54,7 +53,6 @@ export const exportLog = pgTable(
       createdAt: timestamp("created_at").defaultNow().notNull(),
    },
    (table) => [
-      index("export_log_content_id_idx").on(table.contentId),
       index("export_log_member_id_idx").on(table.memberId),
       index("export_log_format_idx").on(table.format),
       index("export_log_destination_idx").on(table.destination),

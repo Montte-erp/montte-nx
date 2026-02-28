@@ -9,6 +9,8 @@ import {
    ThreadPrimitive,
    useAui,
 } from "@assistant-ui/react";
+import type { ContentModelId } from "@packages/agents/models";
+import { CONTENT_MODELS } from "@packages/agents/models";
 import {
    ComposerAddAttachment,
    ComposerAttachments,
@@ -16,22 +18,11 @@ import {
 } from "@packages/ui/components/assistant-ui/attachment";
 import { MarkdownText } from "@packages/ui/components/assistant-ui/markdown-text";
 import {
-   ModelSelector,
    type ModelOption,
+   ModelSelector,
 } from "@packages/ui/components/assistant-ui/model-selector";
 import { ToolFallback } from "@packages/ui/components/assistant-ui/tool-fallback";
 import { TooltipIconButton } from "@packages/ui/components/assistant-ui/tooltip-icon-button";
-import { AgentCallTool } from "./tool-components/agent-call-tool";
-import { DataNetworkRenderer } from "./tool-components/data-network-renderer";
-import { EditorTool } from "./tool-components/editor-tool";
-import {
-   ReasoningDisplay,
-   ReasoningGroupDisplay,
-} from "./tool-components/reasoning-display";
-import { ResearchTool } from "./tool-components/research-tool";
-import { SkillTool } from "./tool-components/skill-tool";
-import { WorkflowCard } from "./tool-components/workflow-card";
-import { WriteContentToolUI } from "./tool-components/write-content-tool";
 import { Button } from "@packages/ui/components/button";
 import {
    Select,
@@ -56,23 +47,32 @@ import {
    SparklesIcon,
    SquareIcon,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
 import type { FC, ReactNode } from "react";
-import { CONTENT_MODELS } from "@packages/agents/models";
-import type { ContentModelId } from "@packages/agents/models";
+import { useEffect, useRef, useState } from "react";
 import {
    chatContextStore,
    setChatModel,
    setChatThinkingBudget,
 } from "@/features/teco-chat/stores/chat-context-store";
 import { type ContextItem, ContextPicker } from "./context-picker";
+import { AgentCallTool } from "./tool-components/agent-call-tool";
+import { DataNetworkRenderer } from "./tool-components/data-network-renderer";
+import { EditorTool } from "./tool-components/editor-tool";
+import {
+   ReasoningDisplay,
+   ReasoningGroupDisplay,
+} from "./tool-components/reasoning-display";
+import { ResearchTool } from "./tool-components/research-tool";
+import { SkillTool } from "./tool-components/skill-tool";
+import { WorkflowCard } from "./tool-components/workflow-card";
+import { WriteContentToolUI } from "./tool-components/write-content-tool";
 
 const MODEL_OPTIONS: ModelOption[] = Object.entries(CONTENT_MODELS).map(
-	([id, preset]) => ({
-		id,
-		name: preset.label,
-		description: preset.provider,
-	}),
+   ([id, preset]) => ({
+      id,
+      name: preset.label,
+      description: preset.provider,
+   }),
 );
 
 const THINKING_BUDGET_OPTIONS = [
@@ -258,32 +258,30 @@ const QuickChip: FC<{ label: string; prompt: string }> = ({
    );
 };
 
-interface ComposerProps {
-   // intentionally empty — mode is now read from chatContextStore
-}
+type ComposerProps = {};
 
 const Composer: FC<ComposerProps> = () => {
    const [contextItems, setContextItems] = useState<ContextItem[]>([]);
-   const contentId = useStore(chatContextStore, (s) => s.contextId);
+   const contextId = useStore(chatContextStore, (s) => s.contextId);
    const selectedModel = useStore(chatContextStore, (s) => s.model);
    const thinkingBudget = useStore(chatContextStore, (s) => s.thinkingBudget);
    const prefillledForRef = useRef<string | null>(null);
 
    useEffect(() => {
-      if (contentId && prefillledForRef.current !== contentId) {
-         prefillledForRef.current = contentId;
+      if (contextId && prefillledForRef.current !== contextId) {
+         prefillledForRef.current = contextId;
          setContextItems([
             {
                type: "current-document",
-               id: contentId,
+               id: contextId,
                label: "Documento atual",
             },
          ]);
-      } else if (!contentId) {
+      } else if (!contextId) {
          prefillledForRef.current = null;
          setContextItems([]);
       }
-   }, [contentId]);
+   }, [contextId]);
 
    const handleContextSelect = (item: ContextItem) => {
       setContextItems((prev) =>
@@ -386,7 +384,7 @@ const Composer: FC<ComposerProps> = () => {
             <div className="flex items-center justify-between px-1 pb-1.5">
                <div className="flex items-center gap-0.5">
                   <ContextPicker
-                     currentDocumentId={contentId ?? undefined}
+                     currentDocumentId={contextId ?? undefined}
                      currentDocumentLabel="Documento atual"
                      onSelect={handleContextSelect}
                   />

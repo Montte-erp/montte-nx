@@ -1,11 +1,7 @@
 import { AppError, propagateError } from "@packages/utils/errors";
 import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
-import {
-   type NewTransaction,
-   transactionTags,
-   transactions,
-} from "../schema";
+import { type NewTransaction, transactions, transactionTags } from "../schema";
 
 export interface ListTransactionsFilter {
    teamId: string;
@@ -30,7 +26,10 @@ export async function createTransaction(
 
       if (tagIds && tagIds.length > 0 && transaction) {
          await db.insert(transactionTags).values(
-            tagIds.map((tagId) => ({ transactionId: transaction.id, tagId })),
+            tagIds.map((tagId) => ({
+               transactionId: transaction.id,
+               tagId,
+            })),
          );
       }
 
@@ -56,11 +55,16 @@ export async function listTransactions(
 
          const conditions = [
             eq(transactions.teamId, filter.teamId),
-            inArray(transactions.id, taggedIds.map((r) => r.transactionId)),
+            inArray(
+               transactions.id,
+               taggedIds.map((r) => r.transactionId),
+            ),
          ];
          if (filter.type) conditions.push(eq(transactions.type, filter.type));
          if (filter.bankAccountId)
-            conditions.push(eq(transactions.bankAccountId, filter.bankAccountId));
+            conditions.push(
+               eq(transactions.bankAccountId, filter.bankAccountId),
+            );
          if (filter.categoryId)
             conditions.push(eq(transactions.categoryId, filter.categoryId));
          if (filter.dateFrom)
@@ -83,8 +87,7 @@ export async function listTransactions(
          conditions.push(eq(transactions.categoryId, filter.categoryId));
       if (filter.dateFrom)
          conditions.push(gte(transactions.date, filter.dateFrom));
-      if (filter.dateTo)
-         conditions.push(lte(transactions.date, filter.dateTo));
+      if (filter.dateTo) conditions.push(lte(transactions.date, filter.dateTo));
 
       return await db
          .select()
@@ -97,10 +100,7 @@ export async function listTransactions(
    }
 }
 
-export async function getTransactionWithTags(
-   db: DatabaseInstance,
-   id: string,
-) {
+export async function getTransactionWithTags(db: DatabaseInstance, id: string) {
    try {
       const [transaction] = await db
          .select()
@@ -142,9 +142,9 @@ export async function updateTransaction(
             .delete(transactionTags)
             .where(eq(transactionTags.transactionId, id));
          if (tagIds.length > 0) {
-            await db.insert(transactionTags).values(
-               tagIds.map((tagId) => ({ transactionId: id, tagId })),
-            );
+            await db
+               .insert(transactionTags)
+               .values(tagIds.map((tagId) => ({ transactionId: id, tagId })));
          }
       }
 

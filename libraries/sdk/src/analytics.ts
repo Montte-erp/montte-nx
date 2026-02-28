@@ -7,7 +7,6 @@
  */
 
 export interface AnalyticsConfig {
-	contentId: string;
 	contentSlug: string;
 	contentTitle: string;
 	agentId: string;
@@ -45,7 +44,6 @@ export class BlogAnalyticsTracker {
 
   // Configuration
   var CONFIG = {
-    contentId: '${this.escapeString(config.contentId)}',
     contentSlug: '${this.escapeString(config.contentSlug)}',
     contentTitle: '${this.escapeString(config.contentTitle)}',
     agentId: '${this.escapeString(config.agentId)}',
@@ -189,7 +187,6 @@ export class BlogAnalyticsTracker {
   // Base properties for all events
   function getBaseProperties() {
     return {
-      content_id: CONFIG.contentId,
       content_slug: CONFIG.contentSlug,
       content_title: CONFIG.contentTitle,
       agent_id: CONFIG.agentId,
@@ -474,7 +471,6 @@ export class BlogAnalyticsTracker {
   if (navigator.doNotTrack === '1') return;
 
   var CONFIG = {
-    contentId: '${this.escapeString(config.contentId)}',
     organizationId: '${this.escapeString(config.organizationId)}',
     posthogHost: '${this.escapeString(config.posthogHost)}',
     posthogApiKey: '${this.escapeString(config.posthogApiKey)}'
@@ -499,7 +495,6 @@ export class BlogAnalyticsTracker {
   })();
 
   send('blog_post_view', {
-    content_id: CONFIG.contentId,
     organization_id: CONFIG.organizationId,
     visitor_id: vid,
     referrer: document.referrer,

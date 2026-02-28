@@ -2,7 +2,12 @@ import type { ContentModelId } from "@packages/agents/models";
 import { DEFAULT_CONTENT_MODEL_ID } from "@packages/agents/models";
 import { Store } from "@tanstack/react-store";
 
-export type ChatMode = "editor" | "content-list" | "analytics" | "forms" | "platform";
+export type ChatMode =
+   | "editor"
+   | "content-list"
+   | "analytics"
+   | "forms"
+   | "platform";
 
 interface ChatContextState {
    mode: ChatMode;

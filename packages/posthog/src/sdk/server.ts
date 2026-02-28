@@ -35,7 +35,6 @@ export type SDKContentFetchedProps = {
 export type SDKImageFetchedProps = {
    userId: string;
    organizationId?: string;
-   contentId: string;
    found: boolean;
    latencyMs: number;
 };
@@ -148,12 +147,11 @@ export function captureSDKImageFetched(
    posthog: PostHog,
    props: SDKImageFetchedProps,
 ) {
-   const { userId, organizationId, contentId, found, latencyMs } = props;
+   const { userId, organizationId, found, latencyMs } = props;
    posthog.capture({
       distinctId: userId,
       event: "sdk_image_fetched",
       properties: {
-         contentId,
          found,
          latencyMs,
       },

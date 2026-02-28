@@ -129,7 +129,6 @@ export default function OrganizationInvitationEmail({
 OrganizationInvitationEmail.PreviewProps = {
    invitedByEmail: "maria@exemplo.com",
    invitedByUsername: "Maria Silva",
-   inviteLink:
-      "https://app.montte.co/callback/organization/invitation/abc123",
+   inviteLink: "https://app.montte.co/callback/organization/invitation/abc123",
    teamName: "Empresa ABC",
 } satisfies OrganizationInvitationEmailProps;

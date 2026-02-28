@@ -98,16 +98,19 @@ export const transactionsRelations = relations(
    }),
 );
 
-export const transactionTagsRelations = relations(transactionTags, ({ one }) => ({
-   transaction: one(transactions, {
-      fields: [transactionTags.transactionId],
-      references: [transactions.id],
+export const transactionTagsRelations = relations(
+   transactionTags,
+   ({ one }) => ({
+      transaction: one(transactions, {
+         fields: [transactionTags.transactionId],
+         references: [transactions.id],
+      }),
+      tag: one(tags, {
+         fields: [transactionTags.tagId],
+         references: [tags.id],
+      }),
    }),
-   tag: one(tags, {
-      fields: [transactionTags.tagId],
-      references: [tags.id],
-   }),
-}));
+);
 
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;

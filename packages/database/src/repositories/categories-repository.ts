@@ -2,8 +2,8 @@ import { AppError, propagateError } from "@packages/utils/errors";
 import { eq, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import {
-   type NewCategory,
    categories,
+   type NewCategory,
    subcategories,
    transactions,
 } from "../schema";
@@ -20,10 +20,7 @@ export const DEFAULT_CATEGORIES = [
    "Investimento",
 ];
 
-export async function createCategory(
-   db: DatabaseInstance,
-   data: NewCategory,
-) {
+export async function createCategory(db: DatabaseInstance, data: NewCategory) {
    try {
       const [category] = await db.insert(categories).values(data).returning();
       return category;

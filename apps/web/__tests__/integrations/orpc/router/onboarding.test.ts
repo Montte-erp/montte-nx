@@ -148,13 +148,13 @@ describe("getOnboardingStatus", () => {
 			name: "Test Team",
 			organizationId: TEST_ORG_ID,
 			onboardingCompleted: false,
-			onboardingProducts: ["content"],
+			onboardingProducts: ["finance"],
 			onboardingTasks: { setup_profile: true },
 		});
 
-		// Mock the 5 count queries: content=2, published=1, forms=1, insights=0, dashboards=0
+		// Mock the 3 count queries (Promise.all): insights=1, categories=1, transactions=2
 		let callIndex = 0;
-		const counts = [2, 1, 1, 0, 0];
+		const counts = [1, 1, 2];
 		mocks.mockWhere.mockImplementation(() => ({
 			then: vi.fn((cb: any) => cb([{ count: counts[callIndex++] }])),
 			limit: mocks.mockLimit,
@@ -165,13 +165,13 @@ describe("getOnboardingStatus", () => {
 
 		expect(mocks.db.query.organization.findFirst).toHaveBeenCalled();
 		expect(result.organization.onboardingCompleted).toBe(false);
-		expect(result.project.onboardingProducts).toEqual(["content"]);
+		expect(result.project.onboardingProducts).toEqual(["finance"]);
 		expect(result.project.tasks).toEqual(
 			expect.objectContaining({
 				setup_profile: true,
-				create_content: true,
-				publish_content: true,
-				create_form: true,
+				create_insight: true,
+				create_category: true,
+				add_transaction: true,
 			}),
 		);
 	});

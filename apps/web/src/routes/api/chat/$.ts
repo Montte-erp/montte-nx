@@ -1,14 +1,21 @@
-import { createRequestContext, handleChatStream, handleWorkflowStream, mastra } from "@packages/agents";
 import type { RequestContext } from "@packages/agents";
+import {
+   createRequestContext,
+   handleChatStream,
+   handleWorkflowStream,
+   mastra,
+} from "@packages/agents";
 import { AI_EVENTS, emitAiChatMessage } from "@packages/events/ai";
-import { enforceCreditBudget, trackCreditUsage } from "@packages/events/credits";
+import {
+   enforceCreditBudget,
+   trackCreditUsage,
+} from "@packages/events/credits";
 import { createEmitFn } from "@packages/events/emit";
 import { createFileRoute } from "@tanstack/react-router";
 import type { ModelMessage } from "ai";
 import { createUIMessageStreamResponse } from "ai";
 
 import { auth, db } from "@/integrations/orpc/server-instances";
-
 
 export const Route = createFileRoute("/api/chat/$")({
    server: {
@@ -22,9 +29,18 @@ export const Route = createFileRoute("/api/chat/$")({
 
             const teamId = session.session.activeTeamId;
             const userId = session.session.userId;
-            const organizationId = session.session.activeOrganizationId ?? undefined;
+            const organizationId =
+               session.session.activeOrganizationId ?? undefined;
             const body = await request.json();
-            const { messages, threadId, mode = "platform", contextId, workflow, model, thinkingBudget } = body;
+            const {
+               messages,
+               threadId,
+               mode = "platform",
+               contextId,
+               workflow,
+               model,
+               thinkingBudget,
+            } = body;
             const resourceId = `${teamId}:${userId}`;
 
             // Credit enforcement — block if AI budget exhausted
@@ -48,7 +64,11 @@ export const Route = createFileRoute("/api/chat/$")({
                      // the client regardless of its specific type.
                      // Log them so we can eventually build proper UI renderers.
                      if (typeof type === "string" && type.startsWith("data-")) {
-                        console.log("[data-stream] filtered part:", type, chunk);
+                        console.log(
+                           "[data-stream] filtered part:",
+                           type,
+                           chunk,
+                        );
                         return;
                      }
                      controller.enqueue(chunk);
@@ -57,9 +77,7 @@ export const Route = createFileRoute("/api/chat/$")({
             }
 
             if (threadId) {
-               const memory = await mastra
-                  .getAgent("tecoAgent")
-                  .getMemory();
+               const memory = await mastra.getAgent("tecoAgent").getMemory();
                if (!memory)
                   return new Response("Memory not configured", { status: 500 });
                const thread = await memory.getThreadById({
@@ -93,12 +111,13 @@ export const Route = createFileRoute("/api/chat/$")({
                         organizationId,
                         db,
                         mode,
-                        contentId: contextId,
                      }) as RequestContext,
                   },
                });
 
-               const filteredWorkflowStream = workflowStream.pipeThrough(filterDataStreamParts());
+               const filteredWorkflowStream = workflowStream.pipeThrough(
+                  filterDataStreamParts(),
+               );
 
                // Fire-and-forget: emit ai.chat_message event and track credit usage
                if (organizationId) {
@@ -108,8 +127,10 @@ export const Route = createFileRoute("/api/chat/$")({
                      { organizationId, userId, teamId: teamId ?? undefined },
                      {
                         chatId,
-                        contentId: contextId ?? undefined,
-                        model: typeof model === "string" ? model : "openrouter/default",
+                        model:
+                           typeof model === "string"
+                              ? model
+                              : "openrouter/default",
                         provider: "openrouter",
                         role: "assistant",
                         promptTokens: 0,
@@ -118,10 +139,17 @@ export const Route = createFileRoute("/api/chat/$")({
                         latencyMs: 0,
                      },
                   );
-                  void trackCreditUsage(db, AI_EVENTS["ai.chat_message"], organizationId, "ai");
+                  void trackCreditUsage(
+                     db,
+                     AI_EVENTS["ai.chat_message"],
+                     organizationId,
+                     "ai",
+                  );
                }
 
-               return createUIMessageStreamResponse({ stream: filteredWorkflowStream });
+               return createUIMessageStreamResponse({
+                  stream: filteredWorkflowStream,
+               });
             }
             // ── End workflow path ───────────────────────────────────────────────────────
 
@@ -139,7 +167,6 @@ export const Route = createFileRoute("/api/chat/$")({
                      mode,
                      ...(model ? { model } : {}),
                      ...(thinkingBudget ? { thinkingBudget } : {}),
-                     ...(contextId ? { contentId: contextId } : {}),
                   }),
                },
             });
@@ -158,8 +185,10 @@ export const Route = createFileRoute("/api/chat/$")({
                   { organizationId, userId, teamId: teamId ?? undefined },
                   {
                      chatId,
-                     contentId: contextId ?? undefined,
-                     model: typeof model === "string" ? model : "openrouter/default",
+                     model:
+                        typeof model === "string"
+                           ? model
+                           : "openrouter/default",
                      provider: "openrouter",
                      role: "assistant",
                      promptTokens: 0,
@@ -168,7 +197,12 @@ export const Route = createFileRoute("/api/chat/$")({
                      latencyMs: 0,
                   },
                );
-               void trackCreditUsage(db, AI_EVENTS["ai.chat_message"], organizationId, "ai");
+               void trackCreditUsage(
+                  db,
+                  AI_EVENTS["ai.chat_message"],
+                  organizationId,
+                  "ai",
+               );
             }
 
             return createUIMessageStreamResponse({ stream: filteredStream });

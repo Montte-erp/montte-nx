@@ -540,9 +540,8 @@ export class MontteFormsClient {
 		container: HTMLElement,
 		options?: { experimentId?: string; variantId?: string },
 	): void {
-		const formElement = container.querySelector<HTMLFormElement>(
-			".montte-form__form",
-		);
+		const formElement =
+			container.querySelector<HTMLFormElement>(".montte-form__form");
 		if (!formElement) {
 			return;
 		}
@@ -554,9 +553,10 @@ export class MontteFormsClient {
 		for (const ratingContainer of ratingContainers) {
 			const fieldId = ratingContainer.getAttribute("data-field-id");
 			if (!fieldId) continue;
-			const stars = ratingContainer.querySelectorAll<HTMLButtonElement>(
-				".montte-form__star",
-			);
+			const stars =
+				ratingContainer.querySelectorAll<HTMLButtonElement>(
+					".montte-form__star",
+				);
 			const hiddenInput = container.querySelector<HTMLInputElement>(
 				`#montte-rating-input-${CSS.escape(fieldId)}`,
 			);

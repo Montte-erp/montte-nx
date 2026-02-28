@@ -38,7 +38,6 @@ type PropertyDef = {
 };
 
 const FILTER_PROPERTIES: PropertyDef[] = [
-   { field: "contentId", label: "Conteúdo", type: "string" },
    { field: "userId", label: "Usuário", type: "string" },
    { field: "sessionId", label: "Sessão", type: "string" },
    { field: "organizationId", label: "Organização", type: "string" },
@@ -176,7 +175,7 @@ export function DashboardFilterPopover({
       const newId = `${uid}-${Date.now()}`;
       setRows((prev) => [
          ...prev,
-         { id: newId, field: "contentId", operator: "eq", value: "" },
+         { id: newId, field: "userId", operator: "eq", value: "" },
       ]);
    };
 

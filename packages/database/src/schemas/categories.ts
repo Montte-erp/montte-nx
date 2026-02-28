@@ -26,7 +26,10 @@ export const categories = pgTable(
    },
    (table) => [
       index("categories_team_id_idx").on(table.teamId),
-      uniqueIndex("categories_team_id_name_unique").on(table.teamId, table.name),
+      uniqueIndex("categories_team_id_name_unique").on(
+         table.teamId,
+         table.name,
+      ),
    ],
 );
 

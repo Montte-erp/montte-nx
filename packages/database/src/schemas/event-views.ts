@@ -107,7 +107,6 @@ export const dailyContentAnalytics = pgMaterializedView(
    "daily_content_analytics",
    {
       organizationId: uuid("organization_id").notNull(),
-      contentId: text("content_id"),
       date: date("date").notNull(),
       views: integer("views").notNull(),
       uniqueVisitors: integer("unique_visitors").notNull(),
@@ -122,7 +121,6 @@ export const dailyContentAnalytics = pgMaterializedView(
 ).as(sql`
 	SELECT
 		organization_id,
-		properties->>'contentId' AS content_id,
 		DATE(timestamp) AS date,
 		COUNT(*) FILTER (WHERE event_name = 'content.page.view')::int AS views,
 		COUNT(DISTINCT CASE WHEN event_name = 'content.page.view' THEN properties->>'visitorId' END)::int AS unique_visitors,
@@ -133,7 +131,7 @@ export const dailyContentAnalytics = pgMaterializedView(
 	FROM events
 	WHERE event_category IN ('content', 'form')
 		AND timestamp >= CURRENT_DATE - INTERVAL '90 days'
-	GROUP BY organization_id, content_id, DATE(timestamp)
+	GROUP BY organization_id, DATE(timestamp)
 `);
 
 // ---------------------------------------------------------------------------
@@ -144,7 +142,6 @@ export const contentTrafficSources = pgMaterializedView(
    "content_traffic_sources",
    {
       organizationId: uuid("organization_id").notNull(),
-      contentId: text("content_id"),
       source: text("source").notNull(),
       medium: text("medium"),
       views: integer("views").notNull(),
@@ -153,7 +150,6 @@ export const contentTrafficSources = pgMaterializedView(
 ).as(sql`
 	SELECT
 		organization_id,
-		properties->>'contentId' AS content_id,
 		COALESCE(properties->>'referrerSource', 'direct') AS source,
 		properties->>'referrerMedium' AS medium,
 		COUNT(*)::int AS views,
@@ -161,7 +157,7 @@ export const contentTrafficSources = pgMaterializedView(
 	FROM events
 	WHERE event_name = 'content.page.view'
 		AND timestamp >= CURRENT_DATE - INTERVAL '90 days'
-	GROUP BY organization_id, content_id, source, medium
+	GROUP BY organization_id, source, medium
 `);
 
 // ---------------------------------------------------------------------------
@@ -268,10 +264,7 @@ export const experimentDailyStats = pgMaterializedView(
       (properties->>'experimentId')::uuid AS experiment_id,
       properties->>'variantId' AS variant_id,
       COALESCE(properties->>'targetType', 'content') AS target_type,
-      COALESCE(
-         (properties->>'targetId')::uuid,
-         (properties->>'contentId')::uuid
-      ) AS target_id,
+      (properties->>'targetId')::uuid AS target_id,
       DATE(timestamp) AS date,
       COUNT(*) FILTER (WHERE event_name = 'experiment.started')::int AS impressions,
       COUNT(*) FILTER (WHERE event_name = 'experiment.conversion')::int AS conversions

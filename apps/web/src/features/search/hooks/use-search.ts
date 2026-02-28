@@ -118,8 +118,8 @@ export function useSearch(
                description: item.meta?.description,
                type: "content" as const,
                icon: "FileText",
-               route: "/$slug/$teamSlug/content/$contentId",
-               params: { slug: orgSlug, teamSlug: teamId, contentId: item.id },
+               route: "/$slug/$teamSlug/content/$id",
+               params: { slug: orgSlug, teamSlug: teamId, id: item.id },
             }));
 
          if (contentResults.length > 0) {

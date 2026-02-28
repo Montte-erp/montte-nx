@@ -78,8 +78,6 @@ function setupAgentMock(streamResult: unknown) {
 	} as unknown as ReturnType<typeof mastra.getAgent>);
 }
 
-const CONTENT_ID = "a0a0a0a0-b1b1-4c2c-9d3d-e4e4e4e4e4e4";
-
 // ---------------------------------------------------------------------------
 // Setup
 // ---------------------------------------------------------------------------
@@ -273,7 +271,7 @@ describe("aiCommandStream", () => {
 		const ctx = createTestContext();
 		const iterable = await call(
 			agentRouter.aiCommandStream,
-			{ prompt: "Hello", contentId: CONTENT_ID },
+			{ prompt: "Hello" },
 			{ context: ctx },
 		);
 		await collectChunks(iterable);

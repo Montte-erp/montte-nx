@@ -1,11 +1,7 @@
 import { AppError, propagateError } from "@packages/utils/errors";
 import { and, desc, eq, or, sql, sum } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
-import {
-   type NewBankAccount,
-   bankAccounts,
-   transactions,
-} from "../schema";
+import { bankAccounts, type NewBankAccount, transactions } from "../schema";
 
 export async function createBankAccount(
    db: DatabaseInstance,

@@ -6,11 +6,13 @@ type WriteContentArgs = { markdown: string };
 type WriteContentResult = { success: boolean };
 
 export const WriteContentToolUI = makeAssistantToolUI<
-  WriteContentArgs,
-  WriteContentResult
+   WriteContentArgs,
+   WriteContentResult
 >({
-  toolName: "write-content",
-  render: (props: ToolCallMessagePartProps<WriteContentArgs, WriteContentResult>) => {
-    return <EditorTool {...(props as ToolCallMessagePartProps<any, any>)} />;
-  },
+   toolName: "write-content",
+   render: (
+      props: ToolCallMessagePartProps<WriteContentArgs, WriteContentResult>,
+   ) => {
+      return <EditorTool {...(props as ToolCallMessagePartProps<any, any>)} />;
+   },
 });

@@ -3,9 +3,7 @@ import {
    getProductSettings,
    updateAiDefaults as updateAiDefaultsRepo,
 } from "@packages/database/repositories/product-settings-repository";
-import {
-   AIDefaultsSchema,
-} from "@packages/database/schemas/product-settings";
+import { AIDefaultsSchema } from "@packages/database/schemas/product-settings";
 import { protectedProcedure } from "../server";
 
 // =============================================================================

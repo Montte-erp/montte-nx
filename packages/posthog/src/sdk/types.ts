@@ -177,7 +177,6 @@ export interface BlogAnalyticsEventMap {
 export interface ContentAnalyticsDaily {
    date: string;
    organizationId: string;
-   contentId: string;
    totalViews: number;
    uniqueVisitors: number;
    avgTimeSeconds: number;
@@ -204,7 +203,6 @@ export interface TrafficSourceStats {
  * Content performance metrics
  */
 export interface ContentPerformanceStats {
-   contentId: string;
    contentSlug: string;
    contentTitle: string;
    agentId: string;
@@ -222,7 +220,6 @@ export interface ContentPerformanceStats {
  * Engagement funnel metrics
  */
 export interface EngagementFunnel {
-   contentId: string;
    totalViews: number;
    scroll25: number;
    scroll50: number;
@@ -243,7 +240,6 @@ export interface EngagementFunnel {
  * Top content item
  */
 export interface TopContentItem {
-   contentId: string;
    contentSlug: string;
    contentTitle: string;
    agentId: string;

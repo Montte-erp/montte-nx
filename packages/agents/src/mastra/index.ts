@@ -18,7 +18,6 @@ export type { RequestContext };
 export type CustomRequestContext = {
    userId: string;
    writerId?: string;
-   contentId?: string;
    teamId?: string;
    organizationId?: string;
    memberId?: string;
@@ -39,7 +38,10 @@ export type CustomRequestContext = {
       output: Record<string, unknown>,
    ) => Promise<void>;
    onMetaUpdate?: (patch: Record<string, unknown>) => Promise<void>;
-   getContentBody?: () => Promise<{ markdown: string; wordCount: number } | null>;
+   getContentBody?: () => Promise<{
+      markdown: string;
+      wordCount: number;
+   } | null>;
    // Mode-based context for tecoAgent
    mode?: string;
    contentTitle?: string;
@@ -89,9 +91,6 @@ export function createRequestContext(context: CustomRequestContext) {
 
    if (context.writerId) {
       requestContext.set("writerId", context.writerId);
-   }
-   if (context.contentId) {
-      requestContext.set("contentId", context.contentId);
    }
    if (context.teamId) {
       requestContext.set("teamId", context.teamId);
@@ -159,5 +158,5 @@ export function createRequestContext(context: CustomRequestContext) {
    return requestContext;
 }
 export { contentCreationWorkflow };
-export { handleWorkflowStream } from "@mastra/ai-sdk";
 export * from "@mastra/ai-sdk";
+export { handleWorkflowStream } from "@mastra/ai-sdk";

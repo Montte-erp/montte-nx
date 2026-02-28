@@ -14,10 +14,7 @@ import {
    getModelPreset,
 } from "@packages/agents/models";
 import { getProductSettings } from "@packages/database/repositories/product-settings-repository";
-import {
-   AI_EVENTS,
-   emitAiCompletion,
-} from "@packages/events/ai";
+import { AI_EVENTS, emitAiCompletion } from "@packages/events/ai";
 import {
    enforceCreditBudget,
    trackCreditUsage,
@@ -32,12 +29,24 @@ import { protectedProcedure } from "../server";
 
 type FIMChunk =
    | { text: string; done: false }
-   | { text: string; done: true; metadata?: { stopReason: string; latencyMs: number } };
+   | {
+        text: string;
+        done: true;
+        metadata?: { stopReason: string; latencyMs: number };
+     };
 
 type ChatChunk =
    | { type: "text"; text: string }
-   | { type: "tool_call_start"; toolCall: { id: string; name: string; args: Record<string, unknown> } }
-   | { type: "tool_call_complete"; toolCallId: string; toolName: string; result: unknown }
+   | {
+        type: "tool_call_start";
+        toolCall: { id: string; name: string; args: Record<string, unknown> };
+     }
+   | {
+        type: "tool_call_complete";
+        toolCallId: string;
+        toolName: string;
+        result: unknown;
+     }
    | { type: "step_start"; stepIndex: number }
    | { type: "step_complete"; stepIndex: number }
    | { type: "done" }
@@ -72,7 +81,6 @@ export const copilotStream = protectedProcedure
       z.object({
          prefix: z.string(),
          suffix: z.string().optional(),
-         contentId: z.string().optional(),
       }),
    )
    .handler(async function* ({ context, input }) {
@@ -193,7 +201,6 @@ export const aiCommandStream = protectedProcedure
    .input(
       z.object({
          prompt: z.string(),
-         contentId: z.string().optional(),
          writerId: z.string().optional(),
          model: z.string().optional(),
          language: z.string().optional(),
@@ -223,7 +230,6 @@ export const aiCommandStream = protectedProcedure
       // Create request context with settings, falling back to product defaults
       const requestContext = createRequestContext({
          userId,
-         contentId: input.contentId,
          writerId: input.writerId,
          language:
             input.language ??
@@ -373,7 +379,6 @@ export const aiCommandStream = protectedProcedure
          } satisfies ChatChunk;
       }
    });
-
 
 // =============================================================================
 // Helper Functions

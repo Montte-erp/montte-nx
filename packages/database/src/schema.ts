@@ -2,12 +2,17 @@
 
 // Actions
 export * from "./schemas/actions";
+// Assets
+export * from "./schemas/assets";
 export * from "./schemas/activity-logs";
 // Addons
 export * from "./schemas/addons";
 // Analytics
 export * from "./schemas/annotations";
 export * from "./schemas/auth";
+// Finance
+export * from "./schemas/bank-accounts";
+export * from "./schemas/categories";
 export * from "./schemas/dashboards";
 // Data sources
 export * from "./schemas/data-sources";
@@ -32,12 +37,8 @@ export * from "./schemas/resource-permissions";
 export * from "./schemas/roles";
 // SSO
 export * from "./schemas/sso";
-// Webhooks
-export * from "./schemas/webhooks";
-
-// Finance
-export * from "./schemas/bank-accounts";
-export * from "./schemas/categories";
 export * from "./schemas/subcategories";
 export * from "./schemas/tags";
 export * from "./schemas/transactions";
+// Webhooks
+export * from "./schemas/webhooks";
