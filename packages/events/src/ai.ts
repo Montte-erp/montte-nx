@@ -86,7 +86,6 @@ export type AiEventName = (typeof AI_EVENTS)[keyof typeof AI_EVENTS];
 // ---------------------------------------------------------------------------
 
 export const aiCompletionEventSchema = z.object({
-   contentId: z.uuid().optional(),
    agentId: z.uuid().optional(),
    model: z.string(),
    provider: z.string(),
@@ -117,7 +116,6 @@ export function emitAiCompletion(
 
 export const aiChatMessageEventSchema = z.object({
    chatId: z.uuid(),
-   contentId: z.uuid().optional(),
    agentId: z.uuid().optional(),
    model: z.string(),
    provider: z.string(),
@@ -148,7 +146,6 @@ export function emitAiChatMessage(
 
 export const aiAgentActionEventSchema = z.object({
    agentId: z.uuid(),
-   contentId: z.uuid().optional(),
    action: z.string(),
    model: z.string(),
    provider: z.string(),
