@@ -1,0 +1,147 @@
+import { z } from "zod";
+import { type EmitFn, EVENT_CATEGORIES } from "./catalog";
+
+// ---------------------------------------------------------------------------
+// Finance Event Names
+// ---------------------------------------------------------------------------
+
+export const FINANCE_EVENTS = {
+   "finance.transaction_created": "finance.transaction_created",
+   "finance.transaction_updated": "finance.transaction_updated",
+   "finance.bank_account_connected": "finance.bank_account_connected",
+   "finance.category_created": "finance.category_created",
+   "finance.tag_created": "finance.tag_created",
+} as const;
+
+export type FinanceEventName =
+   (typeof FINANCE_EVENTS)[keyof typeof FINANCE_EVENTS];
+
+// ---------------------------------------------------------------------------
+// finance.transaction_created
+// ---------------------------------------------------------------------------
+
+export const financeTransactionCreatedSchema = z.object({
+   transactionId: z.string().uuid(),
+   type: z.enum(["income", "expense", "transfer"]),
+   bankAccountId: z.string().uuid(),
+   categoryId: z.string().uuid().optional(),
+   amountCents: z.number().int().nonnegative(),
+});
+export type FinanceTransactionCreatedEvent = z.infer<
+   typeof financeTransactionCreatedSchema
+>;
+
+export function emitFinanceTransactionCreated(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: FinanceTransactionCreatedEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: FINANCE_EVENTS["finance.transaction_created"],
+      eventCategory: EVENT_CATEGORIES.finance,
+      properties,
+   });
+}
+
+// ---------------------------------------------------------------------------
+// finance.transaction_updated
+// ---------------------------------------------------------------------------
+
+export const financeTransactionUpdatedSchema = z.object({
+   transactionId: z.string().uuid(),
+});
+export type FinanceTransactionUpdatedEvent = z.infer<
+   typeof financeTransactionUpdatedSchema
+>;
+
+export function emitFinanceTransactionUpdated(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: FinanceTransactionUpdatedEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: FINANCE_EVENTS["finance.transaction_updated"],
+      eventCategory: EVENT_CATEGORIES.finance,
+      properties,
+   });
+}
+
+// ---------------------------------------------------------------------------
+// finance.bank_account_connected
+// ---------------------------------------------------------------------------
+
+export const financeBankAccountConnectedSchema = z.object({
+   bankAccountId: z.string().uuid(),
+   type: z.enum([
+      "checking",
+      "savings",
+      "credit_card",
+      "investment",
+      "cash",
+      "other",
+   ]),
+});
+export type FinanceBankAccountConnectedEvent = z.infer<
+   typeof financeBankAccountConnectedSchema
+>;
+
+export function emitFinanceBankAccountConnected(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: FinanceBankAccountConnectedEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: FINANCE_EVENTS["finance.bank_account_connected"],
+      eventCategory: EVENT_CATEGORIES.finance,
+      properties,
+   });
+}
+
+// ---------------------------------------------------------------------------
+// finance.category_created
+// ---------------------------------------------------------------------------
+
+export const financeCategoryCreatedSchema = z.object({
+   categoryId: z.string().uuid(),
+});
+export type FinanceCategoryCreatedEvent = z.infer<
+   typeof financeCategoryCreatedSchema
+>;
+
+export function emitFinanceCategoryCreated(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: FinanceCategoryCreatedEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: FINANCE_EVENTS["finance.category_created"],
+      eventCategory: EVENT_CATEGORIES.finance,
+      properties,
+   });
+}
+
+// ---------------------------------------------------------------------------
+// finance.tag_created
+// ---------------------------------------------------------------------------
+
+export const financeTagCreatedSchema = z.object({
+   tagId: z.string().uuid(),
+});
+export type FinanceTagCreatedEvent = z.infer<typeof financeTagCreatedSchema>;
+
+export function emitFinanceTagCreated(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: FinanceTagCreatedEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: FINANCE_EVENTS["finance.tag_created"],
+      eventCategory: EVENT_CATEGORIES.finance,
+      properties,
+   });
+}
