@@ -1,4 +1,4 @@
-export interface ContenttaSdkConfig {
+export interface MontteSdkConfig {
 	apiKey: string;
 	apiUrl?: string;
 	organizationId: string;

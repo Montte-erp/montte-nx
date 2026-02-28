@@ -141,7 +141,7 @@ export class BlogAnalyticsTracker {
       api_key: CONFIG.posthogApiKey,
       event: eventName,
       properties: Object.assign({}, properties, {
-        $lib: 'contentta-sdk',
+        $lib: 'montte-sdk',
         $lib_version: '1.0.0'
       }),
       timestamp: new Date().toISOString()

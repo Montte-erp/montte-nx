@@ -45,15 +45,15 @@ const products: ProductCardData[] = [
 ];
 
 const installCommands: Record<string, string> = {
-   npm: "npm install @contentta/sdk",
-   pnpm: "pnpm add @contentta/sdk",
-   bun: "bun add @contentta/sdk",
+   npm: "npm install @montte/sdk",
+   pnpm: "pnpm add @montte/sdk",
+   bun: "bun add @montte/sdk",
 };
 
 const usageSnippets: Record<Product, string> = {
-   content: `import { Contentta } from '@contentta/sdk'
+   content: `import { Montte } from '@montte/sdk'
 
-const client = new Contentta({
+const client = new Montte({
   apiKey: 'your-api-key'
 })
 
@@ -62,9 +62,9 @@ const page = await client.content.create({
   title: 'Meu primeiro post',
   body: '...'
 })`,
-   analytics: `import { Contentta } from '@contentta/sdk'
+   analytics: `import { Montte } from '@montte/sdk'
 
-const client = new Contentta({
+const client = new Montte({
   apiKey: 'your-api-key'
 })
 

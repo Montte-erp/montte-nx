@@ -1,7 +1,7 @@
 /**
  * SDK Type Definitions
  *
- * This file contains type exports for the Contentta SDK.
+ * This file contains type exports for the Montte SDK.
  * All runtime types are inferred from the oRPC router at sdk-server/src/orpc/router/*.
  *
  * We only maintain minimal helper types here for backward compatibility and documentation.
@@ -17,7 +17,7 @@ import type { createSdk } from "./index";
  *
  * @example
  * ```typescript
- * import type { SdkRouter } from "@contentta/sdk";
+ * import type { SdkRouter } from "@montte/sdk";
  *
  * const sdk = createSdk({ apiKey: "..." });
  * // sdk is of type SdkRouter

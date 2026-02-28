@@ -6,7 +6,7 @@
  *
  * @example
  * ```typescript
- * import { createBrowserSdk } from "@contentta/sdk/browser";
+ * import { createBrowserSdk } from "@montte/sdk/browser";
  *
  * const sdk = createBrowserSdk({
  *   apiKey: "your-api-key",
@@ -26,20 +26,20 @@
 
 export type { FormDefinition, FormField } from "./forms.ts";
 export {
-	ContenttaFormsClient,
+	MontteFormsClient,
 	createFormsClient,
 } from "./forms.ts";
 
 // ── Re-exports from Event Tracker ──────────────────────────────
 
 export {
-	ContenttaEventTracker,
+	MontteEventTracker,
 	createEventTracker,
 	createEventTracker as createTracker,
 } from "./events/client.ts";
 
 export type {
-	ContenttaSdkConfig,
+	MontteSdkConfig,
 	EventBatch,
 	TrackedEvent,
 } from "./events/types.ts";
@@ -47,7 +47,7 @@ export type {
 // ── Browser SDK Factory ─────────────────────────────────────────
 
 import { createEventTracker } from "./events/client.ts";
-import type { ContenttaSdkConfig } from "./events/types.ts";
+import type { MontteSdkConfig } from "./events/types.ts";
 import { createFormsClient } from "./forms.ts";
 
 export interface BrowserSdk {
@@ -76,7 +76,7 @@ export interface BrowserSdk {
  * await sdk.forms.embedForm("form-id", "container-id");
  * ```
  */
-export function createBrowserSdk(config: ContenttaSdkConfig): BrowserSdk {
+export function createBrowserSdk(config: MontteSdkConfig): BrowserSdk {
 	const tracker = createEventTracker(config);
 	const forms = createFormsClient(config, tracker);
 

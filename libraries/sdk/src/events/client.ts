@@ -1,12 +1,12 @@
 import { createSdk } from "../index.ts";
-import type { ContenttaSdkConfig, TrackedEvent } from "./types.ts";
+import type { MontteSdkConfig, TrackedEvent } from "./types.ts";
 
 const DEFAULT_BATCH_SIZE = 10;
 const DEFAULT_FLUSH_INTERVAL = 30_000;
 const DEFAULT_API_URL = "https://api.contentagen.com";
 
-const VISITOR_ID_KEY = "contentta_visitor_id";
-const SESSION_ID_KEY = "contentta_session_id";
+const VISITOR_ID_KEY = "montte_visitor_id";
+const SESSION_ID_KEY = "montte_session_id";
 
 const SCROLL_MILESTONES = [25, 50, 75, 100] as const;
 
@@ -15,7 +15,7 @@ const MAX_QUEUE_SIZE = 1000;
 /** C1: Stop re-queuing after this many consecutive flush failures */
 const MAX_CONSECUTIVE_FAILURES = 5;
 
-export class ContenttaEventTracker {
+export class MontteEventTracker {
 	private readonly apiKey: string;
 	private readonly apiUrl: string;
 	private readonly organizationId: string;
@@ -48,7 +48,7 @@ export class ContenttaEventTracker {
 	/** oRPC SDK client for sending events */
 	private readonly sdk: any;
 
-	constructor(config: ContenttaSdkConfig) {
+	constructor(config: MontteSdkConfig) {
 		this.apiKey = config.apiKey;
 		this.apiUrl = (config.apiUrl ?? DEFAULT_API_URL).replace(/\/+$/, "");
 		this.organizationId = config.organizationId;
@@ -498,15 +498,15 @@ export class ContenttaEventTracker {
 
 	private log(message: string, ...args: unknown[]): void {
 		if (this.debug) {
-			console.log(`[ContenttaEventTracker] ${message}`, ...args);
+			console.log(`[MontteEventTracker] ${message}`, ...args);
 		}
 	}
 }
 
 export function createEventTracker(
-	config: ContenttaSdkConfig,
-): ContenttaEventTracker {
-	return new ContenttaEventTracker(config);
+	config: MontteSdkConfig,
+): MontteEventTracker {
+	return new MontteEventTracker(config);
 }
 
-export type { ContenttaSdkConfig, EventBatch, TrackedEvent } from "./types.ts";
+export type { MontteSdkConfig, EventBatch, TrackedEvent } from "./types.ts";

@@ -1,5 +1,5 @@
-import type { ContenttaEventTracker } from "./events/client.ts";
-import type { ContenttaSdkConfig } from "./events/types.ts";
+import type { MontteEventTracker } from "./events/client.ts";
+import type { MontteSdkConfig } from "./events/types.ts";
 import { createSdk } from "./index.ts";
 
 // ── Type Definitions ────────────────────────────────────────────
@@ -71,7 +71,7 @@ function escapeHtml(str: string): string {
 // ── CSS ─────────────────────────────────────────────────────────
 
 const FORM_STYLES = `
-.contentta-form {
+.montte-form {
 	--cf-bg: var(--background, #fff);
 	--cf-fg: var(--foreground, #09090b);
 	--cf-muted: var(--muted, #f4f4f5);
@@ -90,52 +90,52 @@ const FORM_STYLES = `
 	color: var(--cf-fg);
 	border-radius: var(--cf-radius);
 }
-.contentta-form__cta {
+.montte-form__cta {
 	margin-bottom: 1.25rem;
 }
-.contentta-form__cta-icon {
+.montte-form__cta-icon {
 	font-size: 1.75rem;
 	margin-bottom: 0.375rem;
 }
-.contentta-form__cta-title {
+.montte-form__cta-title {
 	font-size: 1.25rem;
 	font-weight: 600;
 	margin: 0 0 0.25rem;
 	color: var(--cf-fg);
 }
-.contentta-form__cta-subtitle {
+.montte-form__cta-subtitle {
 	font-size: 0.875rem;
 	color: var(--cf-muted-fg);
 	margin: 0;
 }
-.contentta-form__title {
+.montte-form__title {
 	font-size: 1.25rem;
 	font-weight: 600;
 	margin: 0 0 0.25rem;
 	color: var(--cf-fg);
 }
-.contentta-form__description {
+.montte-form__description {
 	font-size: 0.875rem;
 	color: var(--cf-muted-fg);
 	margin: 0 0 1.25rem;
 }
-.contentta-form__field {
+.montte-form__field {
 	margin-bottom: 1rem;
 }
-.contentta-form__label {
+.montte-form__label {
 	display: block;
 	font-size: 0.875rem;
 	font-weight: 500;
 	margin-bottom: 0.375rem;
 	color: var(--cf-fg);
 }
-.contentta-form__required {
+.montte-form__required {
 	color: var(--cf-destructive);
 	margin-left: 0.125rem;
 }
-.contentta-form__input,
-.contentta-form__textarea,
-.contentta-form__select {
+.montte-form__input,
+.montte-form__textarea,
+.montte-form__select {
 	display: block;
 	width: 100%;
 	padding: 0.5rem 0.75rem;
@@ -149,31 +149,31 @@ const FORM_STYLES = `
 	transition: border-color 0.15s ease;
 	font-family: inherit;
 }
-.contentta-form__input:focus,
-.contentta-form__textarea:focus,
-.contentta-form__select:focus {
+.montte-form__input:focus,
+.montte-form__textarea:focus,
+.montte-form__select:focus {
 	outline: none;
 	border-color: var(--cf-ring);
 	box-shadow: 0 0 0 2px color-mix(in srgb, var(--cf-ring) 20%, transparent);
 }
-.contentta-form__textarea {
+.montte-form__textarea {
 	min-height: 5rem;
 	resize: vertical;
 }
-.contentta-form__checkbox-wrapper {
+.montte-form__checkbox-wrapper {
 	display: flex;
 	align-items: flex-start;
 	gap: 0.5rem;
 }
-.contentta-form__checkbox {
+.montte-form__checkbox {
 	margin-top: 0.25rem;
 	accent-color: var(--cf-primary);
 }
-.contentta-form__rating {
+.montte-form__rating {
 	display: flex;
 	gap: 0.375rem;
 }
-.contentta-form__star {
+.montte-form__star {
 	font-size: 1.5rem;
 	cursor: pointer;
 	color: var(--cf-border);
@@ -183,17 +183,17 @@ const FORM_STYLES = `
 	padding: 0;
 	line-height: 1;
 }
-.contentta-form__star:hover,
-.contentta-form__star--active {
+.montte-form__star:hover,
+.montte-form__star--active {
 	color: #eab308;
 }
-.contentta-form__error {
+.montte-form__error {
 	font-size: 0.75rem;
 	color: var(--cf-destructive);
 	margin-top: 0.25rem;
 	min-height: 0;
 }
-.contentta-form__submit {
+.montte-form__submit {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -208,14 +208,14 @@ const FORM_STYLES = `
 	transition: opacity 0.15s ease;
 	font-family: inherit;
 }
-.contentta-form__submit:hover {
+.montte-form__submit:hover {
 	opacity: 0.9;
 }
-.contentta-form__submit:disabled {
+.montte-form__submit:disabled {
 	opacity: 0.6;
 	cursor: not-allowed;
 }
-.contentta-form__success {
+.montte-form__success {
 	padding: 1rem;
 	font-size: 0.875rem;
 	color: var(--cf-fg);
@@ -263,19 +263,19 @@ function injectFormStyles(): void {
 	if (typeof document === "undefined") return;
 
 	const style = document.createElement("style");
-	style.setAttribute("data-contentta-forms", "");
+	style.setAttribute("data-montte-forms", "");
 	style.textContent = FORM_STYLES;
 	document.head.appendChild(style);
 	stylesInjected = true;
 }
 
-export class ContenttaFormsClient {
-	private config: ContenttaSdkConfig;
-	private tracker: ContenttaEventTracker;
+export class MontteFormsClient {
+	private config: MontteSdkConfig;
+	private tracker: MontteEventTracker;
 	private apiUrl: string;
 	private readonly sdk: FormsApiClient;
 
-	constructor(config: ContenttaSdkConfig, tracker: ContenttaEventTracker) {
+	constructor(config: MontteSdkConfig, tracker: MontteEventTracker) {
 		this.config = config;
 		this.tracker = tracker;
 		this.apiUrl = (config.apiUrl ?? DEFAULT_API_URL).replace(/\/+$/, "");
@@ -300,7 +300,7 @@ export class ContenttaFormsClient {
 		const container = document.getElementById(containerId);
 		if (!container) {
 			console.error(
-				`[ContenttaForms] Container element with id "${containerId}" not found.`,
+				`[MontteForms] Container element with id "${containerId}" not found.`,
 			);
 			return;
 		}
@@ -313,7 +313,7 @@ export class ContenttaFormsClient {
 
 			if (!isFormDefinition(result)) {
 				console.error(
-					"[ContenttaForms] Invalid form definition received from API.",
+					"[MontteForms] Invalid form definition received from API.",
 				);
 				return;
 			}
@@ -324,7 +324,7 @@ export class ContenttaFormsClient {
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
 			console.error(
-				`[ContenttaForms] Failed to fetch form: ${errorMessage}`,
+				`[MontteForms] Failed to fetch form: ${errorMessage}`,
 				error,
 			);
 			return;
@@ -367,10 +367,10 @@ export class ContenttaFormsClient {
 		const ctaHtml =
 			form.icon || displayTitle || displaySubtitle
 				? `
-<div class="contentta-form__cta">
-	${form.icon ? `<div class="contentta-form__cta-icon">${escapeHtml(form.icon)}</div>` : ""}
-	${displayTitle ? `<h3 class="contentta-form__cta-title">${escapeHtml(displayTitle)}</h3>` : ""}
-	${displaySubtitle ? `<p class="contentta-form__cta-subtitle">${escapeHtml(displaySubtitle)}</p>` : ""}
+<div class="montte-form__cta">
+	${form.icon ? `<div class="montte-form__cta-icon">${escapeHtml(form.icon)}</div>` : ""}
+	${displayTitle ? `<h3 class="montte-form__cta-title">${escapeHtml(displayTitle)}</h3>` : ""}
+	${displaySubtitle ? `<p class="montte-form__cta-subtitle">${escapeHtml(displaySubtitle)}</p>` : ""}
 </div>`
 				: "";
 
@@ -381,11 +381,11 @@ export class ContenttaFormsClient {
 		const buttonText = form.buttonText || "Enviar";
 
 		return `
-<div class="contentta-form">
+<div class="montte-form">
 	${ctaHtml}
-	<form class="contentta-form__form" novalidate>
+	<form class="montte-form__form" novalidate>
 		${fieldsHtml}
-		<button type="submit" class="contentta-form__submit">${escapeHtml(buttonText)}</button>
+		<button type="submit" class="montte-form__submit">${escapeHtml(buttonText)}</button>
 	</form>
 </div>`;
 	}
@@ -398,7 +398,7 @@ export class ContenttaFormsClient {
 			: "";
 		const requiredAttr = field.required ? "required" : "";
 		const requiredMarker = field.required
-			? '<span class="contentta-form__required">*</span>'
+			? '<span class="montte-form__required">*</span>'
 			: "";
 
 		let inputHtml: string;
@@ -408,9 +408,9 @@ export class ContenttaFormsClient {
 			case "email":
 				inputHtml = `<input
 					type="${field.type}"
-					id="contentta-field-${escapedId}"
+					id="montte-field-${escapedId}"
 					name="${escapedId}"
-					class="contentta-form__input"
+					class="montte-form__input"
 					placeholder="${escapedPlaceholder}"
 					${requiredAttr}
 				/>`;
@@ -418,24 +418,24 @@ export class ContenttaFormsClient {
 
 			case "textarea":
 				inputHtml = `<textarea
-					id="contentta-field-${escapedId}"
+					id="montte-field-${escapedId}"
 					name="${escapedId}"
-					class="contentta-form__textarea"
+					class="montte-form__textarea"
 					placeholder="${escapedPlaceholder}"
 					${requiredAttr}
 				></textarea>`;
 				break;
 
 			case "checkbox":
-				inputHtml = `<div class="contentta-form__checkbox-wrapper">
+				inputHtml = `<div class="montte-form__checkbox-wrapper">
 					<input
 						type="checkbox"
-						id="contentta-field-${escapedId}"
+						id="montte-field-${escapedId}"
 						name="${escapedId}"
-						class="contentta-form__checkbox"
+						class="montte-form__checkbox"
 						${requiredAttr}
 					/>
-					<label for="contentta-field-${escapedId}">${escapedLabel}</label>
+					<label for="montte-field-${escapedId}">${escapedLabel}</label>
 				</div>`;
 				break;
 
@@ -448,9 +448,9 @@ export class ContenttaFormsClient {
 					.join("\n");
 
 				inputHtml = `<select
-					id="contentta-field-${escapedId}"
+					id="montte-field-${escapedId}"
 					name="${escapedId}"
-					class="contentta-form__select"
+					class="montte-form__select"
 					${requiredAttr}
 				>
 					<option value="">${escapedPlaceholder || "Selecione uma opção"}</option>
@@ -462,9 +462,9 @@ export class ContenttaFormsClient {
 			case "number":
 				inputHtml = `<input
 					type="number"
-					id="contentta-field-${escapedId}"
+					id="montte-field-${escapedId}"
 					name="${escapedId}"
-					class="contentta-form__input"
+					class="montte-form__input"
 					placeholder="${escapedPlaceholder}"
 					${requiredAttr}
 				/>`;
@@ -473,9 +473,9 @@ export class ContenttaFormsClient {
 			case "date":
 				inputHtml = `<input
 					type="date"
-					id="contentta-field-${escapedId}"
+					id="montte-field-${escapedId}"
 					name="${escapedId}"
-					class="contentta-form__input"
+					class="montte-form__input"
 					${requiredAttr}
 				/>`;
 				break;
@@ -484,11 +484,11 @@ export class ContenttaFormsClient {
 				const stars = [1, 2, 3, 4, 5]
 					.map(
 						(n) =>
-							`<button type="button" class="contentta-form__star" data-rating="${n}" aria-label="${n} estrela${n > 1 ? "s" : ""}">★</button>`,
+							`<button type="button" class="montte-form__star" data-rating="${n}" aria-label="${n} estrela${n > 1 ? "s" : ""}">★</button>`,
 					)
 					.join("");
-				inputHtml = `<div class="contentta-form__rating" id="contentta-field-${escapedId}" data-field-id="${escapedId}">
-					<input type="hidden" name="${escapedId}" id="contentta-rating-input-${escapedId}" />
+				inputHtml = `<div class="montte-form__rating" id="montte-field-${escapedId}" data-field-id="${escapedId}">
+					<input type="hidden" name="${escapedId}" id="montte-rating-input-${escapedId}" />
 					${stars}
 				</div>`;
 				break;
@@ -497,9 +497,9 @@ export class ContenttaFormsClient {
 			case "file":
 				inputHtml = `<input
 					type="file"
-					id="contentta-field-${escapedId}"
+					id="montte-field-${escapedId}"
 					name="${escapedId}"
-					class="contentta-form__input"
+					class="montte-form__input"
 					${requiredAttr}
 				/>`;
 				break;
@@ -509,10 +509,10 @@ export class ContenttaFormsClient {
 				const _type: string = field.type;
 				inputHtml = `<input
 					type="text"
-					id="contentta-field-${escapedId}"
+					id="montte-field-${escapedId}"
 					name="${escapedId}"
 					data-field-type="${escapeHtml(_type)}"
-					class="contentta-form__input"
+					class="montte-form__input"
 					placeholder="${escapedPlaceholder}"
 					${requiredAttr}
 				/>`;
@@ -523,13 +523,13 @@ export class ContenttaFormsClient {
 		const labelHtml =
 			field.type === "checkbox"
 				? ""
-				: `<label class="contentta-form__label" for="contentta-field-${escapedId}">${escapedLabel}${requiredMarker}</label>`;
+				: `<label class="montte-form__label" for="montte-field-${escapedId}">${escapedLabel}${requiredMarker}</label>`;
 
 		return `
-<div class="contentta-form__field">
+<div class="montte-form__field">
 	${labelHtml}
 	${inputHtml}
-	<div class="contentta-form__error" data-field-error="${escapedId}"></div>
+	<div class="montte-form__error" data-field-error="${escapedId}"></div>
 </div>`;
 	}
 
@@ -541,7 +541,7 @@ export class ContenttaFormsClient {
 		options?: { experimentId?: string; variantId?: string },
 	): void {
 		const formElement = container.querySelector<HTMLFormElement>(
-			".contentta-form__form",
+			".montte-form__form",
 		);
 		if (!formElement) {
 			return;
@@ -549,16 +549,16 @@ export class ContenttaFormsClient {
 
 		// Setup star rating fields
 		const ratingContainers = container.querySelectorAll<HTMLDivElement>(
-			".contentta-form__rating",
+			".montte-form__rating",
 		);
 		for (const ratingContainer of ratingContainers) {
 			const fieldId = ratingContainer.getAttribute("data-field-id");
 			if (!fieldId) continue;
 			const stars = ratingContainer.querySelectorAll<HTMLButtonElement>(
-				".contentta-form__star",
+				".montte-form__star",
 			);
 			const hiddenInput = container.querySelector<HTMLInputElement>(
-				`#contentta-rating-input-${CSS.escape(fieldId)}`,
+				`#montte-rating-input-${CSS.escape(fieldId)}`,
 			);
 
 			for (const [i, star] of stars.entries()) {
@@ -567,7 +567,7 @@ export class ContenttaFormsClient {
 					if (hiddenInput) hiddenInput.value = String(value);
 					// Update star visual state
 					for (const [j, s] of stars.entries()) {
-						s.classList.toggle("contentta-form__star--active", j <= i);
+						s.classList.toggle("montte-form__star--active", j <= i);
 					}
 				});
 			}
@@ -577,7 +577,7 @@ export class ContenttaFormsClient {
 			event.preventDefault();
 
 			const submitButton = formElement.querySelector<HTMLButtonElement>(
-				".contentta-form__submit",
+				".montte-form__submit",
 			);
 			if (submitButton) {
 				submitButton.disabled = true;
@@ -648,7 +648,7 @@ export class ContenttaFormsClient {
 							window.location.href = redirectUrl;
 						} else {
 							console.error(
-								`[ContenttaForms] Unsafe redirect URL: ${redirectUrl}`,
+								`[MontteForms] Unsafe redirect URL: ${redirectUrl}`,
 							);
 						}
 					} else {
@@ -664,7 +664,7 @@ export class ContenttaFormsClient {
 						const errorMessage =
 							error instanceof Error ? error.message : "Unknown error";
 						console.error(
-							`[ContenttaForms] Submission failed: ${errorMessage}`,
+							`[MontteForms] Submission failed: ${errorMessage}`,
 							error,
 						);
 					}
@@ -684,7 +684,7 @@ export class ContenttaFormsClient {
 	): void {
 		// Clear all previous errors
 		const errorContainers = form.querySelectorAll<HTMLDivElement>(
-			".contentta-form__error",
+			".montte-form__error",
 		);
 		for (const el of errorContainers) {
 			el.textContent = "";
@@ -703,8 +703,8 @@ export class ContenttaFormsClient {
 
 	private showSuccess(container: HTMLElement, message: string): void {
 		container.innerHTML = `
-<div class="contentta-form">
-	<div class="contentta-form__success">${escapeHtml(message)}</div>
+<div class="montte-form">
+	<div class="montte-form__success">${escapeHtml(message)}</div>
 </div>`;
 	}
 }
@@ -712,10 +712,10 @@ export class ContenttaFormsClient {
 // ── Factory ─────────────────────────────────────────────────────
 
 export function createFormsClient(
-	config: ContenttaSdkConfig,
-	tracker: ContenttaEventTracker,
-): ContenttaFormsClient {
-	return new ContenttaFormsClient(config, tracker);
+	config: MontteSdkConfig,
+	tracker: MontteEventTracker,
+): MontteFormsClient {
+	return new MontteFormsClient(config, tracker);
 }
 
 export type { FormField, FormDefinition };

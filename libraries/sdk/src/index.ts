@@ -9,7 +9,7 @@ export interface SdkConfig {
 }
 
 /**
- * Create a type-safe SDK client for Contentta API
+ * Create a type-safe SDK client for Montte API
  *
  * @example
  * ```typescript
@@ -43,7 +43,7 @@ export interface SdkConfig {
  * ```
  */
 /**
- * Create a type-safe SDK client for Contentta API.
+ * Create a type-safe SDK client for Montte API.
  * Returns an oRPC client with methods for content, events, and forms.
  */
 export function createSdk(config: SdkConfig) {
@@ -64,6 +64,6 @@ export function createSdk(config: SdkConfig) {
 	return createORPCClient(link);
 }
 
-export { ContenttaChangelogClient } from "./changelog.ts";
+export { MontteChangelogClient } from "./changelog.ts";
 // Re-export types
 export type { SdkRouter } from "./types";

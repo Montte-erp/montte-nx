@@ -1,4 +1,4 @@
-import type { ContenttaSdkConfig } from "./events/types.ts";
+import type { MontteSdkConfig } from "./events/types.ts";
 import { createSdk } from "./index.ts";
 
 // ── Types ────────────────────────────────────────────────────────
@@ -130,7 +130,7 @@ function formatDate(iso: string): string {
 
 // ── Client class ─────────────────────────────────────────────────
 
-export class ContenttaChangelogClient {
+export class MontteChangelogClient {
 	private sdk: ReturnType<typeof createSdk> & SdkWithClusters;
 	private clusterId: string;
 	private config: EmbedConfig;
@@ -140,7 +140,7 @@ export class ContenttaChangelogClient {
 	private outsideClickHandler: ((e: MouseEvent) => void) | null = null;
 
 	constructor(
-		sdkConfig: ContenttaSdkConfig,
+		sdkConfig: MontteSdkConfig,
 		opts: {
 			clusterId: string;
 			theme?: "light" | "dark" | "auto";

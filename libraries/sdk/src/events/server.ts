@@ -1,18 +1,18 @@
-import type { ContenttaSdkConfig, EventBatch } from "./types.ts";
+import type { MontteSdkConfig, EventBatch } from "./types.ts";
 
-const DEFAULT_API_URL = "https://sdk.contentta.com";
+const DEFAULT_API_URL = "https://sdk.montte.co";
 const DEFAULT_TIMEOUT_MS = 30_000;
 
-export class ContenttaServerClient {
+export class MontteServerClient {
 	private readonly apiKey: string;
 	private readonly apiUrl: string;
 	private readonly timeout: number;
 
 	constructor(
-		config: Pick<ContenttaSdkConfig, "apiKey" | "apiUrl" | "timeout">,
+		config: Pick<MontteSdkConfig, "apiKey" | "apiUrl" | "timeout">,
 	) {
 		if (!config.apiKey) {
-			throw new Error("apiKey is required to initialize ContenttaServerClient");
+			throw new Error("apiKey is required to initialize MontteServerClient");
 		}
 
 		this.apiKey = config.apiKey;
@@ -48,7 +48,7 @@ export class ContenttaServerClient {
 			});
 		} catch (error) {
 			if (error instanceof TypeError) {
-				throw new Error(`Contentta SDK: network error — ${error.message}`);
+				throw new Error(`Montte SDK: network error — ${error.message}`);
 			}
 			throw error;
 		}
@@ -56,7 +56,7 @@ export class ContenttaServerClient {
 		if (!response.ok) {
 			const body = await response.text().catch(() => "");
 			throw new Error(
-				`Contentta SDK: event emission failed — ${response.status} ${response.statusText}${body ? ` — ${body}` : ""}`,
+				`Montte SDK: event emission failed — ${response.status} ${response.statusText}${body ? ` — ${body}` : ""}`,
 			);
 		}
 	}
@@ -82,7 +82,7 @@ export class ContenttaServerClient {
 	}): Promise<void> {
 		if (!params.contentId && !(params.targetType && params.targetId)) {
 			throw new Error(
-				"Contentta SDK: trackConversion requires either contentId or both targetType and targetId",
+				"Montte SDK: trackConversion requires either contentId or both targetType and targetId",
 			);
 		}
 		return this.emitEvent("experiment.conversion", params);
@@ -100,9 +100,9 @@ export class ContenttaServerClient {
 }
 
 export function createServerClient(
-	config: Pick<ContenttaSdkConfig, "apiKey" | "apiUrl" | "timeout">,
-): ContenttaServerClient {
-	return new ContenttaServerClient(config);
+	config: Pick<MontteSdkConfig, "apiKey" | "apiUrl" | "timeout">,
+): MontteServerClient {
+	return new MontteServerClient(config);
 }
 
-export type { ContenttaSdkConfig, EventBatch } from "./types.ts";
+export type { MontteSdkConfig, EventBatch } from "./types.ts";

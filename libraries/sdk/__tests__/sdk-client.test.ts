@@ -29,7 +29,7 @@ const createJsonResponse = (
 	} as unknown as FetchResponse;
 };
 
-describe("Contentta SDK - createSdk", () => {
+describe("Montte SDK - createSdk", () => {
 	beforeEach(() => {
 		if (originalFetch) {
 			globalThis.fetch = originalFetch;
@@ -97,7 +97,7 @@ describe("Contentta SDK - createSdk", () => {
 	});
 });
 
-describe("Contentta SDK - Content", () => {
+describe("Montte SDK - Content", () => {
 	beforeEach(() => {
 		if (originalFetch) {
 			globalThis.fetch = originalFetch;
@@ -273,7 +273,7 @@ describe("Contentta SDK - Content", () => {
 	});
 });
 
-describe("Contentta SDK - Forms", () => {
+describe("Montte SDK - Forms", () => {
 	beforeEach(() => {
 		if (originalFetch) {
 			globalThis.fetch = originalFetch;
@@ -448,7 +448,7 @@ describe("Contentta SDK - Forms", () => {
 	});
 });
 
-describe("Contentta SDK - Events", () => {
+describe("Montte SDK - Events", () => {
 	beforeEach(() => {
 		if (originalFetch) {
 			globalThis.fetch = originalFetch;
@@ -644,7 +644,7 @@ describe("Contentta SDK - Events", () => {
 	});
 });
 
-describe("Contentta SDK - Error Handling", () => {
+describe("Montte SDK - Error Handling", () => {
 	beforeEach(() => {
 		if (originalFetch) {
 			globalThis.fetch = originalFetch;

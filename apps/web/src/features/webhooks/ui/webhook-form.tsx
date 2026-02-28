@@ -142,7 +142,7 @@ export function WebhookForm({
                <Input
                   id="webhook-url"
                   onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://api.seusite.com/webhooks/contentta"
+                  placeholder="https://api.seusite.com/webhooks/montte"
                   value={url}
                />
             </div>
