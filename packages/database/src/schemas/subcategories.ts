@@ -14,6 +14,10 @@ export const subcategories = pgTable(
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
          .defaultNow(),
+      updatedAt: timestamp("updated_at", { withTimezone: true })
+         .notNull()
+         .defaultNow()
+         .$onUpdate(() => new Date()),
    },
    (table) => [
       index("subcategories_category_id_idx").on(table.categoryId),
@@ -28,6 +32,8 @@ export const subcategoriesRelations = relations(subcategories, ({ one }) => ({
    }),
 }));
 
+// categoriesRelations is defined here (not in categories.ts) to avoid a circular import.
+// subcategories.ts → categories.ts is already a one-way dependency.
 export const categoriesRelations = relations(categories, ({ many }) => ({
    subcategories: many(subcategories),
 }));

@@ -79,11 +79,12 @@ export const transactionsRelations = relations(
       bankAccount: one(bankAccounts, {
          fields: [transactions.bankAccountId],
          references: [bankAccounts.id],
+         relationName: "sourceAccount",
       }),
       destinationBankAccount: one(bankAccounts, {
          fields: [transactions.destinationBankAccountId],
          references: [bankAccounts.id],
-         relationName: "destinationBankAccount",
+         relationName: "destinationAccount",
       }),
       category: one(categories, {
          fields: [transactions.categoryId],
@@ -112,3 +113,4 @@ export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
 export type TransactionType = (typeof transactionTypeEnum.enumValues)[number];
 export type TransactionTag = typeof transactionTags.$inferSelect;
+export type NewTransactionTag = typeof transactionTags.$inferInsert;
