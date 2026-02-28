@@ -13,6 +13,7 @@ import {
    useCallback,
    useEffect,
    useImperativeHandle,
+   useRef,
    useTransition,
 } from "react";
 import { toast } from "sonner";
@@ -36,12 +37,14 @@ interface WorkspaceStepProps {
 export const WorkspaceStep = forwardRef<StepHandle, WorkspaceStepProps>(
    function WorkspaceStep({ onNext, onStateChange, onSlugChange }, ref) {
       const [isPending, startTransition] = useTransition();
+      const submitSucceeded = useRef(false);
 
       const form = useForm({
          defaultValues: {
             workspaceName: "",
          },
          onSubmit: async ({ value }) => {
+            submitSucceeded.current = false;
             try {
                const slug = createSlug(value.workspaceName);
 
@@ -69,6 +72,7 @@ export const WorkspaceStep = forwardRef<StepHandle, WorkspaceStepProps>(
                }
 
                const teamId = teamResult.data.id;
+               const teamSlug = slug;
 
                const session = await authClient.getSession();
                if (!session?.data?.user?.id) {
@@ -84,7 +88,8 @@ export const WorkspaceStep = forwardRef<StepHandle, WorkspaceStepProps>(
 
                await orpc.onboarding.completeOnboarding.call({ products: ["finance"] });
 
-               onNext({ orgSlug, teamSlug: slug });
+               onNext({ orgSlug, teamSlug });
+               submitSucceeded.current = true;
             } catch (error) {
                toast.error(
                   error instanceof Error ? error.message : "Erro ao criar espaço.",
@@ -99,7 +104,7 @@ export const WorkspaceStep = forwardRef<StepHandle, WorkspaceStepProps>(
          () => ({
             submit: async () => {
                await form.handleSubmit();
-               return true;
+               return submitSucceeded.current;
             },
             canContinue: true,
             isPending: isPending,
