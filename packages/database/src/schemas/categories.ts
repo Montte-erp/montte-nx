@@ -16,6 +16,9 @@ export const categories = pgTable(
       teamId: uuid("team_id").notNull(),
       name: text("name").notNull(),
       isDefault: boolean("is_default").notNull().default(false),
+      color: text("color"),
+      icon: text("icon"),
+      type: text("type"), // "income" | "expense" | null
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
          .defaultNow(),

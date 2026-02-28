@@ -26,6 +26,7 @@ export const transactions = pgTable(
    {
       id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
       teamId: uuid("team_id").notNull(),
+      name: text("name"),
       type: transactionTypeEnum("type").notNull(),
       amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
       description: text("description"),
