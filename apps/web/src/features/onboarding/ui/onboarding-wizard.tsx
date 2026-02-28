@@ -87,13 +87,13 @@ export function OnboardingWizard({
 
    const handleWorkspaceComplete = useCallback(
       (
-         org: { id: string; slug: string },
+         result: { orgSlug: string; teamSlug: string },
          methods: { navigation: { next: () => void } },
       ) => {
          setWizardState((prev) => ({
             ...prev,
-            organizationId: org.id,
-            organizationSlug: org.slug,
+            organizationSlug: result.orgSlug,
+            teamSlug: result.teamSlug,
          }));
          methods.navigation.next();
       },
@@ -197,9 +197,9 @@ export function OnboardingWizard({
                               ? {
                                    workspace: () => (
                                       <WorkspaceStep
-                                         onNext={(org) =>
+                                         onNext={(result) =>
                                             handleWorkspaceComplete(
-                                               org,
+                                               result,
                                                methods,
                                             )
                                          }
