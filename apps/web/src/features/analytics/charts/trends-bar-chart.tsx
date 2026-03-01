@@ -7,7 +7,7 @@ import {
    ChartTooltipContent,
 } from "@packages/ui/components/chart";
 import { memo, useMemo } from "react";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
 
 interface TrendsBarChartProps {
    data: Array<Record<string, unknown>>;
@@ -17,6 +17,14 @@ interface TrendsBarChartProps {
    xAxisFormatter?: (value: string) => string;
    valueFormatter?: (value: number) => string;
    comparisonData?: Array<Record<string, unknown>>;
+   /** Per-bar colors — when provided, each bar gets its own fill via Cell */
+   cellColors?: (string | null | undefined)[];
+   /**
+    * Series keys whose values are stored as negatives in the data.
+    * The Y-axis ticks and tooltip will display their absolute value,
+    * while the tooltip label will be prefixed with "−" to communicate negativity.
+    */
+   negativeKeys?: string[];
 }
 
 export const TrendsBarChart = memo(function TrendsBarChart({
@@ -27,7 +35,10 @@ export const TrendsBarChart = memo(function TrendsBarChart({
    xAxisFormatter,
    valueFormatter,
    comparisonData,
+   cellColors,
+   negativeKeys = [],
 }: TrendsBarChartProps) {
+   // chartConfig must be declared before tooltipFormatter (closes over it)
    const chartConfig = useMemo(() => {
       const config: ChartConfig = {};
       for (const s of series) {
@@ -43,6 +54,40 @@ export const TrendsBarChart = memo(function TrendsBarChart({
       }
       return config;
    }, [series, comparisonData]);
+
+   const negativeKeySet = useMemo(() => new Set(negativeKeys), [negativeKeys]);
+
+   // Y-axis always shows absolute values so negative ticks read as positive currency
+   const yAxisFormatter = useMemo(() => {
+      if (!valueFormatter) return undefined;
+      return (value: number) => valueFormatter(Math.abs(value));
+   }, [valueFormatter]);
+
+   const tooltipFormatter = useMemo(() => {
+      if (!valueFormatter) return undefined;
+      return (value: unknown, name: unknown) => {
+         const label = chartConfig[name as string]?.label ?? name;
+         const numVal = Number(value);
+         const isNegative = negativeKeySet.has(name as string);
+         // Always display absolute amount; prefix with "−" for negative series
+         const formatted =
+            (isNegative ? "−" : "") + valueFormatter(Math.abs(numVal));
+         return (
+            <div className="flex items-center gap-2 w-full">
+               <div
+                  className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                  style={{
+                     background: `var(--color-${name})`,
+                  }}
+               />
+               <span className="text-muted-foreground">{String(label)}</span>
+               <span className="ml-auto pl-4 font-mono font-medium tabular-nums">
+                  {formatted}
+               </span>
+            </div>
+         );
+      };
+   }, [valueFormatter, negativeKeySet, chartConfig]);
 
    const mergedData = useMemo(() => {
       if (!comparisonData) return data;
@@ -85,7 +130,7 @@ export const TrendsBarChart = memo(function TrendsBarChart({
             <YAxis
                axisLine={false}
                className="text-xs"
-               tickFormatter={valueFormatter}
+               tickFormatter={yAxisFormatter}
                tickLine={false}
                tickMargin={8}
                width={valueFormatter ? 80 : 40}
@@ -106,14 +151,22 @@ export const TrendsBarChart = memo(function TrendsBarChart({
                   fill={`var(--color-${s.key})`}
                   key={s.key}
                   radius={[4, 4, 0, 0]}
-               />
+               >
+                  {cellColors?.map((color, i) => (
+                     <Cell
+                        fill={color ?? `var(--color-${s.key})`}
+                        key={`cell-${i + 1}`}
+                     />
+                  ))}
+               </Bar>
             ))}
             <ChartTooltip
                content={
                   <ChartTooltipContent
-                     formatter={
-                        valueFormatter
-                           ? (value) => valueFormatter(Number(value))
+                     formatter={tooltipFormatter}
+                     labelFormatter={
+                        xAxisFormatter
+                           ? (label) => xAxisFormatter(String(label))
                            : undefined
                      }
                   />

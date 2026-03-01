@@ -14,7 +14,8 @@
       "noUnusedLocals": true,
       "noUnusedParameters": true,
       "noUncheckedIndexedAccess": true,
-      "tsBuildInfoFile": ".cache/tsbuildinfo.json"
+      "tsBuildInfoFile": ".cache/tsbuildinfo.json",
+      "jsx": "react-jsx"
    },
   "include": [
     "src/**/*.ts"
