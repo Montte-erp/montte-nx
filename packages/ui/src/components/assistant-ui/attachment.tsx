@@ -7,7 +7,7 @@ import {
    useAui,
    useAuiState,
 } from "@assistant-ui/react";
-import { TooltipIconButton } from "@packages/ui/components/assistant-ui/tooltip-icon-button";
+import { Button } from "@packages/ui/components/button";
 import {
    Avatar,
    AvatarFallback,
@@ -184,13 +184,15 @@ const AttachmentUI: FC = () => {
 const AttachmentRemove: FC = () => {
    return (
       <AttachmentPrimitive.Remove asChild>
-         <TooltipIconButton
+         <Button
             className="aui-attachment-tile-remove absolute top-1.5 right-1.5 size-3.5 rounded-full bg-white text-muted-foreground opacity-100 shadow-sm hover:bg-white! [&_svg]:text-black hover:[&_svg]:text-destructive"
-            side="top"
+            size="icon"
             tooltip="Remover arquivo"
+            tooltipSide="top"
+            variant="ghost"
          >
             <XIcon className="aui-attachment-remove-icon size-3 dark:stroke-[2.5px]" />
-         </TooltipIconButton>
+         </Button>
       </AttachmentPrimitive.Remove>
    );
 };
@@ -218,16 +220,16 @@ export const ComposerAttachments: FC = () => {
 export const ComposerAddAttachment: FC = () => {
    return (
       <ComposerPrimitive.AddAttachment asChild>
-         <TooltipIconButton
+         <Button
             aria-label="Adicionar anexo"
             className="aui-composer-add-attachment size-8.5 rounded-full p-1 font-semibold text-xs hover:bg-muted-foreground/15 dark:border-muted-foreground/15 dark:hover:bg-muted-foreground/30"
-            side="bottom"
             size="icon"
             tooltip="Adicionar anexo"
+            tooltipSide="bottom"
             variant="ghost"
          >
             <PlusIcon className="aui-attachment-add-icon size-5 stroke-[1.5px]" />
-         </TooltipIconButton>
+         </Button>
       </ComposerPrimitive.AddAttachment>
    );
 };

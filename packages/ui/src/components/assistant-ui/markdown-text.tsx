@@ -8,7 +8,7 @@ import {
    unstable_memoizeMarkdownComponents as memoizeMarkdownComponents,
    useIsMarkdownCodeBlock,
 } from "@assistant-ui/react-markdown";
-import { TooltipIconButton } from "@packages/ui/components/assistant-ui/tooltip-icon-button";
+import { Button } from "@packages/ui/components/button";
 import { cn } from "@packages/ui/lib/utils";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { type FC, memo, useState } from "react";
@@ -38,10 +38,16 @@ const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
          <span className="aui-code-header-language font-medium text-muted-foreground lowercase">
             {language}
          </span>
-         <TooltipIconButton onClick={onCopy} tooltip="Copiar">
+         <Button
+            className="aui-button-icon size-6 p-1"
+            onClick={onCopy}
+            size="icon"
+            tooltip="Copiar"
+            variant="ghost"
+         >
             {!isCopied && <CopyIcon />}
             {isCopied && <CheckIcon />}
-         </TooltipIconButton>
+         </Button>
       </div>
    );
 };
