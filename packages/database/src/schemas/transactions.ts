@@ -11,6 +11,7 @@ import {
    uuid,
 } from "drizzle-orm/pg-core";
 import { bankAccounts } from "./bank-accounts";
+import { creditCards } from "./credit-cards";
 import { categories } from "./categories";
 import { subcategories } from "./subcategories";
 import { tags } from "./tags";
@@ -31,13 +32,16 @@ export const transactions = pgTable(
       amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
       description: text("description"),
       date: date("date").notNull(),
-      bankAccountId: uuid("bank_account_id")
-         .notNull()
-         .references(() => bankAccounts.id, { onDelete: "restrict" }),
+      bankAccountId: uuid("bank_account_id").references(() => bankAccounts.id, {
+         onDelete: "restrict",
+      }),
       destinationBankAccountId: uuid("destination_bank_account_id").references(
          () => bankAccounts.id,
          { onDelete: "restrict" },
       ),
+      creditCardId: uuid("credit_card_id").references(() => creditCards.id, {
+         onDelete: "restrict",
+      }),
       categoryId: uuid("category_id").references(() => categories.id, {
          onDelete: "set null",
       }),
@@ -58,6 +62,7 @@ export const transactions = pgTable(
       index("transactions_date_idx").on(table.date),
       index("transactions_bank_account_id_idx").on(table.bankAccountId),
       index("transactions_category_id_idx").on(table.categoryId),
+      index("transactions_credit_card_id_idx").on(table.creditCardId),
    ],
 );
 
@@ -86,6 +91,10 @@ export const transactionsRelations = relations(
          fields: [transactions.destinationBankAccountId],
          references: [bankAccounts.id],
          relationName: "destinationAccount",
+      }),
+      creditCard: one(creditCards, {
+         fields: [transactions.creditCardId],
+         references: [creditCards.id],
       }),
       category: one(categories, {
          fields: [transactions.categoryId],
