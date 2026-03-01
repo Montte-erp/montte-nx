@@ -1,7 +1,6 @@
-import { parseOrThrow } from "@f-o-t/csv";
-import { generateFromObjects } from "@f-o-t/csv";
 import { evaluateConditionGroup } from "@f-o-t/condition-evaluator";
-import { parseOrThrow as parseOfx, getTransactions } from "@f-o-t/ofx";
+import { generateFromObjects, parseOrThrow } from "@f-o-t/csv";
+import { getTransactions, parseOrThrow as parseOfx } from "@f-o-t/ofx";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import { Combobox } from "@packages/ui/components/combobox";
@@ -21,9 +20,13 @@ import {
    TableHeader,
    TableRow,
 } from "@packages/ui/components/table";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+   useMutation,
+   useQueryClient,
+   useSuspenseQuery,
+} from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
-import { useRef, useState, Suspense, useTransition } from "react";
+import { Suspense, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -63,7 +66,8 @@ type Defaults = {
 function parseTipo(tipo: string): "income" | "expense" | "transfer" {
    const t = tipo.toLowerCase().trim();
    if (t === "receita" || t === "income") return "income";
-   if (t === "transferencia" || t === "transferência" || t === "transfer") return "transfer";
+   if (t === "transferencia" || t === "transferência" || t === "transfer")
+      return "transfer";
    return "expense";
 }
 
@@ -74,6 +78,13 @@ function normalizeDate(d: string): string {
       return `${year}-${month}-${day}`;
    }
    return d; // assume already YYYY-MM-DD
+}
+
+function normalizeOfxDate(raw: string): string {
+   if (/^\d{8}$/.test(raw)) {
+      return `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
+   }
+   return raw;
 }
 
 function triggerDownload(blob: Blob, filename: string): void {
@@ -125,11 +136,15 @@ function ImportForm() {
       label: cat.name,
    }));
 
-   const selectedCategory = categories.find((c) => c.id === defaults.categoryId);
-   const subcategoryOptions = (selectedCategory?.subcategories ?? []).map((sub) => ({
-      value: sub.id,
-      label: sub.name,
-   }));
+   const selectedCategory = categories.find(
+      (c) => c.id === defaults.categoryId,
+   );
+   const subcategoryOptions = (selectedCategory?.subcategories ?? []).map(
+      (sub) => ({
+         value: sub.id,
+         label: sub.name,
+      }),
+   );
 
    const duplicateCount = rows.filter((r) => r.isDuplicate).length;
 
@@ -159,17 +174,14 @@ function ImportForm() {
                parsed = txs.map((tx) => {
                   const amount = Math.abs(tx.TRNAMT);
                   const tipo = tx.TRNAMT >= 0 ? "receita" : "despesa";
-                  // DTPOSTED is an OFXDate object with isoString property
                   // biome-ignore lint/suspicious/noExplicitAny: OFXDate shape access
                   const dtPosted = tx.DTPOSTED as any;
                   const rawDate: string =
-                     typeof dtPosted?.isoString === "string"
-                        ? dtPosted.isoString.slice(0, 10)
-                        : typeof dtPosted?.raw === "string"
-                          ? dtPosted.raw.slice(0, 8)
-                          : "";
+                     typeof dtPosted?.raw === "string"
+                        ? dtPosted.raw.slice(0, 8)
+                        : "";
                   // Normalize date to YYYY-MM-DD
-                  const data = normalizeDate(rawDate);
+                  const data = normalizeOfxDate(rawDate);
                   return {
                      data,
                      nome: tx.NAME ?? tx.MEMO ?? "",
@@ -283,7 +295,14 @@ function ImportForm() {
 
          const result = await queryClient.fetchQuery(
             orpc.transactions.getAll.queryOptions({
-               input: { dateFrom, dateTo, pageSize: 500 },
+               input: {
+                  dateFrom,
+                  dateTo,
+                  ...(defaults.bankAccountId
+                     ? { bankAccountId: defaults.bankAccountId }
+                     : {}),
+                  pageSize: 500,
+               },
             }),
          );
 
@@ -294,8 +313,7 @@ function ImportForm() {
             const resolvedBankAccountId =
                defaults.bankAccountId ||
                bankAccounts.find(
-                  (acc) =>
-                     acc.name.toLowerCase() === row.conta.toLowerCase(),
+                  (acc) => acc.name.toLowerCase() === row.conta.toLowerCase(),
                )?.id ||
                "";
 
@@ -329,7 +347,7 @@ function ImportForm() {
                            field: "bankAccountId",
                            operator: "eq",
                            value: resolvedBankAccountId,
-                           options: { weight: 0.20 },
+                           options: { weight: 0.2 },
                         },
                      ],
                   },
@@ -389,8 +407,7 @@ function ImportForm() {
          const payload = visibleRows.map((row) => {
             const resolvedBankAccountId =
                bankAccounts.find(
-                  (acc) =>
-                     acc.name.toLowerCase() === row.conta.toLowerCase(),
+                  (acc) => acc.name.toLowerCase() === row.conta.toLowerCase(),
                )?.id || defaults.bankAccountId;
 
             const resolvedCategoryId =
@@ -437,10 +454,10 @@ function ImportForm() {
                   <Field>
                      <FieldLabel>Arquivo (.csv ou .ofx)</FieldLabel>
                      <input
-                        ref={fileInputRef}
                         accept=".csv,.ofx"
                         className="hidden"
                         onChange={handleFileChange}
+                        ref={fileInputRef}
                         type="file"
                      />
                      <Button
