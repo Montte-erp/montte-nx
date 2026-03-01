@@ -50,12 +50,13 @@ interface TransactionFormProps {
    onSuccess: () => void;
 }
 
-interface TagCheckboxListProps {
-   selectedTagIds: string[];
-   onToggle: (tagId: string) => void;
-}
-
-function TagCheckboxList({ selectedTagIds, onToggle }: TagCheckboxListProps) {
+function TagCombobox({
+   selectedIds,
+   onChange,
+}: {
+   selectedIds: string[];
+   onChange: (ids: string[]) => void;
+}) {
    const { data: tags } = useSuspenseQuery(orpc.tags.getAll.queryOptions({}));
 
    if (tags.length === 0) {
@@ -69,16 +70,22 @@ function TagCheckboxList({ selectedTagIds, onToggle }: TagCheckboxListProps) {
    return (
       <div className="flex flex-wrap gap-x-4 gap-y-2">
          {tags.map((tag) => {
-            const checked = selectedTagIds.includes(tag.id);
+            const checked = selectedIds.includes(tag.id);
             return (
-               // biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is a Radix button, not a native input
+               // biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is Radix
                <label
                   className="flex items-center gap-2 cursor-pointer select-none"
                   key={tag.id}
                >
                   <Checkbox
                      checked={checked}
-                     onCheckedChange={() => onToggle(tag.id)}
+                     onCheckedChange={() => {
+                        onChange(
+                           checked
+                              ? selectedIds.filter((id) => id !== tag.id)
+                              : [...selectedIds, tag.id],
+                        );
+                     }}
                   />
                   {tag.color ? (
                      <span
@@ -144,6 +151,9 @@ function TransactionFormContent({
    const { data: categories } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
+   const { data: creditCards } = useSuspenseQuery(
+      orpc.creditCards.getAll.queryOptions({}),
+   );
 
    const createMutation = useMutation(
       orpc.transactions.create.mutationOptions({
@@ -188,6 +198,7 @@ function TransactionFormContent({
          tagIds: transaction?.tagIds ?? ([] as string[]),
          description: transaction?.description ?? "",
          contactId: transaction?.contactId ?? (null as string | null),
+         creditCardId: transaction?.creditCardId ?? "",
       },
       onSubmit: ({ value }) => {
          const dateStr = value.date
@@ -209,6 +220,7 @@ function TransactionFormContent({
             tagIds: value.tagIds,
             description: value.description || null,
             contactId: value.contactId,
+            creditCardId: value.type === "expense" ? (value.creditCardId || null) : null,
          };
 
          if (isCreate) {
@@ -404,6 +416,35 @@ function TransactionFormContent({
                      }
                   </form.Subscribe>
 
+                  {/* Cartão de Crédito (expense only) */}
+                  <form.Subscribe selector={(s) => s.values.type}>
+                     {(type) =>
+                        type === "expense" ? (
+                           <form.Field name="creditCardId">
+                              {(field) => (
+                                 <Field>
+                                    <FieldLabel>Cartão de Crédito</FieldLabel>
+                                    <Combobox
+                                       className="w-full"
+                                       emptyMessage="Nenhum cartão cadastrado."
+                                       onValueChange={(v) =>
+                                          field.handleChange(v || "")
+                                       }
+                                       options={creditCards.map((c) => ({
+                                          value: c.id,
+                                          label: c.name,
+                                       }))}
+                                       placeholder="Selecionar cartão (opcional)..."
+                                       searchPlaceholder="Buscar cartão..."
+                                       value={field.state.value}
+                                    />
+                                 </Field>
+                              )}
+                           </form.Field>
+                        ) : null
+                     }
+                  </form.Subscribe>
+
                   {/* Categoria + Subcategoria */}
                   <form.Field name="categoryId">
                      {(field) => (
@@ -478,17 +519,9 @@ function TransactionFormContent({
                                  </p>
                               }
                            >
-                              <TagCheckboxList
-                                 onToggle={(tagId) => {
-                                    field.handleChange(
-                                       field.state.value.includes(tagId)
-                                          ? field.state.value.filter(
-                                               (id) => id !== tagId,
-                                            )
-                                          : [...field.state.value, tagId],
-                                    );
-                                 }}
-                                 selectedTagIds={field.state.value}
+                              <TagCombobox
+                                 selectedIds={field.state.value}
+                                 onChange={field.handleChange}
                               />
                            </Suspense>
                         </Field>
