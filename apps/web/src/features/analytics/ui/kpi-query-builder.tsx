@@ -18,6 +18,7 @@ const AGGREGATION_OPTIONS = [
    { value: "sum", label: "Soma dos valores" },
    { value: "count", label: "Contagem de transações" },
    { value: "avg", label: "Média dos valores" },
+   { value: "net", label: "Saldo líquido (receitas − despesas)" },
 ] as const;
 
 export function KpiQueryBuilder({ config, onUpdate }: KpiQueryBuilderProps) {

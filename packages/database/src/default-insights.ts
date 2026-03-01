@@ -42,11 +42,11 @@ export const DEFAULT_INSIGHTS: DefaultInsightDef[] = [
    },
    {
       name: "Saldo líquido",
-      description: "Total de transações no mês atual",
+      description: "Receitas menos despesas no mês atual vs mês anterior",
       type: "kpi",
       config: {
          type: "kpi",
-         measure: { aggregation: "count" },
+         measure: { aggregation: "net" },
          filters: {
             dateRange: { type: "relative", value: "this_month" },
          },
