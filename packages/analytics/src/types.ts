@@ -49,7 +49,7 @@ export const transactionFiltersSchema = z.object({
 // ──────────────────────────────────────────────
 
 export const measureSchema = z.object({
-   aggregation: z.enum(["sum", "count", "avg"]),
+   aggregation: z.enum(["sum", "count", "avg", "net"]),
 });
 
 // ──────────────────────────────────────────────
