@@ -58,8 +58,10 @@
         "@dnd-kit/utilities": "catalog:dnd",
         "@f-o-t/condition-evaluator": "catalog:fot",
         "@f-o-t/content-analysis": "catalog:fot",
+        "@f-o-t/csv": "catalog:fot",
         "@f-o-t/markdown": "catalog:fot",
         "@f-o-t/money": "catalog:fot",
+        "@f-o-t/ofx": "catalog:fot",
         "@f-o-t/qrcode": "catalog:fot",
         "@f-o-t/spelling": "catalog:fot",
         "@faker-js/faker": "catalog:testing",
@@ -616,8 +618,10 @@
     "fot": {
       "@f-o-t/condition-evaluator": "2.0.7",
       "@f-o-t/content-analysis": "1.0.7",
+      "@f-o-t/csv": "1.2.6",
       "@f-o-t/markdown": "1.0.7",
       "@f-o-t/money": "1.2.6",
+      "@f-o-t/ofx": "2.4.6",
       "@f-o-t/qrcode": "1.0.1",
       "@f-o-t/spelling": "1.0.6",
     },
@@ -1211,9 +1215,13 @@
 
     "@f-o-t/content-analysis": ["@f-o-t/content-analysis@1.0.7", "", { "dependencies": { "@f-o-t/markdown": "^1.0.6" } }, "sha512-jBrGSUj+ysEiohEK3WOWaKJKGcOpETeTyAIyPJT4uDUzRNtprjEzM0uhZSplmckvLavmalOxbGwBkdBReq5OYg=="],
 
+    "@f-o-t/csv": ["@f-o-t/csv@1.2.6", "", { "dependencies": { "zod": "^4.3.6" } }, "sha512-ymnYoE+ZNkn3wCTonO84pkF23WhB9iMni+DjSvF2/FYQj7eosFtLhmKohjqFBIzipQpWkfZdWczp4Sz6U9t6UA=="],
+
     "@f-o-t/markdown": ["@f-o-t/markdown@1.0.7", "", { "dependencies": { "zod": "^4.3.6" } }, "sha512-t07QEXoxzt1YkwmHwL3SYBpxItbNnbxJPdPxR+lcWiaCnYARGd8bqHsFwVTzAS1hHuB/2w0vIZVk9oAmIoa01Q=="],
 
     "@f-o-t/money": ["@f-o-t/money@1.2.6", "", { "dependencies": { "@f-o-t/bigint": "^1.0.4", "zod": "^4.3.6" }, "peerDependencies": { "@f-o-t/condition-evaluator": "^2.0.6" }, "optionalPeers": ["@f-o-t/condition-evaluator"] }, "sha512-CGKWv2lOQ2rc3LMR321Q+T6n54DvQQFgPHa1g/7I4jNfdZbOymqmj969yB2JIOpMPKpF2rakQBkSFznUnZn29g=="],
+
+    "@f-o-t/ofx": ["@f-o-t/ofx@2.4.6", "", { "dependencies": { "zod": "^4.3.6" } }, "sha512-P/Lm1Q6lVxFkS57+nkyvE+JYHiyMtZ+V8/GWgxaYz4lBQUM9l2C2fYTOGqVEgkIRSW6y09AQarMHMUYU3JGCuA=="],
 
     "@f-o-t/qrcode": ["@f-o-t/qrcode@1.0.1", "", { "dependencies": { "zod": "^4.3.6" } }, "sha512-lkRKJ8dCLXpp+fVUq2Je3pLAnXpponZjnRladKNrz/AmYwGV2GxYHR4EJko+8a0bRFVpqZoqjfrpqd14ncgu5Q=="],
 
