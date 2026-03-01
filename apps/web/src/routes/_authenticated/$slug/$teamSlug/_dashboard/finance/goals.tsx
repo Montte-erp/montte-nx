@@ -60,6 +60,70 @@ const GOAL_VIEWS = [
 ];
 
 // =============================================================================
+// Summary
+// =============================================================================
+
+function GoalsSummary({ goals }: { goals: BudgetGoalWithProgress[] }) {
+   const totalLimit = goals.reduce(
+      (sum, g) => sum + Number(g.limitAmount),
+      0,
+   );
+   const totalSpent = goals.reduce((sum, g) => sum + g.spentAmount, 0);
+   const totalRemaining = totalLimit - totalSpent;
+   const atAlertCount = goals.filter(
+      (g) => g.alertThreshold != null && g.percentUsed >= g.alertThreshold,
+   ).length;
+   const overBudgetCount = goals.filter((g) => g.percentUsed >= 100).length;
+
+   const fmt = (v: number) =>
+      new Intl.NumberFormat("pt-BR", {
+         style: "currency",
+         currency: "BRL",
+      }).format(v);
+
+   return (
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+         <div className="rounded-lg border bg-card p-4 space-y-1">
+            <p className="text-xs text-muted-foreground">Total orçado</p>
+            <p className="text-lg font-semibold tabular-nums">
+               {fmt(totalLimit)}
+            </p>
+         </div>
+         <div className="rounded-lg border bg-card p-4 space-y-1">
+            <p className="text-xs text-muted-foreground">Total gasto</p>
+            <p className="text-lg font-semibold tabular-nums text-destructive">
+               {fmt(totalSpent)}
+            </p>
+         </div>
+         <div className="rounded-lg border bg-card p-4 space-y-1">
+            <p className="text-xs text-muted-foreground">Disponível</p>
+            <p
+               className={`text-lg font-semibold tabular-nums ${
+                  totalRemaining >= 0
+                     ? "text-emerald-600 dark:text-emerald-500"
+                     : "text-destructive"
+               }`}
+            >
+               {fmt(totalRemaining)}
+            </p>
+         </div>
+         <div className="rounded-lg border bg-card p-4 space-y-1">
+            <p className="text-xs text-muted-foreground">Em alerta</p>
+            <p className="text-lg font-semibold tabular-nums text-amber-500">
+               {atAlertCount}
+               {overBudgetCount > 0 && (
+                  <span className="text-destructive text-base ml-1">
+                     ({overBudgetCount} excedida
+                     {overBudgetCount !== 1 ? "s" : ""})
+                  </span>
+               )}
+            </p>
+         </div>
+      </div>
+   );
+}
+
+// =============================================================================
 // Skeleton
 // =============================================================================
 
@@ -216,32 +280,38 @@ function GoalsList({ month, year, view }: GoalsListProps) {
 
    if (view === "card") {
       return (
-         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {goals.map((goal) => (
-               <BudgetGoalCard
-                  goal={goal}
-                  key={goal.id}
-                  onDelete={handleDelete}
-                  onEdit={handleEdit}
-               />
-            ))}
+         <div className="space-y-4">
+            <GoalsSummary goals={goals} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+               {goals.map((goal) => (
+                  <BudgetGoalCard
+                     goal={goal}
+                     key={goal.id}
+                     onDelete={handleDelete}
+                     onEdit={handleEdit}
+                  />
+               ))}
+            </div>
          </div>
       );
    }
 
    return (
-      <DataTable
-         columns={columns}
-         data={goals}
-         getRowId={(row) => row.id}
-         renderMobileCard={({ row }) => (
-            <BudgetGoalCard
-               goal={row.original}
-               onDelete={handleDelete}
-               onEdit={handleEdit}
-            />
-         )}
-      />
+      <div className="space-y-4">
+         <GoalsSummary goals={goals} />
+         <DataTable
+            columns={columns}
+            data={goals}
+            getRowId={(row) => row.id}
+            renderMobileCard={({ row }) => (
+               <BudgetGoalCard
+                  goal={row.original}
+                  onDelete={handleDelete}
+                  onEdit={handleEdit}
+               />
+            )}
+         />
+      </div>
    );
 }
 
