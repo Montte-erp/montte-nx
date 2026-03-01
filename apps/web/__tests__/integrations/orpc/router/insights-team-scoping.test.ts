@@ -65,7 +65,7 @@ describe("Insights Team Scoping", () => {
 		const insight = makeInsight({
 			teamId: TEAM_A_ID,
 			name: "Team A Insight",
-			type: "trends",
+			type: "kpi",
 		});
 		vi.mocked(createInsight).mockResolvedValueOnce(insight);
 
@@ -75,11 +75,13 @@ describe("Insights Team Scoping", () => {
 			{
 				name: "Team A Insight",
 				description: "Test insight",
-				type: "trends",
+				type: "kpi",
 				config: {
-					type: "trends",
-					series: [{ event: "test_event" }],
-					dateRange: { type: "relative" as const, value: "7d" as const },
+					type: "kpi" as const,
+					measure: { aggregation: "sum" as const },
+					filters: {
+						dateRange: { type: "relative" as const, value: "7d" as const },
+					},
 				},
 			},
 			{ context },
@@ -171,39 +173,39 @@ describe("Insights Team Scoping", () => {
 	});
 
 	it("should filter insights by type within active team", async () => {
-		const trendsInsight = makeInsight({
+		const kpiInsight = makeInsight({
 			id: "i1",
 			teamId: TEAM_A_ID,
-			name: "Trends Insight",
-			type: "trends",
+			name: "KPI Insight",
+			type: "kpi",
 		});
-		const funnelInsight = makeInsight({
+		const breakdownInsight = makeInsight({
 			id: "i2",
 			teamId: TEAM_A_ID,
-			name: "Funnel Insight",
-			type: "funnels",
+			name: "Breakdown Insight",
+			type: "breakdown",
 		});
 
 		const context = createTeamContext(TEAM_A_ID);
 
-		// Query only trends
-		vi.mocked(listInsightsByTeam).mockResolvedValueOnce([trendsInsight]);
-		const trendsResults = await call(
+		// Query only kpi
+		vi.mocked(listInsightsByTeam).mockResolvedValueOnce([kpiInsight]);
+		const kpiResults = await call(
 			insightsRouter.list,
-			{ type: "trends" },
+			{ type: "kpi" },
 			{ context },
 		);
-		expect(trendsResults).toHaveLength(1);
-		expect(trendsResults[0].type).toBe("trends");
+		expect(kpiResults).toHaveLength(1);
+		expect(kpiResults[0].type).toBe("kpi");
 
-		// Query only funnels
-		vi.mocked(listInsightsByTeam).mockResolvedValueOnce([funnelInsight]);
-		const funnelsResults = await call(
+		// Query only breakdown
+		vi.mocked(listInsightsByTeam).mockResolvedValueOnce([breakdownInsight]);
+		const breakdownResults = await call(
 			insightsRouter.list,
-			{ type: "funnels" },
+			{ type: "breakdown" },
 			{ context },
 		);
-		expect(funnelsResults).toHaveLength(1);
-		expect(funnelsResults[0].type).toBe("funnels");
+		expect(breakdownResults).toHaveLength(1);
+		expect(breakdownResults[0].type).toBe("breakdown");
 	});
 });

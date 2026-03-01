@@ -49,11 +49,13 @@ describe("create", () => {
 	const input = {
 		name: "My Insight",
 		description: "Test insight",
-		type: "trends" as const,
+		type: "kpi" as const,
 		config: {
-			type: "trends" as const,
-			series: [{ event: "content.page.viewed" }],
-			dateRange: { type: "relative" as const, value: "30d" as const },
+			type: "kpi" as const,
+			measure: { aggregation: "sum" as const },
+			filters: {
+				dateRange: { type: "relative" as const, value: "30d" as const },
+			},
 		},
 	};
 
@@ -75,7 +77,7 @@ describe("create", () => {
 				name: input.name,
 				description: input.description,
 				type: input.type,
-				config: expect.objectContaining({ type: "trends" }),
+				config: expect.objectContaining({ type: "kpi" }),
 				defaultSize: "md",
 			}),
 		);
@@ -133,12 +135,12 @@ describe("list", () => {
 		vi.mocked(listInsightsByTeam).mockResolvedValueOnce([]);
 
 		const ctx = createTestContext();
-		await call(insightsRouter.list, { type: "funnels" }, { context: ctx });
+		await call(insightsRouter.list, { type: "breakdown" }, { context: ctx });
 
 		expect(listInsightsByTeam).toHaveBeenCalledWith(
 			expect.anything(),
 			TEST_TEAM_ID,
-			"funnels",
+			"breakdown",
 		);
 	});
 });

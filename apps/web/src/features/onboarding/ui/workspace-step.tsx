@@ -60,8 +60,9 @@ export const WorkspaceStep = forwardRef<StepHandle, WorkspaceStepProps>(
                const orgId = result.data.id;
                const orgSlug = result.data.slug ?? slug;
 
-               await authClient.organization.setActive({ organizationId: orgId });
-
+               await authClient.organization.setActive({
+                  organizationId: orgId,
+               });
                const teamResult = await authClient.organization.createTeam({
                   name: value.workspaceName,
                   organizationId: orgId,
@@ -86,13 +87,17 @@ export const WorkspaceStep = forwardRef<StepHandle, WorkspaceStepProps>(
 
                await authClient.organization.setActiveTeam({ teamId });
 
-               await orpc.onboarding.completeOnboarding.call({ products: ["finance"] });
+               await orpc.onboarding.completeOnboarding.call({
+                  products: ["finance"],
+               });
 
                onNext({ orgSlug, teamSlug });
                submitSucceeded.current = true;
             } catch (error) {
                toast.error(
-                  error instanceof Error ? error.message : "Erro ao criar espaço.",
+                  error instanceof Error
+                     ? error.message
+                     : "Erro ao criar espaço.",
                );
             }
          },

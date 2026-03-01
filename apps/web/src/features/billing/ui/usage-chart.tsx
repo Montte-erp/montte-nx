@@ -137,7 +137,7 @@ export function UsageChart({ data, mode = "cost" }: UsageChartProps) {
                   tickLine={false}
                />
                <ChartTooltip
-                  content={(props) => <ChartTooltipContent {...props} />}
+                  content={<ChartTooltipContent />}
                   cursor={false}
                />
                <ChartLegend content={<ChartLegendContent />} />
@@ -177,7 +177,7 @@ export function UsageChart({ data, mode = "cost" }: UsageChartProps) {
                tickLine={false}
             />
             <ChartTooltip
-               content={(props) => <ChartTooltipContent {...props} />}
+               content={<ChartTooltipContent />}
                cursor={false}
             />
             <ChartLegend content={<ChartLegendContent />} />

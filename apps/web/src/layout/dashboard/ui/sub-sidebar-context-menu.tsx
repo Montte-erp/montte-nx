@@ -157,7 +157,7 @@ export function SubSidebarContextMenu({
                   } else {
                      duplicateInsightMutation.mutate({
                         name: newName,
-                        type: "trends",
+                        type: "kpi",
                         config: {} as InsightConfig,
                      });
                   }

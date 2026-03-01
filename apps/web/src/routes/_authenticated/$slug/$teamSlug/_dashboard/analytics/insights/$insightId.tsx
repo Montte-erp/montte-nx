@@ -29,6 +29,13 @@ import { useSidebarSection } from "@/layout/dashboard/hooks/use-sidebar-nav";
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId",
 )({
+   loader: ({ context, params }) => {
+      context.queryClient.prefetchQuery(
+         orpc.insights.getById.queryOptions({
+            input: { id: params.insightId },
+         }),
+      );
+   },
    component: EditInsightPage,
 });
 
@@ -48,14 +55,6 @@ function EditInsightPage() {
          input: { id: insightId },
       }),
    );
-
-   // Query for analytics results (used by TrendsResultsTable)
-   const { data: queryResult } = useQuery({
-      ...orpc.analytics.query.queryOptions({
-         input: { config: insight?.config as InsightConfig },
-      }),
-      enabled: !!insight?.config,
-   });
 
    const { type, config, setType, updateConfigImmediate } = useInsightConfig();
    const [insightName, setInsightName] = useState("");
@@ -159,7 +158,7 @@ function EditInsightPage() {
       duplicateMutation.mutate({
          name: `${insight.name} (cópia)`,
          description: insight.description ?? undefined,
-         type: insight.type as "trends" | "funnels" | "retention",
+         type: insight.type as "kpi" | "time_series" | "breakdown",
          config: insight.config as InsightConfig,
       });
    }, [insight, duplicateMutation]);
@@ -276,7 +275,6 @@ function EditInsightPage() {
          onRefresh={handleRefresh}
          onSave={handleSave}
          onTypeChange={setType}
-         queryResult={queryResult}
          type={type}
       />
    );

@@ -1,11 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Condition } from "@f-o-t/condition-evaluator";
-import type {
-   DateRange,
-   Filter,
-   InsightConfig,
-} from "@packages/analytics/types";
+import type { DateRange, InsightConfig } from "@packages/analytics/types";
 import type { DashboardDateRange } from "@packages/database/schemas/dashboards";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -88,67 +84,6 @@ function TileErrorState({ error }: { error: Error }) {
    );
 }
 
-// Analytics filter operators supported by the query engine
-const ANALYTICS_OPERATORS = new Set<string>([
-   "eq",
-   "neq",
-   "gt",
-   "lt",
-   "gte",
-   "lte",
-   "contains",
-   "not_contains",
-   "is_set",
-   "is_not_set",
-]);
-
-/**
- * Converts condition-evaluator Condition[] to analytics Filter[].
- * Only string and number conditions with a mapped operator are emitted.
- * Conditions without a value (is_empty / is_not_empty) use the analytics
- * is_set / is_not_set equivalents.
- */
-function toAnalyticsFilters(conditions: Condition[]): Filter[] {
-   const result: Filter[] = [];
-
-   for (const c of conditions) {
-      if (c.type !== "string" && c.type !== "number") continue;
-
-      const field = c.field;
-      let operator = c.operator as string;
-      let value: string | number | boolean | undefined =
-         "value" in c ? (c.value as string | number | undefined) : undefined;
-
-      // Map condition-evaluator no-value operators to analytics equivalents
-      if (operator === "is_empty") {
-         operator = "is_not_set";
-         value = undefined;
-      } else if (operator === "is_not_empty") {
-         operator = "is_set";
-         value = undefined;
-      }
-
-      // Skip unsupported operators or empty string values
-      if (!ANALYTICS_OPERATORS.has(operator)) continue;
-      if (
-         value === undefined &&
-         operator !== "is_set" &&
-         operator !== "is_not_set"
-      )
-         continue;
-      if (typeof value === "string" && value.trim() === "") continue;
-      if (typeof value === "number" && Number.isNaN(value)) continue;
-
-      result.push({
-         property: field,
-         operator: operator as Filter["operator"],
-         value,
-      });
-   }
-
-   return result;
-}
-
 /**
  * Converts a dashboard date range to an analytics DateRange.
  * Supports both relative ranges and absolute date ranges.
@@ -193,63 +128,29 @@ function toAnalyticsDateRange(dr: DashboardDateRange): DateRange | undefined {
 
 /**
  * Merges global dashboard filters and date range into an insight config.
- * Global filters are appended to existing per-insight filters.
  * Global date range overrides the insight's own date range when set.
+ * Note: ERP insight configs use TransactionFilters, not event-based Filter[].
+ * Global dashboard conditions are not applied to ERP configs as they use
+ * different filter structures (categoryIds, bankAccountIds, transactionType).
  */
 function mergeGlobalFilters(
    config: InsightConfig,
-   globalFilters?: Condition[],
+   _globalFilters?: Condition[],
    globalDateRange?: DashboardDateRange,
 ): InsightConfig {
-   const analyticsFilters =
-      globalFilters && globalFilters.length > 0
-         ? toAnalyticsFilters(globalFilters)
-         : [];
    const analyticsDateRange = globalDateRange
       ? toAnalyticsDateRange(globalDateRange)
       : undefined;
 
-   if (config.type === "trends") {
-      return {
-         ...config,
-         filters: [...(config.filters ?? []), ...analyticsFilters],
-         dateRange: analyticsDateRange ?? config.dateRange,
-      };
-   }
+   if (!analyticsDateRange) return config;
 
-   if (config.type === "funnels") {
-      return {
-         ...config,
-         steps: config.steps.map((step) => ({
-            ...step,
-            filters: [...(step.filters ?? []), ...analyticsFilters],
-         })),
-         dateRange: analyticsDateRange ?? config.dateRange,
-      };
-   }
-
-   if (config.type === "retention") {
-      return {
-         ...config,
-         startEvent: {
-            ...config.startEvent,
-            filters: [
-               ...(config.startEvent.filters ?? []),
-               ...analyticsFilters,
-            ],
-         },
-         returnEvent: {
-            ...config.returnEvent,
-            filters: [
-               ...(config.returnEvent.filters ?? []),
-               ...analyticsFilters,
-            ],
-         },
-         dateRange: analyticsDateRange ?? config.dateRange,
-      };
-   }
-
-   return config;
+   return {
+      ...config,
+      filters: {
+         ...config.filters,
+         dateRange: analyticsDateRange,
+      },
+   } as InsightConfig;
 }
 
 function DashboardInsightContent({
@@ -311,17 +212,17 @@ function useInsightMetadata(
 
    const name = insightName || insight?.name || "";
    const description = insight?.description || "";
-   const type = insight?.type || "trends";
+   const type = insight?.type || "kpi";
    const lastComputedAt = insight?.lastComputedAt ?? null;
 
-   // PostHog-style type label with date range
+   // ERP insight type label
    const typeLabel =
-      type === "trends"
-         ? "TENDÊNCIAS"
-         : type === "funnels"
-           ? "FUNIS"
-           : type === "retention"
-             ? "RETENÇÃO"
+      type === "kpi"
+         ? "KPI"
+         : type === "time_series"
+           ? "SÉRIE TEMPORAL"
+           : type === "breakdown"
+             ? "DISTRIBUIÇÃO"
              : "INSIGHT";
 
    // Extract date range from config if available

@@ -157,7 +157,7 @@ export const TrendsLineChart = memo(function TrendsLineChart({
                />
             )}
             <ChartTooltip
-               content={(props) => <ChartTooltipContent {...props} />}
+               content={<ChartTooltipContent />}
             />
             <ChartLegend content={<ChartLegendContent />} />
          </LineChart>

@@ -23,20 +23,20 @@ function CalendarDropdown({
    classNames?: unknown;
    options?: { value: number; label: string; disabled?: boolean }[];
 }) {
+   const handleValueChange = (newValue: string) => {
+      if (!onChange) return;
+      const syntheticEvent = {
+         target: { value: newValue },
+      } as React.ChangeEvent<HTMLSelectElement>;
+      onChange(syntheticEvent);
+   };
+
    return (
-      <Select
-         onValueChange={(v) => {
-            const event = {
-               target: { value: v },
-            } as React.ChangeEvent<HTMLSelectElement>;
-            onChange?.(event);
-         }}
-         value={String(value)}
-      >
-         <SelectTrigger className="h-7 w-auto min-w-[70px] border-input text-sm font-medium gap-1 focus:ring-0 focus:ring-offset-0 shadow-none cursor-pointer">
+      <Select onValueChange={handleValueChange} value={String(value)}>
+         <SelectTrigger className="h-7 border-0 px-1.5 shadow-none text-sm font-medium focus-visible:ring-0 [&_svg:not([class*='size-'])]:size-3.5">
             <SelectValue />
          </SelectTrigger>
-         <SelectContent>
+         <SelectContent position="popper">
             {options?.map((opt) => (
                <SelectItem
                   disabled={opt.disabled}

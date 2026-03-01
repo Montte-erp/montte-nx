@@ -70,10 +70,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
    // Disable scroll on main when in settings
    const isSettingsPage = pathname.includes("/settings");
-   const isEditorPage =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-         pathname.split("/").at(-1) ?? "",
-      );
    const isChatPage = pathname.includes("/chat");
 
    // ── Existing effects ─────────────────────────────────────────────────────
@@ -153,7 +149,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                      <main
                         className={cn(
                            "relative flex-1",
-                           isEditorPage || isChatPage
+                           isChatPage
                               ? "overflow-hidden "
                               : isSettingsPage
                                 ? "overflow-hidden p-4"
