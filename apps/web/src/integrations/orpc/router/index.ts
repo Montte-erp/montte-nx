@@ -6,11 +6,12 @@ import * as analyticsRouter from "./analytics";
 import * as annotationsRouter from "./annotations";
 import * as apiKeysRouter from "./api-keys";
 import * as bankAccountsRouter from "./bank-accounts";
+import * as billsRouter from "./bills";
 import * as billingRouter from "./billing";
-import * as creditCardsRouter from "./credit-cards";
 import * as categoriesRouter from "./categories";
-import * as contactsRouter from "./contacts";
 import * as chatRouter from "./chat";
+import * as contactsRouter from "./contacts";
+import * as creditCardsRouter from "./credit-cards";
 import * as dashboardsRouter from "./dashboards";
 import * as dataSourcesRouter from "./data-sources";
 import * as discussionsRouter from "./discussions";
@@ -42,6 +43,7 @@ export default {
    annotations: annotationsRouter,
    apiKeys: apiKeysRouter,
    bankAccounts: bankAccountsRouter,
+   bills: billsRouter,
    billing: billingRouter,
    creditCards: creditCardsRouter,
    categories: categoriesRouter,
