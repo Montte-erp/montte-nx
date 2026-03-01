@@ -30,6 +30,7 @@ const transactionSchema = createInsertSchema(transactions)
       categoryId: true,
       subcategoryId: true,
       attachmentUrl: true,
+      contactId: true,
    })
    .extend({
       name: z.string().max(200).nullable().optional(),
@@ -130,6 +131,7 @@ export const getAll = protectedProcedure
             bankAccountId: z.string().uuid().optional(),
             categoryId: z.string().uuid().optional(),
             tagId: z.string().uuid().optional(),
+            contactId: z.string().uuid().optional(),
             dateFrom: z
                .string()
                .regex(/^\d{4}-\d{2}-\d{2}$/)

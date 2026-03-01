@@ -9,6 +9,7 @@ import * as bankAccountsRouter from "./bank-accounts";
 import * as billingRouter from "./billing";
 import * as creditCardsRouter from "./credit-cards";
 import * as categoriesRouter from "./categories";
+import * as contactsRouter from "./contacts";
 import * as chatRouter from "./chat";
 import * as dashboardsRouter from "./dashboards";
 import * as dataSourcesRouter from "./data-sources";
@@ -44,6 +45,7 @@ export default {
    billing: billingRouter,
    creditCards: creditCardsRouter,
    categories: categoriesRouter,
+   contacts: contactsRouter,
    chat: chatRouter,
    dashboards: dashboardsRouter,
    dataSources: dataSourcesRouter,
