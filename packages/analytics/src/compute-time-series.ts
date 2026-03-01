@@ -62,6 +62,8 @@ async function computeSeries(
       valueExpr = sql<number>`count(*)::int`;
    } else if (config.measure.aggregation === "sum") {
       valueExpr = sql<number>`coalesce(sum(${transactions.amount}), 0)::float`;
+   } else if (config.measure.aggregation === "net") {
+      valueExpr = sql<number>`coalesce(sum(case when ${transactions.type} = 'income' then ${transactions.amount}::float when ${transactions.type} = 'expense' then -(${transactions.amount}::float) else 0 end), 0)`;
    } else {
       valueExpr = sql<number>`coalesce(avg(${transactions.amount}), 0)::float`;
    }
@@ -73,8 +75,8 @@ async function computeSeries(
       })
       .from(transactions)
       .where(and(...conditions))
-      .groupBy(truncExpr)
-      .orderBy(truncExpr);
+      .groupBy(sql`1`)
+      .orderBy(sql`1`);
 
    return rows.map((r) => ({
       date: r.date,
