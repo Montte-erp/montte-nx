@@ -30,16 +30,26 @@ export const recurrenceFrequencyEnum = pgEnum("recurrence_frequency", [
    "yearly",
 ]);
 
-export const recurrenceSettings = pgTable("recurrence_settings", {
-   id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-   teamId: uuid("team_id").notNull(),
-   frequency: recurrenceFrequencyEnum("frequency").notNull(),
-   windowMonths: integer("window_months").notNull().default(3),
-   endsAt: date("ends_at"),
-   createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-});
+export const recurrenceSettings = pgTable(
+   "recurrence_settings",
+   {
+      id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
+      teamId: uuid("team_id").notNull(),
+      frequency: recurrenceFrequencyEnum("frequency").notNull(),
+      windowMonths: integer("window_months").notNull().default(3),
+      endsAt: date("ends_at"),
+      createdAt: timestamp("created_at", { withTimezone: true })
+         .notNull()
+         .defaultNow(),
+      updatedAt: timestamp("updated_at", { withTimezone: true })
+         .notNull()
+         .defaultNow()
+         .$onUpdate(() => new Date()),
+   },
+   (table) => [
+      index("recurrence_settings_team_id_idx").on(table.teamId),
+   ],
+);
 
 export const bills = pgTable(
    "bills",
@@ -53,6 +63,7 @@ export const bills = pgTable(
       amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
       dueDate: date("due_date").notNull(),
       paidAt: timestamp("paid_at", { withTimezone: true }),
+      // set null: bills are forward-looking records; deleting the account de-links it but does not block deletion
       bankAccountId: uuid("bank_account_id").references(() => bankAccounts.id, {
          onDelete: "set null",
       }),
@@ -60,6 +71,7 @@ export const bills = pgTable(
          onDelete: "set null",
       }),
       attachmentUrl: text("attachment_url"),
+      // Self-referential grouping key (not an FK) — the first installment's id is used as group id for all siblings
       installmentGroupId: uuid("installment_group_id"),
       installmentIndex: integer("installment_index"),
       installmentTotal: integer("installment_total"),
@@ -84,6 +96,8 @@ export const bills = pgTable(
       index("bills_status_idx").on(table.status),
       index("bills_installment_group_idx").on(table.installmentGroupId),
       index("bills_recurrence_group_idx").on(table.recurrenceGroupId),
+      index("bills_transaction_id_idx").on(table.transactionId),
+      index("bills_type_idx").on(table.type),
    ],
 );
 
