@@ -82,6 +82,12 @@ export const navGroups: NavGroupDef[] = [
             icon: Target,
             route: "/$slug/$teamSlug/finance/goals",
          },
+      ],
+   },
+   {
+      id: "erp",
+      label: "ERP",
+      items: [
          {
             id: "contacts",
             label: "Contatos",
