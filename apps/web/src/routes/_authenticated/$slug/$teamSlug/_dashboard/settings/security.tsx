@@ -20,12 +20,7 @@ import {
    ItemTitle,
 } from "@packages/ui/components/item";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import {
-   Tooltip,
-   TooltipContent,
-   TooltipProvider,
-   TooltipTrigger,
-} from "@packages/ui/components/tooltip";
+import { TooltipProvider } from "@packages/ui/components/tooltip";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -254,29 +249,25 @@ function SessionsSection({
                               </ItemDescription>
                            </ItemContent>
                            <ItemActions>
-                              <Tooltip>
-                                 <TooltipTrigger asChild>
-                                    <Button
-                                       onClick={() =>
-                                          openSheet({
-                                             children: (
-                                                <SessionDetailsForm
-                                                   currentSessionId={
-                                                      currentSessionId || null
-                                                   }
-                                                   session={session}
-                                                />
-                                             ),
-                                          })
-                                       }
-                                       size="icon"
-                                       variant="ghost"
-                                    >
-                                       <ChevronRight className="size-4" />
-                                    </Button>
-                                 </TooltipTrigger>
-                                 <TooltipContent>Ver detalhes</TooltipContent>
-                              </Tooltip>
+                              <Button
+                                 onClick={() =>
+                                    openSheet({
+                                       children: (
+                                          <SessionDetailsForm
+                                             currentSessionId={
+                                                currentSessionId || null
+                                             }
+                                             session={session}
+                                          />
+                                       ),
+                                    })
+                                 }
+                                 size="icon"
+                                 tooltip="Ver detalhes"
+                                 variant="ghost"
+                              >
+                                 <ChevronRight className="size-4" />
+                              </Button>
                            </ItemActions>
                         </Item>
                         {index !== sessions.length - 1 && <ItemSeparator />}
