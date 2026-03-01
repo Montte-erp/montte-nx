@@ -33,11 +33,12 @@ import { TimeSeriesQueryBuilder } from "./time-series-query-builder";
 import { closeCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
-const TYPE_TABS: { value: InsightType; label: string; icon: React.ElementType }[] = [
-	{ value: "kpi", label: "KPI", icon: Hash },
-	{ value: "time_series", label: "Série Temporal", icon: TrendingUp },
-	{ value: "breakdown", label: "Distribuição", icon: BarChart3 },
-];
+const TYPE_ITEMS: { value: InsightType; label: string; icon: React.ElementType }[] =
+	[
+		{ value: "kpi", label: "KPI", icon: Hash },
+		{ value: "time_series", label: "Série Temporal", icon: TrendingUp },
+		{ value: "breakdown", label: "Distribuição", icon: BarChart3 },
+	];
 
 interface InsightEditCredenzaProps {
 	insightId: string;
@@ -101,7 +102,7 @@ export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
 				<CredenzaHeader>
 					<CredenzaTitle>Configurar insight</CredenzaTitle>
 				</CredenzaHeader>
-				<CredenzaBody>
+				<CredenzaBody className="h-[70vh] flex items-center justify-center">
 					<InsightLoadingState />
 				</CredenzaBody>
 			</>
@@ -111,79 +112,109 @@ export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
 	return (
 		<>
 			<CredenzaHeader>
-				<CredenzaTitle>Configurar insight</CredenzaTitle>
+				<div>
+					<CredenzaTitle>Configurar insight</CredenzaTitle>
+					{insight?.name && (
+						<p className="text-sm text-muted-foreground mt-0.5">
+							{insight.name}
+						</p>
+					)}
+				</div>
 			</CredenzaHeader>
 
-			<CredenzaBody className="space-y-4 overflow-y-auto max-h-[70vh]">
-				<div className="space-y-1.5">
-					<Label htmlFor="insight-name">Nome</Label>
-					<Input
-						id="insight-name"
-						onChange={(e) => setName(e.target.value)}
-						value={name}
-					/>
-				</div>
+			<CredenzaBody className="p-0 overflow-hidden">
+				<div className="flex h-[70vh]">
+					{/* ── Left sidebar ── */}
+					<aside className="w-[270px] shrink-0 border-r flex flex-col overflow-y-auto">
+						<div className="p-4 space-y-5">
+							{/* Name */}
+							<div className="space-y-1.5">
+								<Label className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+									Nome
+								</Label>
+								<Input
+									onChange={(e) => setName(e.target.value)}
+									placeholder="Nome do insight"
+									value={name}
+								/>
+							</div>
 
-				<div className="flex items-center border-t border-b py-1 -mx-6 px-6">
-					{TYPE_TABS.map((tab) => {
-						const Icon = tab.icon;
-						return (
-							<Button
-								className={cn(
-									"px-3 py-2 h-auto rounded-none border-b-2 text-sm font-medium gap-1.5",
-									type === tab.value
-										? "border-primary text-primary"
-										: "border-transparent text-muted-foreground hover:text-foreground",
+							{/* Type selector */}
+							<div className="space-y-1.5">
+								<Label className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+									Tipo
+								</Label>
+								<div className="space-y-0.5">
+									{TYPE_ITEMS.map((item) => {
+										const Icon = item.icon;
+										const isActive = type === item.value;
+										return (
+											<button
+												className={cn(
+													"w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors text-left",
+													isActive
+														? "bg-primary/10 text-primary font-medium"
+														: "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+												)}
+												key={item.value}
+												onClick={() => setType(item.value)}
+												type="button"
+											>
+												<Icon className="size-4 shrink-0" />
+												{item.label}
+											</button>
+										);
+									})}
+								</div>
+							</div>
+
+							{/* Config builder */}
+							<div className="space-y-1.5">
+								<Label className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+									Configuração
+								</Label>
+								{type === "kpi" && (
+									<KpiQueryBuilder
+										config={config as KpiConfig}
+										onUpdate={updateConfigImmediate}
+									/>
 								)}
-								key={tab.value}
-								onClick={() => setType(tab.value)}
-								variant="ghost"
-							>
-								<Icon className="size-3.5" />
-								{tab.label}
-							</Button>
-						);
-					})}
+								{type === "time_series" && (
+									<TimeSeriesQueryBuilder
+										config={config as TimeSeriesConfig}
+										onUpdate={updateConfigImmediate}
+									/>
+								)}
+								{type === "breakdown" && (
+									<BreakdownQueryBuilder
+										config={config as BreakdownConfig}
+										onUpdate={updateConfigImmediate}
+									/>
+								)}
+							</div>
+						</div>
+					</aside>
+
+					{/* ── Right preview ── */}
+					<div className="flex-1 min-w-0 overflow-y-auto bg-muted/20 p-5">
+						<ErrorBoundary
+							fallbackRender={({ error }) => (
+								<InsightErrorState error={error as Error} />
+							)}
+						>
+							<Suspense fallback={<InsightLoadingState />}>
+								<InsightPreview config={config} />
+							</Suspense>
+						</ErrorBoundary>
+					</div>
 				</div>
-
-				{type === "kpi" && (
-					<KpiQueryBuilder
-						config={config as KpiConfig}
-						onUpdate={updateConfigImmediate}
-					/>
-				)}
-				{type === "time_series" && (
-					<TimeSeriesQueryBuilder
-						config={config as TimeSeriesConfig}
-						onUpdate={updateConfigImmediate}
-					/>
-				)}
-				{type === "breakdown" && (
-					<BreakdownQueryBuilder
-						config={config as BreakdownConfig}
-						onUpdate={updateConfigImmediate}
-					/>
-				)}
-
-				<ErrorBoundary
-					fallbackRender={({ error }) => (
-						<InsightErrorState error={error as Error} />
-					)}
-				>
-					<Suspense fallback={<InsightLoadingState />}>
-						<InsightPreview config={config} />
-					</Suspense>
-				</ErrorBoundary>
 			</CredenzaBody>
 
 			<CredenzaFooter>
 				<Button onClick={closeCredenza} variant="outline">
 					Cancelar
 				</Button>
-				<Button
-					disabled={updateMutation.isPending}
-					onClick={handleSave}
-				>
+				<Button disabled={updateMutation.isPending} onClick={handleSave}>
 					{updateMutation.isPending && (
 						<Loader2 className="mr-2 size-4 animate-spin" />
 					)}

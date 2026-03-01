@@ -415,7 +415,7 @@ export function DashboardTile({
                                  onClick={() =>
                                     openCredenza({
                                        children: <InsightEditCredenza insightId={insightId} />,
-                                       className: "sm:max-w-2xl",
+                                       className: "sm:max-w-4xl",
                                     })
                                  }
                               >
