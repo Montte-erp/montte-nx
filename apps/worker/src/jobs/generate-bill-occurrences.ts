@@ -8,16 +8,28 @@ import {
 function computeNextDueDate(from: string, frequency: string): string {
    const d = new Date(from);
    switch (frequency) {
-      case "weekly":    d.setDate(d.getDate() + 7); break;
-      case "biweekly":  d.setDate(d.getDate() + 14); break;
-      case "monthly":   d.setMonth(d.getMonth() + 1); break;
-      case "quarterly": d.setMonth(d.getMonth() + 3); break;
-      case "yearly":    d.setFullYear(d.getFullYear() + 1); break;
+      case "weekly":
+         d.setDate(d.getDate() + 7);
+         break;
+      case "biweekly":
+         d.setDate(d.getDate() + 14);
+         break;
+      case "monthly":
+         d.setMonth(d.getMonth() + 1);
+         break;
+      case "quarterly":
+         d.setMonth(d.getMonth() + 3);
+         break;
+      case "yearly":
+         d.setFullYear(d.getFullYear() + 1);
+         break;
    }
    return d.toISOString().substring(0, 10);
 }
 
-export async function generateBillOccurrences(db: DatabaseInstance): Promise<void> {
+export async function generateBillOccurrences(
+   db: DatabaseInstance,
+): Promise<void> {
    const settings = await getActiveRecurrenceSettings(db);
 
    for (const setting of settings) {
@@ -32,7 +44,8 @@ export async function generateBillOccurrences(db: DatabaseInstance): Promise<voi
       let nextDue = computeNextDueDate(lastBill.dueDate, setting.frequency);
 
       while (new Date(nextDue) <= windowEnd) {
-         if (setting.endsAt && new Date(nextDue) > new Date(setting.endsAt)) break;
+         if (setting.endsAt && new Date(nextDue) > new Date(setting.endsAt))
+            break;
 
          toCreate.push({
             teamId: lastBill.teamId,

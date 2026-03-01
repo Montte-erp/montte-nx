@@ -46,9 +46,7 @@ export const recurrenceSettings = pgTable(
          .defaultNow()
          .$onUpdate(() => new Date()),
    },
-   (table) => [
-      index("recurrence_settings_team_id_idx").on(table.teamId),
-   ],
+   (table) => [index("recurrence_settings_team_id_idx").on(table.teamId)],
 );
 
 export const bills = pgTable(
