@@ -111,7 +111,13 @@ export const create = protectedProcedure
             message: "Transferências exigem uma conta de destino.",
          });
       }
-      await verifyTransactionRefs(db, teamId, input);
+      await verifyTransactionRefs(db, teamId, {
+         bankAccountId: input.bankAccountId ?? "",
+         destinationBankAccountId: input.destinationBankAccountId,
+         categoryId: input.categoryId,
+         subcategoryId: input.subcategoryId,
+         tagIds: input.tagIds,
+      });
       const { tagIds, ...data } = input;
       return createTransaction(db, { ...data, teamId }, tagIds);
    });
@@ -176,7 +182,7 @@ export const update = protectedProcedure
          input.tagIds
       ) {
          await verifyTransactionRefs(db, teamId, {
-            bankAccountId: input.bankAccountId ?? existing.bankAccountId,
+            bankAccountId: input.bankAccountId ?? existing.bankAccountId ?? "",
             destinationBankAccountId: input.destinationBankAccountId,
             categoryId: input.categoryId,
             subcategoryId: input.subcategoryId,
@@ -199,4 +205,35 @@ export const remove = protectedProcedure
       }
       await deleteTransaction(db, input.id);
       return { success: true };
+   });
+
+export const importBulk = protectedProcedure
+   .input(
+      z.object({
+         transactions: z
+            .array(
+               transactionSchema.extend({
+                  name: z.string().max(200).nullable().optional(),
+               }),
+            )
+            .min(1)
+            .max(500),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      const { db, teamId } = context;
+      let imported = 0;
+      for (const t of input.transactions) {
+         const { tagIds, ...data } = t;
+         await verifyTransactionRefs(db, teamId, {
+            bankAccountId: data.bankAccountId ?? "",
+            destinationBankAccountId: data.destinationBankAccountId,
+            categoryId: data.categoryId,
+            subcategoryId: data.subcategoryId,
+            tagIds,
+         });
+         await createTransaction(db, { ...data, teamId }, tagIds);
+         imported++;
+      }
+      return { imported, skipped: 0 };
    });
