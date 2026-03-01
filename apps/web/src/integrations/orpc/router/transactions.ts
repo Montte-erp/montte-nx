@@ -2,6 +2,7 @@ import { ORPCError } from "@orpc/server";
 import { getBankAccount } from "@packages/database/repositories/bank-accounts-repository";
 import { getCategory } from "@packages/database/repositories/categories-repository";
 import { getSubcategory } from "@packages/database/repositories/subcategories-repository";
+import { getContact } from "@packages/database/repositories/contacts-repository";
 import { getTag } from "@packages/database/repositories/tags-repository";
 import {
    createTransaction,
@@ -55,6 +56,7 @@ async function verifyTransactionRefs(
       categoryId?: string | null;
       subcategoryId?: string | null;
       tagIds?: string[];
+      contactId?: string | null;
    },
 ) {
    const account = await getBankAccount(db, input.bankAccountId);
@@ -97,6 +99,15 @@ async function verifyTransactionRefs(
          }
       }
    }
+
+   if (input.contactId) {
+      const contact = await getContact(db, input.contactId);
+      if (!contact || contact.teamId !== teamId) {
+         throw new ORPCError("BAD_REQUEST", {
+            message: "Contato inválido.",
+         });
+      }
+   }
 }
 
 // =============================================================================
@@ -118,6 +129,7 @@ export const create = protectedProcedure
          categoryId: input.categoryId,
          subcategoryId: input.subcategoryId,
          tagIds: input.tagIds,
+         contactId: input.contactId,
       });
       const { tagIds, ...data } = input;
       return createTransaction(db, { ...data, teamId }, tagIds);
@@ -181,7 +193,8 @@ export const update = protectedProcedure
          input.destinationBankAccountId ||
          input.categoryId ||
          input.subcategoryId ||
-         input.tagIds
+         input.tagIds ||
+         input.contactId
       ) {
          await verifyTransactionRefs(db, teamId, {
             bankAccountId: input.bankAccountId ?? existing.bankAccountId ?? "",
@@ -189,6 +202,7 @@ export const update = protectedProcedure
             categoryId: input.categoryId,
             subcategoryId: input.subcategoryId,
             tagIds: input.tagIds,
+            contactId: input.contactId,
          });
       }
       const { id, tagIds, ...data } = input;
