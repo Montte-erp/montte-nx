@@ -13,7 +13,6 @@ import {
 	CredenzaTitle,
 } from "@packages/ui/components/credenza";
 import { Input } from "@packages/ui/components/input";
-import { Label } from "@packages/ui/components/label";
 import { cn } from "@packages/ui/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BarChart3, Hash, Loader2, TrendingUp } from "lucide-react";
@@ -102,7 +101,7 @@ export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
 				<CredenzaHeader>
 					<CredenzaTitle>Configurar insight</CredenzaTitle>
 				</CredenzaHeader>
-				<CredenzaBody className="h-[70vh] flex items-center justify-center">
+				<CredenzaBody className="h-[500px] flex items-center justify-center">
 					<InsightLoadingState />
 				</CredenzaBody>
 			</>
@@ -111,68 +110,56 @@ export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
 
 	return (
 		<>
-			<CredenzaHeader>
-				<div>
-					<CredenzaTitle>Configurar insight</CredenzaTitle>
-					{insight?.name && (
-						<p className="text-sm text-muted-foreground mt-0.5">
-							{insight.name}
-						</p>
-					)}
-				</div>
+			<CredenzaHeader className="pb-3">
+				<CredenzaTitle className="text-base">{insight?.name ?? "Configurar insight"}</CredenzaTitle>
 			</CredenzaHeader>
 
 			<CredenzaBody className="p-0 overflow-hidden">
-				<div className="flex h-[70vh]">
+				<div className="flex h-[500px]">
 					{/* ── Left sidebar ── */}
-					<aside className="w-[270px] shrink-0 border-r flex flex-col overflow-y-auto">
-						<div className="p-4 space-y-5">
+					<aside className="w-[220px] shrink-0 border-r flex flex-col overflow-y-auto">
+						<div className="p-3 flex flex-col gap-3">
 							{/* Name */}
-							<div className="space-y-1.5">
-								<Label className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
-									Nome
-								</Label>
-								<Input
-									onChange={(e) => setName(e.target.value)}
-									placeholder="Nome do insight"
-									value={name}
-								/>
-							</div>
+							<Input
+								className="h-8 text-sm"
+								onChange={(e) => setName(e.target.value)}
+								placeholder="Nome do insight"
+								value={name}
+							/>
+
+							<div className="border-t" />
 
 							{/* Type selector */}
-							<div className="space-y-1.5">
-								<Label className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+							<div className="flex flex-col gap-0.5">
+								<span className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wider px-1 mb-0.5">
 									Tipo
-								</Label>
-								<div className="space-y-0.5">
-									{TYPE_ITEMS.map((item) => {
-										const Icon = item.icon;
-										const isActive = type === item.value;
-										return (
-											<button
-												className={cn(
-													"w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors text-left",
-													isActive
-														? "bg-primary/10 text-primary font-medium"
-														: "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-												)}
-												key={item.value}
-												onClick={() => setType(item.value)}
-												type="button"
-											>
-												<Icon className="size-4 shrink-0" />
-												{item.label}
-											</button>
-										);
-									})}
-								</div>
+								</span>
+								{TYPE_ITEMS.map((item) => {
+									const Icon = item.icon;
+									const isActive = type === item.value;
+									return (
+										<button
+											className={cn(
+												"w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors text-left",
+												isActive
+													? "bg-primary/10 text-primary font-medium"
+													: "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+											)}
+											key={item.value}
+											onClick={() => setType(item.value)}
+											type="button"
+										>
+											<Icon className="size-3.5 shrink-0" />
+											{item.label}
+										</button>
+									);
+								})}
 							</div>
 
+							<div className="border-t" />
+
 							{/* Config builder */}
-							<div className="space-y-1.5">
-								<Label className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
-									Configuração
-								</Label>
+							<div className="[&_.space-y-4]:space-y-3 [&_label]:text-[10px]">
 								{type === "kpi" && (
 									<KpiQueryBuilder
 										config={config as KpiConfig}
@@ -196,7 +183,7 @@ export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
 					</aside>
 
 					{/* ── Right preview ── */}
-					<div className="flex-1 min-w-0 overflow-y-auto bg-muted/20 p-5">
+					<div className="flex-1 min-w-0 overflow-y-auto bg-muted/20 p-4">
 						<ErrorBoundary
 							fallbackRender={({ error }) => (
 								<InsightErrorState error={error as Error} />
