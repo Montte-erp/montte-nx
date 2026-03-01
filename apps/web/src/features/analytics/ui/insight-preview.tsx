@@ -7,6 +7,7 @@ import type {
 } from "@packages/analytics/types";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { format, of } from "@f-o-t/money";
 import { AlertCircle } from "lucide-react";
 import { useMemo } from "react";
 import { orpc } from "@/integrations/orpc/client";
@@ -36,7 +37,15 @@ export function InsightErrorState({ error }: { error: Error }) {
    );
 }
 
-function KpiPreview({ data }: { data: KpiResult }) {
+function formatBRL(value: number): string {
+   return format(of(value.toFixed(2), "BRL"), "pt-BR");
+}
+
+function isCurrencyAggregation(config: InsightConfig): boolean {
+   return config.measure.aggregation !== "count";
+}
+
+function KpiPreview({ data, formatAsCurrency }: { data: KpiResult; formatAsCurrency: boolean }) {
    const trend = data.comparison
       ? {
            value: Math.abs(data.comparison.percentageChange),
@@ -47,15 +56,17 @@ function KpiPreview({ data }: { data: KpiResult }) {
         }
       : undefined;
 
-   return <TrendsNumberCard label="Total" trend={trend} value={data.value} />;
+   return <TrendsNumberCard formatAsCurrency={formatAsCurrency} label="Total" trend={trend} value={data.value} />;
 }
 
 function TimeSeriesPreview({
    config,
    data,
+   valueFormatter,
 }: {
    config: TimeSeriesConfig;
    data: TimeSeriesResult;
+   valueFormatter?: (value: number) => string;
 }) {
    const series = [{ key: "value", label: "Valor", color: "var(--chart-1)" }];
 
@@ -94,6 +105,7 @@ function TimeSeriesPreview({
             comparisonData={comparisonData}
             data={chartData}
             series={series}
+            valueFormatter={valueFormatter}
             xAxisFormatter={xAxisFormatter}
             xAxisKey="date"
          />
@@ -105,13 +117,14 @@ function TimeSeriesPreview({
          comparisonData={comparisonData}
          data={chartData}
          series={series}
+         valueFormatter={valueFormatter}
          xAxisFormatter={xAxisFormatter}
          xAxisKey="date"
       />
    );
 }
 
-function BreakdownPreview({ data }: { data: BreakdownResult }) {
+function BreakdownPreview({ data, valueFormatter }: { data: BreakdownResult; valueFormatter?: (value: number) => string }) {
    const series = [{ key: "value", label: "Valor", color: "var(--chart-1)" }];
 
    const chartData = useMemo(
@@ -131,6 +144,7 @@ function BreakdownPreview({ data }: { data: BreakdownResult }) {
       <TrendsBarChart
          data={chartData}
          series={series}
+         valueFormatter={valueFormatter}
          xAxisFormatter={(label) => label}
          xAxisKey="label"
       />
@@ -142,18 +156,24 @@ export function InsightPreview({ config }: InsightPreviewProps) {
       orpc.analytics.query.queryOptions({ input: { config } }),
    );
 
+   const formatAsCurrency = isCurrencyAggregation(config);
+   const valueFormatter = formatAsCurrency ? formatBRL : undefined;
+
    return (
       <div className="h-full">
          <div className="space-y-3">
-            {config.type === "kpi" && <KpiPreview data={data as KpiResult} />}
+            {config.type === "kpi" && (
+               <KpiPreview data={data as KpiResult} formatAsCurrency={formatAsCurrency} />
+            )}
             {config.type === "time_series" && (
                <TimeSeriesPreview
                   config={config}
                   data={data as TimeSeriesResult}
+                  valueFormatter={valueFormatter}
                />
             )}
             {config.type === "breakdown" && (
-               <BreakdownPreview data={data as BreakdownResult} />
+               <BreakdownPreview data={data as BreakdownResult} valueFormatter={valueFormatter} />
             )}
          </div>
       </div>
