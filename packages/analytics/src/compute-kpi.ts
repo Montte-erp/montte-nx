@@ -52,7 +52,7 @@ export async function executeKpiQuery(
 async function computeValue(
    db: DatabaseInstance,
    teamId: string,
-   aggregation: "sum" | "count" | "avg",
+   aggregation: "sum" | "count" | "avg" | "net",
    filters: TransactionFilters,
    start: Date,
    end: Date,
@@ -71,6 +71,16 @@ async function computeValue(
       const result = await db
          .select({
             value: sql<number>`coalesce(sum(${transactions.amount}), 0)::float`,
+         })
+         .from(transactions)
+         .where(and(...conditions));
+      return Number(result[0]?.value ?? 0);
+   }
+
+   if (aggregation === "net") {
+      const result = await db
+         .select({
+            value: sql<number>`coalesce(sum(case when ${transactions.type} = 'income' then ${transactions.amount}::float when ${transactions.type} = 'expense' then -(${transactions.amount}::float) else 0 end), 0)`,
          })
          .from(transactions)
          .where(and(...conditions));
