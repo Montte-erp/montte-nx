@@ -34,11 +34,6 @@ import {
 } from "@packages/ui/components/sheet";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
-import {
-   Tooltip,
-   TooltipContent,
-   TooltipTrigger,
-} from "@packages/ui/components/tooltip";
 import { getInitials } from "@packages/utils/text";
 import {
    useMutation,
@@ -469,27 +464,22 @@ function MemberMobileCard({
                </div>
                <div className="flex items-center gap-1">
                   {onUpdateRole && (
-                     <Tooltip>
-                        <TooltipTrigger asChild>
-                           <Button
-                              disabled={isDisabled}
-                              onClick={() =>
-                                 onUpdateRole(
-                                    member,
-                                    member.role === "admin"
-                                       ? "member"
-                                       : "admin",
-                                 )
-                              }
-                              size="icon"
-                              variant="ghost"
-                           >
-                              <ShieldCheck className="size-4" />
-                              <span className="sr-only">{roleLabel}</span>
-                           </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>{roleLabel}</TooltipContent>
-                     </Tooltip>
+                     <Button
+                        disabled={isDisabled}
+                        onClick={() =>
+                           onUpdateRole(
+                              member,
+                              member.role === "admin"
+                                 ? "member"
+                                 : "admin",
+                           )
+                        }
+                        size="icon"
+                        tooltip={roleLabel}
+                        variant="ghost"
+                     >
+                        <ShieldCheck className="size-4" />
+                     </Button>
                   )}
                   {canExpand && (
                      <Button
@@ -824,27 +814,22 @@ function MembersContent() {
                      onClick={(e) => e.stopPropagation()}
                      onKeyDown={(e) => e.stopPropagation()}
                   >
-                     <Tooltip>
-                        <TooltipTrigger asChild>
-                           <Button
-                              disabled={isDisabled}
-                              onClick={() =>
-                                 handleUpdateRole(
-                                    member,
-                                    member.role === "admin"
-                                       ? "member"
-                                       : "admin",
-                                 )
-                              }
-                              size="icon"
-                              variant="ghost"
-                           >
-                              <ShieldCheck className="size-4" />
-                              <span className="sr-only">{roleLabel}</span>
-                           </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>{roleLabel}</TooltipContent>
-                     </Tooltip>
+                     <Button
+                        disabled={isDisabled}
+                        onClick={() =>
+                           handleUpdateRole(
+                              member,
+                              member.role === "admin"
+                                 ? "member"
+                                 : "admin",
+                           )
+                        }
+                        size="icon"
+                        tooltip={roleLabel}
+                        variant="ghost"
+                     >
+                        <ShieldCheck className="size-4" />
+                     </Button>
                   </div>
                );
             },
