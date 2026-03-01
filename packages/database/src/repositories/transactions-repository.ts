@@ -19,6 +19,7 @@ export interface ListTransactionsFilter {
    bankAccountId?: string;
    categoryId?: string;
    tagId?: string;
+   contactId?: string;
    dateFrom?: string;
    dateTo?: string;
    search?: string;
@@ -84,6 +85,8 @@ export async function listTransactions(
          conditions.push(eq(transactions.bankAccountId, filter.bankAccountId));
       if (filter.categoryId)
          conditions.push(eq(transactions.categoryId, filter.categoryId));
+      if (filter.contactId)
+         conditions.push(eq(transactions.contactId, filter.contactId));
       if (filter.dateFrom)
          conditions.push(gte(transactions.date, filter.dateFrom));
       if (filter.dateTo) conditions.push(lte(transactions.date, filter.dateTo));
