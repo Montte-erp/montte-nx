@@ -9,7 +9,13 @@ import {
    DropdownMenuTrigger,
 } from "@packages/ui/components/dropdown-menu";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CalendarDays, MoreHorizontal, Pencil, Repeat, Trash2 } from "lucide-react";
+import {
+   CalendarDays,
+   MoreHorizontal,
+   Pencil,
+   Repeat,
+   Trash2,
+} from "lucide-react";
 
 export type TransactionRow = {
    id: string;
@@ -28,6 +34,9 @@ export type TransactionRow = {
    contactId: string | null;
    contactName?: string | null;
    billId?: string | null;
+   creditCardId: string | null;
+   categoryName?: string | null;
+   creditCardName?: string | null;
    createdAt: Date | string;
    updatedAt: Date | string;
 };
@@ -96,6 +105,30 @@ export function buildTransactionColumns(
          },
       },
       {
+         accessorKey: "categoryName",
+         header: "Categoria",
+         cell: ({ row }) => {
+            const name = row.original.categoryName;
+            if (!name)
+               return (
+                  <span className="text-xs text-muted-foreground">—</span>
+               );
+            return <span className="text-sm">{name}</span>;
+         },
+      },
+      {
+         accessorKey: "creditCardName",
+         header: "Cartão",
+         cell: ({ row }) => {
+            const name = row.original.creditCardName;
+            if (!name)
+               return (
+                  <span className="text-xs text-muted-foreground">—</span>
+               );
+            return <span className="text-sm">{name}</span>;
+         },
+      },
+      {
          accessorKey: "amount",
          header: "Valor",
          cell: ({ row }) => {
@@ -151,36 +184,43 @@ export function buildTransactionColumns(
                      <Trash2 className="size-4" />
                      <span className="sr-only">Excluir</span>
                   </Button>
-                  {!isTransfer && (onInstallment || onRecurring || (onUnpay && tx.billId)) && (
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                           <Button size="icon" variant="ghost">
-                              <MoreHorizontal className="size-4" />
-                              <span className="sr-only">Mais ações</span>
-                           </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                           <DropdownMenuSeparator />
-                           {onInstallment && (
-                              <DropdownMenuItem onClick={() => onInstallment(tx)}>
-                                 <CalendarDays className="size-4 mr-2" />
-                                 Parcelar Transação
-                              </DropdownMenuItem>
-                           )}
-                           {onRecurring && (
-                              <DropdownMenuItem onClick={() => onRecurring(tx)}>
-                                 <Repeat className="size-4 mr-2" />
-                                 Criar Transação Recorrente
-                              </DropdownMenuItem>
-                           )}
-                           {onUnpay && tx.billId && (
-                              <DropdownMenuItem onClick={() => onUnpay(tx)}>
-                                 Marcar como Não Pago
-                              </DropdownMenuItem>
-                           )}
-                        </DropdownMenuContent>
-                     </DropdownMenu>
-                  )}
+                  {!isTransfer &&
+                     (onInstallment ||
+                        onRecurring ||
+                        (onUnpay && tx.billId)) && (
+                        <DropdownMenu>
+                           <DropdownMenuTrigger asChild>
+                              <Button size="icon" variant="ghost">
+                                 <MoreHorizontal className="size-4" />
+                                 <span className="sr-only">Mais ações</span>
+                              </Button>
+                           </DropdownMenuTrigger>
+                           <DropdownMenuContent align="end">
+                              <DropdownMenuSeparator />
+                              {onInstallment && (
+                                 <DropdownMenuItem
+                                    onClick={() => onInstallment(tx)}
+                                 >
+                                    <CalendarDays className="size-4 mr-2" />
+                                    Parcelar Transação
+                                 </DropdownMenuItem>
+                              )}
+                              {onRecurring && (
+                                 <DropdownMenuItem
+                                    onClick={() => onRecurring(tx)}
+                                 >
+                                    <Repeat className="size-4 mr-2" />
+                                    Criar Transação Recorrente
+                                 </DropdownMenuItem>
+                              )}
+                              {onUnpay && tx.billId && (
+                                 <DropdownMenuItem onClick={() => onUnpay(tx)}>
+                                    Marcar como Não Pago
+                                 </DropdownMenuItem>
+                              )}
+                           </DropdownMenuContent>
+                        </DropdownMenu>
+                     )}
                </div>
             );
          },
