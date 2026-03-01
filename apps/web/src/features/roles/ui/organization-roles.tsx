@@ -169,7 +169,7 @@ function OrganizationRolesContent() {
                         onClick={() => handleEditRole(role)}
                         size="icon"
                         tooltip="Editar função"
-                        variant="ghost"
+                        variant="icon-outline"
                      >
                         <Pencil className="size-4" />
                      </Button>

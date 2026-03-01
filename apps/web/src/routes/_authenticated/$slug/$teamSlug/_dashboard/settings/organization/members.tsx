@@ -469,14 +469,12 @@ function MemberMobileCard({
                         onClick={() =>
                            onUpdateRole(
                               member,
-                              member.role === "admin"
-                                 ? "member"
-                                 : "admin",
+                              member.role === "admin" ? "member" : "admin",
                            )
                         }
                         size="icon"
                         tooltip={roleLabel}
-                        variant="ghost"
+                        variant="icon-outline"
                      >
                         <ShieldCheck className="size-4" />
                      </Button>
@@ -819,14 +817,12 @@ function MembersContent() {
                         onClick={() =>
                            handleUpdateRole(
                               member,
-                              member.role === "admin"
-                                 ? "member"
-                                 : "admin",
+                              member.role === "admin" ? "member" : "admin",
                            )
                         }
                         size="icon"
                         tooltip={roleLabel}
-                        variant="ghost"
+                        variant="icon-outline"
                      >
                         <ShieldCheck className="size-4" />
                      </Button>

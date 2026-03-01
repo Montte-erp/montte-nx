@@ -66,7 +66,6 @@ const MODEL_OPTIONS: ModelOption[] = Object.entries(CONTENT_MODELS).map(
    }),
 );
 
-
 export interface QuickSuggestion {
    label: string;
    prompt: string;
@@ -355,8 +354,6 @@ const ComposerAction: FC = () => {
                   aria-label="Enviar mensagem"
                   className="aui-composer-send size-8 rounded-full"
                   size="icon"
-                  tooltip="Enviar mensagem"
-                  tooltipSide="bottom"
                   type="submit"
                   variant="icon-solid"
                >
@@ -512,7 +509,7 @@ const AssistantActionBar: FC = () => {
                className="aui-button-icon size-6 p-1"
                size="icon"
                tooltip="Copiar"
-               variant="ghost"
+               variant="icon-outline"
             >
                <AuiIf condition={(s) => s.message.isCopied}>
                   <CheckIcon />
@@ -527,7 +524,7 @@ const AssistantActionBar: FC = () => {
                className="aui-button-icon size-6 p-1"
                size="icon"
                tooltip="Gerar novamente"
-               variant="ghost"
+               variant="icon-outline"
             >
                <RefreshCwIcon />
             </Button>
@@ -538,7 +535,7 @@ const AssistantActionBar: FC = () => {
                   className="aui-button-icon size-6 p-1 data-[state=open]:bg-accent"
                   size="icon"
                   tooltip="Mais"
-                  variant="ghost"
+                  variant="icon-outline"
                >
                   <MoreHorizontalIcon />
                </Button>
@@ -594,7 +591,7 @@ const UserActionBar: FC = () => {
                className="aui-user-action-edit size-6 p-4"
                size="icon"
                tooltip="Editar"
-               variant="ghost"
+               variant="icon-outline"
             >
                <PencilIcon />
             </Button>
@@ -644,7 +641,7 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
                className="aui-button-icon size-6 p-1"
                size="icon"
                tooltip="Anterior"
-               variant="ghost"
+               variant="icon-outline"
             >
                <ChevronLeftIcon />
             </Button>
@@ -657,7 +654,7 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
                className="aui-button-icon size-6 p-1"
                size="icon"
                tooltip="Próximo"
-               variant="ghost"
+               variant="icon-outline"
             >
                <ChevronRightIcon />
             </Button>

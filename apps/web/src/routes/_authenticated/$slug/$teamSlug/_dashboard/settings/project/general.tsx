@@ -316,8 +316,12 @@ function ProjectGeneralContent() {
                            <Button
                               onClick={handleCopyApiKey}
                               size="icon"
-                              tooltip={apiKeyCopied ? "Copiado!" : "Copiar chave de API"}
-                              variant="ghost"
+                              tooltip={
+                                 apiKeyCopied
+                                    ? "Copiado!"
+                                    : "Copiar chave de API"
+                              }
+                              variant="icon-outline"
                            >
                               {apiKeyCopied ? (
                                  <Check className="size-4" />
@@ -330,7 +334,7 @@ function ProjectGeneralContent() {
                            onClick={handleRegenerateApiKey}
                            size="icon"
                            tooltip="Regenerar chave"
-                           variant="ghost"
+                           variant="icon-outline"
                         >
                            <RefreshCw className="size-4" />
                         </Button>

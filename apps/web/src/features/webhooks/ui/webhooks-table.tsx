@@ -210,7 +210,7 @@ export function WebhooksTable({
                      onClick={() => onEdit(row.original)}
                      size="icon"
                      tooltip="Editar"
-                     variant="ghost"
+                     variant="icon-outline"
                   >
                      <Edit className="size-4" />
                   </Button>

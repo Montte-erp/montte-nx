@@ -116,18 +116,18 @@ function ContextPanelInner() {
                <>
                   {allTabs.map((tab) => (
                      <Button
-                        key={tab.id}
                         className={cn(
                            "size-7 rounded",
                            activeTabId === tab.id &&
                               "bg-accent text-accent-foreground",
                         )}
+                        key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         size="icon"
                         tooltip={tab.label}
                         tooltipSide="bottom"
                         type="button"
-                        variant="ghost"
+                        variant="icon-outline"
                      >
                         <tab.icon className="size-4" />
                      </Button>

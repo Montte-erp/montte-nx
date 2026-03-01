@@ -43,7 +43,7 @@ const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
             onClick={onCopy}
             size="icon"
             tooltip="Copiar"
-            variant="ghost"
+            variant="icon-outline"
          >
             {!isCopied && <CopyIcon />}
             {isCopied && <CheckIcon />}

@@ -7,12 +7,12 @@ import {
    useAui,
    useAuiState,
 } from "@assistant-ui/react";
-import { Button } from "@packages/ui/components/button";
 import {
    Avatar,
    AvatarFallback,
    AvatarImage,
 } from "@packages/ui/components/avatar";
+import { Button } from "@packages/ui/components/button";
 import {
    Dialog,
    DialogContent,
@@ -189,7 +189,7 @@ const AttachmentRemove: FC = () => {
             size="icon"
             tooltip="Remover arquivo"
             tooltipSide="top"
-            variant="ghost"
+            variant="icon-outline"
          >
             <XIcon className="aui-attachment-remove-icon size-3 dark:stroke-[2.5px]" />
          </Button>
@@ -226,7 +226,7 @@ export const ComposerAddAttachment: FC = () => {
             size="icon"
             tooltip="Adicionar anexo"
             tooltipSide="bottom"
-            variant="ghost"
+            variant="icon-outline"
          >
             <PlusIcon className="aui-attachment-add-icon size-5 stroke-[1.5px]" />
          </Button>

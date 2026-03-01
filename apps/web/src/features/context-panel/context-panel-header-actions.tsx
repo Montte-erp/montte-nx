@@ -21,7 +21,7 @@ export function ContextPanelHeaderActions() {
             size="icon"
             tooltip="Abrir Chat IA"
             type="button"
-            variant="ghost"
+            variant="icon-outline"
          >
             <Sparkles className="size-4" />
          </Button>
@@ -32,7 +32,7 @@ export function ContextPanelHeaderActions() {
             size="icon"
             tooltip="Abrir painel"
             type="button"
-            variant="ghost"
+            variant="icon-outline"
          >
             <PanelRight className="size-4" />
          </Button>

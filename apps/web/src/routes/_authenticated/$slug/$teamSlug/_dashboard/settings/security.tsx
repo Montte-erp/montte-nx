@@ -264,7 +264,7 @@ function SessionsSection({
                                  }
                                  size="icon"
                                  tooltip="Ver detalhes"
-                                 variant="ghost"
+                                 variant="icon-outline"
                               >
                                  <ChevronRight className="size-4" />
                               </Button>
