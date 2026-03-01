@@ -22,20 +22,12 @@ import {
    ModelSelector,
 } from "@packages/ui/components/assistant-ui/model-selector";
 import { ToolFallback } from "@packages/ui/components/assistant-ui/tool-fallback";
-import { TooltipIconButton } from "@packages/ui/components/assistant-ui/tooltip-icon-button";
 import { Button } from "@packages/ui/components/button";
-import {
-   Select,
-   SelectContent,
-   SelectItem,
-   SelectTrigger,
-} from "@packages/ui/components/select";
 import { cn } from "@packages/ui/lib/utils";
 import { useStore } from "@tanstack/react-store";
 import {
    ArrowDownIcon,
    ArrowUpIcon,
-   BrainIcon,
    CheckIcon,
    ChevronLeftIcon,
    ChevronRightIcon,
@@ -52,7 +44,6 @@ import { useEffect, useRef, useState } from "react";
 import {
    chatContextStore,
    setChatModel,
-   setChatThinkingBudget,
 } from "@/features/teco-chat/stores/chat-context-store";
 import { type ContextItem, ContextPicker } from "./context-picker";
 import { AgentCallTool } from "./tool-components/agent-call-tool";
@@ -75,12 +66,6 @@ const MODEL_OPTIONS: ModelOption[] = Object.entries(CONTENT_MODELS).map(
    }),
 );
 
-const THINKING_BUDGET_OPTIONS = [
-   { value: "0", label: "Nenhum", tokens: 0 },
-   { value: "1024", label: "Baixo", tokens: 1024 },
-   { value: "4096", label: "Médio", tokens: 4096 },
-   { value: "8192", label: "Alto", tokens: 8192 },
-] as const;
 
 export interface QuickSuggestion {
    label: string;
@@ -146,13 +131,14 @@ export const Thread: FC<ThreadProps> = ({
 const ThreadScrollToBottom: FC = () => {
    return (
       <ThreadPrimitive.ScrollToBottom asChild>
-         <TooltipIconButton
+         <Button
             className="aui-thread-scroll-to-bottom absolute -top-12 z-10 self-center rounded-full p-4 disabled:invisible dark:bg-background dark:hover:bg-accent"
+            size="icon"
             tooltip="Rolar para o final"
-            variant="outline"
+            variant="icon-outline"
          >
             <ArrowDownIcon />
-         </TooltipIconButton>
+         </Button>
       </ThreadPrimitive.ScrollToBottom>
    );
 };
@@ -264,7 +250,6 @@ const Composer: FC<ComposerProps> = () => {
    const [contextItems, setContextItems] = useState<ContextItem[]>([]);
    const contextId = useStore(chatContextStore, (s) => s.contextId);
    const selectedModel = useStore(chatContextStore, (s) => s.model);
-   const thinkingBudget = useStore(chatContextStore, (s) => s.thinkingBudget);
    const prefillledForRef = useRef<string | null>(null);
 
    useEffect(() => {
@@ -304,49 +289,6 @@ const Composer: FC<ComposerProps> = () => {
       >
          <ComposerPrimitive.AttachmentDropzone className="aui-composer-attachment-dropzone flex w-full flex-col rounded-xl border border-border/60 bg-background/80 shadow-sm outline-none backdrop-blur-sm transition-all has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:shadow-md has-[textarea:focus-visible]:ring-1 has-[textarea:focus-visible]:ring-ring/20 data-[dragging=true]:border-ring data-[dragging=true]:border-dashed data-[dragging=true]:bg-accent/50">
             {/* ── Settings bar: model + thinking budget ── */}
-            <div className="flex items-center gap-1 border-b border-border/40 px-1.5 py-1">
-               <ModelSelector
-                  models={MODEL_OPTIONS}
-                  onValueChange={(v) => setChatModel(v as ContentModelId)}
-                  triggerClassName="h-6 min-w-0 flex-1 border-none bg-transparent px-1.5 text-xs text-muted-foreground shadow-none hover:bg-accent hover:text-foreground"
-                  value={selectedModel}
-               />
-
-               <Select
-                  onValueChange={(v) => setChatThinkingBudget(Number(v))}
-                  value={String(thinkingBudget)}
-               >
-                  <SelectTrigger className="h-6 w-auto shrink-0 gap-1 border-none bg-transparent px-1.5 text-xs text-muted-foreground shadow-none hover:bg-accent hover:text-foreground">
-                     <BrainIcon
-                        className={cn(
-                           "size-3",
-                           thinkingBudget > 0 && "text-primary",
-                        )}
-                     />
-                     <span>
-                        {THINKING_BUDGET_OPTIONS.find(
-                           (o) => o.tokens === thinkingBudget,
-                        )?.label ?? "Nenhum"}
-                     </span>
-                  </SelectTrigger>
-                  <SelectContent align="end">
-                     {THINKING_BUDGET_OPTIONS.map((opt) => (
-                        <SelectItem
-                           className="text-xs"
-                           key={opt.value}
-                           value={opt.value}
-                        >
-                           {opt.label}
-                           {opt.tokens > 0 && (
-                              <span className="ml-1.5 text-muted-foreground/60">
-                                 {opt.tokens.toLocaleString()} tokens
-                              </span>
-                           )}
-                        </SelectItem>
-                     ))}
-                  </SelectContent>
-               </Select>
-            </div>
 
             {/* ── Attachments + context chips ── */}
             <ComposerAttachments />
@@ -383,6 +325,13 @@ const Composer: FC<ComposerProps> = () => {
             {/* ── Action bar: context | attachment + send ── */}
             <div className="flex items-center justify-between px-1 pb-1.5">
                <div className="flex items-center gap-0.5">
+                  <ModelSelector
+                     models={MODEL_OPTIONS}
+                     onValueChange={(v) => setChatModel(v as ContentModelId)}
+                     triggerClassName="h-6 min-w-0 flex-1 border-none bg-transparent px-1.5 text-xs text-muted-foreground shadow-none hover:bg-accent hover:text-foreground"
+                     value={selectedModel}
+                  />
+
                   <ContextPicker
                      currentDocumentId={contextId ?? undefined}
                      currentDocumentLabel="Documento atual"
@@ -402,17 +351,17 @@ const ComposerAction: FC = () => {
          <ComposerAddAttachment />
          <AuiIf condition={(s) => !s.thread.isRunning}>
             <ComposerPrimitive.Send asChild>
-               <TooltipIconButton
+               <Button
                   aria-label="Enviar mensagem"
                   className="aui-composer-send size-8 rounded-full"
-                  side="bottom"
                   size="icon"
                   tooltip="Enviar mensagem"
+                  tooltipSide="bottom"
                   type="submit"
-                  variant="default"
+                  variant="icon-solid"
                >
                   <ArrowUpIcon className="aui-composer-send-icon size-4" />
-               </TooltipIconButton>
+               </Button>
             </ComposerPrimitive.Send>
          </AuiIf>
          <AuiIf condition={(s) => s.thread.isRunning}>
@@ -559,28 +508,40 @@ const AssistantActionBar: FC = () => {
          hideWhenRunning
       >
          <ActionBarPrimitive.Copy asChild>
-            <TooltipIconButton tooltip="Copiar">
+            <Button
+               className="aui-button-icon size-6 p-1"
+               size="icon"
+               tooltip="Copiar"
+               variant="ghost"
+            >
                <AuiIf condition={(s) => s.message.isCopied}>
                   <CheckIcon />
                </AuiIf>
                <AuiIf condition={(s) => !s.message.isCopied}>
                   <CopyIcon />
                </AuiIf>
-            </TooltipIconButton>
+            </Button>
          </ActionBarPrimitive.Copy>
          <ActionBarPrimitive.Reload asChild>
-            <TooltipIconButton tooltip="Gerar novamente">
+            <Button
+               className="aui-button-icon size-6 p-1"
+               size="icon"
+               tooltip="Gerar novamente"
+               variant="ghost"
+            >
                <RefreshCwIcon />
-            </TooltipIconButton>
+            </Button>
          </ActionBarPrimitive.Reload>
          <ActionBarMorePrimitive.Root>
             <ActionBarMorePrimitive.Trigger asChild>
-               <TooltipIconButton
-                  className="data-[state=open]:bg-accent"
+               <Button
+                  className="aui-button-icon size-6 p-1 data-[state=open]:bg-accent"
+                  size="icon"
                   tooltip="Mais"
+                  variant="ghost"
                >
                   <MoreHorizontalIcon />
-               </TooltipIconButton>
+               </Button>
             </ActionBarMorePrimitive.Trigger>
             <ActionBarMorePrimitive.Content
                align="start"
@@ -629,12 +590,14 @@ const UserActionBar: FC = () => {
          hideWhenRunning
       >
          <ActionBarPrimitive.Edit asChild>
-            <TooltipIconButton
-               className="aui-user-action-edit p-4"
+            <Button
+               className="aui-user-action-edit size-6 p-4"
+               size="icon"
                tooltip="Editar"
+               variant="ghost"
             >
                <PencilIcon />
-            </TooltipIconButton>
+            </Button>
          </ActionBarPrimitive.Edit>
       </ActionBarPrimitive.Root>
    );
@@ -677,17 +640,27 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
          {...rest}
       >
          <BranchPickerPrimitive.Previous asChild>
-            <TooltipIconButton tooltip="Anterior">
+            <Button
+               className="aui-button-icon size-6 p-1"
+               size="icon"
+               tooltip="Anterior"
+               variant="ghost"
+            >
                <ChevronLeftIcon />
-            </TooltipIconButton>
+            </Button>
          </BranchPickerPrimitive.Previous>
          <span className="aui-branch-picker-state font-medium">
             <BranchPickerPrimitive.Number /> / <BranchPickerPrimitive.Count />
          </span>
          <BranchPickerPrimitive.Next asChild>
-            <TooltipIconButton tooltip="Próximo">
+            <Button
+               className="aui-button-icon size-6 p-1"
+               size="icon"
+               tooltip="Próximo"
+               variant="ghost"
+            >
                <ChevronRightIcon />
-            </TooltipIconButton>
+            </Button>
          </BranchPickerPrimitive.Next>
       </BranchPickerPrimitive.Root>
    );
