@@ -7,6 +7,7 @@ import * as annotationsRouter from "./annotations";
 import * as apiKeysRouter from "./api-keys";
 import * as bankAccountsRouter from "./bank-accounts";
 import * as billingRouter from "./billing";
+import * as creditCardsRouter from "./credit-cards";
 import * as categoriesRouter from "./categories";
 import * as chatRouter from "./chat";
 import * as dashboardsRouter from "./dashboards";
@@ -21,6 +22,7 @@ import * as personalApiKeyRouter from "./personal-api-key";
 import * as productSettingsRouter from "./product-settings";
 import * as propertyDefinitionsRouter from "./property-definitions";
 import * as rolesRouter from "./roles";
+import * as searchRouter from "./search";
 import * as sessionRouter from "./session";
 import * as ssoRouter from "./sso";
 import * as subcategoriesRouter from "./subcategories";
@@ -40,6 +42,7 @@ export default {
    apiKeys: apiKeysRouter,
    bankAccounts: bankAccountsRouter,
    billing: billingRouter,
+   creditCards: creditCardsRouter,
    categories: categoriesRouter,
    chat: chatRouter,
    dashboards: dashboardsRouter,
@@ -53,6 +56,7 @@ export default {
    productSettings: productSettingsRouter,
    propertyDefinitions: propertyDefinitionsRouter,
    roles: rolesRouter,
+   search: searchRouter,
    session: sessionRouter,
    sso: ssoRouter,
    subcategories: subcategoriesRouter,
