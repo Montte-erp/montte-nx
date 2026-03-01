@@ -8,6 +8,7 @@ import {
    ColorPickerOutput,
    ColorPickerSelection,
 } from "@packages/ui/components/color-picker";
+import { Combobox } from "@packages/ui/components/combobox";
 import {
    CredenzaBody,
    CredenzaDescription,
@@ -35,7 +36,6 @@ import {
    SelectValue,
 } from "@packages/ui/components/select";
 import { Spinner } from "@packages/ui/components/spinner";
-import { cn } from "@packages/ui/lib/utils";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import Color from "color";
@@ -86,6 +86,16 @@ const CATEGORY_ICONS: { name: string; Icon: LucideIcon }[] = [
    { name: "fuel", Icon: Fuel },
 ];
 
+const ICON_OPTIONS: { value: string; label: string }[] = CATEGORY_ICONS.map(
+   ({ name }) => ({
+      value: name,
+      label: name
+         .split("-")
+         .map((w) => `${w[0]?.toUpperCase() ?? ""}${w.slice(1)}`)
+         .join(" "),
+   }),
+);
+
 interface CategoryFormProps {
    mode: "create" | "edit";
    category?: {
@@ -130,18 +140,14 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
          color: category?.color ?? "#6366f1",
          icon: category?.icon ?? "",
          name: category?.name ?? "",
-         type: (category?.type ?? "") as "income" | "expense" | "",
+         type: (category?.type ?? "expense") as "income" | "expense",
       },
       onSubmit: async ({ value }) => {
          const payload = {
             color: value.color || null,
             icon: value.icon || null,
             name: value.name.trim(),
-            type: (value.type || null) as
-               | "income"
-               | "expense"
-               | null
-               | undefined,
+            type: value.type,
          };
 
          if (isCreate) {
@@ -202,17 +208,16 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                         <FieldLabel>Tipo</FieldLabel>
                         <Select
                            onValueChange={(v) =>
-                              field.handleChange(v as "income" | "expense" | "")
+                              field.handleChange(v as "income" | "expense")
                            }
                            value={field.state.value}
                         >
                            <SelectTrigger>
-                              <SelectValue placeholder="Sem restrição" />
+                              <SelectValue />
                            </SelectTrigger>
                            <SelectContent>
-                              <SelectItem value="">Sem restrição</SelectItem>
-                              <SelectItem value="income">Receita</SelectItem>
                               <SelectItem value="expense">Despesa</SelectItem>
+                              <SelectItem value="income">Receita</SelectItem>
                            </SelectContent>
                         </Select>
                      </Field>
@@ -223,29 +228,32 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                   {(field) => (
                      <Field>
                         <FieldLabel>Ícone</FieldLabel>
-                        <div className="grid grid-cols-10 gap-1.5">
-                           {CATEGORY_ICONS.map(({ name: iconName, Icon }) => (
-                              <button
-                                 className={cn(
-                                    "flex size-8 items-center justify-center rounded-md border transition-colors hover:bg-accent",
-                                    field.state.value === iconName &&
-                                       "border-primary bg-accent",
-                                 )}
-                                 key={iconName}
-                                 onClick={() =>
-                                    field.handleChange(
-                                       field.state.value === iconName
-                                          ? ""
-                                          : iconName,
-                                    )
-                                 }
-                                 title={iconName}
-                                 type="button"
-                              >
-                                 <Icon className="size-4" />
-                              </button>
-                           ))}
-                        </div>
+                        <Combobox
+                           className="w-full"
+                           emptyMessage="Ícone não encontrado."
+                           onValueChange={(v) => field.handleChange(v || "")}
+                           options={ICON_OPTIONS}
+                           placeholder="Selecionar ícone..."
+                           searchPlaceholder="Buscar ícone..."
+                           value={field.state.value}
+                        />
+                        <form.Subscribe selector={(s) => s.values.icon}>
+                           {(icon) => {
+                              const found = CATEGORY_ICONS.find(
+                                 (i) => i.name === icon,
+                              );
+                              if (!found) return null;
+                              const { Icon } = found;
+                              return (
+                                 <div className="mt-1 flex items-center gap-2">
+                                    <Icon className="size-4 text-muted-foreground" />
+                                    <span className="text-xs text-muted-foreground">
+                                       {icon}
+                                    </span>
+                                 </div>
+                              );
+                           }}
+                        </form.Subscribe>
                      </Field>
                   )}
                </form.Field>
