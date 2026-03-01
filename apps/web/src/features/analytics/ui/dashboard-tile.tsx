@@ -1,7 +1,11 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Condition } from "@f-o-t/condition-evaluator";
-import type { DateRange, InsightConfig } from "@packages/analytics/types";
+import {
+   type DateRange,
+   type InsightConfig,
+   insightConfigSchema,
+} from "@packages/analytics/types";
 import type { DashboardDateRange } from "@packages/database/schemas/dashboards";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -27,11 +31,14 @@ import {
    Maximize2,
    Pencil,
    RefreshCw,
+   Settings2,
    Trash2,
 } from "lucide-react";
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { orpc } from "@/integrations/orpc/client";
+import { useCredenza } from "@/hooks/use-credenza";
+import { InsightEditCredenza } from "./insight-edit-credenza";
 import { InsightPreview } from "./insight-preview";
 
 export type TileSize = "sm" | "md" | "lg" | "full";
@@ -176,11 +183,16 @@ function DashboardInsightContent({
    if (error) return <TileErrorState error={error} />;
    if (!insight) return null;
 
-   const config = mergeGlobalFilters(
-      insight.config as InsightConfig,
-      globalFilters,
-      globalDateRange,
-   );
+   const parsed = insightConfigSchema.safeParse(insight.config);
+   if (!parsed.success) {
+      return (
+         <TileErrorState
+            error={new Error("Configuração do insight inválida ou desatualizada")}
+         />
+      );
+   }
+
+   const config = mergeGlobalFilters(parsed.data, globalFilters, globalDateRange);
 
    return (
       <ErrorBoundary
@@ -300,6 +312,7 @@ export function DashboardTile({
    globalDateRange,
 }: DashboardTileProps) {
    const queryClient = useQueryClient();
+   const { openCredenza } = useCredenza();
    const {
       attributes,
       listeners,
@@ -340,14 +353,15 @@ export function DashboardTile({
                <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-2 min-w-0 flex-1">
                      {isEditing && (
-                        <button
-                           className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0 mt-0.5"
+                        <Button
                            type="button"
+                           variant="ghost"
+                           size="icon-sm"
                            {...attributes}
                            {...listeners}
                         >
                            <GripVertical className="size-4" />
-                        </button>
+                        </Button>
                      )}
                      <div className="min-w-0 flex-1 space-y-1">
                         {/* Type + Date range badge */}
@@ -392,6 +406,21 @@ export function DashboardTile({
                                     <Pencil className="mr-2 size-4" />
                                     Editar
                                  </Link>
+                              </DropdownMenuItem>
+                           )}
+
+                           {/* Configure insight */}
+                           {insightId && (
+                              <DropdownMenuItem
+                                 onClick={() =>
+                                    openCredenza({
+                                       children: <InsightEditCredenza insightId={insightId} />,
+                                       className: "sm:max-w-2xl",
+                                    })
+                                 }
+                              >
+                                 <Settings2 className="mr-2 size-4" />
+                                 Configurar
                               </DropdownMenuItem>
                            )}
 
