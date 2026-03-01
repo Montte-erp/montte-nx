@@ -130,6 +130,43 @@ export async function deleteBankAccount(db: DatabaseInstance, id: string) {
    }
 }
 
+export async function listBankAccountsWithBalance(
+   db: DatabaseInstance,
+   teamId: string,
+) {
+   try {
+      const accounts = await db
+         .select()
+         .from(bankAccounts)
+         .where(eq(bankAccounts.teamId, teamId))
+         .orderBy(bankAccounts.name);
+
+      const results = await Promise.all(
+         accounts.map(async (account) => {
+            const [row] = await db
+               .select({
+                  income: sql<string>`COALESCE(SUM(CASE WHEN type = 'income' THEN amount::numeric ELSE 0 END), 0)`,
+                  expense: sql<string>`COALESCE(SUM(CASE WHEN type = 'expense' THEN amount::numeric ELSE 0 END), 0)`,
+               })
+               .from(transactions)
+               .where(eq(transactions.bankAccountId, account.id));
+
+            const currentBalance =
+               Number(account.initialBalance) +
+               Number(row?.income ?? 0) -
+               Number(row?.expense ?? 0);
+
+            return { ...account, currentBalance: currentBalance.toFixed(2) };
+         }),
+      );
+
+      return results;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to list bank accounts with balance");
+   }
+}
+
 export async function bankAccountHasTransactions(
    db: DatabaseInstance,
    accountId: string,

@@ -5,7 +5,7 @@ import {
    createBankAccount,
    deleteBankAccount,
    getBankAccount,
-   listBankAccounts,
+   listBankAccountsWithBalance,
    updateBankAccount,
 } from "@packages/database/repositories/bank-accounts-repository";
 import { bankAccounts } from "@packages/database/schemas/bank-accounts";
@@ -53,7 +53,7 @@ export const create = protectedProcedure
 
 export const getAll = protectedProcedure.handler(async ({ context }) => {
    const { db, teamId } = context;
-   return listBankAccounts(db, teamId);
+   return listBankAccountsWithBalance(db, teamId);
 });
 
 export const getById = protectedProcedure

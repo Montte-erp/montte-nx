@@ -18,6 +18,7 @@ export type BankAccountRow = {
    color: string;
    iconUrl?: string | null;
    initialBalance: string;
+   currentBalance: string;
    createdAt: Date | string;
    updatedAt: Date | string;
 };
@@ -68,6 +69,24 @@ export function buildBankAccountColumns(
                {formatBRL(row.original.initialBalance)}
             </span>
          ),
+      },
+      {
+         accessorKey: "currentBalance",
+         header: "Saldo Atual",
+         cell: ({ row }) => {
+            const balance = Number(row.original.currentBalance);
+            return (
+               <span
+                  className={`text-sm font-medium ${
+                     balance >= 0
+                        ? "text-green-600 dark:text-green-500"
+                        : "text-destructive"
+                  }`}
+               >
+                  {formatBRL(row.original.currentBalance)}
+               </span>
+            );
+         },
       },
       {
          id: "actions",
