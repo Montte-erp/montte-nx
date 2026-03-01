@@ -60,6 +60,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
+import { BillFromTransactionCredenza } from "@/features/bills/ui/bill-from-transaction-credenza";
 import { TransactionExportCredenza } from "@/features/transactions/ui/transaction-export-credenza";
 import { TransactionImportCredenza } from "@/features/transactions/ui/transaction-import-credenza";
 import {
@@ -67,7 +68,6 @@ import {
    type TransactionRow,
 } from "@/features/transactions/ui/transactions-columns";
 import { TransactionSheet } from "@/features/transactions/ui/transactions-sheet";
-import { BillFromTransactionCredenza } from "@/features/bills/ui/bill-from-transaction-credenza";
 import type { ViewConfig } from "@/features/view-switch/hooks/use-view-switch";
 import { useViewSwitch } from "@/features/view-switch/hooks/use-view-switch";
 import { ViewSwitchDropdown } from "@/features/view-switch/ui/view-switch-dropdown";
@@ -86,6 +86,9 @@ export const Route = createFileRoute(
          orpc.categories.getAll.queryOptions({}),
       );
       context.queryClient.prefetchQuery(orpc.tags.getAll.queryOptions({}));
+      context.queryClient.prefetchQuery(
+         orpc.creditCards.getAll.queryOptions({}),
+      );
       context.queryClient.prefetchQuery(
          orpc.transactions.getAll.queryOptions({
             input: { page: 1, pageSize: 20 },
@@ -268,6 +271,10 @@ interface TransactionFilters {
    dateTo?: string;
    datePreset?: string;
    search: string;
+   categoryId?: string;
+   uncategorized?: boolean;
+   bankAccountId?: string;
+   creditCardId?: string;
    page: number;
    pageSize: number;
 }
@@ -335,6 +342,99 @@ function TransactionsSkeleton() {
 }
 
 // =============================================================================
+// Filter child components
+// =============================================================================
+
+function CategoryFilterCombobox({
+   value,
+   uncategorized,
+   onChange,
+}: {
+   value?: string;
+   uncategorized?: boolean;
+   onChange: (categoryId: string | undefined, uncategorized: boolean) => void;
+}) {
+   const { data: categories } = useSuspenseQuery(
+      orpc.categories.getAll.queryOptions({}),
+   );
+
+   const options = [
+      { value: "__uncategorized__", label: "Sem categoria" },
+      ...categories.map((c) => ({ value: c.id, label: c.name })),
+   ];
+
+   const currentValue = uncategorized ? "__uncategorized__" : (value ?? "");
+
+   return (
+      <Combobox
+         className="h-8 w-[160px]"
+         emptyMessage="Nenhuma categoria."
+         onValueChange={(v) => {
+            if (!v) onChange(undefined, false);
+            else if (v === "__uncategorized__") onChange(undefined, true);
+            else onChange(v, false);
+         }}
+         options={options}
+         placeholder="Categoria"
+         searchPlaceholder="Buscar..."
+         value={currentValue}
+      />
+   );
+}
+
+function AccountFilterCombobox({
+   value,
+   onChange,
+}: {
+   value?: string;
+   onChange: (v: string | undefined) => void;
+}) {
+   const { data: bankAccounts } = useSuspenseQuery(
+      orpc.bankAccounts.getAll.queryOptions({}),
+   );
+
+   const options = bankAccounts.map((a) => ({ value: a.id, label: a.name }));
+
+   return (
+      <Combobox
+         className="h-8 w-[160px]"
+         emptyMessage="Nenhuma conta."
+         onValueChange={(v) => onChange(v || undefined)}
+         options={options}
+         placeholder="Conta"
+         searchPlaceholder="Buscar conta..."
+         value={value ?? ""}
+      />
+   );
+}
+
+function CardFilterCombobox({
+   value,
+   onChange,
+}: {
+   value?: string;
+   onChange: (v: string | undefined) => void;
+}) {
+   const { data: creditCards } = useSuspenseQuery(
+      orpc.creditCards.getAll.queryOptions({}),
+   );
+
+   const options = creditCards.map((c) => ({ value: c.id, label: c.name }));
+
+   return (
+      <Combobox
+         className="h-8 w-[160px]"
+         emptyMessage="Nenhum cartão."
+         onValueChange={(v) => onChange(v || undefined)}
+         options={options}
+         placeholder="Cartão"
+         searchPlaceholder="Buscar cartão..."
+         value={value ?? ""}
+      />
+   );
+}
+
+// =============================================================================
 // Filter Bar
 // =============================================================================
 
@@ -388,7 +488,13 @@ function FilterBar({ filters, onFiltersChange }: FilterBarProps) {
    }, [filters.datePreset, filters.dateFrom, filters.dateTo]);
 
    const hasActiveFilters =
-      filters.type || hasDateFilter || filters.search.length > 0;
+      filters.type ||
+      hasDateFilter ||
+      filters.search.length > 0 ||
+      filters.categoryId ||
+      filters.uncategorized ||
+      filters.bankAccountId ||
+      filters.creditCardId;
 
    return (
       <div className="flex flex-wrap items-center gap-2">
@@ -430,6 +536,37 @@ function FilterBar({ filters, onFiltersChange }: FilterBarProps) {
                Transferência
             </ToggleGroupItem>
          </ToggleGroup>
+
+         {/* Category filter */}
+         <Suspense fallback={null}>
+            <CategoryFilterCombobox
+               uncategorized={filters.uncategorized}
+               value={filters.categoryId}
+               onChange={(categoryId, uncategorized) =>
+                  onFiltersChange({ ...filters, categoryId, uncategorized, page: 1 })
+               }
+            />
+         </Suspense>
+
+         {/* Account filter */}
+         <Suspense fallback={null}>
+            <AccountFilterCombobox
+               value={filters.bankAccountId}
+               onChange={(v) =>
+                  onFiltersChange({ ...filters, bankAccountId: v, page: 1 })
+               }
+            />
+         </Suspense>
+
+         {/* Card filter */}
+         <Suspense fallback={null}>
+            <CardFilterCombobox
+               value={filters.creditCardId}
+               onChange={(v) =>
+                  onFiltersChange({ ...filters, creditCardId: v, page: 1 })
+               }
+            />
+         </Suspense>
 
          {/* Date range */}
          <Popover onOpenChange={setIsDateOpen} open={isDateOpen}>
@@ -558,6 +695,10 @@ function TransactionsList({
             dateFrom: filters.dateFrom,
             dateTo: filters.dateTo,
             search: filters.search || undefined,
+            categoryId: filters.categoryId,
+            uncategorized: filters.uncategorized,
+            bankAccountId: filters.bankAccountId,
+            creditCardId: filters.creditCardId,
             page: filters.page,
             pageSize: filters.pageSize,
          },
@@ -627,15 +768,15 @@ function TransactionsList({
          openCredenza({
             children: (
                <BillFromTransactionCredenza
-                  mode="installment"
-                  transactionId={tx.id}
-                  transactionName={tx.name ?? ""}
-                  transactionAmount={tx.amount}
-                  transactionDate={tx.date}
-                  transactionType={tx.type}
                   bankAccountId={tx.bankAccountId}
                   categoryId={tx.categoryId}
+                  mode="installment"
                   onSuccess={closeCredenza}
+                  transactionAmount={tx.amount}
+                  transactionDate={tx.date}
+                  transactionId={tx.id}
+                  transactionName={tx.name ?? ""}
+                  transactionType={tx.type}
                />
             ),
          });
@@ -648,15 +789,15 @@ function TransactionsList({
          openCredenza({
             children: (
                <BillFromTransactionCredenza
-                  mode="recurring"
-                  transactionId={tx.id}
-                  transactionName={tx.name ?? ""}
-                  transactionAmount={tx.amount}
-                  transactionDate={tx.date}
-                  transactionType={tx.type}
                   bankAccountId={tx.bankAccountId}
                   categoryId={tx.categoryId}
+                  mode="recurring"
                   onSuccess={closeCredenza}
+                  transactionAmount={tx.amount}
+                  transactionDate={tx.date}
+                  transactionId={tx.id}
+                  transactionName={tx.name ?? ""}
+                  transactionType={tx.type}
                />
             ),
          });
@@ -749,7 +890,13 @@ function TransactionsList({
    ]);
 
    const columns = useMemo(
-      () => buildTransactionColumns(handleEdit, handleDelete, handleInstallment, handleRecurring),
+      () =>
+         buildTransactionColumns(
+            handleEdit,
+            handleDelete,
+            handleInstallment,
+            handleRecurring,
+         ),
       [handleEdit, handleDelete, handleInstallment, handleRecurring],
    );
 
@@ -762,7 +909,13 @@ function TransactionsList({
                </EmptyMedia>
                <EmptyTitle>Nenhuma transação</EmptyTitle>
                <EmptyDescription>
-                  {filters.search || filters.type || filters.dateFrom
+                  {filters.search ||
+                  filters.type ||
+                  filters.dateFrom ||
+                  filters.categoryId ||
+                  filters.uncategorized ||
+                  filters.bankAccountId ||
+                  filters.creditCardId
                      ? "Nenhuma transação encontrada para os filtros aplicados."
                      : "Registre uma nova transação para começar a controlar suas finanças."}
                </EmptyDescription>
