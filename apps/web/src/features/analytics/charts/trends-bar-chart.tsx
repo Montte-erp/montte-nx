@@ -15,6 +15,7 @@ interface TrendsBarChartProps {
    xAxisKey: string;
    height?: number;
    xAxisFormatter?: (value: string) => string;
+   valueFormatter?: (value: number) => string;
    comparisonData?: Array<Record<string, unknown>>;
 }
 
@@ -24,6 +25,7 @@ export const TrendsBarChart = memo(function TrendsBarChart({
    xAxisKey,
    height = 300,
    xAxisFormatter,
+   valueFormatter,
    comparisonData,
 }: TrendsBarChartProps) {
    const chartConfig = useMemo(() => {
@@ -83,9 +85,10 @@ export const TrendsBarChart = memo(function TrendsBarChart({
             <YAxis
                axisLine={false}
                className="text-xs"
+               tickFormatter={valueFormatter}
                tickLine={false}
                tickMargin={8}
-               width={40}
+               width={valueFormatter ? 80 : 40}
             />
             {comparisonData &&
                series.map((s) => (
@@ -105,7 +108,17 @@ export const TrendsBarChart = memo(function TrendsBarChart({
                   radius={[4, 4, 0, 0]}
                />
             ))}
-            <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartTooltip
+               content={
+                  <ChartTooltipContent
+                     formatter={
+                        valueFormatter
+                           ? (value) => valueFormatter(Number(value))
+                           : undefined
+                     }
+                  />
+               }
+            />
             <ChartLegend content={<ChartLegendContent />} />
          </BarChart>
       </ChartContainer>

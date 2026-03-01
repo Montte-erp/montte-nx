@@ -15,6 +15,7 @@ interface TrendsLineChartProps {
    xAxisKey: string;
    height?: number;
    xAxisFormatter?: (value: string) => string;
+   valueFormatter?: (value: number) => string;
    comparisonData?: Array<Record<string, unknown>>;
    formulaData?: Array<{ date: string; value: number }>;
 }
@@ -25,6 +26,7 @@ export const TrendsLineChart = memo(function TrendsLineChart({
    xAxisKey,
    height = 300,
    xAxisFormatter,
+   valueFormatter,
    comparisonData,
    formulaData,
 }: TrendsLineChartProps) {
@@ -104,9 +106,10 @@ export const TrendsLineChart = memo(function TrendsLineChart({
             <YAxis
                axisLine={false}
                className="text-xs"
+               tickFormatter={valueFormatter}
                tickLine={false}
                tickMargin={8}
-               width={40}
+               width={valueFormatter ? 80 : 40}
                yAxisId="left"
             />
             {formulaData && (
@@ -156,7 +159,17 @@ export const TrendsLineChart = memo(function TrendsLineChart({
                   yAxisId="right"
                />
             )}
-            <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartTooltip
+               content={
+                  <ChartTooltipContent
+                     formatter={
+                        valueFormatter
+                           ? (value) => valueFormatter(Number(value))
+                           : undefined
+                     }
+                  />
+               }
+            />
             <ChartLegend content={<ChartLegendContent />} />
          </LineChart>
       </ChartContainer>
