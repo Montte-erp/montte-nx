@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
    index,
    pgEnum,
@@ -8,6 +8,7 @@ import {
    uniqueIndex,
    uuid,
 } from "drizzle-orm/pg-core";
+import { transactions } from "./transactions";
 
 export const contactTypeEnum = pgEnum("contact_type", [
    "cliente",
@@ -45,6 +46,10 @@ export const contacts = pgTable(
       uniqueIndex("contacts_team_id_name_unique").on(table.teamId, table.name),
    ],
 );
+
+export const contactsRelations = relations(contacts, ({ many }) => ({
+   transactions: many(transactions),
+}));
 
 export type Contact = typeof contacts.$inferSelect;
 export type NewContact = typeof contacts.$inferInsert;

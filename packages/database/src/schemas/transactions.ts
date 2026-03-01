@@ -67,6 +67,7 @@ export const transactions = pgTable(
       index("transactions_bank_account_id_idx").on(table.bankAccountId),
       index("transactions_category_id_idx").on(table.categoryId),
       index("transactions_credit_card_id_idx").on(table.creditCardId),
+      index("transactions_contact_id_idx").on(table.contactId),
    ],
 );
 
