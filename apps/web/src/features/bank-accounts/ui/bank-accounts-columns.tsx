@@ -1,8 +1,14 @@
 import { format, of } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
+import {
+   Tooltip,
+   TooltipContent,
+   TooltipProvider,
+   TooltipTrigger,
+} from "@packages/ui/components/tooltip";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Pencil, Trash2 } from "lucide-react";
+import { Info, Pencil, Trash2 } from "lucide-react";
 
 export type BankAccountRow = {
    id: string;
@@ -19,6 +25,7 @@ export type BankAccountRow = {
    iconUrl?: string | null;
    initialBalance: string;
    currentBalance: string;
+   projectedBalance: string;
    createdAt: Date | string;
    updatedAt: Date | string;
 };
@@ -84,6 +91,37 @@ export function buildBankAccountColumns(
                   }`}
                >
                   {formatBRL(row.original.currentBalance)}
+               </span>
+            );
+         },
+      },
+      {
+         accessorKey: "projectedBalance",
+         header: () => (
+            <TooltipProvider>
+               <Tooltip>
+                  <TooltipTrigger className="flex items-center gap-1">
+                     Saldo Previsto{" "}
+                     <Info className="size-3 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                     Saldo atual + contas a receber pendentes - contas a pagar
+                     pendentes
+                  </TooltipContent>
+               </Tooltip>
+            </TooltipProvider>
+         ),
+         cell: ({ row }) => {
+            const balance = Number(row.original.projectedBalance);
+            return (
+               <span
+                  className={`text-sm font-medium ${
+                     balance >= 0
+                        ? "text-blue-600 dark:text-blue-400"
+                        : "text-destructive"
+                  }`}
+               >
+                  {formatBRL(row.original.projectedBalance)}
                </span>
             );
          },

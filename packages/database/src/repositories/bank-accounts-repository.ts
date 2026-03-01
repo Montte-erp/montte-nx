@@ -1,7 +1,7 @@
 import { AppError, propagateError } from "@packages/utils/errors";
 import { and, desc, eq, or, sql, sum } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
-import { bankAccounts, type NewBankAccount, transactions } from "../schema";
+import { bankAccounts, bills, type NewBankAccount, transactions } from "../schema";
 
 export async function createBankAccount(
    db: DatabaseInstance,
@@ -156,7 +156,24 @@ export async function listBankAccountsWithBalance(
                Number(row?.income ?? 0) -
                Number(row?.expense ?? 0);
 
-            return { ...account, currentBalance: currentBalance.toFixed(2) };
+            const [billsRow] = await db
+               .select({
+                  pendingReceivable: sql<string>`COALESCE(SUM(CASE WHEN type = 'receivable' AND status IN ('pending', 'overdue') THEN amount::numeric ELSE 0 END), 0)`,
+                  pendingPayable: sql<string>`COALESCE(SUM(CASE WHEN type = 'payable' AND status IN ('pending', 'overdue') THEN amount::numeric ELSE 0 END), 0)`,
+               })
+               .from(bills)
+               .where(eq(bills.bankAccountId, account.id));
+
+            const projectedBalance =
+               currentBalance +
+               Number(billsRow?.pendingReceivable ?? 0) -
+               Number(billsRow?.pendingPayable ?? 0);
+
+            return {
+               ...account,
+               currentBalance: currentBalance.toFixed(2),
+               projectedBalance: projectedBalance.toFixed(2),
+            };
          }),
       );
 
