@@ -11,8 +11,9 @@ import {
    uuid,
 } from "drizzle-orm/pg-core";
 import { bankAccounts } from "./bank-accounts";
-import { creditCards } from "./credit-cards";
 import { categories } from "./categories";
+import { contacts } from "./contacts";
+import { creditCards } from "./credit-cards";
 import { subcategories } from "./subcategories";
 import { tags } from "./tags";
 
@@ -49,6 +50,9 @@ export const transactions = pgTable(
          onDelete: "set null",
       }),
       attachmentUrl: text("attachment_url"),
+      contactId: uuid("contact_id").references(() => contacts.id, {
+         onDelete: "set null",
+      }),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
          .defaultNow(),
@@ -105,6 +109,10 @@ export const transactionsRelations = relations(
          references: [subcategories.id],
       }),
       transactionTags: many(transactionTags),
+      contact: one(contacts, {
+         fields: [transactions.contactId],
+         references: [contacts.id],
+      }),
    }),
 );
 
