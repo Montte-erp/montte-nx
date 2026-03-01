@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
    ArrowLeftRight,
    Building2,
+   CreditCard,
    Database,
    House,
    LayoutDashboard,
@@ -9,6 +10,7 @@ import {
    Sparkles,
    Tag,
    Tags,
+   Target,
 } from "lucide-react";
 import type { SubSidebarSection } from "../hooks/use-sidebar-nav";
 
@@ -56,6 +58,12 @@ export const navGroups: NavGroupDef[] = [
             route: "/$slug/$teamSlug/finance/bank-accounts",
          },
          {
+            id: "credit-cards",
+            label: "Cartões de Crédito",
+            icon: CreditCard,
+            route: "/$slug/$teamSlug/finance/credit-cards",
+         },
+         {
             id: "categories",
             label: "Categorias",
             icon: Tag,
@@ -66,6 +74,12 @@ export const navGroups: NavGroupDef[] = [
             label: "Tags",
             icon: Tags,
             route: "/$slug/$teamSlug/finance/tags",
+         },
+         {
+            id: "goals",
+            label: "Metas",
+            icon: Target,
+            route: "/$slug/$teamSlug/finance/goals",
          },
       ],
    },
@@ -89,8 +103,6 @@ export const navGroups: NavGroupDef[] = [
             label: "Dashboards",
             icon: LayoutDashboard,
             route: "/$slug/$teamSlug/analytics/dashboards",
-            quickAction: { type: "create", target: "sub-menu" },
-            subPanel: "dashboards",
             earlyAccessFlag: "advanced-analytics",
          },
          {
@@ -98,8 +110,6 @@ export const navGroups: NavGroupDef[] = [
             label: "Insights",
             icon: Lightbulb,
             route: "/$slug/$teamSlug/analytics/insights",
-            quickAction: { type: "create", target: "sub-menu" },
-            subPanel: "insights",
             earlyAccessFlag: "advanced-analytics",
          },
          {
@@ -107,7 +117,6 @@ export const navGroups: NavGroupDef[] = [
             label: "Dados",
             icon: Database,
             route: "/$slug/$teamSlug/analytics/data-management",
-            quickAction: { type: "create", target: "sub-menu" },
             subPanel: "data-management",
             earlyAccessFlag: "advanced-analytics",
          },
