@@ -1,6 +1,7 @@
 import * as cron from "node-cron";
 import type { DatabaseInstance } from "@packages/database/client";
 import type { Redis } from "ioredis";
+import { generateBillOccurrences } from "./jobs/generate-bill-occurrences";
 import { runReconcileCredits } from "./jobs/reconcile-credits";
 import { runRefreshInsights } from "./jobs/refresh-insights";
 import { runRefreshViews } from "./jobs/refresh-views";
@@ -38,9 +39,20 @@ export function startScheduler(
 		}
 	});
 
-	tasks.push(hourlyTask, insightsTask);
+	// Daily at 6am: generate upcoming bill occurrences for active recurrence groups
+	const billRecurrenceTask = cron.schedule("0 6 * * *", async () => {
+		console.log("[Scheduler] Running bill recurrence generation...");
+		try {
+			await generateBillOccurrences(db);
+			console.log("[Scheduler] Bill recurrence generation complete");
+		} catch (error) {
+			console.error("[Scheduler] Bill recurrence job failed:", error);
+		}
+	});
+
+	tasks.push(hourlyTask, insightsTask, billRecurrenceTask);
 	console.log(
-		"[Scheduler] Cron jobs registered (hourly billing reconciliation, 3-hourly insight refresh)",
+		"[Scheduler] Cron jobs registered (hourly billing reconciliation, 3-hourly insight refresh, daily bill recurrence)",
 	);
 
 	return tasks;
