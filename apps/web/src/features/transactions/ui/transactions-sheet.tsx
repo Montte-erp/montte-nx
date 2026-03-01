@@ -1,5 +1,7 @@
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
+import { Combobox } from "@packages/ui/components/combobox";
+import type { ComboboxOption } from "@packages/ui/components/combobox";
 import {
    CredenzaBody,
    CredenzaDescription,
@@ -23,6 +25,7 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@packages/ui/components/select";
+import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
@@ -91,6 +94,43 @@ function TagCheckboxList({ selectedTagIds, onToggle }: TagCheckboxListProps) {
    );
 }
 
+function ContactCombobox({
+   value,
+   onChange,
+}: {
+   value: string | null;
+   onChange: (id: string | null) => void;
+}) {
+   const { data: contacts } = useSuspenseQuery(
+      orpc.contacts.getAll.queryOptions({}),
+   );
+
+   if (contacts.length === 0) {
+      return (
+         <p className="text-sm text-muted-foreground">
+            Nenhum contato cadastrado.
+         </p>
+      );
+   }
+
+   const options: ComboboxOption[] = contacts.map((c) => ({
+      value: c.id,
+      label: c.name,
+   }));
+
+   return (
+      <Combobox
+         className="w-full"
+         emptyMessage="Nenhum contato encontrado."
+         onValueChange={(v) => onChange(v || null)}
+         options={options}
+         placeholder="Selecionar contato..."
+         searchPlaceholder="Buscar contato..."
+         value={value ?? ""}
+      />
+   );
+}
+
 function TransactionFormContent({
    mode,
    transaction,
@@ -147,6 +187,7 @@ function TransactionFormContent({
          subcategoryId: transaction?.subcategoryId ?? "",
          tagIds: transaction?.tagIds ?? ([] as string[]),
          description: transaction?.description ?? "",
+         contactId: transaction?.contactId ?? (null as string | null),
       },
       onSubmit: ({ value }) => {
          const dateStr = value.date
@@ -167,6 +208,7 @@ function TransactionFormContent({
             attachmentUrl: null as string | null,
             tagIds: value.tagIds,
             description: value.description || null,
+            contactId: value.contactId,
          };
 
          if (isCreate) {
@@ -447,6 +489,21 @@ function TransactionFormContent({
                                     );
                                  }}
                                  selectedTagIds={field.state.value}
+                              />
+                           </Suspense>
+                        </Field>
+                     )}
+                  </form.Field>
+
+                  {/* Contato */}
+                  <form.Field name="contactId">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel>Contato</FieldLabel>
+                           <Suspense fallback={<Skeleton className="h-9 w-full" />}>
+                              <ContactCombobox
+                                 onChange={field.handleChange}
+                                 value={field.state.value}
                               />
                            </Suspense>
                         </Field>

@@ -18,6 +18,8 @@ export type TransactionRow = {
    subcategoryId: string | null;
    attachmentUrl: string | null;
    tagIds?: string[];
+   contactId: string | null;
+   contactName?: string | null;
    createdAt: Date | string;
    updatedAt: Date | string;
 };
