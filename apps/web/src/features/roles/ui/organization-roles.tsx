@@ -3,11 +3,6 @@ import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import {
-   Tooltip,
-   TooltipContent,
-   TooltipTrigger,
-} from "@packages/ui/components/tooltip";
-import {
    useMutation,
    useQueryClient,
    useSuspenseQuery,
@@ -170,19 +165,14 @@ function OrganizationRolesContent() {
                      onClick={(e) => e.stopPropagation()}
                      onKeyDown={(e) => e.stopPropagation()}
                   >
-                     <Tooltip>
-                        <TooltipTrigger asChild>
-                           <Button
-                              onClick={() => handleEditRole(role)}
-                              size="icon"
-                              variant="ghost"
-                           >
-                              <Pencil className="size-4" />
-                              <span className="sr-only">Editar função</span>
-                           </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Editar função</TooltipContent>
-                     </Tooltip>
+                     <Button
+                        onClick={() => handleEditRole(role)}
+                        size="icon"
+                        tooltip="Editar função"
+                        variant="ghost"
+                     >
+                        <Pencil className="size-4" />
+                     </Button>
                   </div>
                );
             },
