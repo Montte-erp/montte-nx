@@ -1,3 +1,4 @@
+import { format, of } from "@f-o-t/money";
 import {
    Card,
    CardContent,
@@ -12,6 +13,7 @@ interface TrendsNumberCardProps {
    value: string | number;
    label: string;
    trend?: { value: number; direction: "up" | "down"; comparison: string };
+   formatAsCurrency?: boolean;
 }
 
 function formatTrendValue(value: number): string {
@@ -23,9 +25,14 @@ export const TrendsNumberCard = memo(function TrendsNumberCard({
    value,
    label,
    trend,
+   formatAsCurrency,
 }: TrendsNumberCardProps) {
    const formattedValue =
-      typeof value === "number" ? value.toLocaleString("pt-BR") : value;
+      formatAsCurrency && typeof value === "number"
+         ? format(of(value.toFixed(2), "BRL"), "pt-BR")
+         : typeof value === "number"
+           ? value.toLocaleString("pt-BR")
+           : value;
 
    return (
       <Card>
