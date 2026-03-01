@@ -9,6 +9,27 @@ import { buildConditions } from "./compute-kpi";
 import { resolveDateRange } from "./date-ranges";
 import type { BreakdownConfig, BreakdownItem, BreakdownResult } from "./types";
 
+async function computeTotal(
+  db: DatabaseInstance,
+  teamId: string,
+  config: BreakdownConfig,
+  start: Date,
+  end: Date,
+): Promise<number> {
+  const conditions = buildConditions(teamId, config.filters, start, end);
+  let valueExpr = sql<number>`count(*)::int`;
+  if (config.measure.aggregation === "sum") {
+    valueExpr = sql<number>`coalesce(sum(${transactions.amount}), 0)::float`;
+  } else if (config.measure.aggregation === "avg") {
+    valueExpr = sql<number>`coalesce(avg(${transactions.amount}), 0)::float`;
+  }
+  const result = await db
+    .select({ value: valueExpr })
+    .from(transactions)
+    .where(and(...conditions));
+  return Number(result[0]?.value ?? 0);
+}
+
 export async function executeBreakdownQuery(
   db: DatabaseInstance,
   teamId: string,
@@ -71,7 +92,8 @@ export async function executeBreakdownQuery(
           .from(transactions)
           .where(and(...conditions))
           .groupBy(transactions.type)
-          .orderBy(desc(valueExpr));
+          .orderBy(desc(valueExpr))
+          .limit(limit);
         const typeLabels: Record<string, string> = {
           income: "Receita",
           expense: "Despesa",
@@ -101,7 +123,7 @@ export async function executeBreakdownQuery(
       }
     }
 
-    const total = rows.reduce((sum, item) => sum + item.value, 0);
+    const total = await computeTotal(db, teamId, config, start, end);
     return { data: rows, total };
   } catch (err) {
     propagateError(err);
