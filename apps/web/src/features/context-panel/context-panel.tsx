@@ -14,12 +14,6 @@ import {
    SidebarHeader,
    SidebarManager,
 } from "@packages/ui/components/sidebar";
-import {
-   Tooltip,
-   TooltipContent,
-   TooltipProvider,
-   TooltipTrigger,
-} from "@packages/ui/components/tooltip";
 import { cn } from "@packages/ui/lib/utils";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
@@ -119,28 +113,24 @@ function ContextPanelInner() {
       >
          <SidebarHeader className="bg-background rounded-t-xl">
             <div className="flex-row flex  items-center gap-2 ">
-               <TooltipProvider>
+               <>
                   {allTabs.map((tab) => (
-                     <Tooltip key={tab.id}>
-                        <TooltipTrigger asChild>
-                           <Button
-                              className={cn(
-                                 "size-7 rounded",
-                                 activeTabId === tab.id &&
-                                    "bg-accent text-accent-foreground",
-                              )}
-                              onClick={() => setActiveTab(tab.id)}
-                              size="icon"
-                              type="button"
-                              variant="ghost"
-                           >
-                              <tab.icon className="size-4" />
-                           </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">
-                           {tab.label}
-                        </TooltipContent>
-                     </Tooltip>
+                     <Button
+                        key={tab.id}
+                        className={cn(
+                           "size-7 rounded",
+                           activeTabId === tab.id &&
+                              "bg-accent text-accent-foreground",
+                        )}
+                        onClick={() => setActiveTab(tab.id)}
+                        size="icon"
+                        tooltip={tab.label}
+                        tooltipSide="bottom"
+                        type="button"
+                        variant="ghost"
+                     >
+                        <tab.icon className="size-4" />
+                     </Button>
                   ))}
                   <div className="flex-1" />
                   <Button
@@ -152,7 +142,7 @@ function ContextPanelInner() {
                   >
                      <X className="size-3.5" />
                   </Button>
-               </TooltipProvider>
+               </>
             </div>
          </SidebarHeader>
 
