@@ -8,6 +8,7 @@ import {
    ColorPickerOutput,
    ColorPickerSelection,
 } from "@packages/ui/components/color-picker";
+import { Combobox } from "@packages/ui/components/combobox";
 import {
    CredenzaBody,
    CredenzaDescription,
@@ -30,7 +31,7 @@ import {
 } from "@packages/ui/components/popover";
 import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import Color from "color";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
@@ -45,12 +46,17 @@ interface CreditCardFormProps {
       creditLimit: string;
       closingDay: number;
       dueDay: number;
+      bankAccountId?: string | null;
    };
    onSuccess: () => void;
 }
 
 export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
    const isCreate = mode === "create";
+
+   const { data: bankAccounts } = useSuspenseQuery(
+      orpc.bankAccounts.getAll.queryOptions({}),
+   );
 
    const createMutation = useMutation(
       orpc.creditCards.create.mutationOptions({
@@ -85,6 +91,7 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
          creditLimit: card?.creditLimit ?? "0",
          closingDay: card?.closingDay ?? 1,
          dueDay: card?.dueDay ?? 10,
+         bankAccountId: card?.bankAccountId ?? "",
       },
       onSubmit: async ({ value }) => {
          if (isCreate) {
@@ -94,14 +101,17 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                creditLimit: value.creditLimit,
                closingDay: value.closingDay,
                dueDay: value.dueDay,
+               bankAccountId: value.bankAccountId || null,
             });
          } else if (card) {
             updateMutation.mutate({
                id: card.id,
                name: value.name.trim(),
                color: value.color,
+               creditLimit: value.creditLimit,
                closingDay: value.closingDay,
                dueDay: value.dueDay,
+               bankAccountId: value.bankAccountId || null,
             });
          }
       },
@@ -222,22 +232,20 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                   )}
                </form.Field>
 
-               {isCreate && (
-                  <form.Field name="creditLimit">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>Limite de Crédito</FieldLabel>
-                           <MoneyInput
-                              onChange={(v) =>
-                                 field.handleChange(String(v ?? 0))
-                              }
-                              value={field.state.value}
-                              valueInCents={false}
-                           />
-                        </Field>
-                     )}
-                  </form.Field>
-               )}
+               <form.Field name="creditLimit">
+                  {(field) => (
+                     <Field>
+                        <FieldLabel>Limite de Crédito</FieldLabel>
+                        <MoneyInput
+                           onChange={(v) =>
+                              field.handleChange(String(v ?? 0))
+                           }
+                           value={field.state.value}
+                           valueInCents={false}
+                        />
+                     </Field>
+                  )}
+               </form.Field>
 
                <form.Field
                   name="closingDay"
@@ -309,6 +317,26 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                         </Field>
                      );
                   }}
+               </form.Field>
+
+               <form.Field name="bankAccountId">
+                  {(field) => (
+                     <Field>
+                        <FieldLabel>Conta Bancária Vinculada</FieldLabel>
+                        <Combobox
+                           className="w-full"
+                           emptyMessage="Nenhuma conta encontrada."
+                           onValueChange={(v) => field.handleChange(v || "")}
+                           options={bankAccounts.map((a) => ({
+                              value: a.id,
+                              label: a.name,
+                           }))}
+                           placeholder="Selecionar conta (opcional)..."
+                           searchPlaceholder="Buscar conta..."
+                           value={field.state.value}
+                        />
+                     </Field>
+                  )}
                </form.Field>
             </FieldGroup>
          </CredenzaBody>

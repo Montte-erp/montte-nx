@@ -19,6 +19,7 @@ const creditCardSchema = createInsertSchema(creditCards)
       creditLimit: true,
       closingDay: true,
       dueDay: true,
+      bankAccountId: true,
    })
    .extend({
       color: z
@@ -39,6 +40,7 @@ const creditCardSchema = createInsertSchema(creditCards)
          .min(1, "Dia inválido.")
          .max(31, "Dia inválido."),
       dueDay: z.number().int().min(1, "Dia inválido.").max(31, "Dia inválido."),
+      bankAccountId: z.string().uuid().nullable().optional(),
    });
 
 export const create = protectedProcedure

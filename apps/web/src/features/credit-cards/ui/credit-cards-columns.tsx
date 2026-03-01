@@ -13,6 +13,7 @@ export type CreditCardRow = {
    creditLimit: string;
    closingDay: number;
    dueDay: number;
+   bankAccountId?: string | null;
    createdAt: Date | string;
    updatedAt: Date | string;
 };

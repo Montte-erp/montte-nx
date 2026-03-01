@@ -40,6 +40,9 @@ export const Route = createFileRoute(
       context.queryClient.prefetchQuery(
          orpc.creditCards.getAll.queryOptions({}),
       );
+      context.queryClient.prefetchQuery(
+         orpc.bankAccounts.getAll.queryOptions({}),
+      );
    },
    component: CreditCardsPage,
 });
@@ -96,11 +99,13 @@ function CreditCardsList({ view }: CreditCardsListProps) {
       (card: CreditCardRow) => {
          openCredenza({
             children: (
-               <CreditCardForm
-                  card={card}
-                  mode="edit"
-                  onSuccess={closeCredenza}
-               />
+               <Suspense fallback={null}>
+                  <CreditCardForm
+                     card={card}
+                     mode="edit"
+                     onSuccess={closeCredenza}
+                  />
+               </Suspense>
             ),
          });
       },
@@ -263,7 +268,11 @@ function CreditCardsPage() {
 
    function handleCreate() {
       openCredenza({
-         children: <CreditCardForm mode="create" onSuccess={closeCredenza} />,
+         children: (
+            <Suspense fallback={null}>
+               <CreditCardForm mode="create" onSuccess={closeCredenza} />
+            </Suspense>
+         ),
       });
    }
 
