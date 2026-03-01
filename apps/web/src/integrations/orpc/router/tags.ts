@@ -4,6 +4,7 @@ import {
    deleteTag,
    getTag,
    listTags,
+   tagHasTransactions,
    updateTag,
 } from "@packages/database/repositories/tags-repository";
 import { tags } from "@packages/database/schemas/tags";
@@ -62,6 +63,23 @@ export const remove = protectedProcedure
       if (!tag || tag.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", { message: "Tag não encontrada." });
       }
+      const hasTransactions = await tagHasTransactions(db, input.id);
+      if (hasTransactions) {
+         throw new ORPCError("BAD_REQUEST", {
+            message: "Não é possível excluir uma tag com transações vinculadas. Arquive-a em vez disso.",
+         });
+      }
       await deleteTag(db, input.id);
       return { success: true };
+   });
+
+export const archive = protectedProcedure
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      const { db, teamId } = context;
+      const tag = await getTag(db, input.id);
+      if (!tag || tag.teamId !== teamId) {
+         throw new ORPCError("NOT_FOUND", { message: "Tag não encontrada." });
+      }
+      return updateTag(db, input.id, { isArchived: true });
    });
