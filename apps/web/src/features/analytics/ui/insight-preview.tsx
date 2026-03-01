@@ -1,3 +1,4 @@
+import { format, of } from "@f-o-t/money";
 import type {
    BreakdownResult,
    InsightConfig,
@@ -7,7 +8,6 @@ import type {
 } from "@packages/analytics/types";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { format, of } from "@f-o-t/money";
 import { AlertCircle } from "lucide-react";
 import { useMemo } from "react";
 import { orpc } from "@/integrations/orpc/client";
@@ -45,7 +45,13 @@ function isCurrencyAggregation(config: InsightConfig): boolean {
    return config.measure.aggregation !== "count";
 }
 
-function KpiPreview({ data, formatAsCurrency }: { data: KpiResult; formatAsCurrency: boolean }) {
+function KpiPreview({
+   data,
+   formatAsCurrency,
+}: {
+   data: KpiResult;
+   formatAsCurrency: boolean;
+}) {
    const trend = data.comparison
       ? {
            value: Math.abs(data.comparison.percentageChange),
@@ -56,7 +62,14 @@ function KpiPreview({ data, formatAsCurrency }: { data: KpiResult; formatAsCurre
         }
       : undefined;
 
-   return <TrendsNumberCard formatAsCurrency={formatAsCurrency} label="Total" trend={trend} value={data.value} />;
+   return (
+      <TrendsNumberCard
+         formatAsCurrency={formatAsCurrency}
+         label="Total"
+         trend={trend}
+         value={data.value}
+      />
+   );
 }
 
 function TimeSeriesPreview({
@@ -124,7 +137,13 @@ function TimeSeriesPreview({
    );
 }
 
-function BreakdownPreview({ data, valueFormatter }: { data: BreakdownResult; valueFormatter?: (value: number) => string }) {
+function BreakdownPreview({
+   data,
+   valueFormatter,
+}: {
+   data: BreakdownResult;
+   valueFormatter?: (value: number) => string;
+}) {
    const series = [{ key: "value", label: "Valor", color: "var(--chart-1)" }];
 
    const chartData = useMemo(
@@ -163,7 +182,10 @@ export function InsightPreview({ config }: InsightPreviewProps) {
       <div className="h-full">
          <div className="space-y-3">
             {config.type === "kpi" && (
-               <KpiPreview data={data as KpiResult} formatAsCurrency={formatAsCurrency} />
+               <KpiPreview
+                  data={data as KpiResult}
+                  formatAsCurrency={formatAsCurrency}
+               />
             )}
             {config.type === "time_series" && (
                <TimeSeriesPreview
@@ -173,7 +195,10 @@ export function InsightPreview({ config }: InsightPreviewProps) {
                />
             )}
             {config.type === "breakdown" && (
-               <BreakdownPreview data={data as BreakdownResult} valueFormatter={valueFormatter} />
+               <BreakdownPreview
+                  data={data as BreakdownResult}
+                  valueFormatter={valueFormatter}
+               />
             )}
          </div>
       </div>

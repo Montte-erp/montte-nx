@@ -36,8 +36,8 @@ import {
 } from "lucide-react";
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { orpc } from "@/integrations/orpc/client";
 import { useCredenza } from "@/hooks/use-credenza";
+import { orpc } from "@/integrations/orpc/client";
 import { InsightEditCredenza } from "./insight-edit-credenza";
 import { InsightPreview } from "./insight-preview";
 
@@ -187,12 +187,18 @@ function DashboardInsightContent({
    if (!parsed.success) {
       return (
          <TileErrorState
-            error={new Error("Configuração do insight inválida ou desatualizada")}
+            error={
+               new Error("Configuração do insight inválida ou desatualizada")
+            }
          />
       );
    }
 
-   const config = mergeGlobalFilters(parsed.data, globalFilters, globalDateRange);
+   const config = mergeGlobalFilters(
+      parsed.data,
+      globalFilters,
+      globalDateRange,
+   );
 
    return (
       <ErrorBoundary
@@ -354,9 +360,9 @@ export function DashboardTile({
                   <div className="flex items-start gap-2 min-w-0 flex-1">
                      {isEditing && (
                         <Button
+                           size="icon-sm"
                            type="button"
                            variant="ghost"
-                           size="icon-sm"
                            {...attributes}
                            {...listeners}
                         >
@@ -414,7 +420,11 @@ export function DashboardTile({
                               <DropdownMenuItem
                                  onClick={() =>
                                     openCredenza({
-                                       children: <InsightEditCredenza insightId={insightId} />,
+                                       children: (
+                                          <InsightEditCredenza
+                                             insightId={insightId}
+                                          />
+                                       ),
                                        className: "sm:max-w-4xl",
                                     })
                                  }

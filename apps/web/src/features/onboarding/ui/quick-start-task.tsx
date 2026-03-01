@@ -31,7 +31,9 @@ export function QuickStartTask({
 
       if (task.id === "connect_bank_account") {
          openCredenza({
-            children: <BankAccountForm mode="create" onSuccess={closeCredenza} />,
+            children: (
+               <BankAccountForm mode="create" onSuccess={closeCredenza} />
+            ),
          });
       } else if (task.id === "create_category") {
          openCredenza({
@@ -45,13 +47,7 @@ export function QuickStartTask({
          });
       }
       // explore tasks (create_insight) have no action
-   }, [
-      isLocked,
-      isCompleted,
-      task.id,
-      openCredenza,
-      closeCredenza,
-   ]);
+   }, [isLocked, isCompleted, task.id, openCredenza, closeCredenza]);
 
    const handleKeyDown = useCallback(
       (e: React.KeyboardEvent) => {

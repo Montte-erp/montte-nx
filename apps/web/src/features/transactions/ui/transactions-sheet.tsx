@@ -1,7 +1,7 @@
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
-import { Combobox } from "@packages/ui/components/combobox";
 import type { ComboboxOption } from "@packages/ui/components/combobox";
+import { Combobox } from "@packages/ui/components/combobox";
 import {
    CredenzaBody,
    CredenzaDescription,
@@ -500,7 +500,9 @@ function TransactionFormContent({
                      {(field) => (
                         <Field>
                            <FieldLabel>Contato</FieldLabel>
-                           <Suspense fallback={<Skeleton className="h-9 w-full" />}>
+                           <Suspense
+                              fallback={<Skeleton className="h-9 w-full" />}
+                           >
                               <ContactCombobox
                                  onChange={field.handleChange}
                                  value={field.state.value}

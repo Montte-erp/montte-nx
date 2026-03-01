@@ -71,7 +71,9 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
             onSuccess();
          },
          onError: (error) => {
-            toast.error(error.message || "Erro ao atualizar cartão de crédito.");
+            toast.error(
+               error.message || "Erro ao atualizar cartão de crédito.",
+            );
          },
       }),
    );
@@ -116,7 +118,9 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
       >
          <CredenzaHeader>
             <CredenzaTitle>
-               {isCreate ? "Novo Cartão de Crédito" : "Editar Cartão de Crédito"}
+               {isCreate
+                  ? "Novo Cartão de Crédito"
+                  : "Editar Cartão de Crédito"}
             </CredenzaTitle>
             <CredenzaDescription>
                {isCreate
@@ -142,12 +146,16 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                            <FieldLabel>Nome</FieldLabel>
                            <Input
                               onBlur={field.handleBlur}
-                              onChange={(e) => field.handleChange(e.target.value)}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
                               placeholder="Ex: Nubank, Itaú Visa"
                               value={field.state.value}
                            />
                            {isInvalid && (
-                              <FieldError errors={field.state.meta.errors as any} />
+                              <FieldError
+                                 errors={field.state.meta.errors as any}
+                              />
                            )}
                         </Field>
                      );
@@ -167,18 +175,27 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                               >
                                  <div
                                     className="w-4 h-4 rounded border border-border shrink-0"
-                                    style={{ backgroundColor: field.state.value }}
+                                    style={{
+                                       backgroundColor: field.state.value,
+                                    }}
                                  />
                                  {field.state.value}
                               </Button>
                            </PopoverTrigger>
-                           <PopoverContent align="start" className="rounded-md border bg-background">
+                           <PopoverContent
+                              align="start"
+                              className="rounded-md border bg-background"
+                           >
                               <ColorPicker
                                  className="flex flex-col gap-4"
                                  onChange={(rgba) => {
                                     if (Array.isArray(rgba)) {
                                        field.handleChange(
-                                          Color.rgb(rgba[0], rgba[1], rgba[2]).hex(),
+                                          Color.rgb(
+                                             rgba[0],
+                                             rgba[1],
+                                             rgba[2],
+                                          ).hex(),
                                        );
                                     }
                                  }}
@@ -211,7 +228,9 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                         <Field>
                            <FieldLabel>Limite de Crédito</FieldLabel>
                            <MoneyInput
-                              onChange={(v) => field.handleChange(String(v ?? 0))}
+                              onChange={(v) =>
+                                 field.handleChange(String(v ?? 0))
+                              }
                               value={field.state.value}
                               valueInCents={false}
                            />
@@ -224,7 +243,9 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                   name="closingDay"
                   validators={{
                      onBlur: ({ value }) =>
-                        value < 1 || value > 31 ? "Dia deve ser entre 1 e 31" : undefined,
+                        value < 1 || value > 31
+                           ? "Dia deve ser entre 1 e 31"
+                           : undefined,
                   }}
                >
                   {(field) => {
@@ -245,7 +266,9 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                               value={field.state.value}
                            />
                            {isInvalid && (
-                              <FieldError errors={field.state.meta.errors as any} />
+                              <FieldError
+                                 errors={field.state.meta.errors as any}
+                              />
                            )}
                         </Field>
                      );
@@ -256,7 +279,9 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                   name="dueDay"
                   validators={{
                      onBlur: ({ value }) =>
-                        value < 1 || value > 31 ? "Dia deve ser entre 1 e 31" : undefined,
+                        value < 1 || value > 31
+                           ? "Dia deve ser entre 1 e 31"
+                           : undefined,
                   }}
                >
                   {(field) => {
@@ -277,7 +302,9 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                               value={field.state.value}
                            />
                            {isInvalid && (
-                              <FieldError errors={field.state.meta.errors as any} />
+                              <FieldError
+                                 errors={field.state.meta.errors as any}
+                              />
                            )}
                         </Field>
                      );

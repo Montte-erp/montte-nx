@@ -1,15 +1,15 @@
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
-	Empty,
-	EmptyDescription,
-	EmptyHeader,
-	EmptyMedia,
-	EmptyTitle,
+   Empty,
+   EmptyDescription,
+   EmptyHeader,
+   EmptyMedia,
+   EmptyTitle,
 } from "@packages/ui/components/empty";
 import {
-	SelectionActionBar,
-	SelectionActionButton,
+   SelectionActionBar,
+   SelectionActionButton,
 } from "@packages/ui/components/selection-action-bar";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
@@ -20,13 +20,13 @@ import { Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import {
-	buildContactColumns,
-	type ContactRow,
+   buildContactColumns,
+   type ContactRow,
 } from "@/features/contacts/ui/contacts-columns";
 import { ContactForm } from "@/features/contacts/ui/contacts-form";
 import {
-	useViewSwitch,
-	type ViewConfig,
+   useViewSwitch,
+   type ViewConfig,
 } from "@/features/view-switch/hooks/use-view-switch";
 import { ViewSwitchDropdown } from "@/features/view-switch/ui/view-switch-dropdown";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -34,22 +34,20 @@ import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
-	"/_authenticated/$slug/$teamSlug/_dashboard/finance/contacts",
+   "/_authenticated/$slug/$teamSlug/_dashboard/finance/contacts",
 )({
-	loader: ({ context }) => {
-		context.queryClient.prefetchQuery(
-			orpc.contacts.getAll.queryOptions({}),
-		);
-	},
-	component: ContactsPage,
+   loader: ({ context }) => {
+      context.queryClient.prefetchQuery(orpc.contacts.getAll.queryOptions({}));
+   },
+   component: ContactsPage,
 });
 
 const CONTACT_VIEWS: [
-	ViewConfig<"table" | "card">,
-	ViewConfig<"table" | "card">,
+   ViewConfig<"table" | "card">,
+   ViewConfig<"table" | "card">,
 ] = [
-	{ id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
-	{ id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
+   { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
+   { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
 ];
 
 // =============================================================================
@@ -57,16 +55,13 @@ const CONTACT_VIEWS: [
 // =============================================================================
 
 function ContactsSkeleton() {
-	return (
-		<div className="space-y-3">
-			{Array.from({ length: 5 }).map((_, index) => (
-				<Skeleton
-					className="h-12 w-full"
-					key={`skeleton-${index + 1}`}
-				/>
-			))}
-		</div>
-	);
+   return (
+      <div className="space-y-3">
+         {Array.from({ length: 5 }).map((_, index) => (
+            <Skeleton className="h-12 w-full" key={`skeleton-${index + 1}`} />
+         ))}
+      </div>
+   );
 }
 
 // =============================================================================
@@ -76,10 +71,10 @@ function ContactsSkeleton() {
 type TypeFilter = "all" | "cliente" | "fornecedor" | "ambos";
 
 const TYPE_FILTER_LABELS: Record<TypeFilter, string> = {
-	all: "Todos",
-	cliente: "Clientes",
-	fornecedor: "Fornecedores",
-	ambos: "Ambos",
+   all: "Todos",
+   cliente: "Clientes",
+   fornecedor: "Fornecedores",
+   ambos: "Ambos",
 };
 
 // =============================================================================
@@ -87,205 +82,200 @@ const TYPE_FILTER_LABELS: Record<TypeFilter, string> = {
 // =============================================================================
 
 interface ContactsListProps {
-	view: "table" | "card";
-	typeFilter: TypeFilter;
+   view: "table" | "card";
+   typeFilter: TypeFilter;
 }
 
 function ContactsList({ view, typeFilter }: ContactsListProps) {
-	const { openCredenza, closeCredenza } = useCredenza();
-	const { openAlertDialog } = useAlertDialog();
-	const {
-		rowSelection,
-		onRowSelectionChange,
-		selectedCount,
-		selectedIds,
-		onClear,
-	} = useRowSelection();
+   const { openCredenza, closeCredenza } = useCredenza();
+   const { openAlertDialog } = useAlertDialog();
+   const {
+      rowSelection,
+      onRowSelectionChange,
+      selectedCount,
+      selectedIds,
+      onClear,
+   } = useRowSelection();
 
-	const { data: contacts } = useSuspenseQuery(
-		orpc.contacts.getAll.queryOptions({
-			input:
-				typeFilter !== "all"
-					? { type: typeFilter }
-					: {},
-		}),
-	);
+   const { data: contacts } = useSuspenseQuery(
+      orpc.contacts.getAll.queryOptions({
+         input: typeFilter !== "all" ? { type: typeFilter } : {},
+      }),
+   );
 
-	const deleteMutation = useMutation(
-		orpc.contacts.remove.mutationOptions({
-			onSuccess: () => {
-				toast.success("Contato excluído com sucesso.");
-			},
-			onError: (error) => {
-				toast.error(error.message || "Erro ao excluir contato.");
-			},
-		}),
-	);
+   const deleteMutation = useMutation(
+      orpc.contacts.remove.mutationOptions({
+         onSuccess: () => {
+            toast.success("Contato excluído com sucesso.");
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao excluir contato.");
+         },
+      }),
+   );
 
-	const handleEdit = useCallback(
-		(contact: ContactRow) => {
-			openCredenza({
-				children: (
-					<ContactForm
-						contact={contact}
-						mode="edit"
-						onSuccess={closeCredenza}
-					/>
-				),
-			});
-		},
-		[openCredenza, closeCredenza],
-	);
+   const handleEdit = useCallback(
+      (contact: ContactRow) => {
+         openCredenza({
+            children: (
+               <ContactForm
+                  contact={contact}
+                  mode="edit"
+                  onSuccess={closeCredenza}
+               />
+            ),
+         });
+      },
+      [openCredenza, closeCredenza],
+   );
 
-	const handleDelete = useCallback(
-		(contact: ContactRow) => {
-			openAlertDialog({
-				title: "Excluir contato",
-				description: `Tem certeza que deseja excluir "${contact.name}"? Esta ação não pode ser desfeita.`,
-				actionLabel: "Excluir",
-				cancelLabel: "Cancelar",
-				variant: "destructive",
-				onAction: async () => {
-					await deleteMutation.mutateAsync({ id: contact.id });
-				},
-			});
-		},
-		[openAlertDialog, deleteMutation],
-	);
+   const handleDelete = useCallback(
+      (contact: ContactRow) => {
+         openAlertDialog({
+            title: "Excluir contato",
+            description: `Tem certeza que deseja excluir "${contact.name}"? Esta ação não pode ser desfeita.`,
+            actionLabel: "Excluir",
+            cancelLabel: "Cancelar",
+            variant: "destructive",
+            onAction: async () => {
+               await deleteMutation.mutateAsync({ id: contact.id });
+            },
+         });
+      },
+      [openAlertDialog, deleteMutation],
+   );
 
-	const handleBulkDelete = useCallback(() => {
-		openAlertDialog({
-			title: `Excluir ${selectedCount} ${selectedCount === 1 ? "contato" : "contatos"}`,
-			description:
-				"Tem certeza que deseja excluir os contatos selecionados? Esta ação não pode ser desfeita.",
-			actionLabel: "Excluir",
-			cancelLabel: "Cancelar",
-			variant: "destructive",
-			onAction: async () => {
-				await Promise.all(
-					selectedIds.map((id) =>
-						deleteMutation.mutateAsync({ id }),
-					),
-				);
-				onClear();
-			},
-		});
-	}, [openAlertDialog, selectedCount, selectedIds, deleteMutation, onClear]);
+   const handleBulkDelete = useCallback(() => {
+      openAlertDialog({
+         title: `Excluir ${selectedCount} ${selectedCount === 1 ? "contato" : "contatos"}`,
+         description:
+            "Tem certeza que deseja excluir os contatos selecionados? Esta ação não pode ser desfeita.",
+         actionLabel: "Excluir",
+         cancelLabel: "Cancelar",
+         variant: "destructive",
+         onAction: async () => {
+            await Promise.all(
+               selectedIds.map((id) => deleteMutation.mutateAsync({ id })),
+            );
+            onClear();
+         },
+      });
+   }, [openAlertDialog, selectedCount, selectedIds, deleteMutation, onClear]);
 
-	if (contacts.length === 0) {
-		return (
-			<Empty>
-				<EmptyHeader>
-					<EmptyMedia variant="icon">
-						<Users className="size-6" />
-					</EmptyMedia>
-					<EmptyTitle>Nenhum contato</EmptyTitle>
-					<EmptyDescription>
-						Cadastre clientes e fornecedores para organizar suas
-						transações.
-					</EmptyDescription>
-				</EmptyHeader>
-			</Empty>
-		);
-	}
+   if (contacts.length === 0) {
+      return (
+         <Empty>
+            <EmptyHeader>
+               <EmptyMedia variant="icon">
+                  <Users className="size-6" />
+               </EmptyMedia>
+               <EmptyTitle>Nenhum contato</EmptyTitle>
+               <EmptyDescription>
+                  Cadastre clientes e fornecedores para organizar suas
+                  transações.
+               </EmptyDescription>
+            </EmptyHeader>
+         </Empty>
+      );
+   }
 
-	if (view === "card") {
-		return (
-			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-				{contacts.map((contact) => (
-					<div
-						className="rounded-lg border bg-background p-4 space-y-2"
-						key={contact.id}
-					>
-						<div className="flex items-start justify-between gap-2">
-							<div className="min-w-0">
-								<p className="font-medium truncate">{contact.name}</p>
-								{contact.email && (
-									<p className="text-sm text-muted-foreground truncate">
-										{contact.email}
-									</p>
-								)}
-								{contact.document && (
-									<p className="text-xs text-muted-foreground">
-										{contact.documentType?.toUpperCase()}{" "}
-										{contact.document}
-									</p>
-								)}
-							</div>
-						</div>
-						<div className="flex items-center gap-2">
-							<Button
-								onClick={() => handleEdit(contact as ContactRow)}
-								size="sm"
-								variant="outline"
-							>
-								Editar
-							</Button>
-							<Button
-								className="text-destructive"
-								onClick={() => handleDelete(contact as ContactRow)}
-								size="sm"
-								variant="ghost"
-							>
-								Excluir
-							</Button>
-						</div>
-					</div>
-				))}
-			</div>
-		);
-	}
+   if (view === "card") {
+      return (
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {contacts.map((contact) => (
+               <div
+                  className="rounded-lg border bg-background p-4 space-y-2"
+                  key={contact.id}
+               >
+                  <div className="flex items-start justify-between gap-2">
+                     <div className="min-w-0">
+                        <p className="font-medium truncate">{contact.name}</p>
+                        {contact.email && (
+                           <p className="text-sm text-muted-foreground truncate">
+                              {contact.email}
+                           </p>
+                        )}
+                        {contact.document && (
+                           <p className="text-xs text-muted-foreground">
+                              {contact.documentType?.toUpperCase()}{" "}
+                              {contact.document}
+                           </p>
+                        )}
+                     </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                     <Button
+                        onClick={() => handleEdit(contact as ContactRow)}
+                        size="sm"
+                        variant="outline"
+                     >
+                        Editar
+                     </Button>
+                     <Button
+                        className="text-destructive"
+                        onClick={() => handleDelete(contact as ContactRow)}
+                        size="sm"
+                        variant="ghost"
+                     >
+                        Excluir
+                     </Button>
+                  </div>
+               </div>
+            ))}
+         </div>
+      );
+   }
 
-	const columns = buildContactColumns(handleEdit, handleDelete);
+   const columns = buildContactColumns(handleEdit, handleDelete);
 
-	return (
-		<>
-			<DataTable
-				columns={columns}
-				data={contacts as ContactRow[]}
-				enableRowSelection
-				getRowId={(row) => row.id}
-				onRowSelectionChange={onRowSelectionChange}
-				renderMobileCard={({ row }) => (
-					<div className="rounded-lg border bg-background p-4 space-y-2">
-						<p className="font-medium">{row.original.name}</p>
-						{row.original.email && (
-							<p className="text-sm text-muted-foreground">
-								{row.original.email}
-							</p>
-						)}
-						<div className="flex items-center gap-2">
-							<Button
-								onClick={() => handleEdit(row.original)}
-								size="sm"
-								variant="outline"
-							>
-								Editar
-							</Button>
-							<Button
-								className="text-destructive"
-								onClick={() => handleDelete(row.original)}
-								size="sm"
-								variant="ghost"
-							>
-								Excluir
-							</Button>
-						</div>
-					</div>
-				)}
-				rowSelection={rowSelection}
-			/>
-			<SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
-				<SelectionActionButton
-					icon={<Trash2 className="size-3.5" />}
-					onClick={handleBulkDelete}
-					variant="destructive"
-				>
-					Excluir
-				</SelectionActionButton>
-			</SelectionActionBar>
-		</>
-	);
+   return (
+      <>
+         <DataTable
+            columns={columns}
+            data={contacts as ContactRow[]}
+            enableRowSelection
+            getRowId={(row) => row.id}
+            onRowSelectionChange={onRowSelectionChange}
+            renderMobileCard={({ row }) => (
+               <div className="rounded-lg border bg-background p-4 space-y-2">
+                  <p className="font-medium">{row.original.name}</p>
+                  {row.original.email && (
+                     <p className="text-sm text-muted-foreground">
+                        {row.original.email}
+                     </p>
+                  )}
+                  <div className="flex items-center gap-2">
+                     <Button
+                        onClick={() => handleEdit(row.original)}
+                        size="sm"
+                        variant="outline"
+                     >
+                        Editar
+                     </Button>
+                     <Button
+                        className="text-destructive"
+                        onClick={() => handleDelete(row.original)}
+                        size="sm"
+                        variant="ghost"
+                     >
+                        Excluir
+                     </Button>
+                  </div>
+               </div>
+            )}
+            rowSelection={rowSelection}
+         />
+         <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
+            <SelectionActionButton
+               icon={<Trash2 className="size-3.5" />}
+               onClick={handleBulkDelete}
+               variant="destructive"
+            >
+               Excluir
+            </SelectionActionButton>
+         </SelectionActionBar>
+      </>
+   );
 }
 
 // =============================================================================
@@ -293,58 +283,56 @@ function ContactsList({ view, typeFilter }: ContactsListProps) {
 // =============================================================================
 
 function ContactsPage() {
-	const { openCredenza, closeCredenza } = useCredenza();
-	const { currentView, setView, views } = useViewSwitch(
-		"finance:contacts:view",
-		CONTACT_VIEWS,
-	);
-	const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+   const { openCredenza, closeCredenza } = useCredenza();
+   const { currentView, setView, views } = useViewSwitch(
+      "finance:contacts:view",
+      CONTACT_VIEWS,
+   );
+   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
 
-	const handleCreate = useCallback(() => {
-		openCredenza({
-			children: (
-				<ContactForm mode="create" onSuccess={closeCredenza} />
-			),
-		});
-	}, [openCredenza, closeCredenza]);
+   const handleCreate = useCallback(() => {
+      openCredenza({
+         children: <ContactForm mode="create" onSuccess={closeCredenza} />,
+      });
+   }, [openCredenza, closeCredenza]);
 
-	return (
-		<main className="flex flex-col gap-4">
-			<DefaultHeader
-				actions={
-					<Button onClick={handleCreate} size="sm">
-						<Plus className="size-4 mr-1" />
-						Novo Contato
-					</Button>
-				}
-				description="Gerencie clientes e fornecedores"
-				title="Contatos"
-				viewSwitch={
-					<ViewSwitchDropdown
-						currentView={currentView}
-						onViewChange={setView}
-						views={views}
-					/>
-				}
-			/>
+   return (
+      <main className="flex flex-col gap-4">
+         <DefaultHeader
+            actions={
+               <Button onClick={handleCreate} size="sm">
+                  <Plus className="size-4 mr-1" />
+                  Novo Contato
+               </Button>
+            }
+            description="Gerencie clientes e fornecedores"
+            title="Contatos"
+            viewSwitch={
+               <ViewSwitchDropdown
+                  currentView={currentView}
+                  onViewChange={setView}
+                  views={views}
+               />
+            }
+         />
 
-			{/* Type filter tabs */}
-			<div className="flex gap-2 flex-wrap">
-				{(Object.keys(TYPE_FILTER_LABELS) as TypeFilter[]).map((key) => (
-					<Button
-						key={key}
-						onClick={() => setTypeFilter(key)}
-						size="sm"
-						variant={typeFilter === key ? "default" : "outline"}
-					>
-						{TYPE_FILTER_LABELS[key]}
-					</Button>
-				))}
-			</div>
+         {/* Type filter tabs */}
+         <div className="flex gap-2 flex-wrap">
+            {(Object.keys(TYPE_FILTER_LABELS) as TypeFilter[]).map((key) => (
+               <Button
+                  key={key}
+                  onClick={() => setTypeFilter(key)}
+                  size="sm"
+                  variant={typeFilter === key ? "default" : "outline"}
+               >
+                  {TYPE_FILTER_LABELS[key]}
+               </Button>
+            ))}
+         </div>
 
-			<Suspense fallback={<ContactsSkeleton />}>
-				<ContactsList typeFilter={typeFilter} view={currentView} />
-			</Suspense>
-		</main>
-	);
+         <Suspense fallback={<ContactsSkeleton />}>
+            <ContactsList typeFilter={typeFilter} view={currentView} />
+         </Suspense>
+      </main>
+   );
 }

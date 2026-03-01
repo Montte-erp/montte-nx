@@ -82,7 +82,9 @@ function TagsList({ view }: TagsListProps) {
    const handleEdit = useCallback(
       (tag: TagRow) => {
          openCredenza({
-            children: <TagForm mode="edit" onSuccess={closeCredenza} tag={tag} />,
+            children: (
+               <TagForm mode="edit" onSuccess={closeCredenza} tag={tag} />
+            ),
          });
       },
       [openCredenza, closeCredenza],

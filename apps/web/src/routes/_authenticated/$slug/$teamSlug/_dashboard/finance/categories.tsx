@@ -282,7 +282,10 @@ function CategoriesList({ view }: CategoriesListProps) {
                return (
                   <div className="flex flex-col gap-1 pl-10 py-1">
                      {subs.map((sub) => (
-                        <span className="text-sm text-muted-foreground" key={sub.id}>
+                        <span
+                           className="text-sm text-muted-foreground"
+                           key={sub.id}
+                        >
                            {sub.name}
                         </span>
                      ))}

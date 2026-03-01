@@ -20,8 +20,8 @@ import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import {
-   type CreditCardRow,
    buildCreditCardColumns,
+   type CreditCardRow,
 } from "@/features/credit-cards/ui/credit-cards-columns";
 import { CreditCardForm } from "@/features/credit-cards/ui/credit-cards-form";
 import {
@@ -96,7 +96,11 @@ function CreditCardsList({ view }: CreditCardsListProps) {
       (card: CreditCardRow) => {
          openCredenza({
             children: (
-               <CreditCardForm card={card} mode="edit" onSuccess={closeCredenza} />
+               <CreditCardForm
+                  card={card}
+                  mode="edit"
+                  onSuccess={closeCredenza}
+               />
             ),
          });
       },
@@ -173,7 +177,11 @@ function CreditCardsList({ view }: CreditCardsListProps) {
                      Fecha dia {card.closingDay} · Vence dia {card.dueDay}
                   </p>
                   <div className="flex items-center gap-2">
-                     <Button onClick={() => handleEdit(card)} size="sm" variant="outline">
+                     <Button
+                        onClick={() => handleEdit(card)}
+                        size="sm"
+                        variant="outline"
+                     >
                         Editar
                      </Button>
                      <Button
@@ -209,10 +217,15 @@ function CreditCardsList({ view }: CreditCardsListProps) {
                      <p className="font-medium truncate">{row.original.name}</p>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                     Fecha dia {row.original.closingDay} · Vence dia {row.original.dueDay}
+                     Fecha dia {row.original.closingDay} · Vence dia{" "}
+                     {row.original.dueDay}
                   </p>
                   <div className="flex items-center gap-2">
-                     <Button onClick={() => handleEdit(row.original)} size="sm" variant="outline">
+                     <Button
+                        onClick={() => handleEdit(row.original)}
+                        size="sm"
+                        variant="outline"
+                     >
                         Editar
                      </Button>
                      <Button

@@ -1,9 +1,7 @@
 import { generateFromObjects } from "@f-o-t/csv";
-import {
-   generateBankStatement,
-   generateCreditCardStatement,
-} from "@f-o-t/ofx";
+import { generateBankStatement, generateCreditCardStatement } from "@f-o-t/ofx";
 import { Button } from "@packages/ui/components/button";
+import { Combobox } from "@packages/ui/components/combobox";
 import {
    CredenzaBody,
    CredenzaFooter,
@@ -11,20 +9,14 @@ import {
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
 import { DatePicker } from "@packages/ui/components/date-picker";
-import {
-   Field,
-   FieldGroup,
-   FieldLabel,
-} from "@packages/ui/components/field";
-import { Combobox } from "@packages/ui/components/combobox";
+import { Field, FieldGroup, FieldLabel } from "@packages/ui/components/field";
+import { Spinner } from "@packages/ui/components/spinner";
 import {
    ToggleGroup,
    ToggleGroupItem,
 } from "@packages/ui/components/toggle-group";
-import { Spinner } from "@packages/ui/components/spinner";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { useQueryClient } from "@tanstack/react-query";
-import { Suspense, useTransition, useState } from "react";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { Suspense, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 
