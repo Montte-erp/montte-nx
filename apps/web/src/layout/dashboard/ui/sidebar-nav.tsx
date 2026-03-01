@@ -25,6 +25,7 @@ import {
    setActiveSection,
    useSidebarNav,
 } from "@/layout/dashboard/hooks/use-sidebar-nav";
+import { useSidebarVisibility } from "@/layout/dashboard/hooks/use-sidebar-visibility";
 import type {
    NavGroupDef,
    NavItemDef,
@@ -176,12 +177,13 @@ export function SidebarDefaultItems() {
    const { pathname } = useLocation();
    const navigate = useNavigate();
    const { isEnrolled } = useEarlyAccess();
+   const { isVisible } = useSidebarVisibility();
 
    const mainGroup = navGroups.find((g) => !g.label);
    const visibleMainItems = (mainGroup?.items ?? []).filter((item) => {
       if (!item.earlyAccessFlag) return true;
       return isEnrolled(item.earlyAccessFlag);
-   });
+   }).filter((item) => isVisible(item.id));
 
    const resolvedSlug = slug || pathname.split("/")[1] || "";
 
@@ -236,11 +238,12 @@ function NavGroup({
    onMainItemClick: () => void;
 }) {
    const { isEnrolled } = useEarlyAccess();
+   const { isVisible } = useSidebarVisibility();
 
    const visibleItems = group.items.filter((item) => {
       if (!item.earlyAccessFlag) return true;
       return isEnrolled(item.earlyAccessFlag);
-   });
+   }).filter((item) => isVisible(item.id));
 
    if (visibleItems.length === 0) return null;
 
