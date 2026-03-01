@@ -10,15 +10,20 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Tag, Trash2 } from "lucide-react";
+import { LayoutGrid, LayoutList, Plus, Tag, Trash2 } from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
-import { PageHeader } from "@/components/page-header";
+import { DefaultHeader } from "@/components/default-header";
 import {
 	type TagRow,
 	buildTagColumns,
 } from "@/features/tags/ui/tags-columns";
 import { TagSheet } from "@/features/tags/ui/tags-sheet";
+import {
+	type ViewConfig,
+	useViewSwitch,
+} from "@/features/view-switch/hooks/use-view-switch";
+import { ViewSwitchDropdown } from "@/features/view-switch/ui/view-switch-dropdown";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
@@ -26,6 +31,11 @@ import { orpc } from "@/integrations/orpc/client";
 export const Route = createFileRoute(
 	"/_authenticated/$slug/$teamSlug/_dashboard/finance/tags",
 )({ component: TagsPage });
+
+const TAG_VIEWS: [ViewConfig<"table" | "card">, ViewConfig<"table" | "card">] = [
+	{ id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
+	{ id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
+];
 
 // =============================================================================
 // Skeleton
@@ -48,7 +58,11 @@ function TagsSkeleton() {
 // List
 // =============================================================================
 
-function TagsList() {
+interface TagsListProps {
+	view: "table" | "card";
+}
+
+function TagsList({ view }: TagsListProps) {
 	const { openSheet, closeSheet } = useSheet();
 	const { openAlertDialog } = useAlertDialog();
 
@@ -98,8 +112,6 @@ function TagsList() {
 		[openAlertDialog, deleteMutation],
 	);
 
-	const columns = buildTagColumns(handleEdit, handleDelete);
-
 	if (tags.length === 0) {
 		return (
 			<Empty>
@@ -115,6 +127,46 @@ function TagsList() {
 			</Empty>
 		);
 	}
+
+	if (view === "card") {
+		return (
+			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+				{tags.map((tag) => (
+					<div
+						className="rounded-lg border bg-background p-4 space-y-3"
+						key={tag.id}
+					>
+						<div className="flex items-center gap-2 min-w-0">
+							<span
+								className="size-3 rounded-full shrink-0"
+								style={{ backgroundColor: tag.color }}
+							/>
+							<p className="font-medium truncate">{tag.name}</p>
+						</div>
+						<div className="flex items-center gap-2">
+							<Button
+								onClick={() => handleEdit(tag)}
+								size="sm"
+								variant="outline"
+							>
+								Editar
+							</Button>
+							<Button
+								className="text-destructive"
+								onClick={() => handleDelete(tag)}
+								size="sm"
+								variant="ghost"
+							>
+								Excluir
+							</Button>
+						</div>
+					</div>
+				))}
+			</div>
+		);
+	}
+
+	const columns = buildTagColumns(handleEdit, handleDelete);
 
 	return (
 		<DataTable
@@ -171,6 +223,10 @@ function TagsList() {
 
 function TagsPage() {
 	const { openSheet, closeSheet } = useSheet();
+	const { currentView, setView, views } = useViewSwitch(
+		"finance:tags:view",
+		TAG_VIEWS,
+	);
 
 	const handleCreate = useCallback(() => {
 		openSheet({
@@ -180,7 +236,7 @@ function TagsPage() {
 
 	return (
 		<main className="flex flex-col gap-4">
-			<PageHeader
+			<DefaultHeader
 				actions={
 					<Button onClick={handleCreate} size="sm">
 						<Plus className="size-4 mr-1" />
@@ -189,9 +245,10 @@ function TagsPage() {
 				}
 				description="Gerencie suas tags para categorizar transações"
 				title="Tags"
+				viewSwitch={<ViewSwitchDropdown currentView={currentView} onViewChange={setView} views={views} />}
 			/>
 			<Suspense fallback={<TagsSkeleton />}>
-				<TagsList />
+				<TagsList view={currentView} />
 			</Suspense>
 		</main>
 	);
