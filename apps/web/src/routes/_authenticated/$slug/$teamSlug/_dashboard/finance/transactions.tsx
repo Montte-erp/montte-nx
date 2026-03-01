@@ -1,4 +1,12 @@
 import { Button } from "@packages/ui/components/button";
+import { Combobox } from "@packages/ui/components/combobox";
+import {
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { DataTable } from "@packages/ui/components/data-table";
 import { DateRangePicker } from "@packages/ui/components/date-range-picker";
 import {
@@ -14,29 +22,50 @@ import {
    PopoverContent,
    PopoverTrigger,
 } from "@packages/ui/components/popover";
+import {
+   SelectionActionBar,
+   SelectionActionButton,
+} from "@packages/ui/components/selection-action-bar";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import {
    ToggleGroup,
    ToggleGroupItem,
 } from "@packages/ui/components/toggle-group";
+import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
    ArrowLeftRight,
+   ArrowRight,
    Calendar,
+   Download,
+   FolderOpen,
+   Landmark,
    LayoutGrid,
    LayoutList,
+   Loader2,
    Plus,
    Search,
+   Trash2,
+   Upload,
    X,
 } from "lucide-react";
-import { Suspense, useCallback, useMemo, useRef, useState } from "react";
+import {
+   Suspense,
+   useCallback,
+   useMemo,
+   useRef,
+   useState,
+   useTransition,
+} from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import {
    buildTransactionColumns,
    type TransactionRow,
 } from "@/features/transactions/ui/transactions-columns";
+import { TransactionExportCredenza } from "@/features/transactions/ui/transaction-export-credenza";
+import { TransactionImportCredenza } from "@/features/transactions/ui/transaction-import-credenza";
 import { TransactionSheet } from "@/features/transactions/ui/transactions-sheet";
 import type { ViewConfig } from "@/features/view-switch/hooks/use-view-switch";
 import { useViewSwitch } from "@/features/view-switch/hooks/use-view-switch";
@@ -72,6 +101,159 @@ const TRANSACTION_VIEWS: [
    { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
    { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
 ];
+
+// =============================================================================
+// Bulk action forms
+// =============================================================================
+
+function BulkCategorizeForm({
+   selectedCount,
+   onApply,
+   onCancel,
+}: {
+   selectedCount: number;
+   onApply: (categoryId: string) => Promise<void>;
+   onCancel: () => void;
+}) {
+   const [categoryId, setCategoryId] = useState<string | undefined>();
+   const [isPending, startTransition] = useTransition();
+   const { data: categories } = useSuspenseQuery(
+      orpc.categories.getAll.queryOptions({}),
+   );
+
+   return (
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Categorizar transações</CredenzaTitle>
+            <CredenzaDescription>
+               Aplicar categoria a {selectedCount}{" "}
+               {selectedCount === 1 ? "transação" : "transações"}
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <CredenzaBody>
+            <Combobox
+               emptyMessage="Nenhuma categoria encontrada."
+               onValueChange={setCategoryId}
+               options={categories.map((c) => ({ value: c.id, label: c.name }))}
+               placeholder="Selecionar categoria..."
+               searchPlaceholder="Buscar categoria..."
+               value={categoryId}
+            />
+         </CredenzaBody>
+         <CredenzaFooter className="flex-col gap-2">
+            <Button
+               className="w-full"
+               disabled={isPending}
+               onClick={onCancel}
+               size="sm"
+               variant="outline"
+            >
+               Cancelar
+            </Button>
+            <Button
+               className="w-full"
+               disabled={!categoryId || isPending}
+               onClick={() =>
+                  startTransition(async () => {
+                     await onApply(categoryId!);
+                  })
+               }
+               size="sm"
+            >
+               {isPending && <Loader2 className="size-4 mr-1 animate-spin" />}
+               Aplicar
+            </Button>
+         </CredenzaFooter>
+      </>
+   );
+}
+
+function BulkMoveAccountForm({
+   bankAccounts,
+   selectedCount,
+   onApply,
+   onCancel,
+}: {
+   bankAccounts: Array<{ id: string; name: string }>;
+   selectedCount: number;
+   onApply: (
+      bankAccountId: string,
+      destinationBankAccountId: string,
+   ) => Promise<void>;
+   onCancel: () => void;
+}) {
+   const [bankAccountId, setBankAccountId] = useState<string | undefined>();
+   const [destinationBankAccountId, setDestinationBankAccountId] = useState<
+      string | undefined
+   >();
+   const [isPending, startTransition] = useTransition();
+   const options = bankAccounts.map((a) => ({ value: a.id, label: a.name }));
+
+   return (
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Transferir transações</CredenzaTitle>
+            <CredenzaDescription>
+               Converter {selectedCount}{" "}
+               {selectedCount === 1 ? "transação" : "transações"} em
+               transferências entre contas
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <CredenzaBody className="flex items-end gap-2">
+            <div className="flex-1 space-y-2">
+               <p className="text-sm font-medium">Conta de Origem</p>
+               <Combobox
+                  emptyMessage="Nenhuma conta encontrada."
+                  onValueChange={setBankAccountId}
+                  options={options}
+                  placeholder="Origem..."
+                  searchPlaceholder="Buscar conta..."
+                  value={bankAccountId}
+               />
+            </div>
+            <ArrowRight className="size-4 mb-[18px] shrink-0 text-muted-foreground" />
+            <div className="flex-1 space-y-2">
+               <p className="text-sm font-medium">Conta de Destino</p>
+               <Combobox
+                  emptyMessage="Nenhuma conta encontrada."
+                  onValueChange={setDestinationBankAccountId}
+                  options={options}
+                  placeholder="Destino..."
+                  searchPlaceholder="Buscar conta..."
+                  value={destinationBankAccountId}
+               />
+            </div>
+         </CredenzaBody>
+         <CredenzaFooter className="grid gap-2 w-full">
+            <Button
+               className="w-full"
+               disabled={isPending}
+               onClick={onCancel}
+               variant="outline"
+            >
+               Cancelar
+            </Button>
+            <Button
+               className="w-full"
+               disabled={
+                  !bankAccountId || !destinationBankAccountId || isPending
+               }
+               onClick={() =>
+                  startTransition(async () => {
+                     await onApply(
+                        bankAccountId ?? "",
+                        destinationBankAccountId ?? "",
+                     );
+                  })
+               }
+            >
+               {isPending && <Loader2 className="size-4 mr-1 animate-spin" />}
+               Aplicar
+            </Button>
+         </CredenzaFooter>
+      </>
+   );
+}
 
 // =============================================================================
 // Filters
@@ -360,6 +542,13 @@ function TransactionsList({
 }: TransactionsListProps) {
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
+   const {
+      rowSelection,
+      onRowSelectionChange,
+      selectedCount,
+      selectedIds,
+      onClear,
+   } = useRowSelection();
 
    const { data: result } = useSuspenseQuery(
       orpc.transactions.getAll.queryOptions({
@@ -386,6 +575,18 @@ function TransactionsList({
             toast.error(error.message || "Erro ao excluir transação.");
          },
       }),
+   );
+
+   const updateMutation = useMutation(
+      orpc.transactions.update.mutationOptions({
+         onError: (error) => {
+            toast.error(error.message || "Erro ao atualizar transações.");
+         },
+      }),
+   );
+
+   const { data: bankAccounts } = useSuspenseQuery(
+      orpc.bankAccounts.getAll.queryOptions({}),
    );
 
    const handleEdit = useCallback(
@@ -419,6 +620,90 @@ function TransactionsList({
       },
       [openAlertDialog, deleteMutation],
    );
+
+   const handleBulkDelete = useCallback(() => {
+      openAlertDialog({
+         title: `Excluir ${selectedCount} ${selectedCount === 1 ? "transação" : "transações"}`,
+         description:
+            "Tem certeza que deseja excluir as transações selecionadas? Esta ação não pode ser desfeita.",
+         actionLabel: "Excluir",
+         cancelLabel: "Cancelar",
+         variant: "destructive",
+         onAction: async () => {
+            await Promise.all(
+               selectedIds.map((id) => deleteMutation.mutateAsync({ id })),
+            );
+            onClear();
+         },
+      });
+   }, [openAlertDialog, selectedCount, selectedIds, deleteMutation, onClear]);
+
+   const handleBulkCategorize = useCallback(() => {
+      openCredenza({
+         children: (
+            <BulkCategorizeForm
+               onApply={async (categoryId) => {
+                  await Promise.all(
+                     selectedIds.map((id) =>
+                        updateMutation.mutateAsync({ id, categoryId }),
+                     ),
+                  );
+                  onClear();
+                  closeCredenza();
+                  toast.success(
+                     `${selectedCount} ${selectedCount === 1 ? "transação categorizada" : "transações categorizadas"}.`,
+                  );
+               }}
+               onCancel={closeCredenza}
+               selectedCount={selectedCount}
+            />
+         ),
+      });
+   }, [
+      openCredenza,
+      closeCredenza,
+      selectedCount,
+      selectedIds,
+      updateMutation,
+      onClear,
+   ]);
+
+   const handleBulkMoveAccount = useCallback(() => {
+      openCredenza({
+         children: (
+            <BulkMoveAccountForm
+               bankAccounts={bankAccounts}
+               onApply={async (bankAccountId, destinationBankAccountId) => {
+                  await Promise.all(
+                     selectedIds.map((id) =>
+                        updateMutation.mutateAsync({
+                           id,
+                           type: "transfer",
+                           bankAccountId,
+                           destinationBankAccountId,
+                        }),
+                     ),
+                  );
+                  onClear();
+                  closeCredenza();
+                  toast.success(
+                     `${selectedCount} ${selectedCount === 1 ? "transação convertida" : "transações convertidas"} em transferências.`,
+                  );
+               }}
+               onCancel={closeCredenza}
+               selectedCount={selectedCount}
+            />
+         ),
+      });
+   }, [
+      openCredenza,
+      closeCredenza,
+      bankAccounts,
+      selectedCount,
+      selectedIds,
+      updateMutation,
+      onClear,
+   ]);
 
    const columns = useMemo(
       () => buildTransactionColumns(handleEdit, handleDelete),
@@ -485,52 +770,78 @@ function TransactionsList({
    }
 
    return (
-      <DataTable
-         columns={columns}
-         data={transactionData}
-         getRowId={(row) => row.id}
-         pagination={{
-            currentPage: filters.page,
-            onPageChange,
-            onPageSizeChange,
-            pageSize: filters.pageSize,
-            totalCount: result.total,
-            totalPages,
-         }}
-         renderMobileCard={({ row }) => (
-            <div className="rounded-lg border bg-background p-4 space-y-3">
-               <div className="flex items-start justify-between gap-2">
-                  <div className="flex flex-col gap-1 min-w-0">
-                     <p className="text-sm font-medium tabular-nums">
-                        {row.original.date.split("-").reverse().join("/")}
-                     </p>
-                     {(row.original.name || row.original.description) && (
-                        <p className="text-xs text-muted-foreground truncate">
-                           {row.original.name || row.original.description}
+      <>
+         <DataTable
+            columns={columns}
+            data={transactionData}
+            enableRowSelection
+            getRowId={(row) => row.id}
+            onRowSelectionChange={onRowSelectionChange}
+            pagination={{
+               currentPage: filters.page,
+               onPageChange,
+               onPageSizeChange,
+               pageSize: filters.pageSize,
+               totalCount: result.total,
+               totalPages,
+            }}
+            renderMobileCard={({ row }) => (
+               <div className="rounded-lg border bg-background p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                     <div className="flex flex-col gap-1 min-w-0">
+                        <p className="text-sm font-medium tabular-nums">
+                           {row.original.date.split("-").reverse().join("/")}
                         </p>
-                     )}
+                        {(row.original.name || row.original.description) && (
+                           <p className="text-xs text-muted-foreground truncate">
+                              {row.original.name || row.original.description}
+                           </p>
+                        )}
+                     </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                     <Button
+                        onClick={() => handleEdit(row.original)}
+                        size="sm"
+                        variant="outline"
+                     >
+                        Editar
+                     </Button>
+                     <Button
+                        className="text-destructive"
+                        onClick={() => handleDelete(row.original)}
+                        size="sm"
+                        variant="ghost"
+                     >
+                        Excluir
+                     </Button>
                   </div>
                </div>
-               <div className="flex items-center gap-2">
-                  <Button
-                     onClick={() => handleEdit(row.original)}
-                     size="sm"
-                     variant="outline"
-                  >
-                     Editar
-                  </Button>
-                  <Button
-                     className="text-destructive"
-                     onClick={() => handleDelete(row.original)}
-                     size="sm"
-                     variant="ghost"
-                  >
-                     Excluir
-                  </Button>
-               </div>
-            </div>
-         )}
-      />
+            )}
+            rowSelection={rowSelection}
+         />
+         <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
+            <SelectionActionButton
+               icon={<FolderOpen className="size-3.5" />}
+               onClick={handleBulkCategorize}
+            >
+               Categorizar
+            </SelectionActionButton>
+            <SelectionActionButton
+               icon={<Landmark className="size-3.5" />}
+               onClick={handleBulkMoveAccount}
+            >
+               Mover conta
+            </SelectionActionButton>
+            <SelectionActionButton
+               icon={<Trash2 className="size-3.5" />}
+               onClick={handleBulkDelete}
+               variant="destructive"
+            >
+               Excluir
+            </SelectionActionButton>
+         </SelectionActionBar>
+      </>
    );
 }
 
@@ -556,10 +867,41 @@ function TransactionsPage() {
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
-               <Button onClick={handleCreate} size="sm">
-                  <Plus className="size-4 mr-1" />
-                  Nova Transação
-               </Button>
+               <div className="flex items-center gap-2">
+                  <Button
+                     onClick={() =>
+                        openCredenza({
+                           children: <TransactionImportCredenza />,
+                        })
+                     }
+                     size="sm"
+                     variant="outline"
+                  >
+                     <Upload className="size-4 mr-1" />
+                     Importar
+                  </Button>
+                  <Button
+                     onClick={() =>
+                        openCredenza({
+                           children: (
+                              <TransactionExportCredenza
+                                 dateFrom={filters.dateFrom}
+                                 dateTo={filters.dateTo}
+                              />
+                           ),
+                        })
+                     }
+                     size="sm"
+                     variant="outline"
+                  >
+                     <Download className="size-4 mr-1" />
+                     Exportar
+                  </Button>
+                  <Button onClick={handleCreate} size="sm">
+                     <Plus className="size-4 mr-1" />
+                     Nova Transação
+                  </Button>
+               </div>
             }
             description="Gerencie suas receitas, despesas e transferências"
             title="Transações"
