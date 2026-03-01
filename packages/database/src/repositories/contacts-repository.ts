@@ -5,8 +5,8 @@ import {
    type ContactType,
    type NewContact,
    contacts,
+   transactions,
 } from "../schema";
-import { transactions } from "../schema";
 
 export async function createContact(db: DatabaseInstance, data: NewContact) {
    try {
