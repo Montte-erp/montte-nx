@@ -12,12 +12,7 @@ import {
    ItemTitle,
 } from "@packages/ui/components/item";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import {
-   Tooltip,
-   TooltipContent,
-   TooltipProvider,
-   TooltipTrigger,
-} from "@packages/ui/components/tooltip";
+import { TooltipProvider } from "@packages/ui/components/tooltip";
 import {
    useMutation,
    useQueryClient,
@@ -318,39 +313,27 @@ function ProjectGeneralContent() {
                      </ItemContent>
                      <ItemActions className="flex gap-1">
                         {publicKeyData.publicApiKey && (
-                           <Tooltip>
-                              <TooltipTrigger asChild>
-                                 <Button
-                                    onClick={handleCopyApiKey}
-                                    size="icon"
-                                    variant="ghost"
-                                 >
-                                    {apiKeyCopied ? (
-                                       <Check className="size-4" />
-                                    ) : (
-                                       <Copy className="size-4" />
-                                    )}
-                                 </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                 {apiKeyCopied
-                                    ? "Copiado!"
-                                    : "Copiar chave de API"}
-                              </TooltipContent>
-                           </Tooltip>
+                           <Button
+                              onClick={handleCopyApiKey}
+                              size="icon"
+                              tooltip={apiKeyCopied ? "Copiado!" : "Copiar chave de API"}
+                              variant="ghost"
+                           >
+                              {apiKeyCopied ? (
+                                 <Check className="size-4" />
+                              ) : (
+                                 <Copy className="size-4" />
+                              )}
+                           </Button>
                         )}
-                        <Tooltip>
-                           <TooltipTrigger asChild>
-                              <Button
-                                 onClick={handleRegenerateApiKey}
-                                 size="icon"
-                                 variant="ghost"
-                              >
-                                 <RefreshCw className="size-4" />
-                              </Button>
-                           </TooltipTrigger>
-                           <TooltipContent>Regenerar chave</TooltipContent>
-                        </Tooltip>
+                        <Button
+                           onClick={handleRegenerateApiKey}
+                           size="icon"
+                           tooltip="Regenerar chave"
+                           variant="ghost"
+                        >
+                           <RefreshCw className="size-4" />
+                        </Button>
                      </ItemActions>
                   </Item>
                </ItemGroup>
