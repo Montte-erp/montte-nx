@@ -179,7 +179,22 @@ function TransactionFormContent({
       }),
    );
 
-   const isPending = createMutation.isPending || updateMutation.isPending;
+   const billCreateMutation = useMutation(
+      orpc.bills.create.mutationOptions({
+         onSuccess: () => {
+            toast.success("Conta a pagar criada com sucesso.");
+            onSuccess();
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao criar conta a pagar.");
+         },
+      }),
+   );
+
+   const isPending =
+      createMutation.isPending ||
+      updateMutation.isPending ||
+      billCreateMutation.isPending;
 
    const form = useForm({
       defaultValues: {
@@ -199,11 +214,28 @@ function TransactionFormContent({
          description: transaction?.description ?? "",
          contactId: transaction?.contactId ?? (null as string | null),
          creditCardId: transaction?.creditCardId ?? "",
+         createAsBill: false as boolean,
       },
       onSubmit: ({ value }) => {
          const dateStr = value.date
             ? value.date.toISOString().split("T")[0]
             : "";
+
+         if (isCreate && value.createAsBill && value.type === "expense") {
+            billCreateMutation.mutate({
+               bill: {
+                  name: value.name?.trim() || "Despesa",
+                  type: "payable",
+                  amount: value.amount,
+                  dueDate: dateStr,
+                  bankAccountId: value.bankAccountId || null,
+                  categoryId: value.categoryId || null,
+                  description: value.description || null,
+               },
+            });
+            return;
+         }
+
          const payload = {
             type: value.type,
             name: value.name?.trim() || null,
@@ -220,7 +252,8 @@ function TransactionFormContent({
             tagIds: value.tagIds,
             description: value.description || null,
             contactId: value.contactId,
-            creditCardId: value.type === "expense" ? (value.creditCardId || null) : null,
+            creditCardId:
+               value.type === "expense" ? value.creditCardId || null : null,
          };
 
          if (isCreate) {
@@ -520,8 +553,8 @@ function TransactionFormContent({
                               }
                            >
                               <TagCombobox
-                                 selectedIds={field.state.value}
                                  onChange={field.handleChange}
+                                 selectedIds={field.state.value}
                               />
                            </Suspense>
                         </Field>
@@ -562,21 +595,81 @@ function TransactionFormContent({
                         </Field>
                      )}
                   </form.Field>
+
+                  {/* Aviso: data futura */}
+                  {isCreate && (
+                     <form.Subscribe selector={(s) => s.values.date}>
+                        {(date) => {
+                           const isFuture = date && date > new Date();
+                           return isFuture ? (
+                              <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 text-sm text-amber-700 dark:text-amber-300">
+                                 Esta transação é no futuro. Considere
+                                 registrá-la como conta a pagar.
+                              </div>
+                           ) : null;
+                        }}
+                     </form.Subscribe>
+                  )}
+
+                  {/* Registrar como conta a pagar (expense + create only) */}
+                  {isCreate && (
+                     <form.Subscribe selector={(s) => s.values.type}>
+                        {(type) =>
+                           type === "expense" ? (
+                              <form.Field name="createAsBill">
+                                 {(field) => (
+                                    <Field>
+                                       <div className="flex items-center gap-2">
+                                          <Checkbox
+                                             checked={field.state.value}
+                                             id="createAsBill"
+                                             onCheckedChange={(v) =>
+                                                field.handleChange(!!v)
+                                             }
+                                          />
+                                          {/* biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is Radix */}
+                                          <label
+                                             className="text-sm cursor-pointer select-none"
+                                             htmlFor="createAsBill"
+                                          >
+                                             Registrar como conta a pagar (não
+                                             pago ainda)
+                                          </label>
+                                       </div>
+                                    </Field>
+                                 )}
+                              </form.Field>
+                           ) : null
+                        }
+                     </form.Subscribe>
+                  )}
                </FieldGroup>
             </CredenzaBody>
 
             <CredenzaFooter>
                <form.Subscribe>
-                  {(formState) => (
-                     <Button
-                        className="w-full"
-                        disabled={!formState.canSubmit || isPending}
-                        type="submit"
-                     >
-                        {isPending ? <Spinner className="size-4 mr-2" /> : null}
-                        {isCreate ? "Criar transação" : "Salvar alterações"}
-                     </Button>
-                  )}
+                  {(formState) => {
+                     const createAsBill =
+                        isCreate &&
+                        formState.values.createAsBill &&
+                        formState.values.type === "expense";
+                     return (
+                        <Button
+                           className="w-full"
+                           disabled={!formState.canSubmit || isPending}
+                           type="submit"
+                        >
+                           {isPending ? (
+                              <Spinner className="size-4 mr-2" />
+                           ) : null}
+                           {createAsBill
+                              ? "Criar conta a pagar"
+                              : isCreate
+                                ? "Criar transação"
+                                : "Salvar alterações"}
+                        </Button>
+                     );
+                  }}
                </form.Subscribe>
             </CredenzaFooter>
          </form>
