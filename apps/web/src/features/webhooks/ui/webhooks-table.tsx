@@ -206,19 +206,14 @@ export function WebhooksTable({
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => e.stopPropagation()}
                >
-                  <Tooltip>
-                     <TooltipTrigger asChild>
-                        <Button
-                           onClick={() => onEdit(row.original)}
-                           size="icon"
-                           variant="ghost"
-                        >
-                           <Edit className="size-4" />
-                           <span className="sr-only">Editar</span>
-                        </Button>
-                     </TooltipTrigger>
-                     <TooltipContent>Editar</TooltipContent>
-                  </Tooltip>
+                  <Button
+                     onClick={() => onEdit(row.original)}
+                     size="icon"
+                     tooltip="Editar"
+                     variant="ghost"
+                  >
+                     <Edit className="size-4" />
+                  </Button>
                </div>
             ),
          },
