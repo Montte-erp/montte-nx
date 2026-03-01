@@ -23,7 +23,7 @@ import { protectedProcedure } from "../server";
 const createInsightSchema = z.object({
    name: z.string().min(1),
    description: z.string().optional(),
-   type: z.enum(["trends", "funnels", "retention"]),
+   type: z.enum(["kpi", "time_series", "breakdown"]),
    config: insightConfigSchema,
    defaultSize: z.enum(["sm", "md", "lg", "full"]).optional().default("md"),
 });
@@ -69,7 +69,7 @@ export const list = protectedProcedure
    .input(
       z
          .object({
-            type: z.enum(["trends", "funnels", "retention"]).optional(),
+            type: z.enum(["kpi", "time_series", "breakdown"]).optional(),
          })
          .optional(),
    )
