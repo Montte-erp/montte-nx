@@ -11,6 +11,7 @@ import {
    Tag,
    Tags,
    Target,
+   Users,
 } from "lucide-react";
 import type { SubSidebarSection } from "../hooks/use-sidebar-nav";
 
@@ -80,6 +81,13 @@ export const navGroups: NavGroupDef[] = [
             label: "Metas",
             icon: Target,
             route: "/$slug/$teamSlug/finance/goals",
+         },
+         {
+            id: "contacts",
+            label: "Contatos",
+            icon: Users,
+            route: "/$slug/$teamSlug/finance/contacts",
+            earlyAccessFlag: "contacts",
          },
       ],
    },
