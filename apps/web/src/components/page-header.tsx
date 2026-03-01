@@ -1,10 +1,5 @@
 import { Button } from "@packages/ui/components/button";
 import { Input } from "@packages/ui/components/input";
-import {
-   Tooltip,
-   TooltipContent,
-   TooltipTrigger,
-} from "@packages/ui/components/tooltip";
 import { cn } from "@packages/ui/lib/utils";
 import { Check, Pencil, X } from "lucide-react";
 import {
@@ -95,33 +90,25 @@ function InlineEditableText({
                ref={inputRef}
                value={draft}
             />
-            <Tooltip>
-               <TooltipTrigger asChild>
-                  <Button
-                     onClick={commit}
-                     size="icon-sm"
-                     type="button"
-                     variant="outline"
-                  >
-                     <Check />
-                  </Button>
-               </TooltipTrigger>
-               <TooltipContent>Salvar</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-               <TooltipTrigger asChild>
-                  <Button
-                     onClick={discard}
-                     onMouseDown={(e) => e.preventDefault()}
-                     size="icon-sm"
-                     type="button"
-                     variant="outline"
-                  >
-                     <X />
-                  </Button>
-               </TooltipTrigger>
-               <TooltipContent>Cancelar</TooltipContent>
-            </Tooltip>
+            <Button
+               onClick={commit}
+               size="icon-sm"
+               tooltip="Salvar"
+               type="button"
+               variant="icon-outline"
+            >
+               <Check />
+            </Button>
+            <Button
+               onClick={discard}
+               onMouseDown={(e) => e.preventDefault()}
+               size="icon-sm"
+               tooltip="Cancelar"
+               type="button"
+               variant="icon-outline"
+            >
+               <X />
+            </Button>
          </div>
       );
    }
@@ -137,19 +124,15 @@ function InlineEditableText({
          >
             {value || placeholder}
          </span>
-         <Tooltip>
-            <TooltipTrigger asChild>
-               <Button
-                  onClick={startEditing}
-                  size="icon-sm"
-                  type="button"
-                  variant="outline"
-               >
-                  <Pencil />
-               </Button>
-            </TooltipTrigger>
-            <TooltipContent>Editar</TooltipContent>
-         </Tooltip>
+         <Button
+            onClick={startEditing}
+            size="icon-sm"
+            tooltip="Editar"
+            type="button"
+            variant="icon-outline"
+         >
+            <Pencil />
+         </Button>
       </div>
    );
 }
