@@ -25,6 +25,22 @@ function QuickCreateButton({ item }: { item: NavItemDef }) {
       return <SubSidebarNewMenu section={item.subPanel} />;
    }
 
+   // For sheet items, dispatch a custom event for the page to handle
+   if (item.quickAction.target === "sheet") {
+      const handleCreate = () => {
+         window.dispatchEvent(
+            new CustomEvent("sidebar:quick-create", {
+               detail: { itemId: item.id },
+            }),
+         );
+      };
+      return (
+         <SidebarMenuAction onClick={handleCreate} title="Criar novo">
+            <Plus className="size-4" />
+         </SidebarMenuAction>
+      );
+   }
+
    // For navigate items, go to the create route
    const handleCreate = () => {
       return navigate({

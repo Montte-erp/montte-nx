@@ -52,6 +52,7 @@ export const navGroups: NavGroupDef[] = [
             label: "Transações",
             icon: ArrowLeftRight,
             route: "/$slug/$teamSlug/finance/transactions",
+            quickAction: { type: "create", target: "sheet" },
          },
          {
             id: "bank-accounts",

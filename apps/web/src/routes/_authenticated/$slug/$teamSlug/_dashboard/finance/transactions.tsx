@@ -53,6 +53,7 @@ import {
 import {
    Suspense,
    useCallback,
+   useEffect,
    useMemo,
    useRef,
    useState,
@@ -540,31 +541,36 @@ function FilterBar({ filters, onFiltersChange }: FilterBarProps) {
          {/* Category filter */}
          <Suspense fallback={null}>
             <CategoryFilterCombobox
+               onChange={(categoryId, uncategorized) =>
+                  onFiltersChange({
+                     ...filters,
+                     categoryId,
+                     uncategorized,
+                     page: 1,
+                  })
+               }
                uncategorized={filters.uncategorized}
                value={filters.categoryId}
-               onChange={(categoryId, uncategorized) =>
-                  onFiltersChange({ ...filters, categoryId, uncategorized, page: 1 })
-               }
             />
          </Suspense>
 
          {/* Account filter */}
          <Suspense fallback={null}>
             <AccountFilterCombobox
-               value={filters.bankAccountId}
                onChange={(v) =>
                   onFiltersChange({ ...filters, bankAccountId: v, page: 1 })
                }
+               value={filters.bankAccountId}
             />
          </Suspense>
 
          {/* Card filter */}
          <Suspense fallback={null}>
             <CardFilterCombobox
-               value={filters.creditCardId}
                onChange={(v) =>
                   onFiltersChange({ ...filters, creditCardId: v, page: 1 })
                }
+               value={filters.creditCardId}
             />
          </Suspense>
 
@@ -1058,6 +1064,17 @@ function TransactionsPage() {
          children: <TransactionSheet mode="create" onSuccess={closeCredenza} />,
       });
    }, [openCredenza, closeCredenza]);
+
+   useEffect(() => {
+      const handler = (e: Event) => {
+         const detail = (e as CustomEvent<{ itemId: string }>).detail;
+         if (detail.itemId === "transactions") {
+            handleCreate();
+         }
+      };
+      window.addEventListener("sidebar:quick-create", handler);
+      return () => window.removeEventListener("sidebar:quick-create", handler);
+   }, [handleCreate]);
 
    return (
       <main className="flex flex-col gap-4">
