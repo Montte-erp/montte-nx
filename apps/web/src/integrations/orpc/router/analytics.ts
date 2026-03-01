@@ -1,7 +1,7 @@
 import { ORPCError } from "@orpc/server";
-import { executeFunnelsQuery } from "@packages/analytics/funnels";
-import { executeRetentionQuery } from "@packages/analytics/retention";
-import { executeTrendsQuery } from "@packages/analytics/trends";
+import { executeBreakdownQuery } from "@packages/analytics/compute-breakdown";
+import { executeKpiQuery } from "@packages/analytics/compute-kpi";
+import { executeTimeSeriesQuery } from "@packages/analytics/compute-time-series";
 import { insightConfigSchema } from "@packages/analytics/types";
 import { getDefaultDashboard as fetchDefaultDashboard } from "@packages/database/repositories/dashboard-repository";
 import { getInsightsByIds } from "@packages/database/repositories/insight-repository";
@@ -19,28 +19,16 @@ import { protectedProcedure } from "../server";
 export const query = protectedProcedure
    .input(z.object({ config: insightConfigSchema }))
    .handler(async ({ context, input }) => {
-      const { db, organizationId } = context;
+      const { db, teamId } = context;
 
       try {
          switch (input.config.type) {
-            case "trends":
-               return await executeTrendsQuery(
-                  db,
-                  organizationId,
-                  input.config,
-               );
-            case "funnels":
-               return await executeFunnelsQuery(
-                  db,
-                  organizationId,
-                  input.config,
-               );
-            case "retention":
-               return await executeRetentionQuery(
-                  db,
-                  organizationId,
-                  input.config,
-               );
+            case "kpi":
+               return await executeKpiQuery(db, teamId, input.config);
+            case "time_series":
+               return await executeTimeSeriesQuery(db, teamId, input.config);
+            case "breakdown":
+               return await executeBreakdownQuery(db, teamId, input.config);
          }
       } catch (error) {
          throw new ORPCError("INTERNAL_SERVER_ERROR", {
