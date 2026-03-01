@@ -79,6 +79,13 @@ function TagsList({ view }: TagsListProps) {
       }),
    );
 
+   const archiveMutation = useMutation(
+      orpc.tags.archive.mutationOptions({
+         onSuccess: () => toast.success("Tag arquivada."),
+         onError: (e) => toast.error(e.message || "Erro ao arquivar tag."),
+      }),
+   );
+
    const handleEdit = useCallback(
       (tag: TagRow) => {
          openCredenza({
@@ -104,6 +111,13 @@ function TagsList({ view }: TagsListProps) {
          });
       },
       [openAlertDialog, deleteMutation],
+   );
+
+   const handleArchive = useCallback(
+      (tag: TagRow) => {
+         archiveMutation.mutate({ id: tag.id });
+      },
+      [archiveMutation],
    );
 
    if (tags.length === 0) {
@@ -160,7 +174,7 @@ function TagsList({ view }: TagsListProps) {
       );
    }
 
-   const columns = buildTagColumns(handleEdit, handleDelete);
+   const columns = buildTagColumns(handleEdit, handleDelete, handleArchive);
 
    return (
       <DataTable

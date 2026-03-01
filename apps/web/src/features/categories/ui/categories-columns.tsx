@@ -2,6 +2,7 @@ import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
+   Archive,
    Baby,
    BookOpen,
    Briefcase,
@@ -61,6 +62,7 @@ export type CategoryRow = {
 export function buildCategoryColumns(
    onEdit: (category: CategoryRow) => void,
    onDelete: (category: CategoryRow) => void,
+   onArchive: (category: CategoryRow) => void,
 ): ColumnDef<CategoryRow>[] {
    return [
       {
@@ -125,6 +127,15 @@ export function buildCategoryColumns(
                   >
                      <Pencil className="size-4" />
                      <span className="sr-only">Editar</span>
+                  </Button>
+                  <Button
+                     onClick={() => onArchive(row.original)}
+                     size="icon"
+                     title="Arquivar"
+                     variant="ghost"
+                  >
+                     <Archive className="size-4" />
+                     <span className="sr-only">Arquivar</span>
                   </Button>
                   <Button
                      className="text-destructive hover:text-destructive"

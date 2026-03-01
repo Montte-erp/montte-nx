@@ -98,3 +98,21 @@ export const remove = protectedProcedure
       await deleteCategory(db, input.id);
       return { success: true };
    });
+
+export const archive = protectedProcedure
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      const { db, teamId } = context;
+      const category = await getCategory(db, input.id);
+      if (!category || category.teamId !== teamId) {
+         throw new ORPCError("NOT_FOUND", {
+            message: "Categoria não encontrada.",
+         });
+      }
+      if (category.isDefault) {
+         throw new ORPCError("BAD_REQUEST", {
+            message: "Categorias padrão não podem ser arquivadas.",
+         });
+      }
+      return updateCategory(db, input.id, { isArchived: true });
+   });

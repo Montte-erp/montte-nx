@@ -1,6 +1,6 @@
 import { Button } from "@packages/ui/components/button";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Pencil, Trash2 } from "lucide-react";
+import { Archive, Pencil, Trash2 } from "lucide-react";
 
 export type TagRow = {
    id: string;
@@ -11,6 +11,7 @@ export type TagRow = {
 export function buildTagColumns(
    onEdit: (tag: TagRow) => void,
    onDelete: (tag: TagRow) => void,
+   onArchive: (tag: TagRow) => void,
 ): ColumnDef<TagRow>[] {
    return [
       {
@@ -43,6 +44,15 @@ export function buildTagColumns(
                >
                   <Pencil className="size-4" />
                   <span className="sr-only">Editar</span>
+               </Button>
+               <Button
+                  onClick={() => onArchive(row.original)}
+                  size="icon"
+                  title="Arquivar"
+                  variant="ghost"
+               >
+                  <Archive className="size-4" />
+                  <span className="sr-only">Arquivar</span>
                </Button>
                <Button
                   className="text-destructive hover:text-destructive"

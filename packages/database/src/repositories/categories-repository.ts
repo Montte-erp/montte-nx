@@ -1,5 +1,6 @@
 import { AppError, propagateError } from "@packages/utils/errors";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import {
    categories,
@@ -47,12 +48,21 @@ export async function seedDefaultCategories(
    }
 }
 
-export async function listCategories(db: DatabaseInstance, teamId: string) {
+export async function listCategories(
+   db: DatabaseInstance,
+   teamId: string,
+   opts?: { includeArchived?: boolean },
+) {
    try {
+      const catConditions: SQL[] = [eq(categories.teamId, teamId)];
+      if (!opts?.includeArchived) {
+         catConditions.push(eq(categories.isArchived, false));
+      }
+
       const cats = await db
          .select()
          .from(categories)
-         .where(eq(categories.teamId, teamId))
+         .where(and(...catConditions))
          .orderBy(categories.name);
 
       const subs = await db

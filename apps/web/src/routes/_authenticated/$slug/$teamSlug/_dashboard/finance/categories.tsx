@@ -110,6 +110,13 @@ function CategoriesList({ view }: CategoriesListProps) {
       }),
    );
 
+   const archiveMutation = useMutation(
+      orpc.categories.archive.mutationOptions({
+         onSuccess: () => toast.success("Categoria arquivada."),
+         onError: (e) => toast.error(e.message || "Erro ao arquivar categoria."),
+      }),
+   );
+
    const handleEdit = useCallback(
       (category: CategoryRow) => {
          openCredenza({
@@ -147,6 +154,13 @@ function CategoriesList({ view }: CategoriesListProps) {
       [openAlertDialog, deleteMutation],
    );
 
+   const handleArchive = useCallback(
+      (category: CategoryRow) => {
+         archiveMutation.mutate({ id: category.id });
+      },
+      [archiveMutation],
+   );
+
    const handleBulkDelete = useCallback(() => {
       const deletableIds = selectedIds.filter(
          (id) => !categories.find((c) => c.id === id)?.isDefault,
@@ -170,7 +184,7 @@ function CategoriesList({ view }: CategoriesListProps) {
       });
    }, [openAlertDialog, selectedIds, categories, deleteMutation, onClear]);
 
-   const columns = buildCategoryColumns(handleEdit, handleDelete);
+   const columns = buildCategoryColumns(handleEdit, handleDelete, handleArchive);
 
    if (categories.length === 0) {
       return (
