@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+   boolean,
    index,
    pgTable,
    text,
@@ -15,6 +16,7 @@ export const tags = pgTable(
       teamId: uuid("team_id").notNull(),
       name: text("name").notNull(),
       color: text("color").notNull().default("#6366f1"),
+      isArchived: boolean("is_archived").notNull().default(false),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
          .defaultNow(),

@@ -18,6 +18,7 @@ export const categories = pgTable(
       isDefault: boolean("is_default").notNull().default(false),
       color: text("color"),
       icon: text("icon"),
+      isArchived: boolean("is_archived").notNull().default(false),
       type: text("type"), // "income" | "expense" | null
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
