@@ -78,6 +78,8 @@ interface DataTableProps<TData, TValue> {
    rowSelection?: RowSelectionState;
    onRowSelectionChange?: (selection: RowSelectionState) => void;
    getRowId?: (row: TData) => string;
+   initialExpanded?: ExpandedState;
+   getRowCanExpand?: (row: Row<TData>) => boolean;
 }
 
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
@@ -214,6 +216,8 @@ export function DataTable<TData, TValue>({
    rowSelection: controlledRowSelection,
    onRowSelectionChange,
    getRowId,
+   initialExpanded,
+   getRowCanExpand,
 }: DataTableProps<TData, TValue>) {
    const isMobile = useIsMobile();
    const [sorting, setSorting] = useState<SortingState>([]);
@@ -223,7 +227,7 @@ export function DataTable<TData, TValue>({
    );
    const [internalRowSelection, setInternalRowSelection] =
       useState<RowSelectionState>({});
-   const [expanded, setExpanded] = useState<ExpandedState>({});
+   const [expanded, setExpanded] = useState<ExpandedState>(initialExpanded ?? {});
 
    const isControlled = controlledRowSelection !== undefined;
    const rowSelection = isControlled
@@ -260,7 +264,7 @@ export function DataTable<TData, TValue>({
       getCoreRowModel: getCoreRowModel(),
       getExpandedRowModel: getExpandedRowModel(),
       getFilteredRowModel: getFilteredRowModel(),
-      getRowCanExpand: () => !!renderSubComponent,
+      getRowCanExpand: getRowCanExpand ?? (() => !!renderSubComponent),
       getRowId: getRowId
          ? (originalRow) => getRowId(originalRow)
          : (_row, index) => String(index),

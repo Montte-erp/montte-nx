@@ -7,11 +7,16 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
+import {
+   SelectionActionBar,
+   SelectionActionButton,
+} from "@packages/ui/components/selection-action-bar";
 import { Skeleton } from "@packages/ui/components/skeleton";
+import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { FolderOpen, LayoutGrid, LayoutList, Plus } from "lucide-react";
-import { Suspense, useCallback } from "react";
+import { FolderOpen, LayoutGrid, LayoutList, Plus, Trash2 } from "lucide-react";
+import { Suspense, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import {
@@ -72,9 +77,26 @@ interface CategoriesListProps {
 function CategoriesList({ view }: CategoriesListProps) {
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
+   const {
+      rowSelection,
+      onRowSelectionChange,
+      selectedCount,
+      selectedIds,
+      onClear,
+   } = useRowSelection();
 
    const { data: categories } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
+   );
+
+   const expanded = useMemo(
+      () =>
+         Object.fromEntries(
+            categories
+               .filter((c) => c.subcategories.length > 0)
+               .map((c) => [c.id, true]),
+         ),
+      [categories],
    );
 
    const deleteMutation = useMutation(
@@ -124,6 +146,29 @@ function CategoriesList({ view }: CategoriesListProps) {
       },
       [openAlertDialog, deleteMutation],
    );
+
+   const handleBulkDelete = useCallback(() => {
+      const deletableIds = selectedIds.filter(
+         (id) => !categories.find((c) => c.id === id)?.isDefault,
+      );
+      if (deletableIds.length === 0) {
+         return;
+      }
+      openAlertDialog({
+         title: `Excluir ${deletableIds.length} ${deletableIds.length === 1 ? "categoria" : "categorias"}`,
+         description:
+            "Tem certeza que deseja excluir as categorias selecionadas? Esta ação não pode ser desfeita.",
+         actionLabel: "Excluir",
+         cancelLabel: "Cancelar",
+         variant: "destructive",
+         onAction: async () => {
+            await Promise.all(
+               deletableIds.map((id) => deleteMutation.mutateAsync({ id })),
+            );
+            onClear();
+         },
+      });
+   }, [openAlertDialog, selectedIds, categories, deleteMutation, onClear]);
 
    const columns = buildCategoryColumns(handleEdit, handleDelete);
 
@@ -186,45 +231,76 @@ function CategoriesList({ view }: CategoriesListProps) {
    }
 
    return (
-      <DataTable
-         columns={columns}
-         data={categories}
-         getRowId={(row) => row.id}
-         renderMobileCard={({ row }) => (
-            <div className="rounded-lg border bg-background p-4 space-y-3">
-               <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                     {row.original.color && (
-                        <span
-                           className="size-4 rounded-full shrink-0"
-                           style={{ backgroundColor: row.original.color }}
-                        />
-                     )}
-                     <p className="font-medium truncate">{row.original.name}</p>
+      <>
+         <DataTable
+            columns={columns}
+            data={categories}
+            enableRowSelection
+            getRowCanExpand={(row) => row.original.subcategories.length > 0}
+            getRowId={(row) => row.id}
+            initialExpanded={expanded}
+            onRowSelectionChange={onRowSelectionChange}
+            renderMobileCard={({ row }) => (
+               <div className="rounded-lg border bg-background p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                     <div className="flex items-center gap-2 min-w-0">
+                        {row.original.color && (
+                           <span
+                              className="size-4 rounded-full shrink-0"
+                              style={{ backgroundColor: row.original.color }}
+                           />
+                        )}
+                        <p className="font-medium truncate">
+                           {row.original.name}
+                        </p>
+                     </div>
                   </div>
+                  {!row.original.isDefault && (
+                     <div className="flex items-center gap-2">
+                        <Button
+                           onClick={() => handleEdit(row.original)}
+                           size="sm"
+                           variant="outline"
+                        >
+                           Editar
+                        </Button>
+                        <Button
+                           className="text-destructive"
+                           onClick={() => handleDelete(row.original)}
+                           size="sm"
+                           variant="ghost"
+                        >
+                           Excluir
+                        </Button>
+                     </div>
+                  )}
                </div>
-               {!row.original.isDefault && (
-                  <div className="flex items-center gap-2">
-                     <Button
-                        onClick={() => handleEdit(row.original)}
-                        size="sm"
-                        variant="outline"
-                     >
-                        Editar
-                     </Button>
-                     <Button
-                        className="text-destructive"
-                        onClick={() => handleDelete(row.original)}
-                        size="sm"
-                        variant="ghost"
-                     >
-                        Excluir
-                     </Button>
+            )}
+            renderSubComponent={({ row }) => {
+               const subs = row.original.subcategories;
+               if (subs.length === 0) return null;
+               return (
+                  <div className="flex flex-col gap-1 pl-10 py-1">
+                     {subs.map((sub) => (
+                        <span className="text-sm text-muted-foreground" key={sub.id}>
+                           {sub.name}
+                        </span>
+                     ))}
                   </div>
-               )}
-            </div>
-         )}
-      />
+               );
+            }}
+            rowSelection={rowSelection}
+         />
+         <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
+            <SelectionActionButton
+               icon={<Trash2 className="size-3.5" />}
+               onClick={handleBulkDelete}
+               variant="destructive"
+            >
+               Excluir
+            </SelectionActionButton>
+         </SelectionActionBar>
+      </>
    );
 }
 

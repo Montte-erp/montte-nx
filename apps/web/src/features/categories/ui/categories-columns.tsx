@@ -107,23 +107,6 @@ export function buildCategoryColumns(
          },
       },
       {
-         id: "subcategories",
-         header: "Subcategorias",
-         cell: ({ row }) => {
-            const subs = row.original.subcategories;
-            if (subs.length === 0) {
-               return (
-                  <span className="text-sm text-muted-foreground">Nenhuma</span>
-               );
-            }
-            return (
-               <span className="text-sm text-muted-foreground">
-                  {subs.map((s) => s.name).join(", ")}
-               </span>
-            );
-         },
-      },
-      {
          id: "actions",
          header: "",
          cell: ({ row }) => {
