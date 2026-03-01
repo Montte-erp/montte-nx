@@ -132,6 +132,9 @@ export const getAll = protectedProcedure
                .string()
                .regex(/^\d{4}-\d{2}-\d{2}$/)
                .optional(),
+            search: z.string().max(100).optional(),
+            page: z.number().int().positive().default(1),
+            pageSize: z.number().int().positive().max(100).default(20),
          })
          .optional(),
    )

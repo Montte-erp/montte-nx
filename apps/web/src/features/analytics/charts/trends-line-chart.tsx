@@ -156,9 +156,7 @@ export const TrendsLineChart = memo(function TrendsLineChart({
                   yAxisId="right"
                />
             )}
-            <ChartTooltip
-               content={<ChartTooltipContent />}
-            />
+            <ChartTooltip content={<ChartTooltipContent />} />
             <ChartLegend content={<ChartLegendContent />} />
          </LineChart>
       </ChartContainer>

@@ -1,3 +1,4 @@
+import { format, of } from "@f-o-t/money";
 import {
    Card,
    CardContent,
@@ -59,10 +60,7 @@ type SpendRow = {
 // ============================================
 
 function formatCurrency(value: number): string {
-   return value.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-   });
+   return format(of(String(value), "BRL"), "pt-BR");
 }
 
 function formatShortDate(dateStr: string): string {

@@ -6,6 +6,7 @@
       "@assistant-ui/react-markdown": "^0.12.5",
       "@emoji-mart/data": "1.2.1",
       "@faker-js/faker": "^10.3.0",
+      "@f-o-t/money": "catalog:fot",
       "@packages/utils": "workspace:*",
       "@platejs/ai": "^52.3.1",
       "@platejs/basic-nodes": "^52.0.11",

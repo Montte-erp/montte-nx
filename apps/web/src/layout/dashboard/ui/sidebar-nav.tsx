@@ -47,11 +47,10 @@ function NavItem({
    onMainItemClick: () => void;
 }) {
    const Icon = item.icon;
-   const { features } = useEarlyAccess();
-   const feature = item.earlyAccessFlag
-      ? features.find((f) => f.flagKey === item.earlyAccessFlag)
-      : undefined;
-   const stage = feature?.stage ?? item.earlyAccessStage ?? "beta";
+   const { getFeatureStage } = useEarlyAccess();
+   const stage = item.earlyAccessFlag
+      ? getFeatureStage(item.earlyAccessFlag)
+      : null;
 
    const handleClick = useCallback(
       (e: React.MouseEvent) => {
@@ -75,7 +74,7 @@ function NavItem({
                <>
                   <Icon />
                   <span>{item.label}</span>
-                  {item.earlyAccessFlag && (
+                  {stage && (
                      <FeatureStageBadge
                         className="ml-auto group-data-[collapsible=icon]:hidden"
                         stage={stage}
@@ -91,7 +90,7 @@ function NavItem({
                >
                   <Icon />
                   <span>{item.label}</span>
-                  {item.earlyAccessFlag && (
+                  {stage && (
                      <FeatureStageBadge
                         className="ml-auto group-data-[collapsible=icon]:hidden"
                         stage={stage}

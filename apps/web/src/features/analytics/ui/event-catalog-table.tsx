@@ -1,14 +1,12 @@
 import { Badge } from "@packages/ui/components/badge";
-import { Input } from "@packages/ui/components/input";
+import { Card, CardContent } from "@packages/ui/components/card";
 import {
-   Table,
-   TableBody,
-   TableCell,
-   TableHead,
-   TableHeader,
-   TableRow,
-} from "@packages/ui/components/table";
-import { useState } from "react";
+   DataTable,
+   type MobileCardRenderProps,
+} from "@packages/ui/components/data-table";
+import { Input } from "@packages/ui/components/input";
+import type { ColumnDef } from "@tanstack/react-table";
+import { useMemo, useState } from "react";
 
 interface EventCatalogEntry {
    id: string;
@@ -26,13 +24,102 @@ interface EventCatalogTableProps {
    events: EventCatalogEntry[];
 }
 
+const columns: ColumnDef<EventCatalogEntry>[] = [
+   {
+      id: "event",
+      header: "Evento",
+      cell: ({ row }) => (
+         <div>
+            <span className="font-mono text-sm">{row.original.eventName}</span>
+            <p className="text-xs text-muted-foreground">
+               {row.original.displayName}
+            </p>
+         </div>
+      ),
+   },
+   {
+      id: "category",
+      header: "Categoria",
+      cell: ({ row }) => (
+         <Badge variant="secondary">{row.original.category}</Badge>
+      ),
+   },
+   {
+      id: "price",
+      header: () => <span className="block text-right">Preço/evento</span>,
+      cell: ({ row }) => (
+         <span className="block text-right font-mono text-sm">
+            R${row.original.pricePerEvent}
+         </span>
+      ),
+   },
+   {
+      id: "freeTier",
+      header: () => <span className="block text-right">Free tier</span>,
+      cell: ({ row }) => (
+         <span className="block text-right tabular-nums">
+            {row.original.freeTierLimit > 0
+               ? `${row.original.freeTierLimit.toLocaleString("pt-BR")}/mo`
+               : "-"}
+         </span>
+      ),
+   },
+   {
+      id: "status",
+      header: "Status",
+      cell: ({ row }) => (
+         <Badge variant={row.original.isActive ? "default" : "secondary"}>
+            {row.original.isActive ? "Ativo" : "Inativo"}
+         </Badge>
+      ),
+   },
+];
+
+function EventMobileCard({ row }: MobileCardRenderProps<EventCatalogEntry>) {
+   const event = row.original;
+   return (
+      <Card>
+         <CardContent className="p-4">
+            <div className="flex items-start justify-between gap-3">
+               <div className="min-w-0">
+                  <span className="font-mono text-sm">{event.eventName}</span>
+                  <p className="text-xs text-muted-foreground">
+                     {event.displayName}
+                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                     <Badge variant="secondary">{event.category}</Badge>
+                     <Badge variant={event.isActive ? "default" : "secondary"}>
+                        {event.isActive ? "Ativo" : "Inativo"}
+                     </Badge>
+                  </div>
+               </div>
+               <div className="text-right shrink-0">
+                  <span className="font-mono text-sm">
+                     R${event.pricePerEvent}
+                  </span>
+                  {event.freeTierLimit > 0 && (
+                     <p className="text-xs text-muted-foreground">
+                        {event.freeTierLimit.toLocaleString("pt-BR")}/mo free
+                     </p>
+                  )}
+               </div>
+            </div>
+         </CardContent>
+      </Card>
+   );
+}
+
 export function EventCatalogTable({ events }: EventCatalogTableProps) {
    const [search, setSearch] = useState("");
 
-   const filtered = events.filter(
-      (event) =>
-         event.eventName.toLowerCase().includes(search.toLowerCase()) ||
-         event.displayName.toLowerCase().includes(search.toLowerCase()),
+   const filtered = useMemo(
+      () =>
+         events.filter(
+            (event) =>
+               event.eventName.toLowerCase().includes(search.toLowerCase()) ||
+               event.displayName.toLowerCase().includes(search.toLowerCase()),
+         ),
+      [events, search],
    );
 
    return (
@@ -43,64 +130,12 @@ export function EventCatalogTable({ events }: EventCatalogTableProps) {
             placeholder="Buscar eventos..."
             value={search}
          />
-
-         <div className="rounded-md border">
-            <Table>
-               <TableHeader>
-                  <TableRow>
-                     <TableHead>Evento</TableHead>
-                     <TableHead>Categoria</TableHead>
-                     <TableHead className="text-right">Preço/evento</TableHead>
-                     <TableHead className="text-right">Free tier</TableHead>
-                     <TableHead>Status</TableHead>
-                  </TableRow>
-               </TableHeader>
-               <TableBody>
-                  {filtered.map((event) => (
-                     <TableRow key={event.id}>
-                        <TableCell>
-                           <div>
-                              <span className="font-mono text-sm">
-                                 {event.eventName}
-                              </span>
-                              <p className="text-xs text-muted-foreground">
-                                 {event.displayName}
-                              </p>
-                           </div>
-                        </TableCell>
-                        <TableCell>
-                           <Badge variant="secondary">{event.category}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm">
-                           R${event.pricePerEvent}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                           {event.freeTierLimit > 0
-                              ? `${event.freeTierLimit.toLocaleString("pt-BR")}/mo`
-                              : "-"}
-                        </TableCell>
-                        <TableCell>
-                           <Badge
-                              variant={event.isActive ? "default" : "secondary"}
-                           >
-                              {event.isActive ? "Ativo" : "Inativo"}
-                           </Badge>
-                        </TableCell>
-                     </TableRow>
-                  ))}
-                  {filtered.length === 0 && (
-                     <TableRow>
-                        <TableCell
-                           className="text-center py-8 text-muted-foreground"
-                           colSpan={5}
-                        >
-                           Nenhum evento encontrado
-                        </TableCell>
-                     </TableRow>
-                  )}
-               </TableBody>
-            </Table>
-         </div>
+         <DataTable
+            columns={columns}
+            data={filtered}
+            getRowId={(row) => row.id}
+            renderMobileCard={(props) => <EventMobileCard {...props} />}
+         />
       </div>
    );
 }

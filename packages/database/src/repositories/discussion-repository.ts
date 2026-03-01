@@ -26,9 +26,7 @@ export async function createDiscussion(
    }
 }
 
-export async function getDiscussionsByContent(
-   db: DatabaseInstance,
-) {
+export async function getDiscussionsByContent(db: DatabaseInstance) {
    try {
       const rows = await db
          .select()

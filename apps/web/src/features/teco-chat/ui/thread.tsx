@@ -322,8 +322,8 @@ const Composer: FC<ComposerProps> = () => {
             />
 
             {/* ── Action bar: context | attachment + send ── */}
-            <div className="flex items-center justify-between px-1 pb-1.5">
-               <div className="flex items-center gap-0.5">
+            <div className="flex items-center justify-between px-2 pb-2">
+               <div className="flex items-center gap-1">
                   <ModelSelector
                      models={MODEL_OPTIONS}
                      onValueChange={(v) => setChatModel(v as ContentModelId)}
@@ -346,7 +346,7 @@ const Composer: FC<ComposerProps> = () => {
 
 const ComposerAction: FC = () => {
    return (
-      <div className="aui-composer-action-wrapper relative mx-2 mb-2 flex items-center justify-between">
+      <div className="aui-composer-action-wrapper relative  flex items-center justify-between gap-2">
          <ComposerAddAttachment />
          <AuiIf condition={(s) => !s.thread.isRunning}>
             <ComposerPrimitive.Send asChild>

@@ -21,7 +21,15 @@ import {
 } from "@packages/ui/components/toggle-group";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeftRight, Calendar, LayoutGrid, LayoutList, Plus, Search, X } from "lucide-react";
+import {
+   ArrowLeftRight,
+   Calendar,
+   LayoutGrid,
+   LayoutList,
+   Plus,
+   Search,
+   X,
+} from "lucide-react";
 import { Suspense, useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
@@ -48,11 +56,19 @@ export const Route = createFileRoute(
          orpc.categories.getAll.queryOptions({}),
       );
       context.queryClient.prefetchQuery(orpc.tags.getAll.queryOptions({}));
+      context.queryClient.prefetchQuery(
+         orpc.transactions.getAll.queryOptions({
+            input: { page: 1, pageSize: 20 },
+         }),
+      );
    },
    component: TransactionsPage,
 });
 
-const TRANSACTION_VIEWS: [ViewConfig<"table" | "card">, ViewConfig<"table" | "card">] = [
+const TRANSACTION_VIEWS: [
+   ViewConfig<"table" | "card">,
+   ViewConfig<"table" | "card">,
+] = [
    { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
    { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
 ];
@@ -213,8 +229,10 @@ function FilterBar({ filters, onFiltersChange }: FilterBarProps) {
                   page: 1,
                })
             }
+            spacing={1}
             type="single"
             value={filters.type ?? ""}
+            variant="outline"
          >
             <ToggleGroupItem size="sm" value="">
                Todos
@@ -523,7 +541,10 @@ function TransactionsList({
 function TransactionsPage() {
    const { openCredenza, closeCredenza } = useCredenza();
    const [filters, setFilters] = useState<TransactionFilters>(DEFAULT_FILTERS);
-   const { currentView, setView, views } = useViewSwitch("finance:transactions:view", TRANSACTION_VIEWS);
+   const { currentView, setView, views } = useViewSwitch(
+      "finance:transactions:view",
+      TRANSACTION_VIEWS,
+   );
 
    const handleCreate = useCallback(() => {
       openCredenza({
@@ -542,7 +563,13 @@ function TransactionsPage() {
             }
             description="Gerencie suas receitas, despesas e transferências"
             title="Transações"
-            viewSwitch={<ViewSwitchDropdown currentView={currentView} onViewChange={setView} views={views} />}
+            viewSwitch={
+               <ViewSwitchDropdown
+                  currentView={currentView}
+                  onViewChange={setView}
+                  views={views}
+               />
+            }
          />
          <FilterBar filters={filters} onFiltersChange={setFilters} />
          <Suspense fallback={<TransactionsSkeleton />}>

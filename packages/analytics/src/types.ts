@@ -5,22 +5,30 @@ import { z } from "zod";
 // ──────────────────────────────────────────────
 
 export const relativeDateRangeSchema = z.object({
-  type: z.literal("relative"),
-  value: z.enum([
-    "7d", "14d", "30d", "90d", "180d", "12m",
-    "this_month", "last_month", "this_quarter", "this_year",
-  ]),
+   type: z.literal("relative"),
+   value: z.enum([
+      "7d",
+      "14d",
+      "30d",
+      "90d",
+      "180d",
+      "12m",
+      "this_month",
+      "last_month",
+      "this_quarter",
+      "this_year",
+   ]),
 });
 
 export const absoluteDateRangeSchema = z.object({
-  type: z.literal("absolute"),
-  start: z.string().datetime(),
-  end: z.string().datetime(),
+   type: z.literal("absolute"),
+   start: z.string().datetime(),
+   end: z.string().datetime(),
 });
 
 export const dateRangeSchema = z.discriminatedUnion("type", [
-  relativeDateRangeSchema,
-  absoluteDateRangeSchema,
+   relativeDateRangeSchema,
+   absoluteDateRangeSchema,
 ]);
 
 // ──────────────────────────────────────────────
@@ -28,10 +36,12 @@ export const dateRangeSchema = z.discriminatedUnion("type", [
 // ──────────────────────────────────────────────
 
 export const transactionFiltersSchema = z.object({
-  dateRange: dateRangeSchema,
-  transactionType: z.array(z.enum(["income", "expense", "transfer"])).optional(),
-  bankAccountIds: z.array(z.string().uuid()).optional(),
-  categoryIds: z.array(z.string().uuid()).optional(),
+   dateRange: dateRangeSchema,
+   transactionType: z
+      .array(z.enum(["income", "expense", "transfer"]))
+      .optional(),
+   bankAccountIds: z.array(z.string().uuid()).optional(),
+   categoryIds: z.array(z.string().uuid()).optional(),
 });
 
 // ──────────────────────────────────────────────
@@ -39,7 +49,7 @@ export const transactionFiltersSchema = z.object({
 // ──────────────────────────────────────────────
 
 export const measureSchema = z.object({
-  aggregation: z.enum(["sum", "count", "avg"]),
+   aggregation: z.enum(["sum", "count", "avg"]),
 });
 
 // ──────────────────────────────────────────────
@@ -47,10 +57,10 @@ export const measureSchema = z.object({
 // ──────────────────────────────────────────────
 
 export const kpiConfigSchema = z.object({
-  type: z.literal("kpi"),
-  measure: measureSchema,
-  filters: transactionFiltersSchema,
-  compare: z.boolean().optional().default(false),
+   type: z.literal("kpi"),
+   measure: measureSchema,
+   filters: transactionFiltersSchema,
+   compare: z.boolean().optional().default(false),
 });
 
 // ──────────────────────────────────────────────
@@ -58,12 +68,12 @@ export const kpiConfigSchema = z.object({
 // ──────────────────────────────────────────────
 
 export const timeSeriesConfigSchema = z.object({
-  type: z.literal("time_series"),
-  measure: measureSchema,
-  filters: transactionFiltersSchema,
-  interval: z.enum(["day", "week", "month"]).default("month"),
-  chartType: z.enum(["line", "bar"]).default("line"),
-  compare: z.boolean().optional().default(false),
+   type: z.literal("time_series"),
+   measure: measureSchema,
+   filters: transactionFiltersSchema,
+   interval: z.enum(["day", "week", "month"]).default("month"),
+   chartType: z.enum(["line", "bar"]).default("line"),
+   compare: z.boolean().optional().default(false),
 });
 
 // ──────────────────────────────────────────────
@@ -71,11 +81,13 @@ export const timeSeriesConfigSchema = z.object({
 // ──────────────────────────────────────────────
 
 export const breakdownConfigSchema = z.object({
-  type: z.literal("breakdown"),
-  measure: measureSchema,
-  filters: transactionFiltersSchema,
-  groupBy: z.enum(["category", "bank_account", "transaction_type", "subcategory"]).default("category"),
-  limit: z.number().int().positive().optional().default(10),
+   type: z.literal("breakdown"),
+   measure: measureSchema,
+   filters: transactionFiltersSchema,
+   groupBy: z
+      .enum(["category", "bank_account", "transaction_type", "subcategory"])
+      .default("category"),
+   limit: z.number().int().positive().optional().default(10),
 });
 
 // ──────────────────────────────────────────────
@@ -83,9 +95,9 @@ export const breakdownConfigSchema = z.object({
 // ──────────────────────────────────────────────
 
 export const insightConfigSchema = z.discriminatedUnion("type", [
-  kpiConfigSchema,
-  timeSeriesConfigSchema,
-  breakdownConfigSchema,
+   kpiConfigSchema,
+   timeSeriesConfigSchema,
+   breakdownConfigSchema,
 ]);
 
 // ──────────────────────────────────────────────
@@ -105,32 +117,32 @@ export type InsightConfig = z.infer<typeof insightConfigSchema>;
 // ──────────────────────────────────────────────
 
 export interface KpiResult {
-  value: number;
-  comparison?: {
-    value: number;
-    percentageChange: number;
-  };
+   value: number;
+   comparison?: {
+      value: number;
+      percentageChange: number;
+   };
 }
 
 export interface TimeSeriesDataPoint {
-  date: string;
-  value: number;
+   date: string;
+   value: number;
 }
 
 export interface TimeSeriesResult {
-  data: TimeSeriesDataPoint[];
-  comparison?: {
-    data: TimeSeriesDataPoint[];
-  };
+   data: TimeSeriesDataPoint[];
+   comparison?: {
+      data: TimeSeriesDataPoint[];
+   };
 }
 
 export interface BreakdownItem {
-  label: string;
-  value: number;
-  color?: string | null;
+   label: string;
+   value: number;
+   color?: string | null;
 }
 
 export interface BreakdownResult {
-  data: BreakdownItem[];
-  total: number;
+   data: BreakdownItem[];
+   total: number;
 }

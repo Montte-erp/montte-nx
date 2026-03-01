@@ -10,8 +10,13 @@ import { useSidebarSection } from "@/layout/dashboard/hooks/use-sidebar-nav";
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId",
 )({
-   loader: () => {
+   loader: ({ context, params }) => {
       setChatMode("analytics");
+      context.queryClient.prefetchQuery(
+         orpc.dashboards.getById.queryOptions({
+            input: { id: params.dashboardId },
+         }),
+      );
    },
    component: DashboardViewPage,
 });

@@ -136,10 +136,7 @@ export function UsageChart({ data, mode = "cost" }: UsageChartProps) {
                   tickFormatter={formatTick}
                   tickLine={false}
                />
-               <ChartTooltip
-                  content={<ChartTooltipContent />}
-                  cursor={false}
-               />
+               <ChartTooltip content={<ChartTooltipContent />} cursor={false} />
                <ChartLegend content={<ChartLegendContent />} />
                {categories.map((cat) => (
                   <Area
@@ -176,10 +173,7 @@ export function UsageChart({ data, mode = "cost" }: UsageChartProps) {
                tickFormatter={formatTick}
                tickLine={false}
             />
-            <ChartTooltip
-               content={<ChartTooltipContent />}
-               cursor={false}
-            />
+            <ChartTooltip content={<ChartTooltipContent />} cursor={false} />
             <ChartLegend content={<ChartLegendContent />} />
             {categories.map((cat) => (
                <Line

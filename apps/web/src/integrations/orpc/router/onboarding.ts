@@ -45,23 +45,25 @@ export const getOnboardingStatus = protectedProcedure.handler(
          });
       }
 
-      const [insightCount, categoryCount, transactionCount] = await Promise.all([
-         db
-            .select({ count: sql<number>`count(*)` })
-            .from(insights)
-            .where(eq(insights.organizationId, organizationId))
-            .then((rows) => Number(rows[0]?.count ?? 0)),
-         db
-            .select({ count: sql<number>`count(*)` })
-            .from(categories)
-            .where(eq(categories.teamId, teamId))
-            .then((rows) => Number(rows[0]?.count ?? 0)),
-         db
-            .select({ count: sql<number>`count(*)` })
-            .from(transactions)
-            .where(eq(transactions.teamId, teamId))
-            .then((rows) => Number(rows[0]?.count ?? 0)),
-      ]);
+      const [insightCount, categoryCount, transactionCount] = await Promise.all(
+         [
+            db
+               .select({ count: sql<number>`count(*)` })
+               .from(insights)
+               .where(eq(insights.organizationId, organizationId))
+               .then((rows) => Number(rows[0]?.count ?? 0)),
+            db
+               .select({ count: sql<number>`count(*)` })
+               .from(categories)
+               .where(eq(categories.teamId, teamId))
+               .then((rows) => Number(rows[0]?.count ?? 0)),
+            db
+               .select({ count: sql<number>`count(*)` })
+               .from(transactions)
+               .where(eq(transactions.teamId, teamId))
+               .then((rows) => Number(rows[0]?.count ?? 0)),
+         ],
+      );
 
       const storedTasks = currentTeam.onboardingTasks ?? {};
       const autoDetected: Record<string, boolean> = {};

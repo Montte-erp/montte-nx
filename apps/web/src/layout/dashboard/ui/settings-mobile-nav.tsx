@@ -15,7 +15,8 @@ function flattenItems(items: SettingsNavItemDef[]): SettingsNavItemDef[] {
 }
 
 export function SettingsMobileNav() {
-   const { activeOrganization } = useActiveOrganization();
+   const { activeOrganization, projectLimit } = useActiveOrganization();
+   const isFree = projectLimit === 1;
    const { isEnrolled } = useEarlyAccess();
    const navigate = useNavigate();
    const [search, setSearch] = useState("");
@@ -34,50 +35,56 @@ export function SettingsMobileNav() {
             />
          </div>
 
-         {settingsNavSections.map((section) => {
-            const allItems = flattenItems(section.items);
-            const filtered = (
-               q
-                  ? allItems.filter((item) =>
-                       item.title.toLowerCase().includes(q),
-                    )
-                  : allItems
-            ).filter((item) => {
-               // Filter by early access enrollment
-               if (!item.earlyAccessFlag) return true;
-               return isEnrolled(item.earlyAccessFlag);
-            });
+         {settingsNavSections
+            .filter(
+               (section) =>
+                  !isFree ||
+                  (section.id !== "project" && section.id !== "organization"),
+            )
+            .map((section) => {
+               const allItems = flattenItems(section.items);
+               const filtered = (
+                  q
+                     ? allItems.filter((item) =>
+                          item.title.toLowerCase().includes(q),
+                       )
+                     : allItems
+               ).filter((item) => {
+                  // Filter by early access enrollment
+                  if (!item.earlyAccessFlag) return true;
+                  return isEnrolled(item.earlyAccessFlag);
+               });
 
-            if (filtered.length === 0) return null;
+               if (filtered.length === 0) return null;
 
-            return (
-               <div key={section.id}>
-                  <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">
-                     {section.label}
-                  </h2>
-                  <div className="grid gap-2">
-                     {filtered.map((item) => (
-                        <QuickAccessCard
-                           description=""
-                           icon={
-                              item.icon ? (
-                                 <item.icon className="size-4" />
-                              ) : undefined
-                           }
-                           key={item.id}
-                           onClick={() =>
-                              navigate({
-                                 params: { slug: activeOrganization.slug },
-                                 to: item.href,
-                              })
-                           }
-                           title={item.title}
-                        />
-                     ))}
+               return (
+                  <div key={section.id}>
+                     <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">
+                        {section.label}
+                     </h2>
+                     <div className="grid gap-2">
+                        {filtered.map((item) => (
+                           <QuickAccessCard
+                              description=""
+                              icon={
+                                 item.icon ? (
+                                    <item.icon className="size-4" />
+                                 ) : undefined
+                              }
+                              key={item.id}
+                              onClick={() =>
+                                 navigate({
+                                    params: { slug: activeOrganization.slug },
+                                    to: item.href,
+                                 })
+                              }
+                              title={item.title}
+                           />
+                        ))}
+                     </div>
                   </div>
-               </div>
-            );
-         })}
+               );
+            })}
       </div>
    );
 }

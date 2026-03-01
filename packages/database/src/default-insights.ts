@@ -2,88 +2,89 @@
 // Moved here to avoid circular dependency (database -> analytics -> database)
 
 interface DefaultInsightDef {
-  name: string;
-  description: string;
-  type: "kpi" | "time_series" | "breakdown";
-  config: Record<string, unknown>;
-  defaultSize: "sm" | "md" | "lg" | "full";
+   name: string;
+   description: string;
+   type: "kpi" | "time_series" | "breakdown";
+   config: Record<string, unknown>;
+   defaultSize: "sm" | "md" | "lg" | "full";
 }
 
 export const DEFAULT_INSIGHTS: DefaultInsightDef[] = [
-  {
-    name: "Receita este mês",
-    description: "Total de receitas no mês atual vs mês anterior",
-    type: "kpi",
-    config: {
+   {
+      name: "Receita este mês",
+      description: "Total de receitas no mês atual vs mês anterior",
       type: "kpi",
-      measure: { aggregation: "sum" },
-      filters: {
-        dateRange: { type: "relative", value: "this_month" },
-        transactionType: ["income"],
+      config: {
+         type: "kpi",
+         measure: { aggregation: "sum" },
+         filters: {
+            dateRange: { type: "relative", value: "this_month" },
+            transactionType: ["income"],
+         },
+         compare: true,
       },
-      compare: true,
-    },
-    defaultSize: "sm",
-  },
-  {
-    name: "Despesas este mês",
-    description: "Total de despesas no mês atual vs mês anterior",
-    type: "kpi",
-    config: {
+      defaultSize: "sm",
+   },
+   {
+      name: "Despesas este mês",
+      description: "Total de despesas no mês atual vs mês anterior",
       type: "kpi",
-      measure: { aggregation: "sum" },
-      filters: {
-        dateRange: { type: "relative", value: "this_month" },
-        transactionType: ["expense"],
+      config: {
+         type: "kpi",
+         measure: { aggregation: "sum" },
+         filters: {
+            dateRange: { type: "relative", value: "this_month" },
+            transactionType: ["expense"],
+         },
+         compare: true,
       },
-      compare: true,
-    },
-    defaultSize: "sm",
-  },
-  {
-    name: "Saldo líquido",
-    description: "Total de transações no mês atual",
-    type: "kpi",
-    config: {
+      defaultSize: "sm",
+   },
+   {
+      name: "Saldo líquido",
+      description: "Total de transações no mês atual",
       type: "kpi",
-      measure: { aggregation: "count" },
-      filters: {
-        dateRange: { type: "relative", value: "this_month" },
+      config: {
+         type: "kpi",
+         measure: { aggregation: "count" },
+         filters: {
+            dateRange: { type: "relative", value: "this_month" },
+         },
+         compare: true,
       },
-      compare: true,
-    },
-    defaultSize: "sm",
-  },
-  {
-    name: "Receita vs Despesas",
-    description: "Comparativo mensal de receitas e despesas nos últimos 6 meses",
-    type: "time_series",
-    config: {
+      defaultSize: "sm",
+   },
+   {
+      name: "Receita vs Despesas",
+      description:
+         "Comparativo mensal de receitas e despesas nos últimos 6 meses",
       type: "time_series",
-      measure: { aggregation: "sum" },
-      filters: {
-        dateRange: { type: "relative", value: "180d" },
+      config: {
+         type: "time_series",
+         measure: { aggregation: "sum" },
+         filters: {
+            dateRange: { type: "relative", value: "180d" },
+         },
+         interval: "month",
+         chartType: "bar",
+         compare: false,
       },
-      interval: "month",
-      chartType: "bar",
-      compare: false,
-    },
-    defaultSize: "lg",
-  },
-  {
-    name: "Gastos por categoria",
-    description: "Distribuição de despesas por categoria nos últimos 30 dias",
-    type: "breakdown",
-    config: {
+      defaultSize: "lg",
+   },
+   {
+      name: "Gastos por categoria",
+      description: "Distribuição de despesas por categoria nos últimos 30 dias",
       type: "breakdown",
-      measure: { aggregation: "sum" },
-      filters: {
-        dateRange: { type: "relative", value: "30d" },
-        transactionType: ["expense"],
+      config: {
+         type: "breakdown",
+         measure: { aggregation: "sum" },
+         filters: {
+            dateRange: { type: "relative", value: "30d" },
+            transactionType: ["expense"],
+         },
+         groupBy: "category",
+         limit: 10,
       },
-      groupBy: "category",
-      limit: 10,
-    },
-    defaultSize: "lg",
-  },
+      defaultSize: "lg",
+   },
 ];

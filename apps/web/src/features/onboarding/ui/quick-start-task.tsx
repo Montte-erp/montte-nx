@@ -1,13 +1,12 @@
-import { BankAccountSheet } from "@/features/bank-accounts/ui/bank-accounts-sheet";
-import { CategorySheet } from "@/features/categories/ui/categories-sheet";
-import { TransactionSheet } from "@/features/transactions/ui/transactions-sheet";
-import { useCredenza } from "@/hooks/use-credenza";
-import { useSheet } from "@/hooks/use-sheet";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import { cn } from "@packages/ui/lib/utils";
 import { CheckCircle2, Lock } from "lucide-react";
 import type React from "react";
 import { useCallback } from "react";
+import { BankAccountForm } from "@/features/bank-accounts/ui/bank-accounts-form";
+import { CategoryForm } from "@/features/categories/ui/categories-form";
+import { TransactionSheet } from "@/features/transactions/ui/transactions-sheet";
+import { useCredenza } from "@/hooks/use-credenza";
 import type { TaskDefinition } from "../task-definitions";
 
 interface QuickStartTaskProps {
@@ -25,27 +24,34 @@ export function QuickStartTask({
    isAutoDetected,
    onComplete,
 }: QuickStartTaskProps) {
-   const { openSheet, closeSheet } = useSheet();
    const { openCredenza, closeCredenza } = useCredenza();
 
    const handleClick = useCallback(() => {
       if (isLocked || isCompleted) return;
 
       if (task.id === "connect_bank_account") {
-         openSheet({
-            children: <BankAccountSheet mode="create" onSuccess={closeSheet} />,
+         openCredenza({
+            children: <BankAccountForm mode="create" onSuccess={closeCredenza} />,
          });
       } else if (task.id === "create_category") {
          openCredenza({
-            children: <CategorySheet mode="create" onSuccess={closeCredenza} />,
+            children: <CategoryForm mode="create" onSuccess={closeCredenza} />,
          });
       } else if (task.id === "add_transaction") {
          openCredenza({
-            children: <TransactionSheet mode="create" onSuccess={closeCredenza} />,
+            children: (
+               <TransactionSheet mode="create" onSuccess={closeCredenza} />
+            ),
          });
       }
       // explore tasks (create_insight) have no action
-   }, [isLocked, isCompleted, task.id, openSheet, closeSheet, openCredenza, closeCredenza]);
+   }, [
+      isLocked,
+      isCompleted,
+      task.id,
+      openCredenza,
+      closeCredenza,
+   ]);
 
    const handleKeyDown = useCallback(
       (e: React.KeyboardEvent) => {

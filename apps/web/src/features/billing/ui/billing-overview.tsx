@@ -1,3 +1,4 @@
+import { format, fromMinorUnits, of } from "@f-o-t/money";
 import {
    PLATFORM_ADDONS,
    PlanName,
@@ -178,10 +179,7 @@ const VOLUME_FEATURE_CONFIG: Record<
 // ============================================
 
 function formatCurrency(value: number): string {
-   return value.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-   });
+   return format(of(String(value), "BRL"), "pt-BR");
 }
 
 function getBillingPeriodDates(): { start: Date; end: Date } {
@@ -771,10 +769,13 @@ function InvoicesPreviewContent() {
                month: "2-digit",
                year: "numeric",
             });
-            const amount = new Intl.NumberFormat("pt-BR", {
-               currency: invoice.currency.toUpperCase(),
-               style: "currency",
-            }).format(invoice.amountPaid / 100);
+            const amount = format(
+               fromMinorUnits(
+                  invoice.amountPaid,
+                  invoice.currency.toUpperCase(),
+               ),
+               "pt-BR",
+            );
 
             const statusLabel =
                invoice.status === "paid"

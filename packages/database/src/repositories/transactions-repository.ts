@@ -1,5 +1,15 @@
 import { AppError, propagateError } from "@packages/utils/errors";
-import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import {
+   and,
+   count,
+   desc,
+   eq,
+   gte,
+   ilike,
+   inArray,
+   lte,
+   or,
+} from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import { type NewTransaction, transactions, transactionTags } from "../schema";
 
@@ -11,6 +21,9 @@ export interface ListTransactionsFilter {
    tagId?: string;
    dateFrom?: string;
    dateTo?: string;
+   search?: string;
+   page?: number;
+   pageSize?: number;
 }
 
 export async function createTransaction(
@@ -45,41 +58,27 @@ export async function listTransactions(
    filter: ListTransactionsFilter,
 ) {
    try {
+      const page = filter.page ?? 1;
+      const pageSize = filter.pageSize ?? 50;
+
+      const conditions = [eq(transactions.teamId, filter.teamId)];
+
       if (filter.tagId) {
          const taggedIds = await db
             .select({ transactionId: transactionTags.transactionId })
             .from(transactionTags)
             .where(eq(transactionTags.tagId, filter.tagId));
 
-         if (taggedIds.length === 0) return [];
+         if (taggedIds.length === 0) return { data: [], total: 0 };
 
-         const conditions = [
-            eq(transactions.teamId, filter.teamId),
+         conditions.push(
             inArray(
                transactions.id,
                taggedIds.map((r) => r.transactionId),
             ),
-         ];
-         if (filter.type) conditions.push(eq(transactions.type, filter.type));
-         if (filter.bankAccountId)
-            conditions.push(
-               eq(transactions.bankAccountId, filter.bankAccountId),
-            );
-         if (filter.categoryId)
-            conditions.push(eq(transactions.categoryId, filter.categoryId));
-         if (filter.dateFrom)
-            conditions.push(gte(transactions.date, filter.dateFrom));
-         if (filter.dateTo)
-            conditions.push(lte(transactions.date, filter.dateTo));
-
-         return await db
-            .select()
-            .from(transactions)
-            .where(and(...conditions))
-            .orderBy(desc(transactions.date));
+         );
       }
 
-      const conditions = [eq(transactions.teamId, filter.teamId)];
       if (filter.type) conditions.push(eq(transactions.type, filter.type));
       if (filter.bankAccountId)
          conditions.push(eq(transactions.bankAccountId, filter.bankAccountId));
@@ -88,12 +87,31 @@ export async function listTransactions(
       if (filter.dateFrom)
          conditions.push(gte(transactions.date, filter.dateFrom));
       if (filter.dateTo) conditions.push(lte(transactions.date, filter.dateTo));
+      if (filter.search) {
+         const pattern = `%${filter.search}%`;
+         const searchCond = or(
+            ilike(transactions.name, pattern),
+            ilike(transactions.description, pattern),
+         );
+         if (searchCond) conditions.push(searchCond);
+      }
 
-      return await db
+      const whereClause = and(...conditions);
+
+      const [countResult] = await db
+         .select({ total: count() })
+         .from(transactions)
+         .where(whereClause);
+
+      const data = await db
          .select()
          .from(transactions)
-         .where(and(...conditions))
-         .orderBy(desc(transactions.date));
+         .where(whereClause)
+         .orderBy(desc(transactions.date))
+         .limit(pageSize)
+         .offset((page - 1) * pageSize);
+
+      return { data, total: countResult?.total ?? 0 };
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to list transactions");

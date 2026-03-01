@@ -11,6 +11,11 @@ import { orpc } from "@/integrations/orpc/client";
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/home/",
 )({
+   loader: ({ context }) => {
+      context.queryClient.prefetchQuery(
+         orpc.analytics.getDefaultDashboard.queryOptions(),
+      );
+   },
    component: HomePage,
 });
 

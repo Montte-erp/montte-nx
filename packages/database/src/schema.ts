@@ -2,13 +2,13 @@
 
 // Actions
 export * from "./schemas/actions";
-// Assets
-export * from "./schemas/assets";
 export * from "./schemas/activity-logs";
 // Addons
 export * from "./schemas/addons";
 // Analytics
 export * from "./schemas/annotations";
+// Assets
+export * from "./schemas/assets";
 export * from "./schemas/auth";
 // Finance
 export * from "./schemas/bank-accounts";

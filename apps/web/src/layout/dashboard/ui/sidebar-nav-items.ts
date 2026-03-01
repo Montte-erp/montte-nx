@@ -29,8 +29,6 @@ export type NavItemDef = {
    subPanel?: SubSidebarSection;
    /** PostHog early access flag key — if set, item is hidden when user is not enrolled */
    earlyAccessFlag?: string;
-   /** Stage of the early access feature, used to render the correct badge (override when PostHog feature is missing) */
-   earlyAccessStage?: "alpha" | "beta" | "concept" | "general-availability";
 };
 
 export type NavGroupDef = {
@@ -93,8 +91,7 @@ export const navGroups: NavGroupDef[] = [
             route: "/$slug/$teamSlug/analytics/dashboards",
             quickAction: { type: "create", target: "sub-menu" },
             subPanel: "dashboards",
-            earlyAccessFlag: "dashboards",
-            earlyAccessStage: "beta" as const,
+            earlyAccessFlag: "advanced-analytics",
          },
          {
             id: "insights",
@@ -103,8 +100,7 @@ export const navGroups: NavGroupDef[] = [
             route: "/$slug/$teamSlug/analytics/insights",
             quickAction: { type: "create", target: "sub-menu" },
             subPanel: "insights",
-            earlyAccessFlag: "insights",
-            earlyAccessStage: "beta" as const,
+            earlyAccessFlag: "advanced-analytics",
          },
          {
             id: "data-management",
@@ -113,8 +109,7 @@ export const navGroups: NavGroupDef[] = [
             route: "/$slug/$teamSlug/analytics/data-management",
             quickAction: { type: "create", target: "sub-menu" },
             subPanel: "data-management",
-            earlyAccessFlag: "data-management",
-            earlyAccessStage: "beta" as const,
+            earlyAccessFlag: "advanced-analytics",
          },
       ],
    },

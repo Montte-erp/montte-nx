@@ -19,7 +19,11 @@ import { protectedProcedure } from "../server";
 const categorySchema = createInsertSchema(categories)
    .pick({ name: true })
    .extend({
-      color: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
+      color: z
+         .string()
+         .regex(/^#[0-9a-fA-F]{6}$/)
+         .nullable()
+         .optional(),
       icon: z.string().max(50).nullable().optional(),
       type: z.enum(["income", "expense"]).nullable().optional(),
    });
