@@ -67,6 +67,7 @@ import {
    type TransactionRow,
 } from "@/features/transactions/ui/transactions-columns";
 import { TransactionSheet } from "@/features/transactions/ui/transactions-sheet";
+import { BillFromTransactionCredenza } from "@/features/bills/ui/bill-from-transaction-credenza";
 import type { ViewConfig } from "@/features/view-switch/hooks/use-view-switch";
 import { useViewSwitch } from "@/features/view-switch/hooks/use-view-switch";
 import { ViewSwitchDropdown } from "@/features/view-switch/ui/view-switch-dropdown";
@@ -621,6 +622,48 @@ function TransactionsList({
       [openAlertDialog, deleteMutation],
    );
 
+   const handleInstallment = useCallback(
+      (tx: TransactionRow) => {
+         openCredenza({
+            children: (
+               <BillFromTransactionCredenza
+                  mode="installment"
+                  transactionId={tx.id}
+                  transactionName={tx.name ?? ""}
+                  transactionAmount={tx.amount}
+                  transactionDate={tx.date}
+                  transactionType={tx.type}
+                  bankAccountId={tx.bankAccountId}
+                  categoryId={tx.categoryId}
+                  onSuccess={closeCredenza}
+               />
+            ),
+         });
+      },
+      [openCredenza, closeCredenza],
+   );
+
+   const handleRecurring = useCallback(
+      (tx: TransactionRow) => {
+         openCredenza({
+            children: (
+               <BillFromTransactionCredenza
+                  mode="recurring"
+                  transactionId={tx.id}
+                  transactionName={tx.name ?? ""}
+                  transactionAmount={tx.amount}
+                  transactionDate={tx.date}
+                  transactionType={tx.type}
+                  bankAccountId={tx.bankAccountId}
+                  categoryId={tx.categoryId}
+                  onSuccess={closeCredenza}
+               />
+            ),
+         });
+      },
+      [openCredenza, closeCredenza],
+   );
+
    const handleBulkDelete = useCallback(() => {
       openAlertDialog({
          title: `Excluir ${selectedCount} ${selectedCount === 1 ? "transação" : "transações"}`,
@@ -706,8 +749,8 @@ function TransactionsList({
    ]);
 
    const columns = useMemo(
-      () => buildTransactionColumns(handleEdit, handleDelete),
-      [handleEdit, handleDelete],
+      () => buildTransactionColumns(handleEdit, handleDelete, handleInstallment, handleRecurring),
+      [handleEdit, handleDelete, handleInstallment, handleRecurring],
    );
 
    if (transactionData.length === 0 && filters.page === 1) {

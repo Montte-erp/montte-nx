@@ -1,8 +1,15 @@
 import { format, of } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
+import {
+   DropdownMenu,
+   DropdownMenuContent,
+   DropdownMenuItem,
+   DropdownMenuSeparator,
+   DropdownMenuTrigger,
+} from "@packages/ui/components/dropdown-menu";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Pencil, Trash2 } from "lucide-react";
+import { CalendarDays, MoreHorizontal, Pencil, Repeat, Trash2 } from "lucide-react";
 
 export type TransactionRow = {
    id: string;
@@ -20,6 +27,7 @@ export type TransactionRow = {
    tagIds?: string[];
    contactId: string | null;
    contactName?: string | null;
+   billId?: string | null;
    createdAt: Date | string;
    updatedAt: Date | string;
 };
@@ -37,6 +45,9 @@ function formatDate(dateStr: string): string {
 export function buildTransactionColumns(
    onEdit: (transaction: TransactionRow) => void,
    onDelete: (transaction: TransactionRow) => void,
+   onInstallment?: (transaction: TransactionRow) => void,
+   onRecurring?: (transaction: TransactionRow) => void,
+   onUnpay?: (transaction: TransactionRow) => void,
 ): ColumnDef<TransactionRow>[] {
    return [
       {
@@ -113,32 +124,66 @@ export function buildTransactionColumns(
       {
          id: "actions",
          header: "",
-         cell: ({ row }) => (
-            // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation wrapper for table row click
-            <div
-               className="flex items-center justify-end gap-1"
-               onClick={(e) => e.stopPropagation()}
-               onKeyDown={(e) => e.stopPropagation()}
-            >
-               <Button
-                  onClick={() => onEdit(row.original)}
-                  size="icon"
-                  variant="ghost"
+         cell: ({ row }) => {
+            const tx = row.original;
+            const isTransfer = tx.type === "transfer";
+            return (
+               // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation wrapper for table row click
+               <div
+                  className="flex items-center justify-end gap-1"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
                >
-                  <Pencil className="size-4" />
-                  <span className="sr-only">Editar</span>
-               </Button>
-               <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => onDelete(row.original)}
-                  size="icon"
-                  variant="ghost"
-               >
-                  <Trash2 className="size-4" />
-                  <span className="sr-only">Excluir</span>
-               </Button>
-            </div>
-         ),
+                  <Button
+                     onClick={() => onEdit(tx)}
+                     size="icon"
+                     variant="ghost"
+                  >
+                     <Pencil className="size-4" />
+                     <span className="sr-only">Editar</span>
+                  </Button>
+                  <Button
+                     className="text-destructive hover:text-destructive"
+                     onClick={() => onDelete(tx)}
+                     size="icon"
+                     variant="ghost"
+                  >
+                     <Trash2 className="size-4" />
+                     <span className="sr-only">Excluir</span>
+                  </Button>
+                  {!isTransfer && (onInstallment || onRecurring || (onUnpay && tx.billId)) && (
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                           <Button size="icon" variant="ghost">
+                              <MoreHorizontal className="size-4" />
+                              <span className="sr-only">Mais ações</span>
+                           </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                           <DropdownMenuSeparator />
+                           {onInstallment && (
+                              <DropdownMenuItem onClick={() => onInstallment(tx)}>
+                                 <CalendarDays className="size-4 mr-2" />
+                                 Parcelar Transação
+                              </DropdownMenuItem>
+                           )}
+                           {onRecurring && (
+                              <DropdownMenuItem onClick={() => onRecurring(tx)}>
+                                 <Repeat className="size-4 mr-2" />
+                                 Criar Transação Recorrente
+                              </DropdownMenuItem>
+                           )}
+                           {onUnpay && tx.billId && (
+                              <DropdownMenuItem onClick={() => onUnpay(tx)}>
+                                 Marcar como Não Pago
+                              </DropdownMenuItem>
+                           )}
+                        </DropdownMenuContent>
+                     </DropdownMenu>
+                  )}
+               </div>
+            );
+         },
       },
    ];
 }
