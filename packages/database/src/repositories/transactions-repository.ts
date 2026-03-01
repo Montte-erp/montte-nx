@@ -4,14 +4,22 @@ import {
    count,
    desc,
    eq,
+   getTableColumns,
    gte,
    ilike,
    inArray,
+   isNull,
    lte,
    or,
 } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
-import { type NewTransaction, transactions, transactionTags } from "../schema";
+import {
+   categories,
+   creditCards,
+   type NewTransaction,
+   transactions,
+   transactionTags,
+} from "../schema";
 
 export interface ListTransactionsFilter {
    teamId: string;
@@ -25,6 +33,8 @@ export interface ListTransactionsFilter {
    search?: string;
    page?: number;
    pageSize?: number;
+   uncategorized?: boolean;
+   creditCardId?: string;
 }
 
 export async function createTransaction(
@@ -98,17 +108,29 @@ export async function listTransactions(
          );
          if (searchCond) conditions.push(searchCond);
       }
+      if (filter.creditCardId)
+         conditions.push(eq(transactions.creditCardId, filter.creditCardId));
+      if (filter.uncategorized)
+         conditions.push(isNull(transactions.categoryId));
 
       const whereClause = and(...conditions);
 
       const [countResult] = await db
          .select({ total: count() })
          .from(transactions)
+         .leftJoin(categories, eq(transactions.categoryId, categories.id))
+         .leftJoin(creditCards, eq(transactions.creditCardId, creditCards.id))
          .where(whereClause);
 
       const data = await db
-         .select()
+         .select({
+            ...getTableColumns(transactions),
+            categoryName: categories.name,
+            creditCardName: creditCards.name,
+         })
          .from(transactions)
+         .leftJoin(categories, eq(transactions.categoryId, categories.id))
+         .leftJoin(creditCards, eq(transactions.creditCardId, creditCards.id))
          .where(whereClause)
          .orderBy(desc(transactions.date))
          .limit(pageSize)

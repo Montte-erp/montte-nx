@@ -32,6 +32,7 @@ const transactionSchema = createInsertSchema(transactions)
       subcategoryId: true,
       attachmentUrl: true,
       contactId: true,
+      creditCardId: true,
    })
    .extend({
       name: z.string().max(200).nullable().optional(),
@@ -153,6 +154,8 @@ export const getAll = protectedProcedure
                .regex(/^\d{4}-\d{2}-\d{2}$/)
                .optional(),
             search: z.string().max(100).optional(),
+            creditCardId: z.string().uuid().optional(),
+            uncategorized: z.boolean().optional(),
             page: z.number().int().positive().default(1),
             pageSize: z.number().int().positive().max(100).default(20),
          })
