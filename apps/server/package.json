@@ -23,14 +23,14 @@
       "typescript": "catalog:development"
    },
    "license": "Apache-2.0",
-   "name": "sdk-server",
+   "name": "server",
    "scripts": {
-      "build": "bun build --compile --minify-whitespace --minify-syntax --target bun --outfile sdk-server ./src/index.ts",
+      "build": "bun build --compile --minify-whitespace --minify-syntax --target bun --outfile server ./src/index.ts",
       "check": "bunx --bun biome check --write .",
       "container-start": "(command -v podman-compose > /dev/null 2>&1 && podman-compose -f ../web/docker-compose.yml down && podman-compose -f ../web/docker-compose.yml up -d) || (docker-compose -f ../web/docker-compose.yml down && docker-compose -f ../web/docker-compose.yml up -d)",
       "dev": "bun run container-start && bun run --watch src/index.ts",
       "format": "biome format",
-      "start": "./sdk-server",
+      "start": "./server",
       "typecheck": "tsgo"
    },
    "version": "0.8.1"

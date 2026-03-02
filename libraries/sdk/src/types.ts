@@ -2,7 +2,7 @@
  * SDK Type Definitions
  *
  * This file contains type exports for the Montte SDK.
- * All runtime types are inferred from the oRPC router at sdk-server/src/orpc/router/*.
+ * All runtime types are inferred from the oRPC router at server/src/orpc/router/*.
  *
  * We only maintain minimal helper types here for backward compatibility and documentation.
  */

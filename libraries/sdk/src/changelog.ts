@@ -17,7 +17,7 @@ interface EmbedConfig {
 }
 
 // Minimal type for the clusters portion of the SDK router used by this client.
-// Avoids a cross-package dependency on sdk-server while keeping type safety.
+// Avoids a cross-package dependency on server while keeping type safety.
 interface SdkClustersClient {
 	getEmbed(input: { pillarId: string }): Promise<{
 		config: EmbedConfig;
