@@ -28,6 +28,10 @@ import { eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
+import {
+   cancelPendingBillsForSubscription,
+   generateBillsForSubscription,
+} from "./services-bills";
 
 // =============================================================================
 // Validation Schemas
@@ -230,12 +234,26 @@ export const createSubscription = protectedProcedure
          });
       }
 
-      // TODO Task 7: call generateBillsForSubscription here
-      return createSubscriptionRepo(db, {
+      const sub = await createSubscriptionRepo(db, {
          ...input,
          teamId,
          source: "manual",
       });
+
+      // Auto-generate bills (non-throwing — subscription is already created)
+      try {
+         const service = await getService(db, variant.serviceId);
+         if (service) {
+            await generateBillsForSubscription(db, sub, variant, service.name);
+         }
+      } catch (err) {
+         console.error(
+            "[services] Failed to generate bills for subscription:",
+            err,
+         );
+      }
+
+      return sub;
    });
 
 export const cancelSubscription = protectedProcedure
@@ -262,8 +280,15 @@ export const cancelSubscription = protectedProcedure
          });
       }
 
-      // TODO Task 7: cancel pending bills here
-      return updateSubscription(db, input.id, { status: "cancelled" });
+      const cancelled = await updateSubscription(db, input.id, {
+         status: "cancelled",
+      });
+
+      await cancelPendingBillsForSubscription(db, input.id).catch((err) => {
+         console.error("[services] Failed to cancel pending bills:", err);
+      });
+
+      return cancelled;
    });
 
 // =============================================================================
