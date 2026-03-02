@@ -179,6 +179,7 @@ export type NewServiceVariant = typeof serviceVariants.$inferInsert;
 export type ContactSubscription = typeof contactSubscriptions.$inferSelect;
 export type NewContactSubscription = typeof contactSubscriptions.$inferInsert;
 export type Resource = typeof resources.$inferSelect;
+export type NewResource = typeof resources.$inferInsert;
 export type BillingCycle = (typeof billingCycleEnum.enumValues)[number];
 export type SubscriptionStatus = (typeof subscriptionStatusEnum.enumValues)[number];
 export type ServiceSource = (typeof serviceSourceEnum.enumValues)[number];
