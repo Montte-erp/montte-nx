@@ -2,8 +2,8 @@ import { ORPCError } from "@orpc/server";
 import {
    countActiveSubscriptionsByVariant,
    createService,
-   createSubscription,
-   createVariant,
+   createSubscription as createSubscriptionRepo,
+   createVariant as createVariantRepo,
    deleteService,
    deleteVariant,
    getService,
@@ -16,13 +16,15 @@ import {
    listVariantsByService,
    updateService,
    updateSubscription,
-   updateVariant,
+   updateVariant as updateVariantRepo,
 } from "@packages/database/repositories/services-repository";
+import { contacts } from "@packages/database/schemas/contacts";
 import {
    contactSubscriptions,
    services,
    serviceVariants,
 } from "@packages/database/schemas/services";
+import { eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
@@ -121,7 +123,7 @@ export const getVariants = protectedProcedure
       return listVariantsByService(db, input.serviceId);
    });
 
-export const createVariantProcedure = protectedProcedure
+export const createVariant = protectedProcedure
    .input(z.object({ serviceId: z.string().uuid() }).merge(variantSchema))
    .handler(async ({ context, input }) => {
       const { db, teamId } = context;
@@ -134,10 +136,10 @@ export const createVariantProcedure = protectedProcedure
          });
       }
 
-      return createVariant(db, { ...variantData, serviceId, teamId });
+      return createVariantRepo(db, { ...variantData, serviceId, teamId });
    });
 
-export const updateVariantProcedure = protectedProcedure
+export const updateVariant = protectedProcedure
    .input(z.object({ id: z.string().uuid() }).merge(variantSchema.partial()))
    .handler(async ({ context, input }) => {
       const { db, teamId } = context;
@@ -150,7 +152,7 @@ export const updateVariantProcedure = protectedProcedure
          });
       }
 
-      return updateVariant(db, id, data);
+      return updateVariantRepo(db, id, data);
    });
 
 export const removeVariant = protectedProcedure
@@ -189,17 +191,47 @@ export const getAllSubscriptions = protectedProcedure
 export const getContactSubscriptions = protectedProcedure
    .input(z.object({ contactId: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { db } = context;
+      const { db, teamId } = context;
+
+      const contact = await db
+         .select({ teamId: contacts.teamId })
+         .from(contacts)
+         .where(eq(contacts.id, input.contactId));
+      if (!contact[0] || contact[0].teamId !== teamId) {
+         throw new ORPCError("NOT_FOUND", {
+            message: "Contato não encontrado.",
+         });
+      }
+
       return listSubscriptionsByContact(db, input.contactId);
    });
 
-export const createSubscriptionProcedure = protectedProcedure
+export const createSubscription = protectedProcedure
    .input(subscriptionSchema)
    .handler(async ({ context, input }) => {
       const { db, teamId } = context;
 
+      // Verify contact belongs to team
+      const contact = await db
+         .select({ teamId: contacts.teamId })
+         .from(contacts)
+         .where(eq(contacts.id, input.contactId));
+      if (!contact[0] || contact[0].teamId !== teamId) {
+         throw new ORPCError("NOT_FOUND", {
+            message: "Contato não encontrado.",
+         });
+      }
+
+      // Verify variant belongs to team
+      const variant = await getVariant(db, input.variantId);
+      if (!variant || variant.teamId !== teamId) {
+         throw new ORPCError("NOT_FOUND", {
+            message: "Variante não encontrada.",
+         });
+      }
+
       // TODO Task 7: call generateBillsForSubscription here
-      return createSubscription(db, {
+      return createSubscriptionRepo(db, {
          ...input,
          teamId,
          source: "manual",
@@ -215,6 +247,12 @@ export const cancelSubscription = protectedProcedure
       if (!subscription || subscription.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Assinatura não encontrada.",
+         });
+      }
+
+      if (subscription.status !== "active") {
+         throw new ORPCError("BAD_REQUEST", {
+            message: "Apenas assinaturas ativas podem ser canceladas.",
          });
       }
 
