@@ -81,7 +81,7 @@ export const bills = pgTable(
          onDelete: "set null",
       }),
       contactId: uuid("contact_id"),       // nullable — set when bill is auto-generated from a subscription
-      subscriptionId: uuid("subscription_id"), // nullable — FK to contact_subscriptions
+      subscriptionId: uuid("subscription_id"), // nullable — set when bill is auto-generated from a subscription
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
          .defaultNow(),

@@ -9,7 +9,7 @@ import {
    uuid,
 } from "drizzle-orm/pg-core";
 import { transactions } from "./transactions";
-import { serviceSourceEnum } from "./services";
+import { serviceSourceEnum } from "./enums";
 
 export const contactTypeEnum = pgEnum("contact_type", [
    "cliente",
@@ -47,6 +47,7 @@ export const contacts = pgTable(
    (table) => [
       index("contacts_team_id_idx").on(table.teamId),
       uniqueIndex("contacts_team_id_name_unique").on(table.teamId, table.name),
+      index("contacts_external_id_idx").on(table.externalId),
    ],
 );
 
@@ -59,4 +60,3 @@ export type NewContact = typeof contacts.$inferInsert;
 export type ContactType = (typeof contactTypeEnum.enumValues)[number];
 export type ContactDocumentType =
    (typeof contactDocumentTypeEnum.enumValues)[number];
-export type ContactSource = (typeof serviceSourceEnum.enumValues)[number];

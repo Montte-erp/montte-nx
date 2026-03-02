@@ -18,7 +18,7 @@ export * from "./schemas/categories";
 export * from "./schemas/contacts";
 export * from "./schemas/credit-cards";
 export * from "./schemas/dashboards";
-// Services
+export * from "./schemas/enums";
 export * from "./schemas/services";
 // Data sources
 export * from "./schemas/data-sources";
