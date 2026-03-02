@@ -309,7 +309,7 @@ export function SidebarNav() {
 
    return (
       <>
-         {navGroups.map((group) => (
+         {navGroups.filter((g) => g.id !== "main").map((group) => (
             <NavGroup
                group={group}
                isItemActive={isItemActive}
