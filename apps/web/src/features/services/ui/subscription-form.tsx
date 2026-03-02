@@ -115,7 +115,8 @@ export function SubscriptionForm({
    const discountPercent = useMemo(() => {
       if (
          !selectedVariant ||
-         !negotiatedPrice ||
+         negotiatedPrice <= 0 ||
+         negotiatedPrice >= selectedVariant.basePrice ||
          selectedVariant.basePrice <= 0
       )
          return null;
