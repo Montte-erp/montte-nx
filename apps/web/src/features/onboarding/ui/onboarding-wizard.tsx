@@ -12,6 +12,7 @@ import {
    useTransition,
 } from "react";
 import type { Session } from "@/integrations/better-auth/auth-client";
+import { AccountTypeStep, type AccountType } from "./account-type-step";
 import { ProfileStep } from "./profile-step";
 import type { StepHandle, StepState } from "./step-handle";
 import { WorkspaceStep } from "./workspace-step";
@@ -44,6 +45,7 @@ export function OnboardingWizard({
    const steps = useMemo(() => {
       const s: { id: string; title: string }[] = [];
       if (needsProfile) s.push({ id: "profile", title: "Perfil" });
+      if (needsWorkspace) s.push({ id: "account-type", title: "Tipo de Conta" });
       if (needsWorkspace) s.push({ id: "workspace", title: "Workspace" });
       return s;
    }, [needsProfile, needsWorkspace]);
@@ -53,10 +55,11 @@ export function OnboardingWizard({
    const [workspaceSlug, setWorkspaceSlug] = useState<string | null>(
       activeOrg?.slug ?? null,
    );
+   const [selectedAccountType, setSelectedAccountType] =
+      useState<AccountType>("personal");
 
    const stepRef = useRef<StepHandle>(null);
    const [, startTransition] = useTransition();
-
    const [stepState, setStepState] = useState<StepState>({
       canContinue: true,
       isPending: false,
@@ -67,12 +70,18 @@ export function OnboardingWizard({
    }, []);
 
    const handleProfileComplete = useCallback(
-      (methods: { navigation: { next: () => void } }) => {
-         if (needsWorkspace) {
-            methods.navigation.next();
-         }
+      (next: () => void) => {
+         if (needsWorkspace) next();
       },
       [needsWorkspace],
+   );
+
+   const handleAccountTypeComplete = useCallback(
+      (accountType: AccountType, next: () => void) => {
+         setSelectedAccountType(accountType);
+         next();
+      },
+      [],
    );
 
    const handleWorkspaceComplete = useCallback(
@@ -85,7 +94,7 @@ export function OnboardingWizard({
       [navigate],
    );
 
-   // Edge case: user already has name + org. Navigate away after render.
+   // If there's nothing to do, navigate away after render.
    useEffect(() => {
       if (steps.length === 0) {
          navigate({ to: "/" });
@@ -117,9 +126,9 @@ export function OnboardingWizard({
 
             return (
                <>
-                  {/* Header: stepper + logo */}
+                  {/* Header: step indicators + logo */}
                   <header className="shrink-0 border-b p-4">
-                     <div className="mx-auto flex w-full  items-center gap-4">
+                     <div className="mx-auto flex w-full items-center gap-4">
                         <Stepper.Navigation className="flex-1">
                            {steps.map((step) => (
                               <Stepper.Step key={step.id} of={step.id} />
@@ -142,46 +151,53 @@ export function OnboardingWizard({
                      </div>
                   </header>
 
-                  {/* Main: step content centered */}
+                  {/* Main: step content */}
                   <main className="flex flex-1 items-center justify-center overflow-y-auto px-4 py-8">
                      <div
                         className="w-full animate-in fade-in slide-in-from-bottom-2 duration-200"
                         key={methods.state.current.data.id}
                      >
                         {methods.flow.switch({
-                           ...(needsProfile
-                              ? {
-                                   profile: () => (
-                                      <ProfileStep
-                                         defaultName={session.user.name ?? ""}
-                                         onNext={() =>
-                                            handleProfileComplete(methods)
-                                         }
-                                         onStateChange={handleStepStateChange}
-                                         ref={stepRef}
-                                      />
-                                   ),
-                                }
-                              : {}),
-                           ...(needsWorkspace
-                              ? {
-                                   workspace: () => (
-                                      <WorkspaceStep
-                                         onNext={handleWorkspaceComplete}
-                                         onSlugChange={setWorkspaceSlug}
-                                         onStateChange={handleStepStateChange}
-                                         ref={stepRef}
-                                      />
-                                   ),
-                                }
-                              : {}),
+                           profile: () => (
+                              <ProfileStep
+                                 defaultName={session.user.name ?? ""}
+                                 onNext={() =>
+                                    handleProfileComplete(
+                                       methods.navigation.next,
+                                    )
+                                 }
+                                 onStateChange={handleStepStateChange}
+                                 ref={stepRef}
+                              />
+                           ),
+                           "account-type": () => (
+                              <AccountTypeStep
+                                 onNext={(accountType) =>
+                                    handleAccountTypeComplete(
+                                       accountType,
+                                       methods.navigation.next,
+                                    )
+                                 }
+                                 onStateChange={handleStepStateChange}
+                                 ref={stepRef}
+                              />
+                           ),
+                           workspace: () => (
+                              <WorkspaceStep
+                                 accountType={selectedAccountType}
+                                 onNext={handleWorkspaceComplete}
+                                 onSlugChange={setWorkspaceSlug}
+                                 onStateChange={handleStepStateChange}
+                                 ref={stepRef}
+                              />
+                           ),
                         })}
                      </div>
                   </main>
 
-                  {/* Footer: back/continue buttons */}
-                  <footer className="shrink-0 border-t px-4 py-4">
-                     <div className="mx-auto flex w-full  gap-3">
+                  {/* Footer: back / continue */}
+                  <footer className="shrink-0 px-4 py-4">
+                     <div className="mx-auto flex w-full gap-3">
                         {!isFirstStep && (
                            <Button
                               className="h-11"

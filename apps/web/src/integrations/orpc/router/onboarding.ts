@@ -4,18 +4,201 @@ import type { DatabaseInstance } from "@packages/database/client";
 import { DEFAULT_INSIGHTS } from "@packages/database/default-insights";
 import { createDefaultInsights } from "@packages/database/repositories/dashboard-repository";
 import { getInsightById } from "@packages/database/repositories/insight-repository";
-import { organization, team } from "@packages/database/schemas/auth";
+import { organization, team, teamMember } from "@packages/database/schemas/auth";
 import { categories } from "@packages/database/schemas/categories";
 import { dashboards } from "@packages/database/schemas/dashboards";
 import { insights } from "@packages/database/schemas/insights";
 import { transactions } from "@packages/database/schemas/transactions";
-import { and, eq, sql } from "drizzle-orm";
+import { createSlug } from "@packages/utils/text";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
-import { protectedProcedure } from "../server";
+import { authenticatedProcedure, protectedProcedure } from "../server";
 
-// =============================================================================
-// Procedures
-// =============================================================================
+
+async function runOnboardingCompletion(
+   tx: DatabaseInstance,
+   {
+      organizationId,
+      teamId,
+      userId,
+      workspaceName,
+      slug,
+      accountType,
+   }: {
+      organizationId: string;
+      teamId: string;
+      userId: string;
+      workspaceName: string;
+      slug: string;
+      accountType: "personal" | "business";
+   },
+) {
+   console.log("[runOnboardingCompletion] Inserting teamMember");
+   await tx.insert(teamMember).values({
+      teamId,
+      userId,
+      createdAt: new Date(),
+   });
+
+   console.log("[runOnboardingCompletion] Updating team");
+   await tx
+      .update(team)
+      .set({
+         slug,
+         accountType,
+         onboardingProducts: ["finance"],
+         onboardingCompleted: true,
+      })
+      .where(eq(team.id, teamId));
+
+   console.log("[runOnboardingCompletion] Updating organization");
+   await tx
+      .update(organization)
+      .set({ onboardingCompleted: true })
+      .where(eq(organization.id, organizationId));
+
+   console.log("[runOnboardingCompletion] Creating default insights");
+   const insightIds = await createDefaultInsights(
+      tx,
+      organizationId,
+      teamId,
+      userId,
+   );
+   console.log("[runOnboardingCompletion] Insights created:", insightIds.length);
+
+   for (const insightId of insightIds) {
+      try {
+         console.log("[runOnboardingCompletion] Computing insight:", insightId);
+         const insight = await getInsightById(tx, insightId);
+         if (!insight) continue;
+         const freshData = await computeInsightData(tx, insight);
+         await tx
+            .update(insights)
+            .set({ cachedResults: freshData, lastComputedAt: new Date() })
+            .where(eq(insights.id, insightId));
+         console.log("[runOnboardingCompletion] Insight computed:", insightId);
+      } catch (error) {
+         console.error(
+            `[Onboarding] Failed to compute insight ${insightId}:`,
+            error,
+         );
+      }
+   }
+
+   console.log("[runOnboardingCompletion] Creating dashboard");
+   const tiles = insightIds.map((insightId, index) => ({
+      insightId,
+      size: DEFAULT_INSIGHTS[index].defaultSize,
+      order: index,
+   }));
+
+   await tx.insert(dashboards).values({
+      organizationId,
+      teamId,
+      createdBy: userId,
+      name: `Dashboard ${workspaceName}`,
+      description: null,
+      isDefault: true,
+      tiles,
+   });
+   console.log("[runOnboardingCompletion] Done");
+}
+
+export const createWorkspace = authenticatedProcedure
+   .input(
+      z.object({
+         workspaceName: z
+            .string()
+            .min(2, "O nome deve ter no mínimo 2 caracteres."),
+         accountType: z.enum(["personal", "business"]).default("personal"),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      const { auth, headers, db, userId } = context;
+
+      const slug = createSlug(input.workspaceName);
+
+      console.log("[createWorkspace] Starting:", {
+         userId,
+         workspaceName: input.workspaceName,
+         slug,
+         accountType: input.accountType,
+      });
+
+      const org = await auth.api.createOrganization({
+         headers,
+         body: { name: input.workspaceName, slug },
+      });
+
+      console.log("[createWorkspace] Organization created:", {
+         orgId: org?.id,
+         orgSlug: org?.slug,
+      });
+
+      if (!org?.id) {
+         throw new ORPCError("INTERNAL_SERVER_ERROR", {
+            message: "Failed to create workspace",
+         });
+      }
+
+      await auth.api.setActiveOrganization({
+         headers,
+         body: { organizationId: org.id },
+      });
+
+      console.log("[createWorkspace] Active organization set:", org.id);
+
+      const accountTypeLabel =
+         input.accountType === "business" ? "Empresarial" : "Pessoal";
+      const teamName = `${input.workspaceName} - ${accountTypeLabel}`;
+
+      const createdTeam = await auth.api.createTeam({
+         headers,
+         body: {
+            name: teamName,
+            organizationId: org.id,
+            slug,
+            accountType: input.accountType,
+         },
+      });
+
+      console.log("[createWorkspace] Team created:", {
+         teamId: createdTeam?.id,
+      });
+
+      if (!createdTeam?.id) {
+         throw new ORPCError("INTERNAL_SERVER_ERROR", {
+            message: "Failed to create team",
+         });
+      }
+
+      console.log("[createWorkspace] Starting transaction");
+      await db.transaction(async (tx) => {
+         await runOnboardingCompletion(tx, {
+            organizationId: org.id,
+            teamId: createdTeam.id,
+            userId,
+            workspaceName: teamName,
+            slug,
+            accountType: input.accountType,
+         });
+      });
+      console.log("[createWorkspace] Transaction committed");
+
+      console.log("[createWorkspace] Onboarding complete:", {
+         orgId: org.id,
+         orgSlug: org.slug ?? slug,
+         teamId: createdTeam.id,
+         teamSlug: slug,
+      });
+
+      return {
+         orgId: org.id,
+         orgSlug: org.slug ?? slug,
+         teamId: createdTeam.id,
+         teamSlug: slug,
+      };
+   });
 
 /**
  * Get the current onboarding status for both organization and project.
@@ -127,136 +310,30 @@ export const skipTask = protectedProcedure
    });
 
 /**
- * Complete onboarding — sets selected products and marks both org and team as completed.
- * Uses DB directly to avoid Better Auth team membership check issues.
+ * Complete onboarding for an existing org/team.
+ * Kept for backwards-compatibility — new workspaces use createWorkspace instead.
  */
 export const completeOnboarding = protectedProcedure
-   .input(
-      z.object({
-         products: z.array(z.enum(["finance"])),
-      }),
-   )
-   .handler(async ({ context, input }) => {
+   .input(z.object({ products: z.array(z.enum(["finance"])) }))
+   .handler(async ({ context }) => {
       const { db, organizationId, teamId, userId } = context;
 
-      console.log("[Onboarding] Starting completeOnboarding:", {
-         organizationId,
-         teamId,
-         userId,
-         products: input.products,
+      const teamRecord = await db.query.team.findFirst({
+         where: (t, { eq }) => eq(t.id, teamId),
+         columns: { name: true, slug: true },
       });
 
       await db.transaction(async (tx) => {
-         // Update team: set products and mark completed
-         await tx
-            .update(team)
-            .set({
-               onboardingProducts: input.products,
-               onboardingCompleted: true,
-            })
-            .where(eq(team.id, teamId));
-
-         console.log("[Onboarding] Team updated:", teamId);
-
-         // Update org: mark completed
-         await tx
-            .update(organization)
-            .set({ onboardingCompleted: true })
-            .where(eq(organization.id, organizationId));
-
-         console.log("[Onboarding] Organization updated:", organizationId);
-
-         // Create default insights for the team
-         const insightIds = await createDefaultInsights(
-            tx,
+         await runOnboardingCompletion(tx, {
             organizationId,
             teamId,
             userId,
-         );
-
-         console.log("[Onboarding] Created insights:", insightIds.length);
-
-         // Compute initial cached data for each insight synchronously
-         for (const insightId of insightIds) {
-            try {
-               const insight = await getInsightById(tx, insightId);
-               if (!insight) continue;
-
-               const freshData = await computeInsightData(tx, insight);
-
-               await tx
-                  .update(insights)
-                  .set({
-                     cachedResults: freshData,
-                     lastComputedAt: new Date(),
-                  })
-                  .where(eq(insights.id, insightId));
-            } catch (error) {
-               // Log but don't fail onboarding if insight computation fails
-               console.error(
-                  `[Onboarding] Failed to compute insight ${insightId}:`,
-                  error,
-               );
-            }
-         }
-
-         // Build tiles array from insight IDs
-         const tiles = insightIds.map((insightId, index) => ({
-            insightId,
-            size: DEFAULT_INSIGHTS[index].defaultSize,
-            order: index,
-         }));
-
-         console.log("[Onboarding] Creating dashboard with:", {
-            organizationId,
-            teamId,
-            tilesCount: tiles.length,
+            workspaceName: teamRecord?.name ?? "Workspace",
+            slug: teamRecord?.slug ?? teamId,
+            accountType: "personal",
          });
-
-         // Get team name for dashboard
-         const teamRecord = await tx.query.team.findFirst({
-            where: (t, { eq }) => eq(t.id, teamId),
-            columns: { name: true },
-         });
-
-         // Create default dashboard with tiles
-         const [createdDashboard] = await tx
-            .insert(dashboards)
-            .values({
-               organizationId,
-               teamId,
-               createdBy: userId,
-               name: teamRecord?.name
-                  ? `Dashboard ${teamRecord.name}`
-                  : "Dashboard",
-               description: null,
-               isDefault: true,
-               tiles,
-            })
-            .returning({ id: dashboards.id });
-
-         console.log("[Onboarding] Dashboard created:", createdDashboard);
       });
 
-      // Verify dashboard was created (outside transaction)
-      const verifyDashboard = await db
-         .select()
-         .from(dashboards)
-         .where(
-            and(
-               eq(dashboards.organizationId, organizationId),
-               eq(dashboards.teamId, teamId),
-               eq(dashboards.isDefault, true),
-            ),
-         )
-         .limit(1);
-
-      console.log("[Onboarding] Dashboard verification:", {
-         found: verifyDashboard.length > 0,
-         dashboard: verifyDashboard[0],
-      });
-
-      // Fetch org slug for navigation (outside transaction)
       const org = await db.query.organization.findFirst({
          where: (o, { eq }) => eq(o.id, organizationId),
          columns: { slug: true },

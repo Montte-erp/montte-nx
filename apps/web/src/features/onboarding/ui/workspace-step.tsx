@@ -13,13 +13,14 @@ import {
    useCallback,
    useEffect,
    useImperativeHandle,
-   useRef,
    useTransition,
 } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
+import { useMutation } from "@tanstack/react-query";
+import type { AccountType } from "./account-type-step";
 import type { StepHandle, StepState } from "./step-handle";
 
 const workspaceSchema = z.object({
@@ -29,70 +30,49 @@ const workspaceSchema = z.object({
 });
 
 interface WorkspaceStepProps {
+   accountType: AccountType;
    onNext: (result: { orgSlug: string; teamSlug: string }) => void;
    onStateChange: (state: StepState) => void;
    onSlugChange?: (slug: string | null) => void;
 }
 
 export const WorkspaceStep = forwardRef<StepHandle, WorkspaceStepProps>(
-   function WorkspaceStep({ onNext, onStateChange, onSlugChange }, ref) {
+   function WorkspaceStep(
+      { accountType, onNext, onStateChange, onSlugChange },
+      ref,
+   ) {
       const [isPending, startTransition] = useTransition();
-      const submitSucceeded = useRef(false);
+
+      const createWorkspace = useMutation(
+         orpc.onboarding.createWorkspace.mutationOptions(),
+      );
 
       const form = useForm({
          defaultValues: {
             workspaceName: "",
          },
          onSubmit: async ({ value }) => {
-            submitSucceeded.current = false;
             try {
-               const slug = createSlug(value.workspaceName);
-
-               const result = await authClient.organization.create({
-                  name: value.workspaceName,
-                  slug,
+               console.log("[WorkspaceStep] Calling createWorkspace mutation");
+               const result = await createWorkspace.mutateAsync({
+                  workspaceName: value.workspaceName,
+                  accountType,
                });
+               console.log("[WorkspaceStep] Mutation complete:", result);
 
-               if (!result.data?.id) {
-                  throw new Error("Failed to create workspace");
-               }
-
-               const orgId = result.data.id;
-               const orgSlug = result.data.slug ?? slug;
-
+               console.log("[WorkspaceStep] Calling setActive:", result.orgId);
                await authClient.organization.setActive({
-                  organizationId: orgId,
+                  organizationId: result.orgId,
                });
-               const teamResult = await authClient.organization.createTeam({
-                  name: value.workspaceName,
-                  organizationId: orgId,
+               console.log("[WorkspaceStep] setActive done");
+
+               console.log("[WorkspaceStep] Calling setActiveTeam:", result.teamId);
+               await authClient.organization.setActiveTeam({
+                  teamId: result.teamId,
                });
+               console.log("[WorkspaceStep] setActiveTeam done");
 
-               if (!teamResult.data?.id) {
-                  throw new Error("Failed to create team");
-               }
-
-               const teamId = teamResult.data.id;
-               const teamSlug = slug;
-
-               const session = await authClient.getSession();
-               if (!session?.data?.user?.id) {
-                  throw new Error("No active session");
-               }
-
-               await authClient.organization.addTeamMember({
-                  teamId,
-                  userId: session.data.user.id,
-               });
-
-               await authClient.organization.setActiveTeam({ teamId });
-
-               await orpc.onboarding.completeOnboarding.call({
-                  products: ["finance"],
-               });
-
-               onNext({ orgSlug, teamSlug });
-               submitSucceeded.current = true;
+               onNext({ orgSlug: result.orgSlug, teamSlug: result.teamSlug });
             } catch (error) {
                toast.error(
                   error instanceof Error
@@ -109,16 +89,16 @@ export const WorkspaceStep = forwardRef<StepHandle, WorkspaceStepProps>(
          () => ({
             submit: async () => {
                await form.handleSubmit();
-               return submitSucceeded.current;
+               return !createWorkspace.isError;
             },
             canContinue: true,
-            isPending: isPending,
+            isPending,
          }),
-         [form, isPending],
+         [form, isPending, createWorkspace.isError],
       );
 
       useEffect(() => {
-         onStateChange({ canContinue: true, isPending: isPending });
+         onStateChange({ canContinue: true, isPending });
       }, [isPending, onStateChange]);
 
       const handleSubmit = useCallback(
