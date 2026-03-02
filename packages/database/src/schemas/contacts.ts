@@ -9,6 +9,7 @@ import {
    uuid,
 } from "drizzle-orm/pg-core";
 import { transactions } from "./transactions";
+import { serviceSourceEnum } from "./services";
 
 export const contactTypeEnum = pgEnum("contact_type", [
    "cliente",
@@ -33,6 +34,8 @@ export const contacts = pgTable(
       document: text("document"),
       documentType: contactDocumentTypeEnum("document_type"),
       notes: text("notes"),
+      source: serviceSourceEnum("source").notNull().default("manual"),
+      externalId: text("external_id"),   // Asaas customer ID
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
          .defaultNow(),
@@ -56,3 +59,4 @@ export type NewContact = typeof contacts.$inferInsert;
 export type ContactType = (typeof contactTypeEnum.enumValues)[number];
 export type ContactDocumentType =
    (typeof contactDocumentTypeEnum.enumValues)[number];
+export type ContactSource = (typeof serviceSourceEnum.enumValues)[number];

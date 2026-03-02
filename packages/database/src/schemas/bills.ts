@@ -80,6 +80,8 @@ export const bills = pgTable(
       transactionId: uuid("transaction_id").references(() => transactions.id, {
          onDelete: "set null",
       }),
+      contactId: uuid("contact_id"),       // nullable — set when bill is auto-generated from a subscription
+      subscriptionId: uuid("subscription_id"), // nullable — FK to contact_subscriptions
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
          .defaultNow(),
@@ -96,6 +98,8 @@ export const bills = pgTable(
       index("bills_recurrence_group_idx").on(table.recurrenceGroupId),
       index("bills_transaction_id_idx").on(table.transactionId),
       index("bills_type_idx").on(table.type),
+      index("bills_contact_id_idx").on(table.contactId),
+      index("bills_subscription_id_idx").on(table.subscriptionId),
    ],
 );
 
