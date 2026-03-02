@@ -7,6 +7,7 @@ import {
    House,
    LayoutDashboard,
    Lightbulb,
+   Package,
    Receipt,
    Sparkles,
    Tag,
@@ -143,6 +144,20 @@ export const navGroups: NavGroupDef[] = [
             icon: Users,
             route: "/$slug/$teamSlug/contacts",
             earlyAccessFlag: "contacts",
+         },
+      ],
+   },
+   {
+      id: "inventory",
+      label: "Estoque",
+      items: [
+         {
+            id: "inventory",
+            label: "Produtos",
+            icon: Package,
+            route: "/$slug/$teamSlug/inventory",
+            quickAction: { type: "create", target: "sheet" },
+            configurable: true,
          },
       ],
    },
