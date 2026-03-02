@@ -307,16 +307,14 @@ export function SidebarNav() {
       });
    }, [openCredenza, closeCredenza]);
 
-   const labeledGroups = navGroups.filter((g) => g.label);
-
    return (
       <>
-         {labeledGroups.map((group) => (
+         {navGroups.map((group) => (
             <NavGroup
                group={group}
                isItemActive={isItemActive}
                key={group.id}
-               onConfigure={group.id === "finance" ? handleConfigure : undefined}
+               onConfigure={group.id === "erp" ? handleConfigure : undefined}
                onMainItemClick={handleMainItemClick}
                onSubPanelToggle={handleSubPanelToggle}
                slug={slug}
