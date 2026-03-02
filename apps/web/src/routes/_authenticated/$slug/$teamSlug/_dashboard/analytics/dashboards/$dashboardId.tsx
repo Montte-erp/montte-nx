@@ -5,6 +5,21 @@ import { Suspense } from "react";
 import { DashboardView } from "@/features/analytics/ui/dashboard-view";
 import { setChatMode } from "@/features/teco-chat/stores/chat-context-store";
 import { orpc } from "@/integrations/orpc/client";
+import {
+   EarlyAccessBanner,
+   type EarlyAccessBannerTemplate,
+} from "@/features/billing/ui/early-access-banner";
+
+const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
+   badgeLabel: "Analytics Avançado",
+   message: "Esta funcionalidade está em fase beta.",
+   ctaLabel: "Deixar feedback",
+   bullets: [
+      "Crie dashboards personalizados com seus insights",
+      "Analise tendências, funis e retenção de usuários",
+      "Seu feedback nos ajuda a melhorar",
+   ],
+};
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId",
@@ -51,8 +66,11 @@ function DashboardViewPageContent() {
 
 function DashboardViewPage() {
    return (
-      <Suspense fallback={<DashboardSkeleton />}>
-         <DashboardViewPageContent />
-      </Suspense>
+      <main className="flex flex-col gap-4">
+         <EarlyAccessBanner template={ANALYTICS_BANNER} />
+         <Suspense fallback={<DashboardSkeleton />}>
+            <DashboardViewPageContent />
+         </Suspense>
+      </main>
    );
 }

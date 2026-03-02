@@ -24,6 +24,21 @@ import {
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
+import {
+   EarlyAccessBanner,
+   type EarlyAccessBannerTemplate,
+} from "@/features/billing/ui/early-access-banner";
+
+const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
+   badgeLabel: "Analytics Avançado",
+   message: "Esta funcionalidade está em fase beta.",
+   ctaLabel: "Deixar feedback",
+   bullets: [
+      "Crie dashboards personalizados com seus insights",
+      "Analise tendências, funis e retenção de usuários",
+      "Seu feedback nos ajuda a melhorar",
+   ],
+};
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId",
@@ -259,21 +274,24 @@ function EditInsightPage() {
    if (!insight) return null;
 
    return (
-      <InsightBuilder
-         config={config}
-         description={insightDescription}
-         isSaving={updateMutation.isPending}
-         lastComputedAt={insight.lastComputedAt}
-         name={insightName}
-         onConfigUpdate={updateConfigImmediate}
-         onDelete={handleDelete}
-         onDescriptionChange={setInsightDescription}
-         onDuplicate={handleDuplicate}
-         onNameChange={setInsightName}
-         onRefresh={handleRefresh}
-         onSave={handleSave}
-         onTypeChange={setType}
-         type={type}
-      />
+      <>
+         <EarlyAccessBanner template={ANALYTICS_BANNER} />
+         <InsightBuilder
+            config={config}
+            description={insightDescription}
+            isSaving={updateMutation.isPending}
+            lastComputedAt={insight.lastComputedAt}
+            name={insightName}
+            onConfigUpdate={updateConfigImmediate}
+            onDelete={handleDelete}
+            onDescriptionChange={setInsightDescription}
+            onDuplicate={handleDuplicate}
+            onNameChange={setInsightName}
+            onRefresh={handleRefresh}
+            onSave={handleSave}
+            onTypeChange={setType}
+            type={type}
+         />
+      </>
    );
 }

@@ -34,6 +34,21 @@ import { useContextPanelInfo } from "@/features/context-panel/use-context-panel"
 import { DEFAULT_KPI_CONFIG } from "@/features/analytics/hooks/use-insight-config";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
+import {
+   EarlyAccessBanner,
+   type EarlyAccessBannerTemplate,
+} from "@/features/billing/ui/early-access-banner";
+
+const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
+   badgeLabel: "Analytics Avançado",
+   message: "Esta funcionalidade está em fase beta.",
+   ctaLabel: "Deixar feedback",
+   bullets: [
+      "Crie dashboards personalizados com seus insights",
+      "Analise tendências, funis e retenção de usuários",
+      "Seu feedback nos ajuda a melhorar",
+   ],
+};
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/",
@@ -384,6 +399,7 @@ function InsightsListPage() {
             description="Analise eventos, funis e retenção com consultas personalizadas."
             title="Insights"
          />
+         <EarlyAccessBanner template={ANALYTICS_BANNER} />
 
          {isLoading && <ListSkeleton />}
          {error && (

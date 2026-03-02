@@ -16,6 +16,21 @@ import { ContextPanelAction } from "@/features/context-panel/context-panel-info"
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
 import { setChatMode } from "@/features/teco-chat/stores/chat-context-store";
 import { orpc } from "@/integrations/orpc/client";
+import {
+   EarlyAccessBanner,
+   type EarlyAccessBannerTemplate,
+} from "@/features/billing/ui/early-access-banner";
+
+const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
+   badgeLabel: "Analytics Avançado",
+   message: "Esta funcionalidade está em fase beta.",
+   ctaLabel: "Deixar feedback",
+   bullets: [
+      "Crie dashboards personalizados com seus insights",
+      "Analise tendências, funis e retenção de usuários",
+      "Seu feedback nos ajuda a melhorar",
+   ],
+};
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/",
@@ -113,6 +128,7 @@ function DashboardsPage() {
             description="Painéis personalizados com seus insights"
             title="Dashboards"
          />
+         <EarlyAccessBanner template={ANALYTICS_BANNER} />
          <Suspense fallback={<DashboardsPageSkeleton />}>
             <DashboardsList />
          </Suspense>
