@@ -15,15 +15,15 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { CreditCard, LayoutGrid, LayoutList, Plus, Trash2 } from "lucide-react";
-import { Suspense, useCallback } from "react";
+import { LayoutGrid, LayoutList, Plus, Trash2, Users } from "lucide-react";
+import { Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import {
-   buildCreditCardColumns,
-   type CreditCardRow,
-} from "@/features/credit-cards/ui/credit-cards-columns";
-import { CreditCardForm } from "@/features/credit-cards/ui/credit-cards-form";
+   buildContactColumns,
+   type ContactRow,
+} from "@/features/contacts/ui/contacts-columns";
+import { ContactForm } from "@/features/contacts/ui/contacts-form";
 import {
    useViewSwitch,
    type ViewConfig,
@@ -34,20 +34,15 @@ import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
-   "/_authenticated/$slug/$teamSlug/_dashboard/finance/credit-cards",
+   "/_authenticated/$slug/$teamSlug/_dashboard/contacts",
 )({
    loader: ({ context }) => {
-      context.queryClient.prefetchQuery(
-         orpc.creditCards.getAll.queryOptions({}),
-      );
-      context.queryClient.prefetchQuery(
-         orpc.bankAccounts.getAll.queryOptions({}),
-      );
+      context.queryClient.prefetchQuery(orpc.contacts.getAll.queryOptions({}));
    },
-   component: CreditCardsPage,
+   component: ContactsPage,
 });
 
-const CREDIT_CARD_VIEWS: [
+const CONTACT_VIEWS: [
    ViewConfig<"table" | "card">,
    ViewConfig<"table" | "card">,
 ] = [
@@ -55,7 +50,11 @@ const CREDIT_CARD_VIEWS: [
    { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
 ];
 
-function CreditCardsSkeleton() {
+// =============================================================================
+// Skeleton
+// =============================================================================
+
+function ContactsSkeleton() {
    return (
       <div className="space-y-3">
          {Array.from({ length: 5 }).map((_, index) => (
@@ -65,11 +64,29 @@ function CreditCardsSkeleton() {
    );
 }
 
-interface CreditCardsListProps {
+// =============================================================================
+// Type filter
+// =============================================================================
+
+type TypeFilter = "all" | "cliente" | "fornecedor" | "ambos";
+
+const TYPE_FILTER_LABELS: Record<TypeFilter, string> = {
+   all: "Todos",
+   cliente: "Clientes",
+   fornecedor: "Fornecedores",
+   ambos: "Ambos",
+};
+
+// =============================================================================
+// List
+// =============================================================================
+
+interface ContactsListProps {
    view: "table" | "card";
+   typeFilter: TypeFilter;
 }
 
-function CreditCardsList({ view }: CreditCardsListProps) {
+function ContactsList({ view, typeFilter }: ContactsListProps) {
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const {
@@ -80,32 +97,32 @@ function CreditCardsList({ view }: CreditCardsListProps) {
       onClear,
    } = useRowSelection();
 
-   const { data: cards } = useSuspenseQuery(
-      orpc.creditCards.getAll.queryOptions({}),
+   const { data: contacts } = useSuspenseQuery(
+      orpc.contacts.getAll.queryOptions({
+         input: typeFilter !== "all" ? { type: typeFilter } : {},
+      }),
    );
 
    const deleteMutation = useMutation(
-      orpc.creditCards.remove.mutationOptions({
+      orpc.contacts.remove.mutationOptions({
          onSuccess: () => {
-            toast.success("Cartão de crédito excluído com sucesso.");
+            toast.success("Contato excluído com sucesso.");
          },
          onError: (error) => {
-            toast.error(error.message || "Erro ao excluir cartão de crédito.");
+            toast.error(error.message || "Erro ao excluir contato.");
          },
       }),
    );
 
    const handleEdit = useCallback(
-      (card: CreditCardRow) => {
+      (contact: ContactRow) => {
          openCredenza({
             children: (
-               <Suspense fallback={null}>
-                  <CreditCardForm
-                     card={card}
-                     mode="edit"
-                     onSuccess={closeCredenza}
-                  />
-               </Suspense>
+               <ContactForm
+                  contact={contact}
+                  mode="edit"
+                  onSuccess={closeCredenza}
+               />
             ),
          });
       },
@@ -113,15 +130,15 @@ function CreditCardsList({ view }: CreditCardsListProps) {
    );
 
    const handleDelete = useCallback(
-      (card: CreditCardRow) => {
+      (contact: ContactRow) => {
          openAlertDialog({
-            title: "Excluir cartão de crédito",
-            description: `Tem certeza que deseja excluir o cartão "${card.name}"? Esta ação não pode ser desfeita.`,
+            title: "Excluir contato",
+            description: `Tem certeza que deseja excluir "${contact.name}"? Esta ação não pode ser desfeita.`,
             actionLabel: "Excluir",
             cancelLabel: "Cancelar",
             variant: "destructive",
             onAction: async () => {
-               await deleteMutation.mutateAsync({ id: card.id });
+               await deleteMutation.mutateAsync({ id: contact.id });
             },
          });
       },
@@ -130,9 +147,9 @@ function CreditCardsList({ view }: CreditCardsListProps) {
 
    const handleBulkDelete = useCallback(() => {
       openAlertDialog({
-         title: `Excluir ${selectedCount} ${selectedCount === 1 ? "cartão" : "cartões"}`,
+         title: `Excluir ${selectedCount} ${selectedCount === 1 ? "contato" : "contatos"}`,
          description:
-            "Tem certeza que deseja excluir os cartões selecionados? Esta ação não pode ser desfeita.",
+            "Tem certeza que deseja excluir os contatos selecionados? Esta ação não pode ser desfeita.",
          actionLabel: "Excluir",
          cancelLabel: "Cancelar",
          variant: "destructive",
@@ -145,18 +162,17 @@ function CreditCardsList({ view }: CreditCardsListProps) {
       });
    }, [openAlertDialog, selectedCount, selectedIds, deleteMutation, onClear]);
 
-   const columns = buildCreditCardColumns(handleEdit, handleDelete);
-
-   if (cards.length === 0) {
+   if (contacts.length === 0) {
       return (
          <Empty>
             <EmptyHeader>
                <EmptyMedia variant="icon">
-                  <CreditCard className="size-6" />
+                  <Users className="size-6" />
                </EmptyMedia>
-               <EmptyTitle>Nenhum cartão de crédito</EmptyTitle>
+               <EmptyTitle>Nenhum contato</EmptyTitle>
                <EmptyDescription>
-                  Adicione um cartão de crédito para controlar seus gastos.
+                  Cadastre clientes e fornecedores para organizar suas
+                  transações.
                </EmptyDescription>
             </EmptyHeader>
          </Empty>
@@ -166,24 +182,30 @@ function CreditCardsList({ view }: CreditCardsListProps) {
    if (view === "card") {
       return (
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {cards.map((card) => (
+            {contacts.map((contact) => (
                <div
-                  className="rounded-lg border bg-background p-4 space-y-3"
-                  key={card.id}
+                  className="rounded-lg border bg-background p-4 space-y-2"
+                  key={contact.id}
                >
-                  <div className="flex items-center gap-2 min-w-0">
-                     <span
-                        className="size-3 rounded-full shrink-0"
-                        style={{ backgroundColor: card.color }}
-                     />
-                     <p className="font-medium truncate">{card.name}</p>
+                  <div className="flex items-start justify-between gap-2">
+                     <div className="min-w-0">
+                        <p className="font-medium truncate">{contact.name}</p>
+                        {contact.email && (
+                           <p className="text-sm text-muted-foreground truncate">
+                              {contact.email}
+                           </p>
+                        )}
+                        {contact.document && (
+                           <p className="text-xs text-muted-foreground">
+                              {contact.documentType?.toUpperCase()}{" "}
+                              {contact.document}
+                           </p>
+                        )}
+                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                     Fecha dia {card.closingDay} · Vence dia {card.dueDay}
-                  </p>
                   <div className="flex items-center gap-2">
                      <Button
-                        onClick={() => handleEdit(card)}
+                        onClick={() => handleEdit(contact as ContactRow)}
                         size="sm"
                         variant="outline"
                      >
@@ -191,7 +213,7 @@ function CreditCardsList({ view }: CreditCardsListProps) {
                      </Button>
                      <Button
                         className="text-destructive"
-                        onClick={() => handleDelete(card)}
+                        onClick={() => handleDelete(contact as ContactRow)}
                         size="sm"
                         variant="ghost"
                      >
@@ -204,27 +226,24 @@ function CreditCardsList({ view }: CreditCardsListProps) {
       );
    }
 
+   const columns = buildContactColumns(handleEdit, handleDelete);
+
    return (
       <>
          <DataTable
             columns={columns}
-            data={cards}
+            data={contacts as ContactRow[]}
             enableRowSelection
             getRowId={(row) => row.id}
             onRowSelectionChange={onRowSelectionChange}
             renderMobileCard={({ row }) => (
-               <div className="rounded-lg border bg-background p-4 space-y-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                     <span
-                        className="size-3 rounded-full shrink-0"
-                        style={{ backgroundColor: row.original.color }}
-                     />
-                     <p className="font-medium truncate">{row.original.name}</p>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                     Fecha dia {row.original.closingDay} · Vence dia{" "}
-                     {row.original.dueDay}
-                  </p>
+               <div className="rounded-lg border bg-background p-4 space-y-2">
+                  <p className="font-medium">{row.original.name}</p>
+                  {row.original.email && (
+                     <p className="text-sm text-muted-foreground">
+                        {row.original.email}
+                     </p>
+                  )}
                   <div className="flex items-center gap-2">
                      <Button
                         onClick={() => handleEdit(row.original)}
@@ -259,22 +278,23 @@ function CreditCardsList({ view }: CreditCardsListProps) {
    );
 }
 
-function CreditCardsPage() {
+// =============================================================================
+// Page
+// =============================================================================
+
+function ContactsPage() {
    const { openCredenza, closeCredenza } = useCredenza();
    const { currentView, setView, views } = useViewSwitch(
-      "finance:credit-cards:view",
-      CREDIT_CARD_VIEWS,
+      "finance:contacts:view",
+      CONTACT_VIEWS,
    );
+   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
 
-   function handleCreate() {
+   const handleCreate = useCallback(() => {
       openCredenza({
-         children: (
-            <Suspense fallback={null}>
-               <CreditCardForm mode="create" onSuccess={closeCredenza} />
-            </Suspense>
-         ),
+         children: <ContactForm mode="create" onSuccess={closeCredenza} />,
       });
-   }
+   }, [openCredenza, closeCredenza]);
 
    return (
       <main className="flex flex-col gap-4">
@@ -282,11 +302,11 @@ function CreditCardsPage() {
             actions={
                <Button onClick={handleCreate} size="sm">
                   <Plus className="size-4 mr-1" />
-                  Novo Cartão
+                  Novo Contato
                </Button>
             }
-            description="Gerencie seus cartões de crédito"
-            title="Cartões de Crédito"
+            description="Gerencie clientes e fornecedores"
+            title="Contatos"
             viewSwitch={
                <ViewSwitchDropdown
                   currentView={currentView}
@@ -295,8 +315,23 @@ function CreditCardsPage() {
                />
             }
          />
-         <Suspense fallback={<CreditCardsSkeleton />}>
-            <CreditCardsList view={currentView} />
+
+         {/* Type filter tabs */}
+         <div className="flex gap-2 flex-wrap">
+            {(Object.keys(TYPE_FILTER_LABELS) as TypeFilter[]).map((key) => (
+               <Button
+                  key={key}
+                  onClick={() => setTypeFilter(key)}
+                  size="sm"
+                  variant={typeFilter === key ? "default" : "outline"}
+               >
+                  {TYPE_FILTER_LABELS[key]}
+               </Button>
+            ))}
+         </div>
+
+         <Suspense fallback={<ContactsSkeleton />}>
+            <ContactsList typeFilter={typeFilter} view={currentView} />
          </Suspense>
       </main>
    );

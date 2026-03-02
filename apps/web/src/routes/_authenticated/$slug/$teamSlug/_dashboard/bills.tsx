@@ -31,15 +31,15 @@ import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
-	"/_authenticated/$slug/$teamSlug/_dashboard/finance/bills",
+	"/_authenticated/$slug/$teamSlug/_dashboard/bills",
 )({
 	loader: ({ context }) => {
 		context.queryClient.prefetchQuery(
 			orpc.bills.getAll.queryOptions({ input: { type: "payable" } }),
-		);
+		)
 		context.queryClient.prefetchQuery(
 			orpc.bills.getAll.queryOptions({ input: { type: "receivable" } }),
-		);
+		)
 	},
 	component: BillsPage,
 });
@@ -55,7 +55,7 @@ function BillsSkeleton() {
 				<Skeleton className="h-12 w-full" key={`skeleton-${index + 1}`} />
 			))}
 		</div>
-	);
+	)
 }
 
 // =============================================================================
@@ -85,7 +85,7 @@ function BillsSummary({ items }: BillsSummaryProps) {
 		return value.toLocaleString("pt-BR", {
 			style: "currency",
 			currency: "BRL",
-		});
+		})
 	}
 
 	return (
@@ -105,7 +105,7 @@ function BillsSummary({ items }: BillsSummaryProps) {
 				<p className="text-lg font-semibold tabular-nums">{formatBRL(paid)}</p>
 			</div>
 		</div>
-	);
+	)
 }
 
 // =============================================================================
@@ -122,7 +122,7 @@ function BillsList({ type }: BillsListProps) {
 
 	const { data } = useSuspenseQuery(
 		orpc.bills.getAll.queryOptions({ input: { type } }),
-	);
+	)
 
 	const items = (data?.items ?? []) as BillRow[];
 
@@ -135,7 +135,7 @@ function BillsList({ type }: BillsListProps) {
 				toast.error(error.message || "Erro ao cancelar conta.");
 			},
 		}),
-	);
+	)
 
 	const deleteMutation = useMutation(
 		orpc.bills.remove.mutationOptions({
@@ -146,7 +146,7 @@ function BillsList({ type }: BillsListProps) {
 				toast.error(error.message || "Erro ao excluir conta.");
 			},
 		}),
-	);
+	)
 
 	const unpayMutation = useMutation(
 		orpc.bills.unpay.mutationOptions({
@@ -157,16 +157,16 @@ function BillsList({ type }: BillsListProps) {
 				toast.error(error.message || "Erro ao reverter pagamento.");
 			},
 		}),
-	);
+	)
 
 	const handlePay = useCallback(
 		(bill: BillRow) => {
 			openCredenza({
 				children: <BillPayCredenza bill={bill} onSuccess={closeCredenza} />,
-			});
+			})
 		},
 		[openCredenza, closeCredenza],
-	);
+	)
 
 	const handleEdit = useCallback(
 		(bill: BillRow) => {
@@ -174,10 +174,10 @@ function BillsList({ type }: BillsListProps) {
 				children: (
 					<BillForm bill={bill} mode="edit" onSuccess={closeCredenza} />
 				),
-			});
+			})
 		},
 		[openCredenza, closeCredenza],
-	);
+	)
 
 	const handleCancel = useCallback(
 		(bill: BillRow) => {
@@ -190,10 +190,10 @@ function BillsList({ type }: BillsListProps) {
 				onAction: async () => {
 					await cancelMutation.mutateAsync({ id: bill.id });
 				},
-			});
+			})
 		},
 		[openAlertDialog, cancelMutation],
-	);
+	)
 
 	const handleDelete = useCallback(
 		(bill: BillRow) => {
@@ -206,17 +206,17 @@ function BillsList({ type }: BillsListProps) {
 				onAction: async () => {
 					await deleteMutation.mutateAsync({ id: bill.id });
 				},
-			});
+			})
 		},
 		[openAlertDialog, deleteMutation],
-	);
+	)
 
 	const columns = buildBillsColumns(
 		handlePay,
 		handleEdit,
 		handleCancel,
 		handleDelete,
-	);
+	)
 
 	if (items.length === 0) {
 		return (
@@ -233,7 +233,7 @@ function BillsList({ type }: BillsListProps) {
 					</EmptyDescription>
 				</EmptyHeader>
 			</Empty>
-		);
+		)
 	}
 
 	return (
@@ -310,11 +310,11 @@ function BillsList({ type }: BillsListProps) {
 								</Button>
 							)}
 						</div>
-					);
+					)
 				}}
 			/>
 		</div>
-	);
+	)
 }
 
 // =============================================================================
@@ -330,7 +330,7 @@ function BillsPage() {
 			children: (
 				<BillForm defaultType={tab} mode="create" onSuccess={closeCredenza} />
 			),
-		});
+		})
 	}, [openCredenza, closeCredenza, tab]);
 
 	return (
@@ -365,5 +365,5 @@ function BillsPage() {
 				</TabsContent>
 			</Tabs>
 		</main>
-	);
+	)
 }

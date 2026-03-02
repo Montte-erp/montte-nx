@@ -29,7 +29,7 @@ import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
-   "/_authenticated/$slug/$teamSlug/_dashboard/finance/bank-accounts",
+   "/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts",
 )({
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(

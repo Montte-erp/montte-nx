@@ -35,7 +35,7 @@ import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
-   "/_authenticated/$slug/$teamSlug/_dashboard/finance/goals",
+   "/_authenticated/$slug/$teamSlug/_dashboard/goals",
 )({
    loader: ({ context }) => {
       const now = new Date();
