@@ -314,7 +314,7 @@ export function SidebarNav() {
                group={group}
                isItemActive={isItemActive}
                key={group.id}
-               onConfigure={group.id === "erp" ? handleConfigure : undefined}
+               onConfigure={group.id === "finance" ? handleConfigure : undefined}
                onMainItemClick={handleMainItemClick}
                onSubPanelToggle={handleSubPanelToggle}
                slug={slug}

@@ -86,7 +86,8 @@ export const navGroups: NavGroupDef[] = [
       ],
    },
    {
-      id: "erp",
+      id: "finance",
+      label: "Finanças",
       items: [
          {
             id: "transactions",
@@ -138,6 +139,12 @@ export const navGroups: NavGroupDef[] = [
             route: "/$slug/$teamSlug/bills",
             configurable: true,
          },
+      ],
+   },
+   {
+      id: "erp",
+      label: "ERP",
+      items: [
          {
             id: "contacts",
             label: "Contatos",
@@ -145,12 +152,6 @@ export const navGroups: NavGroupDef[] = [
             route: "/$slug/$teamSlug/contacts",
             earlyAccessFlag: "contacts",
          },
-      ],
-   },
-   {
-      id: "inventory",
-      label: "Estoque",
-      items: [
          {
             id: "inventory",
             label: "Produtos",
