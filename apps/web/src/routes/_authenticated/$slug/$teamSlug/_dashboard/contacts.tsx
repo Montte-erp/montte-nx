@@ -20,6 +20,10 @@ import { Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import {
+   EarlyAccessBanner,
+   type EarlyAccessBannerTemplate,
+} from "@/features/billing/ui/early-access-banner";
+import {
    buildContactColumns,
    type ContactRow,
 } from "@/features/contacts/ui/contacts-columns";
@@ -49,6 +53,17 @@ const CONTACT_VIEWS: [
    { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
    { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
 ];
+
+const CONTACTS_BANNER: EarlyAccessBannerTemplate = {
+   badgeLabel: "Contatos",
+   message: "Esta funcionalidade está em fase alpha.",
+   ctaLabel: "Deixar feedback",
+   bullets: [
+      "Cadastre clientes e fornecedores",
+      "Vincule contatos a transações e cobranças",
+      "Seu feedback nos ajuda a melhorar",
+   ],
+};
 
 // =============================================================================
 // Skeleton
@@ -315,6 +330,7 @@ function ContactsPage() {
                />
             }
          />
+         <EarlyAccessBanner template={CONTACTS_BANNER} />
 
          {/* Type filter tabs */}
          <div className="flex gap-2 flex-wrap">
