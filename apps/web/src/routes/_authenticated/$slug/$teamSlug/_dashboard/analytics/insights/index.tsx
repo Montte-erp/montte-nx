@@ -26,7 +26,7 @@ import {
    Trash2,
    TrendingUp,
 } from "lucide-react";
-import { useMemo, useTransition } from "react";
+import { useMemo, useCallback, useTransition } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import { ContextPanelAction } from "@/features/context-panel/context-panel-info";
@@ -225,6 +225,7 @@ function InsightsListPage() {
    );
 
    const handleCreate = () => {
+      if (isCreating) return;
       startCreateTransition(async () => {
          await createMutation.mutateAsync({
             name: "Novo insight",
@@ -269,18 +270,21 @@ function InsightsListPage() {
       }),
    );
 
-   const handleDelete = (insight: { id: string; name: string }) => {
-      openAlertDialog({
-         title: "Excluir insight",
-         description: `Tem certeza que deseja excluir "${insight.name}"? Esta ação não pode ser desfeita.`,
-         actionLabel: "Excluir",
-         cancelLabel: "Cancelar",
-         variant: "destructive",
-         onAction: async () => {
-            await deleteMutation.mutateAsync({ id: insight.id });
-         },
-      });
-   };
+   const handleDelete = useCallback(
+      (insight: { id: string; name: string }) => {
+         openAlertDialog({
+            title: "Excluir insight",
+            description: `Tem certeza que deseja excluir "${insight.name}"? Esta ação não pode ser desfeita.`,
+            actionLabel: "Excluir",
+            cancelLabel: "Cancelar",
+            variant: "destructive",
+            onAction: async () => {
+               await deleteMutation.mutateAsync({ id: insight.id });
+            },
+         });
+      },
+      [openAlertDialog, deleteMutation],
+   );
 
    const columns = useMemo<ColumnDef<InsightRow>[]>(
       () => [
