@@ -9,14 +9,14 @@ import { useActiveTeam } from "@/hooks/use-active-team";
 import { orpc } from "@/integrations/orpc/client";
 
 const QUICK_SUGGESTIONS: QuickSuggestion[] = [
-   { label: "Criar artigo", prompt: "Crie um artigo completo sobre " },
+   { label: "Resumo financeiro", prompt: "Mostre um resumo das minhas finanças de " },
    {
-      label: "Analisar SEO",
-      prompt: "Analise o SEO deste conteúdo e sugira melhorias: ",
+      label: "Analisar gastos",
+      prompt: "Analise meus gastos e sugira onde posso economizar: ",
    },
-   { label: "Pesquisar", prompt: "Pesquise sobre " },
-   { label: "Otimizar texto", prompt: "Otimize este texto para SEO: " },
-   { label: "Estratégia", prompt: "Crie uma estratégia de conteúdo para " },
+   { label: "Contas a pagar", prompt: "Quais são minhas contas a pagar em " },
+   { label: "Criar meta", prompt: "Me ajude a criar uma meta financeira para " },
+   { label: "Relatório", prompt: "Gere um relatório financeiro do mês de " },
 ];
 
 function RecentThreadsList({ teamId }: { teamId: string }) {
@@ -61,7 +61,7 @@ function TecoChatTabInner({ teamId }: { teamId: string }) {
                </Suspense>
             }
             welcomeIconUrl="/mascot.svg"
-            welcomeSubtitle="Seu assistente de conteúdo com IA."
+            welcomeSubtitle="Seu assistente financeiro e ERP com IA."
             welcomeTitle="Como posso te ajudar?"
          />
       </div>
