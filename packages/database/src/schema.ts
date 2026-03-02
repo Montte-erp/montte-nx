@@ -48,3 +48,5 @@ export * from "./schemas/tags";
 export * from "./schemas/transactions";
 // Webhooks
 export * from "./schemas/webhooks";
+// Inventory
+export * from "./schemas/inventory";
