@@ -34,7 +34,7 @@ const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
    message: "Esta funcionalidade está em fase beta.",
    ctaLabel: "Deixar feedback",
    bullets: [
-      "Crie dashboards personalizados com seus insights",
+      "Crie insights personalizados para monitorar qualquer evento",
       "Analise tendências, funis e retenção de usuários",
       "Seu feedback nos ajuda a melhorar",
    ],
