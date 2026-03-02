@@ -26,6 +26,7 @@ import * as productSettingsRouter from "./product-settings";
 import * as propertyDefinitionsRouter from "./property-definitions";
 import * as rolesRouter from "./roles";
 import * as searchRouter from "./search";
+import * as servicesRouter from "./services";
 import * as sessionRouter from "./session";
 import * as ssoRouter from "./sso";
 import * as subcategoriesRouter from "./subcategories";
@@ -61,6 +62,7 @@ export default {
    propertyDefinitions: propertyDefinitionsRouter,
    roles: rolesRouter,
    search: searchRouter,
+   services: servicesRouter,
    session: sessionRouter,
    sso: ssoRouter,
    subcategories: subcategoriesRouter,
