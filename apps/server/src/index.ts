@@ -72,6 +72,6 @@ const app = new Elysia({
    }))
    .listen(process.env.PORT ?? 9877);
 
-console.log(`SDK Server started on port ${app.server?.port}`);
+console.log(`Server started on port ${app.server?.port}`);
 
 export type App = typeof app;
