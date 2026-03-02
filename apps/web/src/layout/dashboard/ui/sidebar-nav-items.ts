@@ -159,6 +159,7 @@ export const navGroups: NavGroupDef[] = [
             route: "/$slug/$teamSlug/inventory",
             quickAction: { type: "create", target: "sheet" },
             configurable: true,
+            earlyAccessFlag: "inventory",
          },
       ],
    },
