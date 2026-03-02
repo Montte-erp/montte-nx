@@ -26,8 +26,13 @@ export async function generateBillsForSubscription(
    const start = new Date(subscription.startDate);
    const end = subscription.endDate ? new Date(subscription.endDate) : null;
 
-   const formatMonthYear = (d: Date) =>
-      d.toLocaleDateString("pt-BR", { month: "short", year: "numeric" });
+   const formatMonthYear = (d: Date) => {
+      const month = d
+         .toLocaleDateString("pt-BR", { month: "short" })
+         .replace(".", "")
+         .replace(/^\w/, (c) => c.toUpperCase());
+      return `${month}/${d.getFullYear()}`;
+   };
 
    const makeBill = (dueDate: Date, label: string) => ({
       teamId: subscription.teamId,
