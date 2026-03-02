@@ -24,7 +24,6 @@ import {
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
-import { useSidebarSection } from "@/layout/dashboard/hooks/use-sidebar-nav";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId",
@@ -40,7 +39,6 @@ export const Route = createFileRoute(
 });
 
 function EditInsightPage() {
-   useSidebarSection("insights");
    const { insightId, slug, teamSlug } = Route.useParams();
    const navigate = useNavigate();
    const queryClient = useQueryClient();

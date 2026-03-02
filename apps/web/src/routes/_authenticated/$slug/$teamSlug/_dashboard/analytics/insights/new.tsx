@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { useInsightConfig } from "@/features/analytics/hooks/use-insight-config";
 import { InsightBuilder } from "@/features/analytics/ui/insight-builder";
 import { orpc } from "@/integrations/orpc/client";
-import { useSidebarSection } from "@/layout/dashboard/hooks/use-sidebar-nav";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/new",
@@ -19,7 +18,6 @@ export const Route = createFileRoute(
 });
 
 function NewInsightPage() {
-   useSidebarSection("insights");
    const navigate = useNavigate();
    const { slug, teamSlug } = useParams({
       from: "/_authenticated/$slug/$teamSlug/_dashboard",

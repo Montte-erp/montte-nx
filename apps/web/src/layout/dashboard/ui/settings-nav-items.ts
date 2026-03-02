@@ -7,7 +7,6 @@ import {
    FlaskConical,
    Globe,
    Images,
-   Key,
    LayoutGrid,
    Lock,
    Network,
@@ -45,7 +44,7 @@ export type SettingsNavSection = {
 export const settingsNavSections: SettingsNavSection[] = [
    {
       id: "project",
-      label: "Projeto",
+      label: "Espaço",
       defaultOpen: true,
       items: [
          {
@@ -182,12 +181,6 @@ export const settingsNavSections: SettingsNavSection[] = [
             title: "Perfil",
             href: "/$slug/$teamSlug/settings/profile",
             icon: User,
-         },
-         {
-            id: "account-personal-api-keys",
-            title: "Chaves de API pessoais",
-            href: "/$slug/$teamSlug/settings/personal-api-keys",
-            icon: Key,
          },
          {
             id: "account-security",

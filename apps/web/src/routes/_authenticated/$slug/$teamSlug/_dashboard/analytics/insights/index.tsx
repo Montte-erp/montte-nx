@@ -32,7 +32,6 @@ import { ContextPanelAction } from "@/features/context-panel/context-panel-info"
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
-import { useSidebarSection } from "@/layout/dashboard/hooks/use-sidebar-nav";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/",
@@ -205,7 +204,6 @@ function InsightMobileCard({
 // ---------------------------------------------------------------------------
 
 function InsightsListPage() {
-   useSidebarSection("insights");
    const navigate = useNavigate();
    const { slug, teamSlug } = Route.useParams();
    const queryClient = useQueryClient();

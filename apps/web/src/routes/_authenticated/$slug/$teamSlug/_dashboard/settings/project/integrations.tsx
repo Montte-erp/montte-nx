@@ -13,7 +13,7 @@ function ProjectIntegrationsPage() {
          <div>
             <h1 className="text-2xl font-semibold font-serif">Integrações</h1>
             <p className="text-sm text-muted-foreground mt-1">
-               Conecte serviços externos ao seu projeto.
+               Conecte ferramentas externas ao seu espaço e centralize sua operação.
             </p>
          </div>
 

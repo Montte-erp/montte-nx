@@ -41,12 +41,12 @@ export function IntegrationFeedbackCard() {
                         className="bg-blue-500/10 text-blue-500 border-blue-500/20"
                         variant="outline"
                      >
-                        Feedback
+                        Sugestão
                      </Badge>
                   </div>
                   <CardDescription>
-                     Estamos construindo nosso ecossistema de integrações. Qual
-                     integração seria mais útil para você?
+                     Estamos construindo nosso ecossistema de integrações. Diga-nos quais
+                     ferramentas fariam mais diferença na sua operação.
                   </CardDescription>
                </div>
             </div>
@@ -59,15 +59,13 @@ export function IntegrationFeedbackCard() {
                </p>
                <ul className="space-y-1.5 text-sm text-muted-foreground list-disc list-inside">
                   <li>
-                     Quais plataformas você usa hoje para publicar conteúdo?
+                     Quais meios de pagamento você utiliza? (Asaas, Stripe, Mercado Pago...)
                   </li>
                   <li>
-                     Que ferramentas de analytics ou SEO você gostaria de
-                     integrar?
+                     Há alguma plataforma de e-commerce ou marketplace que precisa se conectar? (Shopify, Mercado Livre...)
                   </li>
                   <li>
-                     Há alguma integração específica que desbloquearia seu
-                     workflow?
+                     Qual integração desbloquearia mais valor na sua operação?
                   </li>
                </ul>
                <Button
@@ -77,7 +75,7 @@ export function IntegrationFeedbackCard() {
                   type="button"
                   variant="outline"
                >
-                  Enviar feedback
+                  Enviar sugestão
                </Button>
             </div>
          </CardContent>

@@ -15,8 +15,7 @@ function flattenItems(items: SettingsNavItemDef[]): SettingsNavItemDef[] {
 }
 
 export function SettingsMobileNav() {
-   const { activeOrganization, projectLimit } = useActiveOrganization();
-   const isFree = projectLimit === 1;
+   const { activeOrganization } = useActiveOrganization();
    const { isEnrolled } = useEarlyAccess();
    const navigate = useNavigate();
    const [search, setSearch] = useState("");
@@ -36,11 +35,7 @@ export function SettingsMobileNav() {
          </div>
 
          {settingsNavSections
-            .filter(
-               (section) =>
-                  !isFree ||
-                  (section.id !== "project" && section.id !== "organization"),
-            )
+            .filter((section) => section.id !== "organization")
             .map((section) => {
                const allItems = flattenItems(section.items);
                const filtered = (

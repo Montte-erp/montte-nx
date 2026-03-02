@@ -238,19 +238,14 @@ function NavSection({
 }
 
 export function SettingsSidebar({ search }: { search: string }) {
-   const { activeOrganization, projectLimit } = useActiveOrganization();
-   const isFree = projectLimit === 1;
+   const { activeOrganization } = useActiveOrganization();
    const { teamSlug } = useParams({
       from: "/_authenticated/$slug/$teamSlug/_dashboard",
    });
    const { pathname } = useLocation();
 
    const filteredSections = settingsNavSections
-      .filter(
-         (section) =>
-            !isFree ||
-            (section.id !== "project" && section.id !== "organization"),
-      )
+      .filter((section) => section.id !== "organization")
       .map((section) => filterSection(section, search));
 
    return (
