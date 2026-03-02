@@ -13,23 +13,25 @@ import {
 } from "@packages/ui/components/data-table";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
    AlertCircle,
    GitBranch,
    Lightbulb,
+   Loader2,
    Pencil,
    Plus,
    RotateCcw,
    Trash2,
    TrendingUp,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useTransition } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import { ContextPanelAction } from "@/features/context-panel/context-panel-info";
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
+import { DEFAULT_KPI_CONFIG } from "@/features/analytics/hooks/use-insight-config";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -102,7 +104,7 @@ function ListSkeleton() {
 // Empty state
 // ---------------------------------------------------------------------------
 
-function EmptyState({ slug, teamSlug }: { slug: string; teamSlug: string }) {
+function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
    return (
       <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
          <div className="size-14 rounded-full bg-muted flex items-center justify-center">
@@ -115,14 +117,9 @@ function EmptyState({ slug, teamSlug }: { slug: string; teamSlug: string }) {
                de conversão ou retenção de usuários.
             </p>
          </div>
-         <Button asChild>
-            <Link
-               params={{ slug, teamSlug }}
-               to="/$slug/$teamSlug/analytics/insights/new"
-            >
-               <Plus className="size-4" />
-               Criar primeiro insight
-            </Link>
+         <Button onClick={onCreateClick}>
+            <Plus className="size-4" />
+            Criar primeiro insight
          </Button>
       </div>
    );
@@ -208,6 +205,34 @@ function InsightsListPage() {
    const { slug, teamSlug } = Route.useParams();
    const queryClient = useQueryClient();
    const { openAlertDialog } = useAlertDialog();
+   const [isCreating, startCreateTransition] = useTransition();
+
+   const createMutation = useMutation(
+      orpc.insights.create.mutationOptions({
+         onSuccess: (data) => {
+            queryClient.invalidateQueries({
+               queryKey: orpc.insights.list.queryKey({}),
+            });
+            navigate({
+               to: "/$slug/$teamSlug/analytics/insights/$insightId",
+               params: { slug, teamSlug, insightId: data.id },
+            });
+         },
+         onError: () => {
+            toast.error("Erro ao criar insight");
+         },
+      }),
+   );
+
+   const handleCreate = () => {
+      startCreateTransition(async () => {
+         await createMutation.mutateAsync({
+            name: "Novo insight",
+            type: "kpi",
+            config: DEFAULT_KPI_CONFIG,
+         });
+      });
+   };
 
    useContextPanelInfo(
       <ContextPanel>
@@ -218,12 +243,7 @@ function InsightsListPage() {
             <ContextPanelAction
                icon={Plus}
                label="Novo insight"
-               onClick={() =>
-                  navigate({
-                     to: "/$slug/$teamSlug/analytics/insights/new",
-                     params: { slug, teamSlug },
-                  })
-               }
+               onClick={handleCreate}
             />
          </ContextPanelContent>
       </ContextPanel>,
@@ -348,14 +368,13 @@ function InsightsListPage() {
       <main className="flex flex-col gap-6">
          <PageHeader
             actions={
-               <Button asChild>
-                  <Link
-                     params={{ slug, teamSlug }}
-                     to="/$slug/$teamSlug/analytics/insights/new"
-                  >
-                     <Plus className="size-4" />
-                     Novo insight
-                  </Link>
+               <Button disabled={isCreating} onClick={handleCreate}>
+                  {isCreating ? (
+                     <Loader2 className="size-4 mr-1 animate-spin" />
+                  ) : (
+                     <Plus className="size-4 mr-1" />
+                  )}
+                  Novo insight
                </Button>
             }
             description="Analise eventos, funis e retenção com consultas personalizadas."
@@ -372,7 +391,7 @@ function InsightsListPage() {
             </div>
          )}
          {!isLoading && !error && insights?.length === 0 && (
-            <EmptyState slug={slug} teamSlug={teamSlug} />
+            <EmptyState onCreateClick={handleCreate} />
          )}
          {!isLoading && !error && insights && insights.length > 0 && (
             <DataTable

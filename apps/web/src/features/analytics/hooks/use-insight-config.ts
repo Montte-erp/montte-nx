@@ -9,7 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 
 export type InsightType = "kpi" | "time_series" | "breakdown";
 
-const DEFAULT_KPI_CONFIG: KpiConfig = {
+export const DEFAULT_KPI_CONFIG: KpiConfig = {
    type: "kpi",
    measure: { aggregation: "sum" },
    filters: {
