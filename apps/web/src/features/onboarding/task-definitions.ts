@@ -35,7 +35,7 @@ export const TASK_DEFINITIONS: TaskDefinition[] = [
       type: "setup",
       product: "finance",
       autoDetect: false,
-      route: "/$slug/$teamSlug/finance/bank-accounts",
+      route: "/$slug/$teamSlug/bank-accounts",
    },
    {
       id: "create_category",
@@ -45,7 +45,7 @@ export const TASK_DEFINITIONS: TaskDefinition[] = [
       product: "finance",
       dependsOn: "connect_bank_account",
       autoDetect: true,
-      route: "/$slug/$teamSlug/finance/categories",
+      route: "/$slug/$teamSlug/categories",
    },
    {
       id: "add_transaction",
@@ -56,7 +56,7 @@ export const TASK_DEFINITIONS: TaskDefinition[] = [
       product: "finance",
       dependsOn: "create_category",
       autoDetect: true,
-      route: "/$slug/$teamSlug/finance/transactions",
+      route: "/$slug/$teamSlug/transactions",
    },
    {
       id: "create_insight",

@@ -46,75 +46,6 @@ export type NavGroupDef = {
 
 export const navGroups: NavGroupDef[] = [
    {
-      id: "finance",
-      label: "Finanças",
-      items: [
-         {
-            id: "transactions",
-            label: "Transações",
-            icon: ArrowLeftRight,
-            route: "/$slug/$teamSlug/finance/transactions",
-            quickAction: { type: "create", target: "sheet" },
-            configurable: true,
-         },
-         {
-            id: "bank-accounts",
-            label: "Contas Bancárias",
-            icon: Building2,
-            route: "/$slug/$teamSlug/finance/bank-accounts",
-            configurable: true,
-         },
-         {
-            id: "credit-cards",
-            label: "Cartões de Crédito",
-            icon: CreditCard,
-            route: "/$slug/$teamSlug/finance/credit-cards",
-            configurable: true,
-         },
-         {
-            id: "categories",
-            label: "Categorias",
-            icon: Tag,
-            route: "/$slug/$teamSlug/finance/categories",
-            configurable: true,
-         },
-         {
-            id: "tags",
-            label: "Tags",
-            icon: Tags,
-            route: "/$slug/$teamSlug/finance/tags",
-            configurable: true,
-         },
-         {
-            id: "goals",
-            label: "Metas",
-            icon: Target,
-            route: "/$slug/$teamSlug/finance/goals",
-            configurable: true,
-         },
-         {
-            id: "bills",
-            label: "Contas",
-            icon: Receipt,
-            route: "/$slug/$teamSlug/finance/bills",
-            configurable: true,
-         },
-      ],
-   },
-   {
-      id: "erp",
-      label: "ERP",
-      items: [
-         {
-            id: "contacts",
-            label: "Contatos",
-            icon: Users,
-            route: "/$slug/$teamSlug/finance/contacts",
-            earlyAccessFlag: "contacts",
-         },
-      ],
-   },
-   {
       id: "main",
       items: [
          {
@@ -150,6 +81,68 @@ export const navGroups: NavGroupDef[] = [
             route: "/$slug/$teamSlug/analytics/data-management",
             subPanel: "data-management",
             earlyAccessFlag: "advanced-analytics",
+         },
+      ],
+   },
+   {
+      id: "erp",
+      items: [
+         {
+            id: "transactions",
+            label: "Transações",
+            icon: ArrowLeftRight,
+            route: "/$slug/$teamSlug/transactions",
+            quickAction: { type: "create", target: "sheet" },
+            configurable: true,
+         },
+         {
+            id: "bank-accounts",
+            label: "Contas Bancárias",
+            icon: Building2,
+            route: "/$slug/$teamSlug/bank-accounts",
+            configurable: true,
+         },
+         {
+            id: "credit-cards",
+            label: "Cartões de Crédito",
+            icon: CreditCard,
+            route: "/$slug/$teamSlug/credit-cards",
+            configurable: true,
+         },
+         {
+            id: "categories",
+            label: "Categorias",
+            icon: Tag,
+            route: "/$slug/$teamSlug/categories",
+            configurable: true,
+         },
+         {
+            id: "tags",
+            label: "Tags",
+            icon: Tags,
+            route: "/$slug/$teamSlug/tags",
+            configurable: true,
+         },
+         {
+            id: "goals",
+            label: "Metas",
+            icon: Target,
+            route: "/$slug/$teamSlug/goals",
+            configurable: true,
+         },
+         {
+            id: "bills",
+            label: "Contas",
+            icon: Receipt,
+            route: "/$slug/$teamSlug/bills",
+            configurable: true,
+         },
+         {
+            id: "contacts",
+            label: "Contatos",
+            icon: Users,
+            route: "/$slug/$teamSlug/contacts",
+            earlyAccessFlag: "contacts",
          },
       ],
    },
