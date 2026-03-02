@@ -8,7 +8,7 @@ export { getResendClient, type ResendClient } from "./utils";
 export interface SendEmailOTPOptions {
    email: string;
    otp: string;
-   type: "sign-in" | "email-verification" | "forget-password";
+   type: "sign-in" | "email-verification" | "forget-password" | "change-email";
 }
 
 export interface SendOrganizationInvitationOptions {

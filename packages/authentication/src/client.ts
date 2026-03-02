@@ -1,8 +1,8 @@
 import { oauthProviderClient } from "@better-auth/oauth-provider/client";
+import { apiKey } from "@better-auth/api-key"
 import { stripeClient } from "@better-auth/stripe/client";
 import {
    adminClient,
-   apiKeyClient,
    emailOTPClient,
    inferAdditionalFields,
    lastLoginMethodClient,
@@ -58,9 +58,9 @@ export const createAuthClient = ({
                enabled: true,
             },
          }),
+         apiKey(),
          twoFactorClient(),
          lastLoginMethodClient(),
-         apiKeyClient(),
          oauthProviderClient(),
       ],
    });

@@ -6,10 +6,17 @@ import { DefaultEmailLayout } from "./default-layout";
 
 interface OTPEmailProps {
    otp: string;
-   type: "sign-in" | "email-verification" | "forget-password";
+   type: "sign-in" | "email-verification" | "forget-password" | "change-email";
 }
 
 const content = {
+   "change-email": {
+      description:
+         "Use o código abaixo para confirmar o seu novo endereço de e-mail.",
+      footer: "Este código é válido por 10 minutos.",
+      preview: "Confirme seu novo e-mail Montte",
+      title: "Confirme o novo e-mail",
+   },
    "email-verification": {
       description: "Use o código abaixo para confirmar seu endereço de e-mail.",
       footer: "Este código é válido por 10 minutos.",

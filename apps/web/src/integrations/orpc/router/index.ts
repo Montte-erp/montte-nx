@@ -4,10 +4,10 @@ import * as activityLogsRouter from "./activity-logs";
 import * as agentRouter from "./agent";
 import * as analyticsRouter from "./analytics";
 import * as annotationsRouter from "./annotations";
-import * as apiKeysRouter from "./api-keys";
+
 import * as bankAccountsRouter from "./bank-accounts";
-import * as billsRouter from "./bills";
 import * as billingRouter from "./billing";
+import * as billsRouter from "./bills";
 import * as categoriesRouter from "./categories";
 import * as chatRouter from "./chat";
 import * as contactsRouter from "./contacts";
@@ -31,7 +31,6 @@ import * as subcategoriesRouter from "./subcategories";
 import * as tagsRouter from "./tags";
 import * as teamRouter from "./team";
 import * as transactionsRouter from "./transactions";
-import * as usageRouter from "./usage";
 import * as webhooksRouter from "./webhooks";
 
 export default {
@@ -41,7 +40,6 @@ export default {
    agent: agentRouter,
    analytics: analyticsRouter,
    annotations: annotationsRouter,
-   apiKeys: apiKeysRouter,
    bankAccounts: bankAccountsRouter,
    bills: billsRouter,
    billing: billingRouter,
@@ -68,6 +66,5 @@ export default {
    team: teamRouter,
    transactions: transactionsRouter,
    organization: organizationRouter,
-   usage: usageRouter,
    webhooks: webhooksRouter,
 };

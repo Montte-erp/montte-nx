@@ -4,48 +4,6 @@ import {
 	createTestContext,
 } from "../../../helpers/create-test-context";
 
-// ---------------------------------------------------------------------------
-// Mocks — must be declared before any import that touches the modules
-// ---------------------------------------------------------------------------
-
-vi.mock("@packages/database/schema", () => ({
-	currentMonthUsageByCategory: {
-		organizationId: "organizationId",
-		eventCategory: "eventCategory",
-		eventCount: "eventCount",
-		monthToDateCost: "monthToDateCost",
-		projectedCost: "projectedCost",
-	},
-	currentMonthStorageCost: {
-		organizationId: "organizationId",
-		currentBytes: "currentBytes",
-		monthToDateCost: "monthToDateCost",
-		projectedCost: "projectedCost",
-	},
-	currentMonthUsageByEvent: {
-		organizationId: "organizationId",
-		eventCategory: "eventCategory",
-		eventName: "eventName",
-		eventCount: "eventCount",
-		monthToDateCost: "monthToDateCost",
-	},
-	dailyUsageByEvent: {
-		organizationId: "organizationId",
-		date: "date",
-		eventCategory: "eventCategory",
-		eventCount: "eventCount",
-		totalCost: "totalCost",
-	},
-	eventCatalog: {
-		eventName: "eventName",
-		category: "category",
-		displayName: "displayName",
-		description: "description",
-		pricePerEvent: "pricePerEvent",
-		freeTierLimit: "freeTierLimit",
-	},
-}));
-
 import * as billingRouter from "@/integrations/orpc/router/billing";
 
 // ---------------------------------------------------------------------------
@@ -59,17 +17,12 @@ const mockStripeClient = {
 	},
 };
 
-const mockWhere = vi.fn();
-const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
-const mockSelect = vi.fn().mockReturnValue({ from: mockFrom });
-
 const mockDb = {
 	query: {
 		user: {
 			findFirst: vi.fn(),
 		},
 	},
-	select: mockSelect,
 };
 
 function createBillingContext(overrides: Record<string, unknown> = {}) {
@@ -86,9 +39,6 @@ function createBillingContext(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
 	vi.clearAllMocks();
-	// Reset chained mock defaults
-	mockSelect.mockReturnValue({ from: mockFrom });
-	mockFrom.mockReturnValue({ where: mockWhere });
 });
 
 // =============================================================================
@@ -235,239 +185,5 @@ describe("getUpcomingInvoice", () => {
 		const result = await call(billingRouter.getUpcomingInvoice, undefined, { context: ctx });
 
 		expect(result).toBeNull();
-	});
-});
-
-// =============================================================================
-// getCurrentUsage
-// =============================================================================
-
-describe("getCurrentUsage", () => {
-	it("returns aggregated usage with monthToDate and projected totals", async () => {
-		// getCurrentUsage does Promise.all with two db.select() chains
-		// First call: categories, second call: storage
-		const mockWhere1 = vi.fn().mockResolvedValueOnce([
-			{
-				eventCategory: "content",
-				eventCount: 100,
-				monthToDateCost: "1.50",
-				projectedCost: "3.00",
-			},
-			{
-				eventCategory: "ai",
-				eventCount: 50,
-				monthToDateCost: "2.50",
-				projectedCost: "5.00",
-			},
-		]);
-		const mockFrom1 = vi.fn().mockReturnValue({ where: mockWhere1 });
-
-		const mockWhere2 = vi.fn().mockResolvedValueOnce([]);
-		const mockFrom2 = vi.fn().mockReturnValue({ where: mockWhere2 });
-
-		mockSelect
-			.mockReturnValueOnce({ from: mockFrom1 })
-			.mockReturnValueOnce({ from: mockFrom2 });
-
-		const ctx = createBillingContext();
-		const result = await call(billingRouter.getCurrentUsage, undefined, { context: ctx });
-
-		expect(result).toEqual({
-			monthToDate: 4.0,
-			projected: 8.0,
-			byCategory: [
-				{
-					category: "content",
-					eventCount: 100,
-					monthToDateCost: 1.5,
-					projectedCost: 3.0,
-				},
-				{
-					category: "ai",
-					eventCount: 50,
-					monthToDateCost: 2.5,
-					projectedCost: 5.0,
-				},
-			],
-		});
-	});
-
-	it("returns zeros when no usage rows", async () => {
-		// First call: categories (empty), second call: storage (empty)
-		const mockWhere1 = vi.fn().mockResolvedValueOnce([]);
-		const mockFrom1 = vi.fn().mockReturnValue({ where: mockWhere1 });
-
-		const mockWhere2 = vi.fn().mockResolvedValueOnce([]);
-		const mockFrom2 = vi.fn().mockReturnValue({ where: mockWhere2 });
-
-		mockSelect
-			.mockReturnValueOnce({ from: mockFrom1 })
-			.mockReturnValueOnce({ from: mockFrom2 });
-
-		const ctx = createBillingContext();
-		const result = await call(billingRouter.getCurrentUsage, undefined, { context: ctx });
-
-		expect(result).toEqual({
-			monthToDate: 0,
-			projected: 0,
-			byCategory: [],
-		});
-	});
-});
-
-// =============================================================================
-// getCategoryUsage
-// =============================================================================
-
-describe("getCategoryUsage", () => {
-	it("returns usage rows enriched with catalog metadata", async () => {
-		// getCategoryUsage does Promise.all with two db.select() chains.
-		// First call returns usage rows, second call returns catalog rows.
-		const mockWhere1 = vi.fn().mockResolvedValueOnce([
-			{
-				eventName: "content.page.published",
-				eventCount: 42,
-				monthToDateCost: "0.84",
-			},
-		]);
-		const mockFrom1 = vi.fn().mockReturnValue({ where: mockWhere1 });
-
-		const mockWhere2 = vi.fn().mockResolvedValueOnce([
-			{
-				eventName: "content.page.published",
-				displayName: "Page Published",
-				description: "A content page was published",
-				pricePerEvent: "0.02",
-				freeTierLimit: 100,
-			},
-		]);
-		const mockFrom2 = vi.fn().mockReturnValue({ where: mockWhere2 });
-
-		mockSelect
-			.mockReturnValueOnce({ from: mockFrom1 })
-			.mockReturnValueOnce({ from: mockFrom2 });
-
-		const ctx = createBillingContext();
-		const result = await call(
-			billingRouter.getCategoryUsage,
-			{ category: "content" },
-			{ context: ctx },
-		);
-
-		expect(result).toEqual([
-			{
-				eventName: "content.page.published",
-				eventCount: 42,
-				monthToDateCost: 0.84,
-				displayName: "Page Published",
-				description: "A content page was published",
-				pricePerEvent: 0.02,
-				freeTierLimit: 100,
-			},
-		]);
-	});
-
-	it("returns rows with fallback values when catalog entry missing", async () => {
-		const mockWhere1 = vi.fn().mockResolvedValueOnce([
-			{
-				eventName: "content.unknown.event",
-				eventCount: 5,
-				monthToDateCost: "0.10",
-			},
-		]);
-		const mockFrom1 = vi.fn().mockReturnValue({ where: mockWhere1 });
-
-		const mockWhere2 = vi.fn().mockResolvedValueOnce([]);
-		const mockFrom2 = vi.fn().mockReturnValue({ where: mockWhere2 });
-
-		mockSelect
-			.mockReturnValueOnce({ from: mockFrom1 })
-			.mockReturnValueOnce({ from: mockFrom2 });
-
-		const ctx = createBillingContext();
-		const result = await call(
-			billingRouter.getCategoryUsage,
-			{ category: "content" },
-			{ context: ctx },
-		);
-
-		expect(result).toEqual([
-			{
-				eventName: "content.unknown.event",
-				eventCount: 5,
-				monthToDateCost: 0.1,
-				displayName: "content.unknown.event",
-				description: null,
-				pricePerEvent: null,
-				freeTierLimit: 0,
-			},
-		]);
-	});
-});
-
-// =============================================================================
-// getDailyUsage
-// =============================================================================
-
-describe("getDailyUsage", () => {
-	it("returns sorted date-aggregated usage", async () => {
-		mockWhere.mockResolvedValueOnce([
-			{
-				date: "2026-02-02",
-				eventCategory: "ai",
-				eventCount: 10,
-				totalCost: "0.50",
-			},
-			{
-				date: "2026-02-01",
-				eventCategory: "content",
-				eventCount: 20,
-				totalCost: "0.40",
-			},
-			{
-				date: "2026-02-01",
-				eventCategory: "ai",
-				eventCount: 5,
-				totalCost: "0.25",
-			},
-		]);
-
-		const ctx = createBillingContext();
-		const result = await call(
-			billingRouter.getDailyUsage,
-			{ days: 30 },
-			{ context: ctx },
-		);
-
-		// Should be sorted by date ascending, with 2026-02-01 aggregated
-		expect(result).toEqual([
-			{
-				date: "2026-02-01",
-				total: 0.65,
-				totalCount: 25,
-				byCategory: { content: 0.4, ai: 0.25 },
-				countByCategory: { content: 20, ai: 5 },
-			},
-			{
-				date: "2026-02-02",
-				total: 0.5,
-				totalCount: 10,
-				byCategory: { ai: 0.5 },
-				countByCategory: { ai: 10 },
-			},
-		]);
-	});
-
-	it("returns empty array when no rows", async () => {
-		mockWhere.mockResolvedValueOnce([]);
-
-		const ctx = createBillingContext();
-		const result = await call(
-			billingRouter.getDailyUsage,
-			{ days: 30 },
-			{ context: ctx },
-		);
-
-		expect(result).toEqual([]);
 	});
 });

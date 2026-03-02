@@ -3,7 +3,6 @@ import { Button } from "@packages/ui/components/button";
 import { Input } from "@packages/ui/components/input";
 import {
    Item,
-   ItemActions,
    ItemContent,
    ItemDescription,
    ItemGroup,
@@ -19,23 +18,10 @@ import {
    useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useCopyToClipboard } from "@uidotdev/usehooks";
-import {
-   Calendar,
-   Check,
-   Copy,
-   Globe,
-   Hash,
-   Key,
-   Loader2,
-   RefreshCw,
-   Settings2,
-   X,
-} from "lucide-react";
+import { Calendar, Globe, Hash, Loader2, Settings2, X } from "lucide-react";
 import { Suspense, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
-import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
@@ -59,7 +45,6 @@ function ProjectGeneralSkeleton() {
             <div className="space-y-1">
                <Skeleton className="h-16 w-full rounded-lg" />
                <Skeleton className="h-16 w-full rounded-lg" />
-               <Skeleton className="h-16 w-full rounded-lg" />
             </div>
          </div>
 
@@ -73,7 +58,6 @@ function ProjectGeneralSkeleton() {
          <div className="space-y-3">
             <Skeleton className="h-6 w-2/3" />
             <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-16 w-full rounded-lg" />
             <Skeleton className="h-16 w-full rounded-lg" />
          </div>
       </div>
@@ -113,7 +97,6 @@ function ProjectGeneralErrorFallback({
 // ============================================
 
 function ProjectGeneralContent() {
-   const { openAlertDialog } = useAlertDialog();
    const queryClient = useQueryClient();
    const { currentTeam } = Route.useRouteContext();
    const teamId = currentTeam.id;
@@ -122,40 +105,9 @@ function ProjectGeneralContent() {
       orpc.team.get.queryOptions({ input: { teamId } }),
    );
 
-   const { data: publicKeyData } = useSuspenseQuery(
-      orpc.team.getPublicApiKey.queryOptions({ input: { teamId } }),
-   );
-
-   const [lastCopied, copy] = useCopyToClipboard();
-   const apiKeyCopied =
-      (publicKeyData.publicApiKey &&
-         lastCopied === publicKeyData.publicApiKey) === true;
    const [newDomain, setNewDomain] = useState("");
 
    // ── Mutations ──────────────────────────────────────────────────────
-
-   const regenerateKeyMutation = useMutation(
-      orpc.team.regeneratePublicApiKey.mutationOptions({
-         onSuccess: (data) => {
-            if (data.publicApiKey) {
-               copy(data.publicApiKey);
-               toast.success(
-                  "Chave de API regenerada e copiada para a área de transferência!",
-               );
-            } else {
-               toast.success("Chave de API regenerada!");
-            }
-            queryClient.invalidateQueries({
-               queryKey: orpc.team.getPublicApiKey.queryOptions({
-                  input: { teamId },
-               }).queryKey,
-            });
-         },
-         onError: () => {
-            toast.error("Não foi possível regenerar a chave de API.");
-         },
-      }),
-   );
 
    const updateDomainsMutation = useMutation(
       orpc.team.updateAllowedDomains.mutationOptions({
@@ -172,26 +124,6 @@ function ProjectGeneralContent() {
    );
 
    // ── Handlers ───────────────────────────────────────────────────────
-
-   const handleCopyApiKey = () => {
-      const key = publicKeyData.publicApiKey;
-      if (!key) return;
-      copy(key);
-      toast.success("Chave de API copiada!");
-   };
-
-   const handleRegenerateApiKey = () => {
-      openAlertDialog({
-         title: "Regenerar Chave de API",
-         description:
-            "Isso invalidará a chave atual. Todas as integrações que usam a chave antiga deixarão de funcionar. Deseja continuar?",
-         actionLabel: "Regenerar",
-         variant: "destructive",
-         onAction: async () => {
-            await regenerateKeyMutation.mutateAsync({ teamId });
-         },
-      });
-   };
 
    const handleAddDomain = () => {
       const domain = newDomain.trim().toLowerCase();
@@ -296,50 +228,6 @@ function ProjectGeneralContent() {
                         </ItemDescription>
                      </ItemContent>
                   </Item>
-
-                  <ItemSeparator />
-
-                  {/* Public API Key */}
-                  <Item variant="muted">
-                     <ItemMedia variant="icon">
-                        <Key className="size-4" />
-                     </ItemMedia>
-                     <ItemContent className="min-w-0">
-                        <ItemTitle>Chave de API Pública</ItemTitle>
-                        <ItemDescription className="truncate font-mono">
-                           {publicKeyData.publicApiKey ??
-                              "Nenhuma chave gerada"}
-                        </ItemDescription>
-                     </ItemContent>
-                     <ItemActions className="flex gap-1">
-                        {publicKeyData.publicApiKey && (
-                           <Button
-                              onClick={handleCopyApiKey}
-                              size="icon"
-                              tooltip={
-                                 apiKeyCopied
-                                    ? "Copiado!"
-                                    : "Copiar chave de API"
-                              }
-                              variant="icon-outline"
-                           >
-                              {apiKeyCopied ? (
-                                 <Check className="size-4" />
-                              ) : (
-                                 <Copy className="size-4" />
-                              )}
-                           </Button>
-                        )}
-                        <Button
-                           onClick={handleRegenerateApiKey}
-                           size="icon"
-                           tooltip="Regenerar chave"
-                           variant="icon-outline"
-                        >
-                           <RefreshCw className="size-4" />
-                        </Button>
-                     </ItemActions>
-                  </Item>
                </ItemGroup>
             </section>
 
@@ -348,8 +236,8 @@ function ProjectGeneralContent() {
                <div>
                   <h2 className="text-lg font-medium">Domínios Permitidos</h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                     Restrinja quais domínios podem usar a chave de API pública.
-                     Deixe vazio para permitir todos os domínios.
+                     Restrinja quais domínios têm acesso às integrações do
+                     projeto. Deixe vazio para permitir todos os domínios.
                   </p>
                </div>
 
