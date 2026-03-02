@@ -14,6 +14,7 @@ import { Briefcase, Pencil, Plus, Trash2 } from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
+import { ServicesAnalyticsHeader } from "@/features/services/ui/services-analytics-header";
 import {
    buildServiceColumns,
    type ServiceRow,
@@ -181,6 +182,7 @@ function ServicesPage() {
             description="Gerencie o catálogo de serviços"
             title="Serviços"
          />
+         <ServicesAnalyticsHeader />
          <Suspense fallback={<ServicesSkeleton />}>
             <ServicesList />
          </Suspense>
