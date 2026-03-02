@@ -17,20 +17,23 @@ import {
    useParams,
    useRouter,
 } from "@tanstack/react-router";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight, Search, Settings2 } from "lucide-react";
 import { useCallback } from "react";
 import { useEarlyAccess } from "@/hooks/use-early-access";
+import { useCredenza } from "@/hooks/use-credenza";
 import type { SubSidebarSection } from "@/layout/dashboard/hooks/use-sidebar-nav";
 import {
    setActiveSection,
    useSidebarNav,
 } from "@/layout/dashboard/hooks/use-sidebar-nav";
+import { useFinanceNavPreferences } from "@/layout/dashboard/hooks/use-finance-nav-preferences";
 import { useSidebarVisibility } from "@/layout/dashboard/hooks/use-sidebar-visibility";
 import type {
    NavGroupDef,
    NavItemDef,
 } from "@/layout/dashboard/ui/sidebar-nav-items";
 import { navGroups } from "@/layout/dashboard/ui/sidebar-nav-items";
+import { SidebarNavConfigForm } from "@/layout/dashboard/ui/sidebar-nav-config-form";
 
 function NavItem({
    item,
@@ -229,6 +232,7 @@ function NavGroup({
    isItemActive,
    onSubPanelToggle,
    onMainItemClick,
+   onConfigure,
 }: {
    group: NavGroupDef;
    slug: string;
@@ -236,20 +240,38 @@ function NavGroup({
    isItemActive: (item: NavItemDef) => boolean;
    onSubPanelToggle: (section: SubSidebarSection) => void;
    onMainItemClick: () => void;
+   onConfigure?: () => void;
 }) {
    const { isEnrolled } = useEarlyAccess();
    const { isVisible } = useSidebarVisibility();
+   const { isWanted } = useFinanceNavPreferences();
 
    const visibleItems = group.items.filter((item) => {
       if (!item.earlyAccessFlag) return true;
+      // Labeled groups (finance, erp) use the finance nav preferences hook,
+      // falling back to enrollment so existing enrolled users aren't affected.
+      if (group.label) return isWanted(item.id) || isEnrolled(item.earlyAccessFlag);
       return isEnrolled(item.earlyAccessFlag);
    }).filter((item) => isVisible(item.id));
 
-   if (visibleItems.length === 0) return null;
+   if (visibleItems.length === 0 && !onConfigure) return null;
 
    return (
-      <SidebarGroup>
-         {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
+      <SidebarGroup className="group/nav-group">
+         {group.label && (
+            <SidebarGroupLabel className="justify-between pr-1">
+               <span>{group.label}</span>
+               {onConfigure && (
+                  <button
+                     className="text-muted-foreground hover:text-foreground group-data-[collapsible=icon]:hidden"
+                     onClick={onConfigure}
+                     type="button"
+                  >
+                     <Settings2 className="size-3.5" />
+                  </button>
+               )}
+            </SidebarGroupLabel>
+         )}
          <SidebarGroupContent>
             <SidebarMenu>
                {visibleItems.map((item) => (
@@ -277,6 +299,13 @@ export function SidebarNav() {
       handleMainItemClick,
       isItemActive,
    } = useNavHandlers();
+   const { openCredenza, closeCredenza } = useCredenza();
+
+   const handleConfigure = useCallback(() => {
+      openCredenza({
+         children: <SidebarNavConfigForm onClose={closeCredenza} />,
+      });
+   }, [openCredenza, closeCredenza]);
 
    const labeledGroups = navGroups.filter((g) => g.label);
 
@@ -287,6 +316,7 @@ export function SidebarNav() {
                group={group}
                isItemActive={isItemActive}
                key={group.id}
+               onConfigure={group.id === "finance" ? handleConfigure : undefined}
                onMainItemClick={handleMainItemClick}
                onSubPanelToggle={handleSubPanelToggle}
                slug={slug}

@@ -1,10 +1,4 @@
 import { Button } from "@packages/ui/components/button";
-import { Checkbox } from "@packages/ui/components/checkbox";
-import {
-   CredenzaBody,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
 import {
    Popover,
    PopoverContent,
@@ -27,7 +21,6 @@ import { Link, useParams } from "@tanstack/react-router";
 import {
    Bug,
    ExternalLink,
-   LayoutList,
    Lightbulb,
    MessageSquarePlus,
    PanelLeftClose,
@@ -38,8 +31,6 @@ import { useState } from "react";
 import { BugReportForm } from "@/features/feedback/ui/bug-report-form";
 import { FeatureRequestForm } from "@/features/feedback/ui/feature-request-form";
 import { useCredenza } from "@/hooks/use-credenza";
-import { useSidebarVisibility } from "@/layout/dashboard/hooks/use-sidebar-visibility";
-import { navGroups } from "@/layout/dashboard/ui/sidebar-nav-items";
 import { EarlyAccessSidebarBanner } from "./early-access-sidebar-banner";
 import { SidebarDefaultItems, SidebarNav } from "./sidebar-nav";
 import { SidebarScopeSwitcher } from "./sidebar-scope-switcher";
@@ -144,76 +135,6 @@ function SidebarFeedbackButton() {
    );
 }
 
-function SidebarVisibilityForm({ onClose }: { onClose: () => void }) {
-   const { hiddenItems, toggleItem } = useSidebarVisibility();
-   const configurableItems = navGroups
-      .flatMap((g) => g.items)
-      .filter((item) => item.configurable);
-
-   return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>Itens do menu</CredenzaTitle>
-         </CredenzaHeader>
-         <CredenzaBody>
-            <p className="text-sm text-muted-foreground mb-4">
-               Escolha quais itens exibir na barra lateral.
-            </p>
-            <div className="flex flex-col gap-3">
-               {configurableItems.map((item) => {
-                  const Icon = item.icon;
-                  const isHidden = hiddenItems.includes(item.id);
-                  return (
-                     <div
-                        className="flex items-center gap-3"
-                        key={item.id}
-                     >
-                        <Checkbox
-                           checked={!isHidden}
-                           id={`sidebar-item-${item.id}`}
-                           onCheckedChange={() => toggleItem(item.id)}
-                        />
-                        {/* biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is Radix */}
-                        <label
-                           className="flex items-center gap-2 text-sm cursor-pointer select-none"
-                           htmlFor={`sidebar-item-${item.id}`}
-                        >
-                           <Icon className="size-4 text-muted-foreground" />
-                           {item.label}
-                        </label>
-                     </div>
-                  );
-               })}
-            </div>
-            <div className="flex justify-end mt-6">
-               <Button onClick={onClose} size="sm" variant="outline">
-                  Fechar
-               </Button>
-            </div>
-         </CredenzaBody>
-      </>
-   );
-}
-
-function SidebarVisibilityButton() {
-   const { openCredenza, closeCredenza } = useCredenza();
-
-   const handleOpen = () => {
-      openCredenza({
-         children: <SidebarVisibilityForm onClose={closeCredenza} />,
-      });
-   };
-
-   return (
-      <SidebarMenuItem>
-         <SidebarMenuButton onClick={handleOpen} tooltip="Personalizar menu">
-            <LayoutList />
-            <span>Personalizar menu</span>
-         </SidebarMenuButton>
-      </SidebarMenuItem>
-   );
-}
-
 function SidebarFooterContent() {
    const params = useParams({
       from: "/_authenticated/$slug/$teamSlug/_dashboard",
@@ -235,7 +156,6 @@ function SidebarFooterContent() {
                <span>Ocultar</span>
             </SidebarMenuButton>
          </SidebarMenuItem>
-         <SidebarVisibilityButton />
          <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Configuracoes">
                <Link params={{ slug, teamSlug }} to="/$slug/$teamSlug/settings">
