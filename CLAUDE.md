@@ -44,7 +44,7 @@ bun run scripts/reindex-content.ts
 contentta-nx/
 ├── apps/
 │   ├── web/             # React/Vite SPA — main dashboard + oRPC routers
-│   ├── sdk-server/      # Elysia API server for SDK consumers
+│   ├── server/          # Elysia API server for SDK consumers
 │   └── worker/          # BullMQ background job processor (plain Bun process)
 ├── packages/
 │   ├── agents/          # Mastra AI agents (planning, research, editing)

@@ -8,7 +8,7 @@ AI-powered CMS built as an Nx monorepo with Bun. Provides AI-assisted content cr
 
 ```bash
 # Development
-bun dev              # Start web, sdk-server, worker in parallel
+bun dev              # Start web, server, worker in parallel
 bun dev:all          # Start all apps and packages
 bun dev:worker       # Worker only
 
@@ -40,7 +40,7 @@ bun run scripts/reindex-content.ts
 contentta-nx/
 ├── apps/
 │   ├── web/             # React/Vite SPA — main dashboard + oRPC routers
-│   ├── sdk-server/      # Elysia API server for SDK consumers
+│   ├── server/          # Elysia API server for SDK consumers
 │   └── worker/          # BullMQ background job processor (plain Bun process)
 ├── packages/
 │   ├── agents/          # Mastra AI agents (planning, research, editing)
