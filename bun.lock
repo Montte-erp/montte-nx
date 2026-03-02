@@ -64,6 +64,7 @@
         "@f-o-t/ofx": "catalog:fot",
         "@f-o-t/qrcode": "catalog:fot",
         "@f-o-t/spelling": "catalog:fot",
+        "@f-o-t/uom": "catalog:fot",
         "@faker-js/faker": "catalog:testing",
         "@openrouter/ai-sdk-provider": "^2.2.3",
         "@orpc/client": "catalog:orpc",
@@ -626,6 +627,7 @@
       "@f-o-t/ofx": "2.4.6",
       "@f-o-t/qrcode": "1.0.1",
       "@f-o-t/spelling": "1.0.6",
+      "@f-o-t/uom": "1.0.6",
     },
     "logging": {
       "@logtail/pino": "^0.5.7",
@@ -1254,6 +1256,8 @@
     "@f-o-t/qrcode": ["@f-o-t/qrcode@1.0.1", "", { "dependencies": { "zod": "^4.3.6" } }, "sha512-lkRKJ8dCLXpp+fVUq2Je3pLAnXpponZjnRladKNrz/AmYwGV2GxYHR4EJko+8a0bRFVpqZoqjfrpqd14ncgu5Q=="],
 
     "@f-o-t/spelling": ["@f-o-t/spelling@1.0.6", "", { "dependencies": { "zod": "^4.3.6" } }, "sha512-mCcKxTHfDD8HF+IbWOxAnZYu1qektsvJzwcDLBVnlY268RsUAxcYN4Khp+NpFv0yFWdOqBvWWeRN57TlBNYoSg=="],
+
+    "@f-o-t/uom": ["@f-o-t/uom@1.0.6", "", { "dependencies": { "@f-o-t/bigint": "^1.0.4", "zod": "^4.3.6" }, "peerDependencies": { "@f-o-t/condition-evaluator": "^2.0.6" }, "optionalPeers": ["@f-o-t/condition-evaluator"] }, "sha512-4iBRYHbnQdOT9Qmh81FVVpG0opYBKOXc/pJ5clu82EVVmoKMzjFQ5/rnR71iuJRhKxrCK503aa8gTuOhKoSl6w=="],
 
     "@faker-js/faker": ["@faker-js/faker@10.3.0", "", {}, "sha512-It0Sne6P3szg7JIi6CgKbvTZoMjxBZhcv91ZrqrNuaZQfB5WoqYYbzCUOq89YR+VY8juY9M1vDWmDDa2TzfXCw=="],
 

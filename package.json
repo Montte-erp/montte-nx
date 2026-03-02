@@ -287,7 +287,8 @@
             "@f-o-t/money": "1.2.6",
             "@f-o-t/ofx": "2.4.6",
             "@f-o-t/qrcode": "1.0.1",
-            "@f-o-t/spelling": "1.0.6"
+            "@f-o-t/spelling": "1.0.6",
+            "@f-o-t/uom": "1.0.6"
          }
       },
       "packages": [
