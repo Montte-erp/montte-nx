@@ -18,6 +18,7 @@ import * as discussionsRouter from "./discussions";
 import * as eventCatalogRouter from "./event-catalog";
 import * as feedbackRouter from "./feedback";
 import * as insightsRouter from "./insights";
+import * as inventoryRouter from "./inventory";
 import * as onboardingRouter from "./onboarding";
 import * as organizationRouter from "./organization";
 import * as personalApiKeyRouter from "./personal-api-key";
@@ -53,6 +54,7 @@ export default {
    eventCatalog: eventCatalogRouter,
    feedback: feedbackRouter,
    insights: insightsRouter,
+   inventory: inventoryRouter,
    onboarding: onboardingRouter,
    personalApiKey: personalApiKeyRouter,
    productSettings: productSettingsRouter,
