@@ -207,6 +207,7 @@ export const getCategoryUsage = protectedProcedure
             "webhook",
             "cluster",
             "system",
+            "service",
          ]),
       }),
    )

@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
    ArrowLeftRight,
+   Briefcase,
    Building2,
    CreditCard,
    Database,
@@ -160,6 +161,13 @@ export const navGroups: NavGroupDef[] = [
             quickAction: { type: "create", target: "sheet" },
             configurable: true,
             earlyAccessFlag: "inventory",
+         },
+         {
+            id: "services",
+            label: "Serviços",
+            icon: Briefcase,
+            route: "/$slug/$teamSlug/erp/services",
+            earlyAccessFlag: "services",
          },
       ],
    },

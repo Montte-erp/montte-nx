@@ -41,6 +41,7 @@ import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import {
    BarChart3,
+   Briefcase,
    Calendar,
    Check,
    ChevronRight,
@@ -131,6 +132,11 @@ const CATEGORY_CONFIG: Record<
       description: "Entregas de webhook e notificacoes externas",
       icon: <Webhook className="size-5" />,
    },
+   service: {
+      label: "Serviços",
+      description: "Assinaturas, cobranças recorrentes e receita de serviços",
+      icon: <Briefcase className="size-5" />,
+   },
 };
 
 // ---------------------------------------------------------------------------
@@ -148,6 +154,7 @@ const EARLY_ACCESS_CATEGORY_GATES: Record<
    form: { flag: "forms-beta", fallbackStage: "beta" },
    experiment: { flag: "experiments", fallbackStage: "alpha" },
    cluster: { flag: "content-clusters", fallbackStage: "alpha" },
+   service: { flag: "services", fallbackStage: "alpha" },
 };
 
 // Volume-based (non-event) early access features.
@@ -341,7 +348,8 @@ function OverviewProductSubItems({ category }: { category: string }) {
                | "experiment"
                | "webhook"
                | "cluster"
-               | "system",
+               | "system"
+               | "service",
          },
       }),
    );
