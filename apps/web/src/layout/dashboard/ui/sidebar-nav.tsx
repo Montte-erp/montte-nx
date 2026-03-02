@@ -257,7 +257,7 @@ function NavGroup({
    if (visibleItems.length === 0 && !onConfigure) return null;
 
    return (
-      <SidebarGroup className="group/nav-group">
+      <SidebarGroup className="group/nav-group pt-0">
          {group.label && (
             <SidebarGroupLabel className="justify-between pr-1">
                <span>{group.label}</span>
