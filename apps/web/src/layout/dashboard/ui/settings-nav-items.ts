@@ -98,6 +98,12 @@ export const settingsNavSections: SettingsNavSection[] = [
             icon: Network,
          },
          {
+            id: "project-inventory",
+            title: "Estoque",
+            href: "/$slug/$teamSlug/settings/project/inventory",
+            icon: Package,
+         },
+         {
             id: "project-access-control",
             title: "Controle de acesso",
             href: "/$slug/$teamSlug/settings/project/access-control",

@@ -33,12 +33,21 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthenticatedSlugTeamSlugRouteImport } from './routes/_authenticated/$slug/$teamSlug'
 import { Route as DotwellKnownOauthAuthorizationServerSplatRouteImport } from './routes/[.]well-known.oauth-authorization-server.$'
 import { Route as AuthenticatedSlugTeamSlugDashboardRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard'
+import { Route as AuthenticatedSlugTeamSlugDashboardTransactionsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/transactions'
+import { Route as AuthenticatedSlugTeamSlugDashboardTagsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/tags'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings'
 import { Route as AuthenticatedSlugTeamSlugDashboardSearchRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/search'
 import { Route as AuthenticatedSlugTeamSlugDashboardPlansRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/plans'
+import { Route as AuthenticatedSlugTeamSlugDashboardGoalsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/goals'
+import { Route as AuthenticatedSlugTeamSlugDashboardCreditCardsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/credit-cards'
+import { Route as AuthenticatedSlugTeamSlugDashboardContactsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/contacts'
 import { Route as AuthenticatedSlugTeamSlugDashboardChatRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/chat'
+import { Route as AuthenticatedSlugTeamSlugDashboardCategoriesRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/categories'
+import { Route as AuthenticatedSlugTeamSlugDashboardBillsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/bills'
 import { Route as AuthenticatedSlugTeamSlugDashboardBillingRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/billing'
+import { Route as AuthenticatedSlugTeamSlugDashboardBankAccountsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/index'
+import { Route as AuthenticatedSlugTeamSlugDashboardInventoryIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/inventory/index'
 import { Route as AuthenticatedSlugTeamSlugDashboardHomeIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/home/index'
 import { Route as AuthenticatedSlugTeamSlugDashboardChatIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/chat/index'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsSecurityRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/security'
@@ -47,20 +56,13 @@ import { Route as AuthenticatedSlugTeamSlugDashboardSettingsPersonalApiKeysRoute
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/danger-zone'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/customization'
-import { Route as AuthenticatedSlugTeamSlugDashboardFinanceTransactionsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/finance/transactions'
-import { Route as AuthenticatedSlugTeamSlugDashboardFinanceTagsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/finance/tags'
-import { Route as AuthenticatedSlugTeamSlugDashboardFinanceGoalsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/finance/goals'
-import { Route as AuthenticatedSlugTeamSlugDashboardFinanceCreditCardsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/finance/credit-cards'
-import { Route as AuthenticatedSlugTeamSlugDashboardFinanceContactsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/finance/contacts'
-import { Route as AuthenticatedSlugTeamSlugDashboardFinanceCategoriesRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/finance/categories'
-import { Route as AuthenticatedSlugTeamSlugDashboardFinanceBillsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/finance/bills'
-import { Route as AuthenticatedSlugTeamSlugDashboardFinanceBankAccountsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/finance/bank-accounts'
 import { Route as AuthenticatedSlugTeamSlugDashboardChatThreadIdRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/chat/$threadId'
 import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management'
 import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/index'
 import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/index'
 import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/index'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectWebhooksRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/webhooks'
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectInventoryRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/inventory'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone'
@@ -72,7 +74,6 @@ import { Route as AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersR
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsOrganizationAuthenticationRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/authentication'
-import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsNewRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/new'
 import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId'
 import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementSourcesRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/sources'
 import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementPropertyDefinitionsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/property-definitions'
@@ -81,6 +82,9 @@ import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementDesti
 import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementAnnotationsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/annotations'
 import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementActionsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/actions'
 import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId'
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro'
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsEstoqueRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/estoque'
+import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents'
 
 const AuthRoute = AuthRouteImport.update({
@@ -205,6 +209,18 @@ const AuthenticatedSlugTeamSlugDashboardRoute =
     id: '/_dashboard',
     getParentRoute: () => AuthenticatedSlugTeamSlugRoute,
   } as any)
+const AuthenticatedSlugTeamSlugDashboardTransactionsRoute =
+  AuthenticatedSlugTeamSlugDashboardTransactionsRouteImport.update({
+    id: '/transactions',
+    path: '/transactions',
+    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+  } as any)
+const AuthenticatedSlugTeamSlugDashboardTagsRoute =
+  AuthenticatedSlugTeamSlugDashboardTagsRouteImport.update({
+    id: '/tags',
+    path: '/tags',
+    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+  } as any)
 const AuthenticatedSlugTeamSlugDashboardSettingsRoute =
   AuthenticatedSlugTeamSlugDashboardSettingsRouteImport.update({
     id: '/settings',
@@ -223,10 +239,40 @@ const AuthenticatedSlugTeamSlugDashboardPlansRoute =
     path: '/plans',
     getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
   } as any)
+const AuthenticatedSlugTeamSlugDashboardGoalsRoute =
+  AuthenticatedSlugTeamSlugDashboardGoalsRouteImport.update({
+    id: '/goals',
+    path: '/goals',
+    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+  } as any)
+const AuthenticatedSlugTeamSlugDashboardCreditCardsRoute =
+  AuthenticatedSlugTeamSlugDashboardCreditCardsRouteImport.update({
+    id: '/credit-cards',
+    path: '/credit-cards',
+    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+  } as any)
+const AuthenticatedSlugTeamSlugDashboardContactsRoute =
+  AuthenticatedSlugTeamSlugDashboardContactsRouteImport.update({
+    id: '/contacts',
+    path: '/contacts',
+    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+  } as any)
 const AuthenticatedSlugTeamSlugDashboardChatRoute =
   AuthenticatedSlugTeamSlugDashboardChatRouteImport.update({
     id: '/chat',
     path: '/chat',
+    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+  } as any)
+const AuthenticatedSlugTeamSlugDashboardCategoriesRoute =
+  AuthenticatedSlugTeamSlugDashboardCategoriesRouteImport.update({
+    id: '/categories',
+    path: '/categories',
+    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+  } as any)
+const AuthenticatedSlugTeamSlugDashboardBillsRoute =
+  AuthenticatedSlugTeamSlugDashboardBillsRouteImport.update({
+    id: '/bills',
+    path: '/bills',
     getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
   } as any)
 const AuthenticatedSlugTeamSlugDashboardBillingRoute =
@@ -235,11 +281,23 @@ const AuthenticatedSlugTeamSlugDashboardBillingRoute =
     path: '/billing',
     getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
   } as any)
+const AuthenticatedSlugTeamSlugDashboardBankAccountsRoute =
+  AuthenticatedSlugTeamSlugDashboardBankAccountsRouteImport.update({
+    id: '/bank-accounts',
+    path: '/bank-accounts',
+    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+  } as any)
 const AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute =
   AuthenticatedSlugTeamSlugDashboardSettingsIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+  } as any)
+const AuthenticatedSlugTeamSlugDashboardInventoryIndexRoute =
+  AuthenticatedSlugTeamSlugDashboardInventoryIndexRouteImport.update({
+    id: '/inventory/',
+    path: '/inventory/',
+    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
   } as any)
 const AuthenticatedSlugTeamSlugDashboardHomeIndexRoute =
   AuthenticatedSlugTeamSlugDashboardHomeIndexRouteImport.update({
@@ -289,54 +347,6 @@ const AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute =
     path: '/customization',
     getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
   } as any)
-const AuthenticatedSlugTeamSlugDashboardFinanceTransactionsRoute =
-  AuthenticatedSlugTeamSlugDashboardFinanceTransactionsRouteImport.update({
-    id: '/finance/transactions',
-    path: '/finance/transactions',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
-const AuthenticatedSlugTeamSlugDashboardFinanceTagsRoute =
-  AuthenticatedSlugTeamSlugDashboardFinanceTagsRouteImport.update({
-    id: '/finance/tags',
-    path: '/finance/tags',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
-const AuthenticatedSlugTeamSlugDashboardFinanceGoalsRoute =
-  AuthenticatedSlugTeamSlugDashboardFinanceGoalsRouteImport.update({
-    id: '/finance/goals',
-    path: '/finance/goals',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
-const AuthenticatedSlugTeamSlugDashboardFinanceCreditCardsRoute =
-  AuthenticatedSlugTeamSlugDashboardFinanceCreditCardsRouteImport.update({
-    id: '/finance/credit-cards',
-    path: '/finance/credit-cards',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
-const AuthenticatedSlugTeamSlugDashboardFinanceContactsRoute =
-  AuthenticatedSlugTeamSlugDashboardFinanceContactsRouteImport.update({
-    id: '/finance/contacts',
-    path: '/finance/contacts',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
-const AuthenticatedSlugTeamSlugDashboardFinanceCategoriesRoute =
-  AuthenticatedSlugTeamSlugDashboardFinanceCategoriesRouteImport.update({
-    id: '/finance/categories',
-    path: '/finance/categories',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
-const AuthenticatedSlugTeamSlugDashboardFinanceBillsRoute =
-  AuthenticatedSlugTeamSlugDashboardFinanceBillsRouteImport.update({
-    id: '/finance/bills',
-    path: '/finance/bills',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
-const AuthenticatedSlugTeamSlugDashboardFinanceBankAccountsRoute =
-  AuthenticatedSlugTeamSlugDashboardFinanceBankAccountsRouteImport.update({
-    id: '/finance/bank-accounts',
-    path: '/finance/bank-accounts',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
 const AuthenticatedSlugTeamSlugDashboardChatThreadIdRoute =
   AuthenticatedSlugTeamSlugDashboardChatThreadIdRouteImport.update({
     id: '/$threadId',
@@ -374,6 +384,12 @@ const AuthenticatedSlugTeamSlugDashboardSettingsProjectWebhooksRoute =
   AuthenticatedSlugTeamSlugDashboardSettingsProjectWebhooksRouteImport.update({
     id: '/project/webhooks',
     path: '/project/webhooks',
+    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+  } as any)
+const AuthenticatedSlugTeamSlugDashboardSettingsProjectInventoryRoute =
+  AuthenticatedSlugTeamSlugDashboardSettingsProjectInventoryRouteImport.update({
+    id: '/project/inventory',
+    path: '/project/inventory',
     getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
   } as any)
 const AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute =
@@ -462,12 +478,6 @@ const AuthenticatedSlugTeamSlugDashboardSettingsOrganizationAuthenticationRoute 
       getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
     } as any,
   )
-const AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsNewRoute =
-  AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsNewRouteImport.update({
-    id: '/analytics/insights/new',
-    path: '/analytics/insights/new',
-    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
-  } as any)
 const AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute =
   AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRouteImport.update(
     {
@@ -538,6 +548,30 @@ const AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute =
       getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
     } as any,
   )
+const AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute =
+  AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRouteImport.update(
+    {
+      id: '/project/products/financeiro',
+      path: '/project/products/financeiro',
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+    } as any,
+  )
+const AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsEstoqueRoute =
+  AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsEstoqueRouteImport.update(
+    {
+      id: '/project/products/estoque',
+      path: '/project/products/estoque',
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+    } as any,
+  )
+const AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute =
+  AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRouteImport.update(
+    {
+      id: '/project/products/contatos',
+      path: '/project/products/contatos',
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
+    } as any,
+  )
 const AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute =
   AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRouteImport.update(
     {
@@ -570,21 +604,21 @@ export interface FileRoutesByFullPath {
   '/api/rpc/$': typeof ApiRpcSplatRoute
   '/auth/sign-in/email': typeof AuthSignInEmailRoute
   '/auth/sign-in/': typeof AuthSignInIndexRoute
+  '/$slug/$teamSlug/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
   '/$slug/$teamSlug/billing': typeof AuthenticatedSlugTeamSlugDashboardBillingRoute
+  '/$slug/$teamSlug/bills': typeof AuthenticatedSlugTeamSlugDashboardBillsRoute
+  '/$slug/$teamSlug/categories': typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute
   '/$slug/$teamSlug/chat': typeof AuthenticatedSlugTeamSlugDashboardChatRouteWithChildren
+  '/$slug/$teamSlug/contacts': typeof AuthenticatedSlugTeamSlugDashboardContactsRoute
+  '/$slug/$teamSlug/credit-cards': typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute
+  '/$slug/$teamSlug/goals': typeof AuthenticatedSlugTeamSlugDashboardGoalsRoute
   '/$slug/$teamSlug/plans': typeof AuthenticatedSlugTeamSlugDashboardPlansRoute
   '/$slug/$teamSlug/search': typeof AuthenticatedSlugTeamSlugDashboardSearchRoute
   '/$slug/$teamSlug/settings': typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren
+  '/$slug/$teamSlug/tags': typeof AuthenticatedSlugTeamSlugDashboardTagsRoute
+  '/$slug/$teamSlug/transactions': typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute
   '/$slug/$teamSlug/analytics/data-management': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementRouteWithChildren
   '/$slug/$teamSlug/chat/$threadId': typeof AuthenticatedSlugTeamSlugDashboardChatThreadIdRoute
-  '/$slug/$teamSlug/finance/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardFinanceBankAccountsRoute
-  '/$slug/$teamSlug/finance/bills': typeof AuthenticatedSlugTeamSlugDashboardFinanceBillsRoute
-  '/$slug/$teamSlug/finance/categories': typeof AuthenticatedSlugTeamSlugDashboardFinanceCategoriesRoute
-  '/$slug/$teamSlug/finance/contacts': typeof AuthenticatedSlugTeamSlugDashboardFinanceContactsRoute
-  '/$slug/$teamSlug/finance/credit-cards': typeof AuthenticatedSlugTeamSlugDashboardFinanceCreditCardsRoute
-  '/$slug/$teamSlug/finance/goals': typeof AuthenticatedSlugTeamSlugDashboardFinanceGoalsRoute
-  '/$slug/$teamSlug/finance/tags': typeof AuthenticatedSlugTeamSlugDashboardFinanceTagsRoute
-  '/$slug/$teamSlug/finance/transactions': typeof AuthenticatedSlugTeamSlugDashboardFinanceTransactionsRoute
   '/$slug/$teamSlug/settings/customization': typeof AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute
   '/$slug/$teamSlug/settings/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute
   '/$slug/$teamSlug/settings/feature-previews': typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute
@@ -593,6 +627,7 @@ export interface FileRoutesByFullPath {
   '/$slug/$teamSlug/settings/security': typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute
   '/$slug/$teamSlug/chat/': typeof AuthenticatedSlugTeamSlugDashboardChatIndexRoute
   '/$slug/$teamSlug/home/': typeof AuthenticatedSlugTeamSlugDashboardHomeIndexRoute
+  '/$slug/$teamSlug/inventory/': typeof AuthenticatedSlugTeamSlugDashboardInventoryIndexRoute
   '/$slug/$teamSlug/settings/': typeof AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute
   '/$slug/$teamSlug/analytics/dashboards/$dashboardId': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute
   '/$slug/$teamSlug/analytics/data-management/actions': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementActionsRoute
@@ -602,7 +637,6 @@ export interface FileRoutesByFullPath {
   '/$slug/$teamSlug/analytics/data-management/property-definitions': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementPropertyDefinitionsRoute
   '/$slug/$teamSlug/analytics/data-management/sources': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementSourcesRoute
   '/$slug/$teamSlug/analytics/insights/$insightId': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute
-  '/$slug/$teamSlug/analytics/insights/new': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsNewRoute
   '/$slug/$teamSlug/settings/organization/authentication': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationAuthenticationRoute
   '/$slug/$teamSlug/settings/organization/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute
   '/$slug/$teamSlug/settings/organization/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute
@@ -614,11 +648,15 @@ export interface FileRoutesByFullPath {
   '/$slug/$teamSlug/settings/project/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute
   '/$slug/$teamSlug/settings/project/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute
   '/$slug/$teamSlug/settings/project/integrations': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute
+  '/$slug/$teamSlug/settings/project/inventory': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectInventoryRoute
   '/$slug/$teamSlug/settings/project/webhooks': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectWebhooksRoute
   '/$slug/$teamSlug/analytics/dashboards/': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute
   '/$slug/$teamSlug/analytics/data-management/': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementIndexRoute
   '/$slug/$teamSlug/analytics/insights/': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute
   '/$slug/$teamSlug/settings/project/products/ai-agents': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute
+  '/$slug/$teamSlug/settings/project/products/contatos': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute
+  '/$slug/$teamSlug/settings/project/products/estoque': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsEstoqueRoute
+  '/$slug/$teamSlug/settings/project/products/financeiro': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -642,18 +680,18 @@ export interface FileRoutesByTo {
   '/api/rpc/$': typeof ApiRpcSplatRoute
   '/auth/sign-in/email': typeof AuthSignInEmailRoute
   '/auth/sign-in': typeof AuthSignInIndexRoute
+  '/$slug/$teamSlug/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
   '/$slug/$teamSlug/billing': typeof AuthenticatedSlugTeamSlugDashboardBillingRoute
+  '/$slug/$teamSlug/bills': typeof AuthenticatedSlugTeamSlugDashboardBillsRoute
+  '/$slug/$teamSlug/categories': typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute
+  '/$slug/$teamSlug/contacts': typeof AuthenticatedSlugTeamSlugDashboardContactsRoute
+  '/$slug/$teamSlug/credit-cards': typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute
+  '/$slug/$teamSlug/goals': typeof AuthenticatedSlugTeamSlugDashboardGoalsRoute
   '/$slug/$teamSlug/plans': typeof AuthenticatedSlugTeamSlugDashboardPlansRoute
   '/$slug/$teamSlug/search': typeof AuthenticatedSlugTeamSlugDashboardSearchRoute
+  '/$slug/$teamSlug/tags': typeof AuthenticatedSlugTeamSlugDashboardTagsRoute
+  '/$slug/$teamSlug/transactions': typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute
   '/$slug/$teamSlug/chat/$threadId': typeof AuthenticatedSlugTeamSlugDashboardChatThreadIdRoute
-  '/$slug/$teamSlug/finance/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardFinanceBankAccountsRoute
-  '/$slug/$teamSlug/finance/bills': typeof AuthenticatedSlugTeamSlugDashboardFinanceBillsRoute
-  '/$slug/$teamSlug/finance/categories': typeof AuthenticatedSlugTeamSlugDashboardFinanceCategoriesRoute
-  '/$slug/$teamSlug/finance/contacts': typeof AuthenticatedSlugTeamSlugDashboardFinanceContactsRoute
-  '/$slug/$teamSlug/finance/credit-cards': typeof AuthenticatedSlugTeamSlugDashboardFinanceCreditCardsRoute
-  '/$slug/$teamSlug/finance/goals': typeof AuthenticatedSlugTeamSlugDashboardFinanceGoalsRoute
-  '/$slug/$teamSlug/finance/tags': typeof AuthenticatedSlugTeamSlugDashboardFinanceTagsRoute
-  '/$slug/$teamSlug/finance/transactions': typeof AuthenticatedSlugTeamSlugDashboardFinanceTransactionsRoute
   '/$slug/$teamSlug/settings/customization': typeof AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute
   '/$slug/$teamSlug/settings/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute
   '/$slug/$teamSlug/settings/feature-previews': typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute
@@ -662,6 +700,7 @@ export interface FileRoutesByTo {
   '/$slug/$teamSlug/settings/security': typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute
   '/$slug/$teamSlug/chat': typeof AuthenticatedSlugTeamSlugDashboardChatIndexRoute
   '/$slug/$teamSlug/home': typeof AuthenticatedSlugTeamSlugDashboardHomeIndexRoute
+  '/$slug/$teamSlug/inventory': typeof AuthenticatedSlugTeamSlugDashboardInventoryIndexRoute
   '/$slug/$teamSlug/settings': typeof AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute
   '/$slug/$teamSlug/analytics/dashboards/$dashboardId': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute
   '/$slug/$teamSlug/analytics/data-management/actions': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementActionsRoute
@@ -671,7 +710,6 @@ export interface FileRoutesByTo {
   '/$slug/$teamSlug/analytics/data-management/property-definitions': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementPropertyDefinitionsRoute
   '/$slug/$teamSlug/analytics/data-management/sources': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementSourcesRoute
   '/$slug/$teamSlug/analytics/insights/$insightId': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute
-  '/$slug/$teamSlug/analytics/insights/new': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsNewRoute
   '/$slug/$teamSlug/settings/organization/authentication': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationAuthenticationRoute
   '/$slug/$teamSlug/settings/organization/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute
   '/$slug/$teamSlug/settings/organization/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute
@@ -683,11 +721,15 @@ export interface FileRoutesByTo {
   '/$slug/$teamSlug/settings/project/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute
   '/$slug/$teamSlug/settings/project/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute
   '/$slug/$teamSlug/settings/project/integrations': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute
+  '/$slug/$teamSlug/settings/project/inventory': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectInventoryRoute
   '/$slug/$teamSlug/settings/project/webhooks': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectWebhooksRoute
   '/$slug/$teamSlug/analytics/dashboards': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute
   '/$slug/$teamSlug/analytics/data-management': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementIndexRoute
   '/$slug/$teamSlug/analytics/insights': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute
   '/$slug/$teamSlug/settings/project/products/ai-agents': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute
+  '/$slug/$teamSlug/settings/project/products/contatos': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute
+  '/$slug/$teamSlug/settings/project/products/estoque': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsEstoqueRoute
+  '/$slug/$teamSlug/settings/project/products/financeiro': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -715,21 +757,21 @@ export interface FileRoutesById {
   '/auth/sign-in/email': typeof AuthSignInEmailRoute
   '/auth/sign-in/': typeof AuthSignInIndexRoute
   '/_authenticated/$slug/$teamSlug/_dashboard': typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren
+  '/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/billing': typeof AuthenticatedSlugTeamSlugDashboardBillingRoute
+  '/_authenticated/$slug/$teamSlug/_dashboard/bills': typeof AuthenticatedSlugTeamSlugDashboardBillsRoute
+  '/_authenticated/$slug/$teamSlug/_dashboard/categories': typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/chat': typeof AuthenticatedSlugTeamSlugDashboardChatRouteWithChildren
+  '/_authenticated/$slug/$teamSlug/_dashboard/contacts': typeof AuthenticatedSlugTeamSlugDashboardContactsRoute
+  '/_authenticated/$slug/$teamSlug/_dashboard/credit-cards': typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute
+  '/_authenticated/$slug/$teamSlug/_dashboard/goals': typeof AuthenticatedSlugTeamSlugDashboardGoalsRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/plans': typeof AuthenticatedSlugTeamSlugDashboardPlansRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/search': typeof AuthenticatedSlugTeamSlugDashboardSearchRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings': typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren
+  '/_authenticated/$slug/$teamSlug/_dashboard/tags': typeof AuthenticatedSlugTeamSlugDashboardTagsRoute
+  '/_authenticated/$slug/$teamSlug/_dashboard/transactions': typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementRouteWithChildren
   '/_authenticated/$slug/$teamSlug/_dashboard/chat/$threadId': typeof AuthenticatedSlugTeamSlugDashboardChatThreadIdRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/finance/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardFinanceBankAccountsRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/finance/bills': typeof AuthenticatedSlugTeamSlugDashboardFinanceBillsRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/finance/categories': typeof AuthenticatedSlugTeamSlugDashboardFinanceCategoriesRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/finance/contacts': typeof AuthenticatedSlugTeamSlugDashboardFinanceContactsRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/finance/credit-cards': typeof AuthenticatedSlugTeamSlugDashboardFinanceCreditCardsRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/finance/goals': typeof AuthenticatedSlugTeamSlugDashboardFinanceGoalsRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/finance/tags': typeof AuthenticatedSlugTeamSlugDashboardFinanceTagsRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/finance/transactions': typeof AuthenticatedSlugTeamSlugDashboardFinanceTransactionsRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/customization': typeof AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews': typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute
@@ -738,6 +780,7 @@ export interface FileRoutesById {
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/security': typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/chat/': typeof AuthenticatedSlugTeamSlugDashboardChatIndexRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/home/': typeof AuthenticatedSlugTeamSlugDashboardHomeIndexRoute
+  '/_authenticated/$slug/$teamSlug/_dashboard/inventory/': typeof AuthenticatedSlugTeamSlugDashboardInventoryIndexRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/': typeof AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/actions': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementActionsRoute
@@ -747,7 +790,6 @@ export interface FileRoutesById {
   '/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/property-definitions': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementPropertyDefinitionsRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/sources': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementSourcesRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/new': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsNewRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/authentication': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationAuthenticationRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute
@@ -759,11 +801,15 @@ export interface FileRoutesById {
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute
+  '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/inventory': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectInventoryRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/webhooks': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectWebhooksRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementIndexRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/': typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute
+  '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute
+  '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/estoque': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsEstoqueRoute
+  '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -790,21 +836,21 @@ export interface FileRouteTypes {
     | '/api/rpc/$'
     | '/auth/sign-in/email'
     | '/auth/sign-in/'
+    | '/$slug/$teamSlug/bank-accounts'
     | '/$slug/$teamSlug/billing'
+    | '/$slug/$teamSlug/bills'
+    | '/$slug/$teamSlug/categories'
     | '/$slug/$teamSlug/chat'
+    | '/$slug/$teamSlug/contacts'
+    | '/$slug/$teamSlug/credit-cards'
+    | '/$slug/$teamSlug/goals'
     | '/$slug/$teamSlug/plans'
     | '/$slug/$teamSlug/search'
     | '/$slug/$teamSlug/settings'
+    | '/$slug/$teamSlug/tags'
+    | '/$slug/$teamSlug/transactions'
     | '/$slug/$teamSlug/analytics/data-management'
     | '/$slug/$teamSlug/chat/$threadId'
-    | '/$slug/$teamSlug/finance/bank-accounts'
-    | '/$slug/$teamSlug/finance/bills'
-    | '/$slug/$teamSlug/finance/categories'
-    | '/$slug/$teamSlug/finance/contacts'
-    | '/$slug/$teamSlug/finance/credit-cards'
-    | '/$slug/$teamSlug/finance/goals'
-    | '/$slug/$teamSlug/finance/tags'
-    | '/$slug/$teamSlug/finance/transactions'
     | '/$slug/$teamSlug/settings/customization'
     | '/$slug/$teamSlug/settings/danger-zone'
     | '/$slug/$teamSlug/settings/feature-previews'
@@ -813,6 +859,7 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug/settings/security'
     | '/$slug/$teamSlug/chat/'
     | '/$slug/$teamSlug/home/'
+    | '/$slug/$teamSlug/inventory/'
     | '/$slug/$teamSlug/settings/'
     | '/$slug/$teamSlug/analytics/dashboards/$dashboardId'
     | '/$slug/$teamSlug/analytics/data-management/actions'
@@ -822,7 +869,6 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug/analytics/data-management/property-definitions'
     | '/$slug/$teamSlug/analytics/data-management/sources'
     | '/$slug/$teamSlug/analytics/insights/$insightId'
-    | '/$slug/$teamSlug/analytics/insights/new'
     | '/$slug/$teamSlug/settings/organization/authentication'
     | '/$slug/$teamSlug/settings/organization/danger-zone'
     | '/$slug/$teamSlug/settings/organization/general'
@@ -834,11 +880,15 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug/settings/project/danger-zone'
     | '/$slug/$teamSlug/settings/project/general'
     | '/$slug/$teamSlug/settings/project/integrations'
+    | '/$slug/$teamSlug/settings/project/inventory'
     | '/$slug/$teamSlug/settings/project/webhooks'
     | '/$slug/$teamSlug/analytics/dashboards/'
     | '/$slug/$teamSlug/analytics/data-management/'
     | '/$slug/$teamSlug/analytics/insights/'
     | '/$slug/$teamSlug/settings/project/products/ai-agents'
+    | '/$slug/$teamSlug/settings/project/products/contatos'
+    | '/$slug/$teamSlug/settings/project/products/estoque'
+    | '/$slug/$teamSlug/settings/project/products/financeiro'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -862,18 +912,18 @@ export interface FileRouteTypes {
     | '/api/rpc/$'
     | '/auth/sign-in/email'
     | '/auth/sign-in'
+    | '/$slug/$teamSlug/bank-accounts'
     | '/$slug/$teamSlug/billing'
+    | '/$slug/$teamSlug/bills'
+    | '/$slug/$teamSlug/categories'
+    | '/$slug/$teamSlug/contacts'
+    | '/$slug/$teamSlug/credit-cards'
+    | '/$slug/$teamSlug/goals'
     | '/$slug/$teamSlug/plans'
     | '/$slug/$teamSlug/search'
+    | '/$slug/$teamSlug/tags'
+    | '/$slug/$teamSlug/transactions'
     | '/$slug/$teamSlug/chat/$threadId'
-    | '/$slug/$teamSlug/finance/bank-accounts'
-    | '/$slug/$teamSlug/finance/bills'
-    | '/$slug/$teamSlug/finance/categories'
-    | '/$slug/$teamSlug/finance/contacts'
-    | '/$slug/$teamSlug/finance/credit-cards'
-    | '/$slug/$teamSlug/finance/goals'
-    | '/$slug/$teamSlug/finance/tags'
-    | '/$slug/$teamSlug/finance/transactions'
     | '/$slug/$teamSlug/settings/customization'
     | '/$slug/$teamSlug/settings/danger-zone'
     | '/$slug/$teamSlug/settings/feature-previews'
@@ -882,6 +932,7 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug/settings/security'
     | '/$slug/$teamSlug/chat'
     | '/$slug/$teamSlug/home'
+    | '/$slug/$teamSlug/inventory'
     | '/$slug/$teamSlug/settings'
     | '/$slug/$teamSlug/analytics/dashboards/$dashboardId'
     | '/$slug/$teamSlug/analytics/data-management/actions'
@@ -891,7 +942,6 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug/analytics/data-management/property-definitions'
     | '/$slug/$teamSlug/analytics/data-management/sources'
     | '/$slug/$teamSlug/analytics/insights/$insightId'
-    | '/$slug/$teamSlug/analytics/insights/new'
     | '/$slug/$teamSlug/settings/organization/authentication'
     | '/$slug/$teamSlug/settings/organization/danger-zone'
     | '/$slug/$teamSlug/settings/organization/general'
@@ -903,11 +953,15 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug/settings/project/danger-zone'
     | '/$slug/$teamSlug/settings/project/general'
     | '/$slug/$teamSlug/settings/project/integrations'
+    | '/$slug/$teamSlug/settings/project/inventory'
     | '/$slug/$teamSlug/settings/project/webhooks'
     | '/$slug/$teamSlug/analytics/dashboards'
     | '/$slug/$teamSlug/analytics/data-management'
     | '/$slug/$teamSlug/analytics/insights'
     | '/$slug/$teamSlug/settings/project/products/ai-agents'
+    | '/$slug/$teamSlug/settings/project/products/contatos'
+    | '/$slug/$teamSlug/settings/project/products/estoque'
+    | '/$slug/$teamSlug/settings/project/products/financeiro'
   id:
     | '__root__'
     | '/'
@@ -934,21 +988,21 @@ export interface FileRouteTypes {
     | '/auth/sign-in/email'
     | '/auth/sign-in/'
     | '/_authenticated/$slug/$teamSlug/_dashboard'
+    | '/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts'
     | '/_authenticated/$slug/$teamSlug/_dashboard/billing'
+    | '/_authenticated/$slug/$teamSlug/_dashboard/bills'
+    | '/_authenticated/$slug/$teamSlug/_dashboard/categories'
     | '/_authenticated/$slug/$teamSlug/_dashboard/chat'
+    | '/_authenticated/$slug/$teamSlug/_dashboard/contacts'
+    | '/_authenticated/$slug/$teamSlug/_dashboard/credit-cards'
+    | '/_authenticated/$slug/$teamSlug/_dashboard/goals'
     | '/_authenticated/$slug/$teamSlug/_dashboard/plans'
     | '/_authenticated/$slug/$teamSlug/_dashboard/search'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings'
+    | '/_authenticated/$slug/$teamSlug/_dashboard/tags'
+    | '/_authenticated/$slug/$teamSlug/_dashboard/transactions'
     | '/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management'
     | '/_authenticated/$slug/$teamSlug/_dashboard/chat/$threadId'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/finance/bank-accounts'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/finance/bills'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/finance/categories'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/finance/contacts'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/finance/credit-cards'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/finance/goals'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/finance/tags'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/finance/transactions'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/customization'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/danger-zone'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews'
@@ -957,6 +1011,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/security'
     | '/_authenticated/$slug/$teamSlug/_dashboard/chat/'
     | '/_authenticated/$slug/$teamSlug/_dashboard/home/'
+    | '/_authenticated/$slug/$teamSlug/_dashboard/inventory/'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/'
     | '/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId'
     | '/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/actions'
@@ -966,7 +1021,6 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/property-definitions'
     | '/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/sources'
     | '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/new'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/authentication'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general'
@@ -978,11 +1032,15 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations'
+    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/inventory'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/webhooks'
     | '/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/'
     | '/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/'
     | '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents'
+    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos'
+    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/estoque'
+    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1170,6 +1228,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardRouteImport
       parentRoute: typeof AuthenticatedSlugTeamSlugRoute
     }
+    '/_authenticated/$slug/$teamSlug/_dashboard/transactions': {
+      id: '/_authenticated/$slug/$teamSlug/_dashboard/transactions'
+      path: '/transactions'
+      fullPath: '/$slug/$teamSlug/transactions'
+      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardTransactionsRouteImport
+      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
+    }
+    '/_authenticated/$slug/$teamSlug/_dashboard/tags': {
+      id: '/_authenticated/$slug/$teamSlug/_dashboard/tags'
+      path: '/tags'
+      fullPath: '/$slug/$teamSlug/tags'
+      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardTagsRouteImport
+      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
+    }
     '/_authenticated/$slug/$teamSlug/_dashboard/settings': {
       id: '/_authenticated/$slug/$teamSlug/_dashboard/settings'
       path: '/settings'
@@ -1191,11 +1263,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardPlansRouteImport
       parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
     }
+    '/_authenticated/$slug/$teamSlug/_dashboard/goals': {
+      id: '/_authenticated/$slug/$teamSlug/_dashboard/goals'
+      path: '/goals'
+      fullPath: '/$slug/$teamSlug/goals'
+      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardGoalsRouteImport
+      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
+    }
+    '/_authenticated/$slug/$teamSlug/_dashboard/credit-cards': {
+      id: '/_authenticated/$slug/$teamSlug/_dashboard/credit-cards'
+      path: '/credit-cards'
+      fullPath: '/$slug/$teamSlug/credit-cards'
+      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRouteImport
+      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
+    }
+    '/_authenticated/$slug/$teamSlug/_dashboard/contacts': {
+      id: '/_authenticated/$slug/$teamSlug/_dashboard/contacts'
+      path: '/contacts'
+      fullPath: '/$slug/$teamSlug/contacts'
+      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsRouteImport
+      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
+    }
     '/_authenticated/$slug/$teamSlug/_dashboard/chat': {
       id: '/_authenticated/$slug/$teamSlug/_dashboard/chat'
       path: '/chat'
       fullPath: '/$slug/$teamSlug/chat'
       preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardChatRouteImport
+      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
+    }
+    '/_authenticated/$slug/$teamSlug/_dashboard/categories': {
+      id: '/_authenticated/$slug/$teamSlug/_dashboard/categories'
+      path: '/categories'
+      fullPath: '/$slug/$teamSlug/categories'
+      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardCategoriesRouteImport
+      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
+    }
+    '/_authenticated/$slug/$teamSlug/_dashboard/bills': {
+      id: '/_authenticated/$slug/$teamSlug/_dashboard/bills'
+      path: '/bills'
+      fullPath: '/$slug/$teamSlug/bills'
+      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardBillsRouteImport
       parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
     }
     '/_authenticated/$slug/$teamSlug/_dashboard/billing': {
@@ -1205,12 +1312,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardBillingRouteImport
       parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
     }
+    '/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts': {
+      id: '/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts'
+      path: '/bank-accounts'
+      fullPath: '/$slug/$teamSlug/bank-accounts'
+      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRouteImport
+      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
+    }
     '/_authenticated/$slug/$teamSlug/_dashboard/settings/': {
       id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/'
       path: '/'
       fullPath: '/$slug/$teamSlug/settings/'
       preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
+    }
+    '/_authenticated/$slug/$teamSlug/_dashboard/inventory/': {
+      id: '/_authenticated/$slug/$teamSlug/_dashboard/inventory/'
+      path: '/inventory'
+      fullPath: '/$slug/$teamSlug/inventory/'
+      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardInventoryIndexRouteImport
+      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
     }
     '/_authenticated/$slug/$teamSlug/_dashboard/home/': {
       id: '/_authenticated/$slug/$teamSlug/_dashboard/home/'
@@ -1268,62 +1389,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRouteImport
       parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
     }
-    '/_authenticated/$slug/$teamSlug/_dashboard/finance/transactions': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/finance/transactions'
-      path: '/finance/transactions'
-      fullPath: '/$slug/$teamSlug/finance/transactions'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardFinanceTransactionsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/finance/tags': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/finance/tags'
-      path: '/finance/tags'
-      fullPath: '/$slug/$teamSlug/finance/tags'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardFinanceTagsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/finance/goals': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/finance/goals'
-      path: '/finance/goals'
-      fullPath: '/$slug/$teamSlug/finance/goals'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardFinanceGoalsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/finance/credit-cards': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/finance/credit-cards'
-      path: '/finance/credit-cards'
-      fullPath: '/$slug/$teamSlug/finance/credit-cards'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardFinanceCreditCardsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/finance/contacts': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/finance/contacts'
-      path: '/finance/contacts'
-      fullPath: '/$slug/$teamSlug/finance/contacts'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardFinanceContactsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/finance/categories': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/finance/categories'
-      path: '/finance/categories'
-      fullPath: '/$slug/$teamSlug/finance/categories'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardFinanceCategoriesRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/finance/bills': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/finance/bills'
-      path: '/finance/bills'
-      fullPath: '/$slug/$teamSlug/finance/bills'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardFinanceBillsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
-    '/_authenticated/$slug/$teamSlug/_dashboard/finance/bank-accounts': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/finance/bank-accounts'
-      path: '/finance/bank-accounts'
-      fullPath: '/$slug/$teamSlug/finance/bank-accounts'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardFinanceBankAccountsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
     '/_authenticated/$slug/$teamSlug/_dashboard/chat/$threadId': {
       id: '/_authenticated/$slug/$teamSlug/_dashboard/chat/$threadId'
       path: '/$threadId'
@@ -1364,6 +1429,13 @@ declare module '@tanstack/react-router' {
       path: '/project/webhooks'
       fullPath: '/$slug/$teamSlug/settings/project/webhooks'
       preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectWebhooksRouteImport
+      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
+    }
+    '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/inventory': {
+      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/inventory'
+      path: '/project/inventory'
+      fullPath: '/$slug/$teamSlug/settings/project/inventory'
+      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectInventoryRouteImport
       parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
     }
     '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations': {
@@ -1443,13 +1515,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationAuthenticationRouteImport
       parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
     }
-    '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/new': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/new'
-      path: '/analytics/insights/new'
-      fullPath: '/$slug/$teamSlug/analytics/insights/new'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsNewRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
-    }
     '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId': {
       id: '/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/$insightId'
       path: '/analytics/insights/$insightId'
@@ -1506,6 +1571,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRouteImport
       parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
     }
+    '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro': {
+      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro'
+      path: '/project/products/financeiro'
+      fullPath: '/$slug/$teamSlug/settings/project/products/financeiro'
+      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRouteImport
+      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
+    }
+    '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/estoque': {
+      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/estoque'
+      path: '/project/products/estoque'
+      fullPath: '/$slug/$teamSlug/settings/project/products/estoque'
+      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsEstoqueRouteImport
+      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
+    }
+    '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos': {
+      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos'
+      path: '/project/products/contatos'
+      fullPath: '/$slug/$teamSlug/settings/project/products/contatos'
+      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRouteImport
+      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
+    }
     '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents': {
       id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents'
       path: '/project/products/ai-agents'
@@ -1553,8 +1639,12 @@ interface AuthenticatedSlugTeamSlugDashboardSettingsRouteChildren {
   AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute
   AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute
   AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute
+  AuthenticatedSlugTeamSlugDashboardSettingsProjectInventoryRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectInventoryRoute
   AuthenticatedSlugTeamSlugDashboardSettingsProjectWebhooksRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectWebhooksRoute
   AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute
+  AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute
+  AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsEstoqueRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsEstoqueRoute
+  AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute
 }
 
 const AuthenticatedSlugTeamSlugDashboardSettingsRouteChildren: AuthenticatedSlugTeamSlugDashboardSettingsRouteChildren =
@@ -1595,10 +1685,18 @@ const AuthenticatedSlugTeamSlugDashboardSettingsRouteChildren: AuthenticatedSlug
       AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute,
     AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute:
       AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute,
+    AuthenticatedSlugTeamSlugDashboardSettingsProjectInventoryRoute:
+      AuthenticatedSlugTeamSlugDashboardSettingsProjectInventoryRoute,
     AuthenticatedSlugTeamSlugDashboardSettingsProjectWebhooksRoute:
       AuthenticatedSlugTeamSlugDashboardSettingsProjectWebhooksRoute,
     AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute:
       AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute,
+    AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute:
+      AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute,
+    AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsEstoqueRoute:
+      AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsEstoqueRoute,
+    AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute:
+      AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute,
   }
 
 const AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren =
@@ -1640,66 +1738,66 @@ const AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementRouteWithChildren
   )
 
 interface AuthenticatedSlugTeamSlugDashboardRouteChildren {
+  AuthenticatedSlugTeamSlugDashboardBankAccountsRoute: typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
   AuthenticatedSlugTeamSlugDashboardBillingRoute: typeof AuthenticatedSlugTeamSlugDashboardBillingRoute
+  AuthenticatedSlugTeamSlugDashboardBillsRoute: typeof AuthenticatedSlugTeamSlugDashboardBillsRoute
+  AuthenticatedSlugTeamSlugDashboardCategoriesRoute: typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute
   AuthenticatedSlugTeamSlugDashboardChatRoute: typeof AuthenticatedSlugTeamSlugDashboardChatRouteWithChildren
+  AuthenticatedSlugTeamSlugDashboardContactsRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsRoute
+  AuthenticatedSlugTeamSlugDashboardCreditCardsRoute: typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute
+  AuthenticatedSlugTeamSlugDashboardGoalsRoute: typeof AuthenticatedSlugTeamSlugDashboardGoalsRoute
   AuthenticatedSlugTeamSlugDashboardPlansRoute: typeof AuthenticatedSlugTeamSlugDashboardPlansRoute
   AuthenticatedSlugTeamSlugDashboardSearchRoute: typeof AuthenticatedSlugTeamSlugDashboardSearchRoute
   AuthenticatedSlugTeamSlugDashboardSettingsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren
+  AuthenticatedSlugTeamSlugDashboardTagsRoute: typeof AuthenticatedSlugTeamSlugDashboardTagsRoute
+  AuthenticatedSlugTeamSlugDashboardTransactionsRoute: typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute
   AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementRouteWithChildren
-  AuthenticatedSlugTeamSlugDashboardFinanceBankAccountsRoute: typeof AuthenticatedSlugTeamSlugDashboardFinanceBankAccountsRoute
-  AuthenticatedSlugTeamSlugDashboardFinanceBillsRoute: typeof AuthenticatedSlugTeamSlugDashboardFinanceBillsRoute
-  AuthenticatedSlugTeamSlugDashboardFinanceCategoriesRoute: typeof AuthenticatedSlugTeamSlugDashboardFinanceCategoriesRoute
-  AuthenticatedSlugTeamSlugDashboardFinanceContactsRoute: typeof AuthenticatedSlugTeamSlugDashboardFinanceContactsRoute
-  AuthenticatedSlugTeamSlugDashboardFinanceCreditCardsRoute: typeof AuthenticatedSlugTeamSlugDashboardFinanceCreditCardsRoute
-  AuthenticatedSlugTeamSlugDashboardFinanceGoalsRoute: typeof AuthenticatedSlugTeamSlugDashboardFinanceGoalsRoute
-  AuthenticatedSlugTeamSlugDashboardFinanceTagsRoute: typeof AuthenticatedSlugTeamSlugDashboardFinanceTagsRoute
-  AuthenticatedSlugTeamSlugDashboardFinanceTransactionsRoute: typeof AuthenticatedSlugTeamSlugDashboardFinanceTransactionsRoute
   AuthenticatedSlugTeamSlugDashboardHomeIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardHomeIndexRoute
+  AuthenticatedSlugTeamSlugDashboardInventoryIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardInventoryIndexRoute
   AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute
   AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute
-  AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsNewRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsNewRoute
   AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute
   AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute
 }
 
 const AuthenticatedSlugTeamSlugDashboardRouteChildren: AuthenticatedSlugTeamSlugDashboardRouteChildren =
   {
+    AuthenticatedSlugTeamSlugDashboardBankAccountsRoute:
+      AuthenticatedSlugTeamSlugDashboardBankAccountsRoute,
     AuthenticatedSlugTeamSlugDashboardBillingRoute:
       AuthenticatedSlugTeamSlugDashboardBillingRoute,
+    AuthenticatedSlugTeamSlugDashboardBillsRoute:
+      AuthenticatedSlugTeamSlugDashboardBillsRoute,
+    AuthenticatedSlugTeamSlugDashboardCategoriesRoute:
+      AuthenticatedSlugTeamSlugDashboardCategoriesRoute,
     AuthenticatedSlugTeamSlugDashboardChatRoute:
       AuthenticatedSlugTeamSlugDashboardChatRouteWithChildren,
+    AuthenticatedSlugTeamSlugDashboardContactsRoute:
+      AuthenticatedSlugTeamSlugDashboardContactsRoute,
+    AuthenticatedSlugTeamSlugDashboardCreditCardsRoute:
+      AuthenticatedSlugTeamSlugDashboardCreditCardsRoute,
+    AuthenticatedSlugTeamSlugDashboardGoalsRoute:
+      AuthenticatedSlugTeamSlugDashboardGoalsRoute,
     AuthenticatedSlugTeamSlugDashboardPlansRoute:
       AuthenticatedSlugTeamSlugDashboardPlansRoute,
     AuthenticatedSlugTeamSlugDashboardSearchRoute:
       AuthenticatedSlugTeamSlugDashboardSearchRoute,
     AuthenticatedSlugTeamSlugDashboardSettingsRoute:
       AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren,
+    AuthenticatedSlugTeamSlugDashboardTagsRoute:
+      AuthenticatedSlugTeamSlugDashboardTagsRoute,
+    AuthenticatedSlugTeamSlugDashboardTransactionsRoute:
+      AuthenticatedSlugTeamSlugDashboardTransactionsRoute,
     AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementRoute:
       AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementRouteWithChildren,
-    AuthenticatedSlugTeamSlugDashboardFinanceBankAccountsRoute:
-      AuthenticatedSlugTeamSlugDashboardFinanceBankAccountsRoute,
-    AuthenticatedSlugTeamSlugDashboardFinanceBillsRoute:
-      AuthenticatedSlugTeamSlugDashboardFinanceBillsRoute,
-    AuthenticatedSlugTeamSlugDashboardFinanceCategoriesRoute:
-      AuthenticatedSlugTeamSlugDashboardFinanceCategoriesRoute,
-    AuthenticatedSlugTeamSlugDashboardFinanceContactsRoute:
-      AuthenticatedSlugTeamSlugDashboardFinanceContactsRoute,
-    AuthenticatedSlugTeamSlugDashboardFinanceCreditCardsRoute:
-      AuthenticatedSlugTeamSlugDashboardFinanceCreditCardsRoute,
-    AuthenticatedSlugTeamSlugDashboardFinanceGoalsRoute:
-      AuthenticatedSlugTeamSlugDashboardFinanceGoalsRoute,
-    AuthenticatedSlugTeamSlugDashboardFinanceTagsRoute:
-      AuthenticatedSlugTeamSlugDashboardFinanceTagsRoute,
-    AuthenticatedSlugTeamSlugDashboardFinanceTransactionsRoute:
-      AuthenticatedSlugTeamSlugDashboardFinanceTransactionsRoute,
     AuthenticatedSlugTeamSlugDashboardHomeIndexRoute:
       AuthenticatedSlugTeamSlugDashboardHomeIndexRoute,
+    AuthenticatedSlugTeamSlugDashboardInventoryIndexRoute:
+      AuthenticatedSlugTeamSlugDashboardInventoryIndexRoute,
     AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute:
       AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboardIdRoute,
     AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute:
       AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsInsightIdRoute,
-    AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsNewRoute:
-      AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsNewRoute,
     AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute:
       AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute,
     AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute:
@@ -1803,12 +1901,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
