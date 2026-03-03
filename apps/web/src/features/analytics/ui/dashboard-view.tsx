@@ -8,8 +8,10 @@ import { DateRangePicker } from "@packages/ui/components/date-range-picker";
 import { cn } from "@packages/ui/lib/utils";
 import { formatRelativeTime } from "@packages/utils/date";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Clock, Plus, RefreshCw, X } from "lucide-react";
-import { type ReactNode, useCallback, useMemo, useRef } from "react";
+import { Check, Clock, Layout, Loader2, Plus, RefreshCw, RotateCcw, X } from "lucide-react";
+import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { usePageActions } from "@/features/context-panel/use-context-panel";
 import { PageHeader } from "@/components/page-header";
 import { DashboardFilterPopover } from "@/features/analytics/ui/dashboard-filter-popover";
 import { EditableDashboardGrid } from "@/features/analytics/ui/editable-dashboard-grid";
@@ -31,9 +33,17 @@ interface DashboardViewProps {
 function DashboardHeader({
    dashboard,
    onAddInsight,
+   isEditingLayout,
+   isSaving,
+   onSave,
+   onCancel,
 }: {
    dashboard: Dashboard;
    onAddInsight: () => void;
+   isEditingLayout: boolean;
+   isSaving: boolean;
+   onSave: () => void;
+   onCancel: () => void;
 }) {
    const queryClient = useQueryClient();
 
@@ -77,10 +87,27 @@ function DashboardHeader({
    return (
       <PageHeader
          actions={
-            <Button onClick={onAddInsight}>
-               <Plus className="size-3.5" />
-               Adicionar insight
-            </Button>
+            isEditingLayout ? (
+               <div className="flex items-center gap-2">
+                  <Button onClick={onCancel} variant="ghost">
+                     <RotateCcw className="size-4" />
+                     Cancelar
+                  </Button>
+                  <Button disabled={isSaving} onClick={onSave}>
+                     {isSaving ? (
+                        <Loader2 className="size-4 animate-spin" />
+                     ) : (
+                        <Check className="size-4" />
+                     )}
+                     Salvar
+                  </Button>
+               </div>
+            ) : (
+               <Button onClick={onAddInsight}>
+                  <Plus className="size-3.5" />
+                  Adicionar insight
+               </Button>
+            )
          }
          className="pb-3"
          description={dashboard.description ?? ""}
@@ -304,20 +331,74 @@ function DashboardFilterBar({ dashboard }: { dashboard: Dashboard }) {
 
 export function DashboardView({ dashboard, children }: DashboardViewProps) {
    const addInsightRef = useRef<(() => void) | null>(null);
+   const saveRef = useRef<(() => void) | null>(null);
+   const cancelRef = useRef<(() => void) | null>(null);
+   const [isEditingLayout, setIsEditingLayout] = useState(false);
+   const [isSaving, setIsSaving] = useState(false);
+
+   usePageActions([
+      {
+         icon: Layout,
+         label: "Editar layout",
+         onClick: () => {
+            if (!isEditingLayout) {
+               setIsEditingLayout(true);
+               toast.info(
+                  "Editando o dashboard — salve para persistir as alterações",
+                  {
+                     id: "dashboard-edit-mode",
+                     duration: Number.POSITIVE_INFINITY,
+                  },
+               );
+            }
+         },
+      },
+   ]);
+
+   const handleSave = useCallback(() => {
+      setIsSaving(true);
+      saveRef.current?.();
+   }, []);
+
+   const handleCancel = useCallback(() => {
+      cancelRef.current?.();
+      setIsEditingLayout(false);
+      setIsSaving(false);
+      toast.dismiss("dashboard-edit-mode");
+   }, []);
 
    return (
       <main className="flex flex-col gap-0">
          <DashboardHeader
             dashboard={dashboard}
+            isEditingLayout={isEditingLayout}
+            isSaving={isSaving}
             onAddInsight={() => addInsightRef.current?.()}
+            onCancel={handleCancel}
+            onSave={handleSave}
          />
          <DashboardFilterBar dashboard={dashboard} />
          <div className="flex flex-col gap-4 pt-4">
             {children}
             <EditableDashboardGrid
                dashboard={dashboard}
+               isEditingLayout={isEditingLayout}
+               onCancelReady={(fn) => {
+                  cancelRef.current = fn;
+               }}
                onOpenAddInsight={(fn) => {
                   addInsightRef.current = fn;
+               }}
+               onSaveComplete={() => {
+                  setIsEditingLayout(false);
+                  setIsSaving(false);
+                  toast.dismiss("dashboard-edit-mode");
+               }}
+               onSaveError={() => {
+                  setIsSaving(false);
+               }}
+               onSaveReady={(fn) => {
+                  saveRef.current = fn;
                }}
             />
          </div>

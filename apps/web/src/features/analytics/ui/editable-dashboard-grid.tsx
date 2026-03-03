@@ -38,6 +38,7 @@ interface EditableDashboardGridProps {
    onSaveReady?: (handler: () => void) => void;
    onCancelReady?: (handler: () => void) => void;
    onSaveComplete?: () => void;
+   onSaveError?: () => void;
 }
 
 // =============================================================================
@@ -201,6 +202,7 @@ export function EditableDashboardGrid({
    onSaveReady,
    onCancelReady,
    onSaveComplete,
+   onSaveError,
 }: EditableDashboardGridProps) {
    const queryClient = useQueryClient();
    const { openCredenza, closeCredenza } = useCredenza();
@@ -241,6 +243,11 @@ export function EditableDashboardGrid({
    useEffect(() => {
       onSaveCompleteRef.current = onSaveComplete;
    }, [onSaveComplete]);
+
+   const onSaveErrorRef = useRef(onSaveError);
+   useEffect(() => {
+      onSaveErrorRef.current = onSaveError;
+   }, [onSaveError]);
 
    // Tile operations
    const handleReorder = useCallback((reordered: DashboardTileType[]) => {
@@ -311,7 +318,10 @@ export function EditableDashboardGrid({
    const handleSave = useCallback(() => {
       saveMutate(
          { id: dashboard.id, tiles: localTiles },
-         { onSuccess: () => onSaveCompleteRef.current?.() },
+         {
+            onSuccess: () => onSaveCompleteRef.current?.(),
+            onError: () => onSaveErrorRef.current?.(),
+         },
       );
    }, [saveMutate, dashboard.id, localTiles]);
 
