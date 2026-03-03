@@ -1,3 +1,4 @@
+import { useDraggable } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Condition } from "@f-o-t/condition-evaluator";
@@ -27,6 +28,7 @@ import {
    AlertCircle,
    Copy,
    Ellipsis,
+   GripHorizontal,
    GripVertical,
    Maximize2,
    Pencil,
@@ -327,6 +329,16 @@ export function DashboardTile({
       transition,
       isDragging,
    } = useSortable({ id, disabled: !isEditing });
+   const {
+      attributes: resizeAttributes,
+      listeners: resizeListeners,
+      setNodeRef: setResizeRef,
+      isDragging: isResizing,
+   } = useDraggable({
+      id: `resize-${id}`,
+      data: { insightId: id, currentSize: size },
+      disabled: !isEditing,
+   });
    const style = {
       transform: CSS.Transform.toString(transform),
       transition,
@@ -353,7 +365,12 @@ export function DashboardTile({
          ref={setNodeRef}
          style={style}
       >
-         <div className="h-full rounded-lg border bg-card text-card-foreground">
+         <div
+            className={cn(
+               "h-full rounded-lg border bg-card text-card-foreground relative",
+               isResizing && "ring-2 ring-primary/50",
+            )}
+         >
             {/* Card header — PostHog style */}
             <div className="px-4 pt-4 pb-2">
                <div className="flex items-start justify-between gap-2">
@@ -520,6 +537,21 @@ export function DashboardTile({
                   children
                )}
             </div>
+            {/* Resize handle — only in edit mode */}
+            {isEditing && (
+               <div
+                  ref={setResizeRef}
+                  {...resizeAttributes}
+                  {...resizeListeners}
+                  aria-label="Redimensionar tile"
+                  className={cn(
+                     "absolute bottom-1 right-1 size-5 flex items-center justify-center rounded cursor-col-resize opacity-30 hover:opacity-100 transition-opacity select-none",
+                     isResizing && "opacity-100",
+                  )}
+               >
+                  <GripHorizontal aria-hidden="true" className="size-3 text-muted-foreground" />
+               </div>
+            )}
          </div>
       </div>
    );
