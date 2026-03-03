@@ -1,4 +1,8 @@
 import { Badge } from "@packages/ui/components/badge";
+import {
+	CredenzaHeader,
+	CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
@@ -70,9 +74,9 @@ interface InventoryHistorySheetProps {
 export function InventoryHistorySheet({ product }: InventoryHistorySheetProps) {
 	return (
 		<div className="space-y-4">
-			<p className="text-muted-foreground text-sm">
-				Histórico de movimentos de <strong>{product.name}</strong>.
-			</p>
+			<CredenzaHeader>
+				<CredenzaTitle>Histórico de {product.name}</CredenzaTitle>
+			</CredenzaHeader>
 			<Suspense
 				fallback={
 					<div className="space-y-3">
