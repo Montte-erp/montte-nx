@@ -1,12 +1,17 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useIsomorphicLayoutEffect } from "@dnd-kit/utilities";
 import { orpc } from "@/integrations/orpc/client";
 import { useSafeLocalStorage } from "@/hooks/use-local-storage";
 
 const PENDING_INVITATION_KEY = "montte_pending_invitation_id";
 
 export const Route = createFileRoute("/auth/callback")({
+   loader: ({ context }) => {
+      context.queryClient.prefetchQuery(
+         context.orpc.organization.getOrganizations.queryOptions(),
+      );
+   },
    component: AuthCallbackPage,
 });
 
@@ -14,11 +19,12 @@ function AuthCallbackPage() {
    const [pendingInvitation, setPendingInvitation] =
       useSafeLocalStorage<string | null>(PENDING_INVITATION_KEY, null);
    const router = useRouter();
-   const queryClient = useQueryClient();
 
-   useEffect(() => {
-      // useSafeLocalStorage syncs via useLayoutEffect, which runs before useEffect,
-      // so pendingInvitation already holds the real localStorage value here.
+   const { data: organizations } = useSuspenseQuery(
+      orpc.organization.getOrganizations.queryOptions(),
+   );
+
+   useIsomorphicLayoutEffect(() => {
       if (pendingInvitation) {
          setPendingInvitation(null);
          router.navigate({
@@ -28,51 +34,50 @@ function AuthCallbackPage() {
          return;
       }
 
-      const run = async () => {
-         try {
-            const organizations = await queryClient.fetchQuery(
-               orpc.organization.getOrganizations.queryOptions(),
-            );
+      const firstOrg = organizations[0];
 
-            const firstOrg = organizations[0];
+      if (!firstOrg || !firstOrg.onboardingCompleted) {
+         router.navigate({ to: "/onboarding" });
+         return;
+      }
 
-            if (!firstOrg || !firstOrg.onboardingCompleted) {
-               router.navigate({ to: "/onboarding" });
-               return;
-            }
+      // Organization exists and onboarding is complete — need to fetch teams
+      // This is handled by the child suspense boundary below
+   }, [pendingInvitation, setPendingInvitation, organizations, router]);
 
-            let teams: { id: string; slug: string }[] = [];
-            try {
-               teams = await queryClient.fetchQuery(
-                  orpc.organization.getOrganizationTeams.queryOptions(),
-               );
-            } catch {
-               router.navigate({ to: "/onboarding" });
-               return;
-            }
+   const firstOrg = organizations[0];
 
-            const fallbackTeam = teams[0];
+   // Don't render team resolver if no org or pending invitation
+   if (!firstOrg || !firstOrg.onboardingCompleted || pendingInvitation) {
+      return null;
+   }
 
-            if (fallbackTeam) {
-               router.navigate({
-                  to: "/$slug/$teamSlug/home",
-                  params: {
-                     slug: firstOrg.slug,
-                     teamSlug: fallbackTeam.slug,
-                  },
-               });
-               return;
-            }
+   return <TeamResolver orgSlug={firstOrg.slug} />;
+}
 
-            router.navigate({ to: "/onboarding" });
-         } catch {
-            // If any query fails (network, auth not ready, etc.), fallback to onboarding
-            router.navigate({ to: "/onboarding" });
-         }
-      };
+function TeamResolver({ orgSlug }: { orgSlug: string }) {
+   const router = useRouter();
 
-      run();
-   }, [pendingInvitation, setPendingInvitation, queryClient, router]);
+   const { data: teams } = useSuspenseQuery(
+      orpc.organization.getOrganizationTeams.queryOptions(),
+   );
+
+   useIsomorphicLayoutEffect(() => {
+      const fallbackTeam = teams[0];
+
+      if (fallbackTeam) {
+         router.navigate({
+            to: "/$slug/$teamSlug/home",
+            params: {
+               slug: orgSlug,
+               teamSlug: fallbackTeam.slug,
+            },
+         });
+         return;
+      }
+
+      router.navigate({ to: "/onboarding" });
+   }, [teams, orgSlug, router]);
 
    return null;
 }
