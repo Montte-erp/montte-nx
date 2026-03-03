@@ -3,11 +3,11 @@ import { Button } from "@packages/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import {
-   SheetDescription,
-   SheetFooter,
-   SheetHeader,
-   SheetTitle,
-} from "@packages/ui/components/sheet";
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
@@ -18,7 +18,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
-import { useSheet } from "@/hooks/use-sheet";
+import { useCredenza } from "@/hooks/use-credenza";
 import { authClient } from "@/integrations/better-auth/auth-client";
 
 function CreateTeamErrorFallback() {
@@ -50,7 +50,7 @@ function CreateTeamSkeleton() {
 }
 
 const CreateTeamFormContent = () => {
-   const { closeSheet } = useSheet();
+   const { closeCredenza } = useCredenza();
    const { activeOrganization } = useActiveOrganization();
    const [isPending, startTransition] = useTransition();
 
@@ -71,9 +71,9 @@ const CreateTeamFormContent = () => {
             return;
          }
          toast.success("Team created successfully");
-         closeSheet();
+         closeCredenza();
       },
-      [closeSheet],
+      [closeCredenza],
    );
 
    const schema = z.object({
@@ -176,8 +176,8 @@ const CreateTeamFormContent = () => {
             </form.Field>
          </form>
 
-         <SheetFooter>
-            <Button onClick={closeSheet} type="button" variant="outline">
+         <CredenzaFooter>
+            <Button onClick={closeCredenza} type="button" variant="outline">
                Cancel
             </Button>
             <form.Subscribe>
@@ -199,7 +199,7 @@ const CreateTeamFormContent = () => {
                   </Button>
                )}
             </form.Subscribe>
-         </SheetFooter>
+         </CredenzaFooter>
       </>
    );
 };
@@ -207,12 +207,12 @@ const CreateTeamFormContent = () => {
 export const CreateTeamForm: FC = () => {
    return (
       <>
-         <SheetHeader>
-            <SheetTitle className="">Create New Team</SheetTitle>
-            <SheetDescription>
+         <CredenzaHeader>
+            <CredenzaTitle className="">Create New Team</CredenzaTitle>
+            <CredenzaDescription>
                Create a new team to organize your organization members
-            </SheetDescription>
-         </SheetHeader>
+            </CredenzaDescription>
+         </CredenzaHeader>
          <ErrorBoundary FallbackComponent={CreateTeamErrorFallback}>
             <Suspense fallback={<CreateTeamSkeleton />}>
                <CreateTeamFormContent />
