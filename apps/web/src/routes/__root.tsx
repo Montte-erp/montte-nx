@@ -15,7 +15,6 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
 import { GlobalCredenza } from "@/hooks/use-credenza";
-import { GlobalSheet } from "@/hooks/use-sheet";
 import { EarlyAccessProvider } from "@/hooks/use-early-access";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import type { RouterContext } from "../integrations/tanstack-query/root-provider";
@@ -84,7 +83,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                      }}
                   />
                   <Toaster position="top-right" richColors />
-                  <GlobalSheet />
                   <GlobalCredenza />
                   <GlobalAlertDialog />
                   <ClientOnly>
