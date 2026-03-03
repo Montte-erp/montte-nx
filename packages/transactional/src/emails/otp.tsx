@@ -69,8 +69,8 @@ export default function OTPEmail({ otp, type }: OTPEmailProps) {
             </Text>
             <Section
                style={{
-                  backgroundColor: "#FEF3EE",
-                  border: "2px dashed #C4704A",
+                  backgroundColor: "#DCFCE7",
+                  border: "2px dashed #22C55E",
                   borderRadius: "12px",
                   margin: "0 0 24px 0",
                   padding: "24px",
@@ -78,7 +78,7 @@ export default function OTPEmail({ otp, type }: OTPEmailProps) {
             >
                <Text
                   style={{
-                     color: "#8B4D32",
+                     color: "#166534",
                      fontSize: "36px",
                      fontWeight: 700,
                      letterSpacing: "8px",

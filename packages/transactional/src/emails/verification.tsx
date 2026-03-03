@@ -62,7 +62,7 @@ export default function VerificationEmail({
             <Button
                href={verificationUrl}
                style={{
-                  backgroundColor: "#C4704A",
+                  backgroundColor: "#22C55E",
                   borderRadius: "8px",
                   color: "#ffffff",
                   display: "inline-block",

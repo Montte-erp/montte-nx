@@ -6,7 +6,7 @@ export const DefaultHeading = () => {
    return (
       <Section
          style={{
-            backgroundColor: "#8B4D32",
+            backgroundColor: "#166534",
             padding: "32px 24px",
             textAlign: "center",
          }}

@@ -77,15 +77,15 @@ export default function OrganizationInvitationEmail({
                      textAlign: "left",
                   }}
                >
-                  • Criar e editar conteúdo colaborativamente
-                  <br />• Usar assistentes de IA para redação
-                  <br />• Gerenciar agentes e marcas da organização
+                  • Gerenciar financeiro, vendas e operações
+                  <br />• Usar assistentes de IA integrados
+                  <br />• Colaborar com sua equipe em tempo real
                </Text>
 
                <Button
                   href={inviteLink}
                   style={{
-                     backgroundColor: "#C4704A",
+                     backgroundColor: "#22C55E",
                      borderRadius: "8px",
                      color: "#ffffff",
                      display: "inline-block",

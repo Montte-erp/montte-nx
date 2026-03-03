@@ -29,41 +29,46 @@ function AuthCallbackPage() {
       }
 
       const run = async () => {
-         const organizations = await queryClient.fetchQuery(
-            orpc.organization.getOrganizations.queryOptions(),
-         );
-
-         const firstOrg = organizations[0];
-
-         if (!firstOrg || !firstOrg.onboardingCompleted) {
-            router.navigate({ to: "/onboarding" });
-            return;
-         }
-
-         let teams: { id: string; slug: string }[] = [];
          try {
-            teams = await queryClient.fetchQuery(
-               orpc.organization.getOrganizationTeams.queryOptions(),
+            const organizations = await queryClient.fetchQuery(
+               orpc.organization.getOrganizations.queryOptions(),
             );
-         } catch {
+
+            const firstOrg = organizations[0];
+
+            if (!firstOrg || !firstOrg.onboardingCompleted) {
+               router.navigate({ to: "/onboarding" });
+               return;
+            }
+
+            let teams: { id: string; slug: string }[] = [];
+            try {
+               teams = await queryClient.fetchQuery(
+                  orpc.organization.getOrganizationTeams.queryOptions(),
+               );
+            } catch {
+               router.navigate({ to: "/onboarding" });
+               return;
+            }
+
+            const fallbackTeam = teams[0];
+
+            if (fallbackTeam) {
+               router.navigate({
+                  to: "/$slug/$teamSlug/home",
+                  params: {
+                     slug: firstOrg.slug,
+                     teamSlug: fallbackTeam.slug,
+                  },
+               });
+               return;
+            }
+
             router.navigate({ to: "/onboarding" });
-            return;
+         } catch {
+            // If any query fails (network, auth not ready, etc.), fallback to onboarding
+            router.navigate({ to: "/onboarding" });
          }
-
-         const fallbackTeam = teams[0];
-
-         if (fallbackTeam) {
-            router.navigate({
-               to: "/$slug/$teamSlug/home",
-               params: {
-                  slug: firstOrg.slug,
-                  teamSlug: fallbackTeam.slug,
-               },
-            });
-            return;
-         }
-
-         router.navigate({ to: "/onboarding" });
       };
 
       run();

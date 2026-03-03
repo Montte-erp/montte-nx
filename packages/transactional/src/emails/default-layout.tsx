@@ -25,9 +25,9 @@ export const DefaultEmailLayout = ({
                extend: {
                   colors: {
                      primary: {
-                        DEFAULT: "#C4704A",
-                        dark: "#8B4D32",
-                        light: "#D4856A",
+                        DEFAULT: "#22C55E",
+                        dark: "#166534",
+                        light: "#86EFAC",
                      },
                      background: "#f5f7f6",
                      foreground: "#1a1a2e",
