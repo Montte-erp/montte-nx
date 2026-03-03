@@ -351,7 +351,6 @@ export function EditableDashboardGrid({
    return (
       <div className="flex flex-col gap-4">
          <DashboardGrid
-            isEditing={isEditingLayout}
             onReorder={handleReorder}
             onResize={handleResizeTile}
             renderTile={(tile) => (
