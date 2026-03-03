@@ -7,11 +7,12 @@ import {
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import {
-   SheetDescription,
-   SheetFooter,
-   SheetHeader,
-   SheetTitle,
-} from "@packages/ui/components/sheet";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Textarea } from "@packages/ui/components/textarea";
 import { createSlug } from "@packages/utils/text";
 import { useForm } from "@tanstack/react-form";
@@ -20,7 +21,7 @@ import { useCallback, useMemo, useTransition } from "react";
 import { toast } from "sonner";
 import { useFileUpload } from "@/features/file-upload/lib/use-file-upload";
 import { useSetActiveOrganization } from "@/features/organization/hooks/use-set-active-organization";
-import { useSheet } from "@/hooks/use-sheet";
+import { useCredenza } from "@/hooks/use-credenza";
 import { authClient } from "@/integrations/better-auth/auth-client";
 
 type Organization = {
@@ -37,7 +38,7 @@ type ManageOrganizationFormProps = {
 export function ManageOrganizationForm({
    organization,
 }: ManageOrganizationFormProps) {
-   const { closeSheet } = useSheet();
+   const { closeCredenza } = useCredenza();
    const isEditMode = !!organization;
    const [isPending, startTransition] = useTransition();
 
@@ -90,9 +91,9 @@ export function ManageOrganizationForm({
             });
          }
          fileUpload.clearFile();
-         closeSheet();
+         closeCredenza();
       },
-      [closeSheet, fileUpload, setActiveOrganization],
+      [closeCredenza, fileUpload, setActiveOrganization],
    );
 
    const updateOrganization = useCallback(
@@ -111,9 +112,9 @@ export function ManageOrganizationForm({
          }
          toast.success("Organization updated successfully");
          fileUpload.clearFile();
-         closeSheet();
+         closeCredenza();
       },
-      [closeSheet, fileUpload],
+      [closeCredenza, fileUpload],
    );
 
    const handleFileSelect = (acceptedFiles: File[]) => {
@@ -163,11 +164,12 @@ export function ManageOrganizationForm({
             });
          }}
       >
-         <SheetHeader>
-            <SheetTitle>{modeTexts.title}</SheetTitle>
-            <SheetDescription>{modeTexts.description}</SheetDescription>
-         </SheetHeader>
-         <div className="grid gap-4 px-4">
+         <CredenzaHeader>
+            <CredenzaTitle>{modeTexts.title}</CredenzaTitle>
+            <CredenzaDescription>{modeTexts.description}</CredenzaDescription>
+         </CredenzaHeader>
+         <CredenzaBody>
+         <div className="grid gap-4">
             <form.Field name="logo">
                {(field) => {
                   const currentLogoFile = field.state.value;
@@ -287,8 +289,9 @@ export function ManageOrganizationForm({
                }}
             </form.Field>
          </div>
+         </CredenzaBody>
 
-         <SheetFooter>
+         <CredenzaFooter>
             <form.Subscribe>
                {(state) => (
                   <Button
@@ -306,7 +309,7 @@ export function ManageOrganizationForm({
                   </Button>
                )}
             </form.Subscribe>
-         </SheetFooter>
+         </CredenzaFooter>
       </form>
    );
 }
