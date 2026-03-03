@@ -28,10 +28,10 @@ import {
 } from "@packages/ui/components/select";
 import { Separator } from "@packages/ui/components/separator";
 import {
-   SheetDescription,
-   SheetHeader,
-   SheetTitle,
-} from "@packages/ui/components/sheet";
+   CredenzaDescription,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
 import { getInitials } from "@packages/utils/text";
@@ -56,7 +56,7 @@ import { Suspense, useMemo, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useSheet } from "@/hooks/use-sheet";
+import { useCredenza } from "@/hooks/use-credenza";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -207,13 +207,13 @@ function InviteMemberSheetContent({
 
    return (
       <div className="flex h-full flex-col">
-         <SheetHeader>
-            <SheetTitle>Convidar novo membro</SheetTitle>
-            <SheetDescription>
+         <CredenzaHeader>
+            <CredenzaTitle>Convidar novo membro</CredenzaTitle>
+            <CredenzaDescription>
                Adicione um novo membro à organização enviando um convite por
                e-mail.
-            </SheetDescription>
-         </SheetHeader>
+            </CredenzaDescription>
+         </CredenzaHeader>
 
          <div className="flex-1 space-y-6 py-6 px-1">
             <div className="space-y-2">
@@ -624,7 +624,7 @@ function PendingInvitesSection({ organizationId }: { organizationId: string }) {
 
 function MembersContent() {
    const queryClient = useQueryClient();
-   const { openSheet, closeSheet } = useSheet();
+   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const [searchFilter, setSearchFilter] = useState("");
 
@@ -727,10 +727,10 @@ function MembersContent() {
    }
 
    function handleOpenInviteSheet() {
-      openSheet({
+      openCredenza({
          children: (
             <InviteMemberSheetContent
-               onSuccess={closeSheet}
+               onSuccess={closeCredenza}
                organizationId={organizationId}
             />
          ),
