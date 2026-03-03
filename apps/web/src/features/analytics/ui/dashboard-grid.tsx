@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import { closestCenter, DndContext, type DragEndEvent } from "@dnd-kit/core";
 import {
    arrayMove,
@@ -22,11 +22,20 @@ function fractionToSize(fraction: number): TileSize {
    return "full";
 }
 
+export interface TileResizeProps {
+   isResizing: boolean;
+   onResizePreview: (deltaX: number, startSize: TileSize) => void;
+   onResizeCommit: () => void;
+}
+
 interface DashboardGridProps {
    tiles: DashboardTileType[];
    onReorder: (tiles: DashboardTileType[]) => void;
    onResize?: (insightId: string, size: TileSize) => void;
-   renderTile: (tile: DashboardTileType) => React.ReactNode;
+   renderTile: (
+      tile: DashboardTileType,
+      resizeProps: TileResizeProps,
+   ) => React.ReactNode;
 }
 
 export function DashboardGrid({
@@ -38,31 +47,47 @@ export function DashboardGrid({
    const gridRef = useRef<HTMLDivElement>(null);
    const sortedTiles = [...tiles].sort((a, b) => a.order - b.order);
 
-   const handleDragEnd = (event: DragEndEvent) => {
-      const { active, over, delta } = event;
-      const activeId = String(active.id);
+   // Resize state — ref for stable access in callbacks, state for re-renders
+   const resizePreviewRef = useRef<{ insightId: string; size: TileSize } | null>(
+      null,
+   );
+   const [resizePreview, setResizePreview] = useState<{
+      insightId: string;
+      size: TileSize;
+   } | null>(null);
 
-      // Resize handle drag
-      if (activeId.startsWith("resize-")) {
-         const raw = active.data.current;
-         if (
-            !raw ||
-            typeof raw.insightId !== "string" ||
-            typeof raw.currentSize !== "string"
-         ) return;
-         const data = raw as { insightId: string; currentSize: TileSize };
+   const handleResizePreview = useCallback(
+      (insightId: string, deltaX: number, startSize: TileSize) => {
          const containerWidth =
-            gridRef.current?.getBoundingClientRect().width || 1000;
-         const currentWidth = sizeToFraction[data.currentSize] * containerWidth;
-         const newFraction = Math.max(
+            gridRef.current?.getBoundingClientRect().width ?? 1000;
+         const newFrac = Math.max(
             0.1,
-            Math.min(1.0, (currentWidth + delta.x) / containerWidth),
+            Math.min(1.0, sizeToFraction[startSize] + deltaX / containerWidth),
          );
-         onResize?.(data.insightId, fractionToSize(newFraction));
-         return;
-      }
+         const newSize = fractionToSize(newFrac);
+         const current = resizePreviewRef.current;
+         if (current?.insightId === insightId && current.size === newSize) return;
+         resizePreviewRef.current = { insightId, size: newSize };
+         setResizePreview({ insightId, size: newSize });
+      },
+      [],
+   );
 
-      // Sortable reorder drag
+   const handleResizeCommit = useCallback(
+      (insightId: string) => {
+         const preview = resizePreviewRef.current;
+         resizePreviewRef.current = null;
+         setResizePreview(null);
+         if (preview?.insightId === insightId) {
+            onResize?.(insightId, preview.size);
+         }
+      },
+      [onResize],
+   );
+
+   const handleDragEnd = (event: DragEndEvent) => {
+      const { active, over } = event;
+
       if (over && active.id !== over.id) {
          const oldIndex = sortedTiles.findIndex(
             (t) => t.insightId === active.id,
@@ -82,7 +107,18 @@ export function DashboardGrid({
             strategy={rectSortingStrategy}
          >
             <div className="grid grid-cols-12 gap-4 auto-rows-min" ref={gridRef}>
-               {sortedTiles.map((tile) => renderTile(tile))}
+               {sortedTiles.map((tile) => {
+                  const effectiveTile =
+                     resizePreview?.insightId === tile.insightId
+                        ? { ...tile, size: resizePreview.size }
+                        : tile;
+                  return renderTile(effectiveTile, {
+                     isResizing: resizePreview?.insightId === tile.insightId,
+                     onResizePreview: (deltaX, startSize) =>
+                        handleResizePreview(tile.insightId, deltaX, startSize),
+                     onResizeCommit: () => handleResizeCommit(tile.insightId),
+                  });
+               })}
             </div>
          </SortableContext>
       </DndContext>

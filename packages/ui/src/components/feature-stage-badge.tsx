@@ -7,22 +7,22 @@ const STAGE_CONFIG = {
    alpha: {
       icon: Sparkles,
       label: "Alpha",
-      className: "border-chart-1 bg-chart-1/30 text-foreground ",
+      className: "border-chart-1 bg-chart-1/50 text-foreground",
    },
    beta: {
       icon: FlaskConical,
       label: "Beta",
-      className: "border-chart-2 bg-chart-2/30 text-foreground ",
+      className: "border-chart-2 bg-chart-2/50 text-foreground",
    },
    concept: {
       icon: Lightbulb,
       label: "Conceito",
-      className: "border-chart-3 bg-chart-3/30 text-foreground ",
+      className: "border-chart-3 bg-chart-3/50 text-foreground ",
    },
    "general-availability": {
       icon: CheckCircle2,
       label: "Disponível",
-      className: "border-chart-4 bg-chart-4/30 text-foreground ",
+      className: "border-chart-4 bg-chart-4/50 text-foreground ",
    },
 } as const;
 
@@ -34,19 +34,24 @@ export type FeatureStageBadgeProps = Omit<
 > & {
    stage: FeatureStage;
    showIcon?: boolean;
+   isTooltip?: boolean;
 };
 
 function FeatureStageBadge({
    stage,
    showIcon = true,
+   isTooltip = false,
    className,
    ...props
 }: FeatureStageBadgeProps) {
    const config = STAGE_CONFIG[stage];
    const Icon = config.icon;
+   const baseClassName = isTooltip
+      ? config.className.replace("text-foreground", "")
+      : config.className;
 
    return (
-      <Badge className={cn(config.className, className)} {...props}>
+      <Badge className={cn(baseClassName, className)} {...props}>
          {showIcon && <Icon />}
          {config.label}
       </Badge>

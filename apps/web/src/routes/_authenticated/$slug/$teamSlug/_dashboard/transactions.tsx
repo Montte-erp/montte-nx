@@ -8,7 +8,6 @@ import {
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
 import { DataTable } from "@packages/ui/components/data-table";
-import { DateRangePicker } from "@packages/ui/components/date-range-picker";
 import {
    Empty,
    EmptyDescription,
@@ -16,19 +15,14 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { Input } from "@packages/ui/components/input";
 import {
    SelectionActionBar,
    SelectionActionButton,
 } from "@packages/ui/components/selection-action-bar";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import {
-   ToggleGroup,
-   ToggleGroupItem,
-} from "@packages/ui/components/toggle-group";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
    ArrowLeftRight,
    ArrowRight,
@@ -39,17 +33,14 @@ import {
    LayoutList,
    Loader2,
    Plus,
-   Search,
    Trash2,
    Upload,
-   X,
 } from "lucide-react";
 import {
    Suspense,
    useCallback,
    useEffect,
    useMemo,
-   useRef,
    useState,
    useTransition,
 } from "react";
@@ -58,11 +49,18 @@ import { DefaultHeader } from "@/components/default-header";
 import type { PanelAction } from "@/features/context-panel/context-panel-store";
 import { BillFromTransactionCredenza } from "@/features/bills/ui/bill-from-transaction-credenza";
 import { TransactionExportCredenza } from "@/features/transactions/ui/transaction-export-credenza";
+import {
+   TransactionFilterBar,
+   type TransactionFilters,
+   DEFAULT_FILTERS,
+} from "@/features/transactions/ui/transaction-filter-bar";
 import { TransactionImportCredenza } from "@/features/transactions/ui/transaction-import-credenza";
 import {
    buildTransactionColumns,
    type TransactionRow,
 } from "@/features/transactions/ui/transactions-columns";
+import { useTransactionPrerequisites } from "@/features/transactions/hooks/use-transaction-prerequisites";
+import { TransactionPrerequisitesBlocker } from "@/features/transactions/ui/transaction-prerequisites-blocker";
 import { TransactionSheet } from "@/features/transactions/ui/transactions-sheet";
 import type { ViewConfig } from "@/features/view-switch/hooks/use-view-switch";
 import { useViewSwitch } from "@/features/view-switch/hooks/use-view-switch";
@@ -256,70 +254,6 @@ function BulkMoveAccountForm({
 // Filters
 // =============================================================================
 
-type TransactionType = "income" | "expense" | "transfer";
-
-interface TransactionFilters {
-   type?: TransactionType;
-   dateFrom?: string;
-   dateTo?: string;
-   datePreset?: string;
-   search: string;
-   categoryId?: string;
-   uncategorized?: boolean;
-   bankAccountId?: string;
-   creditCardId?: string;
-   page: number;
-   pageSize: number;
-}
-
-const DEFAULT_FILTERS: TransactionFilters = {
-   search: "",
-   page: 1,
-   pageSize: 20,
-};
-
-const DATE_RANGE_PRESETS = [
-   { label: "Hoje", value: "today" },
-   { label: "Últimos 7 dias", value: "7d" },
-   { label: "Este mês", value: "this_month" },
-   { label: "Mês passado", value: "last_month" },
-   { label: "Este ano", value: "this_year" },
-] as const;
-
-function presetToDateRange(preset: string): {
-   dateFrom: string;
-   dateTo: string;
-} {
-   const today = new Date();
-   const fmt = (d: Date) => d.toISOString().split("T")[0];
-   switch (preset) {
-      case "today":
-         return { dateFrom: fmt(today), dateTo: fmt(today) };
-      case "7d": {
-         const from = new Date(today);
-         from.setDate(from.getDate() - 6);
-         return { dateFrom: fmt(from), dateTo: fmt(today) };
-      }
-      case "this_month": {
-         const from = new Date(today.getFullYear(), today.getMonth(), 1);
-         const to = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-         return { dateFrom: fmt(from), dateTo: fmt(to) };
-      }
-      case "last_month": {
-         const from = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-         const to = new Date(today.getFullYear(), today.getMonth(), 0);
-         return { dateFrom: fmt(from), dateTo: fmt(to) };
-      }
-      case "this_year": {
-         const from = new Date(today.getFullYear(), 0, 1);
-         const to = new Date(today.getFullYear(), 11, 31);
-         return { dateFrom: fmt(from), dateTo: fmt(to) };
-      }
-      default:
-         return { dateFrom: fmt(today), dateTo: fmt(today) };
-   }
-}
-
 // =============================================================================
 // Skeleton
 // =============================================================================
@@ -338,293 +272,9 @@ function TransactionsSkeleton() {
 // Filter child components
 // =============================================================================
 
-function CategoryFilterCombobox({
-   value,
-   uncategorized,
-   onChange,
-}: {
-   value?: string;
-   uncategorized?: boolean;
-   onChange: (categoryId: string | undefined, uncategorized: boolean) => void;
-}) {
-   const { data: categories } = useSuspenseQuery(
-      orpc.categories.getAll.queryOptions({}),
-   );
-
-   const options = [
-      { value: "__uncategorized__", label: "Sem categoria" },
-      ...categories.map((c) => ({ value: c.id, label: c.name })),
-   ];
-
-   const currentValue = uncategorized ? "__uncategorized__" : (value ?? "");
-
-   return (
-      <Combobox
-         className="h-8 w-[160px]"
-         emptyMessage="Nenhuma categoria."
-         onValueChange={(v) => {
-            if (!v) onChange(undefined, false);
-            else if (v === "__uncategorized__") onChange(undefined, true);
-            else onChange(v, false);
-         }}
-         options={options}
-         placeholder="Categoria"
-         searchPlaceholder="Buscar..."
-         value={currentValue}
-      />
-   );
-}
-
-function AccountFilterCombobox({
-   value,
-   onChange,
-}: {
-   value?: string;
-   onChange: (v: string | undefined) => void;
-}) {
-   const { data: bankAccounts } = useSuspenseQuery(
-      orpc.bankAccounts.getAll.queryOptions({}),
-   );
-
-   const options = bankAccounts.map((a) => ({ value: a.id, label: a.name }));
-
-   return (
-      <Combobox
-         className="h-8 w-[160px]"
-         emptyMessage="Nenhuma conta."
-         onValueChange={(v) => onChange(v || undefined)}
-         options={options}
-         placeholder="Conta"
-         searchPlaceholder="Buscar conta..."
-         value={value ?? ""}
-      />
-   );
-}
-
-function CardFilterCombobox({
-   value,
-   onChange,
-}: {
-   value?: string;
-   onChange: (v: string | undefined) => void;
-}) {
-   const { data: creditCards } = useSuspenseQuery(
-      orpc.creditCards.getAll.queryOptions({}),
-   );
-
-   const options = creditCards.map((c) => ({ value: c.id, label: c.name }));
-
-   return (
-      <Combobox
-         className="h-8 w-[160px]"
-         emptyMessage="Nenhum cartão."
-         onValueChange={(v) => onChange(v || undefined)}
-         options={options}
-         placeholder="Cartão"
-         searchPlaceholder="Buscar cartão..."
-         value={value ?? ""}
-      />
-   );
-}
-
 // =============================================================================
 // Filter Bar
 // =============================================================================
-
-interface FilterBarProps {
-   filters: TransactionFilters;
-   onFiltersChange: (filters: TransactionFilters) => void;
-}
-
-function FilterBar({ filters, onFiltersChange }: FilterBarProps) {
-   // Debounce search via timeout ref
-   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-   const [searchInput, setSearchInput] = useState(filters.search);
-
-   const handleSearchChange = (value: string) => {
-      setSearchInput(value);
-      if (searchTimer.current) clearTimeout(searchTimer.current);
-      searchTimer.current = setTimeout(() => {
-         onFiltersChange({ ...filters, search: value, page: 1 });
-      }, 350);
-   };
-
-   const hasDateFilter = !!(filters.dateFrom || filters.dateTo);
-
-   const dateLabel = useMemo(() => {
-      if (filters.datePreset) {
-         return (
-            DATE_RANGE_PRESETS.find((p) => p.value === filters.datePreset)
-               ?.label ?? "Período"
-         );
-      }
-      if (filters.dateFrom && filters.dateTo) {
-         const fmt = (s: string) =>
-            new Date(`${s}T00:00:00`).toLocaleDateString("pt-BR", {
-               day: "numeric",
-               month: "short",
-            });
-         return `${fmt(filters.dateFrom)} – ${fmt(filters.dateTo)}`;
-      }
-      return "Período";
-   }, [filters.datePreset, filters.dateFrom, filters.dateTo]);
-
-   const selectedRange = useMemo(() => {
-      if (filters.datePreset || !filters.dateFrom || !filters.dateTo)
-         return null;
-      return {
-         from: new Date(`${filters.dateFrom}T00:00:00`),
-         to: new Date(`${filters.dateTo}T00:00:00`),
-      };
-   }, [filters.datePreset, filters.dateFrom, filters.dateTo]);
-
-   const hasActiveFilters =
-      filters.type ||
-      hasDateFilter ||
-      filters.search.length > 0 ||
-      filters.categoryId ||
-      filters.uncategorized ||
-      filters.bankAccountId ||
-      filters.creditCardId;
-
-   return (
-      <div className="flex flex-wrap items-center gap-2">
-         {/* Search */}
-         <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
-            <Input
-               className="pl-8 h-8 w-[220px]"
-               onChange={(e) => handleSearchChange(e.target.value)}
-               placeholder="Buscar transação..."
-               value={searchInput}
-            />
-         </div>
-
-         {/* Type chips */}
-         <ToggleGroup
-            onValueChange={(v) =>
-               onFiltersChange({
-                  ...filters,
-                  type: (v as TransactionType) || undefined,
-                  page: 1,
-               })
-            }
-            spacing={1}
-            type="single"
-            value={filters.type ?? ""}
-            variant="outline"
-         >
-            <ToggleGroupItem value="">
-               Todos
-            </ToggleGroupItem>
-            <ToggleGroupItem value="income">
-               Receita
-            </ToggleGroupItem>
-            <ToggleGroupItem value="expense">
-               Despesa
-            </ToggleGroupItem>
-            <ToggleGroupItem value="transfer">
-               Transferência
-            </ToggleGroupItem>
-         </ToggleGroup>
-
-         {/* Category filter */}
-         <Suspense fallback={null}>
-            <CategoryFilterCombobox
-               onChange={(categoryId, uncategorized) =>
-                  onFiltersChange({
-                     ...filters,
-                     categoryId,
-                     uncategorized,
-                     page: 1,
-                  })
-               }
-               uncategorized={filters.uncategorized}
-               value={filters.categoryId}
-            />
-         </Suspense>
-
-         {/* Account filter */}
-         <Suspense fallback={null}>
-            <AccountFilterCombobox
-               onChange={(v) =>
-                  onFiltersChange({ ...filters, bankAccountId: v, page: 1 })
-               }
-               value={filters.bankAccountId}
-            />
-         </Suspense>
-
-         {/* Card filter */}
-         <Suspense fallback={null}>
-            <CardFilterCombobox
-               onChange={(v) =>
-                  onFiltersChange({ ...filters, creditCardId: v, page: 1 })
-               }
-               value={filters.creditCardId}
-            />
-         </Suspense>
-
-         {/* Date range */}
-         <DateRangePicker
-            clearLabel="Limpar período"
-            heading="Período"
-            label={dateLabel}
-            onClear={
-               hasDateFilter
-                  ? () =>
-                       onFiltersChange({
-                          ...filters,
-                          dateFrom: undefined,
-                          dateTo: undefined,
-                          datePreset: undefined,
-                          page: 1,
-                       })
-                  : undefined
-            }
-            onPresetSelect={(preset) => {
-               const { dateFrom, dateTo } = presetToDateRange(preset);
-               onFiltersChange({
-                  ...filters,
-                  dateFrom,
-                  dateTo,
-                  datePreset: preset,
-                  page: 1,
-               });
-            }}
-            onRangeSelect={(range) => {
-               const fmt = (d: Date) => d.toISOString().split("T")[0];
-               onFiltersChange({
-                  ...filters,
-                  dateFrom: fmt(range.from),
-                  dateTo: fmt(range.to),
-                  datePreset: undefined,
-                  page: 1,
-               });
-            }}
-            presets={DATE_RANGE_PRESETS}
-            selectedPreset={filters.datePreset ?? null}
-            selectedRange={selectedRange}
-            triggerClassName="h-8"
-            triggerVariant={hasDateFilter ? "secondary" : "outline"}
-         />
-
-         {/* Clear all */}
-         {hasActiveFilters && (
-            <Button
-               className="h-8 gap-1"
-               onClick={() => {
-                  setSearchInput("");
-                  onFiltersChange(DEFAULT_FILTERS);
-               }}
-               variant="ghost"
-            >
-               <X className="size-3.5" />
-               Limpar
-            </Button>
-         )}
-      </div>
-   );
-}
 
 // =============================================================================
 // List
@@ -660,10 +310,7 @@ function TransactionsList({
             dateFrom: filters.dateFrom,
             dateTo: filters.dateTo,
             search: filters.search || undefined,
-            categoryId: filters.categoryId,
-            uncategorized: filters.uncategorized,
-            bankAccountId: filters.bankAccountId,
-            creditCardId: filters.creditCardId,
+            conditionGroup: filters.conditionGroup,
             page: filters.page,
             pageSize: filters.pageSize,
          },
@@ -877,10 +524,7 @@ function TransactionsList({
                   {filters.search ||
                   filters.type ||
                   filters.dateFrom ||
-                  filters.categoryId ||
-                  filters.uncategorized ||
-                  filters.bankAccountId ||
-                  filters.creditCardId
+                  (filters.conditionGroup?.conditions.length ?? 0) > 0
                      ? "Nenhuma transação encontrada para os filtros aplicados."
                      : "Registre uma nova transação para começar a controlar suas finanças."}
                </EmptyDescription>
@@ -1008,6 +652,9 @@ function TransactionsList({
 
 function TransactionsPage() {
    const { openCredenza, closeCredenza } = useCredenza();
+   const navigate = useNavigate();
+   const { slug, teamSlug } = Route.useParams();
+   const { hasBankAccounts } = useTransactionPrerequisites();
    const [filters, setFilters] = useState<TransactionFilters>(DEFAULT_FILTERS);
    const { currentView, setView, views } = useViewSwitch(
       "finance:transactions:view",
@@ -1015,10 +662,27 @@ function TransactionsPage() {
    );
 
    const handleCreate = useCallback(() => {
+      if (!hasBankAccounts) {
+         openCredenza({
+            children: (
+               <TransactionPrerequisitesBlocker
+                  onAction={() => {
+                     closeCredenza();
+                     navigate({
+                        to: "/$slug/$teamSlug/bank-accounts",
+                        params: { slug, teamSlug },
+                     });
+                  }}
+                  onCancel={closeCredenza}
+               />
+            ),
+         });
+         return;
+      }
       openCredenza({
          children: <TransactionSheet mode="create" onSuccess={closeCredenza} />,
       });
-   }, [openCredenza, closeCredenza]);
+   }, [hasBankAccounts, openCredenza, closeCredenza, navigate, slug, teamSlug]);
 
    useEffect(() => {
       const handler = (e: Event) => {
@@ -1066,7 +730,7 @@ function TransactionsPage() {
             title="Transações"
             viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
-         <FilterBar filters={filters} onFiltersChange={setFilters} />
+         <TransactionFilterBar filters={filters} onFiltersChange={setFilters} />
          <Suspense fallback={<TransactionsSkeleton />}>
             <TransactionsList
                filters={filters}

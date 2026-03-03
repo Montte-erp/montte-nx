@@ -1,4 +1,3 @@
-import { useDraggable } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Condition } from "@f-o-t/condition-evaluator";
@@ -24,14 +23,13 @@ import {
    AlertCircle,
    Copy,
    Ellipsis,
-   GripHorizontal,
    GripVertical,
    Pencil,
    RefreshCw,
    Settings2,
    Trash2,
 } from "lucide-react";
-import { Suspense } from "react";
+import { Suspense, useRef } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -47,8 +45,11 @@ interface DashboardTileProps {
    children?: React.ReactNode;
    insightId?: string;
    isEditing?: boolean;
+   isResizing?: boolean;
    onRemove?: () => void;
    onDuplicate?: () => void;
+   onResizePreview?: (deltaX: number, startSize: TileSize) => void;
+   onResizeCommit?: () => void;
    globalFilters?: Condition[];
    globalDateRange?: DashboardDateRange;
 }
@@ -300,8 +301,11 @@ export function DashboardTile({
    children,
    insightId,
    isEditing = false,
+   isResizing = false,
    onRemove,
    onDuplicate,
+   onResizePreview,
+   onResizeCommit,
    globalFilters,
    globalDateRange,
 }: DashboardTileProps) {
@@ -315,16 +319,8 @@ export function DashboardTile({
       transition,
       isDragging,
    } = useSortable({ id, disabled: !isEditing });
-   const {
-      attributes: resizeAttributes,
-      listeners: resizeListeners,
-      setNodeRef: setResizeRef,
-      isDragging: isResizing,
-   } = useDraggable({
-      id: `resize-${id}`,
-      data: { insightId: id, currentSize: size },
-      disabled: !isEditing,
-   });
+   const resizeStartX = useRef(0);
+   const resizeStartSize = useRef<TileSize>(size);
    const style = {
       transform: CSS.Transform.toString(transform),
       transition,
@@ -494,19 +490,38 @@ export function DashboardTile({
                   children
                )}
             </div>
-            {/* Resize handle — only in edit mode */}
+            {/* Resize handle — right edge, pointer capture */}
             {isEditing && (
                <div
-                  ref={setResizeRef}
-                  {...resizeAttributes}
-                  {...resizeListeners}
                   aria-label="Redimensionar tile"
                   className={cn(
-                     "absolute bottom-1 right-1 size-5 flex items-center justify-center rounded cursor-col-resize opacity-30 hover:opacity-100 transition-opacity select-none",
-                     isResizing && "opacity-100",
+                     "absolute right-1.5 top-1/2 -translate-y-1/2 h-12 w-4 flex items-center justify-center rounded-md",
+                     "bg-muted border border-border/50 cursor-col-resize select-none touch-none",
+                     "hover:bg-accent hover:border-border transition-colors",
+                     isResizing && "bg-accent border-border ring-1 ring-primary/50",
                   )}
+                  onPointerCancel={() => onResizeCommit?.()}
+                  onPointerDown={(e) => {
+                     e.preventDefault();
+                     e.currentTarget.setPointerCapture(e.pointerId);
+                     resizeStartX.current = e.clientX;
+                     resizeStartSize.current = size;
+                  }}
+                  onPointerMove={(e) => {
+                     if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
+                     onResizePreview?.(
+                        e.clientX - resizeStartX.current,
+                        resizeStartSize.current,
+                     );
+                  }}
+                  onPointerUp={(e) => {
+                     if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
+                     e.currentTarget.releasePointerCapture(e.pointerId);
+                     onResizeCommit?.();
+                  }}
+                  role="separator"
                >
-                  <GripHorizontal aria-hidden="true" className="size-3 text-muted-foreground" />
+                  <GripVertical aria-hidden="true" className="size-3 text-muted-foreground" />
                </div>
             )}
          </div>

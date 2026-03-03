@@ -72,7 +72,18 @@ function NavItem({
             asChild={!item.subPanel}
             isActive={isActive}
             onClick={item.subPanel ? handleClick : undefined}
-            tooltip={item.label}
+            tooltip={
+               stage
+                  ? {
+                     children: (
+                        <span className="flex items-center gap-1.5">
+                           {item.label}
+                           <FeatureStageBadge isTooltip stage={stage} />
+                        </span>
+                     ),
+                  }
+                  : item.label
+            }
          >
             {item.subPanel ? (
                <>

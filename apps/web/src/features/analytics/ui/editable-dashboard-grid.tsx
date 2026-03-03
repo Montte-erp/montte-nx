@@ -363,16 +363,19 @@ export function EditableDashboardGrid({
          <DashboardGrid
             onReorder={handleReorder}
             onResize={handleResizeTile}
-            renderTile={(tile) => (
+            renderTile={(tile, resizeProps) => (
                <DashboardTile
                   globalDateRange={dashboard.globalDateRange ?? undefined}
                   globalFilters={dashboard.globalFilters ?? undefined}
                   id={tile.insightId}
                   insightId={tile.insightId}
                   isEditing={isEditingLayout}
+                  isResizing={resizeProps.isResizing}
                   key={tile.insightId}
                   onDuplicate={() => handleDuplicateTile(tile.insightId)}
                   onRemove={() => handleRemoveTile(tile.insightId)}
+                  onResizeCommit={resizeProps.onResizeCommit}
+                  onResizePreview={resizeProps.onResizePreview}
                   size={tile.size}
                />
             )}

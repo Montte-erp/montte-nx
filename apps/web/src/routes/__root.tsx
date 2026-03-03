@@ -82,7 +82,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                            search: routerState.location.search,
                         }}
                      />
-                     <Toaster position="top-right" richColors />
+                     <Toaster richColors />
                      <GlobalCredenza />
                      <GlobalAlertDialog />
                      <ClientOnly>

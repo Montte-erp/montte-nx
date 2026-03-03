@@ -6,6 +6,7 @@ import type {
 import type { Dashboard } from "@packages/database/schemas/dashboards";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
+import { Combobox } from "@packages/ui/components/combobox";
 import { Input } from "@packages/ui/components/input";
 import {
    Popover,
@@ -21,42 +22,59 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@packages/ui/components/select";
+import { MoneyInput } from "@packages/ui/components/money-input";
 import { Separator } from "@packages/ui/components/separator";
 import { cn } from "@packages/ui/lib/utils";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Filter, Plus, Trash2, X } from "lucide-react";
-import { useId, useState } from "react";
+import { Suspense, useId, useState } from "react";
 import type { z } from "zod";
+import { orpc } from "@/integrations/orpc/client";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Filter property definitions
 // ─────────────────────────────────────────────────────────────────────────────
 
+type SelectType = "transactionType" | "bankAccount" | "category" | "contact";
+
 type PropertyDef = {
    field: string;
    label: string;
-   type: "string" | "number";
+   type: "string" | "number" | "select";
+   selectType?: SelectType;
 };
 
 const FILTER_PROPERTIES: PropertyDef[] = [
-   { field: "userId", label: "Usuário", type: "string" },
-   { field: "sessionId", label: "Sessão", type: "string" },
-   { field: "organizationId", label: "Organização", type: "string" },
-   { field: "eventCount", label: "Contagem de eventos", type: "number" },
+   { field: "type",          label: "Tipo",      type: "select", selectType: "transactionType" },
+   { field: "bankAccountId", label: "Conta",      type: "select", selectType: "bankAccount"     },
+   { field: "categoryId",    label: "Categoria",  type: "select", selectType: "category"        },
+   { field: "contactId",     label: "Contato",    type: "select", selectType: "contact"         },
+   { field: "amount",        label: "Valor",      type: "number"                                },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Operator sets from @f-o-t/condition-evaluator
 // ─────────────────────────────────────────────────────────────────────────────
 
+const SELECT_OPERATORS: Array<{
+   value: z.infer<typeof StringCondition>["operator"];
+   label: string;
+}> = [
+   { value: "eq",           label: "é igual a"      },
+   { value: "neq",          label: "não é igual a"  },
+   { value: "is_empty",     label: "está vazio"     },
+   { value: "is_not_empty", label: "não está vazio" },
+];
+
 const STRING_OPERATORS: Array<{
    value: z.infer<typeof StringCondition>["operator"];
    label: string;
 }> = [
-   { value: "eq", label: "=" },
-   { value: "neq", label: "≠" },
-   { value: "contains", label: "contém" },
-   { value: "not_contains", label: "não contém" },
-   { value: "is_empty", label: "está vazio" },
+   { value: "eq",           label: "é igual a"      },
+   { value: "neq",          label: "não é igual a"  },
+   { value: "contains",     label: "contém"         },
+   { value: "not_contains", label: "não contém"     },
+   { value: "is_empty",     label: "está vazio"     },
    { value: "is_not_empty", label: "não está vazio" },
 ];
 
@@ -64,11 +82,11 @@ const NUMBER_OPERATORS: Array<{
    value: z.infer<typeof NumberCondition>["operator"];
    label: string;
 }> = [
-   { value: "eq", label: "=" },
+   { value: "eq",  label: "=" },
    { value: "neq", label: "≠" },
-   { value: "gt", label: ">" },
+   { value: "gt",  label: ">" },
    { value: "gte", label: "≥" },
-   { value: "lt", label: "<" },
+   { value: "lt",  label: "<" },
    { value: "lte", label: "≤" },
 ];
 
@@ -89,14 +107,14 @@ function getPropertyDef(field: string): PropertyDef {
    );
 }
 
-function defaultOperatorFor(type: "string" | "number"): string {
-   return type === "number" ? "eq" : "eq";
+function defaultOperatorFor(_type: PropertyDef["type"]): string {
+   return "eq";
 }
 
 function buildCondition(
    id: string,
    field: string,
-   type: "string" | "number",
+   type: PropertyDef["type"],
    operator: string,
    value: string,
 ): Condition {
@@ -144,6 +162,138 @@ function rowToCondition(row: FilterRow): Condition {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Value input components
+// ─────────────────────────────────────────────────────────────────────────────
+
+function TransactionTypeSelect({
+   value,
+   onChange,
+}: { value: string; onChange: (v: string) => void }) {
+   return (
+      <Select value={value} onValueChange={onChange}>
+         <SelectTrigger className="h-7 text-xs">
+            <SelectValue placeholder="Selecionar..." />
+         </SelectTrigger>
+         <SelectContent>
+            <SelectItem value="income">Receita</SelectItem>
+            <SelectItem value="expense">Despesa</SelectItem>
+            <SelectItem value="transfer">Transferência</SelectItem>
+         </SelectContent>
+      </Select>
+   );
+}
+
+function BankAccountComboboxInner({
+   value,
+   onChange,
+}: { value: string; onChange: (v: string) => void }) {
+   const { data } = useSuspenseQuery(orpc.bankAccounts.getAll.queryOptions({}));
+   return (
+      <Combobox
+         className="h-7 text-xs"
+         emptyMessage="Nenhuma conta."
+         onValueChange={(v) => onChange(v ?? "")}
+         options={data.map((a) => ({ value: a.id, label: a.name }))}
+         placeholder="Selecionar conta..."
+         searchPlaceholder="Buscar conta..."
+         value={value}
+      />
+   );
+}
+
+function CategoryComboboxInner({
+   value,
+   onChange,
+}: { value: string; onChange: (v: string) => void }) {
+   const { data } = useSuspenseQuery(orpc.categories.getAll.queryOptions({}));
+   return (
+      <Combobox
+         className="h-7 text-xs"
+         emptyMessage="Nenhuma categoria."
+         onValueChange={(v) => onChange(v ?? "")}
+         options={data.map((c) => ({ value: c.id, label: c.name }))}
+         placeholder="Selecionar categoria..."
+         searchPlaceholder="Buscar categoria..."
+         value={value}
+      />
+   );
+}
+
+function ContactComboboxInner({
+   value,
+   onChange,
+}: { value: string; onChange: (v: string) => void }) {
+   const { data } = useSuspenseQuery(orpc.contacts.getAll.queryOptions({}));
+   return (
+      <Combobox
+         className="h-7 text-xs"
+         emptyMessage="Nenhum contato."
+         onValueChange={(v) => onChange(v ?? "")}
+         options={data.map((c) => ({ value: c.id, label: c.name }))}
+         placeholder="Selecionar contato..."
+         searchPlaceholder="Buscar contato..."
+         value={value}
+      />
+   );
+}
+
+function FilterRowValueInput({
+   def,
+   value,
+   onChange,
+}: {
+   def: PropertyDef;
+   value: string;
+   onChange: (v: string) => void;
+}) {
+   if (def.type === "number") {
+      return (
+         <MoneyInput
+            value={value !== "" ? Number(value) : undefined}
+            onChange={(v) => onChange(v !== undefined ? String(v) : "")}
+         />
+      );
+   }
+
+   if (def.type === "select") {
+      if (def.selectType === "transactionType") {
+         return <TransactionTypeSelect value={value} onChange={onChange} />;
+      }
+      if (def.selectType === "bankAccount") {
+         return (
+            <Suspense fallback={<Input className="h-7 text-xs" disabled placeholder="Carregando..." />}>
+               <BankAccountComboboxInner value={value} onChange={onChange} />
+            </Suspense>
+         );
+      }
+      if (def.selectType === "category") {
+         return (
+            <Suspense fallback={<Input className="h-7 text-xs" disabled placeholder="Carregando..." />}>
+               <CategoryComboboxInner value={value} onChange={onChange} />
+            </Suspense>
+         );
+      }
+      if (def.selectType === "contact") {
+         return (
+            <Suspense fallback={<Input className="h-7 text-xs" disabled placeholder="Carregando..." />}>
+               <ContactComboboxInner value={value} onChange={onChange} />
+            </Suspense>
+         );
+      }
+   }
+
+   return (
+      <Input
+         className="h-7 text-xs"
+         onChange={(e) => onChange(e.target.value)}
+         placeholder="valor..."
+         type="text"
+         value={value}
+      />
+   );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Component
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -175,7 +325,7 @@ export function DashboardFilterPopover({
       const newId = `${uid}-${Date.now()}`;
       setRows((prev) => [
          ...prev,
-         { id: newId, field: "userId", operator: "eq", value: "" },
+         { id: newId, field: "type", operator: "eq", value: "" },
       ]);
    };
 
@@ -256,7 +406,7 @@ export function DashboardFilterPopover({
 
          <PopoverContent
             align="start"
-            className="w-[560px] p-0"
+            className="w-[580px] p-0"
             forceMount
             sideOffset={6}
          >
@@ -278,7 +428,7 @@ export function DashboardFilterPopover({
 
             {/* Column labels */}
             {rows.length > 0 && (
-               <div className="grid grid-cols-[160px_140px_1fr_28px] gap-1.5 px-3 pt-2.5 pb-1">
+               <div className="grid grid-cols-[160px_150px_1fr_28px] gap-1.5 px-3 pt-2.5 pb-1">
                   <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
                      Propriedade
                   </span>
@@ -293,7 +443,7 @@ export function DashboardFilterPopover({
             )}
 
             {/* Filter rows */}
-            <div className="flex flex-col gap-1.5 px-3 pt-1 pb-2.5">
+            <div className="flex flex-col gap-1.5 px-3 pt-1 pb-2.5 max-h-[320px] overflow-y-auto">
                {rows.length === 0 ? (
                   <div className="flex flex-col items-center gap-1.5 py-7 text-center">
                      <Filter className="size-6 text-muted-foreground/30" />
@@ -310,12 +460,14 @@ export function DashboardFilterPopover({
                      const operators =
                         def.type === "number"
                            ? NUMBER_OPERATORS
-                           : STRING_OPERATORS;
+                           : def.type === "select"
+                             ? SELECT_OPERATORS
+                             : STRING_OPERATORS;
                      const needsValue = !NO_VALUE_OPERATORS.has(row.operator);
 
                      return (
                         <div
-                           className="grid grid-cols-[160px_140px_1fr_28px] gap-1.5 items-center"
+                           className="grid grid-cols-[160px_150px_1fr_28px] gap-1.5 items-center"
                            key={row.id}
                         >
                            {/* Property */}
@@ -331,10 +483,10 @@ export function DashboardFilterPopover({
                               <SelectContent>
                                  <SelectGroup>
                                     <SelectLabel className="text-[11px]">
-                                       Texto
+                                       Categoria
                                     </SelectLabel>
                                     {FILTER_PROPERTIES.filter(
-                                       (p) => p.type === "string",
+                                       (p) => p.type === "select",
                                     ).map((prop) => (
                                        <SelectItem
                                           key={prop.field}
@@ -383,15 +535,9 @@ export function DashboardFilterPopover({
 
                            {/* Value */}
                            {needsValue ? (
-                              <Input
-                                 className="h-7 text-xs"
-                                 onChange={(e) =>
-                                    handleValueChange(row.id, e.target.value)
-                                 }
-                                 placeholder="valor..."
-                                 type={
-                                    def.type === "number" ? "number" : "text"
-                                 }
+                              <FilterRowValueInput
+                                 def={def}
+                                 onChange={(v) => handleValueChange(row.id, v)}
                                  value={row.value}
                               />
                            ) : (
