@@ -20,7 +20,6 @@ import {
 } from "@/features/webhooks/ui/webhooks-table";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
-import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
@@ -59,7 +58,6 @@ function WebhooksSkeleton() {
 
 function WebhooksContent() {
    const queryClient = useQueryClient();
-   const { openSheet, closeSheet } = useSheet();
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
@@ -85,13 +83,13 @@ function WebhooksContent() {
    );
 
    function handleCreateWebhook() {
-      openSheet({
+      openCredenza({
          children: (
             <WebhookForm
                eventCatalog={eventCatalog}
                mode="create"
                onSuccess={(result) => {
-                  closeSheet();
+                  closeCredenza();
                   if (result?.plaintextSecret && result.url) {
                      openCredenza({
                         children: (
@@ -110,12 +108,12 @@ function WebhooksContent() {
    }
 
    function handleEditWebhook(webhook: WebhookEndpoint) {
-      openSheet({
+      openCredenza({
          children: (
             <WebhookForm
                eventCatalog={eventCatalog}
                mode="edit"
-               onSuccess={() => closeSheet()}
+               onSuccess={() => closeCredenza()}
                webhook={webhook}
             />
          ),
