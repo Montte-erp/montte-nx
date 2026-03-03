@@ -1,16 +1,23 @@
 import { AppError, propagateError } from "@packages/utils/errors";
+import type { Condition, ConditionGroup } from "@f-o-t/condition-evaluator";
+import { evaluateConditionGroup } from "@f-o-t/condition-evaluator";
 import {
    and,
    count,
    desc,
    eq,
    getTableColumns,
+   gt,
    gte,
    ilike,
    inArray,
+   isNotNull,
    isNull,
+   lt,
    lte,
+   ne,
    or,
+   sql,
 } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import {
@@ -35,6 +42,54 @@ export interface ListTransactionsFilter {
    pageSize?: number;
    uncategorized?: boolean;
    creditCardId?: string;
+   conditionGroup?: ConditionGroup;
+}
+
+// Maps a single Condition to a Drizzle SQL expression.
+// Returns null if the condition cannot be translated (will be post-filtered in weighted mode).
+function conditionToSql(condition: Condition) {
+   const colMap: Record<string, unknown> = {
+      categoryId: transactions.categoryId,
+      bankAccountId: transactions.bankAccountId,
+      creditCardId: transactions.creditCardId,
+      amount: transactions.amount,
+      name: transactions.name,
+   };
+
+   const col = colMap[condition.field];
+   if (!col) return null; // unknown field — skip
+
+   const { operator } = condition;
+   const value = "value" in condition ? condition.value : undefined;
+
+   switch (operator) {
+      case "eq":
+         return eq(col as Parameters<typeof eq>[0], value as string);
+      case "neq":
+         return ne(col as Parameters<typeof ne>[0], value as string);
+      case "gt":
+         return gt(col as Parameters<typeof gt>[0], value as number);
+      case "gte":
+         return gte(col as Parameters<typeof gte>[0], value as number);
+      case "lt":
+         return lt(col as Parameters<typeof lt>[0], value as number);
+      case "lte":
+         return lte(col as Parameters<typeof lte>[0], value as number);
+      case "is_empty":
+         return isNull(col as Parameters<typeof isNull>[0]);
+      case "is_not_empty":
+         return isNotNull(col as Parameters<typeof isNotNull>[0]);
+      case "contains":
+         return ilike(col as Parameters<typeof ilike>[0], `%${value}%`);
+      case "not_contains":
+         return sql`${col} NOT ILIKE ${"%" + String(value) + "%"}`;
+      case "starts_with":
+         return ilike(col as Parameters<typeof ilike>[0], `${value}%`);
+      case "ends_with":
+         return ilike(col as Parameters<typeof ilike>[0], `%${value}`);
+      default:
+         return null;
+   }
 }
 
 export async function createTransaction(
@@ -113,7 +168,57 @@ export async function listTransactions(
       if (filter.uncategorized)
          conditions.push(isNull(transactions.categoryId));
 
+      const isWeighted = filter.conditionGroup?.scoringMode === "weighted";
+
+      // Standard mode: translate conditions to SQL WHERE clauses
+      if (filter.conditionGroup && !isWeighted) {
+         const group = filter.conditionGroup;
+         const sqlExprs = group.conditions
+            .filter((c): c is Condition => !("conditions" in c))
+            .map((c) => conditionToSql(c))
+            .filter((e): e is NonNullable<ReturnType<typeof conditionToSql>> => e !== null);
+
+         if (sqlExprs.length > 0) {
+            const combined =
+               group.operator === "AND" ? and(...sqlExprs) : or(...sqlExprs);
+            if (combined) conditions.push(combined);
+         }
+      }
+
       const whereClause = and(...conditions);
+
+      // Weighted mode: fetch all matching rows, post-filter in memory, then paginate
+      if (isWeighted && filter.conditionGroup) {
+         const condGroup = filter.conditionGroup;
+         const allRows = await db
+            .select({
+               ...getTableColumns(transactions),
+               categoryName: categories.name,
+               creditCardName: creditCards.name,
+            })
+            .from(transactions)
+            .leftJoin(categories, eq(transactions.categoryId, categories.id))
+            .leftJoin(creditCards, eq(transactions.creditCardId, creditCards.id))
+            .where(whereClause)
+            .orderBy(desc(transactions.date));
+
+         const filtered = allRows.filter((row) => {
+            const result = evaluateConditionGroup(condGroup, {
+               data: {
+                  categoryId: row.categoryId ?? null,
+                  bankAccountId: row.bankAccountId,
+                  creditCardId: row.creditCardId ?? null,
+                  amount: Number(row.amount),
+                  name: row.name ?? row.description ?? "",
+               },
+            });
+            return result.passed;
+         });
+
+         const total = filtered.length;
+         const offset = (page - 1) * pageSize;
+         return { data: filtered.slice(offset, offset + pageSize), total };
+      }
 
       const [countResult] = await db
          .select({ total: count() })

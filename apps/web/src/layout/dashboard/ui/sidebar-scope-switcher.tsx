@@ -239,15 +239,15 @@ function SidebarScopeSwitcherContent() {
                children: (
                   <>
                      <CredenzaHeader>
-                        <CredenzaTitle>Limite de projetos</CredenzaTitle>
+                        <CredenzaTitle>Limite de espaços</CredenzaTitle>
                         <CredenzaDescription>
-                           Voce esta usando {projectCount} de {projectLimit}{" "}
-                           projetos
+                           Você está usando {projectCount} de {projectLimit}{" "}
+                           espaços
                         </CredenzaDescription>
                      </CredenzaHeader>
                      <CredenzaBody>
                         <p className="text-sm text-muted-foreground">
-                           Faca upgrade para o add-on Boost para criar projetos
+                           Faça upgrade para o add-on Boost para criar espaços
                            ilimitados
                         </p>
                      </CredenzaBody>
@@ -345,7 +345,7 @@ function SidebarScopeSwitcherContent() {
                      </Avatar>
                      <div className="grid flex-1 text-left text-sm leading-tight">
                         <span className="truncate font-medium">
-                           {activeTeam?.name ?? "Sem projeto"}
+                           {activeTeam?.name ?? "Sem espaço"}
                         </span>
                         <span className="truncate text-xs text-muted-foreground">
                            {activeOrganization.name}
@@ -363,22 +363,14 @@ function SidebarScopeSwitcherContent() {
                >
                   {/* ── PROJECT ── */}
                   <>
-                     <DropdownMenuLabel className="flex items-center justify-between py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Projeto
-                        <button
-                           className="rounded p-0.5 transition-colors hover:bg-accent hover:text-accent-foreground"
-                           onClick={handleNewProject}
-                           title="Novo projeto"
-                           type="button"
-                        >
-                           <Plus className="size-3.5" />
-                        </button>
+                     <DropdownMenuLabel className="py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Espaço
                      </DropdownMenuLabel>
 
                      <DropdownMenuSub>
                         <DropdownMenuSubTrigger className="gap-2">
                            <span className="truncate font-medium">
-                              {activeTeam?.name ?? "Sem projeto"}
+                              {activeTeam?.name ?? "Sem espaço"}
                            </span>
                         </DropdownMenuSubTrigger>
                         <DropdownMenuSubContent className="min-w-52">
@@ -403,8 +395,8 @@ function SidebarScopeSwitcherContent() {
                               <span>
                                  {projectLimit !== null &&
                                  projectLimit !== Number.POSITIVE_INFINITY
-                                    ? `Novo projeto (${projectCount}/${projectLimit})`
-                                    : "Novo projeto"}
+                                    ? `Novo espaço (${projectCount}/${projectLimit})`
+                                    : "Novo espaço"}
                               </span>
                            </DropdownMenuItem>
                         </DropdownMenuSubContent>
@@ -426,23 +418,15 @@ function SidebarScopeSwitcherContent() {
                            to="/$slug/$teamSlug/settings/project/general"
                         >
                            <Settings className="size-4" />
-                           Configurações do projeto
+                           Configurações do espaço
                         </Link>
                      </DropdownMenuItem>
 
                      <DropdownMenuSeparator />
 
                      {/* ── ORGANIZATION ── */}
-                     <DropdownMenuLabel className="flex items-center justify-between py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                     <DropdownMenuLabel className="py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Organização
-                        <button
-                           className="rounded p-0.5 transition-colors hover:bg-accent hover:text-accent-foreground"
-                           onClick={handleNewOrganization}
-                           title="Nova organização"
-                           type="button"
-                        >
-                           <Plus className="size-3.5" />
-                        </button>
                      </DropdownMenuLabel>
 
                      <DropdownMenuSub>

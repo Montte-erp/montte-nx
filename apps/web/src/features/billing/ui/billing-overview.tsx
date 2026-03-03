@@ -148,6 +148,34 @@ const EARLY_ACCESS_CATEGORY_GATES: Record<
 // Categories that are not yet available — rendered as "Em breve" without enroll CTA.
 const COMING_SOON_CATEGORIES = new Set(["nfe", "document"]);
 
+// ---------------------------------------------------------------------------
+// Platform Add-ons
+// ---------------------------------------------------------------------------
+
+const PLATFORM_ADDONS = [
+   {
+      id: "boost",
+      label: "Boost",
+      price: "R$199/mês",
+      description: "SSO, white label, 2FA enforcement e espaços ilimitados",
+      features: ["SSO", "White label", "2FA enforcement", "Espaços ilimitados"],
+   },
+   {
+      id: "scale",
+      label: "Scale",
+      price: "R$599/mês",
+      description: "Tudo do Boost + SAML, RBAC, audit logs e SLA 24h",
+      features: ["SAML", "RBAC", "Audit logs", "SLA 24h"],
+   },
+   {
+      id: "enterprise",
+      label: "Enterprise",
+      price: "R$2.500+/mês",
+      description: "Tudo do Scale + múltiplos CNPJs, SLA 4h e suporte dedicado",
+      features: ["Múltiplos CNPJs", "SLA 4h", "Suporte dedicado"],
+   },
+] as const;
+
 // ============================================
 // Helpers
 // ============================================
@@ -305,6 +333,126 @@ function AddCardBanner() {
             )}
             Adicionar cartão
          </Button>
+      </div>
+   );
+}
+
+// ============================================
+// Addon Cards Section
+// ============================================
+
+function AddonCard({
+   addon,
+   isActive,
+   hasPaymentMethod,
+   onSubscribe,
+   isPending,
+}: {
+   addon: (typeof PLATFORM_ADDONS)[number];
+   isActive: boolean;
+   hasPaymentMethod: boolean;
+   onSubscribe: (addonId: string) => void;
+   isPending: boolean;
+}) {
+   return (
+      <Card className={!hasPaymentMethod ? "opacity-70" : ""}>
+         <CardHeader className="pb-3">
+            <div className="flex items-start justify-between gap-4">
+               <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                     <CardTitle className="text-base">{addon.label}</CardTitle>
+                     {isActive && (
+                        <Badge className="bg-primary/10 text-primary border-primary/20" variant="secondary">
+                           Ativo
+                        </Badge>
+                     )}
+                  </div>
+                  <CardDescription className="text-xs mt-0.5">
+                     {addon.description}
+                  </CardDescription>
+               </div>
+               <div className="shrink-0 text-right">
+                  <p className="font-semibold text-sm">{addon.price}</p>
+               </div>
+            </div>
+         </CardHeader>
+         <CardContent className="pt-0">
+            <div className="flex items-center justify-between gap-4">
+               <div className="flex flex-wrap gap-1">
+                  {addon.features.map((feature) => (
+                     <Badge key={feature} variant="outline" className="text-xs font-normal">
+                        {feature}
+                     </Badge>
+                  ))}
+               </div>
+               {!isActive && (
+                  <TooltipProvider>
+                     <Tooltip>
+                        <TooltipTrigger asChild>
+                           <span className="shrink-0">
+                              <Button
+                                 disabled={!hasPaymentMethod || isPending}
+                                 onClick={() => onSubscribe(addon.id)}
+                                 size="sm"
+                                 variant="outline"
+                              >
+                                 Assinar
+                              </Button>
+                           </span>
+                        </TooltipTrigger>
+                        {!hasPaymentMethod && (
+                           <TooltipContent>
+                              <p>Ative o pay as you go para adquirir add-ons</p>
+                           </TooltipContent>
+                        )}
+                     </Tooltip>
+                  </TooltipProvider>
+               )}
+            </div>
+         </CardContent>
+      </Card>
+   );
+}
+
+function AddonsSection({ hasPaymentMethod }: { hasPaymentMethod: boolean }) {
+   const { activeOrganization } = useActiveOrganization();
+   const { data: activeAddons } = useSuspenseQuery(
+      orpc.organization.getAddons.queryOptions({}),
+   );
+   const activeAddonIds = new Set(activeAddons.map((a) => a.addonId));
+   const [isPending, startTransition] = useTransition();
+
+   const handleSubscribe = (addonId: string) => {
+      startTransition(async () => {
+         const result = await authClient.subscription.createBillingPortal({
+            referenceId: activeOrganization?.id,
+            returnUrl: window.location.href,
+         });
+         if (result.error) {
+            toast.error(result.error.message ?? "Erro ao abrir portal");
+            return;
+         }
+         if (result.data?.url) {
+            window.location.href = result.data.url;
+         }
+      });
+   };
+
+   return (
+      <div>
+         <h2 className="text-lg font-semibold mb-4">Add-ons</h2>
+         <div className="space-y-3">
+            {PLATFORM_ADDONS.map((addon) => (
+               <AddonCard
+                  key={addon.id}
+                  addon={addon}
+                  isActive={activeAddonIds.has(addon.id)}
+                  hasPaymentMethod={hasPaymentMethod}
+                  onSubscribe={handleSubscribe}
+                  isPending={isPending}
+               />
+            ))}
+         </div>
       </div>
    );
 }
@@ -656,6 +804,10 @@ export function BillingOverview() {
    const { data } = useSuspenseQuery(
       orpc.billing.getCurrentUsage.queryOptions({}),
    );
+   const { data: paymentStatus } = useQuery(
+      orpc.billing.getPaymentStatus.queryOptions({}),
+   );
+   const hasPaymentMethod = paymentStatus?.hasPaymentMethod ?? false;
    const { features, isEnrolled } = useEarlyAccess();
 
    // Derive stage from PostHog feature config, fall back to local config.
@@ -701,6 +853,9 @@ export function BillingOverview() {
 
          {/* Add card CTA — hidden once a payment method exists */}
          <AddCardBanner />
+
+         {/* Add-ons section */}
+         <AddonsSection hasPaymentMethod={hasPaymentMethod} />
 
          {/* Products section */}
          <div>

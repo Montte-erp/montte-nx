@@ -12,7 +12,7 @@ import { createIsomorphicFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
 import router from "./router";
 import type { ORPCContextWithAuth } from "./server";
-import { auth, db, posthog } from "./server-instances";
+import { auth, db, posthog, stripeClient } from "./server-instances";
 
 const getORPCClient = createIsomorphicFn()
    .server(() =>
@@ -32,6 +32,7 @@ const getORPCClient = createIsomorphicFn()
                db,
                session,
                posthog,
+               stripeClient,
             };
          },
       }),

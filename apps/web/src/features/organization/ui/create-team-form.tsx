@@ -28,7 +28,7 @@ function CreateTeamErrorFallback() {
          <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-               Failed to load organization data. Please try again.
+               Erro ao carregar dados da organização. Tente novamente.
             </AlertDescription>
          </Alert>
       </CredenzaBody>
@@ -61,17 +61,17 @@ const CreateTeamFormContent = () => {
          description?: string;
          organizationId?: string;
       }) => {
-         toast.loading("Creating team...");
+         toast.loading("Criando espaço...");
          const result = await authClient.organization.createTeam({
             name: data.name,
             organizationId: data.organizationId,
          });
 
          if (result.error) {
-            toast.error(result.error.message || "Failed to create team");
+            toast.error(result.error.message || "Erro ao criar espaço");
             return;
          }
-         toast.success("Team created successfully");
+         toast.success("Espaço criado com sucesso");
          closeCredenza();
       },
       [closeCredenza],
@@ -80,12 +80,12 @@ const CreateTeamFormContent = () => {
    const schema = z.object({
       description: z
          .string()
-         .max(200, "Description must be less than 200 characters")
+         .max(200, "A descrição deve ter menos de 200 caracteres")
          .default(""),
       name: z
          .string()
-         .min(1, "Team name is required")
-         .max(50, "Team name must be less than 50 characters"),
+         .min(1, "Nome do espaço é obrigatório")
+         .max(50, "O nome deve ter menos de 50 caracteres"),
       organizationId: z.string().default(""),
    });
 
@@ -128,14 +128,14 @@ const CreateTeamFormContent = () => {
 
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>Team Name</FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
                            <Input
                               aria-invalid={isInvalid}
                               id={field.name}
                               name={field.name}
                               onBlur={field.handleBlur}
                               onChange={(e) => field.handleChange(e.target.value)}
-                              placeholder="Enter team name"
+                              placeholder="Meu espaço"
                               type="text"
                               value={field.state.value}
                            />
@@ -156,7 +156,7 @@ const CreateTeamFormContent = () => {
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
-                              Description (Optional)
+                              Descrição (Opcional)
                            </FieldLabel>
                            <Textarea
                               aria-invalid={isInvalid}
@@ -164,7 +164,7 @@ const CreateTeamFormContent = () => {
                               name={field.name}
                               onBlur={field.handleBlur}
                               onChange={(e) => field.handleChange(e.target.value)}
-                              placeholder="Enter team description"
+                              placeholder="Descrição opcional"
                               rows={3}
                               value={field.state.value}
                            />
@@ -181,7 +181,7 @@ const CreateTeamFormContent = () => {
 
          <CredenzaFooter>
             <Button onClick={closeCredenza} type="button" variant="outline">
-               Cancel
+               Cancelar
             </Button>
             <form.Subscribe>
                {(formState) => (
@@ -198,7 +198,7 @@ const CreateTeamFormContent = () => {
                      }}
                      type="submit"
                   >
-                     {isPending ? "Creating..." : "Create Team"}
+                     {isPending ? "Criando..." : "Criar espaço"}
                   </Button>
                )}
             </form.Subscribe>
@@ -211,9 +211,9 @@ export const CreateTeamForm: FC = () => {
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle className="">Create New Team</CredenzaTitle>
+            <CredenzaTitle>Criar espaço</CredenzaTitle>
             <CredenzaDescription>
-               Create a new team to organize your organization members
+               Crie um novo espaço para organizar os membros da sua organização
             </CredenzaDescription>
          </CredenzaHeader>
          <ErrorBoundary FallbackComponent={CreateTeamErrorFallback}>

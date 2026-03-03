@@ -20,17 +20,12 @@ export const env = createEnv({
       BETTER_AUTH_GOOGLE_CLIENT_SECRET: z.string(),
 
       // Stripe (Optional - only if using subscription features)
-      STRIPE_SECRET_KEY: z.string().optional(),
-      STRIPE_WEBHOOK_SECRET: z.string().optional(),
+      STRIPE_SECRET_KEY: z.string(),
+      STRIPE_WEBHOOK_SECRET: z.string(),
       // Platform addons
       STRIPE_BOOST_PRICE_ID: z.string().optional(),
       STRIPE_SCALE_PRICE_ID: z.string().optional(),
       STRIPE_ENTERPRISE_PRICE_ID: z.string().optional(),
-      // Messaging addons
-      STRIPE_TELEGRAM_PRICE_ID: z.string().optional(),
-      STRIPE_WHATSAPP_PRICE_ID: z.string().optional(),
-      STRIPE_MENSAGERIA_BUNDLE_PRICE_ID: z.string().optional(),
-
       // PostHog (Required for analytics)
       POSTHOG_HOST: z.url(),
       POSTHOG_KEY: z.string(),

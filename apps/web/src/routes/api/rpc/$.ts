@@ -2,22 +2,10 @@ import "@/polyfill";
 
 import { RPCHandler } from "@orpc/server/fetch";
 import { BatchHandlerPlugin } from "@orpc/server/plugins";
-import { createAuth } from "@packages/authentication/server";
-import { createDb } from "@packages/database/client";
-import { env } from "@packages/environment/server";
-import { getElysiaPosthogConfig } from "@packages/posthog/server";
-import { getStripeClient } from "@packages/stripe";
 import { createFileRoute } from "@tanstack/react-router";
 import router from "@/integrations/orpc/router";
 import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
-
-// Create singleton instances at module level (created once when route file is imported)
-const db = createDb({ databaseUrl: env.DATABASE_URL });
-const auth = createAuth({ db, env });
-const stripeClient = env.STRIPE_SECRET_KEY
-   ? getStripeClient(env.STRIPE_SECRET_KEY)
-   : undefined;
-const posthog = env.POSTHOG_KEY ? getElysiaPosthogConfig(env) : undefined;
+import { auth, db, posthog, stripeClient } from "@/integrations/orpc/server-instances";
 
 const handler = new RPCHandler(router, {
    plugins: [new BatchHandlerPlugin()],

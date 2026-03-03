@@ -366,7 +366,7 @@ export function createAuth(config: SimplifiedAuthConfig) {
          stripePlugin({
             createCustomerOnSignUp: true,
             stripeClient,
-            stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET ?? "",
+            stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET,
             subscription: {
                authorizeReference: async ({ user, referenceId }) => {
                   const membership = await db.query.member.findFirst({
@@ -400,19 +400,6 @@ export function createAuth(config: SimplifiedAuthConfig) {
                   {
                      name: "enterprise",
                      priceId: env.STRIPE_ENTERPRISE_PRICE_ID,
-                  },
-                  // Messaging addons
-                  {
-                     name: "telegram",
-                     priceId: env.STRIPE_TELEGRAM_PRICE_ID,
-                  },
-                  {
-                     name: "whatsapp",
-                     priceId: env.STRIPE_WHATSAPP_PRICE_ID,
-                  },
-                  {
-                     name: "mensageria-bundle",
-                     priceId: env.STRIPE_MENSAGERIA_BUNDLE_PRICE_ID,
                   },
                ],
             },

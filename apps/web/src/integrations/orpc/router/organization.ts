@@ -44,7 +44,7 @@ export const getOrganizations = authenticatedProcedure.handler(
  */
 export const getActiveOrganization = protectedProcedure.handler(
    async ({ context }) => {
-      const { auth, headers, session } = context;
+      const { auth, headers, session, db, stripeClient, userId } = context;
 
       try {
          const organizationId = session.session.activeOrganizationId;
@@ -82,10 +82,33 @@ export const getActiveOrganization = protectedProcedure.handler(
          });
          const projectCount = teams.length;
 
+         // Determine project limit based on whether the user has a saved payment method
+         let projectLimit = 1;
+         try {
+            if (stripeClient) {
+               const userRecord = await db.query.user.findFirst({
+                  where: (users, { eq }) => eq(users.id, userId),
+               });
+               if (userRecord?.stripeCustomerId) {
+                  const paymentMethods = await stripeClient.paymentMethods.list({
+                     customer: userRecord.stripeCustomerId,
+                     type: "card",
+                     limit: 1,
+                  });
+                  if (paymentMethods.data.length > 0) {
+                     projectLimit = 6;
+                  }
+               }
+            }
+         } catch (_error) {
+            // Fall back to free limit if Stripe check fails
+            projectLimit = 1;
+         }
+
          return {
             ...organization,
             activeSubscription: activeSubscription ?? null,
-            projectLimit: Number.POSITIVE_INFINITY,
+            projectLimit,
             projectCount,
          };
       } catch (error) {

@@ -1,61 +1,73 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { orpc } from "@/integrations/orpc/client";
+import { useSafeLocalStorage } from "@/hooks/use-local-storage";
 
 const PENDING_INVITATION_KEY = "montte_pending_invitation_id";
 
 export const Route = createFileRoute("/auth/callback")({
-   beforeLoad: async ({ context }) => {
-      // Check for a pending invitation stored before sign-in
-      const pendingInvitationId = window.localStorage.getItem(PENDING_INVITATION_KEY);
-      if (pendingInvitationId) {
-         window.localStorage.removeItem(PENDING_INVITATION_KEY);
-         throw redirect({
-            to: "/callback/organization/invitation/$invitationId",
-            params: { invitationId: pendingInvitationId },
-         });
-      }
-
-      // Fetch user's organizations to determine where to redirect
-      const organizations = await context.queryClient.fetchQuery(
-         context.orpc.organization.getOrganizations.queryOptions(),
-      );
-
-      const firstOrg = organizations.length > 0 ? organizations[0] : undefined;
-
-      if (!firstOrg) {
-         // No organization — redirect to onboarding
-         throw redirect({ to: "/onboarding" });
-      }
-
-      // Check if org onboarding is complete
-      if (!firstOrg.onboardingCompleted) {
-         throw redirect({ to: "/onboarding" });
-      }
-
-      // Org is onboarded, find a team to redirect to
-      let teams: { id: string; slug: string }[] = [];
-      try {
-         teams = await context.queryClient.fetchQuery(
-            context.orpc.organization.getOrganizationTeams.queryOptions(),
-         );
-      } catch {
-         // If team fetch fails, go to onboarding
-         throw redirect({ to: "/onboarding" });
-      }
-
-      const fallbackTeam = teams.length > 0 ? teams[0] : undefined;
-
-      if (fallbackTeam) {
-         throw redirect({
-            to: "/$slug/$teamSlug/home",
-            params: {
-               slug: firstOrg.slug,
-               teamSlug: fallbackTeam.slug,
-            },
-         });
-      }
-
-      // Org exists but no teams — go to onboarding
-      throw redirect({ to: "/onboarding" });
-   },
-   component: () => null,
+   component: AuthCallbackPage,
 });
+
+function AuthCallbackPage() {
+   const [pendingInvitation, setPendingInvitation] =
+      useSafeLocalStorage<string | null>(PENDING_INVITATION_KEY, null);
+   const router = useRouter();
+   const queryClient = useQueryClient();
+
+   useEffect(() => {
+      // useSafeLocalStorage syncs via useLayoutEffect, which runs before useEffect,
+      // so pendingInvitation already holds the real localStorage value here.
+      if (pendingInvitation) {
+         setPendingInvitation(null);
+         router.navigate({
+            to: "/callback/organization/invitation/$invitationId",
+            params: { invitationId: pendingInvitation },
+         });
+         return;
+      }
+
+      const run = async () => {
+         const organizations = await queryClient.fetchQuery(
+            orpc.organization.getOrganizations.queryOptions(),
+         );
+
+         const firstOrg = organizations[0];
+
+         if (!firstOrg || !firstOrg.onboardingCompleted) {
+            router.navigate({ to: "/onboarding" });
+            return;
+         }
+
+         let teams: { id: string; slug: string }[] = [];
+         try {
+            teams = await queryClient.fetchQuery(
+               orpc.organization.getOrganizationTeams.queryOptions(),
+            );
+         } catch {
+            router.navigate({ to: "/onboarding" });
+            return;
+         }
+
+         const fallbackTeam = teams[0];
+
+         if (fallbackTeam) {
+            router.navigate({
+               to: "/$slug/$teamSlug/home",
+               params: {
+                  slug: firstOrg.slug,
+                  teamSlug: fallbackTeam.slug,
+               },
+            });
+            return;
+         }
+
+         router.navigate({ to: "/onboarding" });
+      };
+
+      run();
+   }, [pendingInvitation, setPendingInvitation, queryClient, router]);
+
+   return null;
+}

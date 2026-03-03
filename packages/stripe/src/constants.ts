@@ -1,14 +1,11 @@
 // ---------------------------------------------------------------------------
-// Addon Names (Stripe products — platform addons and messaging)
+// Addon Names (Stripe products — platform addons)
 // ---------------------------------------------------------------------------
 
 export enum AddonName {
    BOOST = "boost",
    SCALE = "scale",
    ENTERPRISE = "enterprise",
-   TELEGRAM = "telegram",
-   WHATSAPP = "whatsapp",
-   MENSAGERIA_BUNDLE = "mensageria-bundle",
 }
 
 // ---------------------------------------------------------------------------

@@ -87,7 +87,7 @@
             "astro": "5.17.2"
          },
          "payments": {
-            "stripe": "^20.3.1"
+            "stripe": "^20.4.0"
          },
          "auth": {
             "better-auth": "1.5.1",

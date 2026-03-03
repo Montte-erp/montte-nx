@@ -1,3 +1,4 @@
+import { ConditionGroup } from "@f-o-t/condition-evaluator";
 import { ORPCError } from "@orpc/server";
 import { getBankAccount } from "@packages/database/repositories/bank-accounts-repository";
 import { getCategory } from "@packages/database/repositories/categories-repository";
@@ -158,6 +159,7 @@ export const getAll = protectedProcedure
             uncategorized: z.boolean().optional(),
             page: z.number().int().positive().default(1),
             pageSize: z.number().int().positive().max(100).default(20),
+            conditionGroup: ConditionGroup.optional(),
          })
          .optional(),
    )

@@ -1,43 +1,55 @@
 import { Button } from "@packages/ui/components/button";
-import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { authClient } from "@/integrations/better-auth/auth-client";
+import { orpc } from "@/integrations/orpc/client";
+import { useSafeLocalStorage } from "@/hooks/use-local-storage";
 
-const PENDING_INVITATION_KEY = "montte_pending_invitation_id";
+export const PENDING_INVITATION_KEY = "montte_pending_invitation_id";
 
 export const Route = createFileRoute(
    "/callback/organization/invitation/$invitationId",
 )({
-   beforeLoad: async ({ context, params }) => {
-      const session = await context.queryClient
-         .fetchQuery(context.orpc.session.getSession.queryOptions())
-         .catch(() => null);
-
-      if (!session?.user?.id) {
-         window.localStorage.setItem(PENDING_INVITATION_KEY, params.invitationId);
-         throw redirect({ to: "/auth/sign-in" });
-      }
-   },
    component: AcceptInvitationPage,
 });
 
 function AcceptInvitationPage() {
    const { invitationId } = Route.useParams();
    const router = useRouter();
+   const queryClient = useQueryClient();
+   const [, setPendingInvitation] = useSafeLocalStorage<string | null>(
+      PENDING_INVITATION_KEY,
+      null,
+   );
    const [error, setError] = useState<string | null>(null);
 
    useEffect(() => {
-      authClient.organization
-         .acceptInvitation({ invitationId })
-         .then(({ error: err }) => {
-            if (err) {
-               setError(err.message ?? "Convite inválido ou expirado.");
-               return;
-            }
-            router.navigate({ to: "/auth/callback" });
-         });
-   }, [invitationId, router]);
+      const run = async () => {
+         const session = await queryClient
+            .fetchQuery(orpc.session.getSession.queryOptions())
+            .catch(() => null);
+
+         if (!session?.user?.id) {
+            setPendingInvitation(invitationId);
+            router.navigate({ to: "/auth/sign-in" });
+            return;
+         }
+
+         const { error: err } =
+            await authClient.organization.acceptInvitation({ invitationId });
+
+         if (err) {
+            setError(err.message ?? "Convite inválido ou expirado.");
+            return;
+         }
+
+         router.navigate({ to: "/auth/callback" });
+      };
+
+      run();
+   }, [invitationId, queryClient, router, setPendingInvitation]);
 
    if (error) {
       return (
