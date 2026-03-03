@@ -11,10 +11,10 @@ import {
 } from "@packages/ui/components/select";
 import { Separator } from "@packages/ui/components/separator";
 import {
-   SheetDescription,
-   SheetHeader,
-   SheetTitle,
-} from "@packages/ui/components/sheet";
+   CredenzaDescription,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Spinner } from "@packages/ui/components/spinner";
 import {
    Tabs,
@@ -119,12 +119,12 @@ export function CreateKeyForm({ onSuccess }: CreateKeyFormProps) {
 
    return (
       <div className="flex h-full flex-col">
-         <SheetHeader>
-            <SheetTitle>Criar chave de API</SheetTitle>
-            <SheetDescription>
+         <CredenzaHeader>
+            <CredenzaTitle>Criar chave de API</CredenzaTitle>
+            <CredenzaDescription>
                Crie uma chave de API pessoal para acessar a API do Montte.
-            </SheetDescription>
-         </SheetHeader>
+            </CredenzaDescription>
+         </CredenzaHeader>
 
          <div className="flex-1 overflow-y-auto space-y-6 py-6">
             {/* Label */}
