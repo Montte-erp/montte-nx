@@ -43,7 +43,7 @@ import {
    useRevokeOtherSessions,
 } from "@/features/settings/hooks/use-session-actions";
 import { SessionDetailsForm } from "@/features/settings/ui/session-details-form";
-import { useSheet } from "@/hooks/use-sheet";
+import { useCredenza } from "@/hooks/use-credenza";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -167,12 +167,12 @@ function SessionsSection({
    sessions,
    currentSessionId,
    currentSessionLoginMethod,
-   openSheet,
+   openCredenza,
 }: {
    sessions: SessionType[];
    currentSessionId: string | undefined;
    currentSessionLoginMethod: string | null;
-   openSheet: (options: { children: React.ReactNode }) => void;
+   openCredenza: (options: { children: React.ReactNode }) => void;
 }) {
    return (
       <section className="space-y-3">
@@ -251,7 +251,7 @@ function SessionsSection({
                            <ItemActions>
                               <Button
                                  onClick={() =>
-                                    openSheet({
+                                    openCredenza({
                                        children: (
                                           <SessionDetailsForm
                                              currentSessionId={
@@ -351,7 +351,7 @@ function SecurityActionsSection({
 // ============================================
 
 function SecuritySectionContent() {
-   const { openSheet } = useSheet();
+   const { openCredenza } = useCredenza();
    const { data: sessions } = useSuspenseQuery(
       orpc.session.listSessions.queryOptions({}),
    );
@@ -384,7 +384,7 @@ function SecuritySectionContent() {
             <SessionsSection
                currentSessionId={currentSessionId}
                currentSessionLoginMethod={currentSessionLoginMethod}
-               openSheet={openSheet}
+               openCredenza={openCredenza}
                sessions={sessions as SessionType[]}
             />
 
