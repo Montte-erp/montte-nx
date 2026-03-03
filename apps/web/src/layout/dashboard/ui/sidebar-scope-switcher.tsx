@@ -55,7 +55,6 @@ import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
-import { useSheet } from "@/hooks/use-sheet";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 import { ThemeSwitcher } from "./theme-switcher";
@@ -141,7 +140,6 @@ function SidebarScopeSwitcherContent() {
    const { activeOrganization, projectLimit, projectCount } =
       useActiveOrganization();
    const { activeTeam, teams } = useActiveTeam();
-   const { openSheet } = useSheet();
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const { setActiveOrganization } = useSetActiveOrganization();
@@ -273,10 +271,9 @@ function SidebarScopeSwitcherContent() {
             return;
          }
 
-         openSheet({ children: <CreateTeamForm /> });
+         openCredenza({ children: <CreateTeamForm /> });
       },
       [
-         openSheet,
          openCredenza,
          closeCredenza,
          projectLimit,
@@ -290,9 +287,9 @@ function SidebarScopeSwitcherContent() {
    const handleNewOrganization = useCallback(
       (e?: React.MouseEvent) => {
          e?.stopPropagation();
-         openSheet({ children: <ManageOrganizationForm /> });
+         openCredenza({ children: <ManageOrganizationForm /> });
       },
-      [openSheet],
+      [openCredenza],
    );
 
    const handleLogout = useCallback(async () => {
