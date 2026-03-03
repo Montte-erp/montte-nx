@@ -78,9 +78,6 @@ export function createAuth(config: SimplifiedAuthConfig) {
       },
 
       advanced: {
-         crossSubDomainCookies: isProduction
-            ? { domain: ".montte.co", enabled: true }
-            : { enabled: false },
          database: { generateId: "uuid" },
       },
 
