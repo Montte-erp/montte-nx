@@ -292,47 +292,6 @@ export const getPaymentStatus = protectedProcedure.handler(
 );
 
 /**
- * Create a Stripe Checkout session in setup mode so the user can add a card
- * without purchasing a subscription.
- */
-export const createSetupSession = protectedProcedure
-   .input(z.object({ returnUrl: z.string().url() }))
-   .handler(async ({ context, input }) => {
-      const { db, stripeClient, userId } = context;
-
-      if (!stripeClient) {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Stripe client not configured",
-         });
-      }
-
-      const userRecord = await db.query.user.findFirst({
-         where: (users, { eq }) => eq(users.id, userId),
-      });
-
-      if (!userRecord?.stripeCustomerId) {
-         throw new ORPCError("BAD_REQUEST", {
-            message: "Stripe customer not found",
-         });
-      }
-
-      try {
-         const session = await stripeClient.checkout.sessions.create({
-            mode: "setup",
-            customer: userRecord.stripeCustomerId,
-            success_url: `${input.returnUrl}?setup=success`,
-            cancel_url: input.returnUrl,
-            payment_method_types: ["card"],
-         });
-         return { url: session.url };
-      } catch (_error) {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to create setup session",
-         });
-      }
-   });
-
-/**
  * Get daily usage chart data for the last N days
  */
 export const getDailyUsage = protectedProcedure

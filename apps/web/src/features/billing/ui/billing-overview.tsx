@@ -33,8 +33,8 @@ import {
    TooltipProvider,
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
-import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { Link, useParams } from "@tanstack/react-router";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useParams } from "@tanstack/react-router";
 import {
    Briefcase,
    Building2,
@@ -53,13 +53,14 @@ import {
    TrendingUp,
    Users,
    Webhook,
-   Zap,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { Suspense } from "react";
+import { Suspense, useTransition } from "react";
 import { ErrorBoundary } from "react-error-boundary";
+import { toast } from "sonner";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useEarlyAccess } from "@/hooks/use-early-access";
+import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 
 // ============================================
@@ -222,42 +223,6 @@ function CurrentBillHeader({ monthToDate }: { monthToDate: number }) {
 }
 
 // ============================================
-// Plan Banner
-// ============================================
-
-function PlanBanner({ addonName }: { addonName: string | null }) {
-   const { slug, teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
-
-   const addonLabel = addonName
-      ? addonName.charAt(0).toUpperCase() + addonName.slice(1)
-      : null;
-
-   return (
-      <div className="rounded-lg bg-card border p-5 flex items-start justify-between gap-4">
-         <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-               <Zap className="size-5 text-primary" />
-               <p className="font-semibold text-lg">
-                  {addonLabel ? `Addon ${addonLabel} ativo` : "Pay as you go"}
-               </p>
-            </div>
-            <p className="text-sm text-muted-foreground">
-               Cada funcionalidade é cobrada por uso. Limites gratuitos mensais
-               incluídos — pague apenas pelo excedente.
-            </p>
-         </div>
-         <Button asChild variant="outline">
-            <Link params={{ slug, teamSlug }} to="/$slug/$teamSlug/plans">
-               Ver addons
-            </Link>
-         </Button>
-      </div>
-   );
-}
-
-// ============================================
 // Billing Period + Payment Link
 // ============================================
 
@@ -294,14 +259,24 @@ function AddCardBanner() {
    const { data, isLoading } = useQuery(
       orpc.billing.getPaymentStatus.queryOptions({}),
    );
+   const { activeOrganization } = useActiveOrganization();
+   const [isPending, startTransition] = useTransition();
 
-   const setupMutation = useMutation(
-      orpc.billing.createSetupSession.mutationOptions({
-         onSuccess: ({ url }) => {
-            if (url) window.location.href = url;
-         },
-      }),
-   );
+   const handleAddCard = () => {
+      startTransition(async () => {
+         const result = await authClient.subscription.createBillingPortal({
+            referenceId: activeOrganization?.id,
+            returnUrl: window.location.href,
+         });
+         if (result.error) {
+            toast.error(result.error.message ?? "Erro ao abrir portal");
+            return;
+         }
+         if (result.data?.url) {
+            window.location.href = result.data.url;
+         }
+      });
+   };
 
    if (isLoading || data?.hasPaymentMethod) return null;
 
@@ -312,23 +287,22 @@ function AddCardBanner() {
                <CreditCard className="size-4 text-muted-foreground" />
             </div>
             <div className="space-y-0.5">
-               <p className="font-medium text-sm">Adicione um cartão para ativar o pay as you go</p>
+               <p className="font-medium text-sm">
+                  Adicione um cartão para ativar o pay as you go
+               </p>
                <p className="text-xs text-muted-foreground">
-                  Sem cartão, o uso é limitado ao tier gratuito mensal. Adicione um cartão para pagar apenas pelo que exceder.
+                  Sem cartão, o uso é limitado ao tier gratuito mensal. Adicione
+                  um cartão para pagar apenas pelo que exceder.
                </p>
             </div>
          </div>
          <Button
             className="shrink-0"
-            disabled={setupMutation.isPending}
-            onClick={() =>
-               setupMutation.mutate({
-                  returnUrl: window.location.href,
-               })
-            }
+            disabled={isPending}
+            onClick={handleAddCard}
             variant="default"
          >
-            {setupMutation.isPending ? (
+            {isPending ? (
                <Spinner className="size-4 mr-2" />
             ) : (
                <CreditCard className="size-4 mr-2" />
@@ -779,18 +753,10 @@ function InvoicesPreviewContent() {
 // ============================================
 
 export function BillingOverview() {
-   const { slug, teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
    const { data } = useSuspenseQuery(
       orpc.billing.getCurrentUsage.queryOptions({}),
    );
-   const { activeSubscription } = useActiveOrganization();
    const { features, isEnrolled } = useEarlyAccess();
-
-   const activeAddonName = activeSubscription
-      ? (activeSubscription.plan as string).toLowerCase()
-      : null;
 
    // Derive stage from PostHog feature config, fall back to local config.
    function resolveStage(
@@ -827,41 +793,14 @@ export function BillingOverview() {
 
    return (
       <div className="space-y-6">
-         {/* Top section: bill total + plan banner */}
-         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-            <CurrentBillHeader monthToDate={data.monthToDate} />
-            <div className="lg:max-w-md flex-1">
-               <PlanBanner addonName={activeAddonName} />
-            </div>
-         </div>
+         {/* Top section: bill total */}
+         <CurrentBillHeader monthToDate={data.monthToDate} />
 
          {/* Billing period */}
          <BillingPeriodSection />
 
          {/* Add card CTA — hidden once a payment method exists */}
          <AddCardBanner />
-
-         {/* Manage card link */}
-         <Button asChild variant="outline">
-            <Link params={{ slug, teamSlug }} to="/$slug/$teamSlug/plans">
-               <CreditCard className="size-4 mr-1.5" />
-               Gerenciar plano e faturas
-               <ExternalLink className="size-3 ml-1" />
-            </Link>
-         </Button>
-
-         <div>
-            <h2 className="text-lg font-semibold mb-4">Addons</h2>
-            <div className="space-y-4">
-               {ADDON_DEFS.map((addon) => (
-                  <AddonCard
-                     active={activeAddonName === addon.name}
-                     addon={addon}
-                     key={addon.name}
-                  />
-               ))}
-            </div>
-         </div>
 
          {/* Products section */}
          <div>
