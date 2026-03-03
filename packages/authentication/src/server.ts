@@ -60,11 +60,7 @@ export function createAuth(config: SimplifiedAuthConfig) {
    });
 
    return betterAuth({
-      baseURL: {
-         allowedHosts: ["*.montte.co", "*.railway.app"],
-         fallback: env.BETTER_AUTH_URL,
-         protocol: "auto",
-      },
+      baseURL: env.BETTER_AUTH_URL,
       secret: env.BETTER_AUTH_SECRET,
       trustedOrigins: env.BETTER_AUTH_TRUSTED_ORIGINS.split(","),
 
