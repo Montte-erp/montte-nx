@@ -11,7 +11,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Clock, Layout, Loader2, Plus, RefreshCw, RotateCcw, X } from "lucide-react";
 import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { usePageActions } from "@/features/context-panel/use-context-panel";
 import { PageHeader } from "@/components/page-header";
 import { DashboardFilterPopover } from "@/features/analytics/ui/dashboard-filter-popover";
 import { EditableDashboardGrid } from "@/features/analytics/ui/editable-dashboard-grid";
@@ -37,6 +36,7 @@ function DashboardHeader({
    isSaving,
    onSave,
    onCancel,
+   onEnterEdit,
 }: {
    dashboard: Dashboard;
    onAddInsight: () => void;
@@ -44,6 +44,7 @@ function DashboardHeader({
    isSaving: boolean;
    onSave: () => void;
    onCancel: () => void;
+   onEnterEdit: () => void;
 }) {
    const queryClient = useQueryClient();
 
@@ -115,6 +116,11 @@ function DashboardHeader({
          editable
          onDescriptionChange={handleDescriptionSave}
          onTitleChange={handleNameSave}
+         panelActions={
+            !isEditingLayout
+               ? [{ icon: Layout, label: "Editar layout", onClick: onEnterEdit }]
+               : undefined
+         }
          title={dashboard.name}
          titlePlaceholder="Nome do dashboard"
       />
@@ -336,28 +342,22 @@ export function DashboardView({ dashboard, children }: DashboardViewProps) {
    const [isEditingLayout, setIsEditingLayout] = useState(false);
    const [isSaving, setIsSaving] = useState(false);
 
-   usePageActions([
-      {
-         icon: Layout,
-         label: "Editar layout",
-         onClick: () => {
-            if (!isEditingLayout) {
-               setIsEditingLayout(true);
-               toast.info(
-                  "Editando o dashboard — salve para persistir as alterações",
-                  {
-                     id: "dashboard-edit-mode",
-                     duration: Number.POSITIVE_INFINITY,
-                  },
-               );
-            }
+   const handleEnterEdit = useCallback(() => {
+      if (isEditingLayout) return;
+      setIsEditingLayout(true);
+      toast.info(
+         "Editando o dashboard — salve para persistir as alterações",
+         {
+            id: "dashboard-edit-mode",
+            duration: Number.POSITIVE_INFINITY,
          },
-      },
-   ]);
+      );
+   }, [isEditingLayout]);
 
    const handleSave = useCallback(() => {
+      if (!saveRef.current) return;
       setIsSaving(true);
-      saveRef.current?.();
+      saveRef.current();
    }, []);
 
    const handleCancel = useCallback(() => {
@@ -375,6 +375,7 @@ export function DashboardView({ dashboard, children }: DashboardViewProps) {
             isSaving={isSaving}
             onAddInsight={() => addInsightRef.current?.()}
             onCancel={handleCancel}
+            onEnterEdit={handleEnterEdit}
             onSave={handleSave}
          />
          <DashboardFilterBar dashboard={dashboard} />

@@ -13,11 +13,7 @@ import {
    DropdownMenu,
    DropdownMenuContent,
    DropdownMenuItem,
-   DropdownMenuPortal,
    DropdownMenuSeparator,
-   DropdownMenuSub,
-   DropdownMenuSubContent,
-   DropdownMenuSubTrigger,
    DropdownMenuTrigger,
 } from "@packages/ui/components/dropdown-menu";
 import { Skeleton } from "@packages/ui/components/skeleton";
@@ -30,7 +26,6 @@ import {
    Ellipsis,
    GripHorizontal,
    GripVertical,
-   Maximize2,
    Pencil,
    RefreshCw,
    Settings2,
@@ -53,18 +48,10 @@ interface DashboardTileProps {
    insightId?: string;
    isEditing?: boolean;
    onRemove?: () => void;
-   onResize?: (size: TileSize) => void;
    onDuplicate?: () => void;
    globalFilters?: Condition[];
    globalDateRange?: DashboardDateRange;
 }
-
-const sizeLabels: Record<TileSize, string> = {
-   sm: "Pequeno (25%)",
-   md: "Médio (50%)",
-   lg: "Grande (75%)",
-   full: "Largura total (100%)",
-};
 
 const sizeClasses = {
    sm: "col-span-12 md:col-span-3",
@@ -312,9 +299,8 @@ export function DashboardTile({
    size,
    children,
    insightId,
-   isEditing = true,
+   isEditing = false,
    onRemove,
-   onResize,
    onDuplicate,
    globalFilters,
    globalDateRange,
@@ -456,35 +442,6 @@ export function DashboardTile({
                                  <Copy className="mr-2 size-4" />
                                  Duplicar
                               </DropdownMenuItem>
-                           )}
-
-                           {/* Resize submenu */}
-                           {onResize && (
-                              <DropdownMenuSub>
-                                 <DropdownMenuSubTrigger>
-                                    <Maximize2 className="mr-2 size-4" />
-                                    Redimensionar
-                                 </DropdownMenuSubTrigger>
-                                 <DropdownMenuPortal>
-                                    <DropdownMenuSubContent>
-                                       {(
-                                          Object.entries(sizeLabels) as [
-                                             TileSize,
-                                             string,
-                                          ][]
-                                       ).map(([key, label]) => (
-                                          <DropdownMenuItem
-                                             disabled={key === size}
-                                             key={key}
-                                             onClick={() => onResize(key)}
-                                          >
-                                             {label}
-                                             {key === size && " \u2713"}
-                                          </DropdownMenuItem>
-                                       ))}
-                                    </DropdownMenuSubContent>
-                                 </DropdownMenuPortal>
-                              </DropdownMenuSub>
                            )}
 
                            <DropdownMenuSeparator />

@@ -227,7 +227,7 @@ export function EditableDashboardGrid({
       orpc.dashboards.updateTiles.mutationOptions({
          onSuccess: () => {
             queryClient.invalidateQueries({
-               queryKey: orpc.analytics.getDefaultDashboard.queryKey({}),
+               queryKey: orpc.analytics.getDefaultDashboard.queryKey(),
             });
             queryClient.invalidateQueries({
                queryKey: orpc.dashboards.getById.queryKey({
@@ -373,7 +373,6 @@ export function EditableDashboardGrid({
                   key={tile.insightId}
                   onDuplicate={() => handleDuplicateTile(tile.insightId)}
                   onRemove={() => handleRemoveTile(tile.insightId)}
-                  onResize={(size) => handleResizeTile(tile.insightId, size)}
                   size={tile.size}
                />
             )}
