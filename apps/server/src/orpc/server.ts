@@ -1,5 +1,4 @@
 import { ORPCError, os } from "@orpc/server";
-import type { PlanName } from "@packages/stripe/constants";
 import { auth } from "../integrations/auth";
 import { db } from "../integrations/database";
 import type { posthog } from "../integrations/posthog";
@@ -14,7 +13,7 @@ interface BaseContext {
 interface SdkContext extends BaseContext {
    organizationId: string;
    teamId?: string;
-   plan: PlanName;
+   plan: string;
    sdkMode: "static" | "ssr";
    remaining: number | null;
    userId?: string;
@@ -66,7 +65,7 @@ export const sdkProcedure = baseProcedure.use(async ({ context, next }) => {
          ...context,
          organizationId,
          teamId: resolvedTeamId,
-         plan: (plan as PlanName) ?? "FREE",
+         plan: (plan as string) ?? "metered",
          sdkMode: (sdkMode as "static" | "ssr") ?? "static",
          remaining: result.key.remaining,
          userId: result.key.userId,

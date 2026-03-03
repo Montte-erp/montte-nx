@@ -35,6 +35,12 @@ export type NavItemDef = {
    subPanel?: SubSidebarSection;
    /** PostHog early access flag key — if set, item is hidden when user is not enrolled */
    earlyAccessFlag?: string;
+   /** Fallback stage shown when PostHog hasn't resolved the feature yet */
+   earlyAccessFallbackStage?:
+      | "alpha"
+      | "beta"
+      | "concept"
+      | "general-availability";
    /** Whether the item can be hidden by the user via sidebar visibility settings */
    configurable?: boolean;
 };
@@ -155,7 +161,7 @@ export const navGroups: NavGroupDef[] = [
          },
          {
             id: "inventory",
-            label: "Produtos",
+            label: "Estoque",
             icon: Package,
             route: "/$slug/$teamSlug/inventory",
             quickAction: { type: "create", target: "sheet" },

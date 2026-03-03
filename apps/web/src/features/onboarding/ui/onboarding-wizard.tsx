@@ -12,7 +12,7 @@ import {
    useTransition,
 } from "react";
 import type { Session } from "@/integrations/better-auth/auth-client";
-import { AccountTypeStep, type AccountType } from "./account-type-step";
+import { type AccountType, AccountTypeStep } from "./account-type-step";
 import { ProfileStep } from "./profile-step";
 import type { StepHandle, StepState } from "./step-handle";
 import { WorkspaceStep } from "./workspace-step";
@@ -45,7 +45,8 @@ export function OnboardingWizard({
    const steps = useMemo(() => {
       const s: { id: string; title: string }[] = [];
       if (needsProfile) s.push({ id: "profile", title: "Perfil" });
-      if (needsWorkspace) s.push({ id: "account-type", title: "Tipo de Conta" });
+      if (needsWorkspace)
+         s.push({ id: "account-type", title: "Tipo de Conta" });
       if (needsWorkspace) s.push({ id: "workspace", title: "Workspace" });
       return s;
    }, [needsProfile, needsWorkspace]);

@@ -237,9 +237,7 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                      <Field>
                         <FieldLabel>Limite de Crédito</FieldLabel>
                         <MoneyInput
-                           onChange={(v) =>
-                              field.handleChange(String(v ?? 0))
-                           }
+                           onChange={(v) => field.handleChange(String(v ?? 0))}
                            value={field.state.value}
                            valueInCents={false}
                         />

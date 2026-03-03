@@ -12,14 +12,14 @@ import { LayoutDashboard, Plus } from "lucide-react";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/page-header";
 import { DashboardListCard } from "@/features/analytics/ui/dashboard-list-card";
-import { ContextPanelAction } from "@/features/context-panel/context-panel-info";
-import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
-import { setChatMode } from "@/features/teco-chat/stores/chat-context-store";
-import { orpc } from "@/integrations/orpc/client";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
+import { ContextPanelAction } from "@/features/context-panel/context-panel-info";
+import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
+import { setChatMode } from "@/features/teco-chat/stores/chat-context-store";
+import { orpc } from "@/integrations/orpc/client";
 
 const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
    badgeLabel: "Analytics Avançado",

@@ -66,40 +66,40 @@ function RootDocument({ children }: { children: React.ReactNode }) {
          <body>
             <PostHogWrapper env={env}>
                <EarlyAccessProvider>
-               <ThemeProvider
-                  attribute="class"
-                  defaultTheme="system"
-                  enableSystem
-               >
-                  {children}
-                  <PosthogRouterTracker
-                     location={{
-                        href:
-                           typeof window !== "undefined"
-                              ? window.location.href
-                              : "",
-                        pathname: routerState.location.pathname,
-                        search: routerState.location.search,
-                     }}
-                  />
-                  <Toaster position="top-right" richColors />
-                  <GlobalCredenza />
-                  <GlobalAlertDialog />
-                  <ClientOnly>
-                     <TanStackDevtools
-                        config={{
-                           position: "top-right",
+                  <ThemeProvider
+                     attribute="class"
+                     defaultTheme="system"
+                     enableSystem
+                  >
+                     {children}
+                     <PosthogRouterTracker
+                        location={{
+                           href:
+                              typeof window !== "undefined"
+                                 ? window.location.href
+                                 : "",
+                           pathname: routerState.location.pathname,
+                           search: routerState.location.search,
                         }}
-                        plugins={[
-                           {
-                              name: "Tanstack Router",
-                              render: <TanStackRouterDevtoolsPanel />,
-                           },
-                           TanStackQueryDevtools,
-                        ]}
                      />
-                  </ClientOnly>
-               </ThemeProvider>
+                     <Toaster position="top-right" richColors />
+                     <GlobalCredenza />
+                     <GlobalAlertDialog />
+                     <ClientOnly>
+                        <TanStackDevtools
+                           config={{
+                              position: "top-right",
+                           }}
+                           plugins={[
+                              {
+                                 name: "Tanstack Router",
+                                 render: <TanStackRouterDevtoolsPanel />,
+                              },
+                              TanStackQueryDevtools,
+                           ]}
+                        />
+                     </ClientOnly>
+                  </ThemeProvider>
                </EarlyAccessProvider>
             </PostHogWrapper>
             <Scripts />

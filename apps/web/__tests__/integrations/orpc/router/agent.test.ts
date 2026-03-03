@@ -1,4 +1,4 @@
-import { ORPCError, call } from "@orpc/server";
+import { call } from "@orpc/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	TEST_ORG_ID,
@@ -34,15 +34,10 @@ vi.mock("@packages/agents/models", () => ({
 }));
 
 vi.mock("@packages/events/ai");
-vi.mock("@packages/events/credits");
 vi.mock("@packages/database/repositories/product-settings-repository");
 
 import { mastra } from "@packages/agents";
-import { emitAiCompletion } from "@packages/events/ai";
-import {
-	enforceCreditBudget,
-	trackCreditUsage,
-} from "@packages/events/credits";
+import { emitAiChatMessage } from "@packages/events/ai";
 
 import * as agentRouter from "@/integrations/orpc/router/agent";
 
@@ -84,9 +79,7 @@ function setupAgentMock(streamResult: unknown) {
 
 beforeEach(() => {
 	vi.clearAllMocks();
-	vi.mocked(enforceCreditBudget).mockResolvedValue(undefined);
-	vi.mocked(trackCreditUsage).mockResolvedValue(undefined);
-	vi.mocked(emitAiCompletion).mockResolvedValue(undefined);
+	vi.mocked(emitAiChatMessage).mockResolvedValue(undefined);
 });
 
 // ---------------------------------------------------------------------------
@@ -106,52 +99,12 @@ async function collectChunks<T>(iterable: AsyncIterable<T>): Promise<T[]> {
 	return chunks;
 }
 
-/**
- * For generator procedures, errors thrown *before the first yield* are
- * surfaced when you iterate, not when you call(). This helper iterates
- * the generator and expects it to throw.
- */
-async function expectIterationToThrow(
-	iterablePromise: Promise<AsyncIterable<unknown>>,
-) {
-	const iterable = await iterablePromise;
-	const chunks: unknown[] = [];
-	try {
-		for await (const chunk of iterable) {
-			chunks.push(chunk);
-		}
-		expect.fail("Expected iteration to throw, but it completed successfully");
-	} catch (error) {
-		return error;
-	}
-}
-
 // =============================================================================
 // fimStream
 // =============================================================================
 
 describe("copilotStream", () => {
 	const input = { prefix: "Hello " };
-
-	it("enforces credit budget before streaming", async () => {
-		vi.mocked(enforceCreditBudget).mockRejectedValueOnce(
-			new ORPCError("FORBIDDEN", { message: "Credit exhausted" }),
-		);
-
-		const ctx = createTestContext();
-		const error = await expectIterationToThrow(
-			call(agentRouter.copilotStream, input, { context: ctx }),
-		);
-
-		expect(error).toBeInstanceOf(ORPCError);
-		expect((error as ORPCError<string, unknown>).code).toBe("FORBIDDEN");
-
-		expect(enforceCreditBudget).toHaveBeenCalledWith(
-			expect.anything(),
-			TEST_ORG_ID,
-			"ai",
-		);
-	});
 
 	it("yields text chunks from agent stream", async () => {
 		setupAgentMock(createMockTextStream(["world", "!"]));
@@ -180,14 +133,14 @@ describe("copilotStream", () => {
 		expect((lastChunk.metadata as any).latencyMs).toBeTypeOf("number");
 	});
 
-	it("emits AI completion event with teamId before final yield", async () => {
+	it("emits ai.chat_message event after streaming", async () => {
 		setupAgentMock(createMockTextStream(["world"]));
 
 		const ctx = createTestContext();
 		const iterable = await call(agentRouter.copilotStream, input, { context: ctx });
 		await collectChunks(iterable);
 
-		expect(emitAiCompletion).toHaveBeenCalledWith(
+		expect(emitAiChatMessage).toHaveBeenCalledWith(
 			expect.any(Function),
 			expect.objectContaining({
 				organizationId: TEST_ORG_ID,
@@ -195,17 +148,9 @@ describe("copilotStream", () => {
 				teamId: TEST_TEAM_ID,
 			}),
 			expect.objectContaining({
-				model: "fimAgent",
 				provider: "openrouter",
-				streamed: true,
+				role: "assistant",
 			}),
-		);
-
-		expect(trackCreditUsage).toHaveBeenCalledWith(
-			expect.anything(),
-			"ai.completion",
-			TEST_ORG_ID,
-			"ai",
 		);
 	});
 });
@@ -215,26 +160,6 @@ describe("copilotStream", () => {
 // =============================================================================
 
 describe("aiCommandStream", () => {
-	it("enforces credit budget before streaming", async () => {
-		vi.mocked(enforceCreditBudget).mockRejectedValueOnce(
-			new ORPCError("FORBIDDEN", { message: "Credit exhausted" }),
-		);
-
-		const ctx = createTestContext();
-		const error = await expectIterationToThrow(
-			call(agentRouter.aiCommandStream, { prompt: "Hello" }, { context: ctx }),
-		);
-
-		expect(error).toBeInstanceOf(ORPCError);
-		expect((error as ORPCError<string, unknown>).code).toBe("FORBIDDEN");
-
-		expect(enforceCreditBudget).toHaveBeenCalledWith(
-			expect.anything(),
-			TEST_ORG_ID,
-			"ai",
-		);
-	});
-
 	it("yields text chunks from fullStream", async () => {
 		setupAgentMock(
 			createMockFullStream([
@@ -263,7 +188,7 @@ describe("aiCommandStream", () => {
 		expect(lastChunk.type).toBe("done");
 	});
 
-	it("emits ai.completion event after streaming", async () => {
+	it("emits ai.chat_message event after streaming", async () => {
 		setupAgentMock(
 			createMockFullStream([{ type: "text-delta", textDelta: "Hi" }]),
 		);
@@ -276,24 +201,17 @@ describe("aiCommandStream", () => {
 		);
 		await collectChunks(iterable);
 
-		expect(emitAiCompletion).toHaveBeenCalledWith(
-			expect.anything(),
+		expect(emitAiChatMessage).toHaveBeenCalledWith(
+			expect.any(Function),
 			expect.objectContaining({
 				organizationId: TEST_ORG_ID,
 				userId: TEST_USER_ID,
 				teamId: TEST_TEAM_ID,
 			}),
 			expect.objectContaining({
-				model: "unifiedContent",
-				streamed: true,
+				provider: "openrouter",
+				role: "assistant",
 			}),
-		);
-
-		expect(trackCreditUsage).toHaveBeenCalledWith(
-			expect.anything(),
-			"ai.completion",
-			TEST_ORG_ID,
-			"ai",
 		);
 	});
 });

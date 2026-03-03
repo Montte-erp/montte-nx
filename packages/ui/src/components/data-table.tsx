@@ -227,7 +227,9 @@ export function DataTable<TData, TValue>({
    );
    const [internalRowSelection, setInternalRowSelection] =
       useState<RowSelectionState>({});
-   const [expanded, setExpanded] = useState<ExpandedState>(initialExpanded ?? {});
+   const [expanded, setExpanded] = useState<ExpandedState>(
+      initialExpanded ?? {},
+   );
 
    const isControlled = controlledRowSelection !== undefined;
    const rowSelection = isControlled

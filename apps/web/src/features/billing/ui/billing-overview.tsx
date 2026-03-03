@@ -1,13 +1,10 @@
 import { format, fromMinorUnits, of } from "@f-o-t/money";
-import {
-   PLATFORM_ADDONS,
-   PlanName,
-   STRIPE_PLANS,
-} from "@packages/stripe/constants";
+import { AddonName, FREE_TIER_LIMITS } from "@packages/stripe/constants";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
    Card,
+   CardAction,
    CardContent,
    CardDescription,
    CardHeader,
@@ -25,10 +22,8 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import {
-   type FeatureStage,
-   FeatureStageBadge,
-} from "@packages/ui/components/feature-stage-badge";
+import type { FeatureStage } from "@packages/ui/components/feature-stage-badge";
+import { FeatureStageBadge } from "@packages/ui/components/feature-stage-badge";
 import { Progress } from "@packages/ui/components/progress";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import {
@@ -40,23 +35,22 @@ import {
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import {
-   BarChart3,
    Briefcase,
+   Building2,
    Calendar,
    Check,
    ChevronRight,
+   Coins,
    CreditCard,
-   Crown,
    ExternalLink,
-   FileInput,
-   Globe,
-   HardDrive,
+   FileCheck,
+   FileText,
    HelpCircle,
-   Network,
    Package,
    Receipt,
-   Search,
    Sparkles,
+   TrendingUp,
+   Users,
    Webhook,
    Zap,
 } from "lucide-react";
@@ -96,46 +90,45 @@ const CATEGORY_CONFIG: Record<
    string,
    { label: string; description: string; icon: ReactNode }
 > = {
-   content: {
-      label: "Conteudo e Analytics",
-      description:
-         "Visualizacoes de pagina, engajamento e profundidade de scroll",
-      icon: <BarChart3 className="size-5" />,
+   finance: {
+      label: "Financeiro",
+      description: "Transacoes financeiras, contas bancarias e categorias",
+      icon: <Coins className="size-5" />,
    },
    ai: {
       label: "Inteligencia Artificial",
-      description: "Completamentos IA, mensagens de chat e acoes de agentes",
+      description: "Mensagens de chat IA e acoes de agentes",
       icon: <Sparkles className="size-5" />,
    },
-   form: {
-      label: "Formularios e Conversoes",
-      description: "Envios de formularios e rastreamento de conversoes",
-      icon: <FileInput className="size-5" />,
+   contact: {
+      label: "Contatos",
+      description: "Cadastro de pessoas e empresas",
+      icon: <Users className="size-5" />,
    },
-   seo: {
-      label: "SEO e Otimizacao",
-      description: "Analise SEO e recomendacoes de otimizacao",
-      icon: <Search className="size-5" />,
+   inventory: {
+      label: "Estoque",
+      description: "Produtos, materiais e controle de estoque",
+      icon: <Package className="size-5" />,
    },
-   experiment: {
-      label: "Experimentos",
-      description: "Testes A/B e experimentos de conteudo",
-      icon: <Globe className="size-5" />,
+   service: {
+      label: "Servicos",
+      description: "Prestacao de servicos e ordens de servico",
+      icon: <Briefcase className="size-5" />,
    },
-   cluster: {
-      label: "Clusters de Conteudo",
-      description: "Posts pillar, posts satelite e embeds de changelog",
-      icon: <Network className="size-5" />,
+   nfe: {
+      label: "NF-e",
+      description: "Emissao e cancelamento de notas fiscais eletronicas",
+      icon: <FileText className="size-5" />,
+   },
+   document: {
+      label: "Assinatura Digital",
+      description: "Assinaturas eletrônicas de documentos",
+      icon: <FileCheck className="size-5" />,
    },
    webhook: {
       label: "Webhooks",
       description: "Entregas de webhook e notificacoes externas",
       icon: <Webhook className="size-5" />,
-   },
-   service: {
-      label: "Serviços",
-      description: "Assinaturas, cobranças recorrentes e receita de serviços",
-      icon: <Briefcase className="size-5" />,
    },
 };
 
@@ -150,40 +143,19 @@ const EARLY_ACCESS_CATEGORY_GATES: Record<
    string,
    { flag: string; fallbackStage: FeatureStage }
 > = {
-   content: { flag: "content", fallbackStage: "alpha" },
-   form: { flag: "forms-beta", fallbackStage: "beta" },
-   experiment: { flag: "experiments", fallbackStage: "alpha" },
-   cluster: { flag: "content-clusters", fallbackStage: "alpha" },
-   service: { flag: "services", fallbackStage: "alpha" },
-};
-
-// Volume-based (non-event) early access features.
-// To add a new one: add one entry here — it shows up automatically when enrolled.
-const VOLUME_FEATURE_CONFIG: Record<
-   string,
-   {
-      label: string;
-      description: string;
-      icon: ReactNode;
-      priceLabel: string;
-      unit: string;
-      fallbackStage: FeatureStage;
-   }
-> = {
-   // Asset storage: Railway cost $0.15/GB — charged at R$ 1,50/GB/mês.
-   "asset-bank": {
-      label: "Banco de Imagens",
-      description: "Armazenamento de imagens e mídia",
-      icon: <HardDrive className="size-5" />,
-      priceLabel: "R$ 1,50",
-      unit: "GB/mês",
-      fallbackStage: "alpha",
-   },
+   nfe: { flag: "nfe", fallbackStage: "alpha" },
+   document: { flag: "document-signing", fallbackStage: "alpha" },
 };
 
 // ============================================
 // Helpers
 // ============================================
+
+function getCategoryFreeTier(category: string): number {
+   return Object.entries(FREE_TIER_LIMITS)
+      .filter(([key]) => key.startsWith(`${category}.`))
+      .reduce((sum, [, limit]) => sum + limit, 0);
+}
 
 function formatCurrency(value: number): string {
    return format(of(String(value), "BRL"), "pt-BR");
@@ -249,46 +221,34 @@ function CurrentBillHeader({ monthToDate }: { monthToDate: number }) {
 // Plan Banner
 // ============================================
 
-function PlanBanner({
-   planName,
-   planDisplayName,
-}: {
-   planName: string;
-   planDisplayName: string;
-}) {
+function PlanBanner({ addonName }: { addonName: string | null }) {
    const { slug, teamSlug } = useParams({
       from: "/_authenticated/$slug/$teamSlug/_dashboard",
    });
-   const isPro = planName === PlanName.PRO;
-   const isFree = planName === PlanName.FREE;
-   const PlanIcon = isPro ? Crown : Zap;
+
+   const addonLabel = addonName
+      ? addonName.charAt(0).toUpperCase() + addonName.slice(1)
+      : null;
 
    return (
       <div className="rounded-lg bg-card border p-5 flex items-start justify-between gap-4">
          <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-               <PlanIcon className="size-5 text-primary" />
-               <p className="font-semibold text-lg">Plano {planDisplayName}</p>
+               <Zap className="size-5 text-primary" />
+               <p className="font-semibold text-lg">
+                  {addonLabel ? `Addon ${addonLabel} ativo` : "Pay as you go"}
+               </p>
             </div>
-            {isFree ? (
-               <p className="text-sm text-muted-foreground">
-                  Voce esta no plano gratuito. Faca upgrade para ter mais
-                  creditos e recursos.
-               </p>
-            ) : (
-               <p className="text-sm text-muted-foreground">
-                  Seu plano inclui creditos mensais de IA e plataforma. Uso
-                  acima dos creditos e cobrado por evento.
-               </p>
-            )}
+            <p className="text-sm text-muted-foreground">
+               Cada funcionalidade é cobrada por uso. Limites gratuitos mensais
+               incluídos — pague apenas pelo excedente.
+            </p>
          </div>
-         {isFree && (
-            <Button asChild size="sm" variant="default">
-               <Link params={{ slug, teamSlug }} to="/$slug/$teamSlug/plans">
-                  Ver planos
-               </Link>
-            </Button>
-         )}
+         <Button asChild size="sm" variant="outline">
+            <Link params={{ slug, teamSlug }} to="/$slug/$teamSlug/plans">
+               Ver addons
+            </Link>
+         </Button>
       </div>
    );
 }
@@ -341,15 +301,17 @@ function OverviewProductSubItems({ category }: { category: string }) {
       orpc.billing.getCategoryUsage.queryOptions({
          input: {
             category: category as
-               | "content"
+               | "finance"
                | "ai"
-               | "form"
-               | "seo"
-               | "experiment"
                | "webhook"
-               | "cluster"
-               | "system"
-               | "service",
+               | "dashboard"
+               | "insight"
+               | "contact"
+               | "inventory"
+               | "service"
+               | "nfe"
+               | "document"
+               | "system",
          },
       }),
    );
@@ -462,29 +424,42 @@ function OverviewProductCard({
 
                      <div className="flex-1 flex items-center gap-6">
                         {/* Current usage */}
-                        <div className="text-sm">
+                        <div className="text-sm shrink-0">
                            <span className="text-muted-foreground">Atual</span>
                            <p className="font-medium tabular-nums">
                               {category.eventCount.toLocaleString("pt-BR")}
                            </p>
                         </div>
 
-                        {/* Progress bar area */}
-                        <div className="flex-1">
-                           <Progress
-                              className="h-2"
-                              value={
-                                 category.projectedCost > 0
-                                    ? Math.min(
-                                         (category.monthToDateCost /
-                                            category.projectedCost) *
-                                            100,
-                                         100,
-                                      )
-                                    : 0
-                              }
-                           />
-                        </div>
+                        {/* Progress bar + free tier label */}
+                        {(() => {
+                           const freeTier = getCategoryFreeTier(
+                              category.category,
+                           );
+                           return (
+                              <div className="flex-1 space-y-1 min-w-0">
+                                 <Progress
+                                    className="h-2"
+                                    value={
+                                       freeTier > 0
+                                          ? Math.min(
+                                             (category.eventCount /
+                                                freeTier) *
+                                             100,
+                                             100,
+                                          )
+                                          : 0
+                                    }
+                                 />
+                                 {freeTier > 0 && (
+                                    <p className="text-xs text-muted-foreground">
+                                       Limite gratuito:{" "}
+                                       {freeTier.toLocaleString("pt-BR")}
+                                    </p>
+                                 )}
+                              </div>
+                           );
+                        })()}
 
                         {/* Costs */}
                         <div className="flex items-center gap-6 shrink-0">
@@ -533,196 +508,97 @@ function OverviewProductCard({
    );
 }
 
-// ============================================
-// Volume Feature Card (non-event, e.g. storage)
-// ============================================
-
-function StorageUsageContent() {
-   const { data, isLoading } = useQuery(
-      orpc.billing.getStorageUsage.queryOptions({}),
-   );
-
-   if (isLoading) {
-      return <OverviewProductCardSkeleton />;
-   }
-
-   const currentGB = (data?.currentBytes ?? 0) / 1_073_741_824;
-
-   return (
-      <div className="space-y-3 pt-4">
-         <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Armazenamento atual</span>
-            <span className="tabular-nums font-medium">
-               {currentGB.toFixed(3)} GB
-            </span>
-         </div>
-         <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Custo no mês</span>
-            <span className="tabular-nums font-medium">
-               {formatCurrency(data?.monthToDateCost ?? 0)}
-            </span>
-         </div>
-         <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Projetado</span>
-            <span className="tabular-nums font-medium">
-               {formatCurrency(data?.projectedCost ?? 0)}
-            </span>
-         </div>
-      </div>
-   );
+interface AddonDef {
+   name: AddonName;
+   displayName: string;
+   description: string;
+   price: string;
+   perUnit: string;
+   features: string[];
+   icon: ReactNode;
 }
 
-function VolumeFeatureCard({
-   config,
-   stage,
-   enrolled = true,
-}: {
-   config: (typeof VOLUME_FEATURE_CONFIG)[string];
-   stage: FeatureStage;
-   enrolled?: boolean;
-}) {
-   const { slug, teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
+const ADDON_DEFS: AddonDef[] = [
+   {
+      name: AddonName.BOOST,
+      displayName: "Boost",
+      description: "Limites ampliados para equipes em crescimento",
+      price: "R$ 199",
+      perUnit: "/mês",
+      features: [
+         "Limites 5× maiores em todos os módulos",
+         "Suporte prioritário",
+         "Acesso antecipado a novas funcionalidades",
+      ],
+      icon: <Zap className="size-4" />,
+   },
+   {
+      name: AddonName.SCALE,
+      displayName: "Scale",
+      description: "Para operações de grande volume",
+      price: "R$ 599",
+      perUnit: "/mês",
+      features: [
+         "Limites 20× maiores em todos os módulos",
+         "SLA de suporte dedicado",
+         "Integrações avançadas",
+      ],
+      icon: <TrendingUp className="size-4" />,
+   },
+   {
+      name: AddonName.ENTERPRISE,
+      displayName: "Enterprise",
+      description: "Infraestrutura dedicada e customizações sob medida",
+      price: "R$ 2.500+",
+      perUnit: "/mês",
+      features: [
+         "Limites ilimitados",
+         "Deploy dedicado",
+         "Customizações sob medida",
+         "Suporte 24/7",
+      ],
+      icon: <Building2 className="size-4" />,
+   },
+];
+
+function AddonCard({ addon, active }: { addon: AddonDef; active: boolean }) {
    return (
-      <Card className={!enrolled ? "opacity-70" : ""}>
-         <Collapsible>
-            <CardHeader className="pb-3">
-               <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                     <div className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground shrink-0">
-                        {config.icon}
-                     </div>
-                     <div className="min-w-0">
-                        <CardTitle className="text-base">
-                           {config.label}
-                        </CardTitle>
-                        <CardDescription className="text-xs mt-0.5">
-                           {config.description}
-                        </CardDescription>
-                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                     <FeatureStageBadge stage={stage} />
-                     {!enrolled && (
-                        <Button asChild size="sm" variant="outline">
-                           <Link
-                              params={{ slug, teamSlug }}
-                              to="/$slug/$teamSlug/settings/feature-previews"
-                           >
-                              Ativar
-                           </Link>
-                        </Button>
-                     )}
-                  </div>
-               </div>
-            </CardHeader>
-            {enrolled && (
-               <CardContent>
-                  <div className="flex items-center gap-4">
-                     <CollapsibleTrigger className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors shrink-0">
-                        <ChevronRight className="size-4 transition-transform [[data-state=open]_&]:rotate-90" />
-                     </CollapsibleTrigger>
-                     <div className="flex-1 flex items-center gap-6">
-                        <div className="flex-1" />
-                        <div className="text-right shrink-0">
-                           <span className="text-lg font-semibold tabular-nums">
-                              {config.priceLabel}
-                           </span>
-                           <p className="text-xs text-muted-foreground">
-                              por {config.unit}
-                           </p>
-                        </div>
-                     </div>
-                  </div>
-                  <CollapsibleContent>
-                     <div className="border-t">
-                        <ErrorBoundary
-                           fallback={
-                              <p className="text-sm text-destructive py-3">
-                                 Erro ao carregar detalhes
-                              </p>
-                           }
-                        >
-                           <Suspense fallback={<OverviewProductCardSkeleton />}>
-                              <StorageUsageContent />
-                           </Suspense>
-                        </ErrorBoundary>
-                     </div>
-                  </CollapsibleContent>
-               </CardContent>
-            )}
-         </Collapsible>
-      </Card>
-   );
-}
-
-// ============================================
-// Addon Card
-// ============================================
-
-function AddonCard({
-   addon,
-   currentPlan,
-}: {
-   addon: (typeof PLATFORM_ADDONS)[number];
-   currentPlan: string;
-}) {
-   const isAvailable = addon.availableFor.includes(currentPlan as PlanName);
-
-   return (
-      <Card className={!isAvailable ? "opacity-60" : ""}>
+      <Card className={active ? "border-primary/60" : ""}>
          <CardHeader>
-            <div className="flex items-start justify-between gap-4">
-               <div className="flex items-start gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-                     <Package className="size-5" />
-                  </div>
-                  <div className="min-w-0">
-                     <CardTitle className="text-base">
-                        Addon {addon.displayName}
-                     </CardTitle>
-                     <CardDescription className="text-xs mt-0.5">
-                        {addon.description}
-                     </CardDescription>
-                  </div>
+            <CardTitle className="flex gap-2 items-center">
+               <div className="flex size-8 items-center justify-center rounded-lg bg-muted text-primary ">
+                  {addon.icon}
                </div>
-               <div className="text-right shrink-0">
-                  <p className="text-lg font-semibold">
+               <span>{addon.displayName} addon</span>
+            </CardTitle>
+            <CardDescription> {addon.description}</CardDescription>
+            <CardAction className="flex gap-2 items-center">
+               {active ? (
+                  <span className="text-sm text-primary font-medium">
+                     Ativo
+                  </span>
+               ) : (
+                  <span className="text-sm text-muted-foreground tabular-nums">
                      {addon.price}
-                     <span className="text-sm font-normal text-muted-foreground">
-                        {addon.perUnit}
-                     </span>
-                  </p>
-               </div>
-            </div>
+                     <span className="text-xs">{addon.perUnit}</span>
+                  </span>
+               )}
+               <Button size="sm" variant={active ? "outline" : "default"}>
+                  {active ? "Gerenciar" : "Contratar"}
+               </Button>
+            </CardAction>
          </CardHeader>
-         <CardContent className="space-y-4">
-            <div className="grid gap-2 sm:grid-cols-2">
+         <CardContent className=" space-y-4">
+            {/* Features */}
+            <p className="text-xs text-muted-foreground">Recursos incluídos:</p>
+            <div className="grid gap-4  md:grid-cols-2">
                {addon.features.map((feature) => (
                   <div className="flex items-center gap-2" key={feature}>
-                     <Check className="size-3.5 text-primary shrink-0" />
-                     <span className="text-sm text-muted-foreground">
-                        {feature}
-                     </span>
+                     <Check className="size-4 text-primary " />
+                     <span className="text-sm font-medium">{feature}</span>
                   </div>
                ))}
             </div>
-            {!isAvailable && (
-               <p className="text-xs text-muted-foreground">
-                  Disponível para planos:{" "}
-                  {addon.availableFor
-                     .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
-                     .join(", ")}
-               </p>
-            )}
-            <Button
-               disabled={!isAvailable}
-               size="sm"
-               variant={isAvailable ? "default" : "outline"}
-            >
-               {isAvailable ? "Conhecer addon" : "Indisponível no seu plano"}
-            </Button>
          </CardContent>
       </Card>
    );
@@ -789,8 +665,8 @@ function InvoicesPreviewContent() {
                invoice.status === "paid"
                   ? "Pago"
                   : invoice.status === "open"
-                    ? "Aberto"
-                    : (invoice.status ?? "—");
+                     ? "Aberto"
+                     : (invoice.status ?? "—");
 
             return (
                <div
@@ -809,7 +685,7 @@ function InvoicesPreviewContent() {
                      <Badge
                         className={
                            invoice.status === "paid"
-                              ? "bg-green-500/10 text-green-500 border-green-500/20"
+                              ? "bg-primary/10 text-primary border-primary/20"
                               : ""
                         }
                         variant={
@@ -851,11 +727,9 @@ export function BillingOverview() {
    const { activeSubscription } = useActiveOrganization();
    const { features, isEnrolled } = useEarlyAccess();
 
-   const planName = activeSubscription
+   const activeAddonName = activeSubscription
       ? (activeSubscription.plan as string).toLowerCase()
-      : PlanName.FREE;
-
-   const plan = STRIPE_PLANS.find((p) => p.name.toLowerCase() === planName);
+      : null;
 
    // Derive stage from PostHog feature config, fall back to local config.
    function resolveStage(
@@ -890,19 +764,13 @@ export function BillingOverview() {
       (a, b) => b.monthToDateCost - a.monthToDateCost,
    );
 
-   // Volume-based features: always show, enrolled state passed to card.
-   const allVolumeFeatures = Object.entries(VOLUME_FEATURE_CONFIG);
-
    return (
       <div className="space-y-6">
          {/* Top section: bill total + plan banner */}
          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <CurrentBillHeader monthToDate={data.monthToDate} />
             <div className="lg:max-w-md flex-1">
-               <PlanBanner
-                  planDisplayName={plan?.displayName ?? "Free"}
-                  planName={planName}
-               />
+               <PlanBanner addonName={activeAddonName} />
             </div>
          </div>
 
@@ -921,10 +789,10 @@ export function BillingOverview() {
          <div>
             <h2 className="text-lg font-semibold mb-4">Addons</h2>
             <div className="space-y-4">
-               {PLATFORM_ADDONS.map((addon) => (
+               {ADDON_DEFS.map((addon) => (
                   <AddonCard
+                     active={activeAddonName === addon.name}
                      addon={addon}
-                     currentPlan={planName}
                      key={addon.name}
                   />
                ))}
@@ -950,14 +818,6 @@ export function BillingOverview() {
                      />
                   );
                })}
-               {allVolumeFeatures.map(([flagKey, config]) => (
-                  <VolumeFeatureCard
-                     config={config}
-                     enrolled={isEnrolled(flagKey)}
-                     key={flagKey}
-                     stage={resolveStage(flagKey, config.fallbackStage)}
-                  />
-               ))}
             </div>
          </div>
 

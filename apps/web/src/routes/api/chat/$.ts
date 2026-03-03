@@ -5,11 +5,7 @@ import {
    handleWorkflowStream,
    mastra,
 } from "@packages/agents";
-import { AI_EVENTS, emitAiChatMessage } from "@packages/events/ai";
-import {
-   enforceCreditBudget,
-   trackCreditUsage,
-} from "@packages/events/credits";
+import { emitAiChatMessage } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
 import { createFileRoute } from "@tanstack/react-router";
 import type { ModelMessage } from "ai";
@@ -42,18 +38,6 @@ export const Route = createFileRoute("/api/chat/$")({
                thinkingBudget,
             } = body;
             const resourceId = `${teamId}:${userId}`;
-
-            // Credit enforcement — block if AI budget exhausted
-            if (organizationId) {
-               try {
-                  await enforceCreditBudget(db, organizationId, "ai");
-               } catch {
-                  return new Response(
-                     "Crédito de IA esgotado. Faça upgrade do seu plano para continuar.",
-                     { status: 402 },
-                  );
-               }
-            }
 
             function filterDataStreamParts() {
                return new TransformStream({
@@ -139,12 +123,6 @@ export const Route = createFileRoute("/api/chat/$")({
                         latencyMs: 0,
                      },
                   );
-                  void trackCreditUsage(
-                     db,
-                     AI_EVENTS["ai.chat_message"],
-                     organizationId,
-                     "ai",
-                  );
                }
 
                return createUIMessageStreamResponse({
@@ -196,12 +174,6 @@ export const Route = createFileRoute("/api/chat/$")({
                      totalTokens: 0,
                      latencyMs: 0,
                   },
-               );
-               void trackCreditUsage(
-                  db,
-                  AI_EVENTS["ai.chat_message"],
-                  organizationId,
-                  "ai",
                );
             }
 

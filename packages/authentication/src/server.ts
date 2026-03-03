@@ -8,7 +8,6 @@ import type { ServerEnv } from "@packages/environment/server";
 import { getElysiaPosthogConfig } from "@packages/posthog/server";
 import { createRedisConnection } from "@packages/redis/connection";
 import { getStripeClient } from "@packages/stripe";
-import { PlanName } from "@packages/stripe/constants";
 import {
    getResendClient,
    sendEmailOTP,
@@ -382,10 +381,31 @@ export function createAuth(config: SimplifiedAuthConfig) {
                   },
                }),
                plans: [
+                  // Platform addons
                   {
-                     annualDiscountPriceId: env.STRIPE_PRO_ANNUAL_PRICE_ID,
-                     name: PlanName.PRO,
-                     priceId: env.STRIPE_PRO_PRICE_ID,
+                     name: "boost",
+                     priceId: env.STRIPE_BOOST_PRICE_ID,
+                  },
+                  {
+                     name: "scale",
+                     priceId: env.STRIPE_SCALE_PRICE_ID,
+                  },
+                  {
+                     name: "enterprise",
+                     priceId: env.STRIPE_ENTERPRISE_PRICE_ID,
+                  },
+                  // Messaging addons
+                  {
+                     name: "telegram",
+                     priceId: env.STRIPE_TELEGRAM_PRICE_ID,
+                  },
+                  {
+                     name: "whatsapp",
+                     priceId: env.STRIPE_WHATSAPP_PRICE_ID,
+                  },
+                  {
+                     name: "mensageria-bundle",
+                     priceId: env.STRIPE_MENSAGERIA_BUNDLE_PRICE_ID,
                   },
                ],
             },

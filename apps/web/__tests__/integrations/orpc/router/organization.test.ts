@@ -22,18 +22,10 @@ vi.mock("@packages/files/client", () => ({
 	generatePresignedPutUrl: vi.fn(),
 }));
 vi.mock("@packages/database/repositories/auth-repository");
-vi.mock("@packages/events/credits");
 vi.mock("@packages/database/schemas/auth", () => ({
 	member: { userId: "userId", organizationId: "organizationId", role: "role" },
 	organization: { id: "id", name: "name", slug: "slug", logo: "logo" },
 }));
-vi.mock("@packages/stripe/constants", () => ({
-	PlanName: { FREE: "free", LITE: "lite", PRO: "pro" },
-	getEffectiveProjectLimit: vi.fn().mockReturnValue(5),
-}));
-
-import { resolveOrganizationPlan } from "@packages/events/credits";
-import { getEffectiveProjectLimit } from "@packages/stripe/constants";
 
 import * as orgRouter from "@/integrations/orpc/router/organization";
 
@@ -126,8 +118,6 @@ describe("getActiveOrganization", () => {
 			{ id: "team-1" },
 			{ id: "team-2" },
 		]);
-		vi.mocked(resolveOrganizationPlan).mockResolvedValueOnce("pro" as any);
-		vi.mocked(getEffectiveProjectLimit).mockReturnValueOnce(10);
 
 		const ctx = createOrgContext();
 		const result = await call(orgRouter.getActiveOrganization, undefined, { context: ctx });
@@ -139,7 +129,7 @@ describe("getActiveOrganization", () => {
 		expect(result).toEqual({
 			...fullOrg,
 			activeSubscription: { id: "sub_1", status: "active", plan: "pro" },
-			projectLimit: 10,
+			projectLimit: Number.POSITIVE_INFINITY,
 			projectCount: 2,
 		});
 	});
@@ -169,7 +159,7 @@ describe("getActiveOrganization", () => {
 		expect(mockAuth.api.listActiveSubscriptions).not.toHaveBeenCalled();
 	});
 
-	it("defaults to FREE plan when no active subscription exists", async () => {
+	it("returns unlimited projectLimit when no active subscription exists", async () => {
 		const fullOrg = {
 			id: TEST_ORG_ID,
 			name: "Test Org",
@@ -181,8 +171,6 @@ describe("getActiveOrganization", () => {
 			{ id: "sub_1", status: "canceled", plan: "pro" },
 		]);
 		mockAuth.api.listOrganizationTeams.mockResolvedValueOnce([]);
-		vi.mocked(resolveOrganizationPlan).mockResolvedValueOnce("free" as any);
-		vi.mocked(getEffectiveProjectLimit).mockReturnValueOnce(3);
 
 		const ctx = createOrgContext();
 		const result = await call(orgRouter.getActiveOrganization, undefined, { context: ctx });
@@ -190,7 +178,7 @@ describe("getActiveOrganization", () => {
 		expect(result).toEqual({
 			...fullOrg,
 			activeSubscription: null,
-			projectLimit: 3,
+			projectLimit: Number.POSITIVE_INFINITY,
 			projectCount: 0,
 		});
 	});

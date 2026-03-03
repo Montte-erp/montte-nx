@@ -1,5 +1,10 @@
 import type { ScopeAccess } from "@packages/database/schemas/personal-api-key";
 import { Button } from "@packages/ui/components/button";
+import {
+   CredenzaDescription,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Input } from "@packages/ui/components/input";
 import { Label } from "@packages/ui/components/label";
 import {
@@ -10,11 +15,6 @@ import {
    SelectValue,
 } from "@packages/ui/components/select";
 import { Separator } from "@packages/ui/components/separator";
-import {
-   CredenzaDescription,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
 import { Spinner } from "@packages/ui/components/spinner";
 import {
    Tabs,

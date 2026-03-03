@@ -1,12 +1,12 @@
 import { Button } from "@packages/ui/components/button";
-import { Input } from "@packages/ui/components/input";
-import { Label } from "@packages/ui/components/label";
-import { MultiSelect } from "@packages/ui/components/multi-select";
 import {
    CredenzaDescription,
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
+import { Input } from "@packages/ui/components/input";
+import { Label } from "@packages/ui/components/label";
+import { MultiSelect } from "@packages/ui/components/multi-select";
 import { Spinner } from "@packages/ui/components/spinner";
 import { Switch } from "@packages/ui/components/switch";
 import { Textarea } from "@packages/ui/components/textarea";

@@ -125,42 +125,42 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
    return (
       <SidebarManagerProvider>
-            <SidebarProvider
-               className="h-svh"
-               onOpenChange={handleSidebarChange}
-               open={sidebarOpen}
+         <SidebarProvider
+            className="h-svh"
+            onOpenChange={handleSidebarChange}
+            open={sidebarOpen}
+         >
+            <SidebarManager
+               name="main"
+               style={
+                  {
+                     "--sidebar-width": "28rem",
+                  } as React.CSSProperties
+               }
             >
-               <SidebarManager
-                  name="main"
-                  style={
-                     {
-                        "--sidebar-width": "28rem",
-                     } as React.CSSProperties
-                  }
-               >
-                  <AppSidebar />
-               </SidebarManager>
+               <AppSidebar />
+            </SidebarManager>
 
-               <SidebarInset className="flex flex-col overflow-hidden bg-sidebar">
-                  <SidebarSubPanel />
-                  <div className=" flex flex-1 flex-col overflow-hidden rounded-xl bg-background">
-                     <main
-                        className={cn(
-                           "relative flex-1",
-                           isChatPage
-                              ? "overflow-hidden "
-                              : isSettingsPage
-                                ? "overflow-hidden p-4"
-                                : "overflow-y-auto p-4",
-                        )}
-                     >
-                        {children}
-                     </main>
-                  </div>
-                  <AutoBugReporter />
-               </SidebarInset>
-               <GlobalContextPanel />
-            </SidebarProvider>
+            <SidebarInset className="flex flex-col overflow-hidden bg-sidebar">
+               <SidebarSubPanel />
+               <div className=" flex flex-1 flex-col overflow-hidden rounded-xl bg-background">
+                  <main
+                     className={cn(
+                        "relative flex-1",
+                        isChatPage
+                           ? "overflow-hidden "
+                           : isSettingsPage
+                             ? "overflow-hidden p-4"
+                             : "overflow-y-auto p-4",
+                     )}
+                  >
+                     {children}
+                  </main>
+               </div>
+               <AutoBugReporter />
+            </SidebarInset>
+            <GlobalContextPanel />
+         </SidebarProvider>
       </SidebarManagerProvider>
    );
 }

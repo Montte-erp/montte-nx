@@ -12,8 +12,11 @@ import {
    createWebhookDeliveryQueue,
    type WebhookDeliveryJobData,
 } from "@packages/queue/webhook-delivery";
+import type { StripeClient } from "@packages/stripe";
+import { STRIPE_METER_EVENTS } from "@packages/stripe/constants";
 import type { Queue } from "bullmq";
 import type { EmitFn, EventCategory } from "./catalog";
+import { incrementUsage, isWithinFreeTier } from "./credits";
 import { getEventPrice } from "./utils";
 
 export interface EmitEventParams {
@@ -28,10 +31,18 @@ export interface EmitEventParams {
    ipAddress?: string;
    userAgent?: string;
    priceOverride?: Money;
+   stripeClient?: StripeClient;
+   stripeCustomerId?: string;
 }
 
-export function createEmitFn(db: DatabaseInstance, posthog?: PostHog): EmitFn {
-   return (params) => emitEvent({ ...params, db, posthog });
+export function createEmitFn(
+   db: DatabaseInstance,
+   posthog?: PostHog,
+   stripeClient?: StripeClient,
+   stripeCustomerId?: string,
+): EmitFn {
+   return (params) =>
+      emitEvent({ ...params, db, posthog, stripeClient, stripeCustomerId });
 }
 
 export interface EmitEventBatchParams {
@@ -83,8 +94,9 @@ function buildWebhookPayload(
  *
  * 1. Looks up the event price from the catalog.
  * 2. Inserts a row into the `events` table (billing source of truth).
- * 3. Sends a capture call to PostHog (analytics, optional).
- * 4. Triggers matching webhook deliveries via BullMQ (if initialized).
+ * 3. Increments the Redis usage counter; if over free tier, sends a Stripe Meter event.
+ * 4. Sends a capture call to PostHog (analytics, optional).
+ * 5. Triggers matching webhook deliveries via BullMQ (if initialized).
  *
  * **Non-throwing:** errors are logged but never propagated so that event
  * tracking cannot break the caller's main flow.
@@ -125,7 +137,37 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
          })
          .returning();
 
-      // 2. Send to PostHog for analytics (optional)
+      // 2. Track usage counter + send overage to Stripe Meters
+      if (isBillable) {
+         await incrementUsage(organizationId, eventName);
+         const withinFree = await isWithinFreeTier(organizationId, eventName);
+         const meterEventName = STRIPE_METER_EVENTS[eventName];
+         if (
+            !withinFree &&
+            meterEventName &&
+            params.stripeClient &&
+            params.stripeCustomerId
+         ) {
+            try {
+               await params.stripeClient.billing.meterEvents.create({
+                  event_name: meterEventName,
+                  payload: {
+                     stripe_customer_id: params.stripeCustomerId,
+                     value: "1",
+                  },
+                  timestamp: Math.floor(Date.now() / 1000),
+               });
+            } catch (stripeErr) {
+               console.error(
+                  `[Events] Failed to send meter event ${meterEventName} to Stripe:`,
+                  stripeErr,
+               );
+               // Don't throw — meter billing failure should not block the main flow
+            }
+         }
+      }
+
+      // 3. Send to PostHog for analytics (optional)
       if (posthog) {
          posthog.capture({
             distinctId: userId || organizationId,
@@ -138,7 +180,7 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
          });
       }
 
-      // 3. Trigger webhooks (failure-tolerant)
+      // 4. Trigger webhooks (failure-tolerant)
       if (webhookQueue && storedEvent) {
          try {
             const matchingWebhooks = await findMatchingWebhooks(

@@ -7,6 +7,7 @@ import {
 import { Input } from "@packages/ui/components/input";
 import { createSlug } from "@packages/utils/text";
 import { useForm } from "@tanstack/react-form";
+import { useMutation } from "@tanstack/react-query";
 import {
    type FormEvent,
    forwardRef,
@@ -19,7 +20,6 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
-import { useMutation } from "@tanstack/react-query";
 import type { AccountType } from "./account-type-step";
 import type { StepHandle, StepState } from "./step-handle";
 
@@ -66,7 +66,10 @@ export const WorkspaceStep = forwardRef<StepHandle, WorkspaceStepProps>(
                });
                console.log("[WorkspaceStep] setActive done");
 
-               console.log("[WorkspaceStep] Calling setActiveTeam:", result.teamId);
+               console.log(
+                  "[WorkspaceStep] Calling setActiveTeam:",
+                  result.teamId,
+               );
                await authClient.organization.setActiveTeam({
                   teamId: result.teamId,
                });

@@ -3,8 +3,8 @@ import { and, count, eq } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import {
    type ContactType,
-   type NewContact,
    contacts,
+   type NewContact,
    transactions,
 } from "../schema";
 

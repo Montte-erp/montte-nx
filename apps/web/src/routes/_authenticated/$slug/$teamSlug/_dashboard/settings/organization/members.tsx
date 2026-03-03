@@ -7,6 +7,11 @@ import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Card, CardContent } from "@packages/ui/components/card";
 import {
+   CredenzaDescription,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
+import {
    DataTable,
    type MobileCardRenderProps,
 } from "@packages/ui/components/data-table";
@@ -27,11 +32,6 @@ import {
    SelectValue,
 } from "@packages/ui/components/select";
 import { Separator } from "@packages/ui/components/separator";
-import {
-   CredenzaDescription,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
 import { getInitials } from "@packages/utils/text";

@@ -1,4 +1,4 @@
-import { ADDON_IDS } from "@packages/stripe/constants";
+import { AddonName } from "@packages/stripe/constants";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { createFileRoute } from "@tanstack/react-router";
 import { Globe } from "lucide-react";
@@ -14,7 +14,7 @@ export const Route = createFileRoute(
 });
 
 function AuthenticationPageContent() {
-   const hasEnterprise = useHasAddon(ADDON_IDS.ENTERPRISE);
+   const hasEnterprise = useHasAddon(AddonName.ENTERPRISE);
 
    if (hasEnterprise) {
       return <OrganizationAuthentication />;

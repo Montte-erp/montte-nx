@@ -8,8 +8,8 @@ import {
    uniqueIndex,
    uuid,
 } from "drizzle-orm/pg-core";
-import { transactions } from "./transactions";
 import { serviceSourceEnum } from "./enums";
+import { transactions } from "./transactions";
 
 export const contactTypeEnum = pgEnum("contact_type", [
    "cliente",
@@ -35,7 +35,7 @@ export const contacts = pgTable(
       documentType: contactDocumentTypeEnum("document_type"),
       notes: text("notes"),
       source: serviceSourceEnum("source").notNull().default("manual"),
-      externalId: text("external_id"),   // Asaas customer ID
+      externalId: text("external_id"), // Asaas customer ID
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
          .defaultNow(),

@@ -1,3 +1,4 @@
+import { convert, of } from "@f-o-t/uom";
 import { ORPCError } from "@orpc/server";
 import {
    adjustProductStock,
@@ -16,7 +17,6 @@ import {
    inventoryProducts,
    inventorySettings,
 } from "@packages/database/schemas/inventory";
-import { convert, of } from "@f-o-t/uom";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
@@ -41,7 +41,7 @@ function toBaseQty(
       const m = of(purchasedQty, purchaseUnit as any);
       // biome-ignore lint/suspicious/noExplicitAny: UOM unit symbols are dynamic
       const converted = convert(m, baseUnit as any);
-      return Number(converted.value) / Math.pow(10, converted.scale);
+      return Number(converted.value) / 10 ** converted.scale;
    } catch {
       return purchasedQty * factor;
    }
@@ -129,7 +129,9 @@ export const updateProduct = protectedProcedure
       const { id, ...data } = input;
       const product = await getInventoryProduct(db, id);
       if (!product || product.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", { message: "Produto não encontrado." });
+         throw new ORPCError("NOT_FOUND", {
+            message: "Produto não encontrado.",
+         });
       }
       return updateInventoryProduct(db, id, data);
    });
@@ -140,7 +142,9 @@ export const archiveProduct = protectedProcedure
       const { db, teamId } = context;
       const product = await getInventoryProduct(db, input.id);
       if (!product || product.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", { message: "Produto não encontrado." });
+         throw new ORPCError("NOT_FOUND", {
+            message: "Produto não encontrado.",
+         });
       }
       return archiveInventoryProduct(db, input.id);
    });
@@ -156,7 +160,9 @@ export const registerMovement = protectedProcedure
 
       const product = await getInventoryProduct(db, input.productId);
       if (!product || product.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", { message: "Produto não encontrado." });
+         throw new ORPCError("NOT_FOUND", {
+            message: "Produto não encontrado.",
+         });
       }
 
       const settings = await getInventorySettings(db, teamId);
@@ -185,8 +191,12 @@ export const registerMovement = protectedProcedure
                   amount: String(input.totalAmount),
                   date: input.date,
                   bankAccountId,
-                  creditCardId: input.creditCardId ?? settings?.purchaseCreditCardId ?? null,
-                  categoryId: input.categoryId ?? settings?.purchaseCategoryId ?? null,
+                  creditCardId:
+                     input.creditCardId ??
+                     settings?.purchaseCreditCardId ??
+                     null,
+                  categoryId:
+                     input.categoryId ?? settings?.purchaseCategoryId ?? null,
                   contactId: input.supplierId ?? null,
                   description: input.notes ?? null,
                });

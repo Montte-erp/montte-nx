@@ -1,5 +1,10 @@
 import { Badge } from "@packages/ui/components/badge";
 import {
+   CredenzaDescription,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
+import {
    Item,
    ItemActions,
    ItemContent,
@@ -9,11 +14,6 @@ import {
    ItemTitle,
 } from "@packages/ui/components/item";
 import { Separator } from "@packages/ui/components/separator";
-import {
-   CredenzaDescription,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
 import { formatDate } from "@packages/utils/date";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, Monitor, Trash2 } from "lucide-react";
@@ -106,7 +106,9 @@ export function SessionDetailsForm({
       <>
          <CredenzaHeader>
             <CredenzaTitle>Detalhes da Sessão</CredenzaTitle>
-            <CredenzaDescription>Informações sobre esta sessão</CredenzaDescription>
+            <CredenzaDescription>
+               Informações sobre esta sessão
+            </CredenzaDescription>
          </CredenzaHeader>
          <ItemGroup>
             {sessionDetails.map((detail) => (

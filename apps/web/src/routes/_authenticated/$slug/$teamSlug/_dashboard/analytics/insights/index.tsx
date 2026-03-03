@@ -26,18 +26,18 @@ import {
    Trash2,
    TrendingUp,
 } from "lucide-react";
-import { useMemo, useCallback, useTransition } from "react";
+import { useCallback, useMemo, useTransition } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
-import { ContextPanelAction } from "@/features/context-panel/context-panel-info";
-import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
 import { DEFAULT_KPI_CONFIG } from "@/features/analytics/hooks/use-insight-config";
-import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { orpc } from "@/integrations/orpc/client";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
+import { ContextPanelAction } from "@/features/context-panel/context-panel-info";
+import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { orpc } from "@/integrations/orpc/client";
 
 const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
    badgeLabel: "Analytics Avançado",

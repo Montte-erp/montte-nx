@@ -1,78 +1,54 @@
-import { parseDecimalToMinorUnits } from "@f-o-t/money";
 import type { DatabaseInstance } from "@packages/database/client";
-import { currentMonthUsageByCategory } from "@packages/database/schema";
+import { currentMonthUsageByEvent } from "@packages/database/schema";
+import { FREE_TIER_LIMITS } from "@packages/stripe/constants";
 import type { Redis } from "ioredis";
-import { type CreditPool, POOL_CATEGORIES } from "./credits";
-
-const PRICE_SCALE = 6;
 
 /**
- * Reconcile Redis credit counters with materialized view data.
+ * Reconcile Redis per-product usage counters with materialized view data.
  * Called hourly after refreshUsageViews().
  *
- * 1. Query current_month_usage_by_category for all orgs
- * 2. Sum costs by pool (ai vs platform) using POOL_CATEGORIES
- * 3. SET Redis counters to match (overwrite, not increment)
+ * 1. Query current_month_usage_by_event for all orgs
+ * 2. For each billable event, SET Redis counter to actual event count
+ * 3. Refresh TTL to end of current month
  */
-export async function reconcileCreditCounters(
+export async function reconcileUsageCounters(
    db: DatabaseInstance,
    redis: Redis,
 ): Promise<void> {
    const startTime = Date.now();
 
    try {
-      // Query all current month usage grouped by org and category
-      const rows = await db.select().from(currentMonthUsageByCategory);
+      // Query all current month usage grouped by org and event name
+      const rows = await db.select().from(currentMonthUsageByEvent);
 
-      // Group costs by organization and pool
-      const orgPoolCosts = new Map<string, Map<CreditPool, bigint>>();
+      // Only reconcile events that have a free tier limit (billable events)
+      const billableEventNames = new Set(Object.keys(FREE_TIER_LIMITS));
+
+      // Group counts by org + event
+      const orgEventCounts = new Map<string, Map<string, number>>();
 
       for (const row of rows) {
-         // Determine which pool this category belongs to
-         let pool: CreditPool | undefined;
-         for (const [p, categories] of Object.entries(POOL_CATEGORIES)) {
-            if (
-               categories.includes(
-                  row.eventCategory as (typeof categories)[number],
-               )
-            ) {
-               pool = p as CreditPool;
-               break;
-            }
-         }
-         if (!pool) continue;
+         if (!billableEventNames.has(row.eventName)) continue;
 
-         if (!orgPoolCosts.has(row.organizationId)) {
-            orgPoolCosts.set(row.organizationId, new Map());
+         if (!orgEventCounts.has(row.organizationId)) {
+            orgEventCounts.set(row.organizationId, new Map());
          }
-         const poolMap = orgPoolCosts.get(row.organizationId)!;
-
-         const currentCost = poolMap.get(pool) ?? 0n;
-         const rowCost = parseDecimalToMinorUnits(
-            row.monthToDateCost,
-            PRICE_SCALE,
-         );
-         poolMap.set(pool, currentCost + rowCost);
+         const eventMap = orgEventCounts.get(row.organizationId)!;
+         eventMap.set(row.eventName, row.eventCount);
       }
 
       // SET Redis counters to match materialized view data
       const pipeline = redis.pipeline();
 
-      for (const [orgId, poolMap] of orgPoolCosts) {
-         for (const [pool, costMinorUnits] of poolMap) {
-            const key = `credits:${orgId}:${pool}_used`;
-            pipeline.set(key, costMinorUnits.toString());
-            // Refresh TTL: end of current month + 1 day buffer
-            const now = new Date();
-            const endOfMonth = new Date(
-               now.getFullYear(),
-               now.getMonth() + 1,
-               1,
-            );
-            const endOfMonthPlusOneDay = new Date(
-               endOfMonth.getTime() + 24 * 60 * 60 * 1000,
-            );
-            const ttlMs = endOfMonthPlusOneDay.getTime() - now.getTime();
+      const now = new Date();
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const ttlMs =
+         new Date(endOfMonth.getTime() + 86_400_000).getTime() - now.getTime();
+
+      for (const [orgId, eventMap] of orgEventCounts) {
+         for (const [eventName, count] of eventMap) {
+            const key = `usage:${orgId}:${eventName}`;
+            pipeline.set(key, count.toString());
             pipeline.pexpire(key, ttlMs);
          }
       }
@@ -81,10 +57,10 @@ export async function reconcileCreditCounters(
 
       const duration = Date.now() - startTime;
       console.log(
-         `[Events] Reconciled credit counters for ${orgPoolCosts.size} organizations in ${duration}ms`,
+         `[Events] Reconciled usage counters for ${orgEventCounts.size} organizations in ${duration}ms`,
       );
    } catch (error) {
-      console.error("[Events] Failed to reconcile credit counters:", error);
+      console.error("[Events] Failed to reconcile usage counters:", error);
       throw error;
    }
 }

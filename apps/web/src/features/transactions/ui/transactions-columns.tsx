@@ -110,9 +110,7 @@ export function buildTransactionColumns(
          cell: ({ row }) => {
             const name = row.original.categoryName;
             if (!name)
-               return (
-                  <span className="text-xs text-muted-foreground">—</span>
-               );
+               return <span className="text-xs text-muted-foreground">—</span>;
             return <span className="text-sm">{name}</span>;
          },
       },
@@ -122,9 +120,7 @@ export function buildTransactionColumns(
          cell: ({ row }) => {
             const name = row.original.creditCardName;
             if (!name)
-               return (
-                  <span className="text-xs text-muted-foreground">—</span>
-               );
+               return <span className="text-xs text-muted-foreground">—</span>;
             return <span className="text-sm">{name}</span>;
          },
       },

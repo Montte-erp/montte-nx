@@ -2,12 +2,10 @@ import { ORPCError } from "@orpc/server";
 import { getOrganizationMembers } from "@packages/database/repositories/auth-repository";
 import { member, organization } from "@packages/database/schemas/auth";
 import { env as serverEnv } from "@packages/environment/server";
-import { resolveOrganizationPlan } from "@packages/events/credits";
 import {
    generatePresignedPutUrl,
    getMinioClient,
 } from "@packages/files/client";
-import { getEffectiveProjectLimit } from "@packages/stripe/constants";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { authenticatedProcedure, protectedProcedure } from "../server";
@@ -46,7 +44,7 @@ export const getOrganizations = authenticatedProcedure.handler(
  */
 export const getActiveOrganization = protectedProcedure.handler(
    async ({ context }) => {
-      const { auth, db, headers, session } = context;
+      const { auth, headers, session } = context;
 
       try {
          const organizationId = session.session.activeOrganizationId;
@@ -78,10 +76,6 @@ export const getActiveOrganization = protectedProcedure.handler(
                subscription.status === "trialing",
          );
 
-         // Resolve the organization's plan and calculate project limits
-         const plan = await resolveOrganizationPlan(db, organization.id);
-         const projectLimit = getEffectiveProjectLimit(plan, null);
-
          const teams = await auth.api.listOrganizationTeams({
             headers,
             query: { organizationId: organization.id },
@@ -91,7 +85,7 @@ export const getActiveOrganization = protectedProcedure.handler(
          return {
             ...organization,
             activeSubscription: activeSubscription ?? null,
-            projectLimit,
+            projectLimit: Number.POSITIVE_INFINITY,
             projectCount,
          };
       } catch (error) {

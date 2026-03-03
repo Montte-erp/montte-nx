@@ -12,8 +12,8 @@ import {
 import { contacts } from "./contacts";
 import {
    billingCycleEnum,
-   subscriptionStatusEnum,
    serviceSourceEnum,
+   subscriptionStatusEnum,
 } from "./enums";
 
 // ---------------------------------------------------------------------------

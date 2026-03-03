@@ -4,9 +4,14 @@ import { createDb } from "@packages/database/client";
 import { eventCatalog } from "@packages/database/schemas/event-catalog";
 import { AI_EVENTS } from "@packages/events/ai";
 import { EVENT_CATEGORIES } from "@packages/events/catalog";
+import { CONTACT_EVENTS } from "@packages/events/contact";
 import { DASHBOARD_EVENTS } from "@packages/events/dashboard";
+import { DOCUMENT_EVENTS } from "@packages/events/document";
 import { FINANCE_EVENTS } from "@packages/events/finance";
 import { INSIGHT_EVENTS } from "@packages/events/insight";
+import { INVENTORY_EVENTS } from "@packages/events/inventory";
+import { NFE_EVENTS } from "@packages/events/nfe";
+import { SERVICE_EVENTS } from "@packages/events/service";
 import { WEBHOOK_EVENTS } from "@packages/events/webhook";
 import chalk from "chalk";
 import { Command } from "commander";
@@ -28,29 +33,44 @@ interface EventPricing {
 
 const EVENT_PRICING: EventPricing[] = [
    // Finance
-   { eventName: FINANCE_EVENTS["finance.transaction_created"], category: EVENT_CATEGORIES.finance, pricePerEvent: "0.000500", freeTierLimit: 1_000, displayName: "Transaction Created", description: "Fired when a financial transaction is recorded.", isBillable: true },
-   { eventName: FINANCE_EVENTS["finance.transaction_updated"], category: EVENT_CATEGORIES.finance, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Transaction Updated", description: "Fired when a financial transaction is updated.", isBillable: false },
-   { eventName: FINANCE_EVENTS["finance.bank_account_connected"], category: EVENT_CATEGORIES.finance, pricePerEvent: "0.001000", freeTierLimit: 10, displayName: "Bank Account Connected", description: "Fired when a bank account is connected.", isBillable: true },
-   { eventName: FINANCE_EVENTS["finance.category_created"], category: EVENT_CATEGORIES.finance, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Category Created", description: "Fired when a spending category is created.", isBillable: false },
-   { eventName: FINANCE_EVENTS["finance.tag_created"], category: EVENT_CATEGORIES.finance, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Tag Created", description: "Fired when a transaction tag is created.", isBillable: false },
+   { eventName: FINANCE_EVENTS["finance.transaction_created"], category: EVENT_CATEGORIES.finance, pricePerEvent: "0.001000", freeTierLimit: 500, displayName: "Transação Financeira", description: "Registrada quando uma transação financeira é criada.", isBillable: true },
+   { eventName: FINANCE_EVENTS["finance.transaction_updated"], category: EVENT_CATEGORIES.finance, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Transação Atualizada", description: "Registrada quando uma transação financeira é atualizada.", isBillable: false },
+   { eventName: FINANCE_EVENTS["finance.bank_account_connected"], category: EVENT_CATEGORIES.finance, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Conta Bancária Conectada", description: "Registrada quando uma conta bancária é conectada.", isBillable: false },
+   { eventName: FINANCE_EVENTS["finance.category_created"], category: EVENT_CATEGORIES.finance, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Categoria Criada", description: "Registrada quando uma categoria financeira é criada.", isBillable: false },
+   { eventName: FINANCE_EVENTS["finance.tag_created"], category: EVENT_CATEGORIES.finance, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Tag Criada", description: "Registrada quando uma tag de transação é criada.", isBillable: false },
    // AI
-   { eventName: AI_EVENTS["ai.completion"], category: EVENT_CATEGORIES.ai, pricePerEvent: "0.003000", freeTierLimit: 100, displayName: "AI Completion (FIM)", description: "Tracks a single AI fill-in-the-middle completion.", isBillable: true },
-   { eventName: AI_EVENTS["ai.chat_message"], category: EVENT_CATEGORIES.ai, pricePerEvent: "0.020000", freeTierLimit: 50, displayName: "AI Chat Message", description: "Tracks a single AI chat message exchange.", isBillable: true },
-   { eventName: AI_EVENTS["ai.agent_action"], category: EVENT_CATEGORIES.ai, pricePerEvent: "0.040000", freeTierLimit: 20, displayName: "AI Agent Action", description: "Tracks a discrete action performed by an AI agent.", isBillable: true },
-   { eventName: AI_EVENTS["ai.image_generation"], category: EVENT_CATEGORIES.ai, pricePerEvent: "0.900000", freeTierLimit: 5, displayName: "AI Image Generation", description: "Tracks a single AI image generation request.", isBillable: true },
+   { eventName: AI_EVENTS["ai.chat_message"], category: EVENT_CATEGORIES.ai, pricePerEvent: "0.020000", freeTierLimit: 20, displayName: "Mensagem de Chat IA", description: "Registrada por mensagem no chat com a IA.", isBillable: true },
+   { eventName: AI_EVENTS["ai.agent_action"], category: EVENT_CATEGORIES.ai, pricePerEvent: "0.040000", freeTierLimit: 5, displayName: "Ação de Agente IA", description: "Registrada por ação discreta de um agente IA.", isBillable: true },
    // Webhooks
-   { eventName: WEBHOOK_EVENTS["webhook.endpoint.created"], category: EVENT_CATEGORIES.webhook, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Webhook Endpoint Created", description: "Fired when a webhook endpoint is created.", isBillable: false },
-   { eventName: WEBHOOK_EVENTS["webhook.endpoint.updated"], category: EVENT_CATEGORIES.webhook, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Webhook Endpoint Updated", description: "Fired when a webhook endpoint configuration is updated.", isBillable: false },
-   { eventName: WEBHOOK_EVENTS["webhook.endpoint.deleted"], category: EVENT_CATEGORIES.webhook, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Webhook Endpoint Deleted", description: "Fired when a webhook endpoint is deleted.", isBillable: false },
-   { eventName: WEBHOOK_EVENTS["webhook.delivered"], category: EVENT_CATEGORIES.webhook, pricePerEvent: "0.000500", freeTierLimit: 500, displayName: "Webhook Delivered", description: "Fired when a webhook payload is delivered to an endpoint.", isBillable: true },
+   { eventName: WEBHOOK_EVENTS["webhook.endpoint.created"], category: EVENT_CATEGORIES.webhook, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Endpoint Criado", description: "Registrada quando um endpoint de webhook é criado.", isBillable: false },
+   { eventName: WEBHOOK_EVENTS["webhook.endpoint.updated"], category: EVENT_CATEGORIES.webhook, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Endpoint Atualizado", description: "Registrada quando um endpoint de webhook é atualizado.", isBillable: false },
+   { eventName: WEBHOOK_EVENTS["webhook.endpoint.deleted"], category: EVENT_CATEGORIES.webhook, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Endpoint Deletado", description: "Registrada quando um endpoint de webhook é deletado.", isBillable: false },
+   { eventName: WEBHOOK_EVENTS["webhook.delivered"], category: EVENT_CATEGORIES.webhook, pricePerEvent: "0.000500", freeTierLimit: 500, displayName: "Webhook Entregue", description: "Registrada por entrega bem-sucedida de webhook.", isBillable: true },
    // Dashboards
-   { eventName: DASHBOARD_EVENTS["dashboard.created"], category: EVENT_CATEGORIES.dashboard, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Dashboard Created", description: "Fired when a new dashboard is created.", isBillable: false },
-   { eventName: DASHBOARD_EVENTS["dashboard.updated"], category: EVENT_CATEGORIES.dashboard, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Dashboard Updated", description: "Fired when a dashboard configuration is updated.", isBillable: false },
-   { eventName: DASHBOARD_EVENTS["dashboard.deleted"], category: EVENT_CATEGORIES.dashboard, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Dashboard Deleted", description: "Fired when a dashboard is deleted.", isBillable: false },
+   { eventName: DASHBOARD_EVENTS["dashboard.created"], category: EVENT_CATEGORIES.dashboard, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Dashboard Criado", description: "Registrada quando um novo dashboard é criado.", isBillable: false },
+   { eventName: DASHBOARD_EVENTS["dashboard.updated"], category: EVENT_CATEGORIES.dashboard, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Dashboard Atualizado", description: "Registrada quando um dashboard é atualizado.", isBillable: false },
+   { eventName: DASHBOARD_EVENTS["dashboard.deleted"], category: EVENT_CATEGORIES.dashboard, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Dashboard Deletado", description: "Registrada quando um dashboard é deletado.", isBillable: false },
    // Insights
-   { eventName: INSIGHT_EVENTS["insight.created"], category: EVENT_CATEGORIES.insight, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Insight Created", description: "Fired when a new insight is created.", isBillable: false },
-   { eventName: INSIGHT_EVENTS["insight.updated"], category: EVENT_CATEGORIES.insight, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Insight Updated", description: "Fired when an insight is updated.", isBillable: false },
-   { eventName: INSIGHT_EVENTS["insight.deleted"], category: EVENT_CATEGORIES.insight, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Insight Deleted", description: "Fired when an insight is deleted.", isBillable: false },
+   { eventName: INSIGHT_EVENTS["insight.created"], category: EVENT_CATEGORIES.insight, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Insight Criado", description: "Registrada quando um novo insight é criado.", isBillable: false },
+   { eventName: INSIGHT_EVENTS["insight.updated"], category: EVENT_CATEGORIES.insight, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Insight Atualizado", description: "Registrada quando um insight é atualizado.", isBillable: false },
+   { eventName: INSIGHT_EVENTS["insight.deleted"], category: EVENT_CATEGORIES.insight, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Insight Deletado", description: "Registrada quando um insight é deletado.", isBillable: false },
+   // Contacts
+   { eventName: CONTACT_EVENTS["contact.created"], category: EVENT_CATEGORIES.contact, pricePerEvent: "0.010000", freeTierLimit: 50, displayName: "Contato Criado", description: "Registrada quando um contato é criado.", isBillable: true },
+   { eventName: CONTACT_EVENTS["contact.updated"], category: EVENT_CATEGORIES.contact, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Contato Atualizado", description: "Registrada quando um contato é atualizado.", isBillable: false },
+   { eventName: CONTACT_EVENTS["contact.deleted"], category: EVENT_CATEGORIES.contact, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Contato Deletado", description: "Registrada quando um contato é deletado.", isBillable: false },
+   // Inventory
+   { eventName: INVENTORY_EVENTS["inventory.item_created"], category: EVENT_CATEGORIES.inventory, pricePerEvent: "0.010000", freeTierLimit: 50, displayName: "Item de Estoque Criado", description: "Registrada quando um item de estoque é criado.", isBillable: true },
+   { eventName: INVENTORY_EVENTS["inventory.item_updated"], category: EVENT_CATEGORIES.inventory, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Item Atualizado", description: "Registrada quando um item de estoque é atualizado.", isBillable: false },
+   { eventName: INVENTORY_EVENTS["inventory.item_deleted"], category: EVENT_CATEGORIES.inventory, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Item Deletado", description: "Registrada quando um item de estoque é deletado.", isBillable: false },
+   // Services
+   { eventName: SERVICE_EVENTS["service.created"], category: EVENT_CATEGORIES.service, pricePerEvent: "0.010000", freeTierLimit: 20, displayName: "Serviço Criado", description: "Registrada quando um serviço é criado.", isBillable: true },
+   { eventName: SERVICE_EVENTS["service.updated"], category: EVENT_CATEGORIES.service, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Serviço Atualizado", description: "Registrada quando um serviço é atualizado.", isBillable: false },
+   { eventName: SERVICE_EVENTS["service.deleted"], category: EVENT_CATEGORIES.service, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Serviço Deletado", description: "Registrada quando um serviço é deletado.", isBillable: false },
+   // NF-e
+   { eventName: NFE_EVENTS["nfe.emitted"], category: EVENT_CATEGORIES.nfe, pricePerEvent: "0.150000", freeTierLimit: 5, displayName: "NF-e Emitida", description: "Registrada por emissão de nota fiscal eletrônica.", isBillable: true },
+   { eventName: NFE_EVENTS["nfe.cancelled"], category: EVENT_CATEGORIES.nfe, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "NF-e Cancelada", description: "Registrada quando uma NF-e é cancelada.", isBillable: false },
+   // Document Signature
+   { eventName: DOCUMENT_EVENTS["document.signed"], category: EVENT_CATEGORIES.document, pricePerEvent: "0.100000", freeTierLimit: 10, displayName: "Documento Assinado", description: "Registrada por assinatura digital de documento.", isBillable: true },
 ];
 
 function toSeedEntry(pricing: EventPricing) {

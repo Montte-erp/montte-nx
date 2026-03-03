@@ -199,15 +199,17 @@ export const getCategoryUsage = protectedProcedure
    .input(
       z.object({
          category: z.enum([
-            "content",
+            "finance",
             "ai",
-            "form",
-            "seo",
-            "experiment",
             "webhook",
-            "cluster",
-            "system",
+            "dashboard",
+            "insight",
+            "contact",
+            "inventory",
             "service",
+            "nfe",
+            "document",
+            "system",
          ]),
       }),
    )

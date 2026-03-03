@@ -244,8 +244,9 @@ export function SettingsSidebar({ search }: { search: string }) {
    });
    const { pathname } = useLocation();
 
-   const filteredSections = settingsNavSections
-      .map((section) => filterSection(section, search));
+   const filteredSections = settingsNavSections.map((section) =>
+      filterSection(section, search),
+   );
 
    return (
       <>

@@ -81,10 +81,10 @@ function EstoqueSettingsForm() {
             <div className="space-y-1.5">
                <Label>Conta bancária padrão (compras)</Label>
                <Select
-                  value={form.purchaseBankAccountId}
                   onValueChange={(v) =>
                      setForm((f) => ({ ...f, purchaseBankAccountId: v }))
                   }
+                  value={form.purchaseBankAccountId}
                >
                   <SelectTrigger>
                      <SelectValue placeholder="Selecionar conta…" />
@@ -102,10 +102,10 @@ function EstoqueSettingsForm() {
             <div className="space-y-1.5">
                <Label>Cartão de crédito padrão (compras)</Label>
                <Select
-                  value={form.purchaseCreditCardId}
                   onValueChange={(v) =>
                      setForm((f) => ({ ...f, purchaseCreditCardId: v }))
                   }
+                  value={form.purchaseCreditCardId}
                >
                   <SelectTrigger>
                      <SelectValue placeholder="Selecionar cartão…" />
@@ -123,10 +123,10 @@ function EstoqueSettingsForm() {
             <div className="space-y-1.5">
                <Label>Categoria para compras</Label>
                <Select
-                  value={form.purchaseCategoryId}
                   onValueChange={(v) =>
                      setForm((f) => ({ ...f, purchaseCategoryId: v }))
                   }
+                  value={form.purchaseCategoryId}
                >
                   <SelectTrigger>
                      <SelectValue placeholder="Selecionar categoria…" />
@@ -144,10 +144,10 @@ function EstoqueSettingsForm() {
             <div className="space-y-1.5">
                <Label>Categoria para vendas</Label>
                <Select
-                  value={form.saleCategoryId}
                   onValueChange={(v) =>
                      setForm((f) => ({ ...f, saleCategoryId: v }))
                   }
+                  value={form.saleCategoryId}
                >
                   <SelectTrigger>
                      <SelectValue placeholder="Selecionar categoria…" />
@@ -165,10 +165,10 @@ function EstoqueSettingsForm() {
             <div className="space-y-1.5">
                <Label>Categoria para descartes</Label>
                <Select
-                  value={form.wasteCategoryId}
                   onValueChange={(v) =>
                      setForm((f) => ({ ...f, wasteCategoryId: v }))
                   }
+                  value={form.wasteCategoryId}
                >
                   <SelectTrigger>
                      <SelectValue placeholder="Selecionar categoria…" />

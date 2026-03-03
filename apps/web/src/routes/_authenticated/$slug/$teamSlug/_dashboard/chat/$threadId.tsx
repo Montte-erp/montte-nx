@@ -22,13 +22,19 @@ export const Route = createFileRoute(
 });
 
 const QUICK_SUGGESTIONS = [
-   { label: "Resumo financeiro", prompt: "Mostre um resumo das minhas finanças de " },
+   {
+      label: "Resumo financeiro",
+      prompt: "Mostre um resumo das minhas finanças de ",
+   },
    {
       label: "Analisar gastos",
       prompt: "Analise meus gastos e sugira onde posso economizar: ",
    },
    { label: "Contas a pagar", prompt: "Quais são minhas contas a pagar em " },
-   { label: "Criar meta", prompt: "Me ajude a criar uma meta financeira para " },
+   {
+      label: "Criar meta",
+      prompt: "Me ajude a criar uma meta financeira para ",
+   },
    { label: "Relatório", prompt: "Gere um relatório financeiro do mês de " },
 ];
 

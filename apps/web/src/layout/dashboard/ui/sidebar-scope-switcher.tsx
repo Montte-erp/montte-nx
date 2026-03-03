@@ -366,155 +366,151 @@ function SidebarScopeSwitcherContent() {
                   <>
                      <DropdownMenuLabel className="flex items-center justify-between py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Projeto
-                           <button
-                              className="rounded p-0.5 transition-colors hover:bg-accent hover:text-accent-foreground"
-                              onClick={handleNewProject}
-                              title="Novo projeto"
-                              type="button"
-                           >
-                              <Plus className="size-3.5" />
-                           </button>
-                        </DropdownMenuLabel>
+                        <button
+                           className="rounded p-0.5 transition-colors hover:bg-accent hover:text-accent-foreground"
+                           onClick={handleNewProject}
+                           title="Novo projeto"
+                           type="button"
+                        >
+                           <Plus className="size-3.5" />
+                        </button>
+                     </DropdownMenuLabel>
 
-                        <DropdownMenuSub>
-                           <DropdownMenuSubTrigger className="gap-2">
-                              <span className="truncate font-medium">
-                                 {activeTeam?.name ?? "Sem projeto"}
+                     <DropdownMenuSub>
+                        <DropdownMenuSubTrigger className="gap-2">
+                           <span className="truncate font-medium">
+                              {activeTeam?.name ?? "Sem projeto"}
+                           </span>
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent className="min-w-52">
+                           {teams.map((team, index) => (
+                              <DropdownMenuItem
+                                 key={`team-${index + 1}`}
+                                 onSelect={() => handleTeamSwitch(team)}
+                              >
+                                 {team.id === activeTeam?.id ? (
+                                    <Check className="size-4 shrink-0" />
+                                 ) : (
+                                    <span className="size-4 shrink-0" />
+                                 )}
+                                 <span className="truncate">{team.name}</span>
+                              </DropdownMenuItem>
+                           ))}
+                           <DropdownMenuSeparator />
+                           <DropdownMenuItem
+                              onSelect={() => handleNewProject()}
+                           >
+                              <Plus className="size-4" />
+                              <span>
+                                 {projectLimit !== null &&
+                                 projectLimit !== Number.POSITIVE_INFINITY
+                                    ? `Novo projeto (${projectCount}/${projectLimit})`
+                                    : "Novo projeto"}
                               </span>
-                           </DropdownMenuSubTrigger>
-                           <DropdownMenuSubContent className="min-w-52">
-                              {teams.map((team, index) => (
-                                 <DropdownMenuItem
-                                    key={`team-${index + 1}`}
-                                    onSelect={() => handleTeamSwitch(team)}
-                                 >
-                                    {team.id === activeTeam?.id ? (
-                                       <Check className="size-4 shrink-0" />
-                                    ) : (
-                                       <span className="size-4 shrink-0" />
-                                    )}
-                                    <span className="truncate">
-                                       {team.name}
+                           </DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                     </DropdownMenuSub>
+
+                     <DropdownMenuItem asChild>
+                        <Link
+                           params={{ slug, teamSlug }}
+                           to="/$slug/$teamSlug/settings/organization/members"
+                        >
+                           <UserPlus className="size-4" />
+                           Convidar membros
+                        </Link>
+                     </DropdownMenuItem>
+
+                     <DropdownMenuItem asChild>
+                        <Link
+                           params={{ slug, teamSlug }}
+                           to="/$slug/$teamSlug/settings/project/general"
+                        >
+                           <Settings className="size-4" />
+                           Configurações do projeto
+                        </Link>
+                     </DropdownMenuItem>
+
+                     <DropdownMenuSeparator />
+
+                     {/* ── ORGANIZATION ── */}
+                     <DropdownMenuLabel className="flex items-center justify-between py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Organização
+                        <button
+                           className="rounded p-0.5 transition-colors hover:bg-accent hover:text-accent-foreground"
+                           onClick={handleNewOrganization}
+                           title="Nova organização"
+                           type="button"
+                        >
+                           <Plus className="size-3.5" />
+                        </button>
+                     </DropdownMenuLabel>
+
+                     <DropdownMenuSub>
+                        <DropdownMenuSubTrigger className="gap-2">
+                           <OrgAvatar
+                              logo={activeOrganization.logo}
+                              name={activeOrganization.name}
+                           />
+                           <span className="truncate font-medium">
+                              {activeOrganization.name}
+                           </span>
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent className="min-w-52">
+                           {organizationList.map((org, index) => (
+                              <DropdownMenuItem
+                                 key={`org-${index + 1}`}
+                                 onSelect={() => handleOrganizationSwitch(org)}
+                              >
+                                 {org.id === activeOrganization.id ? (
+                                    <Check className="size-4 shrink-0" />
+                                 ) : (
+                                    <span className="size-4 shrink-0" />
+                                 )}
+                                 <OrgAvatar
+                                    logo={org.logo}
+                                    name={org.name}
+                                    size="md"
+                                 />
+                                 <span className="truncate">{org.name}</span>
+                                 {org.role && (
+                                    <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                                       {org.role}
                                     </span>
-                                 </DropdownMenuItem>
-                              ))}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                 onSelect={() => handleNewProject()}
-                              >
-                                 <Plus className="size-4" />
-                                 <span>
-                                    {projectLimit !== null &&
-                                    projectLimit !== Number.POSITIVE_INFINITY
-                                       ? `Novo projeto (${projectCount}/${projectLimit})`
-                                       : "Novo projeto"}
-                                 </span>
+                                 )}
                               </DropdownMenuItem>
-                           </DropdownMenuSubContent>
-                        </DropdownMenuSub>
-
-                        <DropdownMenuItem asChild>
-                           <Link
-                              params={{ slug, teamSlug }}
-                              to="/$slug/$teamSlug/settings/organization/members"
+                           ))}
+                           <DropdownMenuSeparator />
+                           <DropdownMenuItem
+                              onSelect={() => handleNewOrganization()}
                            >
-                              <UserPlus className="size-4" />
-                              Convidar membros
-                           </Link>
-                        </DropdownMenuItem>
+                              <Plus className="size-4" />
+                              Nova organização
+                           </DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                     </DropdownMenuSub>
 
-                        <DropdownMenuItem asChild>
-                           <Link
-                              params={{ slug, teamSlug }}
-                              to="/$slug/$teamSlug/settings/project/general"
-                           >
-                              <Settings className="size-4" />
-                              Configurações do projeto
-                           </Link>
-                        </DropdownMenuItem>
+                     <DropdownMenuItem asChild>
+                        <Link
+                           params={{ slug, teamSlug }}
+                           to="/$slug/$teamSlug/billing"
+                        >
+                           <CreditCard className="size-4" />
+                           Cobrança & uso
+                        </Link>
+                     </DropdownMenuItem>
 
-                        <DropdownMenuSeparator />
+                     <DropdownMenuItem asChild>
+                        <Link
+                           params={{ slug, teamSlug }}
+                           to="/$slug/$teamSlug/settings/organization/general"
+                        >
+                           <Settings className="size-4" />
+                           Configurações da organização
+                        </Link>
+                     </DropdownMenuItem>
 
-                        {/* ── ORGANIZATION ── */}
-                        <DropdownMenuLabel className="flex items-center justify-between py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                           Organização
-                           <button
-                              className="rounded p-0.5 transition-colors hover:bg-accent hover:text-accent-foreground"
-                              onClick={handleNewOrganization}
-                              title="Nova organização"
-                              type="button"
-                           >
-                              <Plus className="size-3.5" />
-                           </button>
-                        </DropdownMenuLabel>
-
-                        <DropdownMenuSub>
-                           <DropdownMenuSubTrigger className="gap-2">
-                              <OrgAvatar
-                                 logo={activeOrganization.logo}
-                                 name={activeOrganization.name}
-                              />
-                              <span className="truncate font-medium">
-                                 {activeOrganization.name}
-                              </span>
-                           </DropdownMenuSubTrigger>
-                           <DropdownMenuSubContent className="min-w-52">
-                              {organizationList.map((org, index) => (
-                                 <DropdownMenuItem
-                                    key={`org-${index + 1}`}
-                                    onSelect={() =>
-                                       handleOrganizationSwitch(org)
-                                    }
-                                 >
-                                    {org.id === activeOrganization.id ? (
-                                       <Check className="size-4 shrink-0" />
-                                    ) : (
-                                       <span className="size-4 shrink-0" />
-                                    )}
-                                    <OrgAvatar
-                                       logo={org.logo}
-                                       name={org.name}
-                                       size="md"
-                                    />
-                                    <span className="truncate">{org.name}</span>
-                                    {org.role && (
-                                       <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-                                          {org.role}
-                                       </span>
-                                    )}
-                                 </DropdownMenuItem>
-                              ))}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                 onSelect={() => handleNewOrganization()}
-                              >
-                                 <Plus className="size-4" />
-                                 Nova organização
-                              </DropdownMenuItem>
-                           </DropdownMenuSubContent>
-                        </DropdownMenuSub>
-
-                        <DropdownMenuItem asChild>
-                           <Link
-                              params={{ slug, teamSlug }}
-                              to="/$slug/$teamSlug/billing"
-                           >
-                              <CreditCard className="size-4" />
-                              Cobrança & uso
-                           </Link>
-                        </DropdownMenuItem>
-
-                        <DropdownMenuItem asChild>
-                           <Link
-                              params={{ slug, teamSlug }}
-                              to="/$slug/$teamSlug/settings/organization/general"
-                           >
-                              <Settings className="size-4" />
-                              Configurações da organização
-                           </Link>
-                        </DropdownMenuItem>
-
-                        <DropdownMenuSeparator />
+                     <DropdownMenuSeparator />
                   </>
 
                   {/* ── ACCOUNT ── */}

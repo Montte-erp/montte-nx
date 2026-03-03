@@ -17,6 +17,10 @@ import {
 } from "@/features/analytics/hooks/use-insight-config";
 import { InsightBuilder } from "@/features/analytics/ui/insight-builder";
 import {
+   EarlyAccessBanner,
+   type EarlyAccessBannerTemplate,
+} from "@/features/billing/ui/early-access-banner";
+import {
    ContextPanelAction,
    ContextPanelDivider,
    ContextPanelMeta,
@@ -24,10 +28,6 @@ import {
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
-import {
-   EarlyAccessBanner,
-   type EarlyAccessBannerTemplate,
-} from "@/features/billing/ui/early-access-banner";
 
 const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
    badgeLabel: "Analytics Avançado",

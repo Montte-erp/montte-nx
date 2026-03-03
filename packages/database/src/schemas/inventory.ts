@@ -33,7 +33,9 @@ export const inventoryProducts = pgTable(
       purchaseUnitFactor: numeric("purchase_unit_factor", {
          precision: 12,
          scale: 4,
-      }).notNull().default("1"),
+      })
+         .notNull()
+         .default("1"),
       sellingPrice: numeric("selling_price", { precision: 12, scale: 2 }),
       currentStock: numeric("current_stock", { precision: 12, scale: 4 })
          .notNull()

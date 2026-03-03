@@ -113,7 +113,8 @@ function CategoriesList({ view }: CategoriesListProps) {
    const archiveMutation = useMutation(
       orpc.categories.archive.mutationOptions({
          onSuccess: () => toast.success("Categoria arquivada."),
-         onError: (e) => toast.error(e.message || "Erro ao arquivar categoria."),
+         onError: (e) =>
+            toast.error(e.message || "Erro ao arquivar categoria."),
       }),
    );
 
@@ -184,7 +185,11 @@ function CategoriesList({ view }: CategoriesListProps) {
       });
    }, [openAlertDialog, selectedIds, categories, deleteMutation, onClear]);
 
-   const columns = buildCategoryColumns(handleEdit, handleDelete, handleArchive);
+   const columns = buildCategoryColumns(
+      handleEdit,
+      handleDelete,
+      handleArchive,
+   );
 
    if (categories.length === 0) {
       return (

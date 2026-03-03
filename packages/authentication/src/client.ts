@@ -1,5 +1,5 @@
+import { apiKey } from "@better-auth/api-key";
 import { oauthProviderClient } from "@better-auth/oauth-provider/client";
-import { apiKey } from "@better-auth/api-key"
 import { stripeClient } from "@better-auth/stripe/client";
 import {
    adminClient,

@@ -17,12 +17,12 @@ const STAGE_CONFIG = {
    concept: {
       icon: Lightbulb,
       label: "Conceito",
-      className: "border-chart-4 bg-chart-4/30 text-foreground ",
+      className: "border-chart-3 bg-chart-3/30 text-foreground ",
    },
    "general-availability": {
       icon: CheckCircle2,
       label: "Disponível",
-      className: "border-chart-6 bg-chart-6/30 text-foreground ",
+      className: "border-chart-4 bg-chart-4/30 text-foreground ",
    },
 } as const;
 

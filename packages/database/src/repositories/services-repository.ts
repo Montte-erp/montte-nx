@@ -2,13 +2,13 @@ import { AppError, propagateError } from "@packages/utils/errors";
 import { and, count, eq, gte, lte } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import {
+   contactSubscriptions,
    type NewContactSubscription,
    type NewService,
    type NewServiceVariant,
    type SubscriptionStatus,
-   contactSubscriptions,
-   serviceVariants,
    services,
+   serviceVariants,
 } from "../schema";
 
 // ---------------------------------------------------------------------------

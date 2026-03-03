@@ -1,5 +1,5 @@
 import type { DatabaseInstance } from "@packages/database/client";
-import { reconcileCreditCounters } from "@packages/events/reconcile";
+import { reconcileUsageCounters } from "@packages/events/reconcile";
 import type { Redis } from "ioredis";
 
 export async function runReconcileCredits(
@@ -7,10 +7,10 @@ export async function runReconcileCredits(
 	redis: Redis,
 ): Promise<void> {
 	const startTime = Date.now();
-	console.log("[Worker] Starting credit counter reconciliation...");
+	console.log("[Worker] Starting usage counter reconciliation...");
 
-	await reconcileCreditCounters(db, redis);
+	await reconcileUsageCounters(db, redis);
 
 	const duration = Date.now() - startTime;
-	console.log(`[Worker] Credit counters reconciled in ${duration}ms`);
+	console.log(`[Worker] Usage counters reconciled in ${duration}ms`);
 }

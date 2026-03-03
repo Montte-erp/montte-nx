@@ -3,12 +3,12 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { DashboardView } from "@/features/analytics/ui/dashboard-view";
-import { setChatMode } from "@/features/teco-chat/stores/chat-context-store";
-import { orpc } from "@/integrations/orpc/client";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
+import { setChatMode } from "@/features/teco-chat/stores/chat-context-store";
+import { orpc } from "@/integrations/orpc/client";
 
 const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
    badgeLabel: "Analytics Avançado",

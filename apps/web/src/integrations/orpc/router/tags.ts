@@ -66,7 +66,8 @@ export const remove = protectedProcedure
       const hasTransactions = await tagHasTransactions(db, input.id);
       if (hasTransactions) {
          throw new ORPCError("BAD_REQUEST", {
-            message: "Não é possível excluir uma tag com transações vinculadas. Arquive-a em vez disso.",
+            message:
+               "Não é possível excluir uma tag com transações vinculadas. Arquive-a em vez disso.",
          });
       }
       await deleteTag(db, input.id);

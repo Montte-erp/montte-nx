@@ -45,8 +45,9 @@ export function IntegrationFeedbackCard() {
                      </Badge>
                   </div>
                   <CardDescription>
-                     Estamos construindo nosso ecossistema de integrações. Diga-nos quais
-                     ferramentas fariam mais diferença na sua operação.
+                     Estamos construindo nosso ecossistema de integrações.
+                     Diga-nos quais ferramentas fariam mais diferença na sua
+                     operação.
                   </CardDescription>
                </div>
             </div>
@@ -59,10 +60,12 @@ export function IntegrationFeedbackCard() {
                </p>
                <ul className="space-y-1.5 text-sm text-muted-foreground list-disc list-inside">
                   <li>
-                     Quais meios de pagamento você utiliza? (Asaas, Stripe, Mercado Pago...)
+                     Quais meios de pagamento você utiliza? (Asaas, Stripe,
+                     Mercado Pago...)
                   </li>
                   <li>
-                     Há alguma plataforma de e-commerce ou marketplace que precisa se conectar? (Shopify, Mercado Livre...)
+                     Há alguma plataforma de e-commerce ou marketplace que
+                     precisa se conectar? (Shopify, Mercado Livre...)
                   </li>
                   <li>
                      Qual integração desbloquearia mais valor na sua operação?

@@ -1,4 +1,4 @@
-import { ADDON_IDS } from "@packages/stripe/constants";
+import { AddonName } from "@packages/stripe/constants";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck } from "lucide-react";
@@ -16,7 +16,7 @@ export const Route = createFileRoute(
 function AccessControlPageContent() {
    const { currentTeam } = Route.useRouteContext();
    const teamId = currentTeam.id;
-   const hasBoost = useHasAddon(ADDON_IDS.BOOST);
+   const hasBoost = useHasAddon(AddonName.BOOST);
 
    if (hasBoost) {
       return <ProjectAccessControl teamId={teamId} />;

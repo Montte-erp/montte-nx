@@ -4,7 +4,11 @@ import type { DatabaseInstance } from "@packages/database/client";
 import { DEFAULT_INSIGHTS } from "@packages/database/default-insights";
 import { createDefaultInsights } from "@packages/database/repositories/dashboard-repository";
 import { getInsightById } from "@packages/database/repositories/insight-repository";
-import { organization, team, teamMember } from "@packages/database/schemas/auth";
+import {
+   organization,
+   team,
+   teamMember,
+} from "@packages/database/schemas/auth";
 import { categories } from "@packages/database/schemas/categories";
 import { dashboards } from "@packages/database/schemas/dashboards";
 import { insights } from "@packages/database/schemas/insights";
@@ -13,7 +17,6 @@ import { createSlug } from "@packages/utils/text";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { authenticatedProcedure, protectedProcedure } from "../server";
-
 
 async function runOnboardingCompletion(
    tx: DatabaseInstance,
@@ -64,7 +67,10 @@ async function runOnboardingCompletion(
       teamId,
       userId,
    );
-   console.log("[runOnboardingCompletion] Insights created:", insightIds.length);
+   console.log(
+      "[runOnboardingCompletion] Insights created:",
+      insightIds.length,
+   );
 
    for (const insightId of insightIds) {
       try {
@@ -339,8 +345,7 @@ export const fixOnboarding = authenticatedProcedure
       }
 
       return { orgSlug: org.slug, teamSlug: targetTeam.slug };
-   },
-);
+   });
 
 /**
  * Atomically merge a task ID into the team's onboardingTasks jsonb.

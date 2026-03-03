@@ -19,21 +19,21 @@ import {
 } from "@tanstack/react-router";
 import { ChevronRight, Search, Settings2 } from "lucide-react";
 import { useCallback } from "react";
-import { useEarlyAccess } from "@/hooks/use-early-access";
 import { useCredenza } from "@/hooks/use-credenza";
+import { useEarlyAccess } from "@/hooks/use-early-access";
+import { useFinanceNavPreferences } from "@/layout/dashboard/hooks/use-finance-nav-preferences";
 import type { SubSidebarSection } from "@/layout/dashboard/hooks/use-sidebar-nav";
 import {
    setActiveSection,
    useSidebarNav,
 } from "@/layout/dashboard/hooks/use-sidebar-nav";
-import { useFinanceNavPreferences } from "@/layout/dashboard/hooks/use-finance-nav-preferences";
 import { useSidebarVisibility } from "@/layout/dashboard/hooks/use-sidebar-visibility";
+import { SidebarNavConfigForm } from "@/layout/dashboard/ui/sidebar-nav-config-form";
 import type {
    NavGroupDef,
    NavItemDef,
 } from "@/layout/dashboard/ui/sidebar-nav-items";
 import { navGroups } from "@/layout/dashboard/ui/sidebar-nav-items";
-import { SidebarNavConfigForm } from "@/layout/dashboard/ui/sidebar-nav-config-form";
 
 function NavItem({
    item,
@@ -183,10 +183,12 @@ export function SidebarDefaultItems() {
    const { isVisible } = useSidebarVisibility();
 
    const mainGroup = navGroups.find((g) => !g.label);
-   const visibleMainItems = (mainGroup?.items ?? []).filter((item) => {
-      if (!item.earlyAccessFlag) return true;
-      return isEnrolled(item.earlyAccessFlag);
-   }).filter((item) => isVisible(item.id));
+   const visibleMainItems = (mainGroup?.items ?? [])
+      .filter((item) => {
+         if (!item.earlyAccessFlag) return true;
+         return isEnrolled(item.earlyAccessFlag);
+      })
+      .filter((item) => isVisible(item.id));
 
    const resolvedSlug = slug || pathname.split("/")[1] || "";
 
@@ -246,13 +248,16 @@ function NavGroup({
    const { isVisible } = useSidebarVisibility();
    const { isWanted } = useFinanceNavPreferences();
 
-   const visibleItems = group.items.filter((item) => {
-      if (!item.earlyAccessFlag) return true;
-      // Labeled groups (finance, erp) use the finance nav preferences hook,
-      // falling back to enrollment so existing enrolled users aren't affected.
-      if (group.label) return isWanted(item.id) || isEnrolled(item.earlyAccessFlag);
-      return isEnrolled(item.earlyAccessFlag);
-   }).filter((item) => isVisible(item.id));
+   const visibleItems = group.items
+      .filter((item) => {
+         if (!item.earlyAccessFlag) return true;
+         // Labeled groups (finance, erp) use the finance nav preferences hook,
+         // falling back to enrollment so existing enrolled users aren't affected.
+         if (group.label)
+            return isWanted(item.id) || isEnrolled(item.earlyAccessFlag);
+         return isEnrolled(item.earlyAccessFlag);
+      })
+      .filter((item) => isVisible(item.id));
 
    if (visibleItems.length === 0 && !onConfigure) return null;
 
@@ -309,18 +314,22 @@ export function SidebarNav() {
 
    return (
       <>
-         {navGroups.filter((g) => g.id !== "main").map((group) => (
-            <NavGroup
-               group={group}
-               isItemActive={isItemActive}
-               key={group.id}
-               onConfigure={group.id === "finance" ? handleConfigure : undefined}
-               onMainItemClick={handleMainItemClick}
-               onSubPanelToggle={handleSubPanelToggle}
-               slug={slug}
-               teamSlug={teamSlug ?? undefined}
-            />
-         ))}
+         {navGroups
+            .filter((g) => g.id !== "main")
+            .map((group) => (
+               <NavGroup
+                  group={group}
+                  isItemActive={isItemActive}
+                  key={group.id}
+                  onConfigure={
+                     group.id === "finance" ? handleConfigure : undefined
+                  }
+                  onMainItemClick={handleMainItemClick}
+                  onSubPanelToggle={handleSubPanelToggle}
+                  slug={slug}
+                  teamSlug={teamSlug ?? undefined}
+               />
+            ))}
       </>
    );
 }

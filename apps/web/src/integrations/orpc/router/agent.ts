@@ -14,11 +14,7 @@ import {
    getModelPreset,
 } from "@packages/agents/models";
 import { getProductSettings } from "@packages/database/repositories/product-settings-repository";
-import { AI_EVENTS, emitAiCompletion } from "@packages/events/ai";
-import {
-   enforceCreditBudget,
-   trackCreditUsage,
-} from "@packages/events/credits";
+import { emitAiChatMessage } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
@@ -86,8 +82,6 @@ export const copilotStream = protectedProcedure
    .handler(async function* ({ context, input }) {
       const { userId, db, organizationId, posthog, teamId, headers } = context;
 
-      await enforceCreditBudget(db, organizationId, "ai");
-
       // Fetch product settings for AI configuration
       const settings = await getProductSettings(db, teamId);
       const aiDefaults = settings?.aiDefaults ?? {};
@@ -146,26 +140,21 @@ export const copilotStream = protectedProcedure
 
          const latencyMs = Date.now() - startTime;
 
-         // Emit event and increment credit usage (failure-tolerant)
+         // Emit ai.chat_message event (failure-tolerant)
          try {
-            await emitAiCompletion(
+            await emitAiChatMessage(
                createEmitFn(db, posthog),
                { organizationId, userId, teamId },
                {
-                  model: "fimAgent",
+                  chatId: crypto.randomUUID(),
+                  model: autocompleteModelId,
                   provider: "openrouter",
+                  role: "assistant",
                   promptTokens: 0,
                   completionTokens: 0,
                   totalTokens: 0,
                   latencyMs,
-                  streamed: true,
                },
-            );
-            await trackCreditUsage(
-               db,
-               AI_EVENTS["ai.completion"],
-               organizationId,
-               "ai",
             );
          } catch {
             // Event tracking must not break the streaming flow
@@ -208,8 +197,6 @@ export const aiCommandStream = protectedProcedure
    )
    .handler(async function* ({ context, input }) {
       const { userId, db, organizationId, posthog, teamId, headers } = context;
-
-      await enforceCreditBudget(db, organizationId, "ai");
 
       // Fetch product settings for AI configuration
       const settings = await getProductSettings(db, teamId);
@@ -342,26 +329,21 @@ export const aiCommandStream = protectedProcedure
 
          const latencyMs = Date.now() - startTime;
 
-         // Emit event and increment credit usage (failure-tolerant)
+         // Emit ai.chat_message event (failure-tolerant)
          try {
-            await emitAiCompletion(
+            await emitAiChatMessage(
                createEmitFn(db, posthog),
                { organizationId, userId, teamId },
                {
-                  model: "unifiedContent",
+                  chatId: crypto.randomUUID(),
+                  model: contentModelId,
                   provider: "openrouter",
+                  role: "assistant",
                   promptTokens: 0,
                   completionTokens: 0,
                   totalTokens: 0,
                   latencyMs,
-                  streamed: true,
                },
-            );
-            await trackCreditUsage(
-               db,
-               AI_EVENTS["ai.completion"],
-               organizationId,
-               "ai",
             );
          } catch {
             // Event tracking must not break the streaming flow

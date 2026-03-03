@@ -1,4 +1,4 @@
-import { ADDON_IDS } from "@packages/stripe/constants";
+import { AddonName } from "@packages/stripe/constants";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { createFileRoute } from "@tanstack/react-router";
 import { ScrollText } from "lucide-react";
@@ -16,7 +16,7 @@ export const Route = createFileRoute(
 function ActivityLogsPageContent() {
    const { currentTeam } = Route.useRouteContext();
    const teamId = currentTeam.id;
-   const hasScale = useHasAddon(ADDON_IDS.SCALE);
+   const hasScale = useHasAddon(AddonName.SCALE);
 
    if (hasScale) {
       return <ProjectActivityLogs teamId={teamId} />;

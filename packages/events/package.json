@@ -60,6 +60,26 @@
       "./reconcile": {
          "default": "./src/reconcile.ts",
          "types": "./dist/src/reconcile.d.ts"
+      },
+      "./contact": {
+         "default": "./src/contact.ts",
+         "types": "./dist/src/contact.d.ts"
+      },
+      "./inventory": {
+         "default": "./src/inventory.ts",
+         "types": "./dist/src/inventory.d.ts"
+      },
+      "./service": {
+         "default": "./src/service.ts",
+         "types": "./dist/src/service.d.ts"
+      },
+      "./nfe": {
+         "default": "./src/nfe.ts",
+         "types": "./dist/src/nfe.d.ts"
+      },
+      "./document": {
+         "default": "./src/document.ts",
+         "types": "./dist/src/document.d.ts"
       }
    },
    "files": [

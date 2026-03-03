@@ -1,12 +1,12 @@
-import { ADDON_IDS, type AddonId } from "@packages/stripe/constants";
+import { AddonName } from "@packages/stripe/constants";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { orpc } from "@/integrations/orpc/client";
 
-export function useHasAddon(addonId: AddonId): boolean {
+export function useHasAddon(addonName: AddonName): boolean {
    const { data } = useSuspenseQuery(
       orpc.organization.hasAddon.queryOptions({
-         input: { addonId },
+         input: { addonId: addonName },
       }),
    );
 
@@ -25,9 +25,9 @@ export function useAddons() {
 
    return {
       addons,
-      hasAddon: (addonId: AddonId) => addonSet.has(addonId),
-      hasBoost: addonSet.has(ADDON_IDS.BOOST),
-      hasScale: addonSet.has(ADDON_IDS.SCALE),
-      hasEnterprise: addonSet.has(ADDON_IDS.ENTERPRISE),
+      hasAddon: (addonName: AddonName) => addonSet.has(addonName),
+      hasBoost: addonSet.has(AddonName.BOOST),
+      hasScale: addonSet.has(AddonName.SCALE),
+      hasEnterprise: addonSet.has(AddonName.ENTERPRISE),
    };
 }

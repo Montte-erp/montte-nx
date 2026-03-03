@@ -1,6 +1,5 @@
 import { ORPCError } from "@orpc/server";
 import { getBankAccount } from "@packages/database/repositories/bank-accounts-repository";
-import { getCategory } from "@packages/database/repositories/categories-repository";
 import {
    createBill,
    createBillsBatch,
@@ -10,6 +9,7 @@ import {
    listBills,
    updateBill,
 } from "@packages/database/repositories/bills-repository";
+import { getCategory } from "@packages/database/repositories/categories-repository";
 import {
    createTransaction,
    deleteTransaction,
@@ -220,8 +220,7 @@ export const create = protectedProcedure
 
          if (batchData.length === 0) {
             throw new ORPCError("BAD_REQUEST", {
-               message:
-                  "Nenhuma parcela gerada dentro da janela configurada.",
+               message: "Nenhuma parcela gerada dentro da janela configurada.",
             });
          }
 
@@ -237,7 +236,9 @@ export const update = protectedProcedure
 
       const existing = await getBill(db, id);
       if (!existing || existing.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", { message: "Conta a pagar/receber não encontrada." });
+         throw new ORPCError("NOT_FOUND", {
+            message: "Conta a pagar/receber não encontrada.",
+         });
       }
 
       if (existing.status === "paid") {
@@ -260,10 +261,11 @@ export const pay = protectedProcedure
    .input(
       z.object({
          id: z.string().uuid(),
-         amount: z.string().refine(
-            (v) => !Number.isNaN(Number(v)) && Number(v) > 0,
-            { message: "Valor deve ser maior que zero." },
-         ),
+         amount: z
+            .string()
+            .refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0, {
+               message: "Valor deve ser maior que zero.",
+            }),
          date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
          bankAccountId: z.string().uuid().optional(),
       }),
@@ -274,7 +276,9 @@ export const pay = protectedProcedure
 
       const bill = await getBill(db, id);
       if (!bill || bill.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", { message: "Conta a pagar/receber não encontrada." });
+         throw new ORPCError("NOT_FOUND", {
+            message: "Conta a pagar/receber não encontrada.",
+         });
       }
 
       if (bill.status === "paid") {
@@ -300,8 +304,7 @@ export const pay = protectedProcedure
          }
       }
 
-      const transactionType =
-         bill.type === "payable" ? "expense" : "income";
+      const transactionType = bill.type === "payable" ? "expense" : "income";
 
       const transaction = await createTransaction(
          db,
@@ -339,7 +342,9 @@ export const unpay = protectedProcedure
 
       const bill = await getBill(db, input.id);
       if (!bill || bill.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", { message: "Conta a pagar/receber não encontrada." });
+         throw new ORPCError("NOT_FOUND", {
+            message: "Conta a pagar/receber não encontrada.",
+         });
       }
 
       if (bill.status !== "paid") {
@@ -366,7 +371,9 @@ export const cancel = protectedProcedure
 
       const bill = await getBill(db, input.id);
       if (!bill || bill.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", { message: "Conta a pagar/receber não encontrada." });
+         throw new ORPCError("NOT_FOUND", {
+            message: "Conta a pagar/receber não encontrada.",
+         });
       }
 
       return updateBill(db, input.id, { status: "cancelled" });
@@ -379,7 +386,9 @@ export const remove = protectedProcedure
 
       const bill = await getBill(db, input.id);
       if (!bill || bill.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", { message: "Conta a pagar/receber não encontrada." });
+         throw new ORPCError("NOT_FOUND", {
+            message: "Conta a pagar/receber não encontrada.",
+         });
       }
 
       if (bill.status === "paid") {
@@ -481,8 +490,7 @@ export const createFromTransaction = protectedProcedure
 
          if (batchData.length === 0) {
             throw new ORPCError("BAD_REQUEST", {
-               message:
-                  "Nenhuma parcela gerada dentro da janela configurada.",
+               message: "Nenhuma parcela gerada dentro da janela configurada.",
             });
          }
 

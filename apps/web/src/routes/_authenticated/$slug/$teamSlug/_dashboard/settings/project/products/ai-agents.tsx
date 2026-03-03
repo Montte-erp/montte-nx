@@ -1,7 +1,4 @@
-import {
-   CONTENT_MODELS,
-   type ContentModelId,
-} from "@packages/agents/models";
+import { CONTENT_MODELS, type ContentModelId } from "@packages/agents/models";
 import { Button } from "@packages/ui/components/button";
 import { Label } from "@packages/ui/components/label";
 import {
@@ -83,7 +80,8 @@ function DefaultLanguageSection({
             <div className="flex-1">
                <h2 className="text-lg font-medium">Idioma padrão</h2>
                <p className="text-sm text-muted-foreground">
-                  Idioma usado pelo assistente IA para responder e gerar relatórios.
+                  Idioma usado pelo assistente IA para responder e gerar
+                  relatórios.
                </p>
             </div>
          </div>

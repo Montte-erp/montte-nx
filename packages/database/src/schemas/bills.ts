@@ -80,7 +80,7 @@ export const bills = pgTable(
       transactionId: uuid("transaction_id").references(() => transactions.id, {
          onDelete: "set null",
       }),
-      contactId: uuid("contact_id"),       // nullable — set when bill is auto-generated from a subscription
+      contactId: uuid("contact_id"), // nullable — set when bill is auto-generated from a subscription
       subscriptionId: uuid("subscription_id"), // nullable — set when bill is auto-generated from a subscription
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
