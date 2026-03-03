@@ -71,9 +71,15 @@ export function OnboardingWizard({
 
    const handleProfileComplete = useCallback(
       (next: () => void) => {
-         if (needsWorkspace) next();
+         if (needsWorkspace) {
+            next();
+         } else if (activeOrg) {
+            // Onboarding flags were already fixed by the route loader.
+            // Navigate to the org and let the routing chain pick the active team.
+            navigate({ to: "/$slug", params: { slug: activeOrg.slug } });
+         }
       },
-      [needsWorkspace],
+      [needsWorkspace, navigate, activeOrg],
    );
 
    const handleAccountTypeComplete = useCallback(

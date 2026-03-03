@@ -28,11 +28,30 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
             (org) => org.id === session.session.activeOrganizationId,
          ) ?? organizations[0];
 
-      // Don't redirect away from onboarding based only on org completion.
-      // The wizard dynamically determines which steps are needed (profile,
-      // workspace, project, products). Redirecting here causes loops when
-      // org is completed but project onboarding isn't, since _dashboard.tsx
-      // redirects back to /onboarding.
+      // If the user already has an org, fix any stale onboarding flags so the
+      // dashboard guards won't loop them back here.
+      if (activeOrg) {
+         let fixed: { orgSlug: string; teamSlug: string } | null = null;
+
+         try {
+            fixed = await context.queryClient.fetchQuery(
+               context.orpc.onboarding.fixOnboarding.queryOptions({
+                  input: { organizationId: activeOrg.id },
+               }),
+            );
+         } catch {
+            // No team found or other error — fall through and let the wizard handle it.
+         }
+
+         // If onboarding state was fixed AND profile is already set, the wizard
+         // has nothing left to do — redirect straight to the dashboard.
+         if (fixed && session.user.name) {
+            throw redirect({
+               to: "/$slug/$teamSlug/home",
+               params: { slug: fixed.orgSlug, teamSlug: fixed.teamSlug },
+            });
+         }
+      }
 
       return {
          session,

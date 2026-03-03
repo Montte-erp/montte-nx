@@ -245,7 +245,6 @@ export function SettingsSidebar({ search }: { search: string }) {
    const { pathname } = useLocation();
 
    const filteredSections = settingsNavSections
-      .filter((section) => section.id !== "organization")
       .map((section) => filterSection(section, search));
 
    return (

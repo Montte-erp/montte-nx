@@ -140,7 +140,6 @@ function SidebarScopeSwitcherSkeleton() {
 function SidebarScopeSwitcherContent() {
    const { activeOrganization, projectLimit, projectCount } =
       useActiveOrganization();
-   const isFree = projectLimit === 1;
    const { activeTeam, teams } = useActiveTeam();
    const { openSheet } = useSheet();
    const { openCredenza, closeCredenza } = useCredenza();
@@ -367,10 +366,9 @@ function SidebarScopeSwitcherContent() {
                   sideOffset={4}
                >
                   {/* ── PROJECT ── */}
-                  {!isFree && (
-                     <>
-                        <DropdownMenuLabel className="flex items-center justify-between py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                           Projeto
+                  <>
+                     <DropdownMenuLabel className="flex items-center justify-between py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Projeto
                            <button
                               className="rounded p-0.5 transition-colors hover:bg-accent hover:text-accent-foreground"
                               onClick={handleNewProject}
@@ -520,8 +518,7 @@ function SidebarScopeSwitcherContent() {
                         </DropdownMenuItem>
 
                         <DropdownMenuSeparator />
-                     </>
-                  )}
+                  </>
 
                   {/* ── ACCOUNT ── */}
                   <DropdownMenuLabel className="py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">

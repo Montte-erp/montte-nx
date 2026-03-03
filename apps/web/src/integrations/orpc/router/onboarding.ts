@@ -274,6 +274,75 @@ export const getOnboardingStatus = protectedProcedure.handler(
 );
 
 /**
+ * Safely mark org and team onboarding as complete for users who already have
+ * an existing org/team but whose onboarding flags are still false.
+ * Idempotent — only updates what isn't already marked complete.
+ * Returns orgSlug and teamSlug for client-side navigation.
+ */
+export const fixOnboarding = authenticatedProcedure
+   .input(z.object({ organizationId: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      const { db, session } = context;
+
+      const orgId = input.organizationId;
+
+      const org = await db.query.organization.findFirst({
+         where: (o, { eq }) => eq(o.id, orgId),
+         columns: { id: true, slug: true, onboardingCompleted: true },
+      });
+
+      if (!org) {
+         throw new ORPCError("NOT_FOUND", {
+            message: "Organization not found",
+         });
+      }
+
+      const activeTeamId = session.session.activeTeamId;
+
+      let targetTeam = activeTeamId
+         ? await db.query.team.findFirst({
+              where: (t, { eq }) => eq(t.id, activeTeamId),
+              columns: { id: true, slug: true, onboardingCompleted: true },
+           })
+         : null;
+
+      if (!targetTeam) {
+         targetTeam = await db.query.team.findFirst({
+            where: (t, { eq }) => eq(t.organizationId, orgId),
+            columns: { id: true, slug: true, onboardingCompleted: true },
+         });
+      }
+
+      if (!targetTeam) {
+         throw new ORPCError("NOT_FOUND", {
+            message: "No team found for organization",
+         });
+      }
+
+      if (!org.onboardingCompleted || !targetTeam.onboardingCompleted) {
+         await db.transaction(async (tx) => {
+            if (!org.onboardingCompleted) {
+               await tx
+                  .update(organization)
+                  .set({ onboardingCompleted: true })
+                  .where(eq(organization.id, orgId));
+            }
+            // biome-ignore lint/style/noNonNullAssertion: checked above
+            if (!targetTeam!.onboardingCompleted) {
+               await tx
+                  .update(team)
+                  .set({ onboardingCompleted: true })
+                  // biome-ignore lint/style/noNonNullAssertion: checked above
+                  .where(eq(team.id, targetTeam!.id));
+            }
+         });
+      }
+
+      return { orgSlug: org.slug, teamSlug: targetTeam.slug };
+   },
+);
+
+/**
  * Atomically merge a task ID into the team's onboardingTasks jsonb.
  */
 async function markTaskDone(
