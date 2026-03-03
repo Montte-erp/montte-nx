@@ -10,17 +10,17 @@ import {
 } from "@packages/ui/components/item";
 import { Separator } from "@packages/ui/components/separator";
 import {
-   SheetDescription,
-   SheetHeader,
-   SheetTitle,
-} from "@packages/ui/components/sheet";
+   CredenzaDescription,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { formatDate } from "@packages/utils/date";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, Monitor, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useSheet } from "@/hooks/use-sheet";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
 interface SessionDetailsFormProps {
@@ -40,14 +40,14 @@ export function SessionDetailsForm({
    currentSessionId,
 }: SessionDetailsFormProps) {
    const queryClient = useQueryClient();
-   const { closeSheet } = useSheet();
+   const { closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
    const revokeSessionMutation = useMutation(
       orpc.session.revokeSessionByToken.mutationOptions({
          onSuccess: () => {
             toast.success("Sessão encerrada");
-            closeSheet();
+            closeCredenza();
             queryClient.invalidateQueries({
                queryKey: orpc.session.listSessions.queryKey({}),
             });
@@ -104,10 +104,10 @@ export function SessionDetailsForm({
 
    return (
       <>
-         <SheetHeader>
-            <SheetTitle>Detalhes da Sessão</SheetTitle>
-            <SheetDescription>Informações sobre esta sessão</SheetDescription>
-         </SheetHeader>
+         <CredenzaHeader>
+            <CredenzaTitle>Detalhes da Sessão</CredenzaTitle>
+            <CredenzaDescription>Informações sobre esta sessão</CredenzaDescription>
+         </CredenzaHeader>
          <ItemGroup>
             {sessionDetails.map((detail) => (
                <Item key={detail.title}>
@@ -132,10 +132,10 @@ export function SessionDetailsForm({
             ))}
          </ItemGroup>
          <Separator />
-         <SheetHeader>
-            <SheetTitle>Ações</SheetTitle>
-            <SheetDescription>Gerencie esta sessão</SheetDescription>
-         </SheetHeader>
+         <CredenzaHeader>
+            <CredenzaTitle>Ações</CredenzaTitle>
+            <CredenzaDescription>Gerencie esta sessão</CredenzaDescription>
+         </CredenzaHeader>
          <ItemGroup className="px-4">
             <Item
                aria-label="Encerrar Esta Sessão"
