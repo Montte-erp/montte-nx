@@ -46,10 +46,10 @@ vi.mock("@/features/organization/hooks/use-set-active-organization", () => ({
    }),
 }));
 
-vi.mock("@/hooks/use-sheet", () => ({
-   useSheet: () => ({
-      closeSheet: vi.fn(),
-      openSheet: vi.fn(),
+vi.mock("@/hooks/use-credenza", () => ({
+   useCredenza: () => ({
+      openCredenza: vi.fn(),
+      closeCredenza: vi.fn(),
    }),
 }));
 
