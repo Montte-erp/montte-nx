@@ -10,12 +10,10 @@ import { Landmark } from "lucide-react";
 
 interface TransactionPrerequisitesBlockerProps {
    onAction: () => void;
-   onCancel: () => void;
 }
 
 export function TransactionPrerequisitesBlocker({
    onAction,
-   onCancel,
 }: TransactionPrerequisitesBlockerProps) {
    return (
       <>
@@ -37,12 +35,9 @@ export function TransactionPrerequisitesBlocker({
                </p>
             </div>
          </CredenzaBody>
-         <CredenzaFooter className="flex-col w-full flex gap-2">
+         <CredenzaFooter>
             <Button className="w-full" onClick={onAction}>
                Cadastrar conta bancária
-            </Button>
-            <Button className="w-full" onClick={onCancel} variant="outline">
-               Cancelar
             </Button>
          </CredenzaFooter>
       </>

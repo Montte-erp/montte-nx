@@ -673,7 +673,6 @@ function TransactionsPage() {
                         params: { slug, teamSlug },
                      });
                   }}
-                  onCancel={closeCredenza}
                />
             ),
          });
