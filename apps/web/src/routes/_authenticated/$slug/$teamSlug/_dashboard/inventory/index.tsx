@@ -29,7 +29,6 @@ import {
 import { ViewSwitchDropdown } from "@/features/view-switch/ui/view-switch-dropdown";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
-import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
@@ -75,7 +74,6 @@ function InventoryList({ view }: { view: "table" | "card" }) {
 	);
 
 	const { openCredenza, closeCredenza } = useCredenza();
-	const { openSheet, closeSheet } = useSheet();
 	const { openAlertDialog } = useAlertDialog();
 
 	const archiveMutation = useMutation(
@@ -101,16 +99,16 @@ function InventoryList({ view }: { view: "table" | "card" }) {
 
 	const handleHistory = useCallback(
 		(product: InventoryProductRow) => {
-			openSheet({
+			openCredenza({
 				children: <InventoryHistorySheet product={product} />,
 			});
 		},
-		[openSheet],
+		[openCredenza],
 	);
 
 	const handleEdit = useCallback(
 		(product: InventoryProductRow) => {
-			openSheet({
+			openCredenza({
 				children: (
 					<InventoryProductForm
 						mode="edit"
@@ -123,12 +121,12 @@ function InventoryList({ view }: { view: "table" | "card" }) {
 							purchaseUnitFactor: "1",
 							sellingPrice: product.sellingPrice,
 						}}
-						onSuccess={closeSheet}
+						onSuccess={closeCredenza}
 					/>
 				),
 			});
 		},
-		[openSheet, closeSheet],
+		[openCredenza, closeCredenza],
 	);
 
 	const handleArchive = useCallback(
@@ -188,17 +186,17 @@ function InventoryList({ view }: { view: "table" | "card" }) {
 // =============================================================================
 
 function InventoryPage() {
-	const { openSheet, closeSheet } = useSheet();
+	const { openCredenza, closeCredenza } = useCredenza();
 	const { currentView, setView, views } = useViewSwitch(
 		"inventory:products:view",
 		INVENTORY_VIEWS,
 	);
 
 	const handleCreate = useCallback(() => {
-		openSheet({
-			children: <InventoryProductForm mode="create" onSuccess={closeSheet} />,
+		openCredenza({
+			children: <InventoryProductForm mode="create" onSuccess={closeCredenza} />,
 		});
-	}, [openSheet, closeSheet]);
+	}, [openCredenza, closeCredenza]);
 
 	return (
 		<main className="flex flex-col gap-4">
