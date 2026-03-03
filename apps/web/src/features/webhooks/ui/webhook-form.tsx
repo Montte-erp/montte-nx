@@ -3,10 +3,10 @@ import { Input } from "@packages/ui/components/input";
 import { Label } from "@packages/ui/components/label";
 import { MultiSelect } from "@packages/ui/components/multi-select";
 import {
-   SheetDescription,
-   SheetHeader,
-   SheetTitle,
-} from "@packages/ui/components/sheet";
+   CredenzaDescription,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Spinner } from "@packages/ui/components/spinner";
 import { Switch } from "@packages/ui/components/switch";
 import { Textarea } from "@packages/ui/components/textarea";
@@ -126,15 +126,15 @@ export function WebhookForm({
 
    return (
       <div className="flex h-full flex-col">
-         <SheetHeader>
-            <SheetTitle>
+         <CredenzaHeader>
+            <CredenzaTitle>
                {mode === "create" ? "Criar webhook" : "Editar webhook"}
-            </SheetTitle>
-            <SheetDescription>
+            </CredenzaTitle>
+            <CredenzaDescription>
                Configure a URL e os eventos que serão entregues para este
                endpoint.
-            </SheetDescription>
-         </SheetHeader>
+            </CredenzaDescription>
+         </CredenzaHeader>
 
          <div className="flex-1 overflow-y-auto space-y-6 py-6">
             <div className="space-y-2 px-1">
