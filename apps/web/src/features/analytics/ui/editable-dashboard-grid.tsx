@@ -111,7 +111,6 @@ function makeInsightColumns(
             return (
                <Button
                   onClick={() => onAdd(row.original)}
-                  size="sm"
                   variant="outline"
                >
                   <Plus className="size-3.5" />
@@ -210,11 +209,11 @@ function UnsavedChangesBar({
    return (
       <div className="flex items-center gap-2 flex-wrap">
          <div className="flex-1" />
-         <Button onClick={onCancel} size="sm" variant="ghost">
+         <Button onClick={onCancel} variant="ghost">
             <RotateCcw className="size-4" />
             Cancelar
          </Button>
-         <Button disabled={isSaving} onClick={onSave} size="sm">
+         <Button disabled={isSaving} onClick={onSave}>
             {isSaving ? (
                <Loader2 className="size-4 animate-spin" />
             ) : (

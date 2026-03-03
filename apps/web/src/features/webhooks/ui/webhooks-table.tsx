@@ -95,18 +95,17 @@ function WebhookMobileCard({
             </span>
          </div>
          <div className="flex items-center gap-2">
-            <Button onClick={() => onEdit(webhook)} size="sm" variant="outline">
+            <Button onClick={() => onEdit(webhook)} variant="outline">
                <Edit className="size-3 mr-2" />
                Editar
             </Button>
-            <Button onClick={onToggleDeliveries} size="sm" variant="ghost">
+            <Button onClick={onToggleDeliveries} variant="ghost">
                <Activity className="size-3 mr-2" />
                {isExpanded ? "Ocultar" : "Entregas"}
             </Button>
             <Button
                className="text-destructive"
                onClick={() => onDelete(webhook)}
-               size="sm"
                variant="ghost"
             >
                <Trash2 className="size-3 mr-2" />
@@ -208,9 +207,8 @@ export function WebhooksTable({
                >
                   <Button
                      onClick={() => onEdit(row.original)}
-                     size="icon"
                      tooltip="Editar"
-                     variant="icon-outline"
+                     variant="outline"
                   >
                      <Edit className="size-4" />
                   </Button>
@@ -256,7 +254,6 @@ export function WebhooksTable({
                   <Button
                      className="text-destructive hover:text-destructive"
                      onClick={() => onDelete(row.original)}
-                     size="sm"
                      variant="ghost"
                   >
                      <Trash2 className="size-3 mr-2" />

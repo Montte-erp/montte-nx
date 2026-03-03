@@ -18,11 +18,6 @@ import {
 } from "@packages/ui/components/empty";
 import { Input } from "@packages/ui/components/input";
 import {
-   Popover,
-   PopoverContent,
-   PopoverTrigger,
-} from "@packages/ui/components/popover";
-import {
    SelectionActionBar,
    SelectionActionButton,
 } from "@packages/ui/components/selection-action-bar";
@@ -37,7 +32,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
    ArrowLeftRight,
    ArrowRight,
-   Calendar,
    Download,
    FolderOpen,
    Landmark,
@@ -61,6 +55,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
+import type { PanelAction } from "@/features/context-panel/context-panel-store";
 import { BillFromTransactionCredenza } from "@/features/bills/ui/bill-from-transaction-credenza";
 import { TransactionExportCredenza } from "@/features/transactions/ui/transaction-export-credenza";
 import { TransactionImportCredenza } from "@/features/transactions/ui/transaction-import-credenza";
@@ -150,7 +145,6 @@ function BulkCategorizeForm({
                className="w-full"
                disabled={isPending}
                onClick={onCancel}
-               size="sm"
                variant="outline"
             >
                Cancelar
@@ -163,7 +157,6 @@ function BulkCategorizeForm({
                      await onApply(categoryId!);
                   })
                }
-               size="sm"
             >
                {isPending && <Loader2 className="size-4 mr-1 animate-spin" />}
                Aplicar
@@ -445,8 +438,6 @@ interface FilterBarProps {
 }
 
 function FilterBar({ filters, onFiltersChange }: FilterBarProps) {
-   const [isDateOpen, setIsDateOpen] = useState(false);
-
    // Debounce search via timeout ref
    const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
    const [searchInput, setSearchInput] = useState(filters.search);
@@ -524,16 +515,16 @@ function FilterBar({ filters, onFiltersChange }: FilterBarProps) {
             value={filters.type ?? ""}
             variant="outline"
          >
-            <ToggleGroupItem size="sm" value="">
+            <ToggleGroupItem value="">
                Todos
             </ToggleGroupItem>
-            <ToggleGroupItem size="sm" value="income">
+            <ToggleGroupItem value="income">
                Receita
             </ToggleGroupItem>
-            <ToggleGroupItem size="sm" value="expense">
+            <ToggleGroupItem value="expense">
                Despesa
             </ToggleGroupItem>
-            <ToggleGroupItem size="sm" value="transfer">
+            <ToggleGroupItem value="transfer">
                Transferência
             </ToggleGroupItem>
          </ToggleGroup>
@@ -575,78 +566,48 @@ function FilterBar({ filters, onFiltersChange }: FilterBarProps) {
          </Suspense>
 
          {/* Date range */}
-         <Popover onOpenChange={setIsDateOpen} open={isDateOpen}>
-            <PopoverTrigger asChild>
-               <Button
-                  className="h-8 gap-1.5"
-                  size="sm"
-                  variant={hasDateFilter ? "secondary" : "outline"}
-               >
-                  <Calendar className="size-3.5" />
-                  {dateLabel}
-               </Button>
-            </PopoverTrigger>
-            <PopoverContent
-               align="start"
-               className="w-auto p-0"
-               onInteractOutside={(e) => {
-                  const target = e.target as HTMLElement;
-                  if (target.closest("[data-radix-popper-content-wrapper]")) {
-                     e.preventDefault();
-                  }
-               }}
-            >
-               <DateRangePicker
-                  heading="Período"
-                  onPresetSelect={(preset) => {
-                     const { dateFrom, dateTo } = presetToDateRange(preset);
-                     onFiltersChange({
-                        ...filters,
-                        dateFrom,
-                        dateTo,
-                        datePreset: preset,
-                        page: 1,
-                     });
-                     setIsDateOpen(false);
-                  }}
-                  onRangeSelect={(range) => {
-                     const fmt = (d: Date) => d.toISOString().split("T")[0];
-                     onFiltersChange({
-                        ...filters,
-                        dateFrom: fmt(range.from),
-                        dateTo: fmt(range.to),
-                        datePreset: undefined,
-                        page: 1,
-                     });
-                     setIsDateOpen(false);
-                  }}
-                  presets={DATE_RANGE_PRESETS}
-                  selectedPreset={filters.datePreset ?? null}
-                  selectedRange={selectedRange}
-               />
-               {hasDateFilter && (
-                  <div className="border-t p-2">
-                     <Button
-                        className="w-full"
-                        onClick={() => {
-                           onFiltersChange({
-                              ...filters,
-                              dateFrom: undefined,
-                              dateTo: undefined,
-                              datePreset: undefined,
-                              page: 1,
-                           });
-                           setIsDateOpen(false);
-                        }}
-                        size="sm"
-                        variant="ghost"
-                     >
-                        Limpar período
-                     </Button>
-                  </div>
-               )}
-            </PopoverContent>
-         </Popover>
+         <DateRangePicker
+            clearLabel="Limpar período"
+            heading="Período"
+            label={dateLabel}
+            onClear={
+               hasDateFilter
+                  ? () =>
+                       onFiltersChange({
+                          ...filters,
+                          dateFrom: undefined,
+                          dateTo: undefined,
+                          datePreset: undefined,
+                          page: 1,
+                       })
+                  : undefined
+            }
+            onPresetSelect={(preset) => {
+               const { dateFrom, dateTo } = presetToDateRange(preset);
+               onFiltersChange({
+                  ...filters,
+                  dateFrom,
+                  dateTo,
+                  datePreset: preset,
+                  page: 1,
+               });
+            }}
+            onRangeSelect={(range) => {
+               const fmt = (d: Date) => d.toISOString().split("T")[0];
+               onFiltersChange({
+                  ...filters,
+                  dateFrom: fmt(range.from),
+                  dateTo: fmt(range.to),
+                  datePreset: undefined,
+                  page: 1,
+               });
+            }}
+            presets={DATE_RANGE_PRESETS}
+            selectedPreset={filters.datePreset ?? null}
+            selectedRange={selectedRange}
+            triggerClassName="h-8"
+            triggerVariant={hasDateFilter ? "secondary" : "outline"}
+         />
 
          {/* Clear all */}
          {hasActiveFilters && (
@@ -656,7 +617,6 @@ function FilterBar({ filters, onFiltersChange }: FilterBarProps) {
                   setSearchInput("");
                   onFiltersChange(DEFAULT_FILTERS);
                }}
-               size="sm"
                variant="ghost"
             >
                <X className="size-3.5" />
@@ -951,7 +911,6 @@ function TransactionsList({
                   <div className="flex items-center gap-2">
                      <Button
                         onClick={() => handleEdit(transaction)}
-                        size="sm"
                         variant="outline"
                      >
                         Editar
@@ -959,7 +918,6 @@ function TransactionsList({
                      <Button
                         className="text-destructive"
                         onClick={() => handleDelete(transaction)}
-                        size="sm"
                         variant="ghost"
                      >
                         Excluir
@@ -1004,7 +962,6 @@ function TransactionsList({
                   <div className="flex items-center gap-2">
                      <Button
                         onClick={() => handleEdit(row.original)}
-                        size="sm"
                         variant="outline"
                      >
                         Editar
@@ -1012,7 +969,6 @@ function TransactionsList({
                      <Button
                         className="text-destructive"
                         onClick={() => handleDelete(row.original)}
-                        size="sm"
                         variant="ghost"
                      >
                         Excluir
@@ -1076,47 +1032,38 @@ function TransactionsPage() {
       return () => window.removeEventListener("sidebar:quick-create", handler);
    }, [handleCreate]);
 
+   const panelActions: PanelAction[] = [
+      {
+         icon: Upload,
+         label: "Importar",
+         onClick: () => openCredenza({ children: <TransactionImportCredenza /> }),
+      },
+      {
+         icon: Download,
+         label: "Exportar",
+         onClick: () =>
+            openCredenza({
+               children: (
+                  <TransactionExportCredenza
+                     dateFrom={filters.dateFrom}
+                     dateTo={filters.dateTo}
+                  />
+               ),
+            }),
+      },
+   ];
+
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
-               <div className="flex items-center gap-2">
-                  <Button
-                     onClick={() =>
-                        openCredenza({
-                           children: <TransactionImportCredenza />,
-                        })
-                     }
-                     size="sm"
-                     variant="outline"
-                  >
-                     <Upload className="size-4 mr-1" />
-                     Importar
-                  </Button>
-                  <Button
-                     onClick={() =>
-                        openCredenza({
-                           children: (
-                              <TransactionExportCredenza
-                                 dateFrom={filters.dateFrom}
-                                 dateTo={filters.dateTo}
-                              />
-                           ),
-                        })
-                     }
-                     size="sm"
-                     variant="outline"
-                  >
-                     <Download className="size-4 mr-1" />
-                     Exportar
-                  </Button>
-                  <Button onClick={handleCreate} size="sm">
-                     <Plus className="size-4 mr-1" />
-                     Nova Transação
-                  </Button>
-               </div>
+               <Button onClick={handleCreate}>
+                  <Plus className="size-4 mr-1" />
+                  Nova Transação
+               </Button>
             }
             description="Gerencie suas receitas, despesas e transferências"
+            panelActions={panelActions}
             title="Transações"
             viewSwitch={
                <ViewSwitchDropdown

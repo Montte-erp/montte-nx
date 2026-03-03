@@ -173,7 +173,6 @@ export function buildBillsColumns(
                      <Button
                         className="gap-1.5"
                         onClick={() => onPay(bill)}
-                        size="sm"
                         variant="default"
                      >
                         <Check className="size-3.5" />
@@ -182,7 +181,7 @@ export function buildBillsColumns(
                   )}
                   <DropdownMenu>
                      <DropdownMenuTrigger asChild>
-                        <Button size="icon" variant="ghost">
+                        <Button variant="outline">
                            <MoreHorizontal className="size-4" />
                            <span className="sr-only">Ações</span>
                         </Button>

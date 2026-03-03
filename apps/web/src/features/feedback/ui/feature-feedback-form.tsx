@@ -6,14 +6,13 @@ import {
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
 import { Label } from "@packages/ui/components/label";
+import { Rating, RatingButton } from "@packages/ui/components/rating";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useMutation } from "@tanstack/react-query";
 import { CheckCircle, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
-
-const EMOJI_SCALE = ["😡", "😕", "😐", "🙂", "🤩"];
 
 type FeatureFeedbackFormProps = {
    featureName: string;
@@ -52,7 +51,7 @@ export function FeatureFeedbackForm({
 
    if (mutation.isSuccess) {
       return (
-         <CredenzaBody className="flex flex-col items-center gap-4  text-center">
+         <CredenzaBody className="flex flex-col items-center gap-4 text-center">
             <CheckCircle className="size-8 text-green-500" />
             <p className="text-sm font-medium">Obrigado pelo feedback!</p>
             <p className="text-xs text-muted-foreground">
@@ -74,22 +73,13 @@ export function FeatureFeedbackForm({
             <form className="space-y-4" onSubmit={handleSubmit}>
                <div className="space-y-2">
                   <Label>Como está sendo a experiência?</Label>
-                  <div className="flex items-center justify-between gap-1">
-                     {EMOJI_SCALE.map((emoji, index) => (
-                        <button
-                           className={`rounded-lg p-2 text-2xl transition-all ${
-                              rating === index + 1
-                                 ? "bg-muted ring-2 ring-primary scale-110"
-                                 : "hover:bg-muted/50"
-                           }`}
-                           key={`emoji-${index + 1}`}
-                           onClick={() => setRating(index + 1)}
-                           type="button"
-                        >
-                           {emoji}
-                        </button>
-                     ))}
-                  </div>
+                  <Rating onValueChange={setRating} value={rating}>
+                     <RatingButton />
+                     <RatingButton />
+                     <RatingButton />
+                     <RatingButton />
+                     <RatingButton />
+                  </Rating>
                   <div className="flex justify-between text-xs text-muted-foreground">
                      <span>Péssima</span>
                      <span>Excelente</span>
@@ -113,6 +103,7 @@ export function FeatureFeedbackForm({
                <Button
                   className="w-full"
                   disabled={rating === 0 || mutation.isPending}
+                  size="lg"
                   type="submit"
                >
                   {mutation.isPending && (

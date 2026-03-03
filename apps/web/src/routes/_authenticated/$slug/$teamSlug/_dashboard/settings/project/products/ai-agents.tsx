@@ -109,7 +109,6 @@ function DefaultLanguageSection({
             onClick={() =>
                saveMutation.mutate({ defaultLanguage: language || undefined })
             }
-            size="sm"
          >
             {saveMutation.isPending && (
                <Loader2 className="size-4 mr-2 animate-spin" />
@@ -200,7 +199,6 @@ function AssistantModelSection({
                         : undefined,
                })
             }
-            size="sm"
          >
             {saveMutation.isPending && (
                <Loader2 className="size-4 mr-2 animate-spin" />

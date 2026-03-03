@@ -91,7 +91,7 @@ function OrgDangerZonePage() {
                         <TooltipTrigger asChild>
                            {/* biome-ignore lint/a11y/noNoninteractiveTabindex: needed for tooltip on disabled button */}
                            <span tabIndex={0}>
-                              <Button disabled size="sm" variant="destructive">
+                              <Button disabled variant="destructive">
                                  Deletar organização
                               </Button>
                            </span>
@@ -156,7 +156,7 @@ function DeleteOrganizationDialog({
          open={open}
       >
          <AlertDialogTrigger asChild>
-            <Button size="sm" variant="destructive">
+            <Button variant="destructive">
                Deletar organização
             </Button>
          </AlertDialogTrigger>

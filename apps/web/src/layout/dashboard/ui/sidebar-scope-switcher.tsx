@@ -124,7 +124,7 @@ function SidebarScopeSwitcherSkeleton() {
    return (
       <SidebarMenu>
          <SidebarMenuItem>
-            <SidebarMenuButton className="pointer-events-none" size="lg">
+            <SidebarMenuButton className="pointer-events-none">
                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-muted" />
                <div className="grid flex-1 gap-1">
                   <Skeleton className="h-3.5 w-24" />
@@ -331,7 +331,6 @@ function SidebarScopeSwitcherContent() {
                <DropdownMenuTrigger asChild>
                   <SidebarMenuButton
                      className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                     size="lg"
                   >
                      <Avatar className="aspect-square size-8 shrink-0 rounded-lg">
                         <AvatarImage

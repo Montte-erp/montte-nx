@@ -154,7 +154,6 @@ function TagsList({ view }: TagsListProps) {
                   <div className="flex items-center gap-2">
                      <Button
                         onClick={() => handleEdit(tag)}
-                        size="sm"
                         variant="outline"
                      >
                         Editar
@@ -162,7 +161,6 @@ function TagsList({ view }: TagsListProps) {
                      <Button
                         className="text-destructive"
                         onClick={() => handleDelete(tag)}
-                        size="sm"
                         variant="ghost"
                      >
                         Excluir
@@ -195,13 +193,12 @@ function TagsList({ view }: TagsListProps) {
                <div className="flex items-center gap-2">
                   <Button
                      onClick={() => handleEdit(row.original)}
-                     size="sm"
                      variant="outline"
                   >
                      Editar
                   </Button>
                   {canExpand && (
-                     <Button onClick={toggleExpanded} size="sm" variant="ghost">
+                     <Button onClick={toggleExpanded} variant="ghost">
                         {isExpanded ? "Ocultar" : "Mais"}
                      </Button>
                   )}
@@ -213,7 +210,6 @@ function TagsList({ view }: TagsListProps) {
                <Button
                   className="text-destructive hover:text-destructive"
                   onClick={() => handleDelete(row.original)}
-                  size="sm"
                   variant="ghost"
                >
                   <Trash2 className="size-3 mr-2" />
@@ -246,7 +242,7 @@ function TagsPage() {
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
-               <Button onClick={handleCreate} size="sm">
+               <Button onClick={handleCreate}>
                   <Plus className="size-4 mr-1" />
                   Nova Tag
                </Button>

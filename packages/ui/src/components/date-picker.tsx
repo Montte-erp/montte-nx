@@ -1,5 +1,12 @@
 "use client";
 
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import type { ChangeEvent, ChangeEventHandler } from "react";
+import { useState } from "react";
+
+import { cn } from "@packages/ui/lib/utils";
+
 import { Button } from "@packages/ui/components/button";
 import { Calendar } from "@packages/ui/components/calendar";
 import {
@@ -15,26 +22,11 @@ import {
    SelectValue,
 } from "@packages/ui/components/select";
 
-import { cn } from "@packages/ui/lib/utils";
-import { formatDate } from "@packages/utils/date";
-import { Calendar as CalendarIcon } from "lucide-react";
-import type { ChangeEvent, ChangeEventHandler } from "react";
-import { useState } from "react";
+export const title = "Date Picker with Month and Year Selector";
 
-export interface DatePickerProps {
-   date?: Date;
-   onSelect?: (date: Date | undefined) => void;
-   placeholder?: string;
-   className?: string;
-}
-
-export function DatePicker({
-   date,
-   onSelect,
-   placeholder = "Pick a date",
-   className,
-}: DatePickerProps) {
-   const [month, setMonth] = useState<Date>(date ?? new Date());
+export const DatePicker = () => {
+   const [date, setDate] = useState<Date | undefined>(new Date());
+   const [month, setMonth] = useState<Date>(new Date());
 
    const handleCalendarChange = (
       value: string | number,
@@ -53,18 +45,13 @@ export function DatePicker({
          <PopoverTrigger asChild>
             <Button
                className={cn(
-                  "data-[empty=true]:text-muted-foreground w-[280px] justify-start text-left font-normal",
-                  className,
+                  "w-[280px] justify-start text-left font-normal",
+                  !date && "text-muted-foreground",
                )}
-               data-empty={!date}
                variant="outline"
             >
-               <CalendarIcon />
-               {date ? (
-                  formatDate(date, "DD MMMM YYYY")
-               ) : (
-                  <span>{placeholder}</span>
-               )}
+               <CalendarIcon className="mr-2 h-4 w-4" />
+               {date ? format(date, "PPP") : <span>Pick a date</span>}
             </Button>
          </PopoverTrigger>
          <PopoverContent align="start" className="w-auto p-0">
@@ -103,13 +90,14 @@ export function DatePicker({
                      </Select>
                   ),
                }}
+               hideNavigation
                mode="single"
                month={month}
                onMonthChange={setMonth}
-               onSelect={onSelect}
+               onSelect={setDate}
                selected={date}
             />
          </PopoverContent>
       </Popover>
    );
-}
+};

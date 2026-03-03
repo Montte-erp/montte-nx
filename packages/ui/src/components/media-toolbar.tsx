@@ -100,13 +100,13 @@ export function MediaToolbar({
                      Edit link
                   </FloatingMediaPrimitive.EditButton>
 
-                  <CaptionButton size="sm" variant="ghost">
+                  <CaptionButton variant="ghost">
                      Caption
                   </CaptionButton>
 
                   <Separator className="mx-1 h-6" orientation="vertical" />
 
-                  <Button size="sm" variant="ghost" {...buttonProps}>
+                  <Button variant="ghost" {...buttonProps}>
                      <Trash2Icon />
                   </Button>
                </div>

@@ -347,7 +347,6 @@ function KeysTable({
                         className="text-destructive hover:text-destructive"
                         disabled={isRevoking}
                         onClick={() => onRevoke(key)}
-                        size="sm"
                         variant="ghost"
                      >
                         <Trash2 className="size-3 mr-2" />
@@ -450,7 +449,7 @@ function PersonalApiKeysContent() {
                      API.
                   </p>
                </div>
-               <Button onClick={handleCreateKey} size="sm">
+               <Button onClick={handleCreateKey}>
                   <Plus className="size-4 mr-1" />
                   Criar chave
                </Button>

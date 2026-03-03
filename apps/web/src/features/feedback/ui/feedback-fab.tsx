@@ -59,7 +59,6 @@ export function FeedbackFab() {
                   <PopoverTrigger asChild>
                      <Button
                         className="size-12 cursor-pointer rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
-                        size="icon"
                      >
                         <MessageSquarePlus className="size-5" />
                      </Button>

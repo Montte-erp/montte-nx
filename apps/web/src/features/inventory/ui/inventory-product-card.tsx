@@ -75,14 +75,12 @@ export function InventoryProductCard({
                <Button
                   className="flex-1"
                   onClick={() => onRegisterMovement(product)}
-                  size="sm"
                >
                   <PackagePlus className="size-3.5 mr-1" />
                   Movimento
                </Button>
                <Button
                   onClick={() => onViewHistory(product)}
-                  size="icon-sm"
                   variant="outline"
                >
                   <History className="size-4" />

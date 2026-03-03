@@ -272,7 +272,6 @@ function BillsList({ type }: BillsListProps) {
                      {row.original.status === "pending" && (
                         <Button
                            onClick={() => handlePay(row.original)}
-                           size="sm"
                            variant="default"
                         >
                            {type === "payable" ? "Pagar" : "Receber"}
@@ -280,7 +279,6 @@ function BillsList({ type }: BillsListProps) {
                      )}
                      <Button
                         onClick={() => handleEdit(row.original)}
-                        size="sm"
                         variant="outline"
                      >
                         Editar
@@ -288,7 +286,6 @@ function BillsList({ type }: BillsListProps) {
                      {canExpand && (
                         <Button
                            onClick={toggleExpanded}
-                           size="sm"
                            variant="ghost"
                         >
                            {isExpanded ? "Ocultar" : "Mais"}
@@ -306,7 +303,6 @@ function BillsList({ type }: BillsListProps) {
                         <Button
                            className="text-muted-foreground hover:text-foreground"
                            onClick={() => unpayMutation.mutate({ id: bill.id })}
-                           size="sm"
                            variant="ghost"
                         >
                            <XCircle className="size-3 mr-2" />
@@ -317,7 +313,6 @@ function BillsList({ type }: BillsListProps) {
                         <Button
                            className="text-destructive hover:text-destructive"
                            onClick={() => handleDelete(bill)}
-                           size="sm"
                            variant="ghost"
                         >
                            <Trash2 className="size-3 mr-2" />
@@ -356,7 +351,7 @@ function BillsPage() {
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
-               <Button onClick={handleCreate} size="sm">
+               <Button onClick={handleCreate}>
                   <Plus className="size-4 mr-1" />
                   Nova Conta
                </Button>

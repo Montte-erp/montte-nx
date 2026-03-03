@@ -57,7 +57,6 @@ function AccountDangerZonePage() {
                            },
                         })
                      }
-                     size="sm"
                      variant="destructive"
                   >
                      Deletar conta

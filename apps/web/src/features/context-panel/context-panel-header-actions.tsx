@@ -16,23 +16,19 @@ export function ContextPanelHeaderActions() {
    return (
       <div className="flex items-center gap-1">
          <Button
-            className="size-8 rounded"
             onClick={handleOpenAI}
-            size="icon"
             tooltip="Abrir Chat IA"
             type="button"
-            variant="icon-outline"
+            variant="outline"
          >
             <Sparkles className="size-4" />
          </Button>
 
          <Button
-            className="size-8 rounded"
             onClick={handleOpenPanel}
-            size="icon"
             tooltip="Abrir painel"
             type="button"
-            variant="icon-outline"
+            variant="outline"
          >
             <PanelRight className="size-4" />
          </Button>

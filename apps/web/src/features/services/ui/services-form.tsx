@@ -219,7 +219,6 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                                     billingCycle: "monthly",
                                  })
                               }
-                              size="sm"
                               type="button"
                               variant="outline"
                            >
@@ -246,14 +245,11 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                                        onClick={() =>
                                           arrayField.removeValue(index)
                                        }
-                                       size="icon"
+                                       tooltip="Remover variante"
                                        type="button"
-                                       variant="ghost"
+                                       variant="outline"
                                     >
                                        <Trash2 className="size-4 text-destructive" />
-                                       <span className="sr-only">
-                                          Remover variante
-                                       </span>
                                     </Button>
                                  </div>
 

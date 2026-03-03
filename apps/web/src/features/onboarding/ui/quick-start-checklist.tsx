@@ -167,8 +167,8 @@ export function QuickStartChecklist() {
                <Button
                   className="size-8"
                   onClick={() => setIsCollapsed((prev) => !prev)}
-                  size="icon"
-                  variant="ghost"
+                  tooltip={isCollapsed ? "Expandir" : "Recolher"}
+                  variant="outline"
                >
                   {isCollapsed ? (
                      <ChevronDown className="size-4" />
@@ -179,8 +179,8 @@ export function QuickStartChecklist() {
                <Button
                   className="size-8"
                   onClick={handleHide}
-                  size="icon"
-                  variant="ghost"
+                  tooltip="Fechar"
+                  variant="outline"
                >
                   <X className="size-4" />
                </Button>

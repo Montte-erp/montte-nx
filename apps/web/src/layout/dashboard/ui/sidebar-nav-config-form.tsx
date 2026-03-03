@@ -152,7 +152,7 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
                   )}
             </div>
             <div className="flex justify-end mt-6">
-               <Button onClick={onClose} size="sm" variant="outline">
+               <Button onClick={onClose} variant="outline">
                   Fechar
                </Button>
             </div>

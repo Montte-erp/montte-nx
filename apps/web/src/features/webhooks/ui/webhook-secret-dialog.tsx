@@ -42,7 +42,6 @@ export function WebhookSecretDialog({
                />
                <Button
                   onClick={() => copy(plaintextSecret)}
-                  size="icon"
                   variant="outline"
                >
                   {copied ? (

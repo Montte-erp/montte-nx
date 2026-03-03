@@ -20,9 +20,26 @@ import {
    type ServiceRow,
 } from "@/features/services/ui/services-columns";
 import { ServiceForm } from "@/features/services/ui/services-form";
+import {
+   EarlyAccessBanner,
+   type EarlyAccessBannerTemplate,
+} from "@/features/billing/ui/early-access-banner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
+
+const SERVICES_BANNER: EarlyAccessBannerTemplate = {
+   badgeLabel: "Serviços",
+   message: "Esta funcionalidade está em conceito.",
+   ctaLabel: "Deixar feedback",
+   stage: "concept",
+   icon: Briefcase,
+   bullets: [
+      "Cadastre serviços e defina preços",
+      "Vincule serviços a cobranças e projetos",
+      "Seu feedback nos ajuda a melhorar",
+   ],
+};
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/erp/services",
@@ -135,7 +152,6 @@ function ServicesList() {
                <div className="flex items-center gap-2">
                   <Button
                      onClick={() => handleEdit(row.original)}
-                     size="sm"
                      variant="outline"
                   >
                      <Pencil className="size-3 mr-1" />
@@ -144,7 +160,6 @@ function ServicesList() {
                   <Button
                      className="text-destructive"
                      onClick={() => handleDelete(row.original)}
-                     size="sm"
                      variant="ghost"
                   >
                      <Trash2 className="size-3 mr-1" />
@@ -174,7 +189,7 @@ function ServicesPage() {
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
-               <Button onClick={handleCreate} size="sm">
+               <Button onClick={handleCreate}>
                   <Plus className="size-4 mr-1" />
                   Novo Serviço
                </Button>
@@ -183,6 +198,7 @@ function ServicesPage() {
             title="Serviços"
          />
          <ServicesAnalyticsHeader />
+         <EarlyAccessBanner template={SERVICES_BANNER} />
          <Suspense fallback={<ServicesSkeleton />}>
             <ServicesList />
          </Suspense>

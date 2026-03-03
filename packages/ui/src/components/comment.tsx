@@ -274,8 +274,8 @@ export function Comment(props: {
                               e.stopPropagation();
                               void onCancel();
                            }}
-                           size="icon"
-                           variant="ghost"
+                           tooltip="Cancelar"
+                           variant="outline"
                         >
                            <div className="flex size-5 shrink-0 items-center justify-center rounded-[50%] bg-primary/40">
                               <XIcon className="size-3 stroke-[3px] text-background" />
@@ -289,8 +289,8 @@ export function Comment(props: {
                               e.stopPropagation();
                               void onSave();
                            }}
-                           size="icon"
-                           variant="ghost"
+                           tooltip="Salvar"
+                           variant="outline"
                         >
                            <div className="flex size-5 shrink-0 items-center justify-center rounded-[50%] bg-brand">
                               <CheckIcon className="size-3 stroke-[3px] text-background" />
@@ -622,8 +622,8 @@ export function CommentCreateForm({
                         e.stopPropagation();
                         onAddComment();
                      }}
-                     size="icon"
-                     variant="ghost"
+                     tooltip="Enviar"
+                     variant="outline"
                   >
                      <div className="flex size-6 items-center justify-center rounded-full">
                         <ArrowUpIcon />

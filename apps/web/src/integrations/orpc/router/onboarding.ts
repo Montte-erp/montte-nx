@@ -157,13 +157,13 @@ export const createWorkspace = authenticatedProcedure
       const accountTypeLabel =
          input.accountType === "business" ? "Empresarial" : "Pessoal";
       const teamName = `${input.workspaceName} - ${accountTypeLabel}`;
-
+      const teamSlug = createSlug(teamName);
       const createdTeam = await auth.api.createTeam({
          headers,
          body: {
             name: teamName,
             organizationId: org.id,
-            slug,
+            slug: teamSlug,
             accountType: input.accountType,
          },
       });
@@ -307,9 +307,9 @@ export const fixOnboarding = authenticatedProcedure
 
       let targetTeam = activeTeamId
          ? await db.query.team.findFirst({
-              where: (t, { eq }) => eq(t.id, activeTeamId),
-              columns: { id: true, slug: true, onboardingCompleted: true },
-           })
+            where: (t, { eq }) => eq(t.id, activeTeamId),
+            columns: { id: true, slug: true, onboardingCompleted: true },
+         })
          : null;
 
       if (!targetTeam) {

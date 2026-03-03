@@ -26,7 +26,6 @@ export function ContextPanelAction({
       <Button
          className="w-full justify-start"
          onClick={onClick}
-         size="sm"
          type="button"
          variant={variant}
       >
@@ -46,7 +45,7 @@ export function ContextPanelMeta({
    value: ReactNode;
 }) {
    return (
-      <Item className="px-0" size="sm">
+      <Item className="px-0">
          <ItemMedia variant="icon">
             <Icon />
          </ItemMedia>

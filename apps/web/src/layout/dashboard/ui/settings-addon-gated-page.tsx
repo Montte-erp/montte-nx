@@ -76,7 +76,7 @@ export function SettingsAddonGatedPage({
             )}
 
             <div className="mt-8 flex justify-center">
-               <Button size="lg">Conhecer addon {addonName}</Button>
+               <Button>Conhecer addon {addonName}</Button>
             </div>
          </div>
       </div>

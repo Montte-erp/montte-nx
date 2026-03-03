@@ -39,7 +39,7 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
 
       return (
          <div className="flex h-full flex-col gap-4">
-            <Button asChild className="w-fit" size="sm" variant="ghost">
+            <Button asChild className="w-fit" variant="ghost">
                <Link
                   params={{ slug: activeOrganization.slug, teamSlug }}
                   to="/$slug/$teamSlug/settings"

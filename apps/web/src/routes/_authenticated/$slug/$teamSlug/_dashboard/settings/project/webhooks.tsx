@@ -145,7 +145,7 @@ function WebhooksContent() {
                      Configure endpoints para receber eventos do projeto.
                   </p>
                </div>
-               <Button onClick={handleCreateWebhook} size="sm">
+               <Button onClick={handleCreateWebhook}>
                   <Plus className="size-4 mr-2" />
                   Criar endpoint
                </Button>

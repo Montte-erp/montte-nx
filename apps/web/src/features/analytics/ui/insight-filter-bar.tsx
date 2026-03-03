@@ -57,7 +57,7 @@ export function InsightFilterBar({
       <div className="flex items-center gap-2 border-b py-2">
          <Popover>
             <PopoverTrigger asChild>
-               <Button className="h-7 text-xs" size="sm" variant="outline">
+               <Button className="h-7 text-xs" variant="outline">
                   <Calendar className="mr-1.5 size-3.5" />
                   {getDateRangeLabel(filters)}
                </Button>
@@ -81,7 +81,6 @@ export function InsightFilterBar({
                               },
                            })
                         }
-                        size="sm"
                         variant="ghost"
                      >
                         {preset.label}
@@ -95,7 +94,6 @@ export function InsightFilterBar({
             <PopoverTrigger asChild>
                <Button
                   className="h-7 text-xs gap-1.5"
-                  size="sm"
                   variant="outline"
                >
                   {selectedTypes.length === 0
@@ -118,7 +116,6 @@ export function InsightFilterBar({
                         )}
                         key={type.value}
                         onClick={() => toggleType(type.value)}
-                        size="sm"
                         variant="ghost"
                      >
                         {type.label}

@@ -1,7 +1,7 @@
 import { useStore } from "@tanstack/react-store";
 import type React from "react";
 import { useEffect } from "react";
-import { type ContextPanelTab, contextPanelStore } from "./context-panel-store";
+import { type ContextPanelTab, type PanelAction, contextPanelStore } from "./context-panel-store";
 
 export const openContextPanel = () =>
    contextPanelStore.setState((s) => ({ ...s, isOpen: true }));
@@ -37,6 +37,18 @@ export const setInfoContent = (content: React.ReactNode) =>
 export const clearInfoContent = () =>
    contextPanelStore.setState((s) => ({ ...s, infoContent: null }));
 
+export const setPageActions = (actions: PanelAction[] | null) =>
+   contextPanelStore.setState((s) => ({ ...s, pageActions: actions }));
+
+export const clearPageActions = () =>
+   contextPanelStore.setState((s) => ({ ...s, pageActions: null }));
+
+export const setPageViewSwitch = (node: React.ReactNode) =>
+   contextPanelStore.setState((s) => ({ ...s, pageViewSwitch: node }));
+
+export const clearPageViewSwitch = () =>
+   contextPanelStore.setState((s) => ({ ...s, pageViewSwitch: null }));
+
 export const useContextPanelInfo = (content: React.ReactNode) => {
    // biome-ignore lint/correctness/useExhaustiveDependencies: content is intentionally stable on mount
    useEffect(() => {
@@ -45,14 +57,37 @@ export const useContextPanelInfo = (content: React.ReactNode) => {
    }, []);
 };
 
+// No dep array — always stores the latest actions so handlers that close over
+// mutable state (e.g. filter values) are never stale.
+export const usePageActions = (actions: PanelAction[] | null) => {
+   useEffect(() => {
+      setPageActions(actions);
+   });
+   useEffect(() => {
+      return () => clearPageActions();
+   }, []);
+};
+
+// No dep array — keeps viewSwitch node fresh (e.g. currentView state).
+export const usePageViewSwitch = (node: React.ReactNode) => {
+   useEffect(() => {
+      setPageViewSwitch(node);
+   });
+   useEffect(() => {
+      return () => clearPageViewSwitch();
+   }, []);
+};
+
 export const useContextPanel = () => {
-   const { isOpen, activeTabId, dynamicTabs, infoContent } =
+   const { isOpen, activeTabId, dynamicTabs, infoContent, pageActions, pageViewSwitch } =
       useStore(contextPanelStore);
    return {
       isOpen,
       activeTabId,
       dynamicTabs,
       infoContent,
+      pageActions,
+      pageViewSwitch,
       openContextPanel,
       closeContextPanel,
       toggleContextPanel,
@@ -61,5 +96,9 @@ export const useContextPanel = () => {
       unregisterTab,
       setInfoContent,
       clearInfoContent,
+      setPageActions,
+      clearPageActions,
+      setPageViewSwitch,
+      clearPageViewSwitch,
    };
 };

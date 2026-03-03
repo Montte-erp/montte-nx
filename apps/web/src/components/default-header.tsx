@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { PanelAction } from "@/features/context-panel/context-panel-store";
 import { PageHeader } from "./page-header";
 
 interface DefaultHeaderProps {
@@ -7,8 +8,10 @@ interface DefaultHeaderProps {
    actions?: ReactNode;
    /** Secondary actions shown below the title (e.g., filter chips) */
    secondaryActions?: ReactNode;
-   /** View switch dropdown rendered in the actions area, before route actions */
+   /** View switch — shown as icon button in header when panel is closed, shown in panel Ações header when open. */
    viewSwitch?: ReactNode;
+   /** Structured actions that move into the context panel info tab as full-width items. */
+   panelActions?: PanelAction[];
 }
 
 export function DefaultHeader({
@@ -17,17 +20,15 @@ export function DefaultHeader({
    actions,
    secondaryActions,
    viewSwitch,
+   panelActions,
 }: DefaultHeaderProps) {
    return (
       <div className="flex flex-col gap-4">
          <PageHeader
-            actions={
-               <>
-                  {viewSwitch}
-                  {actions}
-               </>
-            }
+            actions={actions}
             description={description}
+            panelActions={panelActions}
+            panelViewSwitch={viewSwitch}
             title={title}
          />
          {secondaryActions != null && (

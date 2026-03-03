@@ -88,7 +88,7 @@ function OrganizationAuthenticationContent() {
                            </CardDescription>
                         </div>
                      </div>
-                     <Button size="sm" variant="outline">
+                     <Button variant="outline">
                         <Plus className="size-4 mr-2" />
                         Adicionar domínio
                      </Button>
@@ -169,7 +169,7 @@ function OrganizationAuthenticationContent() {
                            </CardDescription>
                         </div>
                      </div>
-                     <Button size="sm" variant="outline">
+                     <Button variant="outline">
                         <Plus className="size-4 mr-2" />
                         Configurar SSO
                      </Button>

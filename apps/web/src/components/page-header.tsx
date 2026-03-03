@@ -1,6 +1,7 @@
 import { Button } from "@packages/ui/components/button";
 import { Input } from "@packages/ui/components/input";
 import { cn } from "@packages/ui/lib/utils";
+import { useStore } from "@tanstack/react-store";
 import { Check, Pencil, X } from "lucide-react";
 import {
    type ReactNode,
@@ -10,7 +11,9 @@ import {
    useState,
 } from "react";
 import { ContextPanelHeaderActions } from "@/features/context-panel/context-panel-header-actions";
-import { useContextPanel } from "@/features/context-panel/use-context-panel";
+import { contextPanelStore } from "@/features/context-panel/context-panel-store";
+import type { PanelAction } from "@/features/context-panel/context-panel-store";
+import { usePageActions, usePageViewSwitch } from "@/features/context-panel/use-context-panel";
 
 export interface PageHeaderProps {
    title: string;
@@ -21,6 +24,10 @@ export interface PageHeaderProps {
    titlePlaceholder?: string;
    descriptionPlaceholder?: string;
    actions?: ReactNode;
+   /** Structured actions that move into the context panel info tab when the panel is open. */
+   panelActions?: PanelAction[];
+   /** View switch that moves into the context panel info tab header when the panel is open. */
+   panelViewSwitch?: ReactNode;
    className?: string;
 }
 
@@ -92,20 +99,18 @@ function InlineEditableText({
             />
             <Button
                onClick={commit}
-               size="icon-sm"
                tooltip="Salvar"
                type="button"
-               variant="icon-outline"
+               variant="outline"
             >
                <Check />
             </Button>
             <Button
                onClick={discard}
                onMouseDown={(e) => e.preventDefault()}
-               size="icon-sm"
                tooltip="Cancelar"
                type="button"
-               variant="icon-outline"
+               variant="outline"
             >
                <X />
             </Button>
@@ -126,10 +131,9 @@ function InlineEditableText({
          </span>
          <Button
             onClick={startEditing}
-            size="icon-sm"
             tooltip="Editar"
             type="button"
-            variant="icon-outline"
+            variant="outline"
          >
             <Pencil />
          </Button>
@@ -149,9 +153,15 @@ export function PageHeader({
    titlePlaceholder = "Título",
    descriptionPlaceholder = "Adicionar descrição...",
    actions,
+   panelActions,
+   panelViewSwitch,
    className,
 }: PageHeaderProps) {
-   const { isOpen } = useContextPanel();
+   // Selector — only re-renders when isOpen changes, not on pageActions store updates
+   const isOpen = useStore(contextPanelStore, (s) => s.isOpen);
+   // Register panel actions and view switch in the store so InfoContent can display them
+   usePageActions(panelActions ?? null);
+   usePageViewSwitch(panelViewSwitch ?? null);
    const hasEditableDescription = editable && onDescriptionChange != null;
    const showDescription = description != null || hasEditableDescription;
 
@@ -194,6 +204,18 @@ export function PageHeader({
             </div>
          </div>
          <div className="flex items-center gap-2 shrink-0">
+            {!isOpen && panelViewSwitch}
+            {!isOpen && panelActions?.map((action) => (
+               <Button
+                  key={action.label}
+                  onClick={action.onClick}
+                  tooltip={action.label}
+                  type="button"
+                  variant="outline"
+               >
+                  <action.icon className="size-4" />
+               </Button>
+            ))}
             {actions}
             {!isOpen && <ContextPanelHeaderActions />}
          </div>

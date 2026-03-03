@@ -57,14 +57,13 @@ function ReauthContent({ onSuccess, onCancel }: ReauthContentProps) {
             <Button
                disabled={password.length === 0 || verifyMutation.isPending}
                onClick={() => verifyMutation.mutate()}
-               size="sm"
             >
                {verifyMutation.isPending && (
                   <Loader2 className="size-4 mr-2 animate-spin" />
                )}
                Confirmar
             </Button>
-            <Button onClick={onCancel} size="sm" variant="outline">
+            <Button onClick={onCancel} variant="outline">
                Cancelar
             </Button>
          </div>

@@ -122,10 +122,9 @@ export function SubSidebarContextMenu({
             <Button
                aria-label="Opções"
                className="size-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-               size="icon"
-               variant="ghost"
+               variant="outline"
             >
-               <MoreHorizontal className="size-3.5" />
+               <MoreHorizontal className="size-4" />
             </Button>
          </DropdownMenuTrigger>
          <DropdownMenuContent align="start" className="z-[1100]" sideOffset={4}>

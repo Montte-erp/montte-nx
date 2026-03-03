@@ -97,7 +97,6 @@ export function TimeSeriesQueryBuilder({
                      config.chartType === "line" && "border-primary",
                   )}
                   onClick={() => onUpdate({ chartType: "line" })}
-                  size="sm"
                   variant={config.chartType === "line" ? "default" : "outline"}
                >
                   <LineChart className="size-4" />
@@ -109,7 +108,6 @@ export function TimeSeriesQueryBuilder({
                      config.chartType === "bar" && "border-primary",
                   )}
                   onClick={() => onUpdate({ chartType: "bar" })}
-                  size="sm"
                   variant={config.chartType === "bar" ? "default" : "outline"}
                >
                   <BarChart3 className="size-4" />

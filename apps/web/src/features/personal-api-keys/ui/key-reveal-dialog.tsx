@@ -42,7 +42,6 @@ export function KeyRevealDialog({
                />
                <Button
                   onClick={() => copy(plaintextKey)}
-                  size="icon"
                   variant="outline"
                >
                   {copied ? (

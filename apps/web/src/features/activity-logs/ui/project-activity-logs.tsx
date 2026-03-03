@@ -225,7 +225,7 @@ function ActivityLogsContent({ teamId }: { teamId: string }) {
                   Histórico completo de ações no projeto.
                </p>
             </div>
-            <Button size="sm" variant="outline">
+            <Button variant="outline">
                <Download className="size-4 mr-2" />
                Exportar
             </Button>

@@ -192,6 +192,7 @@ export function FeatureRequestForm({
                      <Button
                         className="w-full"
                         disabled={!canSubmit || mutation.isPending}
+                        size="lg"
                         type="submit"
                      >
                         {mutation.isPending && (

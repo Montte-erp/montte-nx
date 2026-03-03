@@ -21,7 +21,7 @@ import {
 } from "@packages/ui/components/item";
 import { Switch } from "@packages/ui/components/switch";
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronDown, FlaskConical, ImageIcon, Lightbulb } from "lucide-react";
+import { ChevronDown, Database, FlaskConical, Lightbulb } from "lucide-react";
 import { Fragment, useState } from "react";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 
@@ -35,12 +35,10 @@ export const Route = createFileRoute(
 // Local config — maps parent flagKey to concept sub-feature names.
 // Concept sub-features are nested visually under their parent.
 // ---------------------------------------------------------------------------
-const CONCEPT_CHILDREN: Record<string, string[]> = {
-   "asset-bank": ["Geração de Imagens por IA"],
-};
+const CONCEPT_CHILDREN: Record<string, string[]> = {};
 
 const FEATURE_ICONS: Record<string, React.ElementType> = {
-   "asset-bank": ImageIcon,
+   "data-management": Database,
 };
 
 function FeaturePreviewsPage() {
@@ -120,7 +118,6 @@ function FeaturePreviewsPage() {
                            ]),
                         )
                      }
-                     size="sm"
                      variant="link"
                   >
                      Mostrar todos

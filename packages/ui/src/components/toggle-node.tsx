@@ -16,8 +16,8 @@ export function ToggleElement(props: PlateElementProps) {
          <Button
             className="-left-0.5 absolute top-0 size-6 cursor-pointer select-none items-center justify-center rounded-md p-px text-muted-foreground transition-colors hover:bg-accent [&_svg]:size-4"
             contentEditable={false}
-            size="icon"
-            variant="ghost"
+            tooltip="Expandir"
+            variant="outline"
             {...buttonProps}
          >
             <ChevronRight

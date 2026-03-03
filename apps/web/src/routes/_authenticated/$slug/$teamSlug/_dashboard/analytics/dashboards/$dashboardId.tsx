@@ -1,6 +1,7 @@
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { LayoutDashboard } from "lucide-react";
 import { Suspense } from "react";
 import { DashboardView } from "@/features/analytics/ui/dashboard-view";
 import {
@@ -14,9 +15,11 @@ const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
    badgeLabel: "Analytics Avançado",
    message: "Esta funcionalidade está em fase beta.",
    ctaLabel: "Deixar feedback",
+   stage: "beta",
+   icon: LayoutDashboard,
    bullets: [
-      "Crie dashboards personalizados com seus insights",
-      "Analise tendências, funis e retenção de usuários",
+      "Crie dashboards personalizados com seus insights financeiros e operacionais",
+      "Acompanhe fluxo de caixa, metas e desempenho em tempo real",
       "Seu feedback nos ajuda a melhorar",
    ],
 };

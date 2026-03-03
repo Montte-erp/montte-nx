@@ -262,9 +262,8 @@ function SessionsSection({
                                        ),
                                     })
                                  }
-                                 size="icon"
                                  tooltip="Ver detalhes"
-                                 variant="icon-outline"
+                                 variant="outline"
                               >
                                  <ChevronRight className="size-4" />
                               </Button>
@@ -326,7 +325,6 @@ function SecurityActionsSection({
             <Button
                disabled={isRevokingOthers || otherSessionsCount === 0}
                onClick={revokeOtherSessions}
-               size="sm"
                variant="outline"
             >
                <Trash2 className="size-4 mr-2" />
@@ -335,7 +333,6 @@ function SecurityActionsSection({
             <Button
                disabled={isRevokingAll}
                onClick={revokeAllSessions}
-               size="sm"
                variant="destructive"
             >
                <Trash2 className="size-4 mr-2" />

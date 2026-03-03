@@ -20,6 +20,7 @@ import { useStore } from "@tanstack/react-store";
 import { Info, MessageSquare, MoveDiagonalIcon, X } from "lucide-react";
 import type React from "react";
 import { type ContextPanelTab, contextPanelStore } from "./context-panel-store";
+import { ContextPanelAction } from "./context-panel-info";
 import { TecoChatTab } from "./ui/teco-chat-tab";
 import {
    closeContextPanel,
@@ -28,19 +29,43 @@ import {
 } from "./use-context-panel";
 
 function InfoContent() {
-   const { infoContent } = useStore(contextPanelStore);
-   if (!infoContent) {
-      return (
-         <ContextPanel>
-            <ContextPanelContent className="flex items-center justify-center p-6">
-               <p className="text-sm text-muted-foreground/50">
-                  Sem informações
-               </p>
+   const { infoContent, pageActions, pageViewSwitch } = useStore(contextPanelStore);
+
+   const emptyState = (
+      <ContextPanel>
+         <ContextPanelContent className="flex items-center justify-center p-6">
+            <p className="text-sm text-muted-foreground/50">Sem informações</p>
+         </ContextPanelContent>
+      </ContextPanel>
+   );
+
+   if (!pageActions && !pageViewSwitch) {
+      return infoContent ?? emptyState;
+   }
+
+   return (
+      <div className="flex flex-col h-full min-h-0 overflow-auto">
+         <ContextPanel className="h-auto shrink-0">
+            <ContextPanelHeader>
+               <ContextPanelTitle>Ações</ContextPanelTitle>
+               {pageViewSwitch && (
+                  <ContextPanelHeaderActions>{pageViewSwitch}</ContextPanelHeaderActions>
+               )}
+            </ContextPanelHeader>
+            <ContextPanelContent className="gap-1">
+               {pageActions?.map((action) => (
+                  <ContextPanelAction
+                     icon={action.icon}
+                     key={action.label}
+                     label={action.label}
+                     onClick={action.onClick}
+                  />
+               ))}
             </ContextPanelContent>
          </ContextPanel>
-      );
-   }
-   return <>{infoContent}</>;
+         {infoContent && <div className="flex-1 min-h-0">{infoContent}</div>}
+      </div>
+   );
 }
 
 function ChatContent() {
@@ -55,18 +80,18 @@ function ChatContent() {
             <ContextPanelTitle>Teco AI</ContextPanelTitle>
             <ContextPanelHeaderActions>
                <Button
-                  className="size-6 rounded"
+                  className=""
                   onClick={() =>
                      navigate({
                         to: "/$slug/$teamSlug/chat",
                         params: { slug, teamSlug },
                      })
                   }
-                  size="icon"
+                  tooltip="Expandir chat"
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                >
-                  <MoveDiagonalIcon className="size-4" />
+                  <MoveDiagonalIcon className="" />
                </Button>
             </ContextPanelHeaderActions>
          </ContextPanelHeader>
@@ -117,30 +142,28 @@ function ContextPanelInner() {
                   {allTabs.map((tab) => (
                      <Button
                         className={cn(
-                           "size-7 rounded",
+                           "",
                            activeTabId === tab.id &&
-                              "bg-accent text-accent-foreground",
+                           "bg-accent text-accent-foreground",
                         )}
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        size="icon"
                         tooltip={tab.label}
                         tooltipSide="bottom"
                         type="button"
-                        variant="icon-outline"
+                        variant="outline"
                      >
-                        <tab.icon className="size-4" />
+                        <tab.icon className="" />
                      </Button>
                   ))}
                   <div className="flex-1" />
                   <Button
-                     className="size-7 rounded text-muted-foreground"
                      onClick={closeContextPanel}
-                     size="icon"
+                     tooltip="Fechar painel"
                      type="button"
-                     variant="ghost"
+                     variant="outline"
                   >
-                     <X className="size-3.5" />
+                     <X className="" />
                   </Button>
                </>
             </div>

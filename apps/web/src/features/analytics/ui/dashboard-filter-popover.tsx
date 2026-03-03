@@ -239,7 +239,6 @@ export function DashboardFilterPopover({
                   "h-7 text-xs gap-1",
                   filterCount > 0 ? "text-foreground" : "text-muted-foreground",
                )}
-               size="sm"
                variant="outline"
             >
                <Filter className="size-3" />
@@ -269,7 +268,6 @@ export function DashboardFilterPopover({
                      className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
                      disabled={isPending}
                      onClick={handleClearAll}
-                     size="sm"
                      variant="ghost"
                   >
                      <X className="size-3 mr-1" />
@@ -406,11 +404,11 @@ export function DashboardFilterPopover({
                            <Button
                               className="size-7 text-muted-foreground hover:text-destructive"
                               onClick={() => handleRemove(row.id)}
-                              size="icon"
+                              tooltip="Remover filtro"
                               type="button"
-                              variant="ghost"
+                              variant="outline"
                            >
-                              <Trash2 className="size-3.5" />
+                              <Trash2 className="size-4" />
                            </Button>
                         </div>
                      );
@@ -425,7 +423,6 @@ export function DashboardFilterPopover({
                <Button
                   className="h-7 text-xs gap-1 text-muted-foreground"
                   onClick={handleAddFilter}
-                  size="sm"
                   variant="ghost"
                >
                   <Plus className="size-3.5" />
@@ -436,7 +433,6 @@ export function DashboardFilterPopover({
                   <Button
                      className="h-7 text-xs"
                      onClick={() => handleOpenChange(false)}
-                     size="sm"
                      variant="ghost"
                   >
                      Cancelar
@@ -445,7 +441,6 @@ export function DashboardFilterPopover({
                      className="h-7 text-xs"
                      disabled={isPending || !hasChanges}
                      onClick={handleApply}
-                     size="sm"
                   >
                      {isPending ? "Aplicando..." : "Aplicar"}
                   </Button>

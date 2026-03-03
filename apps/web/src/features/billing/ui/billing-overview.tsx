@@ -244,7 +244,7 @@ function PlanBanner({ addonName }: { addonName: string | null }) {
                incluídos — pague apenas pelo excedente.
             </p>
          </div>
-         <Button asChild size="sm" variant="outline">
+         <Button asChild variant="outline">
             <Link params={{ slug, teamSlug }} to="/$slug/$teamSlug/plans">
                Ver addons
             </Link>
@@ -401,7 +401,7 @@ function OverviewProductCard({
                   <div className="flex items-center gap-2 shrink-0">
                      {stage && <FeatureStageBadge stage={stage} />}
                      {!enrolled && (
-                        <Button asChild size="sm" variant="outline">
+                        <Button asChild variant="outline">
                            <Link
                               params={{ slug, teamSlug }}
                               to="/$slug/$teamSlug/settings/feature-previews"
@@ -583,7 +583,7 @@ function AddonCard({ addon, active }: { addon: AddonDef; active: boolean }) {
                      <span className="text-xs">{addon.perUnit}</span>
                   </span>
                )}
-               <Button size="sm" variant={active ? "outline" : "default"}>
+               <Button variant={active ? "outline" : "default"}>
                   {active ? "Gerenciar" : "Contratar"}
                </Button>
             </CardAction>
@@ -778,7 +778,7 @@ export function BillingOverview() {
          <BillingPeriodSection />
 
          {/* Manage card link */}
-         <Button asChild size="sm" variant="outline">
+         <Button asChild variant="outline">
             <Link params={{ slug, teamSlug }} to="/$slug/$teamSlug/plans">
                <CreditCard className="size-4 mr-1.5" />
                Gerenciar plano e faturas

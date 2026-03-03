@@ -81,7 +81,6 @@ export function buildInventoryProductColumns(
             <div className="flex items-center gap-1">
                <Button
                   onClick={() => onRegisterMovement(row.original)}
-                  size="sm"
                   variant="outline"
                >
                   <PackagePlus className="size-3.5 mr-1" />
@@ -89,7 +88,7 @@ export function buildInventoryProductColumns(
                </Button>
                <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                     <Button size="icon-sm" variant="ghost">
+                     <Button variant="outline">
                         <MoreHorizontal className="size-4" />
                      </Button>
                   </DropdownMenuTrigger>

@@ -281,7 +281,6 @@ function ProjectGeneralContent() {
                         !newDomain.trim() || updateDomainsMutation.isPending
                      }
                      onClick={handleAddDomain}
-                     size="sm"
                   >
                      {updateDomainsMutation.isPending ? (
                         <Loader2 className="size-4 animate-spin" />

@@ -167,9 +167,8 @@ function OrganizationRolesContent() {
                   >
                      <Button
                         onClick={() => handleEditRole(role)}
-                        size="icon"
                         tooltip="Editar função"
-                        variant="icon-outline"
+                        variant="outline"
                      >
                         <Pencil className="size-4" />
                      </Button>
@@ -190,7 +189,7 @@ function OrganizationRolesContent() {
                   Gerencie as funções e permissões da organização.
                </p>
             </div>
-            <Button onClick={handleCreateRole} size="sm">
+            <Button onClick={handleCreateRole}>
                <Plus className="size-4 mr-2" />
                Criar função
             </Button>
@@ -209,7 +208,6 @@ function OrganizationRolesContent() {
                         <Button
                            className="text-destructive hover:text-destructive"
                            onClick={() => handleDeleteRole(role)}
-                           size="sm"
                            variant="ghost"
                         >
                            <Trash2 className="size-3 mr-2" />

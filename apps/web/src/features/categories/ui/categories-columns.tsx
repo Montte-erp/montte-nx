@@ -122,29 +122,25 @@ export function buildCategoryColumns(
                >
                   <Button
                      onClick={() => onEdit(row.original)}
-                     size="icon"
-                     variant="ghost"
+                     tooltip="Editar"
+                     variant="outline"
                   >
                      <Pencil className="size-4" />
-                     <span className="sr-only">Editar</span>
                   </Button>
                   <Button
                      onClick={() => onArchive(row.original)}
-                     size="icon"
-                     title="Arquivar"
-                     variant="ghost"
+                     tooltip="Arquivar"
+                     variant="outline"
                   >
                      <Archive className="size-4" />
-                     <span className="sr-only">Arquivar</span>
                   </Button>
                   <Button
                      className="text-destructive hover:text-destructive"
                      onClick={() => onDelete(row.original)}
-                     size="icon"
-                     variant="ghost"
+                     tooltip="Excluir"
+                     variant="outline"
                   >
                      <Trash2 className="size-4" />
-                     <span className="sr-only">Excluir</span>
                   </Button>
                </div>
             );

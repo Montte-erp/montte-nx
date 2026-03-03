@@ -284,8 +284,7 @@ function SidebarManagerTrigger({
             onClick?.(event);
             sidebar?.toggleSidebar();
          }}
-         size="icon"
-         variant="ghost"
+         variant="outline"
          {...props}
       >
          <MenuIcon />
@@ -543,8 +542,7 @@ function SidebarTrigger({
             onClick?.(event);
             toggleSidebar();
          }}
-         size="icon"
-         variant="ghost"
+         variant="outline"
          {...props}
       >
          {isMobile ? (

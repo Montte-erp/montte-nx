@@ -56,7 +56,6 @@ function ProjectDangerZonePage() {
                            },
                         })
                      }
-                     size="sm"
                      variant="outline"
                   >
                      Transferir
@@ -88,7 +87,6 @@ function ProjectDangerZonePage() {
                            },
                         })
                      }
-                     size="sm"
                      variant="destructive"
                   >
                      Deletar

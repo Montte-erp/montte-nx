@@ -73,6 +73,14 @@ const STATIC_FEATURES: EarlyAccessFeature[] = [
       stage: "beta",
       documentationUrl: null,
    },
+   {
+      flagKey: "data-management",
+      name: "Dados",
+      description:
+         "Pipeline de dados para captura de eventos externos via webhooks e SDKs, configuração de destinos e gerenciamento de schema — infraestrutura para integrações com sistemas externos.",
+      stage: "concept",
+      documentationUrl: null,
+   },
 ];
 
 const STATIC_FLAG_KEYS = new Set(

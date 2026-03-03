@@ -114,8 +114,7 @@ export function BudgetGoalCard({
                <DropdownMenuTrigger asChild>
                   <Button
                      className="size-8 shrink-0"
-                     size="icon"
-                     variant="ghost"
+                     variant="outline"
                   >
                      <MoreHorizontal className="size-4" />
                      <span className="sr-only">Ações</span>

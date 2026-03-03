@@ -113,7 +113,6 @@ function DisplayNameSection({
             <Button
                disabled={!hasChanged || isPending}
                onClick={handleRename}
-               size="sm"
             >
                {isPending && <Loader2 className="size-4 mr-2 animate-spin" />}
                Renomear organização
@@ -271,7 +270,6 @@ function LogoSection({
             <Button
                disabled={saveMutation.isPending || presignedUpload.isUploading}
                onClick={() => saveMutation.mutate()}
-               size="sm"
             >
                {(saveMutation.isPending || presignedUpload.isUploading) && (
                   <Loader2 className="size-4 mr-2 animate-spin" />
@@ -336,13 +334,13 @@ function OrganizationDetailsSection({
                <Button
                   className="size-7"
                   onClick={handleCopySlug}
-                  size="icon"
-                  variant="ghost"
+                  tooltip="Copiar"
+                  variant="outline"
                >
                   {copied ? (
-                     <Check className="size-3.5" />
+                     <Check className="size-4" />
                   ) : (
-                     <Copy className="size-3.5" />
+                     <Copy className="size-4" />
                   )}
                </Button>
             </Item>

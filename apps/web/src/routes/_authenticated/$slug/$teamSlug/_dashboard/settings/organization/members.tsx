@@ -391,7 +391,6 @@ function MemberExpandedRow({
             <Button
                className="text-destructive hover:text-destructive"
                onClick={() => onRemove(member)}
-               size="sm"
                variant="ghost"
             >
                <UserMinus className="size-3 mr-2" />
@@ -472,9 +471,8 @@ function MemberMobileCard({
                               member.role === "admin" ? "member" : "admin",
                            )
                         }
-                        size="icon"
                         tooltip={roleLabel}
-                        variant="icon-outline"
+                        variant="outline"
                      >
                         <ShieldCheck className="size-4" />
                      </Button>
@@ -482,8 +480,8 @@ function MemberMobileCard({
                   {canExpand && (
                      <Button
                         onClick={toggleExpanded}
-                        size="icon"
-                        variant="ghost"
+                        tooltip="Expandir"
+                        variant="outline"
                      >
                         <ChevronDown
                            className={`size-4 transition-transform ${
@@ -604,7 +602,6 @@ function PendingInvitesSection({ organizationId }: { organizationId: string }) {
                         <Button
                            disabled={cancelMutation.isPending}
                            onClick={() => cancelMutation.mutate(invite.id)}
-                           size="sm"
                            variant="ghost"
                         >
                            Cancelar
@@ -820,9 +817,8 @@ function MembersContent() {
                               member.role === "admin" ? "member" : "admin",
                            )
                         }
-                        size="icon"
                         tooltip={roleLabel}
-                        variant="icon-outline"
+                        variant="outline"
                      >
                         <ShieldCheck className="size-4" />
                      </Button>
@@ -844,7 +840,7 @@ function MembersContent() {
                   Gerencie os membros da sua organização.
                </p>
             </div>
-            <Button onClick={handleOpenInviteCredenza} size="sm">
+            <Button onClick={handleOpenInviteCredenza}>
                <UserPlus className="size-4 mr-2" />
                Convidar membro
             </Button>

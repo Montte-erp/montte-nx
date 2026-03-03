@@ -32,7 +32,7 @@ export function ErrorFallback({
             <EmptyDescription>{errorDescription}</EmptyDescription>
          </EmptyHeader>
          <EmptyContent>
-            <Button onClick={resetErrorBoundary} size="sm" variant="outline">
+            <Button onClick={resetErrorBoundary} variant="outline">
                {retryText}
             </Button>
          </EmptyContent>

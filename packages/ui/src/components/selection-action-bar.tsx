@@ -50,7 +50,6 @@ function SelectionActionBar({
          <Button
             className="h-7 gap-1.5 px-2"
             onClick={onClear}
-            size="sm"
             variant="outline"
          >
             <X className="size-3.5" />
@@ -85,7 +84,6 @@ function SelectionActionButton({
                "bg-destructive/10 hover:bg-destructive/20 text-destructive border-destructive/30",
             className,
          )}
-         size="sm"
          variant="outline"
          {...props}
       >

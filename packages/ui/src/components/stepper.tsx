@@ -262,7 +262,6 @@ const defineStepper = <const Steps extends Stepperize.Step[]>(
                            )
                         }
                         role="tab"
-                        size="icon"
                         tabIndex={dataState !== "inactive" ? 0 : -1}
                         type="button"
                         variant={

@@ -228,7 +228,6 @@ function CategoriesList({ view }: CategoriesListProps) {
                      <div className="flex items-center gap-2">
                         <Button
                            onClick={() => handleEdit(category)}
-                           size="sm"
                            variant="outline"
                         >
                            Editar
@@ -236,7 +235,6 @@ function CategoriesList({ view }: CategoriesListProps) {
                         <Button
                            className="text-destructive"
                            onClick={() => handleDelete(category)}
-                           size="sm"
                            variant="ghost"
                         >
                            Excluir
@@ -278,7 +276,6 @@ function CategoriesList({ view }: CategoriesListProps) {
                      <div className="flex items-center gap-2">
                         <Button
                            onClick={() => handleEdit(row.original)}
-                           size="sm"
                            variant="outline"
                         >
                            Editar
@@ -286,7 +283,6 @@ function CategoriesList({ view }: CategoriesListProps) {
                         <Button
                            className="text-destructive"
                            onClick={() => handleDelete(row.original)}
-                           size="sm"
                            variant="ghost"
                         >
                            Excluir
@@ -347,7 +343,7 @@ function CategoriesPage() {
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
-               <Button onClick={handleCreate} size="sm">
+               <Button onClick={handleCreate}>
                   <Plus className="size-4 mr-1" />
                   Nova Categoria
                </Button>

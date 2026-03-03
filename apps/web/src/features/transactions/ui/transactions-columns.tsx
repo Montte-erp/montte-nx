@@ -165,20 +165,18 @@ export function buildTransactionColumns(
                >
                   <Button
                      onClick={() => onEdit(tx)}
-                     size="icon"
-                     variant="ghost"
+                     tooltip="Editar"
+                     variant="outline"
                   >
                      <Pencil className="size-4" />
-                     <span className="sr-only">Editar</span>
                   </Button>
                   <Button
                      className="text-destructive hover:text-destructive"
                      onClick={() => onDelete(tx)}
-                     size="icon"
-                     variant="ghost"
+                     tooltip="Excluir"
+                     variant="outline"
                   >
                      <Trash2 className="size-4" />
-                     <span className="sr-only">Excluir</span>
                   </Button>
                   {!isTransfer &&
                      (onInstallment ||
@@ -186,7 +184,7 @@ export function buildTransactionColumns(
                         (onUnpay && tx.billId)) && (
                         <DropdownMenu>
                            <DropdownMenuTrigger asChild>
-                              <Button size="icon" variant="ghost">
+                              <Button variant="outline">
                                  <MoreHorizontal className="size-4" />
                                  <span className="sr-only">Mais ações</span>
                               </Button>

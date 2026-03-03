@@ -18,6 +18,8 @@ import type { ColumnDef } from "@tanstack/react-table";
 import {
    AlertCircle,
    GitBranch,
+   LayoutGrid,
+   LayoutList,
    Lightbulb,
    Loader2,
    Pencil,
@@ -37,15 +39,30 @@ import {
 import { ContextPanelAction } from "@/features/context-panel/context-panel-info";
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import {
+   useViewSwitch,
+   type ViewConfig,
+} from "@/features/view-switch/hooks/use-view-switch";
+import { ViewSwitchDropdown } from "@/features/view-switch/ui/view-switch-dropdown";
 import { orpc } from "@/integrations/orpc/client";
+
+const INSIGHT_VIEWS: [
+   ViewConfig<"table" | "card">,
+   ViewConfig<"table" | "card">,
+] = [
+   { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
+   { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
+];
 
 const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
    badgeLabel: "Analytics Avançado",
    message: "Esta funcionalidade está em fase beta.",
    ctaLabel: "Deixar feedback",
+   stage: "beta",
+   icon: TrendingUp,
    bullets: [
-      "Crie insights personalizados para monitorar qualquer evento",
-      "Analise tendências, funis e retenção de usuários",
+      "Crie insights personalizados para monitorar receitas, despesas e metas",
+      "Analise tendências financeiras e desempenho operacional",
       "Seu feedback nos ajuda a melhorar",
    ],
 };
@@ -187,22 +204,20 @@ function InsightMobileCard({
                            params: { slug, teamSlug, insightId: insight.id },
                         })
                      }
-                     size="icon"
-                     variant="ghost"
+                     tooltip="Editar"
+                     variant="outline"
                   >
                      <Pencil className="size-4" />
-                     <span className="sr-only">Editar</span>
                   </Button>
                   <Button
                      className="text-destructive hover:text-destructive"
                      onClick={() =>
                         onDelete({ id: insight.id, name: insight.name })
                      }
-                     size="icon"
-                     variant="ghost"
+                     tooltip="Excluir"
+                     variant="outline"
                   >
                      <Trash2 className="size-4" />
-                     <span className="sr-only">Excluir</span>
                   </Button>
                </div>
             </div>
@@ -221,6 +236,10 @@ function InsightsListPage() {
    const queryClient = useQueryClient();
    const { openAlertDialog } = useAlertDialog();
    const [isCreating, startCreateTransition] = useTransition();
+   const { currentView, setView, views } = useViewSwitch(
+      "analytics:insights:view",
+      INSIGHT_VIEWS,
+   );
 
    const createMutation = useMutation(
       orpc.insights.create.mutationOptions({
@@ -358,22 +377,20 @@ function InsightsListPage() {
                               params: { slug, teamSlug, insightId: insight.id },
                            })
                         }
-                        size="icon"
-                        variant="ghost"
+                        tooltip="Editar"
+                        variant="outline"
                      >
-                        <Pencil className="size-3.5" />
-                        <span className="sr-only">Editar</span>
+                        <Pencil className="size-4" />
                      </Button>
                      <Button
                         className="text-destructive hover:text-destructive"
                         onClick={() =>
                            handleDelete({ id: insight.id, name: insight.name })
                         }
-                        size="icon"
-                        variant="ghost"
+                        tooltip="Excluir"
+                        variant="outline"
                      >
-                        <Trash2 className="size-3.5" />
-                        <span className="sr-only">Excluir</span>
+                        <Trash2 className="size-4" />
                      </Button>
                   </div>
                );
@@ -397,6 +414,13 @@ function InsightsListPage() {
                </Button>
             }
             description="Analise eventos, funis e retenção com consultas personalizadas."
+            panelViewSwitch={
+               <ViewSwitchDropdown
+                  currentView={currentView}
+                  onViewChange={setView}
+                  views={views}
+               />
+            }
             title="Insights"
          />
          <EarlyAccessBanner template={ANALYTICS_BANNER} />
@@ -413,22 +437,98 @@ function InsightsListPage() {
          {!isLoading && !error && insights?.length === 0 && (
             <EmptyState onCreateClick={handleCreate} />
          )}
-         {!isLoading && !error && insights && insights.length > 0 && (
-            <DataTable
-               columns={columns}
-               data={insights as InsightRow[]}
-               getRowId={(row) => row.id}
-               renderMobileCard={(props) => (
-                  <InsightMobileCard
-                     {...props}
-                     navigate={navigate}
-                     onDelete={handleDelete}
-                     slug={slug}
-                     teamSlug={teamSlug}
-                  />
-               )}
-            />
-         )}
+         {!isLoading && !error && insights && insights.length > 0 &&
+            (currentView === "card" ? (
+               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {insights.map((insight) => {
+                     const row = insight as InsightRow;
+                     const TypeIcon = TYPE_ICONS[row.type] ?? Lightbulb;
+                     return (
+                        <div
+                           className="rounded-lg border bg-background p-4 flex flex-col gap-3"
+                           key={row.id}
+                        >
+                           <div className="flex items-start gap-3">
+                              <div className="size-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                                 <TypeIcon className="size-4 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                 <p className="font-medium truncate">
+                                    {row.name}
+                                 </p>
+                                 {row.description && (
+                                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                                       {row.description}
+                                    </p>
+                                 )}
+                                 <div className="flex items-center gap-2 mt-1.5">
+                                    <Badge
+                                       className="text-xs"
+                                       variant={
+                                          TYPE_VARIANTS[row.type] ?? "default"
+                                       }
+                                    >
+                                       {TYPE_LABELS[row.type] ?? row.type}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                       {formatDate(row.updatedAt)}
+                                    </span>
+                                 </div>
+                              </div>
+                           </div>
+                           <div className="flex items-center gap-1 pt-2 border-t">
+                              <Button
+                                 className="flex-1"
+                                 onClick={() =>
+                                    navigate({
+                                       to: "/$slug/$teamSlug/analytics/insights/$insightId",
+                                       params: {
+                                          slug,
+                                          teamSlug,
+                                          insightId: row.id,
+                                       },
+                                    })
+                                 }
+                                 variant="outline"
+                              >
+                                 <Pencil className="size-4 mr-1.5" />
+                                 Editar
+                              </Button>
+                              <Button
+                                 className="text-destructive hover:text-destructive"
+                                 onClick={() =>
+                                    handleDelete({
+                                       id: row.id,
+                                       name: row.name,
+                                    })
+                                 }
+                                 size="icon"
+                                 variant="ghost"
+                              >
+                                 <Trash2 className="size-4" />
+                                 <span className="sr-only">Excluir</span>
+                              </Button>
+                           </div>
+                        </div>
+                     );
+                  })}
+               </div>
+            ) : (
+               <DataTable
+                  columns={columns}
+                  data={insights as InsightRow[]}
+                  getRowId={(row) => row.id}
+                  renderMobileCard={(props) => (
+                     <InsightMobileCard
+                        {...props}
+                        navigate={navigate}
+                        onDelete={handleDelete}
+                        slug={slug}
+                        teamSlug={teamSlug}
+                     />
+                  )}
+               />
+            ))}
       </main>
    );
 }

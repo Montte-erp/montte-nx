@@ -27,6 +27,10 @@ import {
    type ViewConfig,
 } from "@/features/view-switch/hooks/use-view-switch";
 import { ViewSwitchDropdown } from "@/features/view-switch/ui/view-switch-dropdown";
+import {
+   EarlyAccessBanner,
+   type EarlyAccessBannerTemplate,
+} from "@/features/billing/ui/early-access-banner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -41,6 +45,19 @@ export const Route = createFileRoute(
    },
    component: InventoryPage,
 });
+
+const INVENTORY_BANNER: EarlyAccessBannerTemplate = {
+   badgeLabel: "Estoque",
+   message: "Esta funcionalidade está em conceito.",
+   ctaLabel: "Deixar feedback",
+   stage: "concept",
+   icon: Package,
+   bullets: [
+      "Cadastre produtos e controle o estoque",
+      "Registre entradas e saídas de movimentação",
+      "Seu feedback nos ajuda a melhorar",
+   ],
+};
 
 const INVENTORY_VIEWS: [
    ViewConfig<"table" | "card">,
@@ -206,7 +223,7 @@ function InventoryPage() {
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
-               <Button onClick={handleCreate} size="sm">
+               <Button onClick={handleCreate}>
                   <Plus className="size-4 mr-1" />
                   Novo Produto
                </Button>
@@ -221,6 +238,7 @@ function InventoryPage() {
                />
             }
          />
+         <EarlyAccessBanner template={INVENTORY_BANNER} />
          <Suspense fallback={<InventorySkeleton />}>
             <InventoryList view={currentView} />
          </Suspense>

@@ -150,7 +150,6 @@ function AvatarUploadSection({
             <Button
                disabled={isPending || presignedUpload.isUploading}
                onClick={handleSave}
-               size="sm"
             >
                {(isPending || presignedUpload.isUploading) && (
                   <Loader2 className="size-4 mr-2 animate-spin" />
@@ -275,7 +274,6 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
                   {twoFactorEnabled ? (
                      <Button
                         onClick={() => setStep("disabling-confirm")}
-                        size="sm"
                         variant="destructive"
                      >
                         Desativar 2FA
@@ -283,7 +281,6 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
                   ) : (
                      <Button
                         onClick={() => setStep("enabling-confirm")}
-                        size="sm"
                      >
                         Ativar 2FA
                      </Button>
@@ -309,14 +306,13 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
                      <Button
                         disabled={password.length === 0 || isPending}
                         onClick={handleEnable}
-                        size="sm"
                      >
                         {isPending && (
                            <Loader2 className="size-4 mr-2 animate-spin" />
                         )}
                         Continuar
                      </Button>
-                     <Button onClick={resetState} size="sm" variant="outline">
+                     <Button onClick={resetState} variant="outline">
                         Cancelar
                      </Button>
                   </div>
@@ -356,14 +352,13 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
                      <Button
                         disabled={totpCode.length !== 6 || isPending}
                         onClick={handleVerify}
-                        size="sm"
                      >
                         {isPending && (
                            <Loader2 className="size-4 mr-2 animate-spin" />
                         )}
                         Verificar
                      </Button>
-                     <Button onClick={resetState} size="sm" variant="outline">
+                     <Button onClick={resetState} variant="outline">
                         Cancelar
                      </Button>
                   </div>
@@ -391,7 +386,7 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
                         ))}
                      </div>
                   </div>
-                  <Button onClick={resetState} size="sm">
+                  <Button onClick={resetState}>
                      Concluído
                   </Button>
                </div>
@@ -415,7 +410,6 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
                      <Button
                         disabled={password.length === 0 || isPending}
                         onClick={handleDisable}
-                        size="sm"
                         variant="destructive"
                      >
                         {isPending && (
@@ -423,7 +417,7 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
                         )}
                         Desativar
                      </Button>
-                     <Button onClick={resetState} size="sm" variant="outline">
+                     <Button onClick={resetState} variant="outline">
                         Cancelar
                      </Button>
                   </div>
@@ -598,7 +592,6 @@ function ProfileNameSection({ currentName }: { currentName: string }) {
                      disabled={
                         !formState.isDirty || !formState.canSubmit || isPending
                      }
-                     size="sm"
                      type="submit"
                   >
                      {isPending && (
@@ -696,7 +689,6 @@ function ProfileEmailSection({
             <Button
                disabled={!hasChanged || isPending}
                onClick={handleSave}
-               size="sm"
             >
                {isPending && <Loader2 className="size-4 mr-2 animate-spin" />}
                Salvar email
@@ -895,7 +887,6 @@ function ProfilePasswordSection({ hasPassword }: { hasPassword: boolean }) {
                {(formState) => (
                   <Button
                      disabled={!formState.canSubmit || isPending}
-                     size="sm"
                      type="submit"
                   >
                      {isPending && (

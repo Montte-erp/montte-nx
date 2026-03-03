@@ -16,6 +16,7 @@ import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { LayoutGrid, LayoutList, Plus, Trash2, Users } from "lucide-react";
+
 import { Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
@@ -23,6 +24,7 @@ import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
+
 import {
    buildContactColumns,
    type ContactRow,
@@ -58,6 +60,8 @@ const CONTACTS_BANNER: EarlyAccessBannerTemplate = {
    badgeLabel: "Contatos",
    message: "Esta funcionalidade está em fase alpha.",
    ctaLabel: "Deixar feedback",
+   stage: "alpha",
+   icon: Users,
    bullets: [
       "Cadastre clientes e fornecedores",
       "Vincule contatos a transações e cobranças",
@@ -221,7 +225,6 @@ function ContactsList({ view, typeFilter }: ContactsListProps) {
                   <div className="flex items-center gap-2">
                      <Button
                         onClick={() => handleEdit(contact as ContactRow)}
-                        size="sm"
                         variant="outline"
                      >
                         Editar
@@ -229,7 +232,6 @@ function ContactsList({ view, typeFilter }: ContactsListProps) {
                      <Button
                         className="text-destructive"
                         onClick={() => handleDelete(contact as ContactRow)}
-                        size="sm"
                         variant="ghost"
                      >
                         Excluir
@@ -262,7 +264,6 @@ function ContactsList({ view, typeFilter }: ContactsListProps) {
                   <div className="flex items-center gap-2">
                      <Button
                         onClick={() => handleEdit(row.original)}
-                        size="sm"
                         variant="outline"
                      >
                         Editar
@@ -270,7 +271,6 @@ function ContactsList({ view, typeFilter }: ContactsListProps) {
                      <Button
                         className="text-destructive"
                         onClick={() => handleDelete(row.original)}
-                        size="sm"
                         variant="ghost"
                      >
                         Excluir
@@ -315,7 +315,7 @@ function ContactsPage() {
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
-               <Button onClick={handleCreate} size="sm">
+               <Button onClick={handleCreate}>
                   <Plus className="size-4 mr-1" />
                   Novo Contato
                </Button>
@@ -338,7 +338,6 @@ function ContactsPage() {
                <Button
                   key={key}
                   onClick={() => setTypeFilter(key)}
-                  size="sm"
                   variant={typeFilter === key ? "default" : "outline"}
                >
                   {TYPE_FILTER_LABELS[key]}

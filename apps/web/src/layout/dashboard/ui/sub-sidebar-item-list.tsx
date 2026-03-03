@@ -444,7 +444,7 @@ function EmptyState({
                ? "Nenhum dashboard encontrado"
                : "Nenhum insight encontrado"}
          </p>
-         <Button asChild size="sm" variant="outline">
+         <Button asChild variant="outline">
             <Link to={listRoute}>
                <Plus className="size-3.5" />
                Novo {label}

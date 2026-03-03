@@ -689,7 +689,6 @@ export function AILoadingBar() {
             <Button
                className="flex items-center gap-1 text-xs"
                onClick={() => api.aiChat.stop()}
-               size="sm"
                variant="ghost"
             >
                <PauseIcon className="h-4 w-4" />
@@ -716,7 +715,6 @@ export function AILoadingBar() {
                   <Button
                      disabled={isLoading}
                      onClick={() => handleComments("accept")}
-                     size="sm"
                   >
                      Accept
                   </Button>
@@ -724,7 +722,6 @@ export function AILoadingBar() {
                   <Button
                      disabled={isLoading}
                      onClick={() => handleComments("reject")}
-                     size="sm"
                   >
                      Reject
                   </Button>

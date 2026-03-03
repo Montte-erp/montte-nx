@@ -244,9 +244,8 @@ export function CodeDrawingElement(
                   <Button
                      className="size-8"
                      onClick={handleDownload}
-                     size="icon"
-                     title="Export"
-                     variant="ghost"
+                     tooltip="Exportar"
+                     variant="outline"
                   >
                      <DownloadIcon className="size-4" />
                   </Button>
@@ -254,9 +253,8 @@ export function CodeDrawingElement(
                <Button
                   className="size-8"
                   onClick={removeNode}
-                  size="icon"
-                  title="Delete"
-                  variant="ghost"
+                  tooltip="Excluir"
+                  variant="outline"
                >
                   <Trash2 className="size-4" />
                </Button>

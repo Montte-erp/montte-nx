@@ -5,16 +5,11 @@ import type {
 } from "@packages/database/schemas/dashboards";
 import { Button } from "@packages/ui/components/button";
 import { DateRangePicker } from "@packages/ui/components/date-range-picker";
-import {
-   Popover,
-   PopoverContent,
-   PopoverTrigger,
-} from "@packages/ui/components/popover";
 import { cn } from "@packages/ui/lib/utils";
 import { formatRelativeTime } from "@packages/utils/date";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Calendar, Clock, Plus, RefreshCw, X } from "lucide-react";
-import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
+import { Clock, Plus, RefreshCw, X } from "lucide-react";
+import { type ReactNode, useCallback, useMemo, useRef } from "react";
 import { PageHeader } from "@/components/page-header";
 import { DashboardFilterPopover } from "@/features/analytics/ui/dashboard-filter-popover";
 import { EditableDashboardGrid } from "@/features/analytics/ui/editable-dashboard-grid";
@@ -82,7 +77,7 @@ function DashboardHeader({
    return (
       <PageHeader
          actions={
-            <Button onClick={onAddInsight} size="sm">
+            <Button onClick={onAddInsight}>
                <Plus className="size-3.5" />
                Adicionar insight
             </Button>
@@ -114,8 +109,6 @@ const DATE_RANGE_PRESETS = [
 
 function DashboardFilterBar({ dashboard }: { dashboard: Dashboard }) {
    const queryClient = useQueryClient();
-   const [isDateRangeOpen, setIsDateRangeOpen] = useState(false);
-
    const { data: insights } = useQuery(
       orpc.analytics.getDashboardInsights.queryOptions({
          input: { dashboardId: dashboard.id },
@@ -183,7 +176,6 @@ function DashboardFilterBar({ dashboard }: { dashboard: Dashboard }) {
          dashboardId: dashboard.id,
          globalDateRange: dateRange,
       });
-      setIsDateRangeOpen(false);
    };
 
    const handleRemoveDateRange = () => {
@@ -191,7 +183,6 @@ function DashboardFilterBar({ dashboard }: { dashboard: Dashboard }) {
          dashboardId: dashboard.id,
          globalDateRange: null,
       });
-      setIsDateRangeOpen(false);
    };
 
    const handleAbsoluteRangeChange = (range: { from: Date; to: Date }) => {
@@ -205,7 +196,6 @@ function DashboardFilterBar({ dashboard }: { dashboard: Dashboard }) {
          dashboardId: dashboard.id,
          globalDateRange: dateRange,
       });
-      setIsDateRangeOpen(false);
    };
 
    const handleFiltersSave = (filters: Condition[]) => {
@@ -247,70 +237,31 @@ function DashboardFilterBar({ dashboard }: { dashboard: Dashboard }) {
    return (
       <div className="flex items-center justify-between gap-3 border-t border-b py-2">
          <div className="flex items-center gap-1.5">
-            <Popover onOpenChange={setIsDateRangeOpen} open={isDateRangeOpen}>
-               <PopoverTrigger asChild>
-                  <Button
-                     className={cn(
-                        "h-7 text-xs gap-1.5",
-                        dashboard.globalDateRange
-                           ? "text-foreground"
-                           : "text-muted-foreground",
-                     )}
-                     size="sm"
-                     variant="outline"
-                  >
-                     <Calendar className="size-3.5" />
-                     {dateRangeLabel}
-                  </Button>
-               </PopoverTrigger>
-               <PopoverContent
-                  align="start"
-                  className="w-auto p-0"
-                  forceMount
-                  onFocusOutside={(e) => {
-                     const target = e.target as HTMLElement;
-                     if (
-                        target.closest("[data-radix-popper-content-wrapper]")
-                     ) {
-                        e.preventDefault();
-                     }
-                  }}
-                  onInteractOutside={(e) => {
-                     const target = e.target as HTMLElement;
-                     if (
-                        target.closest("[data-radix-popper-content-wrapper]")
-                     ) {
-                        e.preventDefault();
-                     }
-                  }}
-               >
-                  <DateRangePicker
-                     heading="Período"
-                     onPresetSelect={handleDateRangeChange}
-                     onRangeSelect={handleAbsoluteRangeChange}
-                     presets={DATE_RANGE_PRESETS}
-                     selectedPreset={
-                        dashboard.globalDateRange?.type === "relative"
-                           ? dashboard.globalDateRange.value
-                           : null
-                     }
-                     selectedRange={absoluteDateRange}
-                  />
-                  {dashboard.globalDateRange && (
-                     <div className="border-t p-2">
-                        <Button
-                           className="w-full justify-start text-destructive hover:text-destructive"
-                           onClick={handleRemoveDateRange}
-                           size="sm"
-                           variant="ghost"
-                        >
-                           <X className="size-3.5" />
-                           Remover período global
-                        </Button>
-                     </div>
-                  )}
-               </PopoverContent>
-            </Popover>
+            <DateRangePicker
+               clearClassName="justify-start text-destructive hover:text-destructive"
+               clearIcon={<X className="size-3.5" />}
+               clearLabel="Remover período global"
+               heading="Período"
+               label={dateRangeLabel}
+               onClear={
+                  dashboard.globalDateRange ? handleRemoveDateRange : undefined
+               }
+               onPresetSelect={handleDateRangeChange}
+               onRangeSelect={handleAbsoluteRangeChange}
+               presets={DATE_RANGE_PRESETS}
+               selectedPreset={
+                  dashboard.globalDateRange?.type === "relative"
+                     ? dashboard.globalDateRange.value
+                     : null
+               }
+               selectedRange={absoluteDateRange}
+               triggerClassName={cn(
+                  "h-7 text-xs",
+                  dashboard.globalDateRange
+                     ? "text-foreground"
+                     : "text-muted-foreground",
+               )}
+            />
 
             <DashboardFilterPopover
                dashboard={dashboard}
@@ -332,7 +283,6 @@ function DashboardFilterBar({ dashboard }: { dashboard: Dashboard }) {
                onClick={() =>
                   refreshMutation.mutate({ dashboardId: dashboard.id })
                }
-               size="sm"
                variant="outline"
             >
                <RefreshCw

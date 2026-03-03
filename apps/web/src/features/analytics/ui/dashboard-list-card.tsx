@@ -103,7 +103,7 @@ export function DashboardListCard({
             <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                     <Button className="size-8" size="icon" variant="ghost">
+                     <Button className="size-8" variant="outline">
                         <MoreHorizontal className="size-4" />
                      </Button>
                   </DropdownMenuTrigger>

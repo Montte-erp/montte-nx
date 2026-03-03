@@ -49,7 +49,7 @@ export function InsightHeader({
                </Button>
                <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                     <Button size="icon" variant="outline">
+                     <Button variant="outline">
                         <Ellipsis className="size-4" />
                      </Button>
                   </DropdownMenuTrigger>

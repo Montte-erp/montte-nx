@@ -15,6 +15,7 @@ import {
    TabsTrigger,
 } from "@packages/ui/components/tabs";
 import { createFileRoute } from "@tanstack/react-router";
+import { CreditCard } from "lucide-react";
 import { Suspense } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { BillingOverview } from "@/features/billing/ui/billing-overview";
@@ -27,6 +28,8 @@ const earlyAccessTemplate = {
    message:
       "Estamos aprimorando estes dashboards — tem perguntas, ideias ou bugs?",
    ctaLabel: "Fale com a gente",
+   stage: "beta" as const,
+   icon: CreditCard,
    bullets: [
       "Dados de uso atualizados diariamente (UTC) — os numeros de hoje aparecem amanha",
       "Gastos historicos e periodos de cobranca sao baseados no plano atual",

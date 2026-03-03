@@ -170,7 +170,7 @@ function MonthNavigation({
          <Button
             className="size-8"
             onClick={prev}
-            size="icon"
+            tooltip="Anterior"
             variant="outline"
          >
             <ChevronLeft className="size-4" />
@@ -181,7 +181,7 @@ function MonthNavigation({
          <Button
             className="size-8"
             onClick={next}
-            size="icon"
+            tooltip="Próximo"
             variant="outline"
          >
             <ChevronRight className="size-4" />
@@ -369,17 +369,16 @@ function GoalsPage() {
                   <Button
                      disabled={copyMutation.isPending}
                      onClick={handleCopyPreviousMonth}
-                     size="sm"
+                     tooltip="Copiar mês anterior"
                      variant="outline"
                   >
                      {copyMutation.isPending ? (
-                        <Loader2 className="size-4 mr-1 animate-spin" />
+                        <Loader2 className="size-4 animate-spin" />
                      ) : (
-                        <Copy className="size-4 mr-1" />
+                        <Copy className="size-4" />
                      )}
-                     Copiar mês anterior
                   </Button>
-                  <Button onClick={handleCreate} size="sm">
+                  <Button onClick={handleCreate}>
                      <Plus className="size-4 mr-1" />
                      Nova Meta
                   </Button>

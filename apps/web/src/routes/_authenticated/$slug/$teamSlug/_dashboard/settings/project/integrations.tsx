@@ -1,11 +1,29 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { IntegrationFeedbackCard } from "@/features/integrations/ui/integration-feedback-card";
+import { Plug } from "lucide-react";
+import {
+   EarlyAccessBanner,
+   type EarlyAccessBannerTemplate,
+} from "@/features/billing/ui/early-access-banner";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations",
 )({
    component: ProjectIntegrationsPage,
 });
+
+const INTEGRATIONS_BANNER: EarlyAccessBannerTemplate = {
+   badgeLabel: "Integrações",
+   message: "Estamos construindo nosso ecossistema de integrações.",
+   ctaLabel: "Sugerir integração",
+   stage: "concept",
+   icon: Plug,
+   form: "request",
+   bullets: [
+      "Quais meios de pagamento você utiliza?",
+      "Há alguma plataforma de e-commerce ou marketplace que precisa se conectar?",
+      "Qual integração desbloquearia mais valor na sua operação?",
+   ],
+};
 
 function ProjectIntegrationsPage() {
    return (
@@ -18,7 +36,7 @@ function ProjectIntegrationsPage() {
             </p>
          </div>
 
-         <IntegrationFeedbackCard />
+         <EarlyAccessBanner template={INTEGRATIONS_BANNER} />
       </div>
    );
 }

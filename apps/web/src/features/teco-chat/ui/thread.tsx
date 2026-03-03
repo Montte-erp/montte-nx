@@ -132,9 +132,8 @@ const ThreadScrollToBottom: FC = () => {
       <ThreadPrimitive.ScrollToBottom asChild>
          <Button
             className="aui-thread-scroll-to-bottom absolute -top-12 z-10 self-center rounded-full p-4 disabled:invisible dark:bg-background dark:hover:bg-accent"
-            size="icon"
             tooltip="Rolar para o final"
-            variant="icon-outline"
+            variant="outline"
          >
             <ArrowDownIcon />
          </Button>
@@ -353,9 +352,8 @@ const ComposerAction: FC = () => {
                <Button
                   aria-label="Enviar mensagem"
                   className="aui-composer-send size-8 rounded-full"
-                  size="icon"
                   type="submit"
-                  variant="icon-solid"
+                  variant="outline"
                >
                   <ArrowUpIcon className="aui-composer-send-icon size-4" />
                </Button>
@@ -366,7 +364,6 @@ const ComposerAction: FC = () => {
                <Button
                   aria-label="Parar geração"
                   className="aui-composer-cancel size-8 rounded-full"
-                  size="icon"
                   type="button"
                   variant="default"
                >
@@ -507,9 +504,8 @@ const AssistantActionBar: FC = () => {
          <ActionBarPrimitive.Copy asChild>
             <Button
                className="aui-button-icon size-6 p-1"
-               size="icon"
                tooltip="Copiar"
-               variant="icon-outline"
+               variant="outline"
             >
                <AuiIf condition={(s) => s.message.isCopied}>
                   <CheckIcon />
@@ -522,9 +518,8 @@ const AssistantActionBar: FC = () => {
          <ActionBarPrimitive.Reload asChild>
             <Button
                className="aui-button-icon size-6 p-1"
-               size="icon"
                tooltip="Gerar novamente"
-               variant="icon-outline"
+               variant="outline"
             >
                <RefreshCwIcon />
             </Button>
@@ -533,9 +528,8 @@ const AssistantActionBar: FC = () => {
             <ActionBarMorePrimitive.Trigger asChild>
                <Button
                   className="aui-button-icon size-6 p-1 data-[state=open]:bg-accent"
-                  size="icon"
                   tooltip="Mais"
-                  variant="icon-outline"
+                  variant="outline"
                >
                   <MoreHorizontalIcon />
                </Button>
@@ -589,9 +583,8 @@ const UserActionBar: FC = () => {
          <ActionBarPrimitive.Edit asChild>
             <Button
                className="aui-user-action-edit size-6 p-4"
-               size="icon"
                tooltip="Editar"
-               variant="icon-outline"
+               variant="outline"
             >
                <PencilIcon />
             </Button>
@@ -610,12 +603,12 @@ const EditComposer: FC = () => {
             />
             <div className="aui-edit-composer-footer mx-3 mb-3 flex items-center gap-2 self-end">
                <ComposerPrimitive.Cancel asChild>
-                  <Button size="sm" variant="ghost">
+                  <Button variant="ghost">
                      Cancelar
                   </Button>
                </ComposerPrimitive.Cancel>
                <ComposerPrimitive.Send asChild>
-                  <Button size="sm">Atualizar</Button>
+                  <Button>Atualizar</Button>
                </ComposerPrimitive.Send>
             </div>
          </ComposerPrimitive.Root>
@@ -639,9 +632,8 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
          <BranchPickerPrimitive.Previous asChild>
             <Button
                className="aui-button-icon size-6 p-1"
-               size="icon"
                tooltip="Anterior"
-               variant="icon-outline"
+               variant="outline"
             >
                <ChevronLeftIcon />
             </Button>
@@ -652,9 +644,8 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
          <BranchPickerPrimitive.Next asChild>
             <Button
                className="aui-button-icon size-6 p-1"
-               size="icon"
                tooltip="Próximo"
-               variant="icon-outline"
+               variant="outline"
             >
                <ChevronRightIcon />
             </Button>

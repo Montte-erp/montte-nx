@@ -77,8 +77,7 @@ export function SubSidebarNewMenu({
             <Button
                aria-label="Novo"
                className="size-7"
-               size="icon"
-               variant="ghost"
+               variant="outline"
             >
                <Plus className="size-4" />
             </Button>

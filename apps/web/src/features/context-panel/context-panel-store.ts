@@ -9,11 +9,19 @@ export interface ContextPanelTab {
    order?: number;
 }
 
+export interface PanelAction {
+   icon: React.ElementType;
+   label: string;
+   onClick: () => void;
+}
+
 interface ContextPanelState {
    isOpen: boolean;
    activeTabId: string;
    dynamicTabs: ContextPanelTab[];
    infoContent: React.ReactNode;
+   pageActions: PanelAction[] | null;
+   pageViewSwitch: React.ReactNode | null;
 }
 
 export const contextPanelStore = new Store<ContextPanelState>({
@@ -21,4 +29,6 @@ export const contextPanelStore = new Store<ContextPanelState>({
    activeTabId: "info",
    dynamicTabs: [],
    infoContent: null,
+   pageActions: null,
+   pageViewSwitch: null,
 });

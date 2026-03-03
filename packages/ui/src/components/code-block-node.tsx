@@ -50,11 +50,10 @@ export function CodeBlockElement(props: PlateElementProps<TCodeBlockElement>) {
                   <Button
                      className="size-6 text-xs"
                      onClick={() => formatCodeBlock(editor, { element })}
-                     size="icon"
-                     title="Format code"
-                     variant="ghost"
+                     tooltip="Formatar código"
+                     variant="outline"
                   >
-                     <BracesIcon className="!size-3.5 text-muted-foreground" />
+                     <BracesIcon className="size-4 text-muted-foreground" />
                   </Button>
                )}
 
@@ -62,9 +61,8 @@ export function CodeBlockElement(props: PlateElementProps<TCodeBlockElement>) {
 
                <CopyButton
                   className="size-6 gap-1 text-muted-foreground text-xs"
-                  size="icon"
                   value={() => NodeApi.string(element)}
-                  variant="ghost"
+                  variant="outline"
                />
             </div>
          </div>
@@ -99,7 +97,6 @@ function CodeBlockCombobox() {
                aria-expanded={open}
                className="h-6 select-none justify-between gap-1 px-2 text-muted-foreground text-xs"
                role="combobox"
-               size="sm"
                variant="ghost"
             >
                {languages.find((language) => language.value === value)?.label ??

@@ -8,7 +8,7 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { AlertCircle, Clock, Copy, RefreshCw, Tag, Trash2 } from "lucide-react";
+import { AlertCircle, Clock, Copy, RefreshCw, Tag, Trash2, TrendingUp } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -33,9 +33,11 @@ const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
    badgeLabel: "Analytics Avançado",
    message: "Esta funcionalidade está em fase beta.",
    ctaLabel: "Deixar feedback",
+   stage: "beta",
+   icon: TrendingUp,
    bullets: [
-      "Crie insights personalizados para monitorar qualquer evento",
-      "Analise tendências, funis e retenção de usuários",
+      "Crie insights personalizados para monitorar receitas, despesas e metas",
+      "Analise tendências financeiras e desempenho operacional",
       "Seu feedback nos ajuda a melhorar",
    ],
 };

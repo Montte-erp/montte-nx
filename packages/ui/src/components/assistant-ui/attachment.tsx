@@ -186,10 +186,9 @@ const AttachmentRemove: FC = () => {
       <AttachmentPrimitive.Remove asChild>
          <Button
             className="aui-attachment-tile-remove absolute top-1.5 right-1.5 size-3.5 rounded-full bg-white text-muted-foreground opacity-100 shadow-sm hover:bg-white! [&_svg]:text-black hover:[&_svg]:text-destructive"
-            size="icon"
             tooltip="Remover arquivo"
             tooltipSide="top"
-            variant="icon-outline"
+            variant="outline"
          >
             <XIcon className="aui-attachment-remove-icon size-3 dark:stroke-[2.5px]" />
          </Button>
@@ -223,10 +222,9 @@ export const ComposerAddAttachment: FC = () => {
          <Button
             aria-label="Adicionar anexo"
             className="aui-composer-add-attachment size-8.5 rounded-full p-1 font-semibold text-xs hover:bg-muted-foreground/15 dark:border-muted-foreground/15 dark:hover:bg-muted-foreground/30"
-            size="icon"
             tooltip="Adicionar anexo"
             tooltipSide="bottom"
-            variant="icon-outline"
+            variant="outline"
          >
             <PlusIcon className="aui-attachment-add-icon size-5 stroke-[1.5px]" />
          </Button>

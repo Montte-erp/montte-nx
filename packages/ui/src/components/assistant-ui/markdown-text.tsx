@@ -41,9 +41,8 @@ const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
          <Button
             className="aui-button-icon size-6 p-1"
             onClick={onCopy}
-            size="icon"
             tooltip="Copiar"
-            variant="icon-outline"
+            variant="outline"
          >
             {!isCopied && <CopyIcon />}
             {isCopied && <CheckIcon />}

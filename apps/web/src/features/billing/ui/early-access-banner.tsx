@@ -1,15 +1,31 @@
+import type { LucideIcon } from "lucide-react";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
+import {
+   STAGE_CONFIG,
+   type FeatureStage,
+} from "@packages/ui/components/feature-stage-badge";
+import { cn } from "@packages/ui/lib/utils";
 import { FlaskConical } from "lucide-react";
 import { FeatureFeedbackForm } from "@/features/feedback/ui/feature-feedback-form";
+import { FeatureRequestForm } from "@/features/feedback/ui/feature-request-form";
 import { useCredenza } from "@/hooks/use-credenza";
+
+const STAGE_ICON_COLOR: Record<FeatureStage, string> = {
+   alpha: "text-chart-1",
+   beta: "text-chart-2",
+   concept: "text-chart-3",
+   "general-availability": "text-chart-4",
+};
 
 export type EarlyAccessBannerTemplate = {
    badgeLabel: string;
    message: string;
    ctaLabel: string;
    bullets: string[];
-   surveyId?: string;
+   stage: FeatureStage;
+   icon?: LucideIcon;
+   form?: "feedback" | "request";
 };
 
 export type EarlyAccessBannerProps = {
@@ -18,29 +34,41 @@ export type EarlyAccessBannerProps = {
 
 export function EarlyAccessBanner({ template }: EarlyAccessBannerProps) {
    const { openCredenza, closeCredenza } = useCredenza();
+   const Icon = template.icon ?? FlaskConical;
+   const stage = template.stage ?? "beta";
+   const iconColor = STAGE_ICON_COLOR[stage];
+   const badgeClassName = STAGE_CONFIG[stage].className;
 
    const handleCtaClick = () => {
-      openCredenza({
-         children: (
-            <FeatureFeedbackForm
-               featureName={template.badgeLabel}
-               onSuccess={closeCredenza}
-            />
-         ),
-      });
+      if (template.form === "request") {
+         openCredenza({
+            children: (
+               <FeatureRequestForm
+                  context="integration"
+                  onSuccess={closeCredenza}
+               />
+            ),
+         });
+      } else {
+         openCredenza({
+            children: (
+               <FeatureFeedbackForm
+                  featureName={template.badgeLabel}
+                  onSuccess={closeCredenza}
+               />
+            ),
+         });
+      }
    };
 
    return (
       <div className="rounded-lg border bg-card p-4 flex gap-4">
          <div className="shrink-0 pt-0.5">
-            <FlaskConical className="size-5 text-amber-500" />
+            <Icon className={cn("size-5", iconColor)} />
          </div>
          <div className="space-y-3">
             <div className="flex items-center gap-2">
-               <Badge
-                  className="bg-amber-500/10 text-amber-500 border-amber-500/20"
-                  variant="outline"
-               >
+               <Badge className={badgeClassName} variant="outline">
                   {template.badgeLabel}
                </Badge>
             </div>

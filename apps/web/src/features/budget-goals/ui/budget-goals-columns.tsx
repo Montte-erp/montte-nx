@@ -186,7 +186,7 @@ export function buildBudgetGoalColumns(
             >
                <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                     <Button size="icon" variant="ghost">
+                     <Button variant="outline">
                         <MoreHorizontal className="size-4" />
                         <span className="sr-only">Ações</span>
                      </Button>

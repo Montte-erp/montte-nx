@@ -360,9 +360,9 @@ export function DashboardTile({
                   <div className="flex items-start gap-2 min-w-0 flex-1">
                      {isEditing && (
                         <Button
-                           size="icon-sm"
+                           tooltip="Mover"
                            type="button"
-                           variant="ghost"
+                           variant="outline"
                            {...attributes}
                            {...listeners}
                         >
@@ -391,8 +391,7 @@ export function DashboardTile({
                         <DropdownMenuTrigger asChild>
                            <Button
                               className="size-6"
-                              size="icon"
-                              variant="ghost"
+                              variant="outline"
                            >
                               <Ellipsis className="size-3.5" />
                            </Button>

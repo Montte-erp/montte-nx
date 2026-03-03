@@ -1,10 +1,27 @@
 import { Button } from "@packages/ui/components/button";
 import { useIsMobile } from "@packages/ui/hooks/use-mobile";
+import {
+   EarlyAccessBanner,
+   type EarlyAccessBannerTemplate,
+} from "@/features/billing/ui/early-access-banner";
 import { Link, useLocation, useParams } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Database } from "lucide-react";
 import type * as React from "react";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { DataManagementMobileNav } from "./data-management-mobile-nav";
+
+const DATA_MANAGEMENT_BANNER: EarlyAccessBannerTemplate = {
+   badgeLabel: "Dados",
+   message: "Esta funcionalidade está em conceito.",
+   ctaLabel: "Deixar feedback",
+   stage: "concept",
+   icon: Database,
+   bullets: [
+      "Capture eventos de sistemas externos via webhooks e SDKs",
+      "Configure destinos para enviar seus dados a warehouses e ferramentas externas",
+      "Seu feedback nos ajuda a priorizar as integrações certas",
+   ],
+};
 
 interface DataManagementLayoutProps {
    children: React.ReactNode;
@@ -27,7 +44,7 @@ export function DataManagementLayout({ children }: DataManagementLayoutProps) {
 
       return (
          <div className="flex h-full flex-col gap-4">
-            <Button asChild className="w-fit" size="sm" variant="ghost">
+            <Button asChild className="w-fit" variant="ghost">
                <Link
                   params={{
                      slug: activeOrganization.slug,
@@ -44,5 +61,10 @@ export function DataManagementLayout({ children }: DataManagementLayoutProps) {
       );
    }
 
-   return <>{children}</>;
+   return (
+      <div className="flex flex-col gap-4">
+         <EarlyAccessBanner template={DATA_MANAGEMENT_BANNER} />
+         {children}
+      </div>
+   );
 }

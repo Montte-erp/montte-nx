@@ -235,7 +235,6 @@ export function CreateKeyForm({ onSuccess }: CreateKeyFormProps) {
                                     v as ScopeAccess,
                                  );
                            }}
-                           size="sm"
                            type="single"
                            value={scopes[def.resource] ?? "none"}
                            variant="outline"

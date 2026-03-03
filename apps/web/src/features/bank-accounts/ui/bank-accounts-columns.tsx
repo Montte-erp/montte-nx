@@ -138,20 +138,18 @@ export function buildBankAccountColumns(
             >
                <Button
                   onClick={() => onEdit(row.original)}
-                  size="icon"
-                  variant="ghost"
+                  tooltip="Editar"
+                  variant="outline"
                >
                   <Pencil className="size-4" />
-                  <span className="sr-only">Editar</span>
                </Button>
                <Button
                   className="text-destructive hover:text-destructive"
                   onClick={() => onDelete(row.original)}
-                  size="icon"
-                  variant="ghost"
+                  tooltip="Excluir"
+                  variant="outline"
                >
                   <Trash2 className="size-4" />
-                  <span className="sr-only">Excluir</span>
                </Button>
             </div>
          ),
