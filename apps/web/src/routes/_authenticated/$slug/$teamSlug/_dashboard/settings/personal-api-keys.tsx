@@ -28,7 +28,6 @@ import { CreateKeyForm } from "@/features/personal-api-keys/ui/create-key-form";
 import { KeyRevealDialog } from "@/features/personal-api-keys/ui/key-reveal-dialog";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
-import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
@@ -368,7 +367,6 @@ function KeysTable({
 
 function PersonalApiKeysContent() {
    const queryClient = useQueryClient();
-   const { openSheet, closeSheet } = useSheet();
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
@@ -394,7 +392,7 @@ function PersonalApiKeysContent() {
    );
 
    function handleCreateKey() {
-      openSheet({
+      openCredenza({
          children: (
             <Suspense
                fallback={
@@ -409,7 +407,7 @@ function PersonalApiKeysContent() {
             >
                <CreateKeyForm
                   onSuccess={(result) => {
-                     closeSheet();
+                     closeCredenza();
                      openCredenza({
                         children: (
                            <KeyRevealDialog
