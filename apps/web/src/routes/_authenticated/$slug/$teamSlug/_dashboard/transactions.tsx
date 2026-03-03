@@ -66,7 +66,6 @@ import {
 import { TransactionSheet } from "@/features/transactions/ui/transactions-sheet";
 import type { ViewConfig } from "@/features/view-switch/hooks/use-view-switch";
 import { useViewSwitch } from "@/features/view-switch/hooks/use-view-switch";
-import { ViewSwitchDropdown } from "@/features/view-switch/ui/view-switch-dropdown";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -1065,13 +1064,7 @@ function TransactionsPage() {
             description="Gerencie suas receitas, despesas e transferências"
             panelActions={panelActions}
             title="Transações"
-            viewSwitch={
-               <ViewSwitchDropdown
-                  currentView={currentView}
-                  onViewChange={setView}
-                  views={views}
-               />
-            }
+            viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <FilterBar filters={filters} onFiltersChange={setFilters} />
          <Suspense fallback={<TransactionsSkeleton />}>

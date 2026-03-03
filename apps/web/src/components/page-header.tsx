@@ -12,8 +12,9 @@ import {
 } from "react";
 import { ContextPanelHeaderActions } from "@/features/context-panel/context-panel-header-actions";
 import { contextPanelStore } from "@/features/context-panel/context-panel-store";
-import type { PanelAction } from "@/features/context-panel/context-panel-store";
+import type { PageViewSwitchConfig, PanelAction } from "@/features/context-panel/context-panel-store";
 import { usePageActions, usePageViewSwitch } from "@/features/context-panel/use-context-panel";
+import { ViewSwitchDropdown } from "@/features/view-switch/ui/view-switch-dropdown";
 
 export interface PageHeaderProps {
    title: string;
@@ -26,8 +27,8 @@ export interface PageHeaderProps {
    actions?: ReactNode;
    /** Structured actions that move into the context panel info tab when the panel is open. */
    panelActions?: PanelAction[];
-   /** View switch that moves into the context panel info tab header when the panel is open. */
-   panelViewSwitch?: ReactNode;
+   /** View switch config — shown as compact icon button in the header when panel is closed, shown as full labeled action in panel content when panel is open. */
+   panelViewSwitch?: PageViewSwitchConfig;
    className?: string;
 }
 
@@ -204,7 +205,13 @@ export function PageHeader({
             </div>
          </div>
          <div className="flex items-center gap-2 shrink-0">
-            {!isOpen && panelViewSwitch}
+            {!isOpen && panelViewSwitch && (
+               <ViewSwitchDropdown
+                  currentView={panelViewSwitch.currentView}
+                  onViewChange={panelViewSwitch.onViewChange}
+                  views={panelViewSwitch.options}
+               />
+            )}
             {!isOpen && panelActions?.map((action) => (
                <Button
                   key={action.label}

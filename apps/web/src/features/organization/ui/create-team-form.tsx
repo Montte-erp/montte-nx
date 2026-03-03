@@ -1,6 +1,7 @@
 import { Alert, AlertDescription } from "@packages/ui/components/alert";
 import { Button } from "@packages/ui/components/button";
 import {
+   CredenzaBody,
    CredenzaDescription,
    CredenzaFooter,
    CredenzaHeader,
@@ -23,29 +24,29 @@ import { authClient } from "@/integrations/better-auth/auth-client";
 
 function CreateTeamErrorFallback() {
    return (
-      <Alert variant="destructive">
-         <AlertTriangle className="h-4 w-4" />
-         <AlertDescription>
-            Failed to load organization data. Please try again.
-         </AlertDescription>
-      </Alert>
+      <CredenzaBody>
+         <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+               Failed to load organization data. Please try again.
+            </AlertDescription>
+         </Alert>
+      </CredenzaBody>
    );
 }
 
 function CreateTeamSkeleton() {
    return (
-      <div className="grid gap-4 px-4">
-         <Skeleton className="h-4 w-20" />
-         <Skeleton className="h-10 w-full" />
-         <Skeleton className="h-4 w-24" />
-         <Skeleton className="h-10 w-full" />
-         <Skeleton className="h-4 w-32" />
-         <Skeleton className="h-20 w-full" />
-         <div className="flex gap-2 pt-4">
-            <Skeleton className="h-10 w-24" />
-            <Skeleton className="h-10 w-32" />
+      <CredenzaBody>
+         <div className="grid gap-4">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-20 w-full" />
          </div>
-      </div>
+      </CredenzaBody>
    );
 }
 
@@ -118,63 +119,65 @@ const CreateTeamFormContent = () => {
 
    return (
       <>
-         <form className="grid gap-4 px-4" onSubmit={handleSubmit}>
-            <form.Field name="name">
-               {(field) => {
-                  const isInvalid =
-                     field.state.meta.isTouched && !field.state.meta.isValid;
+         <CredenzaBody>
+            <form className="grid gap-4" id="create-team-form" onSubmit={handleSubmit}>
+               <form.Field name="name">
+                  {(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid;
 
-                  return (
-                     <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Team Name</FieldLabel>
-                        <Input
-                           aria-invalid={isInvalid}
-                           id={field.name}
-                           name={field.name}
-                           onBlur={field.handleBlur}
-                           onChange={(e) => field.handleChange(e.target.value)}
-                           placeholder="Enter team name"
-                           type="text"
-                           value={field.state.value}
-                        />
+                     return (
+                        <Field data-invalid={isInvalid}>
+                           <FieldLabel htmlFor={field.name}>Team Name</FieldLabel>
+                           <Input
+                              aria-invalid={isInvalid}
+                              id={field.name}
+                              name={field.name}
+                              onBlur={field.handleBlur}
+                              onChange={(e) => field.handleChange(e.target.value)}
+                              placeholder="Enter team name"
+                              type="text"
+                              value={field.state.value}
+                           />
 
-                        {isInvalid && (
-                           <FieldError errors={field.state.meta.errors} />
-                        )}
-                     </Field>
-                  );
-               }}
-            </form.Field>
+                           {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                           )}
+                        </Field>
+                     );
+                  }}
+               </form.Field>
 
-            <form.Field name="description">
-               {(field) => {
-                  const isInvalid =
-                     field.state.meta.isTouched && !field.state.meta.isValid;
+               <form.Field name="description">
+                  {(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid;
 
-                  return (
-                     <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>
-                           Description (Optional)
-                        </FieldLabel>
-                        <Textarea
-                           aria-invalid={isInvalid}
-                           id={field.name}
-                           name={field.name}
-                           onBlur={field.handleBlur}
-                           onChange={(e) => field.handleChange(e.target.value)}
-                           placeholder="Enter team description"
-                           rows={3}
-                           value={field.state.value}
-                        />
+                     return (
+                        <Field data-invalid={isInvalid}>
+                           <FieldLabel htmlFor={field.name}>
+                              Description (Optional)
+                           </FieldLabel>
+                           <Textarea
+                              aria-invalid={isInvalid}
+                              id={field.name}
+                              name={field.name}
+                              onBlur={field.handleBlur}
+                              onChange={(e) => field.handleChange(e.target.value)}
+                              placeholder="Enter team description"
+                              rows={3}
+                              value={field.state.value}
+                           />
 
-                        {isInvalid && (
-                           <FieldError errors={field.state.meta.errors} />
-                        )}
-                     </Field>
-                  );
-               }}
-            </form.Field>
-         </form>
+                           {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                           )}
+                        </Field>
+                     );
+                  }}
+               </form.Field>
+            </form>
+         </CredenzaBody>
 
          <CredenzaFooter>
             <Button onClick={closeCredenza} type="button" variant="outline">

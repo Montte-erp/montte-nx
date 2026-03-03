@@ -7,7 +7,9 @@ import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Card, CardContent } from "@packages/ui/components/card";
 import {
+   CredenzaBody,
    CredenzaDescription,
+   CredenzaFooter,
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
@@ -206,7 +208,7 @@ function InviteMemberCredenzaContent({
    const isValid = email.trim().length > 0 && email.includes("@");
 
    return (
-      <div className="flex h-full flex-col">
+      <>
          <CredenzaHeader>
             <CredenzaTitle>Convidar novo membro</CredenzaTitle>
             <CredenzaDescription>
@@ -215,69 +217,46 @@ function InviteMemberCredenzaContent({
             </CredenzaDescription>
          </CredenzaHeader>
 
-         <div className="flex-1 space-y-6 py-6 px-1">
-            <div className="space-y-2">
-               <Label htmlFor="invite-email">Endereço de e-mail</Label>
-               <Input
-                  autoComplete="email"
-                  id="invite-email"
-                  onChange={(e) => setEmail(e.target.value)}
-                  onKeyDown={(e) => {
-                     if (
-                        e.key === "Enter" &&
-                        isValid &&
-                        !inviteMutation.isPending
-                     ) {
-                        inviteMutation.mutate();
-                     }
-                  }}
-                  placeholder="usuario@empresa.com"
-                  type="email"
-                  value={email}
-               />
-               <p className="text-xs text-muted-foreground">
-                  O convite será enviado para este endereço de e-mail
-               </p>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-3">
-               <div>
-                  <Label htmlFor="invite-role">Função na organização</Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                     Define as permissões do membro na organização
-                  </p>
+         <CredenzaBody className="space-y-4">
+            <div className="flex gap-2 items-end">
+               <div className="flex-1 space-y-2">
+                  <Label htmlFor="invite-email">E-mail</Label>
+                  <Input
+                     autoComplete="email"
+                     id="invite-email"
+                     onChange={(e) => setEmail(e.target.value)}
+                     onKeyDown={(e) => {
+                        if (
+                           e.key === "Enter" &&
+                           isValid &&
+                           !inviteMutation.isPending
+                        ) {
+                           inviteMutation.mutate();
+                        }
+                     }}
+                     placeholder="usuario@empresa.com"
+                     type="email"
+                     value={email}
+                  />
                </div>
-               <Select
-                  onValueChange={(v) => setRole(v as "member" | "admin")}
-                  value={role}
-               >
-                  <SelectTrigger id="invite-role">
-                     <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                     <SelectItem value="member">
-                        <div className="flex flex-col items-start">
-                           <span className="font-medium">Membro</span>
-                           <span className="text-xs text-muted-foreground">
-                              Pode acessar e colaborar nos projetos
-                           </span>
-                        </div>
-                     </SelectItem>
-                     <SelectItem value="admin">
-                        <div className="flex flex-col items-start">
-                           <span className="font-medium">Administrador</span>
-                           <span className="text-xs text-muted-foreground">
-                              Pode gerenciar membros e configurações
-                           </span>
-                        </div>
-                     </SelectItem>
-                  </SelectContent>
-               </Select>
+               <div className="w-36 space-y-2 shrink-0">
+                  <Label htmlFor="invite-role">Função</Label>
+                  <Select
+                     onValueChange={(v) => setRole(v as "member" | "admin")}
+                     value={role}
+                  >
+                     <SelectTrigger id="invite-role" className="w-full">
+                        <SelectValue />
+                     </SelectTrigger>
+                     <SelectContent>
+                        <SelectItem value="member">Membro</SelectItem>
+                        <SelectItem value="admin">Administrador</SelectItem>
+                     </SelectContent>
+                  </Select>
+               </div>
             </div>
 
-            <Card className="bg-muted/50">
+            <Card className="bg-muted border-0">
                <CardContent className="pt-4 pb-4">
                   <div className="flex gap-3">
                      <div className="mt-0.5">
@@ -296,11 +275,11 @@ function InviteMemberCredenzaContent({
                   </div>
                </CardContent>
             </Card>
-         </div>
+         </CredenzaBody>
 
-         <div className="border-t pt-4 pb-2 px-4 flex gap-2">
+         <CredenzaFooter>
             <Button
-               className="flex-1"
+               className="w-full"
                disabled={!isValid || inviteMutation.isPending}
                onClick={() => inviteMutation.mutate()}
             >
@@ -311,8 +290,8 @@ function InviteMemberCredenzaContent({
                )}
                Enviar convite
             </Button>
-         </div>
-      </div>
+         </CredenzaFooter>
+      </>
    );
 }
 

@@ -29,7 +29,6 @@ import { BudgetGoalCredenza } from "@/features/budget-goals/ui/budget-goal-crede
 import { buildBudgetGoalColumns } from "@/features/budget-goals/ui/budget-goals-columns";
 import type { ViewConfig } from "@/features/view-switch/hooks/use-view-switch";
 import { useViewSwitch } from "@/features/view-switch/hooks/use-view-switch";
-import { ViewSwitchDropdown } from "@/features/view-switch/ui/view-switch-dropdown";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -386,13 +385,7 @@ function GoalsPage() {
             }
             description="Defina limites de gasto mensais por categoria"
             title="Metas"
-            viewSwitch={
-               <ViewSwitchDropdown
-                  currentView={currentView}
-                  onViewChange={setView}
-                  views={views}
-               />
-            }
+            viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <MonthNavigation
             month={monthYear.month}

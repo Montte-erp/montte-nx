@@ -15,13 +15,25 @@ export interface PanelAction {
    onClick: () => void;
 }
 
+export interface PageViewSwitchOption {
+   id: string;
+   label: string;
+   icon: React.ReactNode;
+}
+
+export interface PageViewSwitchConfig {
+   options: PageViewSwitchOption[];
+   currentView: string;
+   onViewChange(id: string): void;
+}
+
 interface ContextPanelState {
    isOpen: boolean;
    activeTabId: string;
    dynamicTabs: ContextPanelTab[];
    infoContent: React.ReactNode;
    pageActions: PanelAction[] | null;
-   pageViewSwitch: React.ReactNode | null;
+   pageViewSwitch: PageViewSwitchConfig | null;
 }
 
 export const contextPanelStore = new Store<ContextPanelState>({

@@ -28,7 +28,6 @@ import {
    useViewSwitch,
    type ViewConfig,
 } from "@/features/view-switch/hooks/use-view-switch";
-import { ViewSwitchDropdown } from "@/features/view-switch/ui/view-switch-dropdown";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -350,13 +349,7 @@ function CategoriesPage() {
             }
             description="Gerencie as categorias das suas transações"
             title="Categorias"
-            viewSwitch={
-               <ViewSwitchDropdown
-                  currentView={currentView}
-                  onViewChange={setView}
-                  views={views}
-               />
-            }
+            viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <Suspense fallback={<CategoriesSkeleton />}>
             <CategoriesList view={currentView} />

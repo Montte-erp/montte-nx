@@ -43,7 +43,6 @@ import {
    useViewSwitch,
    type ViewConfig,
 } from "@/features/view-switch/hooks/use-view-switch";
-import { ViewSwitchDropdown } from "@/features/view-switch/ui/view-switch-dropdown";
 import { orpc } from "@/integrations/orpc/client";
 
 const INSIGHT_VIEWS: [
@@ -414,13 +413,7 @@ function InsightsListPage() {
                </Button>
             }
             description="Analise eventos, funis e retenção com consultas personalizadas."
-            panelViewSwitch={
-               <ViewSwitchDropdown
-                  currentView={currentView}
-                  onViewChange={setView}
-                  views={views}
-               />
-            }
+            panelViewSwitch={{ options: views, currentView, onViewChange: setView }}
             title="Insights"
          />
          <EarlyAccessBanner template={ANALYTICS_BANNER} />

@@ -1,7 +1,7 @@
 import { useStore } from "@tanstack/react-store";
 import type React from "react";
 import { useEffect } from "react";
-import { type ContextPanelTab, type PanelAction, contextPanelStore } from "./context-panel-store";
+import { type ContextPanelTab, type PageViewSwitchConfig, type PanelAction, contextPanelStore } from "./context-panel-store";
 
 export const openContextPanel = () =>
    contextPanelStore.setState((s) => ({ ...s, isOpen: true }));
@@ -43,8 +43,8 @@ export const setPageActions = (actions: PanelAction[] | null) =>
 export const clearPageActions = () =>
    contextPanelStore.setState((s) => ({ ...s, pageActions: null }));
 
-export const setPageViewSwitch = (node: React.ReactNode) =>
-   contextPanelStore.setState((s) => ({ ...s, pageViewSwitch: node }));
+export const setPageViewSwitch = (config: PageViewSwitchConfig | null) =>
+   contextPanelStore.setState((s) => ({ ...s, pageViewSwitch: config }));
 
 export const clearPageViewSwitch = () =>
    contextPanelStore.setState((s) => ({ ...s, pageViewSwitch: null }));
@@ -68,10 +68,10 @@ export const usePageActions = (actions: PanelAction[] | null) => {
    }, []);
 };
 
-// No dep array — keeps viewSwitch node fresh (e.g. currentView state).
-export const usePageViewSwitch = (node: React.ReactNode) => {
+// No dep array — keeps viewSwitch config fresh (e.g. currentView state).
+export const usePageViewSwitch = (config: PageViewSwitchConfig | null) => {
    useEffect(() => {
-      setPageViewSwitch(node);
+      setPageViewSwitch(config);
    });
    useEffect(() => {
       return () => clearPageViewSwitch();

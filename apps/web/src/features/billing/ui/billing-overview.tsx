@@ -26,13 +26,14 @@ import type { FeatureStage } from "@packages/ui/components/feature-stage-badge";
 import { FeatureStageBadge } from "@packages/ui/components/feature-stage-badge";
 import { Progress } from "@packages/ui/components/progress";
 import { Skeleton } from "@packages/ui/components/skeleton";
+import { Spinner } from "@packages/ui/components/spinner";
 import {
    Tooltip,
    TooltipContent,
    TooltipProvider,
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import {
    Briefcase,
@@ -146,6 +147,9 @@ const EARLY_ACCESS_CATEGORY_GATES: Record<
    nfe: { flag: "nfe", fallbackStage: "alpha" },
    document: { flag: "document-signing", fallbackStage: "alpha" },
 };
+
+// Categories that are not yet available — rendered as "Em breve" without enroll CTA.
+const COMING_SOON_CATEGORIES = new Set(["nfe", "document"]);
 
 // ============================================
 // Helpers
@@ -283,6 +287,59 @@ function BillingPeriodSection() {
 }
 
 // ============================================
+// Add Card Banner
+// ============================================
+
+function AddCardBanner() {
+   const { data, isLoading } = useQuery(
+      orpc.billing.getPaymentStatus.queryOptions({}),
+   );
+
+   const setupMutation = useMutation(
+      orpc.billing.createSetupSession.mutationOptions({
+         onSuccess: ({ url }) => {
+            if (url) window.location.href = url;
+         },
+      }),
+   );
+
+   if (isLoading || data?.hasPaymentMethod) return null;
+
+   return (
+      <div className="rounded-lg border border-dashed bg-muted/40 p-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+         <div className="flex items-start gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-background border">
+               <CreditCard className="size-4 text-muted-foreground" />
+            </div>
+            <div className="space-y-0.5">
+               <p className="font-medium text-sm">Adicione um cartão para ativar o pay as you go</p>
+               <p className="text-xs text-muted-foreground">
+                  Sem cartão, o uso é limitado ao tier gratuito mensal. Adicione um cartão para pagar apenas pelo que exceder.
+               </p>
+            </div>
+         </div>
+         <Button
+            className="shrink-0"
+            disabled={setupMutation.isPending}
+            onClick={() =>
+               setupMutation.mutate({
+                  returnUrl: window.location.href,
+               })
+            }
+            variant="default"
+         >
+            {setupMutation.isPending ? (
+               <Spinner className="size-4 mr-2" />
+            ) : (
+               <CreditCard className="size-4 mr-2" />
+            )}
+            Adicionar cartão
+         </Button>
+      </div>
+   );
+}
+
+// ============================================
 // Product Card (PostHog-style)
 // ============================================
 
@@ -369,10 +426,12 @@ function OverviewProductCard({
    category,
    stage,
    enrolled = true,
+   comingSoon = false,
 }: {
    category: CategorySummary;
    stage?: FeatureStage;
    enrolled?: boolean;
+   comingSoon?: boolean;
 }) {
    const { slug, teamSlug } = useParams({
       from: "/_authenticated/$slug/$teamSlug/_dashboard",
@@ -381,7 +440,7 @@ function OverviewProductCard({
    if (!config) return null;
 
    return (
-      <Card className={!enrolled ? "opacity-70" : ""}>
+      <Card className={comingSoon || !enrolled ? "opacity-70" : ""}>
          <Collapsible>
             <CardHeader className="pb-3">
                <div className="flex items-start justify-between gap-4">
@@ -400,7 +459,9 @@ function OverviewProductCard({
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                      {stage && <FeatureStageBadge stage={stage} />}
-                     {!enrolled && (
+                     {comingSoon ? (
+                        <Badge variant="secondary">Em breve</Badge>
+                     ) : !enrolled ? (
                         <Button asChild variant="outline">
                            <Link
                               params={{ slug, teamSlug }}
@@ -409,7 +470,7 @@ function OverviewProductCard({
                               Ativar
                            </Link>
                         </Button>
-                     )}
+                     ) : null}
                   </div>
                </div>
             </CardHeader>
@@ -777,6 +838,9 @@ export function BillingOverview() {
          {/* Billing period */}
          <BillingPeriodSection />
 
+         {/* Add card CTA — hidden once a payment method exists */}
+         <AddCardBanner />
+
          {/* Manage card link */}
          <Button asChild variant="outline">
             <Link params={{ slug, teamSlug }} to="/$slug/$teamSlug/plans">
@@ -808,10 +872,16 @@ export function BillingOverview() {
                   const stage = gate
                      ? resolveStage(gate.flag, gate.fallbackStage)
                      : undefined;
-                  const enrolled = gate ? isEnrolled(gate.flag) : true;
+                  const comingSoon = COMING_SOON_CATEGORIES.has(cat.category);
+                  const enrolled = comingSoon
+                     ? false
+                     : gate
+                        ? isEnrolled(gate.flag)
+                        : true;
                   return (
                      <OverviewProductCard
                         category={cat}
+                        comingSoon={comingSoon}
                         enrolled={enrolled}
                         key={cat.category}
                         stage={stage}

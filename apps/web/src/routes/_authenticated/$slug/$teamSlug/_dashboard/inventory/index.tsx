@@ -26,7 +26,6 @@ import {
    useViewSwitch,
    type ViewConfig,
 } from "@/features/view-switch/hooks/use-view-switch";
-import { ViewSwitchDropdown } from "@/features/view-switch/ui/view-switch-dropdown";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
@@ -230,13 +229,7 @@ function InventoryPage() {
             }
             description="Controle de estoque e movimentações"
             title="Estoque"
-            viewSwitch={
-               <ViewSwitchDropdown
-                  currentView={currentView}
-                  onViewChange={setView}
-                  views={views}
-               />
-            }
+            viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <EarlyAccessBanner template={INVENTORY_BANNER} />
          <Suspense fallback={<InventorySkeleton />}>

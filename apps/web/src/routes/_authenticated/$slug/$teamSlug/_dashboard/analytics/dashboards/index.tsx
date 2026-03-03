@@ -37,7 +37,6 @@ import {
    useViewSwitch,
    type ViewConfig,
 } from "@/features/view-switch/hooks/use-view-switch";
-import { ViewSwitchDropdown } from "@/features/view-switch/ui/view-switch-dropdown";
 import { orpc } from "@/integrations/orpc/client";
 
 const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
@@ -359,13 +358,7 @@ function DashboardsPage() {
                </Button>
             }
             description="Painéis personalizados com seus insights"
-            panelViewSwitch={
-               <ViewSwitchDropdown
-                  currentView={currentView}
-                  onViewChange={setView}
-                  views={views}
-               />
-            }
+            panelViewSwitch={{ options: views, currentView, onViewChange: setView }}
             title="Dashboards"
          />
          <EarlyAccessBanner template={ANALYTICS_BANNER} />

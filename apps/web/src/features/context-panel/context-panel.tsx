@@ -9,6 +9,14 @@ import {
    ContextPanelTitle,
 } from "@packages/ui/components/context-panel";
 import {
+   DropdownMenu,
+   DropdownMenuContent,
+   DropdownMenuItem,
+   DropdownMenuLabel,
+   DropdownMenuSeparator,
+   DropdownMenuTrigger,
+} from "@packages/ui/components/dropdown-menu";
+import {
    Sidebar,
    SidebarContent,
    SidebarHeader,
@@ -17,9 +25,9 @@ import {
 import { cn } from "@packages/ui/lib/utils";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
-import { Info, MessageSquare, MoveDiagonalIcon, X } from "lucide-react";
+import { Check, ChevronDown, Info, MessageSquare, MoveDiagonalIcon, X } from "lucide-react";
 import type React from "react";
-import { type ContextPanelTab, contextPanelStore } from "./context-panel-store";
+import { type ContextPanelTab, type PageViewSwitchConfig, contextPanelStore } from "./context-panel-store";
 import { ContextPanelAction } from "./context-panel-info";
 import { TecoChatTab } from "./ui/teco-chat-tab";
 import {
@@ -27,6 +35,39 @@ import {
    openContextPanel,
    setActiveTab,
 } from "./use-context-panel";
+
+function ViewSwitchPanelAction({ config }: { config: PageViewSwitchConfig }) {
+   const active = config.options.find((o) => o.id === config.currentView) ?? config.options[0];
+
+   return (
+      <DropdownMenu>
+         <DropdownMenuTrigger asChild>
+            <Button className="w-full justify-start" type="button" variant="ghost">
+               {active?.icon}
+               <span className="flex-1 text-left">{active?.label}</span>
+               <ChevronDown className="size-4 text-muted-foreground" />
+            </Button>
+         </DropdownMenuTrigger>
+         <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Visualização</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {config.options.map((option) => (
+               <DropdownMenuItem
+                  className="flex items-center justify-between gap-4"
+                  key={option.id}
+                  onClick={() => config.onViewChange(option.id)}
+               >
+                  <span className="flex items-center gap-2">
+                     {option.icon}
+                     {option.label}
+                  </span>
+                  {config.currentView === option.id && <Check className="size-4" />}
+               </DropdownMenuItem>
+            ))}
+         </DropdownMenuContent>
+      </DropdownMenu>
+   );
+}
 
 function InfoContent() {
    const { infoContent, pageActions, pageViewSwitch } = useStore(contextPanelStore);
@@ -48,11 +89,9 @@ function InfoContent() {
          <ContextPanel className="h-auto shrink-0">
             <ContextPanelHeader>
                <ContextPanelTitle>Ações</ContextPanelTitle>
-               {pageViewSwitch && (
-                  <ContextPanelHeaderActions>{pageViewSwitch}</ContextPanelHeaderActions>
-               )}
             </ContextPanelHeader>
             <ContextPanelContent className="gap-1">
+               {pageViewSwitch && <ViewSwitchPanelAction config={pageViewSwitch} />}
                {pageActions?.map((action) => (
                   <ContextPanelAction
                      icon={action.icon}

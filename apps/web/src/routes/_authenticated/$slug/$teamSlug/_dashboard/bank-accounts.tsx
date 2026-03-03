@@ -23,7 +23,6 @@ import {
    useViewSwitch,
    type ViewConfig,
 } from "@/features/view-switch/hooks/use-view-switch";
-import { ViewSwitchDropdown } from "@/features/view-switch/ui/view-switch-dropdown";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -249,13 +248,7 @@ function BankAccountsPage() {
             }
             description="Gerencie suas contas bancárias e saldos"
             title="Contas Bancárias"
-            viewSwitch={
-               <ViewSwitchDropdown
-                  currentView={currentView}
-                  onViewChange={setView}
-                  views={views}
-               />
-            }
+            viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <Suspense fallback={<BankAccountsSkeleton />}>
             <BankAccountsList view={currentView} />
