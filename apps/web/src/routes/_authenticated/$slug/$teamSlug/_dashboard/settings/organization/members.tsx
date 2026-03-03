@@ -165,10 +165,10 @@ function MembersErrorFallback({ resetErrorBoundary }: FallbackProps) {
 }
 
 // ============================================
-// Invite Member Sheet Content
+// Invite Member Credenza Content
 // ============================================
 
-function InviteMemberSheetContent({
+function InviteMemberCredenzaContent({
    organizationId,
    onSuccess,
 }: {
@@ -726,10 +726,10 @@ function MembersContent() {
       });
    }
 
-   function handleOpenInviteSheet() {
+   function handleOpenInviteCredenza() {
       openCredenza({
          children: (
-            <InviteMemberSheetContent
+            <InviteMemberCredenzaContent
                onSuccess={closeCredenza}
                organizationId={organizationId}
             />
@@ -844,7 +844,7 @@ function MembersContent() {
                   Gerencie os membros da sua organização.
                </p>
             </div>
-            <Button onClick={handleOpenInviteSheet} size="sm">
+            <Button onClick={handleOpenInviteCredenza} size="sm">
                <UserPlus className="size-4 mr-2" />
                Convidar membro
             </Button>
