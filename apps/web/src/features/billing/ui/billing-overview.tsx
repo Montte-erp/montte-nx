@@ -1,10 +1,9 @@
 import { format, fromMinorUnits, of } from "@f-o-t/money";
-import { AddonName, FREE_TIER_LIMITS } from "@packages/stripe/constants";
+import { FREE_TIER_LIMITS } from "@packages/stripe/constants";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
    Card,
-   CardAction,
    CardContent,
    CardDescription,
    CardHeader,
@@ -37,9 +36,7 @@ import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import {
    Briefcase,
-   Building2,
    Calendar,
-   Check,
    ChevronRight,
    Coins,
    CreditCard,
@@ -50,7 +47,6 @@ import {
    Package,
    Receipt,
    Sparkles,
-   TrendingUp,
    Users,
    Webhook,
 } from "lucide-react";
@@ -539,102 +535,6 @@ function OverviewProductCard({
                </CardContent>
             )}
          </Collapsible>
-      </Card>
-   );
-}
-
-interface AddonDef {
-   name: AddonName;
-   displayName: string;
-   description: string;
-   price: string;
-   perUnit: string;
-   features: string[];
-   icon: ReactNode;
-}
-
-const ADDON_DEFS: AddonDef[] = [
-   {
-      name: AddonName.BOOST,
-      displayName: "Boost",
-      description: "Limites ampliados para equipes em crescimento",
-      price: "R$ 199",
-      perUnit: "/mês",
-      features: [
-         "Limites 5× maiores em todos os módulos",
-         "Suporte prioritário",
-         "Acesso antecipado a novas funcionalidades",
-      ],
-      icon: <Zap className="size-4" />,
-   },
-   {
-      name: AddonName.SCALE,
-      displayName: "Scale",
-      description: "Para operações de grande volume",
-      price: "R$ 599",
-      perUnit: "/mês",
-      features: [
-         "Limites 20× maiores em todos os módulos",
-         "SLA de suporte dedicado",
-         "Integrações avançadas",
-      ],
-      icon: <TrendingUp className="size-4" />,
-   },
-   {
-      name: AddonName.ENTERPRISE,
-      displayName: "Enterprise",
-      description: "Infraestrutura dedicada e customizações sob medida",
-      price: "R$ 2.500+",
-      perUnit: "/mês",
-      features: [
-         "Limites ilimitados",
-         "Deploy dedicado",
-         "Customizações sob medida",
-         "Suporte 24/7",
-      ],
-      icon: <Building2 className="size-4" />,
-   },
-];
-
-function AddonCard({ addon, active }: { addon: AddonDef; active: boolean }) {
-   return (
-      <Card className={active ? "border-primary/60" : ""}>
-         <CardHeader>
-            <CardTitle className="flex gap-2 items-center">
-               <div className="flex size-8 items-center justify-center rounded-lg bg-muted text-primary ">
-                  {addon.icon}
-               </div>
-               <span>{addon.displayName} addon</span>
-            </CardTitle>
-            <CardDescription> {addon.description}</CardDescription>
-            <CardAction className="flex gap-2 items-center">
-               {active ? (
-                  <span className="text-sm text-primary font-medium">
-                     Ativo
-                  </span>
-               ) : (
-                  <span className="text-sm text-muted-foreground tabular-nums">
-                     {addon.price}
-                     <span className="text-xs">{addon.perUnit}</span>
-                  </span>
-               )}
-               <Button variant={active ? "outline" : "default"}>
-                  {active ? "Gerenciar" : "Contratar"}
-               </Button>
-            </CardAction>
-         </CardHeader>
-         <CardContent className=" space-y-4">
-            {/* Features */}
-            <p className="text-xs text-muted-foreground">Recursos incluídos:</p>
-            <div className="grid gap-4  md:grid-cols-2">
-               {addon.features.map((feature) => (
-                  <div className="flex items-center gap-2" key={feature}>
-                     <Check className="size-4 text-primary " />
-                     <span className="text-sm font-medium">{feature}</span>
-                  </div>
-               ))}
-            </div>
-         </CardContent>
       </Card>
    );
 }

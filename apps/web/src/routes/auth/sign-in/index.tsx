@@ -105,7 +105,7 @@ export function SignInPage() {
          <div className="text-center space-y-2">
             <h1 className="text-3xl font-semibold font-serif">Entrar</h1>
             <p className="text-muted-foreground text-sm">
-               Bom te ver de novo! Entre na sua conta para continuar.
+               Bom te ver de volta. O ERP com IA espera por voce.
             </p>
          </div>
 

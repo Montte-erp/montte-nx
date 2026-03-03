@@ -70,6 +70,13 @@ export function createAuth(config: SimplifiedAuthConfig) {
          },
       },
 
+      socialProviders: {
+         google: {
+            clientId: env.BETTER_AUTH_GOOGLE_CLIENT_ID,
+            clientSecret: env.BETTER_AUTH_GOOGLE_CLIENT_SECRET,
+         },
+      },
+
       advanced: {
          crossSubDomainCookies: isProduction
             ? { domain: ".montte.co", enabled: true }

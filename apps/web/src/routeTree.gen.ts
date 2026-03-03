@@ -32,6 +32,7 @@ import { Route as ApiChatSplatRouteImport } from './routes/api/chat/$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthenticatedSlugTeamSlugRouteImport } from './routes/_authenticated/$slug/$teamSlug'
 import { Route as DotwellKnownOauthAuthorizationServerSplatRouteImport } from './routes/[.]well-known.oauth-authorization-server.$'
+import { Route as CallbackOrganizationInvitationInvitationIdRouteImport } from './routes/callback/organization/invitation/$invitationId'
 import { Route as AuthenticatedSlugTeamSlugDashboardRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard'
 import { Route as AuthenticatedSlugTeamSlugDashboardTransactionsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/transactions'
 import { Route as AuthenticatedSlugTeamSlugDashboardTagsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/tags'
@@ -201,6 +202,12 @@ const DotwellKnownOauthAuthorizationServerSplatRoute =
   DotwellKnownOauthAuthorizationServerSplatRouteImport.update({
     id: '/.well-known/oauth-authorization-server/$',
     path: '/.well-known/oauth-authorization-server/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const CallbackOrganizationInvitationInvitationIdRoute =
+  CallbackOrganizationInvitationInvitationIdRouteImport.update({
+    id: '/callback/organization/invitation/$invitationId',
+    path: '/callback/organization/invitation/$invitationId',
     getParentRoute: () => rootRouteImport,
   } as any)
 const AuthenticatedSlugTeamSlugDashboardRoute =
@@ -597,6 +604,7 @@ export interface FileRoutesByFullPath {
   '/api/rpc/$': typeof ApiRpcSplatRoute
   '/auth/sign-in/email': typeof AuthSignInEmailRoute
   '/auth/sign-in/': typeof AuthSignInIndexRoute
+  '/callback/organization/invitation/$invitationId': typeof CallbackOrganizationInvitationInvitationIdRoute
   '/$slug/$teamSlug/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
   '/$slug/$teamSlug/billing': typeof AuthenticatedSlugTeamSlugDashboardBillingRoute
   '/$slug/$teamSlug/bills': typeof AuthenticatedSlugTeamSlugDashboardBillsRoute
@@ -672,6 +680,7 @@ export interface FileRoutesByTo {
   '/api/rpc/$': typeof ApiRpcSplatRoute
   '/auth/sign-in/email': typeof AuthSignInEmailRoute
   '/auth/sign-in': typeof AuthSignInIndexRoute
+  '/callback/organization/invitation/$invitationId': typeof CallbackOrganizationInvitationInvitationIdRoute
   '/$slug/$teamSlug/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
   '/$slug/$teamSlug/billing': typeof AuthenticatedSlugTeamSlugDashboardBillingRoute
   '/$slug/$teamSlug/bills': typeof AuthenticatedSlugTeamSlugDashboardBillsRoute
@@ -748,6 +757,7 @@ export interface FileRoutesById {
   '/auth/sign-in/email': typeof AuthSignInEmailRoute
   '/auth/sign-in/': typeof AuthSignInIndexRoute
   '/_authenticated/$slug/$teamSlug/_dashboard': typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren
+  '/callback/organization/invitation/$invitationId': typeof CallbackOrganizationInvitationInvitationIdRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/billing': typeof AuthenticatedSlugTeamSlugDashboardBillingRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/bills': typeof AuthenticatedSlugTeamSlugDashboardBillsRoute
@@ -826,6 +836,7 @@ export interface FileRouteTypes {
     | '/api/rpc/$'
     | '/auth/sign-in/email'
     | '/auth/sign-in/'
+    | '/callback/organization/invitation/$invitationId'
     | '/$slug/$teamSlug/bank-accounts'
     | '/$slug/$teamSlug/billing'
     | '/$slug/$teamSlug/bills'
@@ -901,6 +912,7 @@ export interface FileRouteTypes {
     | '/api/rpc/$'
     | '/auth/sign-in/email'
     | '/auth/sign-in'
+    | '/callback/organization/invitation/$invitationId'
     | '/$slug/$teamSlug/bank-accounts'
     | '/$slug/$teamSlug/billing'
     | '/$slug/$teamSlug/bills'
@@ -976,6 +988,7 @@ export interface FileRouteTypes {
     | '/auth/sign-in/email'
     | '/auth/sign-in/'
     | '/_authenticated/$slug/$teamSlug/_dashboard'
+    | '/callback/organization/invitation/$invitationId'
     | '/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts'
     | '/_authenticated/$slug/$teamSlug/_dashboard/billing'
     | '/_authenticated/$slug/$teamSlug/_dashboard/bills'
@@ -1043,6 +1056,7 @@ export interface RootRouteChildren {
   ApiElectricSplatRoute: typeof ApiElectricSplatRoute
   ApiFilesSplatRoute: typeof ApiFilesSplatRoute
   ApiRpcSplatRoute: typeof ApiRpcSplatRoute
+  CallbackOrganizationInvitationInvitationIdRoute: typeof CallbackOrganizationInvitationInvitationIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1206,6 +1220,13 @@ declare module '@tanstack/react-router' {
       path: '/.well-known/oauth-authorization-server/$'
       fullPath: '/.well-known/oauth-authorization-server/$'
       preLoaderRoute: typeof DotwellKnownOauthAuthorizationServerSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/callback/organization/invitation/$invitationId': {
+      id: '/callback/organization/invitation/$invitationId'
+      path: '/callback/organization/invitation/$invitationId'
+      fullPath: '/callback/organization/invitation/$invitationId'
+      preLoaderRoute: typeof CallbackOrganizationInvitationInvitationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/$slug/$teamSlug/_dashboard': {
@@ -1874,6 +1895,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiElectricSplatRoute: ApiElectricSplatRoute,
   ApiFilesSplatRoute: ApiFilesSplatRoute,
   ApiRpcSplatRoute: ApiRpcSplatRoute,
+  CallbackOrganizationInvitationInvitationIdRoute:
+    CallbackOrganizationInvitationInvitationIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

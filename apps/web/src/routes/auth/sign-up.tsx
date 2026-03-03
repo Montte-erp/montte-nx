@@ -268,7 +268,7 @@ function SignUpPage() {
                      Cadastrar
                   </h1>
                   <p className="text-muted-foreground text-sm">
-                     Crie sua conta para comecar a usar o aplicativo.
+                     Crie sua conta e comece a gerenciar seu negocio com IA.
                   </p>
                </div>
 
