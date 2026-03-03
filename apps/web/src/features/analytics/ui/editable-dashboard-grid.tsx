@@ -20,15 +20,8 @@ import { DataTable } from "@packages/ui/components/data-table";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import {
-   BarChart3,
-   Check,
-   CheckCircle2,
-   Loader2,
-   Plus,
-   RotateCcw,
-} from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { BarChart3, CheckCircle2, Plus } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 import { DashboardGrid } from "./dashboard-grid";
@@ -41,6 +34,10 @@ import { DashboardTile } from "./dashboard-tile";
 interface EditableDashboardGridProps {
    dashboard: Dashboard;
    onOpenAddInsight?: (handler: () => void) => void;
+   isEditingLayout: boolean;
+   onSaveReady?: (handler: () => void) => void;
+   onCancelReady?: (handler: () => void) => void;
+   onSaveComplete?: () => void;
 }
 
 // =============================================================================
@@ -194,44 +191,16 @@ function AddInsightCredenza({
 }
 
 // =============================================================================
-// Unsaved Changes Toolbar
-// =============================================================================
-
-function UnsavedChangesBar({
-   onSave,
-   onCancel,
-   isSaving,
-}: {
-   onSave: () => void;
-   onCancel: () => void;
-   isSaving: boolean;
-}) {
-   return (
-      <div className="flex items-center gap-2 flex-wrap">
-         <div className="flex-1" />
-         <Button onClick={onCancel} variant="ghost">
-            <RotateCcw className="size-4" />
-            Cancelar
-         </Button>
-         <Button disabled={isSaving} onClick={onSave}>
-            {isSaving ? (
-               <Loader2 className="size-4 animate-spin" />
-            ) : (
-               <Check className="size-4" />
-            )}
-            Salvar
-         </Button>
-      </div>
-   );
-}
-
-// =============================================================================
 // Main Component
 // =============================================================================
 
 export function EditableDashboardGrid({
    dashboard,
    onOpenAddInsight: externalOnOpenAddInsight,
+   isEditingLayout,
+   onSaveReady,
+   onCancelReady,
+   onSaveComplete,
 }: EditableDashboardGridProps) {
    const queryClient = useQueryClient();
    const { openCredenza, closeCredenza } = useCredenza();
@@ -251,13 +220,8 @@ export function EditableDashboardGrid({
       setLocalTiles(dashboard.tiles);
    }
 
-   const tilesChanged = useMemo(
-      () => JSON.stringify(localTiles) !== dashboardTilesJson,
-      [localTiles, dashboardTilesJson],
-   );
-
    // Save tiles mutation
-   const saveMutation = useMutation(
+   const { mutate: saveMutate } = useMutation(
       orpc.dashboards.updateTiles.mutationOptions({
          onSuccess: () => {
             queryClient.invalidateQueries({
@@ -271,6 +235,12 @@ export function EditableDashboardGrid({
          },
       }),
    );
+
+   // Keep a ref to always call the latest onSaveComplete (avoids stale closure)
+   const onSaveCompleteRef = useRef(onSaveComplete);
+   useEffect(() => {
+      onSaveCompleteRef.current = onSaveComplete;
+   }, [onSaveComplete]);
 
    // Tile operations
    const handleReorder = useCallback((reordered: DashboardTileType[]) => {
@@ -338,6 +308,17 @@ export function EditableDashboardGrid({
       });
    }, [localTiles, openCredenza, handleAddInsight]);
 
+   const handleSave = useCallback(() => {
+      saveMutate(
+         { id: dashboard.id, tiles: localTiles },
+         { onSuccess: () => onSaveCompleteRef.current?.() },
+      );
+   }, [saveMutate, dashboard.id, localTiles]);
+
+   const handleCancel = useCallback(() => {
+      setLocalTiles(dashboard.tiles);
+   }, [dashboard.tiles]);
+
    // Expose add handler to parent (DashboardView header button)
    useEffect(() => {
       if (externalOnOpenAddInsight) {
@@ -345,18 +326,15 @@ export function EditableDashboardGrid({
       }
    }, [externalOnOpenAddInsight, handleOpenAddInsight]);
 
-   const handleSave = useCallback(() => {
-      saveMutation.mutate({
-         id: dashboard.id,
-         tiles: localTiles,
-      });
-   }, [saveMutation, dashboard.id, localTiles]);
+   useEffect(() => {
+      if (onSaveReady) onSaveReady(handleSave);
+   }, [onSaveReady, handleSave]);
 
-   const handleCancel = useCallback(() => {
-      setLocalTiles(dashboard.tiles);
-   }, [dashboard.tiles]);
+   useEffect(() => {
+      if (onCancelReady) onCancelReady(handleCancel);
+   }, [onCancelReady, handleCancel]);
 
-   if (localTiles.length === 0 && !tilesChanged) {
+   if (localTiles.length === 0 && !isEditingLayout) {
       return (
          <Card>
             <CardHeader className="items-center text-center py-12">
@@ -372,23 +350,17 @@ export function EditableDashboardGrid({
 
    return (
       <div className="flex flex-col gap-4">
-         {tilesChanged && (
-            <UnsavedChangesBar
-               isSaving={saveMutation.isPending}
-               onCancel={handleCancel}
-               onSave={handleSave}
-            />
-         )}
-
          <DashboardGrid
+            isEditing={isEditingLayout}
             onReorder={handleReorder}
+            onResize={handleResizeTile}
             renderTile={(tile) => (
                <DashboardTile
                   globalDateRange={dashboard.globalDateRange ?? undefined}
                   globalFilters={dashboard.globalFilters ?? undefined}
                   id={tile.insightId}
                   insightId={tile.insightId}
-                  isEditing
+                  isEditing={isEditingLayout}
                   key={tile.insightId}
                   onDuplicate={() => handleDuplicateTile(tile.insightId)}
                   onRemove={() => handleRemoveTile(tile.insightId)}
