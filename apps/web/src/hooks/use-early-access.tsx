@@ -54,7 +54,7 @@ const STATIC_FEATURES: EarlyAccessFeature[] = [
       name: "Produtos (Estoque)",
       description:
          "Cadastre e gerencie o catálogo de produtos da sua empresa — controle de estoque, preços, variantes e categorias.",
-      stage: "alpha",
+      stage: "concept",
       documentationUrl: null,
    },
    {
@@ -62,7 +62,7 @@ const STATIC_FEATURES: EarlyAccessFeature[] = [
       name: "Gestão de Serviços",
       description:
          "Gestão completa de serviços: planos, assinaturas, descontos negociados e faturamento recorrente.",
-      stage: "alpha",
+      stage: "concept",
       documentationUrl: null,
    },
    {
