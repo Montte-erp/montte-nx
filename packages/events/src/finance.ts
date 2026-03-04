@@ -11,6 +11,7 @@ export const FINANCE_EVENTS = {
    "finance.bank_account_connected": "finance.bank_account_connected",
    "finance.category_created": "finance.category_created",
    "finance.tag_created": "finance.tag_created",
+   "finance.budget_alert_triggered": "finance.budget_alert_triggered",
 } as const;
 
 export type FinanceEventName =
@@ -141,6 +142,34 @@ export function emitFinanceTagCreated(
    return emit({
       ...ctx,
       eventName: FINANCE_EVENTS["finance.tag_created"],
+      eventCategory: EVENT_CATEGORIES.finance,
+      properties,
+   });
+}
+
+// ---------------------------------------------------------------------------
+// finance.budget_alert_triggered
+// ---------------------------------------------------------------------------
+
+export const financeBudgetAlertTriggeredSchema = z.object({
+   budgetGoalId: z.string().uuid(),
+   categoryId: z.string().uuid().optional(),
+   subcategoryId: z.string().uuid().optional(),
+   percentUsed: z.number(),
+   teamId: z.string().uuid(),
+});
+export type FinanceBudgetAlertTriggeredEvent = z.infer<
+   typeof financeBudgetAlertTriggeredSchema
+>;
+
+export function emitFinanceBudgetAlertTriggered(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: FinanceBudgetAlertTriggeredEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: FINANCE_EVENTS["finance.budget_alert_triggered"],
       eventCategory: EVENT_CATEGORIES.finance,
       properties,
    });

@@ -65,7 +65,7 @@ export function SubSidebarNewMenu({
          return;
       }
       navigate({
-         to: "/$slug/$teamSlug/analytics/insights/new",
+         to: "/$slug/$teamSlug/analytics/insights",
          params: { slug, teamSlug },
       });
       onAction?.();
@@ -74,11 +74,7 @@ export function SubSidebarNewMenu({
    return (
       <DropdownMenu>
          <DropdownMenuTrigger asChild>
-            <Button
-               aria-label="Novo"
-               className="size-7"
-               variant="outline"
-            >
+            <Button aria-label="Novo" className="size-7" variant="outline">
                <Plus className="size-4" />
             </Button>
          </DropdownMenuTrigger>

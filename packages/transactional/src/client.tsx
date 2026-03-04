@@ -1,4 +1,5 @@
 import type { Resend } from "resend";
+import BudgetAlertEmail from "./emails/budget-alert";
 import MagicLinkEmail from "./emails/magic-link";
 import OrganizationInvitationEmail from "./emails/organization-invitation";
 import OTPEmail from "./emails/otp";
@@ -82,6 +83,46 @@ export const sendMagicLinkEmail = async (
    await client.emails.send({
       from: `${name} <suporte@mail.montte.co>`,
       react: <MagicLinkEmail magicLinkUrl={magicLinkUrl} />,
+      subject,
+      to: email,
+   });
+};
+
+export interface SendBudgetAlertEmailOptions {
+   email: string;
+   categoryName: string;
+   spentAmount: string;
+   limitAmount: string;
+   percentUsed: number;
+   alertThreshold: number;
+   month: string;
+}
+
+export const sendBudgetAlertEmail = async (
+   client: Resend,
+   {
+      email,
+      categoryName,
+      spentAmount,
+      limitAmount,
+      percentUsed,
+      alertThreshold,
+      month,
+   }: SendBudgetAlertEmailOptions,
+) => {
+   const subject = `Alerta de meta: ${categoryName} atingiu ${percentUsed}% do limite`;
+   await client.emails.send({
+      from: `${name} <suporte@mail.montte.co>`,
+      react: (
+         <BudgetAlertEmail
+            alertThreshold={alertThreshold}
+            categoryName={categoryName}
+            limitAmount={limitAmount}
+            month={month}
+            percentUsed={percentUsed}
+            spentAmount={spentAmount}
+         />
+      ),
       subject,
       to: email,
    });

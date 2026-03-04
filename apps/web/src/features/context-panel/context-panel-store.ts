@@ -1,4 +1,5 @@
 import { Store } from "@tanstack/react-store";
+import type { LucideIcon } from "lucide-react";
 import type React from "react";
 
 export interface ContextPanelTab {
@@ -10,7 +11,7 @@ export interface ContextPanelTab {
 }
 
 export interface PanelAction {
-   icon: React.ElementType;
+   icon: LucideIcon;
    label: string;
    onClick: () => void;
 }

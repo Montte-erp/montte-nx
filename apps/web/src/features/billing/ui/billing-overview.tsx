@@ -33,7 +33,7 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { useParams } from "@tanstack/react-router";
+import { Link, useParams } from "@tanstack/react-router";
 import {
    Briefcase,
    Calendar,
@@ -288,7 +288,7 @@ function AddCardBanner() {
 
    const handleAddCard = () => {
       startTransition(async () => {
-         const result = await authClient.subscription.createBillingPortal({
+         const result = await authClient.subscription.billingPortal({
             referenceId: activeOrganization?.id,
             returnUrl: window.location.href,
          });
@@ -362,7 +362,10 @@ function AddonCard({
                   <div className="flex items-center gap-2">
                      <CardTitle className="text-base">{addon.label}</CardTitle>
                      {isActive && (
-                        <Badge className="bg-primary/10 text-primary border-primary/20" variant="secondary">
+                        <Badge
+                           className="bg-primary/10 text-primary border-primary/20"
+                           variant="secondary"
+                        >
                            Ativo
                         </Badge>
                      )}
@@ -380,7 +383,11 @@ function AddonCard({
             <div className="flex items-center justify-between gap-4">
                <div className="flex flex-wrap gap-1">
                   {addon.features.map((feature) => (
-                     <Badge key={feature} variant="outline" className="text-xs font-normal">
+                     <Badge
+                        className="text-xs font-normal"
+                        key={feature}
+                        variant="outline"
+                     >
                         {feature}
                      </Badge>
                   ))}
@@ -422,9 +429,9 @@ function AddonsSection({ hasPaymentMethod }: { hasPaymentMethod: boolean }) {
    const activeAddonIds = new Set(activeAddons.map((a) => a.addonId));
    const [isPending, startTransition] = useTransition();
 
-   const handleSubscribe = (addonId: string) => {
+   const handleSubscribe = (_addonId: string) => {
       startTransition(async () => {
-         const result = await authClient.subscription.createBillingPortal({
+         const result = await authClient.subscription.billingPortal({
             referenceId: activeOrganization?.id,
             returnUrl: window.location.href,
          });
@@ -444,12 +451,12 @@ function AddonsSection({ hasPaymentMethod }: { hasPaymentMethod: boolean }) {
          <div className="space-y-3">
             {PLATFORM_ADDONS.map((addon) => (
                <AddonCard
-                  key={addon.id}
                   addon={addon}
-                  isActive={activeAddonIds.has(addon.id)}
                   hasPaymentMethod={hasPaymentMethod}
-                  onSubscribe={handleSubscribe}
+                  isActive={activeAddonIds.has(addon.id)}
                   isPending={isPending}
+                  key={addon.id}
+                  onSubscribe={handleSubscribe}
                />
             ))}
          </div>
@@ -622,11 +629,11 @@ function OverviewProductCard({
                                     value={
                                        freeTier > 0
                                           ? Math.min(
-                                             (category.eventCount /
-                                                freeTier) *
-                                             100,
-                                             100,
-                                          )
+                                               (category.eventCount /
+                                                  freeTier) *
+                                                  100,
+                                               100,
+                                            )
                                           : 0
                                     }
                                  />
@@ -748,8 +755,8 @@ function InvoicesPreviewContent() {
                invoice.status === "paid"
                   ? "Pago"
                   : invoice.status === "open"
-                     ? "Aberto"
-                     : (invoice.status ?? "—");
+                    ? "Aberto"
+                    : (invoice.status ?? "—");
 
             return (
                <div
@@ -870,8 +877,8 @@ export function BillingOverview() {
                   const enrolled = comingSoon
                      ? false
                      : gate
-                        ? isEnrolled(gate.flag)
-                        : true;
+                       ? isEnrolled(gate.flag)
+                       : true;
                   return (
                      <OverviewProductCard
                         category={cat}

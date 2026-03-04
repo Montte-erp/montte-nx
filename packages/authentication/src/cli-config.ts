@@ -17,4 +17,4 @@ import { createAuth } from "./server";
 export const auth = createAuth({
    db: createDb({ databaseUrl: env.DATABASE_URL }),
    env,
-}) as ReturnType<typeof betterAuth>;
+}) as unknown as ReturnType<typeof betterAuth>;

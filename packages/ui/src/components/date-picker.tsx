@@ -1,12 +1,5 @@
 "use client";
 
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import type { ChangeEvent, ChangeEventHandler } from "react";
-import { useState } from "react";
-
-import { cn } from "@packages/ui/lib/utils";
-
 import { Button } from "@packages/ui/components/button";
 import { Calendar } from "@packages/ui/components/calendar";
 import {
@@ -22,11 +15,37 @@ import {
    SelectValue,
 } from "@packages/ui/components/select";
 
+import { cn } from "@packages/ui/lib/utils";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import type { ChangeEvent, ChangeEventHandler } from "react";
+import { useState } from "react";
+
 export const title = "Date Picker with Month and Year Selector";
 
-export const DatePicker = () => {
-   const [date, setDate] = useState<Date | undefined>(new Date());
-   const [month, setMonth] = useState<Date>(new Date());
+export interface DatePickerProps {
+   /** Controlled selected date */
+   date?: Date | undefined;
+   /** Called when user selects a date */
+   onSelect?: (date: Date | undefined) => void;
+   /** Optional CSS class applied to the trigger button */
+   className?: string;
+   /** Placeholder text shown when no date is selected */
+   placeholder?: string;
+}
+
+export const DatePicker = ({
+   date: dateProp,
+   onSelect,
+   className,
+   placeholder,
+}: DatePickerProps = {}) => {
+   const isControlled = dateProp !== undefined || onSelect !== undefined;
+   const [internalDate, setInternalDate] = useState<Date | undefined>(
+      new Date(),
+   );
+   const date = isControlled ? dateProp : internalDate;
+   const [month, setMonth] = useState<Date>(dateProp ?? new Date());
 
    const handleCalendarChange = (
       value: string | number,
@@ -40,6 +59,15 @@ export const DatePicker = () => {
       event(newEvent);
    };
 
+   const handleSelect = (selected: Date | undefined) => {
+      if (isControlled) {
+         onSelect?.(selected);
+      } else {
+         setInternalDate(selected);
+      }
+      if (selected) setMonth(selected);
+   };
+
    return (
       <Popover>
          <PopoverTrigger asChild>
@@ -47,11 +75,16 @@ export const DatePicker = () => {
                className={cn(
                   "w-[280px] justify-start text-left font-normal",
                   !date && "text-muted-foreground",
+                  className,
                )}
                variant="outline"
             >
                <CalendarIcon className="mr-2 h-4 w-4" />
-               {date ? format(date, "PPP") : <span>Pick a date</span>}
+               {date ? (
+                  format(date, "PPP")
+               ) : (
+                  <span>{placeholder ?? "Pick a date"}</span>
+               )}
             </Button>
          </PopoverTrigger>
          <PopoverContent align="start" className="w-auto p-0">
@@ -94,7 +127,7 @@ export const DatePicker = () => {
                mode="single"
                month={month}
                onMonthChange={setMonth}
-               onSelect={setDate}
+               onSelect={handleSelect}
                selected={date}
             />
          </PopoverContent>

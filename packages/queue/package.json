@@ -16,9 +16,15 @@
       "./scheduled": {
          "default": "./src/scheduled.ts",
          "types": "./dist/src/scheduled.d.ts"
+      },
+      "./budget-alerts": {
+         "default": "./src/budget-alerts.ts",
+         "types": "./dist/src/budget-alerts.d.ts"
       }
    },
-   "files": ["dist"],
+   "files": [
+      "dist"
+   ],
    "scripts": {
       "build": "tsc --build",
       "check": "biome check --write ./src",

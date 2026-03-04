@@ -33,7 +33,6 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@packages/ui/components/select";
-import { Separator } from "@packages/ui/components/separator";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
 import { getInitials } from "@packages/utils/text";
@@ -245,7 +244,7 @@ function InviteMemberCredenzaContent({
                      onValueChange={(v) => setRole(v as "member" | "admin")}
                      value={role}
                   >
-                     <SelectTrigger id="invite-role" className="w-full">
+                     <SelectTrigger className="w-full" id="invite-role">
                         <SelectValue />
                      </SelectTrigger>
                      <SelectContent>

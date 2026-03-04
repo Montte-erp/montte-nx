@@ -97,7 +97,7 @@ export async function authenticateRequest(
       success: true,
       organizationId,
       teamId: typeof teamId === "string" ? teamId : undefined,
-      userId: result.key.userId ?? undefined,
+      userId: result.key.referenceId ?? undefined,
    };
 }
 

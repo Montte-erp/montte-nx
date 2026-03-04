@@ -68,7 +68,7 @@ export const sdkProcedure = baseProcedure.use(async ({ context, next }) => {
          plan: (plan as string) ?? "metered",
          sdkMode: (sdkMode as "static" | "ssr") ?? "static",
          remaining: result.key.remaining,
-         userId: result.key.userId,
+         userId: result.key.referenceId,
          apiKeyType: (apiKeyType as "public" | "private") ?? "private",
       },
    });

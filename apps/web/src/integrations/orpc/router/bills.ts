@@ -295,13 +295,17 @@ export const pay = protectedProcedure
 
       const resolvedBankAccountId = bankAccountId ?? bill.bankAccountId ?? null;
 
-      if (resolvedBankAccountId) {
-         const account = await getBankAccount(db, resolvedBankAccountId);
-         if (!account || account.teamId !== teamId) {
-            throw new ORPCError("BAD_REQUEST", {
-               message: "Conta bancária inválida.",
-            });
-         }
+      if (!resolvedBankAccountId) {
+         throw new ORPCError("BAD_REQUEST", {
+            message: "Conta bancária é obrigatória para pagar uma conta.",
+         });
+      }
+
+      const account = await getBankAccount(db, resolvedBankAccountId);
+      if (!account || account.teamId !== teamId) {
+         throw new ORPCError("BAD_REQUEST", {
+            message: "Conta bancária inválida.",
+         });
       }
 
       const transactionType = bill.type === "payable" ? "expense" : "income";
