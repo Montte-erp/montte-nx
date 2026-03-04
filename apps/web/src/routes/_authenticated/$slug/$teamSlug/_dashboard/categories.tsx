@@ -200,46 +200,6 @@ function CategoriesList({ view }: CategoriesListProps) {
       );
    }
 
-   if (view === "card") {
-      return (
-         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {categories.map((category) => (
-               <div
-                  className="rounded-lg border bg-background p-4 space-y-3"
-                  key={category.id}
-               >
-                  <div className="flex items-center gap-2 min-w-0">
-                     {category.color && (
-                        <span
-                           className="size-4 rounded-full shrink-0"
-                           style={{ backgroundColor: category.color }}
-                        />
-                     )}
-                     <p className="font-medium truncate">{category.name}</p>
-                  </div>
-                  {!category.isDefault && (
-                     <div className="flex items-center gap-2">
-                        <Button
-                           onClick={() => handleEdit(category)}
-                           variant="outline"
-                        >
-                           Editar
-                        </Button>
-                        <Button
-                           className="text-destructive"
-                           onClick={() => handleDelete(category)}
-                           variant="ghost"
-                        >
-                           Excluir
-                        </Button>
-                     </div>
-                  )}
-               </div>
-            ))}
-         </div>
-      );
-   }
-
    return (
       <>
          <DataTable
@@ -277,41 +237,8 @@ function CategoriesList({ view }: CategoriesListProps) {
                   </>
                );
             }}
-            renderMobileCard={({ row }) => (
-               <div className="rounded-lg border bg-background p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                     <div className="flex items-center gap-2 min-w-0">
-                        {row.original.color && (
-                           <span
-                              className="size-4 rounded-full shrink-0"
-                              style={{ backgroundColor: row.original.color }}
-                           />
-                        )}
-                        <p className="font-medium truncate">
-                           {row.original.name}
-                        </p>
-                     </div>
-                  </div>
-                  {!row.original.isDefault && (
-                     <div className="flex items-center gap-2">
-                        <Button
-                           onClick={() => handleEdit(row.original)}
-                           variant="outline"
-                        >
-                           Editar
-                        </Button>
-                        <Button
-                           className="text-destructive"
-                           onClick={() => handleDelete(row.original)}
-                           variant="ghost"
-                        >
-                           Excluir
-                        </Button>
-                     </div>
-                  )}
-               </div>
-            )}
             rowSelection={rowSelection}
+            view={view}
          />
          <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
             <SelectionActionButton

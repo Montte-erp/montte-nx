@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
-import type { PageViewSwitchConfig, PanelAction } from "@/features/context-panel/context-panel-store";
+import type {
+   PageViewSwitchConfig,
+   PanelAction,
+} from "@/features/context-panel/context-panel-store";
 import { PageHeader } from "./page-header";
 
 interface DefaultHeaderProps {

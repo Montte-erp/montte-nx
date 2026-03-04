@@ -1,4 +1,3 @@
-import { useCallback, useRef, useState } from "react";
 import { closestCenter, DndContext, type DragEndEvent } from "@dnd-kit/core";
 import {
    arrayMove,
@@ -6,6 +5,7 @@ import {
    SortableContext,
 } from "@dnd-kit/sortable";
 import type { DashboardTile as DashboardTileType } from "@packages/database/schemas/dashboards";
+import { useCallback, useRef, useState } from "react";
 import type { TileSize } from "./dashboard-tile";
 
 const sizeToFraction: Record<TileSize, number> = {
@@ -48,9 +48,10 @@ export function DashboardGrid({
    const sortedTiles = [...tiles].sort((a, b) => a.order - b.order);
 
    // Resize state — ref for stable access in callbacks, state for re-renders
-   const resizePreviewRef = useRef<{ insightId: string; size: TileSize } | null>(
-      null,
-   );
+   const resizePreviewRef = useRef<{
+      insightId: string;
+      size: TileSize;
+   } | null>(null);
    const [resizePreview, setResizePreview] = useState<{
       insightId: string;
       size: TileSize;
@@ -66,7 +67,8 @@ export function DashboardGrid({
          );
          const newSize = fractionToSize(newFrac);
          const current = resizePreviewRef.current;
-         if (current?.insightId === insightId && current.size === newSize) return;
+         if (current?.insightId === insightId && current.size === newSize)
+            return;
          resizePreviewRef.current = { insightId, size: newSize };
          setResizePreview({ insightId, size: newSize });
       },
@@ -106,7 +108,10 @@ export function DashboardGrid({
             items={sortedTiles.map((t) => t.insightId)}
             strategy={rectSortingStrategy}
          >
-            <div className="grid grid-cols-12 gap-4 auto-rows-min" ref={gridRef}>
+            <div
+               className="grid grid-cols-12 gap-4 auto-rows-min"
+               ref={gridRef}
+            >
                {sortedTiles.map((tile) => {
                   const effectiveTile =
                      resizePreview?.insightId === tile.insightId

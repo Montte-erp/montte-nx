@@ -1,8 +1,8 @@
+import { useIsomorphicLayoutEffect } from "@dnd-kit/utilities";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useIsomorphicLayoutEffect } from "@dnd-kit/utilities";
-import { orpc } from "@/integrations/orpc/client";
 import { useSafeLocalStorage } from "@/hooks/use-local-storage";
+import { orpc } from "@/integrations/orpc/client";
 
 const PENDING_INVITATION_KEY = "montte_pending_invitation_id";
 
@@ -16,8 +16,9 @@ export const Route = createFileRoute("/auth/callback")({
 });
 
 function AuthCallbackPage() {
-   const [pendingInvitation, setPendingInvitation] =
-      useSafeLocalStorage<string | null>(PENDING_INVITATION_KEY, null);
+   const [pendingInvitation, setPendingInvitation] = useSafeLocalStorage<
+      string | null
+   >(PENDING_INVITATION_KEY, null);
    const router = useRouter();
 
    const { data: organizations } = useSuspenseQuery(

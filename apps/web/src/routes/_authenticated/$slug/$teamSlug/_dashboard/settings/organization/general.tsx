@@ -110,10 +110,7 @@ function DisplayNameSection({
                placeholder="Nome da organização"
                value={name}
             />
-            <Button
-               disabled={!hasChanged || isPending}
-               onClick={handleRename}
-            >
+            <Button disabled={!hasChanged || isPending} onClick={handleRename}>
                {isPending && <Loader2 className="size-4 mr-2 animate-spin" />}
                Renomear organização
             </Button>

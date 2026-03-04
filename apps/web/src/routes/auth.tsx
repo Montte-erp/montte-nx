@@ -404,8 +404,8 @@ function AuthLayout() {
                      Seu ERP com superpoderes de IA
                   </h2>
                   <p className="text-white/70 text-sm xl:text-base max-w-sm mx-auto">
-                     Gerencie seu negocio com inteligencia artificial. Financeiro,
-                     vendas e operacoes em um so lugar.
+                     Gerencie seu negocio com inteligencia artificial.
+                     Financeiro, vendas e operacoes em um so lugar.
                   </p>
                </div>
             </div>

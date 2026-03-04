@@ -25,10 +25,21 @@ import {
 import { cn } from "@packages/ui/lib/utils";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
-import { Check, ChevronDown, Info, MessageSquare, MoveDiagonalIcon, X } from "lucide-react";
+import {
+   Check,
+   ChevronDown,
+   Info,
+   MessageSquare,
+   MoveDiagonalIcon,
+   X,
+} from "lucide-react";
 import type React from "react";
-import { type ContextPanelTab, type PageViewSwitchConfig, contextPanelStore } from "./context-panel-store";
 import { ContextPanelAction } from "./context-panel-info";
+import {
+   type ContextPanelTab,
+   contextPanelStore,
+   type PageViewSwitchConfig,
+} from "./context-panel-store";
 import { TecoChatTab } from "./ui/teco-chat-tab";
 import {
    closeContextPanel,
@@ -37,12 +48,18 @@ import {
 } from "./use-context-panel";
 
 function ViewSwitchPanelAction({ config }: { config: PageViewSwitchConfig }) {
-   const active = config.options.find((o) => o.id === config.currentView) ?? config.options[0];
+   const active =
+      config.options.find((o) => o.id === config.currentView) ??
+      config.options[0];
 
    return (
       <DropdownMenu>
          <DropdownMenuTrigger asChild>
-            <Button className="w-full justify-start" type="button" variant="ghost">
+            <Button
+               className="w-full justify-start"
+               type="button"
+               variant="ghost"
+            >
                {active?.icon}
                <span className="flex-1 text-left">{active?.label}</span>
                <ChevronDown className="size-4 text-muted-foreground" />
@@ -61,7 +78,9 @@ function ViewSwitchPanelAction({ config }: { config: PageViewSwitchConfig }) {
                      {option.icon}
                      {option.label}
                   </span>
-                  {config.currentView === option.id && <Check className="size-4" />}
+                  {config.currentView === option.id && (
+                     <Check className="size-4" />
+                  )}
                </DropdownMenuItem>
             ))}
          </DropdownMenuContent>
@@ -70,7 +89,8 @@ function ViewSwitchPanelAction({ config }: { config: PageViewSwitchConfig }) {
 }
 
 function InfoContent() {
-   const { infoContent, pageActions, pageViewSwitch } = useStore(contextPanelStore);
+   const { infoContent, pageActions, pageViewSwitch } =
+      useStore(contextPanelStore);
 
    const emptyState = (
       <ContextPanel>
@@ -91,7 +111,9 @@ function InfoContent() {
                <ContextPanelTitle>Ações</ContextPanelTitle>
             </ContextPanelHeader>
             <ContextPanelContent className="gap-1">
-               {pageViewSwitch && <ViewSwitchPanelAction config={pageViewSwitch} />}
+               {pageViewSwitch && (
+                  <ViewSwitchPanelAction config={pageViewSwitch} />
+               )}
                {pageActions?.map((action) => (
                   <ContextPanelAction
                      icon={action.icon}
@@ -183,7 +205,7 @@ function ContextPanelInner() {
                         className={cn(
                            "",
                            activeTabId === tab.id &&
-                           "bg-accent text-accent-foreground",
+                              "bg-accent text-accent-foreground",
                         )}
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}

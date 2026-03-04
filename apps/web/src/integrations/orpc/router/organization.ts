@@ -90,11 +90,13 @@ export const getActiveOrganization = protectedProcedure.handler(
                   where: (users, { eq }) => eq(users.id, userId),
                });
                if (userRecord?.stripeCustomerId) {
-                  const paymentMethods = await stripeClient.paymentMethods.list({
-                     customer: userRecord.stripeCustomerId,
-                     type: "card",
-                     limit: 1,
-                  });
+                  const paymentMethods = await stripeClient.paymentMethods.list(
+                     {
+                        customer: userRecord.stripeCustomerId,
+                        type: "card",
+                        limit: 1,
+                     },
+                  );
                   if (paymentMethods.data.length > 0) {
                      projectLimit = 6;
                   }

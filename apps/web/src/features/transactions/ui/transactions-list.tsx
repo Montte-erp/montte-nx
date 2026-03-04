@@ -290,48 +290,10 @@ export function TransactionsList({
       );
    }
 
-   if (view === "card") {
-      return (
-         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {transactionData.map((transaction) => (
-               <div
-                  className="rounded-lg border bg-background p-4 space-y-3"
-                  key={transaction.id}
-               >
-                  <div className="flex flex-col gap-1 min-w-0">
-                     <p className="text-sm font-medium tabular-nums">
-                        {transaction.date.split("-").reverse().join("/")}
-                     </p>
-                     {(transaction.name || transaction.description) && (
-                        <p className="text-xs text-muted-foreground truncate">
-                           {transaction.name || transaction.description}
-                        </p>
-                     )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                     <Button
-                        onClick={() => handleEdit(transaction)}
-                        variant="outline"
-                     >
-                        Editar
-                     </Button>
-                     <Button
-                        className="text-destructive"
-                        onClick={() => handleDelete(transaction)}
-                        variant="ghost"
-                     >
-                        Excluir
-                     </Button>
-                  </div>
-               </div>
-            ))}
-         </div>
-      );
-   }
-
    return (
       <>
          <DataTable
+            view={view}
             columns={columns}
             columnVisibilityKey="transactions"
             data={transactionData}
@@ -395,37 +357,6 @@ export function TransactionsList({
                   </>
                );
             }}
-            renderMobileCard={({ row }) => (
-               <div className="rounded-lg border bg-background p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                     <div className="flex flex-col gap-1 min-w-0">
-                        <p className="text-sm font-medium tabular-nums">
-                           {row.original.date.split("-").reverse().join("/")}
-                        </p>
-                        {(row.original.name || row.original.description) && (
-                           <p className="text-xs text-muted-foreground truncate">
-                              {row.original.name || row.original.description}
-                           </p>
-                        )}
-                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                     <Button
-                        onClick={() => handleEdit(row.original)}
-                        variant="outline"
-                     >
-                        Editar
-                     </Button>
-                     <Button
-                        className="text-destructive"
-                        onClick={() => handleDelete(row.original)}
-                        variant="ghost"
-                     >
-                        Excluir
-                     </Button>
-                  </div>
-               </div>
-            )}
             rowSelection={rowSelection}
          />
          <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>

@@ -100,9 +100,7 @@ export function MediaToolbar({
                      Edit link
                   </FloatingMediaPrimitive.EditButton>
 
-                  <CaptionButton variant="ghost">
-                     Caption
-                  </CaptionButton>
+                  <CaptionButton variant="ghost">Caption</CaptionButton>
 
                   <Separator className="mx-1 h-6" orientation="vertical" />
 

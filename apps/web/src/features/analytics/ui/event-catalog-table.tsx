@@ -1,9 +1,5 @@
 import { Badge } from "@packages/ui/components/badge";
-import { Card, CardContent } from "@packages/ui/components/card";
-import {
-   DataTable,
-   type MobileCardRenderProps,
-} from "@packages/ui/components/data-table";
+import { DataTable } from "@packages/ui/components/data-table";
 import { Input } from "@packages/ui/components/input";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
@@ -75,40 +71,6 @@ const columns: ColumnDef<EventCatalogEntry>[] = [
    },
 ];
 
-function EventMobileCard({ row }: MobileCardRenderProps<EventCatalogEntry>) {
-   const event = row.original;
-   return (
-      <Card>
-         <CardContent className="p-4">
-            <div className="flex items-start justify-between gap-3">
-               <div className="min-w-0">
-                  <span className="font-mono text-sm">{event.eventName}</span>
-                  <p className="text-xs text-muted-foreground">
-                     {event.displayName}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                     <Badge variant="secondary">{event.category}</Badge>
-                     <Badge variant={event.isActive ? "default" : "secondary"}>
-                        {event.isActive ? "Ativo" : "Inativo"}
-                     </Badge>
-                  </div>
-               </div>
-               <div className="text-right shrink-0">
-                  <span className="font-mono text-sm">
-                     R${event.pricePerEvent}
-                  </span>
-                  {event.freeTierLimit > 0 && (
-                     <p className="text-xs text-muted-foreground">
-                        {event.freeTierLimit.toLocaleString("pt-BR")}/mo free
-                     </p>
-                  )}
-               </div>
-            </div>
-         </CardContent>
-      </Card>
-   );
-}
-
 export function EventCatalogTable({ events }: EventCatalogTableProps) {
    const [search, setSearch] = useState("");
 
@@ -134,7 +96,6 @@ export function EventCatalogTable({ events }: EventCatalogTableProps) {
             columns={columns}
             data={filtered}
             getRowId={(row) => row.id}
-            renderMobileCard={(props) => <EventMobileCard {...props} />}
          />
       </div>
    );

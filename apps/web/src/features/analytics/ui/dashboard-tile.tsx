@@ -388,10 +388,7 @@ export function DashboardTile({
                   <div className="flex items-center gap-0.5 shrink-0">
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                           <Button
-                              className="size-6"
-                              variant="outline"
-                           >
+                           <Button className="size-6" variant="outline">
                               <Ellipsis className="size-3.5" />
                            </Button>
                         </DropdownMenuTrigger>
@@ -498,7 +495,8 @@ export function DashboardTile({
                      "absolute right-1.5 top-1/2 -translate-y-1/2 h-12 w-4 flex items-center justify-center rounded-md",
                      "bg-muted border border-border/50 cursor-col-resize select-none touch-none",
                      "hover:bg-accent hover:border-border transition-colors",
-                     isResizing && "bg-accent border-border ring-1 ring-primary/50",
+                     isResizing &&
+                        "bg-accent border-border ring-1 ring-primary/50",
                   )}
                   onPointerCancel={() => onResizeCommit?.()}
                   onPointerDown={(e) => {
@@ -508,20 +506,25 @@ export function DashboardTile({
                      resizeStartSize.current = size;
                   }}
                   onPointerMove={(e) => {
-                     if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
+                     if (!e.currentTarget.hasPointerCapture(e.pointerId))
+                        return;
                      onResizePreview?.(
                         e.clientX - resizeStartX.current,
                         resizeStartSize.current,
                      );
                   }}
                   onPointerUp={(e) => {
-                     if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
+                     if (!e.currentTarget.hasPointerCapture(e.pointerId))
+                        return;
                      e.currentTarget.releasePointerCapture(e.pointerId);
                      onResizeCommit?.();
                   }}
                   role="separator"
                >
-                  <GripVertical aria-hidden="true" className="size-3 text-muted-foreground" />
+                  <GripVertical
+                     aria-hidden="true"
+                     className="size-3 text-muted-foreground"
+                  />
                </div>
             )}
          </div>

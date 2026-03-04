@@ -1,6 +1,5 @@
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
-import { Card, CardContent } from "@packages/ui/components/card";
 import {
    ContextPanel,
    ContextPanelContent,
@@ -234,64 +233,6 @@ function DashboardsList({ view }: DashboardsListProps) {
                      <Home className="size-4" />
                      <span className="sr-only">Definir como Home</span>
                   </Button>
-               );
-            }}
-            renderMobileCard={({ row }) => {
-               const d = row.original as DashboardRow;
-               return (
-                  <Card>
-                     <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                           <div className="size-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                              <LayoutDashboard className="size-4 text-primary" />
-                           </div>
-                           <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                 <p className="font-medium truncate">
-                                    {d.name}
-                                 </p>
-                                 {d.isDefault && (
-                                    <Badge
-                                       className="gap-1 shrink-0"
-                                       variant="secondary"
-                                    >
-                                       <Home className="size-3" />
-                                       Home
-                                    </Badge>
-                                 )}
-                              </div>
-                              {d.description && (
-                                 <p className="text-xs text-muted-foreground truncate">
-                                    {d.description}
-                                 </p>
-                              )}
-                              <p className="text-xs text-muted-foreground mt-1">
-                                 {Array.isArray(d.tiles) ? d.tiles.length : 0}{" "}
-                                 tiles
-                                 {" · "}
-                                 {new Date(d.updatedAt).toLocaleDateString(
-                                    "pt-BR",
-                                 )}
-                              </p>
-                           </div>
-                           {!d.isDefault && (
-                              <Button
-                                 disabled={setAsHomeMutation.isPending}
-                                 onClick={() =>
-                                    setAsHomeMutation.mutate({ id: d.id })
-                                 }
-                                 size="icon"
-                                 variant="ghost"
-                              >
-                                 <Home className="size-4" />
-                                 <span className="sr-only">
-                                    Definir como Home
-                                 </span>
-                              </Button>
-                           )}
-                        </div>
-                     </CardContent>
-                  </Card>
                );
             }}
          />

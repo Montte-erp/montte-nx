@@ -169,42 +169,6 @@ function CreditCardsList({ view }: CreditCardsListProps) {
       );
    }
 
-   if (view === "card") {
-      return (
-         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {cards.map((card) => (
-               <div
-                  className="rounded-lg border bg-background p-4 space-y-3"
-                  key={card.id}
-               >
-                  <div className="flex items-center gap-2 min-w-0">
-                     <span
-                        className="size-3 rounded-full shrink-0"
-                        style={{ backgroundColor: card.color }}
-                     />
-                     <p className="font-medium truncate">{card.name}</p>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                     Fecha dia {card.closingDay} · Vence dia {card.dueDay}
-                  </p>
-                  <div className="flex items-center gap-2">
-                     <Button onClick={() => handleEdit(card)} variant="outline">
-                        Editar
-                     </Button>
-                     <Button
-                        className="text-destructive"
-                        onClick={() => handleDelete(card)}
-                        variant="ghost"
-                     >
-                        Excluir
-                     </Button>
-                  </div>
-               </div>
-            ))}
-         </div>
-      );
-   }
-
    return (
       <>
          <DataTable
@@ -232,37 +196,8 @@ function CreditCardsList({ view }: CreditCardsListProps) {
                   </Button>
                </>
             )}
-            renderMobileCard={({ row }) => (
-               <div className="rounded-lg border bg-background p-4 space-y-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                     <span
-                        className="size-3 rounded-full shrink-0"
-                        style={{ backgroundColor: row.original.color }}
-                     />
-                     <p className="font-medium truncate">{row.original.name}</p>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                     Fecha dia {row.original.closingDay} · Vence dia{" "}
-                     {row.original.dueDay}
-                  </p>
-                  <div className="flex items-center gap-2">
-                     <Button
-                        onClick={() => handleEdit(row.original)}
-                        variant="outline"
-                     >
-                        Editar
-                     </Button>
-                     <Button
-                        className="text-destructive"
-                        onClick={() => handleDelete(row.original)}
-                        variant="ghost"
-                     >
-                        Excluir
-                     </Button>
-                  </div>
-               </div>
-            )}
             rowSelection={rowSelection}
+            view={view}
          />
          <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
             <SelectionActionButton

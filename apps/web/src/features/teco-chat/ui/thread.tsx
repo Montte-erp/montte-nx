@@ -603,9 +603,7 @@ const EditComposer: FC = () => {
             />
             <div className="aui-edit-composer-footer mx-3 mb-3 flex items-center gap-2 self-end">
                <ComposerPrimitive.Cancel asChild>
-                  <Button variant="ghost">
-                     Cancelar
-                  </Button>
+                  <Button variant="ghost">Cancelar</Button>
                </ComposerPrimitive.Cancel>
                <ComposerPrimitive.Send asChild>
                   <Button>Atualizar</Button>

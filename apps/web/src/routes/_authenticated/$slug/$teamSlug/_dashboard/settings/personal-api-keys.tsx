@@ -13,20 +13,14 @@ import {
 import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { TooltipProvider } from "@packages/ui/components/tooltip";
-import {
-   useMutation,
-   useQueryClient,
-   useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Key, Plus, Trash2 } from "lucide-react";
+import { Key, Plus } from "lucide-react";
 import { Suspense, useMemo } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
-import { toast } from "sonner";
 import { CreateKeyForm } from "@/features/personal-api-keys/ui/create-key-form";
 import { KeyRevealDialog } from "@/features/personal-api-keys/ui/key-reveal-dialog";
-import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -83,20 +77,6 @@ function getScopesSummary(scopes: Record<string, ScopeAccess>): string {
    if (readCount > 0) parts.push(`${readCount} leitura`);
    if (parts.length === 0) return "Sem permissões";
    return parts.join(", ");
-}
-
-function getScopeAccessLabel(access: ScopeAccess): string {
-   if (access === "write") return "Escrita";
-   if (access === "read") return "Leitura";
-   return "Sem acesso";
-}
-
-function getScopeAccessBadgeVariant(
-   access: ScopeAccess,
-): "default" | "secondary" | "outline" {
-   if (access === "write") return "default";
-   if (access === "read") return "secondary";
-   return "outline";
 }
 
 // =============================================================================
@@ -172,23 +152,7 @@ interface ApiKeyRow {
    createdAt: Date;
 }
 
-interface ScopeDefinition {
-   resource: string;
-   label: string;
-   description: string;
-}
-
-function KeysTable({
-   keys,
-   onRevoke,
-   isRevoking,
-   scopeDefinitions,
-}: {
-   keys: ApiKeyRow[];
-   onRevoke: (key: ApiKeyRow) => void;
-   isRevoking: boolean;
-   scopeDefinitions: ScopeDefinition[];
-}) {
+function KeysTable({ keys }: { keys: ApiKeyRow[] }) {
    if (keys.length === 0) {
       return (
          <Card>
@@ -209,15 +173,6 @@ function KeysTable({
          </Card>
       );
    }
-
-   const scopeDefinitionMap = useMemo(() => {
-      return new Map(
-         scopeDefinitions.map((definition) => [
-            definition.resource,
-            definition,
-         ]),
-      );
-   }, [scopeDefinitions]);
 
    const columns = useMemo<ColumnDef<ApiKeyRow>[]>(
       () => [
@@ -268,96 +223,7 @@ function KeysTable({
       [],
    );
 
-   return (
-      <DataTable
-         columns={columns}
-         data={keys}
-         renderSubComponent={({ row }) => {
-            const key = row.original;
-            const scopes = Object.entries(key.scopes)
-               .map(([resource, access]) => {
-                  const definition = scopeDefinitionMap.get(resource);
-                  return {
-                     resource,
-                     access,
-                     label: definition?.label ?? resource,
-                     description: definition?.description ?? "",
-                  };
-               })
-               .sort((a, b) => a.label.localeCompare(b.label));
-
-            return (
-               <div className="p-4 space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                     <div className="space-y-2">
-                        <p className="text-sm font-medium">Último uso</p>
-                        <p className="text-sm text-muted-foreground">
-                           {formatRelativeDate(key.lastUsedAt)}
-                           {key.lastUsedAt
-                              ? ` • ${formatDate(key.lastUsedAt)}`
-                              : ""}
-                        </p>
-                     </div>
-                     <div className="space-y-2">
-                        <p className="text-sm font-medium">Criada em</p>
-                        <p className="text-sm text-muted-foreground">
-                           {formatDate(key.createdAt)}
-                        </p>
-                     </div>
-                  </div>
-
-                  {key.organizationAccess !== "all" &&
-                     key.organizationAccess.length > 0 && (
-                        <div className="space-y-2">
-                           <p className="text-sm font-medium">
-                              Organizações permitidas
-                           </p>
-                           <div className="flex flex-wrap gap-2">
-                              {key.organizationAccess.map((orgId) => (
-                                 <code
-                                    className="text-xs bg-muted px-2 py-1 rounded font-mono"
-                                    key={orgId}
-                                 >
-                                    {orgId}
-                                 </code>
-                              ))}
-                           </div>
-                        </div>
-                     )}
-
-                  <div className="space-y-3">
-                     <p className="text-sm font-medium">Permissões</p>
-                     <div className="flex flex-wrap gap-2">
-                        {scopes.map((scope) => (
-                           <Badge
-                              key={scope.resource}
-                              variant={getScopeAccessBadgeVariant(
-                                 scope.access as ScopeAccess,
-                              )}
-                           >
-                              {scope.label} •{" "}
-                              {getScopeAccessLabel(scope.access as ScopeAccess)}
-                           </Badge>
-                        ))}
-                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-wrap border-t pt-4">
-                     <Button
-                        className="text-destructive hover:text-destructive"
-                        disabled={isRevoking}
-                        onClick={() => onRevoke(key)}
-                        variant="ghost"
-                     >
-                        <Trash2 className="size-3 mr-2" />
-                        Revogar chave
-                     </Button>
-                  </div>
-               </div>
-            );
-         }}
-      />
-   );
+   return <DataTable columns={columns} data={keys} />;
 }
 
 // =============================================================================
@@ -365,29 +231,9 @@ function KeysTable({
 // =============================================================================
 
 function PersonalApiKeysContent() {
-   const queryClient = useQueryClient();
    const { openCredenza, closeCredenza } = useCredenza();
-   const { openAlertDialog } = useAlertDialog();
-
    const { data: keys } = useSuspenseQuery(
       orpc.personalApiKey.list.queryOptions({}),
-   );
-   const { data: scopeData } = useSuspenseQuery(
-      orpc.personalApiKey.getScopeDefinitions.queryOptions({}),
-   );
-
-   const revokeMutation = useMutation(
-      orpc.personalApiKey.revoke.mutationOptions({
-         onSuccess: () => {
-            queryClient.invalidateQueries({
-               queryKey: orpc.personalApiKey.list.queryOptions({}).queryKey,
-            });
-            toast.success("Chave de API revogada com sucesso.");
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao revogar chave de API.");
-         },
-      }),
    );
 
    function handleCreateKey() {
@@ -423,19 +269,6 @@ function PersonalApiKeysContent() {
       });
    }
 
-   function handleRevoke(key: ApiKeyRow) {
-      openAlertDialog({
-         title: "Revogar chave de API",
-         description: `Tem certeza que deseja revogar a chave "${key.label}"? Esta ação não pode ser desfeita e todas as integrações usando esta chave deixarão de funcionar.`,
-         actionLabel: "Revogar",
-         cancelLabel: "Cancelar",
-         variant: "destructive",
-         onAction: async () => {
-            await revokeMutation.mutateAsync({ id: key.id });
-         },
-      });
-   }
-
    return (
       <TooltipProvider>
          <div className="space-y-6">
@@ -455,12 +288,7 @@ function PersonalApiKeysContent() {
                </Button>
             </div>
 
-            <KeysTable
-               isRevoking={revokeMutation.isPending}
-               keys={keys}
-               onRevoke={handleRevoke}
-               scopeDefinitions={scopeData.definitions}
-            />
+            <KeysTable keys={keys} />
          </div>
       </TooltipProvider>
    );

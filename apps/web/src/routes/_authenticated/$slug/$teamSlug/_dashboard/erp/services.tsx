@@ -10,7 +10,14 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Briefcase, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+   Briefcase,
+   LayoutGrid,
+   LayoutList,
+   Pencil,
+   Plus,
+   Trash2,
+} from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
@@ -24,9 +31,21 @@ import {
    type ServiceRow,
 } from "@/features/services/ui/services-columns";
 import { ServiceForm } from "@/features/services/ui/services-form";
+import {
+   useViewSwitch,
+   type ViewConfig,
+} from "@/features/view-switch/hooks/use-view-switch";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
+
+const SERVICE_VIEWS: [
+   ViewConfig<"table" | "card">,
+   ViewConfig<"table" | "card">,
+] = [
+   { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
+   { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
+];
 
 const SERVICES_BANNER: EarlyAccessBannerTemplate = {
    badgeLabel: "Serviços",
@@ -68,7 +87,7 @@ function ServicesSkeleton() {
 // List
 // =============================================================================
 
-function ServicesList() {
+function ServicesList({ view }: { view: "table" | "card" }) {
    const { data: servicesList } = useSuspenseQuery(
       orpc.services.getAll.queryOptions({}),
    );
@@ -156,37 +175,7 @@ function ServicesList() {
                </Button>
             </>
          )}
-         renderMobileCard={({ row }) => (
-            <div className="rounded-lg border bg-background p-4 space-y-3">
-               <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                     <p className="font-medium truncate">{row.original.name}</p>
-                     {row.original.category && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                           {row.original.category}
-                        </p>
-                     )}
-                  </div>
-               </div>
-               <div className="flex items-center gap-2">
-                  <Button
-                     onClick={() => handleEdit(row.original)}
-                     variant="outline"
-                  >
-                     <Pencil className="size-3 mr-1" />
-                     Editar
-                  </Button>
-                  <Button
-                     className="text-destructive"
-                     onClick={() => handleDelete(row.original)}
-                     variant="ghost"
-                  >
-                     <Trash2 className="size-3 mr-1" />
-                     Excluir
-                  </Button>
-               </div>
-            </div>
-         )}
+         view={view}
       />
    );
 }
@@ -197,6 +186,10 @@ function ServicesList() {
 
 function ServicesPage() {
    const { openCredenza, closeCredenza } = useCredenza();
+   const { currentView, setView, views } = useViewSwitch(
+      "erp:services:view",
+      SERVICE_VIEWS,
+   );
 
    const handleCreate = useCallback(() => {
       openCredenza({
@@ -215,11 +208,12 @@ function ServicesPage() {
             }
             description="Gerencie o catálogo de serviços"
             title="Serviços"
+            viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <ServicesAnalyticsHeader />
          <EarlyAccessBanner template={SERVICES_BANNER} />
          <Suspense fallback={<ServicesSkeleton />}>
-            <ServicesList />
+            <ServicesList view={currentView} />
          </Suspense>
       </main>
    );

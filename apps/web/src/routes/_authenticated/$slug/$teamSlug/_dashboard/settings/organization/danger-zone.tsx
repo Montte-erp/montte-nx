@@ -156,9 +156,7 @@ function DeleteOrganizationDialog({
          open={open}
       >
          <AlertDialogTrigger asChild>
-            <Button variant="destructive">
-               Deletar organização
-            </Button>
+            <Button variant="destructive">Deletar organização</Button>
          </AlertDialogTrigger>
          <AlertDialogContent>
             <AlertDialogHeader>

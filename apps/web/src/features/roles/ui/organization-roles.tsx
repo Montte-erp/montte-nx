@@ -2,17 +2,11 @@ import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import {
-   useMutation,
-   useQueryClient,
-   useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
-import { toast } from "sonner";
-import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
 import { RoleFormDialog } from "./role-form-dialog";
 
@@ -64,26 +58,10 @@ function OrganizationRolesErrorFallback({ resetErrorBoundary }: FallbackProps) {
 }
 
 function OrganizationRolesContent() {
-   const queryClient = useQueryClient();
-   const { openAlertDialog } = useAlertDialog();
    const [dialogOpen, setDialogOpen] = useState(false);
    const [editingRole, setEditingRole] = useState<Role | undefined>();
 
    const { data: roles } = useSuspenseQuery(orpc.roles.getAll.queryOptions({}));
-
-   const deleteMutation = useMutation(
-      orpc.roles.deleteRole.mutationOptions({
-         onSuccess: () => {
-            queryClient.invalidateQueries({
-               queryKey: orpc.roles.getAll.queryOptions({}).queryKey,
-            });
-            toast.success("Função removida com sucesso");
-         },
-         onError: (error) => {
-            toast.error(error.message);
-         },
-      }),
-   );
 
    function handleCreateRole() {
       setEditingRole(undefined);
@@ -93,19 +71,6 @@ function OrganizationRolesContent() {
    function handleEditRole(role: Role) {
       setEditingRole(role);
       setDialogOpen(true);
-   }
-
-   function handleDeleteRole(role: Role) {
-      openAlertDialog({
-         title: "Remover função",
-         description: `Tem certeza que deseja remover a função "${role.name}"? Esta ação não pode ser desfeita.`,
-         actionLabel: "Remover",
-         cancelLabel: "Cancelar",
-         variant: "destructive",
-         onAction: async () => {
-            await deleteMutation.mutateAsync({ roleId: role.id });
-         },
-      });
    }
 
    const columns: ColumnDef<Role>[] = useMemo(
@@ -195,29 +160,7 @@ function OrganizationRolesContent() {
             </Button>
          </div>
 
-         <DataTable
-            columns={columns}
-            data={roles}
-            getRowId={(row) => row.id}
-            renderSubComponent={({ row }) => {
-               const role = row.original;
-               if (role.isDefault) return null;
-               return (
-                  <div className="px-4 py-4">
-                     <div className="flex items-center gap-2 flex-wrap">
-                        <Button
-                           className="text-destructive hover:text-destructive"
-                           onClick={() => handleDeleteRole(role)}
-                           variant="ghost"
-                        >
-                           <Trash2 className="size-3 mr-2" />
-                           Remover função
-                        </Button>
-                     </div>
-                  </div>
-               );
-            }}
-         />
+         <DataTable columns={columns} data={roles} getRowId={(row) => row.id} />
 
          <RoleFormDialog
             onOpenChange={setDialogOpen}

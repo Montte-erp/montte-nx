@@ -92,10 +92,7 @@ export function InsightFilterBar({
 
          <Popover>
             <PopoverTrigger asChild>
-               <Button
-                  className="h-7 text-xs gap-1.5"
-                  variant="outline"
-               >
+               <Button className="h-7 text-xs gap-1.5" variant="outline">
                   {selectedTypes.length === 0
                      ? "Todos os tipos"
                      : selectedTypes.length === 1

@@ -8,12 +8,9 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import { cn } from "@packages/ui/lib/utils";
-import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Activity, Edit, Trash2, Zap } from "lucide-react";
+import { Edit } from "lucide-react";
 import { useMemo } from "react";
-import { orpc } from "@/integrations/orpc/client";
-import { WebhookDeliveriesTable } from "./webhook-deliveries-table";
 
 export type WebhookEndpoint = {
    id: string;
@@ -55,65 +52,6 @@ function buildEventSummary(events: string[]) {
    if (events.length === 0) return "Nenhum";
    if (events.length === 1) return "1 evento";
    return `${events.length} eventos`;
-}
-
-function WebhookMobileCard({
-   webhook,
-   onEdit,
-   onDelete,
-   onToggleDeliveries,
-   isExpanded,
-}: {
-   webhook: WebhookEndpoint;
-   onEdit: (webhook: WebhookEndpoint) => void;
-   onDelete: (webhook: WebhookEndpoint) => void;
-   onToggleDeliveries: () => void;
-   isExpanded: boolean;
-}) {
-   return (
-      <div className="rounded-lg border bg-background p-4 space-y-3">
-         <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-               <p className="font-medium truncate">{webhook.url}</p>
-               {webhook.description && (
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                     {webhook.description}
-                  </p>
-               )}
-            </div>
-            <Badge variant={webhook.isActive ? "default" : "secondary"}>
-               {webhook.isActive ? "Ativo" : "Inativo"}
-            </Badge>
-         </div>
-         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-               <Zap className="size-3" /> {webhook.eventPatterns.length} eventos
-            </span>
-            <span className="flex items-center gap-1">
-               <Activity className="size-3" />
-               {webhook.lastSuccessAt ? "Sucesso" : "Sem entregas"}
-            </span>
-         </div>
-         <div className="flex items-center gap-2">
-            <Button onClick={() => onEdit(webhook)} variant="outline">
-               <Edit className="size-3 mr-2" />
-               Editar
-            </Button>
-            <Button onClick={onToggleDeliveries} variant="ghost">
-               <Activity className="size-3 mr-2" />
-               {isExpanded ? "Ocultar" : "Entregas"}
-            </Button>
-            <Button
-               className="text-destructive"
-               onClick={() => onDelete(webhook)}
-               variant="ghost"
-            >
-               <Trash2 className="size-3 mr-2" />
-               Excluir
-            </Button>
-         </div>
-      </div>
-   );
 }
 
 export function WebhooksTable({
@@ -237,67 +175,6 @@ export function WebhooksTable({
          columns={columns}
          data={webhooks}
          getRowId={(row) => row.id}
-         renderMobileCard={({ row, toggleExpanded, isExpanded }) => (
-            <div className="space-y-2">
-               <WebhookMobileCard
-                  isExpanded={isExpanded}
-                  onDelete={onDelete}
-                  onEdit={onEdit}
-                  onToggleDeliveries={toggleExpanded}
-                  webhook={row.original}
-               />
-            </div>
-         )}
-         renderSubComponent={({ row }) => (
-            <div className="space-y-4">
-               <div className="px-4 pt-4 flex items-center gap-2 flex-wrap border-b pb-4">
-                  <Button
-                     className="text-destructive hover:text-destructive"
-                     onClick={() => onDelete(row.original)}
-                     variant="ghost"
-                  >
-                     <Trash2 className="size-3 mr-2" />
-                     Excluir
-                  </Button>
-               </div>
-               <WebhookDeliveriesPanel
-                  isExpanded={row.getIsExpanded()}
-                  webhookId={row.original.id}
-               />
-            </div>
-         )}
       />
    );
-}
-
-function WebhookDeliveriesPanel({
-   webhookId,
-   isExpanded,
-}: {
-   webhookId: string;
-   isExpanded: boolean;
-}) {
-   const { data, isLoading } = useQuery({
-      ...orpc.webhooks.deliveries.queryOptions({
-         input: { webhookId, page: 1, limit: 10 },
-      }),
-      enabled: isExpanded,
-   });
-
-   if (isLoading) {
-      return (
-         <div className="p-4">
-            <div className="space-y-2">
-               {Array.from({ length: 3 }).map((_, index) => (
-                  <Skeleton
-                     className="h-8 w-full"
-                     key={`delivery-skeleton-${index + 1}`}
-                  />
-               ))}
-            </div>
-         </div>
-      );
-   }
-
-   return <WebhookDeliveriesTable deliveries={data?.items ?? []} />;
 }

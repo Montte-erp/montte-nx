@@ -5,7 +5,12 @@ import { BatchHandlerPlugin } from "@orpc/server/plugins";
 import { createFileRoute } from "@tanstack/react-router";
 import router from "@/integrations/orpc/router";
 import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
-import { auth, db, posthog, stripeClient } from "@/integrations/orpc/server-instances";
+import {
+   auth,
+   db,
+   posthog,
+   stripeClient,
+} from "@/integrations/orpc/server-instances";
 
 const handler = new RPCHandler(router, {
    plugins: [new BatchHandlerPlugin()],

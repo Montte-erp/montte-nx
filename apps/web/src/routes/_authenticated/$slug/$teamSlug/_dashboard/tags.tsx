@@ -143,39 +143,6 @@ function TagsList({ view }: TagsListProps) {
       );
    }
 
-   if (view === "card") {
-      return (
-         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {tags.map((tag) => (
-               <div
-                  className="rounded-lg border bg-background p-4 space-y-3"
-                  key={tag.id}
-               >
-                  <div className="flex items-center gap-2 min-w-0">
-                     <span
-                        className="size-3 rounded-full shrink-0"
-                        style={{ backgroundColor: tag.color }}
-                     />
-                     <p className="font-medium truncate">{tag.name}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                     <Button onClick={() => handleEdit(tag)} variant="outline">
-                        Editar
-                     </Button>
-                     <Button
-                        className="text-destructive"
-                        onClick={() => handleDelete(tag)}
-                        variant="ghost"
-                     >
-                        Excluir
-                     </Button>
-                  </div>
-               </div>
-            ))}
-         </div>
-      );
-   }
-
    const columns = buildTagColumns();
 
    return (
@@ -209,27 +176,7 @@ function TagsList({ view }: TagsListProps) {
                </Button>
             </>
          )}
-         renderMobileCard={({ row }) => (
-            <div className="rounded-lg border bg-background p-4 space-y-3">
-               <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                     <span
-                        className="size-3 rounded-full shrink-0"
-                        style={{ backgroundColor: row.original.color }}
-                     />
-                     <p className="font-medium truncate">{row.original.name}</p>
-                  </div>
-               </div>
-               <div className="flex items-center gap-2">
-                  <Button
-                     onClick={() => handleEdit(row.original)}
-                     variant="outline"
-                  >
-                     Editar
-                  </Button>
-               </div>
-            </div>
-         )}
+         view={view}
       />
    );
 }

@@ -204,51 +204,6 @@ function ContactsList({ view, typeFilter }: ContactsListProps) {
       );
    }
 
-   if (view === "card") {
-      return (
-         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {contacts.map((contact) => (
-               <div
-                  className="rounded-lg border bg-background p-4 space-y-2"
-                  key={contact.id}
-               >
-                  <div className="flex items-start justify-between gap-2">
-                     <div className="min-w-0">
-                        <p className="font-medium truncate">{contact.name}</p>
-                        {contact.email && (
-                           <p className="text-sm text-muted-foreground truncate">
-                              {contact.email}
-                           </p>
-                        )}
-                        {contact.document && (
-                           <p className="text-xs text-muted-foreground">
-                              {contact.documentType?.toUpperCase()}{" "}
-                              {contact.document}
-                           </p>
-                        )}
-                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                     <Button
-                        onClick={() => handleEdit(contact as ContactRow)}
-                        variant="outline"
-                     >
-                        Editar
-                     </Button>
-                     <Button
-                        className="text-destructive"
-                        onClick={() => handleDelete(contact as ContactRow)}
-                        variant="ghost"
-                     >
-                        Excluir
-                     </Button>
-                  </div>
-               </div>
-            ))}
-         </div>
-      );
-   }
-
    const columns = buildContactColumns();
 
    return (
@@ -278,32 +233,8 @@ function ContactsList({ view, typeFilter }: ContactsListProps) {
                   </Button>
                </>
             )}
-            renderMobileCard={({ row }) => (
-               <div className="rounded-lg border bg-background p-4 space-y-2">
-                  <p className="font-medium">{row.original.name}</p>
-                  {row.original.email && (
-                     <p className="text-sm text-muted-foreground">
-                        {row.original.email}
-                     </p>
-                  )}
-                  <div className="flex items-center gap-2">
-                     <Button
-                        onClick={() => handleEdit(row.original)}
-                        variant="outline"
-                     >
-                        Editar
-                     </Button>
-                     <Button
-                        className="text-destructive"
-                        onClick={() => handleDelete(row.original)}
-                        variant="ghost"
-                     >
-                        Excluir
-                     </Button>
-                  </div>
-               </div>
-            )}
             rowSelection={rowSelection}
+            view={view}
          />
          <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
             <SelectionActionButton

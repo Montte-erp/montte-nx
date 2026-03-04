@@ -40,10 +40,7 @@ export function KeyRevealDialog({
                   readOnly
                   value={plaintextKey}
                />
-               <Button
-                  onClick={() => copy(plaintextKey)}
-                  variant="outline"
-               >
+               <Button onClick={() => copy(plaintextKey)} variant="outline">
                   {copied ? (
                      <Check className="size-4 text-green-600" />
                   ) : (

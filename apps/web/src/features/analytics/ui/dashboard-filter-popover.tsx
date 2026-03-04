@@ -8,6 +8,7 @@ import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Combobox } from "@packages/ui/components/combobox";
 import { Input } from "@packages/ui/components/input";
+import { MoneyInput } from "@packages/ui/components/money-input";
 import {
    Popover,
    PopoverContent,
@@ -22,7 +23,6 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@packages/ui/components/select";
-import { MoneyInput } from "@packages/ui/components/money-input";
 import { Separator } from "@packages/ui/components/separator";
 import { cn } from "@packages/ui/lib/utils";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -45,11 +45,31 @@ type PropertyDef = {
 };
 
 const FILTER_PROPERTIES: PropertyDef[] = [
-   { field: "type",          label: "Tipo",      type: "select", selectType: "transactionType" },
-   { field: "bankAccountId", label: "Conta",      type: "select", selectType: "bankAccount"     },
-   { field: "categoryId",    label: "Categoria",  type: "select", selectType: "category"        },
-   { field: "contactId",     label: "Contato",    type: "select", selectType: "contact"         },
-   { field: "amount",        label: "Valor",      type: "number"                                },
+   {
+      field: "type",
+      label: "Tipo",
+      type: "select",
+      selectType: "transactionType",
+   },
+   {
+      field: "bankAccountId",
+      label: "Conta",
+      type: "select",
+      selectType: "bankAccount",
+   },
+   {
+      field: "categoryId",
+      label: "Categoria",
+      type: "select",
+      selectType: "category",
+   },
+   {
+      field: "contactId",
+      label: "Contato",
+      type: "select",
+      selectType: "contact",
+   },
+   { field: "amount", label: "Valor", type: "number" },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -60,9 +80,9 @@ const SELECT_OPERATORS: Array<{
    value: z.infer<typeof StringCondition>["operator"];
    label: string;
 }> = [
-   { value: "eq",           label: "é igual a"      },
-   { value: "neq",          label: "não é igual a"  },
-   { value: "is_empty",     label: "está vazio"     },
+   { value: "eq", label: "é igual a" },
+   { value: "neq", label: "não é igual a" },
+   { value: "is_empty", label: "está vazio" },
    { value: "is_not_empty", label: "não está vazio" },
 ];
 
@@ -70,11 +90,11 @@ const STRING_OPERATORS: Array<{
    value: z.infer<typeof StringCondition>["operator"];
    label: string;
 }> = [
-   { value: "eq",           label: "é igual a"      },
-   { value: "neq",          label: "não é igual a"  },
-   { value: "contains",     label: "contém"         },
-   { value: "not_contains", label: "não contém"     },
-   { value: "is_empty",     label: "está vazio"     },
+   { value: "eq", label: "é igual a" },
+   { value: "neq", label: "não é igual a" },
+   { value: "contains", label: "contém" },
+   { value: "not_contains", label: "não contém" },
+   { value: "is_empty", label: "está vazio" },
    { value: "is_not_empty", label: "não está vazio" },
 ];
 
@@ -82,11 +102,11 @@ const NUMBER_OPERATORS: Array<{
    value: z.infer<typeof NumberCondition>["operator"];
    label: string;
 }> = [
-   { value: "eq",  label: "=" },
+   { value: "eq", label: "=" },
    { value: "neq", label: "≠" },
-   { value: "gt",  label: ">" },
+   { value: "gt", label: ">" },
    { value: "gte", label: "≥" },
-   { value: "lt",  label: "<" },
+   { value: "lt", label: "<" },
    { value: "lte", label: "≤" },
 ];
 
@@ -168,9 +188,12 @@ function rowToCondition(row: FilterRow): Condition {
 function TransactionTypeSelect({
    value,
    onChange,
-}: { value: string; onChange: (v: string) => void }) {
+}: {
+   value: string;
+   onChange: (v: string) => void;
+}) {
    return (
-      <Select value={value} onValueChange={onChange}>
+      <Select onValueChange={onChange} value={value}>
          <SelectTrigger className="h-7 text-xs">
             <SelectValue placeholder="Selecionar..." />
          </SelectTrigger>
@@ -186,7 +209,10 @@ function TransactionTypeSelect({
 function BankAccountComboboxInner({
    value,
    onChange,
-}: { value: string; onChange: (v: string) => void }) {
+}: {
+   value: string;
+   onChange: (v: string) => void;
+}) {
    const { data } = useSuspenseQuery(orpc.bankAccounts.getAll.queryOptions({}));
    return (
       <Combobox
@@ -204,7 +230,10 @@ function BankAccountComboboxInner({
 function CategoryComboboxInner({
    value,
    onChange,
-}: { value: string; onChange: (v: string) => void }) {
+}: {
+   value: string;
+   onChange: (v: string) => void;
+}) {
    const { data } = useSuspenseQuery(orpc.categories.getAll.queryOptions({}));
    return (
       <Combobox
@@ -222,7 +251,10 @@ function CategoryComboboxInner({
 function ContactComboboxInner({
    value,
    onChange,
-}: { value: string; onChange: (v: string) => void }) {
+}: {
+   value: string;
+   onChange: (v: string) => void;
+}) {
    const { data } = useSuspenseQuery(orpc.contacts.getAll.queryOptions({}));
    return (
       <Combobox
@@ -249,34 +281,58 @@ function FilterRowValueInput({
    if (def.type === "number") {
       return (
          <MoneyInput
-            value={value !== "" ? Number(value) : undefined}
             onChange={(v) => onChange(v !== undefined ? String(v) : "")}
+            value={value !== "" ? Number(value) : undefined}
          />
       );
    }
 
    if (def.type === "select") {
       if (def.selectType === "transactionType") {
-         return <TransactionTypeSelect value={value} onChange={onChange} />;
+         return <TransactionTypeSelect onChange={onChange} value={value} />;
       }
       if (def.selectType === "bankAccount") {
          return (
-            <Suspense fallback={<Input className="h-7 text-xs" disabled placeholder="Carregando..." />}>
-               <BankAccountComboboxInner value={value} onChange={onChange} />
+            <Suspense
+               fallback={
+                  <Input
+                     className="h-7 text-xs"
+                     disabled
+                     placeholder="Carregando..."
+                  />
+               }
+            >
+               <BankAccountComboboxInner onChange={onChange} value={value} />
             </Suspense>
          );
       }
       if (def.selectType === "category") {
          return (
-            <Suspense fallback={<Input className="h-7 text-xs" disabled placeholder="Carregando..." />}>
-               <CategoryComboboxInner value={value} onChange={onChange} />
+            <Suspense
+               fallback={
+                  <Input
+                     className="h-7 text-xs"
+                     disabled
+                     placeholder="Carregando..."
+                  />
+               }
+            >
+               <CategoryComboboxInner onChange={onChange} value={value} />
             </Suspense>
          );
       }
       if (def.selectType === "contact") {
          return (
-            <Suspense fallback={<Input className="h-7 text-xs" disabled placeholder="Carregando..." />}>
-               <ContactComboboxInner value={value} onChange={onChange} />
+            <Suspense
+               fallback={
+                  <Input
+                     className="h-7 text-xs"
+                     disabled
+                     placeholder="Carregando..."
+                  />
+               }
+            >
+               <ContactComboboxInner onChange={onChange} value={value} />
             </Suspense>
          );
       }

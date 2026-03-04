@@ -3,9 +3,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useSafeLocalStorage } from "@/hooks/use-local-storage";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
-import { useSafeLocalStorage } from "@/hooks/use-local-storage";
 
 export const PENDING_INVITATION_KEY = "montte_pending_invitation_id";
 
@@ -37,8 +37,9 @@ function AcceptInvitationPage() {
             return;
          }
 
-         const { error: err } =
-            await authClient.organization.acceptInvitation({ invitationId });
+         const { error: err } = await authClient.organization.acceptInvitation({
+            invitationId,
+         });
 
          if (err) {
             setError(err.message ?? "Convite inválido ou expirado.");

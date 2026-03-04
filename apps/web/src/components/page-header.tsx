@@ -11,9 +11,15 @@ import {
    useState,
 } from "react";
 import { ContextPanelHeaderActions } from "@/features/context-panel/context-panel-header-actions";
+import type {
+   PageViewSwitchConfig,
+   PanelAction,
+} from "@/features/context-panel/context-panel-store";
 import { contextPanelStore } from "@/features/context-panel/context-panel-store";
-import type { PageViewSwitchConfig, PanelAction } from "@/features/context-panel/context-panel-store";
-import { usePageActions, usePageViewSwitch } from "@/features/context-panel/use-context-panel";
+import {
+   usePageActions,
+   usePageViewSwitch,
+} from "@/features/context-panel/use-context-panel";
 import { ViewSwitchDropdown } from "@/features/view-switch/ui/view-switch-dropdown";
 
 export interface PageHeaderProps {
@@ -212,17 +218,18 @@ export function PageHeader({
                   views={panelViewSwitch.options}
                />
             )}
-            {!isOpen && panelActions?.map((action) => (
-               <Button
-                  key={action.label}
-                  onClick={action.onClick}
-                  tooltip={action.label}
-                  type="button"
-                  variant="outline"
-               >
-                  <action.icon className="size-4" />
-               </Button>
-            ))}
+            {!isOpen &&
+               panelActions?.map((action) => (
+                  <Button
+                     key={action.label}
+                     onClick={action.onClick}
+                     tooltip={action.label}
+                     type="button"
+                     variant="outline"
+                  >
+                     <action.icon className="size-4" />
+                  </Button>
+               ))}
             {actions}
             {!isOpen && <ContextPanelHeaderActions />}
          </div>

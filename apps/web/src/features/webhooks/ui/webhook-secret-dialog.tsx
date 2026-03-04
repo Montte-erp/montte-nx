@@ -40,10 +40,7 @@ export function WebhookSecretDialog({
                   readOnly
                   value={plaintextSecret}
                />
-               <Button
-                  onClick={() => copy(plaintextSecret)}
-                  variant="outline"
-               >
+               <Button onClick={() => copy(plaintextSecret)} variant="outline">
                   {copied ? (
                      <Check className="size-4 text-green-600" />
                   ) : (

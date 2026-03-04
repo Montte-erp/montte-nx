@@ -1,11 +1,11 @@
-import type { LucideIcon } from "lucide-react";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
-   STAGE_CONFIG,
    type FeatureStage,
+   STAGE_CONFIG,
 } from "@packages/ui/components/feature-stage-badge";
 import { cn } from "@packages/ui/lib/utils";
+import type { LucideIcon } from "lucide-react";
 import { FlaskConical } from "lucide-react";
 import { FeatureFeedbackForm } from "@/features/feedback/ui/feature-feedback-form";
 import { FeatureRequestForm } from "@/features/feedback/ui/feature-request-form";

@@ -37,7 +37,6 @@ import {
 } from "@/features/billing/ui/early-access-banner";
 import { InventoryHistorySheet } from "@/features/inventory/ui/inventory-history-sheet";
 import { InventoryMovementCredenza } from "@/features/inventory/ui/inventory-movement-credenza";
-import { InventoryProductCard } from "@/features/inventory/ui/inventory-product-card";
 import {
    buildInventoryProductColumns,
    type InventoryProductRow,
@@ -189,21 +188,6 @@ function InventoryList({ view }: { view: "table" | "card" }) {
       );
    }
 
-   if (view === "card") {
-      return (
-         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {products.map((product) => (
-               <InventoryProductCard
-                  key={product.id}
-                  onRegisterMovement={handleMovement}
-                  onViewHistory={handleHistory}
-                  product={product as InventoryProductRow}
-               />
-            ))}
-         </div>
-      );
-   }
-
    const columns = buildInventoryProductColumns();
 
    return (
@@ -248,6 +232,7 @@ function InventoryList({ view }: { view: "table" | "card" }) {
                </DropdownMenu>
             </>
          )}
+         view={view}
       />
    );
 }

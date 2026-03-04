@@ -26,7 +26,11 @@ export function ViewSwitchDropdown<T extends string>({
    return (
       <DropdownMenu>
          <DropdownMenuTrigger asChild>
-            <Button tooltip="Alterar visualização" type="button" variant="outline">
+            <Button
+               tooltip="Alterar visualização"
+               type="button"
+               variant="outline"
+            >
                {active.icon}
             </Button>
          </DropdownMenuTrigger>

@@ -75,13 +75,13 @@ function NavItem({
             tooltip={
                stage
                   ? {
-                     children: (
-                        <span className="flex items-center gap-1.5">
-                           {item.label}
-                           <FeatureStageBadge isTooltip stage={stage} />
-                        </span>
-                     ),
-                  }
+                       children: (
+                          <span className="flex items-center gap-1.5">
+                             {item.label}
+                             <FeatureStageBadge isTooltip stage={stage} />
+                          </span>
+                       ),
+                    }
                   : item.label
             }
          >

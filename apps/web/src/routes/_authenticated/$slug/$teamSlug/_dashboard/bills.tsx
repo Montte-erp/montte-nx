@@ -26,6 +26,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
    Check,
    FileText,
+   LayoutGrid,
+   LayoutList,
    MoreHorizontal,
    Pencil,
    Plus,
@@ -42,9 +44,19 @@ import {
    computeDisplayStatus,
 } from "@/features/bills/ui/bills-columns";
 import { BillForm } from "@/features/bills/ui/bills-form";
+import {
+   useViewSwitch,
+   type ViewConfig,
+} from "@/features/view-switch/hooks/use-view-switch";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
+
+const BILL_VIEWS: [ViewConfig<"table" | "card">, ViewConfig<"table" | "card">] =
+   [
+      { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
+      { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
+   ];
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/bills",
@@ -134,9 +146,10 @@ function BillsSummary({ items }: BillsSummaryProps) {
 
 interface BillsListProps {
    type: "payable" | "receivable";
+   view: "table" | "card";
 }
 
-function BillsList({ type }: BillsListProps) {
+function BillsList({ type, view }: BillsListProps) {
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
@@ -306,40 +319,7 @@ function BillsList({ type }: BillsListProps) {
                   </>
                );
             }}
-            renderMobileCard={({ row }) => (
-               <div className="rounded-lg border bg-background p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                     <div className="min-w-0">
-                        <p className="font-medium truncate">
-                           {row.original.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                           Venc. {(() => {
-                              const [year, month, day] =
-                                 row.original.dueDate.split("-");
-                              return `${day}/${month}/${year}`;
-                           })()}
-                        </p>
-                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                     {row.original.status === "pending" && (
-                        <Button
-                           onClick={() => handlePay(row.original)}
-                           variant="default"
-                        >
-                           {type === "payable" ? "Pagar" : "Receber"}
-                        </Button>
-                     )}
-                     <Button
-                        onClick={() => handleEdit(row.original)}
-                        variant="outline"
-                     >
-                        Editar
-                     </Button>
-                  </div>
-               </div>
-            )}
+            view={view}
          />
       </div>
    );
@@ -352,6 +332,10 @@ function BillsList({ type }: BillsListProps) {
 function BillsPage() {
    const { openCredenza, closeCredenza } = useCredenza();
    const [tab, setTab] = useState<"payable" | "receivable">("payable");
+   const { currentView, setView, views } = useViewSwitch(
+      "finance:bills:view",
+      BILL_VIEWS,
+   );
 
    const handleCreate = useCallback(() => {
       openCredenza({
@@ -376,6 +360,7 @@ function BillsPage() {
             }
             description="Gerencie suas contas a pagar e a receber"
             title="Contas"
+            viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <Tabs
             onValueChange={(v) => setTab(v as "payable" | "receivable")}
@@ -387,12 +372,12 @@ function BillsPage() {
             </TabsList>
             <TabsContent className="mt-4" value="payable">
                <Suspense fallback={<BillsSkeleton />}>
-                  <BillsList type="payable" />
+                  <BillsList type="payable" view={currentView} />
                </Suspense>
             </TabsContent>
             <TabsContent className="mt-4" value="receivable">
                <Suspense fallback={<BillsSkeleton />}>
-                  <BillsList type="receivable" />
+                  <BillsList type="receivable" view={currentView} />
                </Suspense>
             </TabsContent>
          </Tabs>

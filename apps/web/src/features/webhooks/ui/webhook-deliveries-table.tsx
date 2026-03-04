@@ -116,50 +116,6 @@ export function WebhookDeliveriesTable({
             columns={columns}
             data={deliveries}
             getRowId={(row) => row.id}
-            renderMobileCard={({ row }) => (
-               <div className="rounded-lg border bg-background p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                     <div>
-                        <p className="text-xs text-muted-foreground">Evento</p>
-                        <p className="font-mono text-xs break-words">
-                           {row.original.eventName}
-                        </p>
-                     </div>
-                     <Badge
-                        className={cn(
-                           "capitalize",
-                           row.original.status
-                              .toLowerCase()
-                              .includes("success") &&
-                              "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
-                        )}
-                        variant={getStatusBadgeVariant(row.original.status)}
-                     >
-                        {row.original.status}
-                     </Badge>
-                  </div>
-                  <div className="grid gap-3 text-xs">
-                     <div>
-                        <p className="text-muted-foreground">HTTP</p>
-                        <p className="font-medium">
-                           {row.original.httpStatusCode ?? "-"}
-                        </p>
-                     </div>
-                     <div>
-                        <p className="text-muted-foreground">Entregue em</p>
-                        <p className="font-medium">
-                           {formatTimestamp(row.original.deliveredAt)}
-                        </p>
-                     </div>
-                     <div>
-                        <p className="text-muted-foreground">Erro</p>
-                        <p className="text-muted-foreground line-clamp-3">
-                           {getErrorSnippet(row.original)}
-                        </p>
-                     </div>
-                  </div>
-               </div>
-            )}
          />
       </div>
    );

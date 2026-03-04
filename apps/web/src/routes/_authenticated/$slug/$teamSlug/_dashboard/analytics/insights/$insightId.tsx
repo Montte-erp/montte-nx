@@ -8,7 +8,15 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { AlertCircle, Clock, Copy, RefreshCw, Tag, Trash2, TrendingUp } from "lucide-react";
+import {
+   AlertCircle,
+   Clock,
+   Copy,
+   RefreshCw,
+   Tag,
+   Trash2,
+   TrendingUp,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {

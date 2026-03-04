@@ -33,7 +33,6 @@ import {
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
-import { BudgetGoalCard } from "@/features/budget-goals/ui/budget-goal-card";
 import { BudgetGoalCredenza } from "@/features/budget-goals/ui/budget-goal-credenza";
 import { buildBudgetGoalColumns } from "@/features/budget-goals/ui/budget-goals-columns";
 import type { ViewConfig } from "@/features/view-switch/hooks/use-view-switch";
@@ -280,24 +279,6 @@ function GoalsList({ month, year, view }: GoalsListProps) {
       );
    }
 
-   if (view === "card") {
-      return (
-         <div className="space-y-4">
-            <GoalsSummary goals={goals} />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-               {goals.map((goal) => (
-                  <BudgetGoalCard
-                     goal={goal}
-                     key={goal.id}
-                     onDelete={handleDelete}
-                     onEdit={handleEdit}
-                  />
-               ))}
-            </div>
-         </div>
-      );
-   }
-
    return (
       <div className="space-y-4">
          <GoalsSummary goals={goals} />
@@ -328,13 +309,7 @@ function GoalsList({ month, year, view }: GoalsListProps) {
                   </DropdownMenuContent>
                </DropdownMenu>
             )}
-            renderMobileCard={({ row }) => (
-               <BudgetGoalCard
-                  goal={row.original}
-                  onDelete={handleDelete}
-                  onEdit={handleEdit}
-               />
-            )}
+            view={view}
          />
       </div>
    );

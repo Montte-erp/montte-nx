@@ -8,7 +8,16 @@ import { DateRangePicker } from "@packages/ui/components/date-range-picker";
 import { cn } from "@packages/ui/lib/utils";
 import { formatRelativeTime } from "@packages/utils/date";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Clock, Layout, Loader2, Plus, RefreshCw, RotateCcw, X } from "lucide-react";
+import {
+   Check,
+   Clock,
+   Layout,
+   Loader2,
+   Plus,
+   RefreshCw,
+   RotateCcw,
+   X,
+} from "lucide-react";
 import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
@@ -118,7 +127,13 @@ function DashboardHeader({
          onTitleChange={handleNameSave}
          panelActions={
             !isEditingLayout
-               ? [{ icon: Layout, label: "Editar layout", onClick: onEnterEdit }]
+               ? [
+                    {
+                       icon: Layout,
+                       label: "Editar layout",
+                       onClick: onEnterEdit,
+                    },
+                 ]
                : undefined
          }
          title={dashboard.name}
@@ -345,13 +360,10 @@ export function DashboardView({ dashboard, children }: DashboardViewProps) {
    const handleEnterEdit = useCallback(() => {
       if (isEditingLayout) return;
       setIsEditingLayout(true);
-      toast.info(
-         "Editando o dashboard — salve para persistir as alterações",
-         {
-            id: "dashboard-edit-mode",
-            duration: Number.POSITIVE_INFINITY,
-         },
-      );
+      toast.info("Editando o dashboard — salve para persistir as alterações", {
+         id: "dashboard-edit-mode",
+         duration: Number.POSITIVE_INFINITY,
+      });
    }, [isEditingLayout]);
 
    const handleSave = useCallback(() => {

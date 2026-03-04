@@ -424,7 +424,7 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
             </p>
          </CredenzaHeader>
 
-         <CredenzaBody className="flex flex-col gap-4">
+         <CredenzaBody className="flex flex-col gap-4 w-full overflow-auto">
             <StepIndicator methods={methods} />
 
             {/* Drop zone */}
@@ -890,7 +890,7 @@ function PreviewStep({
             </p>
          </CredenzaHeader>
 
-         <CredenzaBody className="flex flex-col gap-3">
+         <CredenzaBody className="flex flex-col gap-2 w-full">
             <StepIndicator methods={methods} />
 
             {/* Defaults */}

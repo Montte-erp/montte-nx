@@ -17,7 +17,6 @@ import {
 import { ArrowDown, ArrowUp, ArrowUpDown, Settings2 } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 
-import { useIsMobile } from "../hooks/use-mobile";
 import { cn } from "../lib/utils";
 import { Button } from "./button";
 import { Checkbox } from "./checkbox";
@@ -67,18 +66,10 @@ interface DataTablePaginationProps {
    pageSizeOptions?: number[];
 }
 
-export type MobileCardRenderProps<TData> = {
-   row: Row<TData>;
-   isSelected?: boolean;
-   toggleSelected?: () => void;
-   enableRowSelection?: boolean;
-};
-
 interface DataTableProps<TData, TValue> {
    columns: ColumnDef<TData, TValue>[];
    data: TData[];
    pagination?: DataTablePaginationProps;
-   renderMobileCard?: (props: MobileCardRenderProps<TData>) => React.ReactNode;
    enableRowSelection?: boolean;
    rowSelection?: RowSelectionState;
    onRowSelectionChange?: (selection: RowSelectionState) => void;
@@ -87,6 +78,8 @@ interface DataTableProps<TData, TValue> {
    columnVisibilityKey?: string;
    /** Render row actions in the last column. The header shows the column visibility config icon. */
    renderActions?: (props: { row: Row<TData> }) => React.ReactNode;
+   /** Controls layout: 'table' (default) or 'card' (dynamic cards from column definitions). */
+   view?: "table" | "card";
 }
 
 // =============================================================================
@@ -297,15 +290,14 @@ export function DataTable<TData, TValue>({
    columns,
    data,
    pagination,
-   renderMobileCard,
    enableRowSelection = false,
    rowSelection: controlledRowSelection,
    onRowSelectionChange,
    getRowId,
    columnVisibilityKey,
    renderActions,
+   view = "table",
 }: DataTableProps<TData, TValue>) {
-   const isMobile = useIsMobile();
    const [sorting, setSorting] = useState<SortingState>([]);
    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
@@ -412,26 +404,105 @@ export function DataTable<TData, TValue>({
 
    const columnCount = allColumns.length + (enableRowSelection ? 1 : 0);
 
-   // --- Mobile layout ---
-   if (isMobile && renderMobileCard) {
+   // --- Card layout ---
+   if (view === "card") {
       return (
          <div className="space-y-3">
-            {table.getRowModel().rows?.length ? (
-               table.getRowModel().rows.map((row) => (
-                  <div key={row.id}>
-                     {renderMobileCard({
-                        enableRowSelection,
-                        isSelected: row.getIsSelected(),
-                        row,
-                        toggleSelected: () => row.toggleSelected(),
-                     })}
-                  </div>
-               ))
-            ) : (
-               <div className="py-8 text-center text-muted-foreground">
-                  Nenhum resultado encontrado.
+            {/* Toolbar: select-all + column visibility */}
+            <div className="flex items-center justify-between gap-2">
+               <div className="flex items-center gap-2">
+                  {enableRowSelection && (
+                     <>
+                        <Checkbox
+                           aria-label="Selecionar todos"
+                           checked={
+                              table.getIsAllPageRowsSelected() ||
+                              (table.getIsSomePageRowsSelected() &&
+                                 "indeterminate")
+                           }
+                           onCheckedChange={(value) =>
+                              table.toggleAllPageRowsSelected(!!value)
+                           }
+                        />
+                        <span className="text-sm text-muted-foreground">
+                           Selecionar todos
+                        </span>
+                     </>
+                  )}
                </div>
-            )}
+               {columnVisibilityKey && <ColumnVisibilityToggle table={table} />}
+            </div>
+
+            {/* Card grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+               {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => {
+                     const visibleCells = row
+                        .getVisibleCells()
+                        .filter((cell) => cell.column.id !== "__actions");
+
+                     return (
+                        <div
+                           className={cn(
+                              "rounded-lg border bg-background overflow-hidden",
+                              row.getIsSelected() && "ring-2 ring-primary",
+                           )}
+                           key={row.id}
+                        >
+                           <div className="p-4 space-y-2">
+                              {visibleCells.map((cell) => {
+                                 const header = cell.column.columnDef.header;
+                                 const label =
+                                    typeof header === "string" ? header : null;
+
+                                 return (
+                                    <div key={cell.id}>
+                                       {label && (
+                                          <p className="text-xs text-muted-foreground">
+                                             {label}
+                                          </p>
+                                       )}
+                                       <div className="text-sm">
+                                          {flexRender(
+                                             cell.column.columnDef.cell,
+                                             cell.getContext(),
+                                          )}
+                                       </div>
+                                    </div>
+                                 );
+                              })}
+                           </div>
+
+                           {/* Card footer: selection + actions */}
+                           {(enableRowSelection || renderActions) && (
+                              <div className="flex items-center justify-between gap-2 border-t px-4 py-2 bg-muted/30">
+                                 {enableRowSelection ? (
+                                    <Checkbox
+                                       aria-label="Selecionar"
+                                       checked={row.getIsSelected()}
+                                       onCheckedChange={(value) =>
+                                          row.toggleSelected(!!value)
+                                       }
+                                    />
+                                 ) : (
+                                    <div />
+                                 )}
+                                 {renderActions && (
+                                    <div className="flex items-center gap-1">
+                                       {renderActions({ row })}
+                                    </div>
+                                 )}
+                              </div>
+                           )}
+                        </div>
+                     );
+                  })
+               ) : (
+                  <div className="col-span-full py-8 text-center text-muted-foreground">
+                     Nenhum resultado encontrado.
+                  </div>
+               )}
+            </div>
             {pagination && <DataTablePagination {...pagination} />}
          </div>
       );

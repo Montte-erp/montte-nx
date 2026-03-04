@@ -1,6 +1,6 @@
-import { AppError, propagateError } from "@packages/utils/errors";
 import type { Condition, ConditionGroup } from "@f-o-t/condition-evaluator";
 import { evaluateConditionGroup } from "@f-o-t/condition-evaluator";
+import { AppError, propagateError } from "@packages/utils/errors";
 import {
    and,
    count,
@@ -176,7 +176,10 @@ export async function listTransactions(
          const sqlExprs = group.conditions
             .filter((c): c is Condition => !("conditions" in c))
             .map((c) => conditionToSql(c))
-            .filter((e): e is NonNullable<ReturnType<typeof conditionToSql>> => e !== null);
+            .filter(
+               (e): e is NonNullable<ReturnType<typeof conditionToSql>> =>
+                  e !== null,
+            );
 
          if (sqlExprs.length > 0) {
             const combined =
@@ -198,7 +201,10 @@ export async function listTransactions(
             })
             .from(transactions)
             .leftJoin(categories, eq(transactions.categoryId, categories.id))
-            .leftJoin(creditCards, eq(transactions.creditCardId, creditCards.id))
+            .leftJoin(
+               creditCards,
+               eq(transactions.creditCardId, creditCards.id),
+            )
             .where(whereClause)
             .orderBy(desc(transactions.date));
 

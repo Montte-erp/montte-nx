@@ -107,10 +107,7 @@ function makeInsightColumns(
                );
             }
             return (
-               <Button
-                  onClick={() => onAdd(row.original)}
-                  variant="outline"
-               >
+               <Button onClick={() => onAdd(row.original)} variant="outline">
                   <Plus className="size-3.5" />
                   Adicionar
                </Button>

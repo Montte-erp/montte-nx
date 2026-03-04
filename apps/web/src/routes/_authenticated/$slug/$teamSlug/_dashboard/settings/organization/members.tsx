@@ -283,87 +283,6 @@ function InviteMemberCredenzaContent({
 }
 
 // ============================================
-// Mobile Card Renderer
-// ============================================
-
-function MemberMobileCard({
-   row,
-   onUpdateRole,
-}: {
-   row: { original: MemberRow };
-   onUpdateRole?: (member: MemberRow, newRole: string) => void;
-}) {
-   const { data: sessionData } = useSuspenseQuery(
-      orpc.session.getSession.queryOptions({}),
-   );
-   const currentUserId = sessionData?.user?.id;
-   const member = row.original;
-   const isSelf = member.userId === currentUserId;
-   const isOwner = member.role === "owner";
-   const isDisabled = isSelf || isOwner;
-   const roleLabel =
-      member.role === "admin"
-         ? "Alterar para membro"
-         : "Alterar para administrador";
-
-   return (
-      <Card>
-         <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-               <Avatar className="size-10">
-                  <AvatarImage
-                     alt={member.name}
-                     src={member.image || undefined}
-                  />
-                  <AvatarFallback className="text-sm">
-                     {getInitials(member.name)}
-                  </AvatarFallback>
-               </Avatar>
-               <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                     <p className="font-medium truncate">{member.name}</p>
-                     {isSelf && (
-                        <Badge className="text-[10px] px-1.5" variant="outline">
-                           você
-                        </Badge>
-                     )}
-                  </div>
-                  <p className="text-sm text-muted-foreground truncate">
-                     {member.email}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                     <Badge variant={getRoleBadgeVariant(member.role)}>
-                        {ROLE_LABELS[member.role] ?? member.role}
-                     </Badge>
-                     <span className="text-xs text-muted-foreground">
-                        Desde {formatDate(member.createdAt)}
-                     </span>
-                  </div>
-               </div>
-               <div className="flex items-center gap-1">
-                  {onUpdateRole && (
-                     <Button
-                        disabled={isDisabled}
-                        onClick={() =>
-                           onUpdateRole(
-                              member,
-                              member.role === "admin" ? "member" : "admin",
-                           )
-                        }
-                        tooltip={roleLabel}
-                        variant="outline"
-                     >
-                        <ShieldCheck className="size-4" />
-                     </Button>
-                  )}
-               </div>
-            </div>
-         </CardContent>
-      </Card>
-   );
-}
-
-// ============================================
 // Pending Invites Section
 // ============================================
 
@@ -697,12 +616,6 @@ function MembersContent() {
                      </Button>
                   );
                }}
-               renderMobileCard={(props) => (
-                  <MemberMobileCard
-                     {...props}
-                     onUpdateRole={handleUpdateRole}
-                  />
-               )}
             />
          </section>
       </div>

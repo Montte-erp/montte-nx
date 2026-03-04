@@ -120,7 +120,11 @@ const CreateTeamFormContent = () => {
    return (
       <>
          <CredenzaBody>
-            <form className="grid gap-4" id="create-team-form" onSubmit={handleSubmit}>
+            <form
+               className="grid gap-4"
+               id="create-team-form"
+               onSubmit={handleSubmit}
+            >
                <form.Field name="name">
                   {(field) => {
                      const isInvalid =
@@ -134,7 +138,9 @@ const CreateTeamFormContent = () => {
                               id={field.name}
                               name={field.name}
                               onBlur={field.handleBlur}
-                              onChange={(e) => field.handleChange(e.target.value)}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
                               placeholder="Meu espaço"
                               type="text"
                               value={field.state.value}
@@ -163,7 +169,9 @@ const CreateTeamFormContent = () => {
                               id={field.name}
                               name={field.name}
                               onBlur={field.handleBlur}
-                              onChange={(e) => field.handleChange(e.target.value)}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
                               placeholder="Descrição opcional"
                               rows={3}
                               value={field.state.value}

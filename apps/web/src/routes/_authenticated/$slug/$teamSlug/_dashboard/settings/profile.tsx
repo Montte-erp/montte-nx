@@ -279,9 +279,7 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
                         Desativar 2FA
                      </Button>
                   ) : (
-                     <Button
-                        onClick={() => setStep("enabling-confirm")}
-                     >
+                     <Button onClick={() => setStep("enabling-confirm")}>
                         Ativar 2FA
                      </Button>
                   )}
@@ -386,9 +384,7 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
                         ))}
                      </div>
                   </div>
-                  <Button onClick={resetState}>
-                     Concluído
-                  </Button>
+                  <Button onClick={resetState}>Concluído</Button>
                </div>
             )}
 
@@ -686,10 +682,7 @@ function ProfileEmailSection({
                   )}
                </Field>
             </FieldGroup>
-            <Button
-               disabled={!hasChanged || isPending}
-               onClick={handleSave}
-            >
+            <Button disabled={!hasChanged || isPending} onClick={handleSave}>
                {isPending && <Loader2 className="size-4 mr-2 animate-spin" />}
                Salvar email
             </Button>

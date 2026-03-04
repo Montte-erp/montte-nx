@@ -79,10 +79,7 @@ export function InventoryProductCard({
                   <PackagePlus className="size-3.5 mr-1" />
                   Movimento
                </Button>
-               <Button
-                  onClick={() => onViewHistory(product)}
-                  variant="outline"
-               >
+               <Button onClick={() => onViewHistory(product)} variant="outline">
                   <History className="size-4" />
                </Button>
             </div>

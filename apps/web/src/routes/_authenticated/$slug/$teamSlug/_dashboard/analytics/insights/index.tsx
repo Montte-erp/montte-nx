@@ -1,16 +1,12 @@
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
-import { Card, CardContent } from "@packages/ui/components/card";
 import {
    ContextPanel,
    ContextPanelContent,
    ContextPanelHeader,
    ContextPanelTitle,
 } from "@packages/ui/components/context-panel";
-import {
-   DataTable,
-   type MobileCardRenderProps,
-} from "@packages/ui/components/data-table";
+import { DataTable } from "@packages/ui/components/data-table";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -153,75 +149,6 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
             Criar primeiro insight
          </Button>
       </div>
-   );
-}
-
-// ---------------------------------------------------------------------------
-// Mobile card
-// ---------------------------------------------------------------------------
-
-function InsightMobileCard({
-   row,
-   slug,
-   teamSlug,
-   navigate,
-   onDelete,
-}: MobileCardRenderProps<InsightRow> & {
-   slug: string;
-   teamSlug: string;
-   navigate: ReturnType<typeof useNavigate>;
-   onDelete: (insight: { id: string; name: string }) => void;
-}) {
-   const insight = row.original;
-   const TypeIcon = TYPE_ICONS[insight.type] ?? Lightbulb;
-   return (
-      <Card>
-         <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-               <div className="size-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <TypeIcon className="size-4 text-primary" />
-               </div>
-               <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{insight.name}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                     <Badge
-                        className="text-xs"
-                        variant={TYPE_VARIANTS[insight.type] ?? "default"}
-                     >
-                        {TYPE_LABELS[insight.type] ?? insight.type}
-                     </Badge>
-                     <span className="text-xs text-muted-foreground">
-                        {formatDate(insight.updatedAt)}
-                     </span>
-                  </div>
-               </div>
-               <div className="flex items-center gap-1">
-                  <Button
-                     onClick={() =>
-                        navigate({
-                           to: "/$slug/$teamSlug/analytics/insights/$insightId",
-                           params: { slug, teamSlug, insightId: insight.id },
-                        })
-                     }
-                     tooltip="Editar"
-                     variant="outline"
-                  >
-                     <Pencil className="size-4" />
-                  </Button>
-                  <Button
-                     className="text-destructive hover:text-destructive"
-                     onClick={() =>
-                        onDelete({ id: insight.id, name: insight.name })
-                     }
-                     tooltip="Excluir"
-                     variant="outline"
-                  >
-                     <Trash2 className="size-4" />
-                  </Button>
-               </div>
-            </div>
-         </CardContent>
-      </Card>
    );
 }
 
@@ -521,15 +448,6 @@ function InsightsListPage() {
                         </>
                      );
                   }}
-                  renderMobileCard={(props) => (
-                     <InsightMobileCard
-                        {...props}
-                        navigate={navigate}
-                        onDelete={handleDelete}
-                        slug={slug}
-                        teamSlug={teamSlug}
-                     />
-                  )}
                />
             ))}
       </main>

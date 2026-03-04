@@ -1,7 +1,12 @@
 import { useStore } from "@tanstack/react-store";
 import type React from "react";
 import { useEffect } from "react";
-import { type ContextPanelTab, type PageViewSwitchConfig, type PanelAction, contextPanelStore } from "./context-panel-store";
+import {
+   type ContextPanelTab,
+   contextPanelStore,
+   type PageViewSwitchConfig,
+   type PanelAction,
+} from "./context-panel-store";
 
 export const openContextPanel = () =>
    contextPanelStore.setState((s) => ({ ...s, isOpen: true }));
@@ -79,8 +84,14 @@ export const usePageViewSwitch = (config: PageViewSwitchConfig | null) => {
 };
 
 export const useContextPanel = () => {
-   const { isOpen, activeTabId, dynamicTabs, infoContent, pageActions, pageViewSwitch } =
-      useStore(contextPanelStore);
+   const {
+      isOpen,
+      activeTabId,
+      dynamicTabs,
+      infoContent,
+      pageActions,
+      pageViewSwitch,
+   } = useStore(contextPanelStore);
    return {
       isOpen,
       activeTabId,

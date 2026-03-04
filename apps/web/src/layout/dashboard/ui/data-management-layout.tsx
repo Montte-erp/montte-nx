@@ -1,12 +1,12 @@
 import { Button } from "@packages/ui/components/button";
 import { useIsMobile } from "@packages/ui/hooks/use-mobile";
+import { Link, useLocation, useParams } from "@tanstack/react-router";
+import { ChevronLeft, Database } from "lucide-react";
+import type * as React from "react";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
-import { Link, useLocation, useParams } from "@tanstack/react-router";
-import { ChevronLeft, Database } from "lucide-react";
-import type * as React from "react";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { DataManagementMobileNav } from "./data-management-mobile-nav";
 
