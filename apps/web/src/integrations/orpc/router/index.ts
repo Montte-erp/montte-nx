@@ -8,6 +8,7 @@ import * as annotationsRouter from "./annotations";
 import * as bankAccountsRouter from "./bank-accounts";
 import * as billingRouter from "./billing";
 import * as billsRouter from "./bills";
+import * as budgetGoalsRouter from "./budget-goals";
 import * as categoriesRouter from "./categories";
 import * as chatRouter from "./chat";
 import * as contactsRouter from "./contacts";
@@ -45,6 +46,7 @@ export default {
    bankAccounts: bankAccountsRouter,
    bills: billsRouter,
    billing: billingRouter,
+   budgetGoals: budgetGoalsRouter,
    creditCards: creditCardsRouter,
    categories: categoriesRouter,
    contacts: contactsRouter,
