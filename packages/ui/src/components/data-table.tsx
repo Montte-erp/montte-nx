@@ -141,7 +141,7 @@ function ColumnVisibilityToggle<TData>({
 }) {
    const toggleableColumns = table
       .getAllColumns()
-      .filter((col) => col.getCanHide() && col.id !== "actions");
+      .filter((col) => col.getCanHide() && col.id !== "__actions");
 
    if (toggleableColumns.length === 0) return null;
 
@@ -368,8 +368,28 @@ export function DataTable<TData, TValue>({
 
    const hasActionsColumn = !!renderActions || !!columnVisibilityKey;
 
+   const allColumns = useMemo(() => {
+      if (!hasActionsColumn) return columns;
+      const actionsCol: ColumnDef<TData, unknown> = {
+         id: "__actions",
+         header: columnVisibilityKey
+            ? () => null // placeholder — header rendered via headerGroup
+            : undefined,
+         cell: renderActions
+            ? ({ row }) => (
+                 <div className="flex items-center justify-end gap-1">
+                    {renderActions({ row })}
+                 </div>
+              )
+            : undefined,
+         enableSorting: false,
+         enableHiding: false,
+      };
+      return [...columns, actionsCol];
+   }, [columns, hasActionsColumn, columnVisibilityKey, renderActions]);
+
    const table = useReactTable({
-      columns,
+      columns: allColumns,
       data,
       enableRowSelection,
       getCoreRowModel: getCoreRowModel(),
@@ -390,10 +410,7 @@ export function DataTable<TData, TValue>({
       },
    });
 
-   const columnCount =
-      columns.length +
-      (enableRowSelection ? 1 : 0) +
-      (hasActionsColumn ? 1 : 0);
+   const columnCount = allColumns.length + (enableRowSelection ? 1 : 0);
 
    // --- Mobile layout ---
    if (isMobile && renderMobileCard) {
@@ -444,8 +461,19 @@ export function DataTable<TData, TValue>({
                            </TableHead>
                         )}
                         {headerGroup.headers.map((header) => (
-                           <TableHead key={header.id}>
-                              {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                           <TableHead
+                              key={header.id}
+                              {...(header.column.id === "__actions"
+                                 ? { className: "w-0" }
+                                 : {})}
+                           >
+                              {header.column.id === "__actions" ? (
+                                 columnVisibilityKey ? (
+                                    <div className="flex items-center justify-end">
+                                       <ColumnVisibilityToggle table={table} />
+                                    </div>
+                                 ) : null
+                              ) : header.isPlaceholder ? null : header.column.getCanSort() ? (
                                  <Button
                                     className="h-8 gap-2"
                                     onClick={header.column.getToggleSortingHandler()}
@@ -472,15 +500,6 @@ export function DataTable<TData, TValue>({
                               )}
                            </TableHead>
                         ))}
-                        {hasActionsColumn && (
-                           <TableHead className="w-full">
-                              <div className="flex items-center justify-end">
-                                 {columnVisibilityKey && (
-                                    <ColumnVisibilityToggle table={table} />
-                                 )}
-                              </div>
-                           </TableHead>
-                        )}
                      </TableRow>
                   ))}
                </TableHeader>
@@ -517,15 +536,6 @@ export function DataTable<TData, TValue>({
                                  )}
                               </TableCell>
                            ))}
-                           {hasActionsColumn && (
-                              <TableCell>
-                                 {renderActions && (
-                                    <div className="flex items-center justify-end gap-1">
-                                       {renderActions({ row })}
-                                    </div>
-                                 )}
-                              </TableCell>
-                           )}
                         </TableRow>
                      ))
                   ) : (
