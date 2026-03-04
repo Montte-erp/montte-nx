@@ -159,7 +159,41 @@ Use `DataTable` from `@packages/ui/components/data-table` for all tabular lists.
 - Prefer `DataTable` over manual `Table` primitives for list views.
 - Tables should be expandable via row click using `renderSubComponent`.
 - Do not wrap `DataTable` in `Card`/`CardContent` containers.
-- Provide a mobile card renderer when the table is used on responsive pages.
+
+### Card View (`view` prop)
+
+DataTable supports a `view` prop (`"table" | "card"`). When `view="card"`, it dynamically renders visible columns as Card components — **no hand-crafted card templates**.
+
+- **Never** use `renderMobileCard` — it was removed. There is no mobile card prop.
+- **Never** write inline `if (view === "card") { return <grid>... }` blocks in page components. Always pass `view` to DataTable and let it handle the layout.
+- Card layout uses the same column definitions, column visibility, row selection, and `renderActions` as the table view.
+
+**Card structure:**
+- `CardHeader` — 1st column as `CardTitle`, 2nd column as `CardDescription`
+- `CardAction` — Row selection checkbox (when `enableRowSelection` is true)
+- `CardContent` — Remaining columns in a 2-column grid with uppercase labels
+- `CardFooter` — `renderActions` output, right-aligned
+
+**Do not override** Card component default styles (padding, gap, text sizes). Use the Card as-is — only add `gap-4` on the root Card.
+
+**Page integration pattern:**
+```typescript
+// 1. Define view config
+const VIEWS: [ViewConfig<"table" | "card">, ViewConfig<"table" | "card">] = [
+   { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
+   { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
+];
+
+// 2. Use hook
+const { currentView, setView, views } = useViewSwitch("feature:view", VIEWS);
+
+// 3. Pass to header
+<DefaultHeader viewSwitch={{ options: views, currentView, onViewChange: setView }} />
+// or <PageHeader panelViewSwitch={{ options: views, currentView, onViewChange: setView }} />
+
+// 4. Pass view to DataTable
+<DataTable columns={columns} data={data} view={currentView} renderActions={...} />
+```
 
 ---
 

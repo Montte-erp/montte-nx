@@ -19,6 +19,15 @@ import { useCallback, useMemo, useRef, useState } from "react";
 
 import { cn } from "../lib/utils";
 import { Button } from "./button";
+import {
+   Card,
+   CardAction,
+   CardContent,
+   CardDescription,
+   CardFooter,
+   CardHeader,
+   CardTitle,
+} from "./card";
 import { Checkbox } from "./checkbox";
 import {
    DropdownMenu,
@@ -441,42 +450,36 @@ export function DataTable<TData, TValue>({
                         .getVisibleCells()
                         .filter((cell) => cell.column.id !== "__actions");
 
+                     const [primaryCell, secondaryCell, ...restCells] =
+                        visibleCells;
+
                      return (
-                        <div
+                        <Card
                            className={cn(
-                              "rounded-lg border bg-background overflow-hidden",
+                              "gap-4",
                               row.getIsSelected() && "ring-2 ring-primary",
                            )}
                            key={row.id}
                         >
-                           <div className="p-4 space-y-2">
-                              {visibleCells.map((cell) => {
-                                 const header = cell.column.columnDef.header;
-                                 const label =
-                                    typeof header === "string" ? header : null;
-
-                                 return (
-                                    <div key={cell.id}>
-                                       {label && (
-                                          <p className="text-xs text-muted-foreground">
-                                             {label}
-                                          </p>
-                                       )}
-                                       <div className="text-sm">
-                                          {flexRender(
-                                             cell.column.columnDef.cell,
-                                             cell.getContext(),
-                                          )}
-                                       </div>
-                                    </div>
-                                 );
-                              })}
-                           </div>
-
-                           {/* Card footer: selection + actions */}
-                           {(enableRowSelection || renderActions) && (
-                              <div className="flex items-center justify-between gap-2 border-t px-4 py-2 bg-muted/30">
-                                 {enableRowSelection ? (
+                           <CardHeader>
+                              {primaryCell && (
+                                 <CardTitle>
+                                    {flexRender(
+                                       primaryCell.column.columnDef.cell,
+                                       primaryCell.getContext(),
+                                    )}
+                                 </CardTitle>
+                              )}
+                              {secondaryCell && (
+                                 <CardDescription>
+                                    {flexRender(
+                                       secondaryCell.column.columnDef.cell,
+                                       secondaryCell.getContext(),
+                                    )}
+                                 </CardDescription>
+                              )}
+                              {enableRowSelection && (
+                                 <CardAction>
                                     <Checkbox
                                        aria-label="Selecionar"
                                        checked={row.getIsSelected()}
@@ -484,17 +487,44 @@ export function DataTable<TData, TValue>({
                                           row.toggleSelected(!!value)
                                        }
                                     />
-                                 ) : (
-                                    <div />
-                                 )}
-                                 {renderActions && (
-                                    <div className="flex items-center gap-1">
-                                       {renderActions({ row })}
-                                    </div>
-                                 )}
-                              </div>
+                                 </CardAction>
+                              )}
+                           </CardHeader>
+
+                           {restCells.length > 0 && (
+                              <CardContent className="grid grid-cols-2 gap-x-4 gap-y-3">
+                                 {restCells.map((cell) => {
+                                    const header = cell.column.columnDef.header;
+                                    const label =
+                                       typeof header === "string"
+                                          ? header
+                                          : null;
+
+                                    return (
+                                       <div className="min-w-0" key={cell.id}>
+                                          {label && (
+                                             <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
+                                                {label}
+                                             </p>
+                                          )}
+                                          <div className="text-sm truncate">
+                                             {flexRender(
+                                                cell.column.columnDef.cell,
+                                                cell.getContext(),
+                                             )}
+                                          </div>
+                                       </div>
+                                    );
+                                 })}
+                              </CardContent>
                            )}
-                        </div>
+
+                           {renderActions && (
+                              <CardFooter className="justify-end gap-1">
+                                 {renderActions({ row })}
+                              </CardFooter>
+                           )}
+                        </Card>
                      );
                   })
                ) : (
