@@ -1,8 +1,6 @@
 import { Badge } from "@packages/ui/components/badge";
-import { Button } from "@packages/ui/components/button";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
-   Archive,
    Baby,
    BookOpen,
    Briefcase,
@@ -17,11 +15,9 @@ import {
    type LucideIcon,
    Music,
    Package,
-   Pencil,
    Plane,
    ShoppingCart,
    Smartphone,
-   Trash2,
    Utensils,
    Wallet,
    Zap,
@@ -59,11 +55,7 @@ export type CategoryRow = {
    subcategories: { id: string; name: string }[];
 };
 
-export function buildCategoryColumns(
-   onEdit: (category: CategoryRow) => void,
-   onDelete: (category: CategoryRow) => void,
-   onArchive: (category: CategoryRow) => void,
-): ColumnDef<CategoryRow>[] {
+export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
    return [
       {
          accessorKey: "name",
@@ -106,44 +98,6 @@ export function buildCategoryColumns(
             if (type === "expense")
                return <Badge variant="destructive">Despesa</Badge>;
             return <span className="text-sm text-muted-foreground">—</span>;
-         },
-      },
-      {
-         id: "actions",
-         header: "",
-         cell: ({ row }) => {
-            if (row.original.isDefault) return null;
-            return (
-               // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation wrapper for table row click
-               <div
-                  className="flex items-center justify-end gap-1"
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => e.stopPropagation()}
-               >
-                  <Button
-                     onClick={() => onEdit(row.original)}
-                     tooltip="Editar"
-                     variant="outline"
-                  >
-                     <Pencil className="size-4" />
-                  </Button>
-                  <Button
-                     onClick={() => onArchive(row.original)}
-                     tooltip="Arquivar"
-                     variant="outline"
-                  >
-                     <Archive className="size-4" />
-                  </Button>
-                  <Button
-                     className="text-destructive hover:text-destructive"
-                     onClick={() => onDelete(row.original)}
-                     tooltip="Excluir"
-                     variant="outline"
-                  >
-                     <Trash2 className="size-4" />
-                  </Button>
-               </div>
-            );
          },
       },
    ];

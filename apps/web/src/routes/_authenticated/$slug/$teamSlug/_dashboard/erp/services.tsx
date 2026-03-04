@@ -14,16 +14,16 @@ import { Briefcase, Pencil, Plus, Trash2 } from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
+import {
+   EarlyAccessBanner,
+   type EarlyAccessBannerTemplate,
+} from "@/features/billing/ui/early-access-banner";
 import { ServicesAnalyticsHeader } from "@/features/services/ui/services-analytics-header";
 import {
    buildServiceColumns,
    type ServiceRow,
 } from "@/features/services/ui/services-columns";
 import { ServiceForm } from "@/features/services/ui/services-form";
-import {
-   EarlyAccessBanner,
-   type EarlyAccessBannerTemplate,
-} from "@/features/billing/ui/early-access-banner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -130,13 +130,32 @@ function ServicesList() {
       );
    }
 
-   const columns = buildServiceColumns(handleEdit, handleDelete);
+   const columns = buildServiceColumns();
 
    return (
       <DataTable
          columns={columns}
          data={servicesList as ServiceRow[]}
          getRowId={(row) => row.id}
+         renderActions={({ row }) => (
+            <>
+               <Button
+                  onClick={() => handleEdit(row.original)}
+                  tooltip="Editar"
+                  variant="outline"
+               >
+                  <Pencil className="size-4" />
+               </Button>
+               <Button
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => handleDelete(row.original)}
+                  tooltip="Excluir"
+                  variant="outline"
+               >
+                  <Trash2 className="size-4" />
+               </Button>
+            </>
+         )}
          renderMobileCard={({ row }) => (
             <div className="rounded-lg border bg-background p-4 space-y-3">
                <div className="flex items-start justify-between gap-2">

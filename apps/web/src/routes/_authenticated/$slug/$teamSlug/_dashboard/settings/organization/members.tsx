@@ -13,10 +13,7 @@ import {
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
-import {
-   DataTable,
-   type MobileCardRenderProps,
-} from "@packages/ui/components/data-table";
+import { DataTable } from "@packages/ui/components/data-table";
 import {
    Empty,
    EmptyDescription,
@@ -44,19 +41,10 @@ import {
 } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import {
-   ChevronDown,
-   FolderKanban,
-   Mail,
-   Search,
-   ShieldCheck,
-   UserMinus,
-   UserPlus,
-} from "lucide-react";
+import { Mail, Search, ShieldCheck, UserPlus } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
-import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
@@ -295,101 +283,14 @@ function InviteMemberCredenzaContent({
 }
 
 // ============================================
-// Member Expandable Row
-// ============================================
-
-function MemberExpandedRow({
-   member,
-   onRemove,
-}: {
-   member: MemberRow;
-   onRemove: (member: MemberRow) => void;
-}) {
-   const { data: teams } = useSuspenseQuery(
-      orpc.organization.getOrganizationTeams.queryOptions({}),
-   );
-
-   const { data: memberTeams, isLoading } = useQuery(
-      orpc.organization.getMemberTeams.queryOptions({
-         input: { userId: member.userId },
-      }),
-   );
-
-   return (
-      <div className="px-4 py-4 space-y-4">
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-               <h4 className="text-sm font-medium text-muted-foreground">
-                  Informações do membro
-               </h4>
-               <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-sm">
-                     <span className="text-muted-foreground">Entrou em:</span>
-                     <span>{formatDate(member.createdAt)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                     <span className="text-muted-foreground">Função:</span>
-                     <Badge variant={getRoleBadgeVariant(member.role)}>
-                        {ROLE_LABELS[member.role] ?? member.role}
-                     </Badge>
-                  </div>
-               </div>
-            </div>
-
-            <div className="space-y-2">
-               <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-medium text-muted-foreground">
-                     Acesso a projetos
-                  </h4>
-                  {!isLoading && memberTeams && (
-                     <span className="text-xs text-muted-foreground">
-                        {memberTeams.length} de {teams.length}
-                     </span>
-                  )}
-               </div>
-               {isLoading ? (
-                  <Skeleton className="h-6 w-32" />
-               ) : memberTeams && memberTeams.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                     {memberTeams.map((team) => (
-                        <Badge key={team.id} variant="outline">
-                           <FolderKanban className="size-3 mr-1" />
-                           {team.name}
-                        </Badge>
-                     ))}
-                  </div>
-               ) : (
-                  <p className="text-sm text-muted-foreground">
-                     Sem acesso a projetos
-                  </p>
-               )}
-            </div>
-         </div>
-         <div className="flex items-center gap-2 flex-wrap border-t pt-4">
-            <Button
-               className="text-destructive hover:text-destructive"
-               onClick={() => onRemove(member)}
-               variant="ghost"
-            >
-               <UserMinus className="size-3 mr-2" />
-               Remover membro
-            </Button>
-         </div>
-      </div>
-   );
-}
-
-// ============================================
 // Mobile Card Renderer
 // ============================================
 
 function MemberMobileCard({
    row,
-   isExpanded,
-   toggleExpanded,
-   canExpand,
    onUpdateRole,
-}: MobileCardRenderProps<MemberRow> & {
+}: {
+   row: { original: MemberRow };
    onUpdateRole?: (member: MemberRow, newRole: string) => void;
 }) {
    const { data: sessionData } = useSuspenseQuery(
@@ -453,19 +354,6 @@ function MemberMobileCard({
                         variant="outline"
                      >
                         <ShieldCheck className="size-4" />
-                     </Button>
-                  )}
-                  {canExpand && (
-                     <Button
-                        onClick={toggleExpanded}
-                        tooltip="Expandir"
-                        variant="outline"
-                     >
-                        <ChevronDown
-                           className={`size-4 transition-transform ${
-                              isExpanded ? "rotate-180" : ""
-                           }`}
-                        />
                      </Button>
                   )}
                </div>
@@ -600,7 +488,6 @@ function PendingInvitesSection({ organizationId }: { organizationId: string }) {
 function MembersContent() {
    const queryClient = useQueryClient();
    const { openCredenza, closeCredenza } = useCredenza();
-   const { openAlertDialog } = useAlertDialog();
    const [searchFilter, setSearchFilter] = useState("");
 
    const { data: members } = useSuspenseQuery(
@@ -630,28 +517,6 @@ function MembersContent() {
    }, [members, searchFilter]);
 
    // Mutations
-   const removeMutation = useMutation({
-      mutationFn: async (memberIdOrEmail: string) => {
-         const result = await authClient.organization.removeMember({
-            memberIdOrEmail,
-            organizationId,
-         });
-         if (result.error) {
-            throw new Error(result.error.message ?? "Erro ao remover membro");
-         }
-         return result.data;
-      },
-      onSuccess: () => {
-         queryClient.invalidateQueries({
-            queryKey: orpc.organization.getMembers.queryOptions({}).queryKey,
-         });
-         toast.success("Membro removido com sucesso");
-      },
-      onError: (error) => {
-         toast.error(error.message);
-      },
-   });
-
    const updateRoleMutation = useMutation({
       mutationFn: async ({
          memberId,
@@ -680,19 +545,6 @@ function MembersContent() {
          toast.error(error.message);
       },
    });
-
-   function handleRemoveMember(member: MemberRow) {
-      openAlertDialog({
-         title: "Remover membro",
-         description: `Tem certeza que deseja remover ${member.name} da organização? Esta ação não pode ser desfeita.`,
-         actionLabel: "Remover",
-         cancelLabel: "Cancelar",
-         variant: "destructive",
-         onAction: async () => {
-            await removeMutation.mutateAsync(member.id);
-         },
-      });
-   }
 
    function handleUpdateRole(member: MemberRow, newRole: string) {
       updateRoleMutation.mutate({
@@ -767,43 +619,6 @@ function MembersContent() {
                </span>
             ),
          },
-         {
-            id: "actions",
-            header: "",
-            cell: ({ row }) => {
-               const member = row.original;
-               const isSelf = member.userId === currentUserId;
-               const isOwner = member.role === "owner";
-               const isDisabled = isSelf || isOwner;
-               const roleLabel =
-                  member.role === "admin"
-                     ? "Alterar para membro"
-                     : "Alterar para administrador";
-
-               return (
-                  // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation wrapper for table row click
-                  <div
-                     className="flex items-center justify-end gap-1"
-                     onClick={(e) => e.stopPropagation()}
-                     onKeyDown={(e) => e.stopPropagation()}
-                  >
-                     <Button
-                        disabled={isDisabled}
-                        onClick={() =>
-                           handleUpdateRole(
-                              member,
-                              member.role === "admin" ? "member" : "admin",
-                           )
-                        }
-                        tooltip={roleLabel}
-                        variant="outline"
-                     >
-                        <ShieldCheck className="size-4" />
-                     </Button>
-                  </div>
-               );
-            },
-         },
       ],
       [currentUserId],
    );
@@ -857,16 +672,35 @@ function MembersContent() {
                columns={columns}
                data={filteredMembers}
                getRowId={(row) => row.id}
+               renderActions={({ row }) => {
+                  const member = row.original;
+                  const isSelf = member.userId === currentUserId;
+                  const isOwner = member.role === "owner";
+                  const isDisabled = isSelf || isOwner;
+                  const roleLabel =
+                     member.role === "admin"
+                        ? "Alterar para membro"
+                        : "Alterar para administrador";
+                  return (
+                     <Button
+                        disabled={isDisabled}
+                        onClick={() =>
+                           handleUpdateRole(
+                              member,
+                              member.role === "admin" ? "member" : "admin",
+                           )
+                        }
+                        tooltip={roleLabel}
+                        variant="outline"
+                     >
+                        <ShieldCheck className="size-4" />
+                     </Button>
+                  );
+               }}
                renderMobileCard={(props) => (
                   <MemberMobileCard
                      {...props}
                      onUpdateRole={handleUpdateRole}
-                  />
-               )}
-               renderSubComponent={({ row }) => (
-                  <MemberExpandedRow
-                     member={row.original}
-                     onRemove={handleRemoveMember}
                   />
                )}
             />

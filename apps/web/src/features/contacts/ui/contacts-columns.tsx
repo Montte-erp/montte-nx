@@ -1,7 +1,5 @@
 import { Badge } from "@packages/ui/components/badge";
-import { Button } from "@packages/ui/components/button";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Pencil, Trash2 } from "lucide-react";
 
 export type ContactRow = {
    id: string;
@@ -28,10 +26,7 @@ const TYPE_VARIANTS: Record<
    ambos: "outline",
 };
 
-export function buildContactColumns(
-   onEdit: (contact: ContactRow) => void,
-   onDelete: (contact: ContactRow) => void,
-): ColumnDef<ContactRow>[] {
+export function buildContactColumns(): ColumnDef<ContactRow>[] {
    return [
       {
          accessorKey: "name",
@@ -82,34 +77,6 @@ export function buildContactColumns(
             ) : (
                <span className="text-muted-foreground">—</span>
             ),
-      },
-      {
-         id: "actions",
-         header: "",
-         cell: ({ row }) => (
-            // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation wrapper for table row click
-            <div
-               className="flex items-center justify-end gap-1"
-               onClick={(e) => e.stopPropagation()}
-               onKeyDown={(e) => e.stopPropagation()}
-            >
-               <Button
-                  onClick={() => onEdit(row.original)}
-                  tooltip="Editar"
-                  variant="outline"
-               >
-                  <Pencil className="size-4" />
-               </Button>
-               <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => onDelete(row.original)}
-                  tooltip="Excluir"
-                  variant="outline"
-               >
-                  <Trash2 className="size-4" />
-               </Button>
-            </div>
-         ),
       },
    ];
 }

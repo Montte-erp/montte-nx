@@ -15,7 +15,14 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { LayoutGrid, LayoutList, Plus, Trash2, Users } from "lucide-react";
+import {
+   LayoutGrid,
+   LayoutList,
+   Pencil,
+   Plus,
+   Trash2,
+   Users,
+} from "lucide-react";
 
 import { Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -242,7 +249,7 @@ function ContactsList({ view, typeFilter }: ContactsListProps) {
       );
    }
 
-   const columns = buildContactColumns(handleEdit, handleDelete);
+   const columns = buildContactColumns();
 
    return (
       <>
@@ -252,6 +259,25 @@ function ContactsList({ view, typeFilter }: ContactsListProps) {
             enableRowSelection
             getRowId={(row) => row.id}
             onRowSelectionChange={onRowSelectionChange}
+            renderActions={({ row }) => (
+               <>
+                  <Button
+                     onClick={() => handleEdit(row.original)}
+                     tooltip="Editar"
+                     variant="outline"
+                  >
+                     <Pencil className="size-4" />
+                  </Button>
+                  <Button
+                     className="text-destructive hover:text-destructive"
+                     onClick={() => handleDelete(row.original)}
+                     tooltip="Excluir"
+                     variant="outline"
+                  >
+                     <Trash2 className="size-4" />
+                  </Button>
+               </>
+            )}
             renderMobileCard={({ row }) => (
                <div className="rounded-lg border bg-background p-4 space-y-2">
                   <p className="font-medium">{row.original.name}</p>

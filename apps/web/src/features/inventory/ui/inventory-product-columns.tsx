@@ -1,20 +1,5 @@
 import { Badge } from "@packages/ui/components/badge";
-import { Button } from "@packages/ui/components/button";
-import {
-   DropdownMenu,
-   DropdownMenuContent,
-   DropdownMenuItem,
-   DropdownMenuSeparator,
-   DropdownMenuTrigger,
-} from "@packages/ui/components/dropdown-menu";
 import type { ColumnDef } from "@tanstack/react-table";
-import {
-   Archive,
-   History,
-   MoreHorizontal,
-   PackagePlus,
-   Pencil,
-} from "lucide-react";
 
 export type InventoryProductRow = {
    id: string;
@@ -33,12 +18,7 @@ function StockBadge({ stock }: { stock: string }) {
    return <Badge variant={variant}>{value <= 0 ? "Sem estoque" : stock}</Badge>;
 }
 
-export function buildInventoryProductColumns(
-   onRegisterMovement: (product: InventoryProductRow) => void,
-   onViewHistory: (product: InventoryProductRow) => void,
-   onEdit: (product: InventoryProductRow) => void,
-   onArchive: (product: InventoryProductRow) => void,
-): ColumnDef<InventoryProductRow>[] {
+export function buildInventoryProductColumns(): ColumnDef<InventoryProductRow>[] {
    return [
       {
          accessorKey: "name",
@@ -74,47 +54,6 @@ export function buildInventoryProductColumns(
                </span>
             );
          },
-      },
-      {
-         id: "actions",
-         cell: ({ row }) => (
-            <div className="flex items-center gap-1">
-               <Button
-                  onClick={() => onRegisterMovement(row.original)}
-                  variant="outline"
-               >
-                  <PackagePlus className="size-3.5 mr-1" />
-                  Movimento
-               </Button>
-               <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                     <Button variant="outline">
-                        <MoreHorizontal className="size-4" />
-                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                     <DropdownMenuItem
-                        onClick={() => onViewHistory(row.original)}
-                     >
-                        <History className="size-4 mr-2" />
-                        Ver histórico
-                     </DropdownMenuItem>
-                     <DropdownMenuItem onClick={() => onEdit(row.original)}>
-                        <Pencil className="size-4 mr-2" />
-                        Editar
-                     </DropdownMenuItem>
-                     <DropdownMenuSeparator />
-                     <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={() => onArchive(row.original)}
-                     >
-                        <Archive className="size-4 mr-2" />
-                        Arquivar
-                     </DropdownMenuItem>
-                  </DropdownMenuContent>
-               </DropdownMenu>
-            </div>
-         ),
       },
    ];
 }

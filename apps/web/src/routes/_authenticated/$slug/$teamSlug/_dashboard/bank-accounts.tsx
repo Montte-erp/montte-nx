@@ -10,7 +10,14 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Landmark, LayoutGrid, LayoutList, Plus, Trash2 } from "lucide-react";
+import {
+   Landmark,
+   LayoutGrid,
+   LayoutList,
+   Pencil,
+   Plus,
+   Trash2,
+} from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
@@ -118,7 +125,7 @@ function BankAccountsList({ view }: BankAccountsListProps) {
       [openAlertDialog, deleteMutation],
    );
 
-   const columns = buildBankAccountColumns(handleEdit, handleDelete);
+   const columns = buildBankAccountColumns();
 
    if (accounts.length === 0) {
       return (
@@ -178,7 +185,26 @@ function BankAccountsList({ view }: BankAccountsListProps) {
          columns={columns}
          data={accounts}
          getRowId={(row) => row.id}
-         renderMobileCard={({ row, toggleExpanded, isExpanded, canExpand }) => (
+         renderActions={({ row }) => (
+            <>
+               <Button
+                  onClick={() => handleEdit(row.original)}
+                  tooltip="Editar"
+                  variant="outline"
+               >
+                  <Pencil className="size-4" />
+               </Button>
+               <Button
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => handleDelete(row.original)}
+                  tooltip="Excluir"
+                  variant="outline"
+               >
+                  <Trash2 className="size-4" />
+               </Button>
+            </>
+         )}
+         renderMobileCard={({ row }) => (
             <div className="rounded-lg border bg-background p-4 space-y-3">
                <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
@@ -196,24 +222,7 @@ function BankAccountsList({ view }: BankAccountsListProps) {
                   >
                      Editar
                   </Button>
-                  {canExpand && (
-                     <Button onClick={toggleExpanded} variant="ghost">
-                        {isExpanded ? "Ocultar" : "Mais"}
-                     </Button>
-                  )}
                </div>
-            </div>
-         )}
-         renderSubComponent={({ row }) => (
-            <div className="px-4 py-4 flex items-center gap-2 flex-wrap border-t">
-               <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(row.original)}
-                  variant="ghost"
-               >
-                  <Trash2 className="size-3 mr-2" />
-                  Excluir
-               </Button>
             </div>
          )}
       />

@@ -2,6 +2,12 @@ import type { BudgetGoalWithProgress } from "@packages/database/repositories/bud
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
+   DropdownMenu,
+   DropdownMenuContent,
+   DropdownMenuItem,
+   DropdownMenuTrigger,
+} from "@packages/ui/components/dropdown-menu";
+import {
    Empty,
    EmptyDescription,
    EmptyHeader,
@@ -18,8 +24,11 @@ import {
    LayoutGrid,
    LayoutList,
    Loader2,
+   MoreHorizontal,
+   Pencil,
    Plus,
    Target,
+   Trash2,
 } from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -252,10 +261,7 @@ function GoalsList({ month, year, view }: GoalsListProps) {
       [openAlertDialog, deleteMutation],
    );
 
-   const columns = useMemo(
-      () => buildBudgetGoalColumns(handleEdit, handleDelete),
-      [handleEdit, handleDelete],
-   );
+   const columns = useMemo(() => buildBudgetGoalColumns(), []);
 
    if (goals.length === 0) {
       return (
@@ -299,6 +305,29 @@ function GoalsList({ month, year, view }: GoalsListProps) {
             columns={columns}
             data={goals}
             getRowId={(row) => row.id}
+            renderActions={({ row }) => (
+               <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                     <Button variant="outline">
+                        <MoreHorizontal className="size-4" />
+                        <span className="sr-only">Ações</span>
+                     </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                     <DropdownMenuItem onClick={() => handleEdit(row.original)}>
+                        <Pencil className="size-4" />
+                        Editar
+                     </DropdownMenuItem>
+                     <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => handleDelete(row.original)}
+                     >
+                        <Trash2 className="size-4" />
+                        Excluir
+                     </DropdownMenuItem>
+                  </DropdownMenuContent>
+               </DropdownMenu>
+            )}
             renderMobileCard={({ row }) => (
                <BudgetGoalCard
                   goal={row.original}

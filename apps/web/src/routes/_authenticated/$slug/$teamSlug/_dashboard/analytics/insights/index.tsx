@@ -38,11 +38,11 @@ import {
 } from "@/features/billing/ui/early-access-banner";
 import { ContextPanelAction } from "@/features/context-panel/context-panel-info";
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
-import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import {
    useViewSwitch,
    type ViewConfig,
 } from "@/features/view-switch/hooks/use-view-switch";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
 
 const INSIGHT_VIEWS: [
@@ -362,41 +362,8 @@ function InsightsListPage() {
                </span>
             ),
          },
-         {
-            id: "actions",
-            header: "",
-            cell: ({ row }) => {
-               const insight = row.original;
-               return (
-                  <div className="flex items-center justify-end gap-1">
-                     <Button
-                        onClick={() =>
-                           navigate({
-                              to: "/$slug/$teamSlug/analytics/insights/$insightId",
-                              params: { slug, teamSlug, insightId: insight.id },
-                           })
-                        }
-                        tooltip="Editar"
-                        variant="outline"
-                     >
-                        <Pencil className="size-4" />
-                     </Button>
-                     <Button
-                        className="text-destructive hover:text-destructive"
-                        onClick={() =>
-                           handleDelete({ id: insight.id, name: insight.name })
-                        }
-                        tooltip="Excluir"
-                        variant="outline"
-                     >
-                        <Trash2 className="size-4" />
-                     </Button>
-                  </div>
-               );
-            },
-         },
       ],
-      [navigate, slug, teamSlug, handleDelete],
+      [],
    );
 
    return (
@@ -413,7 +380,11 @@ function InsightsListPage() {
                </Button>
             }
             description="Analise eventos, funis e retenção com consultas personalizadas."
-            panelViewSwitch={{ options: views, currentView, onViewChange: setView }}
+            panelViewSwitch={{
+               options: views,
+               currentView,
+               onViewChange: setView,
+            }}
             title="Insights"
          />
          <EarlyAccessBanner template={ANALYTICS_BANNER} />
@@ -430,7 +401,10 @@ function InsightsListPage() {
          {!isLoading && !error && insights?.length === 0 && (
             <EmptyState onCreateClick={handleCreate} />
          )}
-         {!isLoading && !error && insights && insights.length > 0 &&
+         {!isLoading &&
+            !error &&
+            insights &&
+            insights.length > 0 &&
             (currentView === "card" ? (
                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {insights.map((insight) => {
@@ -511,6 +485,42 @@ function InsightsListPage() {
                   columns={columns}
                   data={insights as InsightRow[]}
                   getRowId={(row) => row.id}
+                  renderActions={({ row }) => {
+                     const insight = row.original;
+                     return (
+                        <>
+                           <Button
+                              onClick={() =>
+                                 navigate({
+                                    to: "/$slug/$teamSlug/analytics/insights/$insightId",
+                                    params: {
+                                       slug,
+                                       teamSlug,
+                                       insightId: insight.id,
+                                    },
+                                 })
+                              }
+                              tooltip="Editar"
+                              variant="outline"
+                           >
+                              <Pencil className="size-4" />
+                           </Button>
+                           <Button
+                              className="text-destructive hover:text-destructive"
+                              onClick={() =>
+                                 handleDelete({
+                                    id: insight.id,
+                                    name: insight.name,
+                                 })
+                              }
+                              tooltip="Excluir"
+                              variant="outline"
+                           >
+                              <Trash2 className="size-4" />
+                           </Button>
+                        </>
+                     );
+                  }}
                   renderMobileCard={(props) => (
                      <InsightMobileCard
                         {...props}

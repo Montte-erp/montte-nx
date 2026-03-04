@@ -1,6 +1,13 @@
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
+   DropdownMenu,
+   DropdownMenuContent,
+   DropdownMenuItem,
+   DropdownMenuSeparator,
+   DropdownMenuTrigger,
+} from "@packages/ui/components/dropdown-menu";
+import {
    Empty,
    EmptyDescription,
    EmptyHeader,
@@ -16,7 +23,15 @@ import {
 } from "@packages/ui/components/tabs";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { FileText, Plus, Trash2, XCircle } from "lucide-react";
+import {
+   Check,
+   FileText,
+   MoreHorizontal,
+   Pencil,
+   Plus,
+   Trash2,
+   XCircle,
+} from "lucide-react";
 import { Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
@@ -24,6 +39,7 @@ import { BillPayCredenza } from "@/features/bills/ui/bill-pay-credenza";
 import {
    type BillRow,
    buildBillsColumns,
+   computeDisplayStatus,
 } from "@/features/bills/ui/bills-columns";
 import { BillForm } from "@/features/bills/ui/bills-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -152,17 +168,6 @@ function BillsList({ type }: BillsListProps) {
       }),
    );
 
-   const unpayMutation = useMutation(
-      orpc.bills.unpay.mutationOptions({
-         onSuccess: () => {
-            toast.success("Pagamento revertido com sucesso.");
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao reverter pagamento.");
-         },
-      }),
-   );
-
    const handlePay = useCallback(
       (bill: BillRow) => {
          openCredenza({
@@ -215,12 +220,7 @@ function BillsList({ type }: BillsListProps) {
       [openAlertDialog, deleteMutation],
    );
 
-   const columns = buildBillsColumns(
-      handlePay,
-      handleEdit,
-      handleCancel,
-      handleDelete,
-   );
+   const columns = buildBillsColumns();
 
    if (items.length === 0) {
       return (
@@ -247,12 +247,66 @@ function BillsList({ type }: BillsListProps) {
             columns={columns}
             data={items}
             getRowId={(row) => row.id}
-            renderMobileCard={({
-               row,
-               toggleExpanded,
-               isExpanded,
-               canExpand,
-            }) => (
+            renderActions={({ row }) => {
+               const bill = row.original;
+               const displayStatus = computeDisplayStatus(bill);
+               const isPaid = displayStatus === "paid";
+               const isCancelled = displayStatus === "cancelled";
+               const payLabel = bill.type === "payable" ? "Pagar" : "Receber";
+               return (
+                  <>
+                     {!isPaid && !isCancelled && (
+                        <Button
+                           className="gap-1.5"
+                           onClick={() => handlePay(bill)}
+                           variant="default"
+                        >
+                           <Check className="size-3.5" />
+                           {payLabel}
+                        </Button>
+                     )}
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                           <Button variant="outline">
+                              <MoreHorizontal className="size-4" />
+                              <span className="sr-only">Ações</span>
+                           </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                           {!isPaid && !isCancelled && (
+                              <DropdownMenuItem
+                                 onClick={() => handleEdit(bill)}
+                              >
+                                 <Pencil className="size-3.5" />
+                                 Editar
+                              </DropdownMenuItem>
+                           )}
+                           {!isPaid && !isCancelled && (
+                              <DropdownMenuItem
+                                 onClick={() => handleCancel(bill)}
+                              >
+                                 <XCircle className="size-3.5" />
+                                 Cancelar
+                              </DropdownMenuItem>
+                           )}
+                           {!isPaid && (
+                              <>
+                                 <DropdownMenuSeparator />
+                                 <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={() => handleDelete(bill)}
+                                 >
+                                    <Trash2 className="size-3.5" />
+                                    Excluir
+                                 </DropdownMenuItem>
+                              </>
+                           )}
+                        </DropdownMenuContent>
+                     </DropdownMenu>
+                  </>
+               );
+            }}
+            renderMobileCard={({ row }) => (
                <div className="rounded-lg border bg-background p-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                      <div className="min-w-0">
@@ -283,45 +337,9 @@ function BillsList({ type }: BillsListProps) {
                      >
                         Editar
                      </Button>
-                     {canExpand && (
-                        <Button
-                           onClick={toggleExpanded}
-                           variant="ghost"
-                        >
-                           {isExpanded ? "Ocultar" : "Mais"}
-                        </Button>
-                     )}
                   </div>
                </div>
             )}
-            renderSubComponent={({ row }) => {
-               const bill = row.original;
-               const isPaid = bill.status === "paid";
-               return (
-                  <div className="px-4 py-4 flex items-center gap-2 flex-wrap border-t">
-                     {isPaid && (
-                        <Button
-                           className="text-muted-foreground hover:text-foreground"
-                           onClick={() => unpayMutation.mutate({ id: bill.id })}
-                           variant="ghost"
-                        >
-                           <XCircle className="size-3 mr-2" />
-                           Marcar como não pago
-                        </Button>
-                     )}
-                     {!isPaid && (
-                        <Button
-                           className="text-destructive hover:text-destructive"
-                           onClick={() => handleDelete(bill)}
-                           variant="ghost"
-                        >
-                           <Trash2 className="size-3 mr-2" />
-                           Excluir
-                        </Button>
-                     )}
-                  </div>
-               );
-            }}
          />
       </div>
    );

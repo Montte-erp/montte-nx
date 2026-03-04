@@ -1,21 +1,6 @@
 import { format, of } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
-import { Button } from "@packages/ui/components/button";
-import {
-   DropdownMenu,
-   DropdownMenuContent,
-   DropdownMenuItem,
-   DropdownMenuSeparator,
-   DropdownMenuTrigger,
-} from "@packages/ui/components/dropdown-menu";
 import type { ColumnDef } from "@tanstack/react-table";
-import {
-   CalendarDays,
-   MoreHorizontal,
-   Pencil,
-   Repeat,
-   Trash2,
-} from "lucide-react";
 
 export type TransactionRow = {
    id: string;
@@ -51,13 +36,7 @@ function formatDate(dateStr: string): string {
    return `${day}/${month}/${year}`;
 }
 
-export function buildTransactionColumns(
-   onEdit: (transaction: TransactionRow) => void,
-   onDelete: (transaction: TransactionRow) => void,
-   onInstallment?: (transaction: TransactionRow) => void,
-   onRecurring?: (transaction: TransactionRow) => void,
-   onUnpay?: (transaction: TransactionRow) => void,
-): ColumnDef<TransactionRow>[] {
+export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
    return [
       {
          accessorKey: "date",
@@ -147,75 +126,6 @@ export function buildTransactionColumns(
                <span className="text-sm font-medium text-muted-foreground">
                   {formatBRL(amount)}
                </span>
-            );
-         },
-      },
-      {
-         id: "actions",
-         header: "",
-         cell: ({ row }) => {
-            const tx = row.original;
-            const isTransfer = tx.type === "transfer";
-            return (
-               // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation wrapper for table row click
-               <div
-                  className="flex items-center justify-end gap-1"
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => e.stopPropagation()}
-               >
-                  <Button
-                     onClick={() => onEdit(tx)}
-                     tooltip="Editar"
-                     variant="outline"
-                  >
-                     <Pencil className="size-4" />
-                  </Button>
-                  <Button
-                     className="text-destructive hover:text-destructive"
-                     onClick={() => onDelete(tx)}
-                     tooltip="Excluir"
-                     variant="outline"
-                  >
-                     <Trash2 className="size-4" />
-                  </Button>
-                  {!isTransfer &&
-                     (onInstallment ||
-                        onRecurring ||
-                        (onUnpay && tx.billId)) && (
-                        <DropdownMenu>
-                           <DropdownMenuTrigger asChild>
-                              <Button variant="outline">
-                                 <MoreHorizontal className="size-4" />
-                                 <span className="sr-only">Mais ações</span>
-                              </Button>
-                           </DropdownMenuTrigger>
-                           <DropdownMenuContent align="end">
-                              <DropdownMenuSeparator />
-                              {onInstallment && (
-                                 <DropdownMenuItem
-                                    onClick={() => onInstallment(tx)}
-                                 >
-                                    <CalendarDays className="size-4 mr-2" />
-                                    Parcelar Transação
-                                 </DropdownMenuItem>
-                              )}
-                              {onRecurring && (
-                                 <DropdownMenuItem
-                                    onClick={() => onRecurring(tx)}
-                                 >
-                                    <Repeat className="size-4 mr-2" />
-                                    Criar Transação Recorrente
-                                 </DropdownMenuItem>
-                              )}
-                              {onUnpay && tx.billId && (
-                                 <DropdownMenuItem onClick={() => onUnpay(tx)}>
-                                    Marcar como Não Pago
-                                 </DropdownMenuItem>
-                              )}
-                           </DropdownMenuContent>
-                        </DropdownMenu>
-                     )}
-               </div>
             );
          },
       },

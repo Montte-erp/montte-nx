@@ -1,6 +1,5 @@
 import { format, of } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
-import { Button } from "@packages/ui/components/button";
 import {
    Tooltip,
    TooltipContent,
@@ -8,7 +7,7 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Info, Pencil, Trash2 } from "lucide-react";
+import { Info } from "lucide-react";
 
 export type BankAccountRow = {
    id: string;
@@ -35,10 +34,7 @@ function formatBRL(value: string | number): string {
    return format(of(String(value), "BRL"), "pt-BR");
 }
 
-export function buildBankAccountColumns(
-   onEdit: (account: BankAccountRow) => void,
-   onDelete: (account: BankAccountRow) => void,
-): ColumnDef<BankAccountRow>[] {
+export function buildBankAccountColumns(): ColumnDef<BankAccountRow>[] {
    return [
       {
          accessorKey: "name",
@@ -117,34 +113,6 @@ export function buildBankAccountColumns(
                </span>
             );
          },
-      },
-      {
-         id: "actions",
-         header: "",
-         cell: ({ row }) => (
-            // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation wrapper for table row click
-            <div
-               className="flex items-center justify-end gap-1"
-               onClick={(e) => e.stopPropagation()}
-               onKeyDown={(e) => e.stopPropagation()}
-            >
-               <Button
-                  onClick={() => onEdit(row.original)}
-                  tooltip="Editar"
-                  variant="outline"
-               >
-                  <Pencil className="size-4" />
-               </Button>
-               <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => onDelete(row.original)}
-                  tooltip="Excluir"
-                  variant="outline"
-               >
-                  <Trash2 className="size-4" />
-               </Button>
-            </div>
-         ),
       },
    ];
 }

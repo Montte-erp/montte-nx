@@ -15,7 +15,14 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { CreditCard, LayoutGrid, LayoutList, Plus, Trash2 } from "lucide-react";
+import {
+   CreditCard,
+   LayoutGrid,
+   LayoutList,
+   Pencil,
+   Plus,
+   Trash2,
+} from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
@@ -144,7 +151,7 @@ function CreditCardsList({ view }: CreditCardsListProps) {
       });
    }, [openAlertDialog, selectedCount, selectedIds, deleteMutation, onClear]);
 
-   const columns = buildCreditCardColumns(handleEdit, handleDelete);
+   const columns = buildCreditCardColumns();
 
    if (cards.length === 0) {
       return (
@@ -181,10 +188,7 @@ function CreditCardsList({ view }: CreditCardsListProps) {
                      Fecha dia {card.closingDay} · Vence dia {card.dueDay}
                   </p>
                   <div className="flex items-center gap-2">
-                     <Button
-                        onClick={() => handleEdit(card)}
-                        variant="outline"
-                     >
+                     <Button onClick={() => handleEdit(card)} variant="outline">
                         Editar
                      </Button>
                      <Button
@@ -209,6 +213,25 @@ function CreditCardsList({ view }: CreditCardsListProps) {
             enableRowSelection
             getRowId={(row) => row.id}
             onRowSelectionChange={onRowSelectionChange}
+            renderActions={({ row }) => (
+               <>
+                  <Button
+                     onClick={() => handleEdit(row.original)}
+                     tooltip="Editar"
+                     variant="outline"
+                  >
+                     <Pencil className="size-4" />
+                  </Button>
+                  <Button
+                     className="text-destructive hover:text-destructive"
+                     onClick={() => handleDelete(row.original)}
+                     tooltip="Excluir"
+                     variant="outline"
+                  >
+                     <Trash2 className="size-4" />
+                  </Button>
+               </>
+            )}
             renderMobileCard={({ row }) => (
                <div className="rounded-lg border bg-background p-4 space-y-3">
                   <div className="flex items-center gap-2 min-w-0">

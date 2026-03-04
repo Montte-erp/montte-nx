@@ -1,8 +1,7 @@
 import { format, of } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
-import { Button } from "@packages/ui/components/button";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CreditCard, Pencil, Trash2 } from "lucide-react";
+import { CreditCard } from "lucide-react";
 
 export type CreditCardRow = {
    id: string;
@@ -22,10 +21,7 @@ function formatBRL(value: string | number): string {
    return format(of(String(value), "BRL"), "pt-BR");
 }
 
-export function buildCreditCardColumns(
-   onEdit: (card: CreditCardRow) => void,
-   onDelete: (card: CreditCardRow) => void,
-): ColumnDef<CreditCardRow>[] {
+export function buildCreditCardColumns(): ColumnDef<CreditCardRow>[] {
    return [
       {
          accessorKey: "name",
@@ -64,34 +60,6 @@ export function buildCreditCardColumns(
          header: "Vencimento",
          cell: ({ row }) => (
             <Badge variant="outline">Dia {row.original.dueDay}</Badge>
-         ),
-      },
-      {
-         id: "actions",
-         header: "",
-         cell: ({ row }) => (
-            // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation wrapper for table row click
-            <div
-               className="flex items-center justify-end gap-1"
-               onClick={(e) => e.stopPropagation()}
-               onKeyDown={(e) => e.stopPropagation()}
-            >
-               <Button
-                  onClick={() => onEdit(row.original)}
-                  tooltip="Editar"
-                  variant="outline"
-               >
-                  <Pencil className="size-4" />
-               </Button>
-               <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => onDelete(row.original)}
-                  tooltip="Excluir"
-                  variant="outline"
-               >
-                  <Trash2 className="size-4" />
-               </Button>
-            </div>
          ),
       },
    ];

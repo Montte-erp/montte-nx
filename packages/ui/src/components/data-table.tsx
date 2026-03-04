@@ -3,27 +3,32 @@
 import {
    type ColumnDef,
    type ColumnFiltersState,
-   type ExpandedState,
    flexRender,
    getCoreRowModel,
-   getExpandedRowModel,
    getFilteredRowModel,
    getSortedRowModel,
    type Row,
    type RowSelectionState,
    type SortingState,
+   type Table as TanStackTable,
    useReactTable,
    type VisibilityState,
 } from "@tanstack/react-table";
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronRight } from "lucide-react";
-import { Fragment, useEffect, useState } from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Settings2 } from "lucide-react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { useIsMobile } from "../hooks/use-mobile";
 import { cn } from "../lib/utils";
 import { Button } from "./button";
-import { Card } from "./card";
 import { Checkbox } from "./checkbox";
-import { Collapsible, CollapsibleContent } from "./collapsible";
+import {
+   DropdownMenu,
+   DropdownMenuCheckboxItem,
+   DropdownMenuContent,
+   DropdownMenuLabel,
+   DropdownMenuSeparator,
+   DropdownMenuTrigger,
+} from "./dropdown-menu";
 import {
    Pagination,
    PaginationContent,
@@ -48,6 +53,10 @@ import {
    TableRow,
 } from "./table";
 
+// =============================================================================
+// Types
+// =============================================================================
+
 interface DataTablePaginationProps {
    currentPage: number;
    totalPages: number;
@@ -60,29 +69,112 @@ interface DataTablePaginationProps {
 
 export type MobileCardRenderProps<TData> = {
    row: Row<TData>;
-   isExpanded: boolean;
-   toggleExpanded: () => void;
    isSelected?: boolean;
    toggleSelected?: () => void;
    enableRowSelection?: boolean;
-   canExpand?: boolean;
 };
 
 interface DataTableProps<TData, TValue> {
    columns: ColumnDef<TData, TValue>[];
    data: TData[];
    pagination?: DataTablePaginationProps;
-   renderSubComponent?: (props: { row: Row<TData> }) => React.ReactNode;
    renderMobileCard?: (props: MobileCardRenderProps<TData>) => React.ReactNode;
    enableRowSelection?: boolean;
    rowSelection?: RowSelectionState;
    onRowSelectionChange?: (selection: RowSelectionState) => void;
    getRowId?: (row: TData) => string;
-   initialExpanded?: ExpandedState;
-   getRowCanExpand?: (row: Row<TData>) => boolean;
+   /** When provided, enables column visibility toggle persisted in localStorage under this key. */
+   columnVisibilityKey?: string;
+   /** Render row actions in the last column. The header shows the column visibility config icon. */
+   renderActions?: (props: { row: Row<TData> }) => React.ReactNode;
 }
 
+// =============================================================================
+// Helpers
+// =============================================================================
+
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
+
+function readVisibilityFromStorage(key: string | undefined): VisibilityState {
+   if (!key) return {};
+   try {
+      const stored = localStorage.getItem(`dt-col-vis:${key}`);
+      return stored ? JSON.parse(stored) : {};
+   } catch {
+      return {};
+   }
+}
+
+function writeVisibilityToStorage(
+   key: string | undefined,
+   state: VisibilityState,
+) {
+   if (!key) return;
+   try {
+      localStorage.setItem(`dt-col-vis:${key}`, JSON.stringify(state));
+   } catch {
+      // ignore quota errors
+   }
+}
+
+function getPageNumbers(currentPage: number, totalPages: number): number[] {
+   if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+   }
+   if (currentPage <= 3) {
+      return [1, 2, 3, 4, 5];
+   }
+   if (currentPage >= totalPages - 2) {
+      return Array.from({ length: 5 }, (_, i) => totalPages - 4 + i);
+   }
+   return Array.from({ length: 5 }, (_, i) => currentPage - 2 + i);
+}
+
+// =============================================================================
+// Column Visibility Toggle
+// =============================================================================
+
+function ColumnVisibilityToggle<TData>({
+   table,
+}: {
+   table: TanStackTable<TData>;
+}) {
+   const toggleableColumns = table
+      .getAllColumns()
+      .filter((col) => col.getCanHide() && col.id !== "actions");
+
+   if (toggleableColumns.length === 0) return null;
+
+   return (
+      <DropdownMenu>
+         <DropdownMenuTrigger asChild>
+            <Button tooltip="Configurar colunas" variant="outline">
+               <Settings2 className="size-4" />
+            </Button>
+         </DropdownMenuTrigger>
+         <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Colunas visíveis</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {toggleableColumns.map((column) => (
+               <DropdownMenuCheckboxItem
+                  checked={column.getIsVisible()}
+                  key={column.id}
+                  onCheckedChange={(value) => column.toggleVisibility(value)}
+                  onSelect={(e) => e.preventDefault()}
+               >
+                  {typeof column.columnDef.header === "string"
+                     ? column.columnDef.header
+                     : column.id}
+               </DropdownMenuCheckboxItem>
+            ))}
+         </DropdownMenuContent>
+      </DropdownMenu>
+   );
+}
+
+// =============================================================================
+// Pagination
+// =============================================================================
 
 function DataTablePagination({
    currentPage,
@@ -96,19 +188,10 @@ function DataTablePagination({
    const isFirstPage = currentPage === 1;
    const isLastPage = currentPage === totalPages || totalPages === 0;
    const hasSinglePage = totalPages <= 1;
-
-   const getPageNumbers = () => {
-      if (totalPages <= 5) {
-         return Array.from({ length: totalPages }, (_, i) => i + 1);
-      }
-      if (currentPage <= 3) {
-         return [1, 2, 3, 4, 5];
-      }
-      if (currentPage >= totalPages - 2) {
-         return Array.from({ length: 5 }, (_, i) => totalPages - 4 + i);
-      }
-      return Array.from({ length: 5 }, (_, i) => currentPage - 2 + i);
-   };
+   const pageNumbers = useMemo(
+      () => getPageNumbers(currentPage, totalPages),
+      [currentPage, totalPages],
+   );
 
    return (
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
@@ -162,7 +245,7 @@ function DataTablePagination({
                      />
                   </PaginationItem>
 
-                  {getPageNumbers().map((pageNum) => (
+                  {pageNumbers.map((pageNum) => (
                      <PaginationItem key={pageNum}>
                         <PaginationLink
                            aria-disabled={hasSinglePage}
@@ -206,118 +289,126 @@ function DataTablePagination({
    );
 }
 
+// =============================================================================
+// DataTable
+// =============================================================================
+
 export function DataTable<TData, TValue>({
    columns,
    data,
    pagination,
-   renderSubComponent,
    renderMobileCard,
    enableRowSelection = false,
    rowSelection: controlledRowSelection,
    onRowSelectionChange,
    getRowId,
-   initialExpanded,
-   getRowCanExpand,
+   columnVisibilityKey,
+   renderActions,
 }: DataTableProps<TData, TValue>) {
    const isMobile = useIsMobile();
    const [sorting, setSorting] = useState<SortingState>([]);
    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
-      {},
+      () => readVisibilityFromStorage(columnVisibilityKey),
    );
    const [internalRowSelection, setInternalRowSelection] =
       useState<RowSelectionState>({});
-   const [expanded, setExpanded] = useState<ExpandedState>(
-      initialExpanded ?? {},
-   );
 
    const isControlled = controlledRowSelection !== undefined;
    const rowSelection = isControlled
       ? controlledRowSelection
       : internalRowSelection;
 
-   const handleRowSelectionChange = (
-      updaterOrValue:
-         | RowSelectionState
-         | ((old: RowSelectionState) => RowSelectionState),
-   ) => {
-      const newValue =
-         typeof updaterOrValue === "function"
-            ? updaterOrValue(rowSelection)
-            : updaterOrValue;
+   const onRowSelectionChangeRef = useRef(onRowSelectionChange);
+   onRowSelectionChangeRef.current = onRowSelectionChange;
 
-      if (isControlled && onRowSelectionChange) {
-         onRowSelectionChange(newValue);
-      } else {
-         setInternalRowSelection(newValue);
-      }
-   };
+   const handleRowSelectionChange = useCallback(
+      (
+         updaterOrValue:
+            | RowSelectionState
+            | ((old: RowSelectionState) => RowSelectionState),
+      ) => {
+         if (isControlled) {
+            const resolve = (prev: RowSelectionState) =>
+               typeof updaterOrValue === "function"
+                  ? updaterOrValue(prev)
+                  : updaterOrValue;
+            onRowSelectionChangeRef.current?.(resolve(controlledRowSelection));
+         } else {
+            setInternalRowSelection((prev) => {
+               const next =
+                  typeof updaterOrValue === "function"
+                     ? updaterOrValue(prev)
+                     : updaterOrValue;
+               onRowSelectionChangeRef.current?.(next);
+               return next;
+            });
+         }
+      },
+      [isControlled, controlledRowSelection],
+   );
 
-   useEffect(() => {
-      if (!isControlled && onRowSelectionChange) {
-         onRowSelectionChange(internalRowSelection);
-      }
-   }, [internalRowSelection, isControlled, onRowSelectionChange]);
+   const handleColumnVisibilityChange = useCallback(
+      (
+         updaterOrValue:
+            | VisibilityState
+            | ((old: VisibilityState) => VisibilityState),
+      ) => {
+         setColumnVisibility((prev) => {
+            const next =
+               typeof updaterOrValue === "function"
+                  ? updaterOrValue(prev)
+                  : updaterOrValue;
+            writeVisibilityToStorage(columnVisibilityKey, next);
+            return next;
+         });
+      },
+      [columnVisibilityKey],
+   );
+
+   const hasActionsColumn = !!renderActions || !!columnVisibilityKey;
 
    const table = useReactTable({
       columns,
       data,
       enableRowSelection,
       getCoreRowModel: getCoreRowModel(),
-      getExpandedRowModel: getExpandedRowModel(),
       getFilteredRowModel: getFilteredRowModel(),
-      getRowCanExpand: getRowCanExpand ?? (() => !!renderSubComponent),
       getRowId: getRowId
          ? (originalRow) => getRowId(originalRow)
          : (_row, index) => String(index),
       getSortedRowModel: getSortedRowModel(),
       onColumnFiltersChange: setColumnFilters,
-      onColumnVisibilityChange: setColumnVisibility,
-      onExpandedChange: setExpanded,
+      onColumnVisibilityChange: handleColumnVisibilityChange,
       onRowSelectionChange: handleRowSelectionChange,
       onSortingChange: setSorting,
       state: {
          columnFilters,
          columnVisibility,
-         expanded,
          rowSelection,
          sorting,
       },
    });
 
-   const hasSelectColumn = enableRowSelection;
    const columnCount =
-      columns.length + (renderSubComponent ? 1 : 0) + (hasSelectColumn ? 1 : 0);
+      columns.length +
+      (enableRowSelection ? 1 : 0) +
+      (hasActionsColumn ? 1 : 0);
 
+   // --- Mobile layout ---
    if (isMobile && renderMobileCard) {
       return (
          <div className="space-y-3">
             {table.getRowModel().rows?.length ? (
                table.getRowModel().rows.map((row) => (
-                  <Collapsible
-                     key={row.id}
-                     onOpenChange={(open) => {
-                        row.toggleExpanded(open);
-                     }}
-                     open={row.getIsExpanded()}
-                  >
+                  <div key={row.id}>
                      {renderMobileCard({
-                        canExpand: !!renderSubComponent,
                         enableRowSelection,
-                        isExpanded: row.getIsExpanded(),
                         isSelected: row.getIsSelected(),
                         row,
-                        toggleExpanded: () => row.toggleExpanded(),
                         toggleSelected: () => row.toggleSelected(),
                      })}
-                     {renderSubComponent && (
-                        <CollapsibleContent>
-                           <Card className="rounded-t-none border-t-0">
-                              {renderSubComponent({ row })}
-                           </Card>
-                        </CollapsibleContent>
-                     )}
-                  </Collapsible>
+                  </div>
                ))
             ) : (
                <div className="py-8 text-center text-muted-foreground">
@@ -329,6 +420,7 @@ export function DataTable<TData, TValue>({
       );
    }
 
+   // --- Desktop layout ---
    return (
       <div>
          <div className="rounded-md border">
@@ -336,7 +428,7 @@ export function DataTable<TData, TValue>({
                <TableHeader>
                   {table.getHeaderGroups().map((headerGroup) => (
                      <TableRow key={headerGroup.id}>
-                        {hasSelectColumn && (
+                        {enableRowSelection && (
                            <TableHead className="w-[40px] px-2">
                               <Checkbox
                                  aria-label="Select all"
@@ -351,111 +443,90 @@ export function DataTable<TData, TValue>({
                               />
                            </TableHead>
                         )}
-                        {renderSubComponent && (
-                           <TableHead className="w-[40px]" />
-                        )}
-                        {headerGroup.headers.map((header) => {
-                           return (
-                              <TableHead key={header.id}>
-                                 {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                                    <Button
-                                       className="-ml-3 h-8"
-                                       onClick={header.column.getToggleSortingHandler()}
-                                       variant="ghost"
-                                    >
-                                       {flexRender(
-                                          header.column.columnDef.header,
-                                          header.getContext(),
-                                       )}
-                                       {header.column.getIsSorted() ===
-                                       "asc" ? (
-                                          <ArrowUp className="ml-2 size-4" />
-                                       ) : header.column.getIsSorted() ===
-                                         "desc" ? (
-                                          <ArrowDown className="ml-2 size-4" />
-                                       ) : (
-                                          <ArrowUpDown className="ml-2 size-4" />
-                                       )}
-                                    </Button>
-                                 ) : (
-                                    flexRender(
+                        {headerGroup.headers.map((header) => (
+                           <TableHead key={header.id}>
+                              {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                                 <Button
+                                    className="h-8 gap-2"
+                                    onClick={header.column.getToggleSortingHandler()}
+                                    variant="ghost"
+                                 >
+                                    {flexRender(
                                        header.column.columnDef.header,
                                        header.getContext(),
-                                    )
+                                    )}
+                                    {header.column.getIsSorted() === "asc" ? (
+                                       <ArrowUp className="size-4" />
+                                    ) : header.column.getIsSorted() ===
+                                      "desc" ? (
+                                       <ArrowDown className="size-4" />
+                                    ) : (
+                                       <ArrowUpDown className="size-4" />
+                                    )}
+                                 </Button>
+                              ) : (
+                                 flexRender(
+                                    header.column.columnDef.header,
+                                    header.getContext(),
+                                 )
+                              )}
+                           </TableHead>
+                        ))}
+                        {hasActionsColumn && (
+                           <TableHead className="w-full">
+                              <div className="flex items-center justify-end">
+                                 {columnVisibilityKey && (
+                                    <ColumnVisibilityToggle table={table} />
                                  )}
-                              </TableHead>
-                           );
-                        })}
+                              </div>
+                           </TableHead>
+                        )}
                      </TableRow>
                   ))}
                </TableHeader>
                <TableBody>
                   {table.getRowModel().rows?.length ? (
                      table.getRowModel().rows.map((row) => (
-                        <Fragment key={row.id}>
-                           <TableRow
-                              className={cn(
-                                 renderSubComponent && "cursor-pointer",
-                                 row.getIsExpanded() && "bg-muted/50",
-                                 row.getIsSelected() && "bg-muted/50",
-                              )}
-                              data-state={row.getIsSelected() && "selected"}
-                              onClick={
-                                 renderSubComponent
-                                    ? () => row.toggleExpanded()
-                                    : undefined
-                              }
-                           >
-                              {hasSelectColumn && (
-                                 <TableCell className="w-[40px] px-2">
-                                    <Checkbox
-                                       aria-label="Select row"
-                                       checked={row.getIsSelected()}
-                                       onCheckedChange={(value) =>
-                                          row.toggleSelected(!!value)
-                                       }
-                                       onClick={(e) => e.stopPropagation()}
-                                    />
-                                 </TableCell>
-                              )}
-                              {renderSubComponent && (
-                                 <TableCell className="w-[40px] px-2">
-                                    <ChevronRight
-                                       className={cn(
-                                          "size-4 transition-transform duration-200",
-                                          row.getIsExpanded() && "rotate-90",
-                                       )}
-                                    />
-                                 </TableCell>
-                              )}
-                              {row.getVisibleCells().map((cell) => (
-                                 <TableCell
-                                    className="truncate"
-                                    key={cell.id}
-                                    style={{
-                                       maxWidth: cell.column.columnDef.maxSize,
-                                    }}
-                                 >
-                                    {flexRender(
-                                       cell.column.columnDef.cell,
-                                       cell.getContext(),
-                                    )}
-                                 </TableCell>
-                              ))}
-                           </TableRow>
-                           {row.getIsExpanded() && renderSubComponent && (
-                              <TableRow className="hover:bg-transparent">
-                                 <TableCell
-                                    className="p-0"
-                                    colSpan={columnCount}
-                                 >
-                                    <div className="border-t bg-muted/30">
-                                       {renderSubComponent({ row })}
-                                    </div>
-                                 </TableCell>
-                              </TableRow>
+                        <TableRow
+                           className={cn(row.getIsSelected() && "bg-muted/50")}
+                           data-state={row.getIsSelected() && "selected"}
+                           key={row.id}
+                        >
+                           {enableRowSelection && (
+                              <TableCell className="w-[40px] px-2">
+                                 <Checkbox
+                                    aria-label="Select row"
+                                    checked={row.getIsSelected()}
+                                    onCheckedChange={(value) =>
+                                       row.toggleSelected(!!value)
+                                    }
+                                 />
+                              </TableCell>
                            )}
-                        </Fragment>
+                           {row.getVisibleCells().map((cell) => (
+                              <TableCell
+                                 className="truncate"
+                                 key={cell.id}
+                                 style={{
+                                    maxWidth: cell.column.columnDef.maxSize,
+                                 }}
+                              >
+                                 {flexRender(
+                                    cell.column.columnDef.cell,
+                                    cell.getContext(),
+                                 )}
+                              </TableCell>
+                           ))}
+                           {hasActionsColumn && (
+                              <TableCell>
+                                 {renderActions && (
+                                    <div className="flex items-center justify-end gap-1">
+                                       {renderActions({ row })}
+                                    </div>
+                                 )}
+                              </TableCell>
+                           )}
+                        </TableRow>
                      ))
                   ) : (
                      <TableRow>

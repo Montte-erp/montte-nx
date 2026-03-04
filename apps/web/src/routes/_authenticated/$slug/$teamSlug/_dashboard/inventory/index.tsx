@@ -1,6 +1,13 @@
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
+   DropdownMenu,
+   DropdownMenuContent,
+   DropdownMenuItem,
+   DropdownMenuSeparator,
+   DropdownMenuTrigger,
+} from "@packages/ui/components/dropdown-menu";
+import {
    Empty,
    EmptyDescription,
    EmptyHeader,
@@ -10,10 +17,24 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { LayoutGrid, LayoutList, Package, Plus } from "lucide-react";
+import {
+   Archive,
+   History,
+   LayoutGrid,
+   LayoutList,
+   MoreHorizontal,
+   Package,
+   PackagePlus,
+   Pencil,
+   Plus,
+} from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
+import {
+   EarlyAccessBanner,
+   type EarlyAccessBannerTemplate,
+} from "@/features/billing/ui/early-access-banner";
 import { InventoryHistorySheet } from "@/features/inventory/ui/inventory-history-sheet";
 import { InventoryMovementCredenza } from "@/features/inventory/ui/inventory-movement-credenza";
 import { InventoryProductCard } from "@/features/inventory/ui/inventory-product-card";
@@ -26,10 +47,6 @@ import {
    useViewSwitch,
    type ViewConfig,
 } from "@/features/view-switch/hooks/use-view-switch";
-import {
-   EarlyAccessBanner,
-   type EarlyAccessBannerTemplate,
-} from "@/features/billing/ui/early-access-banner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -187,15 +204,51 @@ function InventoryList({ view }: { view: "table" | "card" }) {
       );
    }
 
-   const columns = buildInventoryProductColumns(
-      handleMovement,
-      handleHistory,
-      handleEdit,
-      handleArchive,
-   );
+   const columns = buildInventoryProductColumns();
 
    return (
-      <DataTable columns={columns} data={products as InventoryProductRow[]} />
+      <DataTable
+         columns={columns}
+         data={products as InventoryProductRow[]}
+         renderActions={({ row }) => (
+            <>
+               <Button
+                  onClick={() => handleMovement(row.original)}
+                  variant="outline"
+               >
+                  <PackagePlus className="size-3.5 mr-1" />
+                  Movimento
+               </Button>
+               <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                     <Button variant="outline">
+                        <MoreHorizontal className="size-4" />
+                     </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                     <DropdownMenuItem
+                        onClick={() => handleHistory(row.original)}
+                     >
+                        <History className="size-4" />
+                        Ver histórico
+                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => handleEdit(row.original)}>
+                        <Pencil className="size-4" />
+                        Editar
+                     </DropdownMenuItem>
+                     <DropdownMenuSeparator />
+                     <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={() => handleArchive(row.original)}
+                     >
+                        <Archive className="size-4" />
+                        Arquivar
+                     </DropdownMenuItem>
+                  </DropdownMenuContent>
+               </DropdownMenu>
+            </>
+         )}
+      />
    );
 }
 

@@ -1,23 +1,7 @@
 import { format, of } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
-import { Button } from "@packages/ui/components/button";
-import {
-   DropdownMenu,
-   DropdownMenuContent,
-   DropdownMenuItem,
-   DropdownMenuSeparator,
-   DropdownMenuTrigger,
-} from "@packages/ui/components/dropdown-menu";
 import type { ColumnDef } from "@tanstack/react-table";
-import {
-   AlertCircle,
-   Check,
-   Clock,
-   MoreHorizontal,
-   Pencil,
-   Trash2,
-   XCircle,
-} from "lucide-react";
+import { AlertCircle, Check, Clock, XCircle } from "lucide-react";
 
 export type BillRow = {
    id: string;
@@ -68,12 +52,7 @@ const STATUS_CONFIG = {
    },
 };
 
-export function buildBillsColumns(
-   onPay: (bill: BillRow) => void,
-   onEdit: (bill: BillRow) => void,
-   onCancel: (bill: BillRow) => void,
-   onDelete: (bill: BillRow) => void,
-): ColumnDef<BillRow>[] {
+export function buildBillsColumns(): ColumnDef<BillRow>[] {
    return [
       {
          accessorKey: "name",
@@ -149,71 +128,6 @@ export function buildBillsColumns(
                   <Icon className="size-3" />
                   {config.label}
                </Badge>
-            );
-         },
-      },
-      {
-         id: "actions",
-         header: "",
-         cell: ({ row }) => {
-            const bill = row.original;
-            const displayStatus = computeDisplayStatus(bill);
-            const isPaid = displayStatus === "paid";
-            const isCancelled = displayStatus === "cancelled";
-            const payLabel = bill.type === "payable" ? "Pagar" : "Receber";
-
-            return (
-               // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation wrapper
-               <div
-                  className="flex items-center justify-end gap-1"
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => e.stopPropagation()}
-               >
-                  {!isPaid && !isCancelled && (
-                     <Button
-                        className="gap-1.5"
-                        onClick={() => onPay(bill)}
-                        variant="default"
-                     >
-                        <Check className="size-3.5" />
-                        {payLabel}
-                     </Button>
-                  )}
-                  <DropdownMenu>
-                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline">
-                           <MoreHorizontal className="size-4" />
-                           <span className="sr-only">Ações</span>
-                        </Button>
-                     </DropdownMenuTrigger>
-                     <DropdownMenuContent align="end">
-                        {!isPaid && !isCancelled && (
-                           <DropdownMenuItem onClick={() => onEdit(bill)}>
-                              <Pencil className="size-3.5 mr-2" />
-                              Editar
-                           </DropdownMenuItem>
-                        )}
-                        {!isPaid && !isCancelled && (
-                           <DropdownMenuItem onClick={() => onCancel(bill)}>
-                              <XCircle className="size-3.5 mr-2" />
-                              Cancelar
-                           </DropdownMenuItem>
-                        )}
-                        {!isPaid && (
-                           <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                 className="text-destructive focus:text-destructive"
-                                 onClick={() => onDelete(bill)}
-                              >
-                                 <Trash2 className="size-3.5 mr-2" />
-                                 Excluir
-                              </DropdownMenuItem>
-                           </>
-                        )}
-                     </DropdownMenuContent>
-                  </DropdownMenu>
-               </div>
             );
          },
       },

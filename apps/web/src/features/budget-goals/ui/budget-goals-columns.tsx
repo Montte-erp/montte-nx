@@ -1,12 +1,5 @@
 import type { BudgetGoalWithProgress } from "@packages/database/repositories/budget-goals-repository";
 import { Badge } from "@packages/ui/components/badge";
-import { Button } from "@packages/ui/components/button";
-import {
-   DropdownMenu,
-   DropdownMenuContent,
-   DropdownMenuItem,
-   DropdownMenuTrigger,
-} from "@packages/ui/components/dropdown-menu";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
    Baby,
@@ -22,15 +15,12 @@ import {
    Heart,
    Home,
    type LucideIcon,
-   MoreHorizontal,
    Music,
    Package,
-   Pencil,
    Plane,
    ShoppingCart,
    Smartphone,
    Target,
-   Trash2,
    Utensils,
    Wallet,
    Zap,
@@ -69,10 +59,7 @@ function formatBRL(value: number): string {
    }).format(value);
 }
 
-export function buildBudgetGoalColumns(
-   onEdit: (goal: BudgetGoalWithProgress) => void,
-   onDelete: (goal: BudgetGoalWithProgress) => void,
-): ColumnDef<BudgetGoalWithProgress>[] {
+export function buildBudgetGoalColumns(): ColumnDef<BudgetGoalWithProgress>[] {
    return [
       {
          id: "categoria",
@@ -173,40 +160,6 @@ export function buildBudgetGoalColumns(
                </span>
             );
          },
-      },
-      {
-         id: "actions",
-         header: "",
-         cell: ({ row }) => (
-            // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation wrapper for table row click
-            <div
-               className="flex items-center justify-end gap-1"
-               onClick={(e) => e.stopPropagation()}
-               onKeyDown={(e) => e.stopPropagation()}
-            >
-               <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                     <Button variant="outline">
-                        <MoreHorizontal className="size-4" />
-                        <span className="sr-only">Ações</span>
-                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                     <DropdownMenuItem onClick={() => onEdit(row.original)}>
-                        <Pencil className="size-4 mr-2" />
-                        Editar
-                     </DropdownMenuItem>
-                     <DropdownMenuItem
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => onDelete(row.original)}
-                     >
-                        <Trash2 className="size-4 mr-2" />
-                        Excluir
-                     </DropdownMenuItem>
-                  </DropdownMenuContent>
-               </DropdownMenu>
-            </div>
-         ),
       },
    ];
 }

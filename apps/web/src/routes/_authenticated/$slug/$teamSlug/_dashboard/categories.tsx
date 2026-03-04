@@ -15,8 +15,16 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { FolderOpen, LayoutGrid, LayoutList, Plus, Trash2 } from "lucide-react";
-import { Suspense, useCallback, useMemo } from "react";
+import {
+   Archive,
+   FolderOpen,
+   LayoutGrid,
+   LayoutList,
+   Pencil,
+   Plus,
+   Trash2,
+} from "lucide-react";
+import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import {
@@ -86,16 +94,6 @@ function CategoriesList({ view }: CategoriesListProps) {
 
    const { data: categories } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
-   );
-
-   const expanded = useMemo(
-      () =>
-         Object.fromEntries(
-            categories
-               .filter((c) => c.subcategories.length > 0)
-               .map((c) => [c.id, true]),
-         ),
-      [categories],
    );
 
    const deleteMutation = useMutation(
@@ -184,11 +182,7 @@ function CategoriesList({ view }: CategoriesListProps) {
       });
    }, [openAlertDialog, selectedIds, categories, deleteMutation, onClear]);
 
-   const columns = buildCategoryColumns(
-      handleEdit,
-      handleDelete,
-      handleArchive,
-   );
+   const columns = buildCategoryColumns();
 
    if (categories.length === 0) {
       return (
@@ -252,10 +246,37 @@ function CategoriesList({ view }: CategoriesListProps) {
             columns={columns}
             data={categories}
             enableRowSelection
-            getRowCanExpand={(row) => row.original.subcategories.length > 0}
             getRowId={(row) => row.id}
-            initialExpanded={expanded}
             onRowSelectionChange={onRowSelectionChange}
+            renderActions={({ row }) => {
+               if (row.original.isDefault) return null;
+               return (
+                  <>
+                     <Button
+                        onClick={() => handleEdit(row.original)}
+                        tooltip="Editar"
+                        variant="outline"
+                     >
+                        <Pencil className="size-4" />
+                     </Button>
+                     <Button
+                        onClick={() => handleArchive(row.original)}
+                        tooltip="Arquivar"
+                        variant="outline"
+                     >
+                        <Archive className="size-4" />
+                     </Button>
+                     <Button
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(row.original)}
+                        tooltip="Excluir"
+                        variant="outline"
+                     >
+                        <Trash2 className="size-4" />
+                     </Button>
+                  </>
+               );
+            }}
             renderMobileCard={({ row }) => (
                <div className="rounded-lg border bg-background p-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
@@ -290,22 +311,6 @@ function CategoriesList({ view }: CategoriesListProps) {
                   )}
                </div>
             )}
-            renderSubComponent={({ row }) => {
-               const subs = row.original.subcategories;
-               if (subs.length === 0) return null;
-               return (
-                  <div className="flex flex-col gap-1 pl-10 py-1">
-                     {subs.map((sub) => (
-                        <span
-                           className="text-sm text-muted-foreground"
-                           key={sub.id}
-                        >
-                           {sub.name}
-                        </span>
-                     ))}
-                  </div>
-               );
-            }}
             rowSelection={rowSelection}
          />
          <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>

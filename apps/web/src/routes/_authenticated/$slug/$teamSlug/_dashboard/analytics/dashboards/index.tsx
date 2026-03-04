@@ -148,7 +148,9 @@ function DashboardsList({ view }: DashboardsListProps) {
                      </div>
                      <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                           <span className="font-medium truncate">{d.name}</span>
+                           <span className="font-medium truncate">
+                              {d.name}
+                           </span>
                            {d.isDefault && (
                               <Badge
                                  className="gap-1 shrink-0"
@@ -190,29 +192,8 @@ function DashboardsList({ view }: DashboardsListProps) {
                </span>
             ),
          },
-         {
-            id: "actions",
-            header: "",
-            cell: ({ row }) => {
-               const d = row.original;
-               if (d.isDefault) return null;
-               return (
-                  <div className="flex items-center justify-end gap-1">
-                     <Button
-                        disabled={setAsHomeMutation.isPending}
-                        onClick={() => setAsHomeMutation.mutate({ id: d.id })}
-                        size="icon"
-                        variant="ghost"
-                     >
-                        <Home className="size-4" />
-                        <span className="sr-only">Definir como Home</span>
-                     </Button>
-                  </div>
-               );
-            },
-         },
       ],
-      [slug, teamSlug, setAsHomeMutation],
+      [slug, teamSlug],
    );
 
    if (dashboards.length === 0) {
@@ -240,6 +221,21 @@ function DashboardsList({ view }: DashboardsListProps) {
             columns={columns}
             data={dashboards as DashboardRow[]}
             getRowId={(row) => row.id}
+            renderActions={({ row }) => {
+               const d = row.original;
+               if (d.isDefault) return null;
+               return (
+                  <Button
+                     disabled={setAsHomeMutation.isPending}
+                     onClick={() => setAsHomeMutation.mutate({ id: d.id })}
+                     size="icon"
+                     variant="ghost"
+                  >
+                     <Home className="size-4" />
+                     <span className="sr-only">Definir como Home</span>
+                  </Button>
+               );
+            }}
             renderMobileCard={({ row }) => {
                const d = row.original as DashboardRow;
                return (
@@ -251,7 +247,9 @@ function DashboardsList({ view }: DashboardsListProps) {
                            </div>
                            <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                 <p className="font-medium truncate">{d.name}</p>
+                                 <p className="font-medium truncate">
+                                    {d.name}
+                                 </p>
                                  {d.isDefault && (
                                     <Badge
                                        className="gap-1 shrink-0"
@@ -358,7 +356,11 @@ function DashboardsPage() {
                </Button>
             }
             description="Painéis personalizados com seus insights"
-            panelViewSwitch={{ options: views, currentView, onViewChange: setView }}
+            panelViewSwitch={{
+               options: views,
+               currentView,
+               onViewChange: setView,
+            }}
             title="Dashboards"
          />
          <EarlyAccessBanner template={ANALYTICS_BANNER} />

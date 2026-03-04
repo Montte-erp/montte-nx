@@ -10,7 +10,15 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { LayoutGrid, LayoutList, Plus, Tag, Trash2 } from "lucide-react";
+import {
+   Archive,
+   LayoutGrid,
+   LayoutList,
+   Pencil,
+   Plus,
+   Tag,
+   Trash2,
+} from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
@@ -151,10 +159,7 @@ function TagsList({ view }: TagsListProps) {
                      <p className="font-medium truncate">{tag.name}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                     <Button
-                        onClick={() => handleEdit(tag)}
-                        variant="outline"
-                     >
+                     <Button onClick={() => handleEdit(tag)} variant="outline">
                         Editar
                      </Button>
                      <Button
@@ -171,14 +176,40 @@ function TagsList({ view }: TagsListProps) {
       );
    }
 
-   const columns = buildTagColumns(handleEdit, handleDelete, handleArchive);
+   const columns = buildTagColumns();
 
    return (
       <DataTable
          columns={columns}
          data={tags}
          getRowId={(row) => row.id}
-         renderMobileCard={({ row, toggleExpanded, isExpanded, canExpand }) => (
+         renderActions={({ row }) => (
+            <>
+               <Button
+                  onClick={() => handleEdit(row.original)}
+                  tooltip="Editar"
+                  variant="outline"
+               >
+                  <Pencil className="size-4" />
+               </Button>
+               <Button
+                  onClick={() => handleArchive(row.original)}
+                  tooltip="Arquivar"
+                  variant="outline"
+               >
+                  <Archive className="size-4" />
+               </Button>
+               <Button
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => handleDelete(row.original)}
+                  tooltip="Excluir"
+                  variant="outline"
+               >
+                  <Trash2 className="size-4" />
+               </Button>
+            </>
+         )}
+         renderMobileCard={({ row }) => (
             <div className="rounded-lg border bg-background p-4 space-y-3">
                <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
@@ -196,24 +227,7 @@ function TagsList({ view }: TagsListProps) {
                   >
                      Editar
                   </Button>
-                  {canExpand && (
-                     <Button onClick={toggleExpanded} variant="ghost">
-                        {isExpanded ? "Ocultar" : "Mais"}
-                     </Button>
-                  )}
                </div>
-            </div>
-         )}
-         renderSubComponent={({ row }) => (
-            <div className="px-4 py-4 flex items-center gap-2 flex-wrap border-t">
-               <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(row.original)}
-                  variant="ghost"
-               >
-                  <Trash2 className="size-3 mr-2" />
-                  Excluir
-               </Button>
             </div>
          )}
       />
