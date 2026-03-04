@@ -14,13 +14,7 @@ export type BankAccountRow = {
    id: string;
    teamId: string;
    name: string;
-   type:
-      | "checking"
-      | "savings"
-      | "credit_card"
-      | "investment"
-      | "cash"
-      | "other";
+   type: "checking" | "savings" | "investment" | "cash";
    color: string;
    iconUrl?: string | null;
    initialBalance: string;
@@ -33,10 +27,8 @@ export type BankAccountRow = {
 const TYPE_LABELS: Record<BankAccountRow["type"], string> = {
    checking: "Conta Corrente",
    savings: "Poupança",
-   credit_card: "Cartão de Crédito",
    investment: "Investimento",
-   cash: "Dinheiro",
-   other: "Outro",
+   cash: "Carteira",
 };
 
 function formatBRL(value: string | number): string {

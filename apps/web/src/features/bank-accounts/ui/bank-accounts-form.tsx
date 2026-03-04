@@ -9,6 +9,13 @@ import {
    ColorPickerSelection,
 } from "@packages/ui/components/color-picker";
 import {
+   Command,
+   CommandEmpty,
+   CommandGroup,
+   CommandItem,
+   CommandList,
+} from "@packages/ui/components/command";
+import {
    CredenzaBody,
    CredenzaDescription,
    CredenzaFooter,
@@ -28,41 +35,58 @@ import {
    PopoverContent,
    PopoverTrigger,
 } from "@packages/ui/components/popover";
-import {
-   Select,
-   SelectContent,
-   SelectItem,
-   SelectTrigger,
-   SelectValue,
-} from "@packages/ui/components/select";
 import { Spinner } from "@packages/ui/components/spinner";
+import { cn } from "@packages/ui/lib/utils";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import Color from "color";
+import {
+   CheckIcon,
+   ChevronsUpDownIcon,
+   Landmark,
+   PiggyBank,
+   TrendingUp,
+   Wallet,
+} from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 
-const TYPE_OPTIONS = [
-   { value: "checking", label: "Conta Corrente" },
-   { value: "savings", label: "Poupança" },
-   { value: "credit_card", label: "Cartão de Crédito" },
-   { value: "investment", label: "Investimento" },
-   { value: "cash", label: "Dinheiro" },
-   { value: "other", label: "Outro" },
-] as const;
+type BankAccountType = "checking" | "savings" | "investment" | "cash";
+
+const TYPE_OPTIONS: {
+   value: BankAccountType;
+   label: string;
+   icon: React.ReactNode;
+}[] = [
+   {
+      value: "checking",
+      label: "Conta Corrente",
+      icon: <Landmark className="size-4" />,
+   },
+   {
+      value: "savings",
+      label: "Conta Poupança",
+      icon: <PiggyBank className="size-4" />,
+   },
+   {
+      value: "investment",
+      label: "Conta Investimento",
+      icon: <TrendingUp className="size-4" />,
+   },
+   {
+      value: "cash",
+      label: "Carteira",
+      icon: <Wallet className="size-4" />,
+   },
+];
 
 interface BankAccountFormProps {
    mode: "create" | "edit";
    account?: {
       id: string;
       name: string;
-      type:
-         | "checking"
-         | "savings"
-         | "credit_card"
-         | "investment"
-         | "cash"
-         | "other";
+      type: BankAccountType;
       color: string;
       iconUrl?: string | null;
       initialBalance: string;
@@ -76,6 +100,7 @@ export function BankAccountForm({
    onSuccess,
 }: BankAccountFormProps) {
    const isCreate = mode === "create";
+   const [typeOpen, setTypeOpen] = useState(false);
 
    const createMutation = useMutation(
       orpc.bankAccounts.create.mutationOptions({
@@ -106,21 +131,23 @@ export function BankAccountForm({
          color: account?.color ?? "#6366f1",
          initialBalance: account?.initialBalance ?? "0",
          name: account?.name ?? "",
-         type: account?.type ?? ("checking" as const),
+         type: (account?.type ?? "checking") as BankAccountType,
       },
       onSubmit: async ({ value }) => {
+         const resolvedName =
+            value.type === "cash" ? "Dinheiro" : value.name.trim();
          if (isCreate) {
             createMutation.mutate({
                color: value.color,
                initialBalance: value.initialBalance,
-               name: value.name.trim(),
+               name: resolvedName,
                type: value.type,
             });
          } else if (account) {
             updateMutation.mutate({
                color: value.color,
                id: account.id,
-               name: value.name.trim(),
+               name: resolvedName,
                type: value.type,
             });
          }
@@ -149,21 +176,74 @@ export function BankAccountForm({
 
          <CredenzaBody className="space-y-4">
             <FieldGroup>
-               <form.Field name="name">
+               <form.Field name="type">
                   {(field) => {
                      const isInvalid =
                         field.state.meta.isTouched && !field.state.meta.isValid;
+                     const selected = TYPE_OPTIONS.find(
+                        (o) => o.value === field.state.value,
+                     );
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel>Nome</FieldLabel>
-                           <Input
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="Ex: Nubank, Itaú Corrente"
-                              value={field.state.value}
-                           />
+                           <FieldLabel>Tipo</FieldLabel>
+                           <Popover onOpenChange={setTypeOpen} open={typeOpen}>
+                              <PopoverTrigger asChild>
+                                 <Button
+                                    aria-expanded={typeOpen}
+                                    className="w-full justify-between"
+                                    onBlur={field.handleBlur}
+                                    role="combobox"
+                                    type="button"
+                                    variant="outline"
+                                 >
+                                    <span className="flex items-center gap-2">
+                                       {selected?.icon}
+                                       {selected?.label ?? "Selecione o tipo"}
+                                    </span>
+                                    <ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
+                                 </Button>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                 align="start"
+                                 className="p-0 w-[var(--radix-popover-trigger-width)]"
+                              >
+                                 <Command>
+                                    <CommandList>
+                                       <CommandEmpty>
+                                          Nenhum tipo encontrado.
+                                       </CommandEmpty>
+                                       <CommandGroup>
+                                          {TYPE_OPTIONS.map((opt) => (
+                                             <CommandItem
+                                                key={opt.value}
+                                                onSelect={() => {
+                                                   field.handleChange(
+                                                      opt.value,
+                                                   );
+                                                   setTypeOpen(false);
+                                                }}
+                                                value={opt.value}
+                                             >
+                                                <span className="flex items-center gap-2 flex-1">
+                                                   {opt.icon}
+                                                   {opt.label}
+                                                </span>
+                                                <CheckIcon
+                                                   className={cn(
+                                                      "size-4 shrink-0",
+                                                      field.state.value ===
+                                                         opt.value
+                                                         ? "opacity-100"
+                                                         : "opacity-0",
+                                                   )}
+                                                />
+                                             </CommandItem>
+                                          ))}
+                                       </CommandGroup>
+                                    </CommandList>
+                                 </Command>
+                              </PopoverContent>
+                           </Popover>
                            {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
                            )}
@@ -172,48 +252,37 @@ export function BankAccountForm({
                   }}
                </form.Field>
 
-               <form.Field name="type">
-                  {(field) => {
-                     const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
-                     return (
-                        <Field data-invalid={isInvalid}>
-                           <FieldLabel>Tipo</FieldLabel>
-                           <Select
-                              onValueChange={(v) =>
-                                 field.handleChange(
-                                    v as
-                                       | "checking"
-                                       | "savings"
-                                       | "credit_card"
-                                       | "investment"
-                                       | "cash"
-                                       | "other",
-                                 )
-                              }
-                              value={field.state.value}
-                           >
-                              <SelectTrigger>
-                                 <SelectValue placeholder="Selecione o tipo" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                 {TYPE_OPTIONS.map((opt) => (
-                                    <SelectItem
-                                       key={opt.value}
-                                       value={opt.value}
-                                    >
-                                       {opt.label}
-                                    </SelectItem>
-                                 ))}
-                              </SelectContent>
-                           </Select>
-                           {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                           )}
-                        </Field>
-                     );
-                  }}
-               </form.Field>
+               <form.Subscribe selector={(s) => s.values.type}>
+                  {(type) =>
+                     type !== "cash" ? (
+                        <form.Field name="name">
+                           {(field) => {
+                              const isInvalid =
+                                 field.state.meta.isTouched &&
+                                 !field.state.meta.isValid;
+                              return (
+                                 <Field data-invalid={isInvalid}>
+                                    <FieldLabel>Nome</FieldLabel>
+                                    <Input
+                                       onBlur={field.handleBlur}
+                                       onChange={(e) =>
+                                          field.handleChange(e.target.value)
+                                       }
+                                       placeholder="Ex: Nubank, Itaú Corrente"
+                                       value={field.state.value}
+                                    />
+                                    {isInvalid && (
+                                       <FieldError
+                                          errors={field.state.meta.errors}
+                                       />
+                                    )}
+                                 </Field>
+                              );
+                           }}
+                        </form.Field>
+                     ) : null
+                  }
+               </form.Subscribe>
 
                <form.Field name="color">
                   {(field) => {

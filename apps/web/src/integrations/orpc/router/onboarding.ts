@@ -9,6 +9,7 @@ import {
    team,
    teamMember,
 } from "@packages/database/schemas/auth";
+import { bankAccounts } from "@packages/database/schemas/bank-accounts";
 import { categories } from "@packages/database/schemas/categories";
 import { dashboards } from "@packages/database/schemas/dashboards";
 import { insights } from "@packages/database/schemas/insights";
@@ -234,8 +235,8 @@ export const getOnboardingStatus = protectedProcedure.handler(
          });
       }
 
-      const [insightCount, categoryCount, transactionCount] = await Promise.all(
-         [
+      const [insightCount, categoryCount, transactionCount, bankAccountCount] =
+         await Promise.all([
             db
                .select({ count: sql<number>`count(*)` })
                .from(insights)
@@ -251,12 +252,17 @@ export const getOnboardingStatus = protectedProcedure.handler(
                .from(transactions)
                .where(eq(transactions.teamId, teamId))
                .then((rows) => Number(rows[0]?.count ?? 0)),
-         ],
-      );
+            db
+               .select({ count: sql<number>`count(*)` })
+               .from(bankAccounts)
+               .where(eq(bankAccounts.teamId, teamId))
+               .then((rows) => Number(rows[0]?.count ?? 0)),
+         ]);
 
       const storedTasks = currentTeam.onboardingTasks ?? {};
       const autoDetected: Record<string, boolean> = {};
 
+      if (bankAccountCount > 0) autoDetected.connect_bank_account = true;
       if (insightCount > 0) autoDetected.create_insight = true;
       if (categoryCount > 0) autoDetected.create_category = true;
       if (transactionCount > 0) autoDetected.add_transaction = true;
@@ -307,9 +313,9 @@ export const fixOnboarding = authenticatedProcedure
 
       let targetTeam = activeTeamId
          ? await db.query.team.findFirst({
-            where: (t, { eq }) => eq(t.id, activeTeamId),
-            columns: { id: true, slug: true, onboardingCompleted: true },
-         })
+              where: (t, { eq }) => eq(t.id, activeTeamId),
+              columns: { id: true, slug: true, onboardingCompleted: true },
+           })
          : null;
 
       if (!targetTeam) {

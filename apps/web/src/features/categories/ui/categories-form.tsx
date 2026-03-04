@@ -64,37 +64,46 @@ import {
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 
-const CATEGORY_ICONS: { name: string; Icon: LucideIcon }[] = [
-   { name: "wallet", Icon: Wallet },
-   { name: "credit-card", Icon: CreditCard },
-   { name: "home", Icon: Home },
-   { name: "car", Icon: Car },
-   { name: "shopping-cart", Icon: ShoppingCart },
-   { name: "utensils", Icon: Utensils },
-   { name: "plane", Icon: Plane },
-   { name: "heart", Icon: Heart },
-   { name: "book-open", Icon: BookOpen },
-   { name: "briefcase", Icon: Briefcase },
-   { name: "package", Icon: Package },
-   { name: "music", Icon: Music },
-   { name: "coffee", Icon: Coffee },
-   { name: "smartphone", Icon: Smartphone },
-   { name: "dumbbell", Icon: Dumbbell },
-   { name: "baby", Icon: Baby },
-   { name: "gift", Icon: Gift },
-   { name: "zap", Icon: Zap },
-   { name: "fuel", Icon: Fuel },
+const CATEGORY_ICONS: { name: string; label: string; Icon: LucideIcon }[] = [
+   { name: "wallet", label: "Carteira", Icon: Wallet },
+   { name: "credit-card", label: "Cartão de Crédito", Icon: CreditCard },
+   { name: "home", label: "Casa", Icon: Home },
+   { name: "car", label: "Carro", Icon: Car },
+   { name: "shopping-cart", label: "Compras", Icon: ShoppingCart },
+   { name: "utensils", label: "Alimentação", Icon: Utensils },
+   { name: "plane", label: "Viagem", Icon: Plane },
+   { name: "heart", label: "Saúde", Icon: Heart },
+   { name: "book-open", label: "Educação", Icon: BookOpen },
+   { name: "briefcase", label: "Trabalho", Icon: Briefcase },
+   { name: "package", label: "Encomenda", Icon: Package },
+   { name: "music", label: "Música", Icon: Music },
+   { name: "coffee", label: "Café", Icon: Coffee },
+   { name: "smartphone", label: "Celular", Icon: Smartphone },
+   { name: "dumbbell", label: "Academia", Icon: Dumbbell },
+   { name: "baby", label: "Bebê", Icon: Baby },
+   { name: "gift", label: "Presente", Icon: Gift },
+   { name: "zap", label: "Energia", Icon: Zap },
+   { name: "fuel", label: "Combustível", Icon: Fuel },
 ];
 
-const ICON_OPTIONS: { value: string; label: string }[] = CATEGORY_ICONS.map(
-   ({ name }) => ({
-      value: name,
-      label: name
-         .split("-")
-         .map((w) => `${w[0]?.toUpperCase() ?? ""}${w.slice(1)}`)
-         .join(" "),
-   }),
+const ICON_OPTIONS = CATEGORY_ICONS.map(({ name, label }) => ({
+   value: name,
+   label,
+}));
+
+const ICON_MAP = Object.fromEntries(
+   CATEGORY_ICONS.map(({ name, Icon }) => [name, Icon]),
 );
+
+function IconOption({ value, label }: { value: string; label: string }) {
+   const Icon = ICON_MAP[value];
+   return (
+      <span className="flex items-center gap-2">
+         {Icon && <Icon className="size-4 shrink-0" />}
+         {label}
+      </span>
+   );
+}
 
 interface CategoryFormProps {
    mode: "create" | "edit";
@@ -234,26 +243,15 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                            onValueChange={(v) => field.handleChange(v || "")}
                            options={ICON_OPTIONS}
                            placeholder="Selecionar ícone..."
+                           renderOption={(opt) => (
+                              <IconOption label={opt.label} value={opt.value} />
+                           )}
+                           renderSelected={(opt) => (
+                              <IconOption label={opt.label} value={opt.value} />
+                           )}
                            searchPlaceholder="Buscar ícone..."
                            value={field.state.value}
                         />
-                        <form.Subscribe selector={(s) => s.values.icon}>
-                           {(icon) => {
-                              const found = CATEGORY_ICONS.find(
-                                 (i) => i.name === icon,
-                              );
-                              if (!found) return null;
-                              const { Icon } = found;
-                              return (
-                                 <div className="mt-1 flex items-center gap-2">
-                                    <Icon className="size-4 text-muted-foreground" />
-                                    <span className="text-xs text-muted-foreground">
-                                       {icon}
-                                    </span>
-                                 </div>
-                              );
-                           }}
-                        </form.Subscribe>
                      </Field>
                   )}
                </form.Field>

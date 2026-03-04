@@ -12,10 +12,8 @@ import {
 export const bankAccountTypeEnum = pgEnum("bank_account_type", [
    "checking",
    "savings",
-   "credit_card",
    "investment",
    "cash",
-   "other",
 ]);
 
 export const bankAccounts = pgTable(

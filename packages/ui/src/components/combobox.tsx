@@ -36,6 +36,8 @@ interface ComboboxProps {
    onBlur?: React.FocusEventHandler<HTMLButtonElement>;
    onCreate?: (name: string) => void;
    createLabel?: string;
+   renderOption?: (option: ComboboxOption) => React.ReactNode;
+   renderSelected?: (option: ComboboxOption) => React.ReactNode;
 }
 
 export function Combobox({
@@ -50,6 +52,8 @@ export function Combobox({
    onBlur,
    onCreate,
    createLabel = "Criar",
+   renderOption,
+   renderSelected,
 }: ComboboxProps) {
    const [open, setOpen] = React.useState(false);
    const [search, setSearch] = React.useState("");
@@ -104,7 +108,9 @@ export function Combobox({
                role="combobox"
                variant="outline"
             >
-               {selectedOption ? selectedOption.label : placeholder}
+               {selectedOption
+                  ? (renderSelected?.(selectedOption) ?? selectedOption.label)
+                  : placeholder}
                <ChevronsUpDownIcon className="size-4" />
             </Button>
          </PopoverTrigger>
@@ -175,7 +181,7 @@ export function Combobox({
                                                 : "opacity-0",
                                           )}
                                        />
-                                       {option.label}
+                                       {renderOption?.(option) ?? option.label}
                                     </CommandItem>
                                  );
                               })}

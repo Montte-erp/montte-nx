@@ -34,7 +34,7 @@ export const TASK_DEFINITIONS: TaskDefinition[] = [
          "Adicione sua primeira conta para começar a registrar transações.",
       type: "setup",
       product: "finance",
-      autoDetect: false,
+      autoDetect: true,
       route: "/$slug/$teamSlug/bank-accounts",
    },
    {

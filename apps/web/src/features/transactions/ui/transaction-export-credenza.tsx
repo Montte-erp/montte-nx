@@ -1,5 +1,5 @@
 import { generateFromObjects } from "@f-o-t/csv";
-import { generateBankStatement, generateCreditCardStatement } from "@f-o-t/ofx";
+import { generateBankStatement } from "@f-o-t/ofx";
 import { Button } from "@packages/ui/components/button";
 import { Combobox } from "@packages/ui/components/combobox";
 import {
@@ -31,13 +31,7 @@ interface TransactionExportCredenzaProps {
 
 type ExportFormat = "csv" | "ofx";
 
-type BankAccountType =
-   | "checking"
-   | "savings"
-   | "credit_card"
-   | "investment"
-   | "cash"
-   | "other";
+type BankAccountType = "checking" | "savings" | "investment" | "cash";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -242,27 +236,17 @@ function ExportForm({ dateFrom, dateTo }: TransactionExportCredenzaProps) {
 
                let ofxContent: string;
 
-               if (selectedAccount.type === "credit_card") {
-                  ofxContent = generateCreditCardStatement({
-                     accountId: selectedAccount.id,
-                     currency: "BRL",
-                     startDate,
-                     endDate,
-                     transactions: ofxTransactions,
-                  });
-               } else {
-                  ofxContent = generateBankStatement({
-                     bankId: "BR",
-                     accountId: selectedAccount.id,
-                     accountType: mapAccountTypeToOFX(
-                        selectedAccount.type as BankAccountType,
-                     ),
-                     currency: "BRL",
-                     startDate,
-                     endDate,
-                     transactions: ofxTransactions,
-                  });
-               }
+               ofxContent = generateBankStatement({
+                  bankId: "BR",
+                  accountId: selectedAccount.id,
+                  accountType: mapAccountTypeToOFX(
+                     selectedAccount.type as BankAccountType,
+                  ),
+                  currency: "BRL",
+                  startDate,
+                  endDate,
+                  transactions: ofxTransactions,
+               });
 
                const blob = new Blob([ofxContent], {
                   type: "application/x-ofx",
