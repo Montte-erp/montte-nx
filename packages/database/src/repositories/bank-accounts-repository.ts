@@ -163,8 +163,8 @@ export async function listBankAccountsWithBalance(
 
             const [billsRow] = await db
                .select({
-                  pendingReceivable: sql<string>`COALESCE(SUM(CASE WHEN type = 'receivable' AND status IN ('pending', 'overdue') THEN amount::numeric ELSE 0 END), 0)`,
-                  pendingPayable: sql<string>`COALESCE(SUM(CASE WHEN type = 'payable' AND status IN ('pending', 'overdue') THEN amount::numeric ELSE 0 END), 0)`,
+                  pendingReceivable: sql<string>`COALESCE(SUM(CASE WHEN type = 'receivable' AND status = 'pending' THEN amount::numeric ELSE 0 END), 0)`,
+                  pendingPayable: sql<string>`COALESCE(SUM(CASE WHEN type = 'payable' AND status = 'pending' THEN amount::numeric ELSE 0 END), 0)`,
                })
                .from(bills)
                .where(eq(bills.bankAccountId, account.id));

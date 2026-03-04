@@ -115,7 +115,7 @@ export function Combobox({
             </Button>
          </PopoverTrigger>
          <PopoverContent className=" p-0">
-            <Command>
+            <Command shouldFilter={false}>
                <CommandInput
                   onValueChange={setSearch}
                   placeholder={searchPlaceholder}

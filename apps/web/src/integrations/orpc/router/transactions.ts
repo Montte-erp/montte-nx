@@ -42,6 +42,9 @@ const transactionSchema = createInsertSchema(transactions)
          .refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0, {
             message: "Valor deve ser maior que zero.",
          }),
+      bankAccountId: z
+         .string()
+         .uuid({ message: "Conta bancária obrigatória." }),
       tagIds: z.array(z.string().uuid()).optional().default([]),
    });
 
@@ -126,7 +129,7 @@ export const create = protectedProcedure
          });
       }
       await verifyTransactionRefs(db, teamId, {
-         bankAccountId: input.bankAccountId ?? "",
+         bankAccountId: input.bankAccountId,
          destinationBankAccountId: input.destinationBankAccountId,
          categoryId: input.categoryId,
          subcategoryId: input.subcategoryId,
