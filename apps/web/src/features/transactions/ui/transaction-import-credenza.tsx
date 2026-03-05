@@ -74,6 +74,9 @@ type ParsedRow = {
    categoria: string;
    subcategoria: string;
    tags: string;
+   forma_pagamento: string;
+   parcelado: string;
+   num_parcelas: string;
 };
 
 type ImportRow = ParsedRow & {
@@ -101,6 +104,9 @@ type ColumnMapping = {
    categoria: string;
    subcategoria: string;
    tags: string;
+   forma_pagamento: string;
+   parcelado: string;
+   num_parcelas: string;
 };
 
 type RawCsvData = {
@@ -125,6 +131,9 @@ const FIELD_LABELS: Record<keyof ColumnMapping, string> = {
    categoria: "Categoria",
    subcategoria: "Subcategoria",
    tags: "Tags",
+   forma_pagamento: "Forma de pagamento",
+   parcelado: "Parcelado",
+   num_parcelas: "Nº de parcelas",
 };
 
 // ---------------------------------------------------------------------------
@@ -207,6 +216,21 @@ function guessColumnMapping(headers: string[]): Partial<ColumnMapping> {
       categoria: ["categoria", "category", "cat", "grupo"],
       subcategoria: ["subcategoria", "subcategory", "subcat", "subgrupo"],
       tags: ["tags", "tag", "labels", "etiquetas"],
+      forma_pagamento: [
+         "forma_pagamento",
+         "payment_method",
+         "metodo",
+         "forma",
+         "meio_pagamento",
+      ],
+      parcelado: ["parcelado", "installment", "parcela", "is_installment"],
+      num_parcelas: [
+         "num_parcelas",
+         "parcelas",
+         "installments",
+         "qtd_parcelas",
+         "installment_count",
+      ],
    };
 
    for (const [field, candidates] of Object.entries(patterns)) {
@@ -244,6 +268,9 @@ function applyMapping(
       categoria: get("categoria"),
       subcategoria: get("subcategoria"),
       tags: get("tags"),
+      forma_pagamento: get("forma_pagamento"),
+      parcelado: get("parcelado"),
+      num_parcelas: get("num_parcelas"),
    };
 }
 
@@ -434,10 +461,8 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                   "relative flex flex-col items-center justify-center gap-3",
                   "rounded-xl border-2 border-dashed p-8 text-center transition-colors duration-200",
                   "cursor-pointer select-none",
-                  isDragging
-                     ? "border-primary bg-primary/5"
-                     : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30",
-                  isParsing ? "pointer-events-none opacity-60" : "",
+                  "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30",
+                  "isParsing ? 'pointer-events-none opacity-60' : '',
                ].join(" ")}
                onClick={() => !isParsing && fileInputRef.current?.click()}
                onDragLeave={handleDragLeave}
@@ -1227,6 +1252,13 @@ function ConfirmStep({
                subcategoryId: null as string | null,
                tagIds: [] as string[],
                attachmentUrl: null as string | null,
+               paymentMethod: row.forma_pagamento || null,
+               isInstallment: ["sim", "yes", "true", "1"].includes(
+                  row.parcelado.toLowerCase().trim(),
+               ),
+               installmentCount: row.num_parcelas
+                  ? Number.parseInt(row.num_parcelas, 10) || null
+                  : null,
             };
          });
 

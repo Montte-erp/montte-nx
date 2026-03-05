@@ -172,11 +172,15 @@ function ExportForm({ dateFrom, dateTo }: TransactionExportCredenzaProps) {
                           : "transferencia",
                   valor: tx.amount ?? "",
                   descricao: tx.description ?? "",
-                  conta: tx.bankAccountId ?? "",
+                  conta: tx.bankAccountName ?? "",
                   conta_destino: tx.destinationBankAccountId ?? "",
                   categoria: "",
                   subcategoria: "",
                   tags: Array.isArray(tx.tagIds) ? tx.tagIds.join(";") : "",
+                  forma_pagamento: tx.paymentMethod ?? "",
+                  parcelado: tx.isInstallment ? "Sim" : "Não",
+                  num_parcelas: tx.installmentCount ?? "",
+                  contato: tx.contactName ?? "",
                }));
 
                const csv = generateFromObjects(rows, {
@@ -191,6 +195,10 @@ function ExportForm({ dateFrom, dateTo }: TransactionExportCredenzaProps) {
                      "categoria",
                      "subcategoria",
                      "tags",
+                     "forma_pagamento",
+                     "parcelado",
+                     "num_parcelas",
+                     "contato",
                   ],
                });
 
