@@ -154,9 +154,22 @@ function SidebarManagerIsolated({
    style?: React.CSSProperties;
 }) {
    const isMobile = useIsMobile();
-   const [openMobile, setOpenMobile] = React.useState(false);
+   const [_openMobile, _setOpenMobile] = React.useState(false);
    const [_open, _setOpen] = React.useState(defaultOpen);
    const manager = useSidebarManager();
+
+   // On mobile, sync the controlled `open` prop to openMobile so Sheet opens
+   const openMobile = isMobile && openProp !== undefined ? openProp : _openMobile;
+   const setOpenMobile = React.useCallback(
+      (value: boolean | ((prev: boolean) => boolean)) => {
+         const next = typeof value === "function" ? value(openMobile) : value;
+         if (isMobile && setOpenProp) {
+            setOpenProp(next);
+         }
+         _setOpenMobile(next);
+      },
+      [isMobile, setOpenProp, openMobile],
+   );
 
    const open = openProp ?? _open;
    const openRef = React.useRef(open);

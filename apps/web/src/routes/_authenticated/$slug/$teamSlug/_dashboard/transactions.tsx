@@ -102,7 +102,7 @@ function TransactionsPage() {
          label: "Importar",
          onClick: () =>
             openCredenza({
-               className: "max-w-2xl ",
+               className: "max-w-4xl",
 
                children: <TransactionImportCredenza />,
             }),
@@ -127,8 +127,8 @@ function TransactionsPage() {
          <DefaultHeader
             actions={
                <Button onClick={handleCreate}>
-                  <Plus className="size-4 mr-1" />
-                  Nova Transação
+                  <Plus className="size-4" />
+                  <span className="sr-only sm:not-sr-only">Nova Transação</span>
                </Button>
             }
             description="Gerencie suas receitas, despesas e transferências"

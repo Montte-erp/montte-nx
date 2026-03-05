@@ -1,8 +1,15 @@
 import { Button } from "@packages/ui/components/button";
+import {
+   DropdownMenu,
+   DropdownMenuContent,
+   DropdownMenuItem,
+   DropdownMenuSeparator,
+   DropdownMenuTrigger,
+} from "@packages/ui/components/dropdown-menu";
 import { Input } from "@packages/ui/components/input";
 import { cn } from "@packages/ui/lib/utils";
 import { useStore } from "@tanstack/react-store";
-import { Check, Pencil, X } from "lucide-react";
+import { Check, MoreVertical, Pencil, X } from "lucide-react";
 import {
    type ReactNode,
    useCallback,
@@ -10,6 +17,7 @@ import {
    useRef,
    useState,
 } from "react";
+import { SidebarTrigger } from "@packages/ui/components/sidebar";
 import { ContextPanelHeaderActions } from "@/features/context-panel/context-panel-header-actions";
 import type {
    PageViewSwitchConfig,
@@ -172,6 +180,9 @@ export function PageHeader({
    const hasEditableDescription = editable && onDescriptionChange != null;
    const showDescription = description != null || hasEditableDescription;
 
+   const hasMobileOverflow =
+      !isOpen && ((panelActions?.length ?? 0) > 0 || panelViewSwitch);
+
    return (
       <header
          className={cn(
@@ -179,7 +190,53 @@ export function PageHeader({
             className,
          )}
       >
-         <div className="flex items-start min-w-0 flex-1 max-w-2xl">
+         {/* Mobile top bar: hamburger | title | actions */}
+         <div className="flex sm:hidden items-center gap-2">
+            <SidebarTrigger />
+            <h1 className={cn(TITLE_CLASS, "flex-1 truncate text-lg")}>
+               {title}
+            </h1>
+            {actions}
+            {!isOpen && <ContextPanelHeaderActions />}
+            {hasMobileOverflow && (
+               <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                     <Button variant="outline">
+                        <MoreVertical className="size-4" />
+                     </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                     {panelViewSwitch?.options.map((v) => (
+                        <DropdownMenuItem
+                           key={v.id}
+                           onClick={() => panelViewSwitch.onViewChange(v.id)}
+                        >
+                           {v.icon}
+                           {v.label}
+                           {panelViewSwitch.currentView === v.id && (
+                              <Check className="size-3.5 ml-auto" />
+                           )}
+                        </DropdownMenuItem>
+                     ))}
+                     {panelViewSwitch && panelActions?.length ? (
+                        <DropdownMenuSeparator />
+                     ) : null}
+                     {panelActions?.map((action) => (
+                        <DropdownMenuItem
+                           key={action.label}
+                           onClick={action.onClick}
+                        >
+                           <action.icon className="size-4" />
+                           {action.label}
+                        </DropdownMenuItem>
+                     ))}
+                  </DropdownMenuContent>
+               </DropdownMenu>
+            )}
+         </div>
+
+         {/* Desktop: title + description */}
+         <div className="hidden sm:flex items-start min-w-0 flex-1 max-w-2xl">
             <div
                className={cn(
                   "flex flex-col min-w-0",
@@ -210,7 +267,9 @@ export function PageHeader({
                ) : null}
             </div>
          </div>
-         <div className="flex items-center gap-2 shrink-0">
+
+         {/* Desktop: actions */}
+         <div className="hidden sm:flex items-center gap-2 shrink-0">
             {!isOpen && panelViewSwitch && (
                <ViewSwitchDropdown
                   currentView={panelViewSwitch.currentView}

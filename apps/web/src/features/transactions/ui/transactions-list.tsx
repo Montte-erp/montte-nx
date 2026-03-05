@@ -1,3 +1,8 @@
+import {
+   Announcement,
+   AnnouncementTag,
+   AnnouncementTitle,
+} from "@packages/ui/components/announcement";
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
@@ -25,11 +30,15 @@ import {
    ArrowLeftRight,
    CalendarDays,
    FolderOpen,
+   Hash,
    Landmark,
    MoreHorizontal,
    Pencil,
    Repeat,
+   Scale,
    Trash2,
+   TrendingDown,
+   TrendingUp,
 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
@@ -415,29 +424,49 @@ function formatBRL(value: string | number): string {
 
 function SummaryBar({ summary }: { summary: { totalCount: number; incomeTotal: string; expenseTotal: string; balance: string } }) {
    return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-         <div className="rounded-lg border bg-card p-3">
-            <p className="text-xs text-muted-foreground">Total de lançamentos</p>
-            <p className="text-lg font-semibold tabular-nums">{summary.totalCount}</p>
-         </div>
-         <div className="rounded-lg border bg-card p-3">
-            <p className="text-xs text-muted-foreground">Entradas</p>
-            <p className="text-lg font-semibold tabular-nums text-green-600 dark:text-green-500">
-               {formatBRL(summary.incomeTotal)}
-            </p>
-         </div>
-         <div className="rounded-lg border bg-card p-3">
-            <p className="text-xs text-muted-foreground">Saídas</p>
-            <p className="text-lg font-semibold tabular-nums text-destructive">
-               {formatBRL(summary.expenseTotal)}
-            </p>
-         </div>
-         <div className="rounded-lg border bg-card p-3">
-            <p className="text-xs text-muted-foreground">Saldo</p>
-            <p className={`text-lg font-semibold tabular-nums ${Number(summary.balance) >= 0 ? "text-green-600 dark:text-green-500" : "text-destructive"}`}>
-               {formatBRL(summary.balance)}
-            </p>
-         </div>
+      <div className="grid grid-cols-2 gap-4 rounded-lg border bg-card px-4 py-2.5 sm:flex sm:items-center">
+         <Announcement>
+            <AnnouncementTag className="flex items-center gap-2">
+               <TrendingDown className="size-4 text-destructive" />
+               Saídas
+            </AnnouncementTag>
+            <AnnouncementTitle>
+               <span className="tabular-nums font-semibold text-destructive">
+                  {formatBRL(summary.expenseTotal)}
+               </span>
+            </AnnouncementTitle>
+         </Announcement>
+         <Announcement>
+            <AnnouncementTag className="flex items-center gap-2">
+               <TrendingUp className="size-4 text-green-600 dark:text-green-500" />
+               Entradas
+            </AnnouncementTag>
+            <AnnouncementTitle>
+               <span className="tabular-nums font-semibold text-green-600 dark:text-green-500">
+                  {formatBRL(summary.incomeTotal)}
+               </span>
+            </AnnouncementTitle>
+         </Announcement>
+         <Announcement>
+            <AnnouncementTag className="flex items-center gap-2">
+               <Hash className="size-4 text-muted-foreground" />
+               Lançamentos
+            </AnnouncementTag>
+            <AnnouncementTitle>
+               <span className="tabular-nums font-semibold">{summary.totalCount}</span>
+            </AnnouncementTitle>
+         </Announcement>
+         <Announcement>
+            <AnnouncementTag className="flex items-center gap-2">
+               <Scale className="size-4 text-muted-foreground" />
+               Saldo
+            </AnnouncementTag>
+            <AnnouncementTitle>
+               <span className={`tabular-nums font-semibold ${Number(summary.balance) >= 0 ? "text-green-600 dark:text-green-500" : "text-destructive"}`}>
+                  {formatBRL(summary.balance)}
+               </span>
+            </AnnouncementTitle>
+         </Announcement>
       </div>
    );
 }

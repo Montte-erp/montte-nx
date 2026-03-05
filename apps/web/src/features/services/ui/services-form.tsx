@@ -192,7 +192,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
    };
 
    return (
-      <form className="h-full flex flex-col" onSubmit={handleSubmit}>
+      <form className="h-full w-full flex flex-col" onSubmit={handleSubmit}>
          <CredenzaHeader>
             <CredenzaTitle>
                {isCreate ? "Novo Serviço" : "Editar Serviço"}
@@ -210,8 +210,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                <form.Field name="name">
                   {(field) => {
                      const isInvalid =
-                        field.state.meta.isTouched &&
-                        !field.state.meta.isValid;
+                        field.state.meta.isTouched && !field.state.meta.isValid;
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel>Nome *</FieldLabel>
@@ -224,9 +223,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                               value={field.state.value}
                            />
                            {isInvalid && (
-                              <FieldError
-                                 errors={field.state.meta.errors}
-                              />
+                              <FieldError errors={field.state.meta.errors} />
                            )}
                         </Field>
                      );
@@ -264,10 +261,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                            </SelectTrigger>
                            <SelectContent>
                               {TYPE_OPTIONS.map((opt) => (
-                                 <SelectItem
-                                    key={opt.value}
-                                    value={opt.value}
-                                 >
+                                 <SelectItem key={opt.value} value={opt.value}>
                                     {opt.label}
                                  </SelectItem>
                               ))}
@@ -332,9 +326,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                         <FieldLabel>Descrição</FieldLabel>
                         <Textarea
                            onBlur={field.handleBlur}
-                           onChange={(e) =>
-                              field.handleChange(e.target.value)
-                           }
+                           onChange={(e) => field.handleChange(e.target.value)}
                            placeholder="Opcional"
                            rows={1}
                            value={field.state.value}
@@ -405,31 +397,23 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                               className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end p-3 border rounded-md bg-muted/30"
                               key={`variant-${index + 1}`}
                            >
-                              <form.Field
-                                 name={`variants[${index}].name`}
-                              >
+                              <form.Field name={`variants[${index}].name`}>
                                  {(field) => (
                                     <Field>
                                        <FieldLabel>Nome</FieldLabel>
                                        <Input
                                           onBlur={field.handleBlur}
                                           onChange={(e) =>
-                                             field.handleChange(
-                                                e.target.value,
-                                             )
+                                             field.handleChange(e.target.value)
                                           }
                                           placeholder="Ex: Mensal"
-                                          value={
-                                             field.state.value as string
-                                          }
+                                          value={field.state.value as string}
                                        />
                                     </Field>
                                  )}
                               </form.Field>
 
-                              <form.Field
-                                 name={`variants[${index}].basePrice`}
-                              >
+                              <form.Field name={`variants[${index}].basePrice`}>
                                  {(field) => (
                                     <Field>
                                        <FieldLabel>Preço</FieldLabel>
@@ -437,9 +421,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                                           onChange={(v) =>
                                              field.handleChange(v ?? 0)
                                           }
-                                          value={
-                                             field.state.value as number
-                                          }
+                                          value={field.state.value as number}
                                           valueInCents={true}
                                        />
                                     </Field>
@@ -458,9 +440,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                                                 v as BillingCycle,
                                              )
                                           }
-                                          value={
-                                             field.state.value as string
-                                          }
+                                          value={field.state.value as string}
                                        >
                                           <SelectTrigger>
                                              <SelectValue placeholder="Ciclo" />
@@ -474,7 +454,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                                                    >
                                                       {
                                                          BILLING_CYCLE_LABELS[
-                                                            cycle
+                                                         cycle
                                                          ]
                                                       }
                                                    </SelectItem>
@@ -488,9 +468,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
 
                               <Button
                                  className="h-9 w-9"
-                                 onClick={() =>
-                                    arrayField.removeValue(index)
-                                 }
+                                 onClick={() => arrayField.removeValue(index)}
                                  aria-label="Remover variante"
                                  size="icon"
                                  type="button"

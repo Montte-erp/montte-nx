@@ -93,7 +93,7 @@ const CredenzaContent = ({ className, children, ...props }: CredenzaProps) => {
    return (
       <CredenzaContent
          className={cn(
-            "w-full max-w-4xl",
+            "w-full max-w-4xl sm:max-w-4xl",
             isDesktop ? "max-h-[85vh] flex flex-col" : "max-h-[90vh]",
             className,
          )}

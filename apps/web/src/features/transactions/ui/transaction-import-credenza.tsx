@@ -23,6 +23,7 @@ import {
 import {
    Tooltip,
    TooltipContent,
+   TooltipProvider,
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import {
@@ -462,7 +463,7 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                   "rounded-xl border-2 border-dashed p-8 text-center transition-colors duration-200",
                   "cursor-pointer select-none",
                   "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30",
-                  "isParsing ? 'pointer-events-none opacity-60' : '',
+                  isParsing ? "pointer-events-none opacity-60" : "",
                ].join(" ")}
                onClick={() => !isParsing && fileInputRef.current?.click()}
                onDragLeave={handleDragLeave}
@@ -655,7 +656,7 @@ function ColumnMappingStep({
             </div>
 
             {/* Column mapping */}
-            <div className="grid grid-cols-1 gap-2">
+            <div className="grid grid-cols-2 gap-2">
                {(Object.keys(FIELD_LABELS) as (keyof ColumnMapping)[]).map(
                   (field) => {
                      const isRequired = REQUIRED_FIELDS.includes(field);
@@ -907,7 +908,7 @@ function PreviewStep({
    };
 
    return (
-      <>
+      <TooltipProvider>
          <CredenzaHeader>
             <CredenzaTitle>Prévia das Transações</CredenzaTitle>
             <p className="text-sm text-muted-foreground mt-0.5">
@@ -1161,7 +1162,7 @@ function PreviewStep({
                <ChevronRight className="ml-1 size-4" />
             </Button>
          </CredenzaFooter>
-      </>
+      </TooltipProvider>
    );
 }
 
@@ -1240,11 +1241,15 @@ function ConfirmStep({
                defaults.categoryId ||
                null;
 
+            const numericAmount = Number(row.valor.replace(",", "."));
+            const inferredType =
+               numericAmount < 0 ? "expense" : parseTipo(row.tipo);
+
             return {
                date: normalizeDate(row.data),
                name: row.nome || null,
-               type: parseTipo(row.tipo),
-               amount: row.valor,
+               type: inferredType,
+               amount: String(Math.abs(numericAmount)),
                description: row.descricao || defaults.description || null,
                bankAccountId: resolvedBankAccountId,
                destinationBankAccountId: null as string | null,

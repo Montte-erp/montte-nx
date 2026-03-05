@@ -284,6 +284,7 @@ function TransactionFormContent({
          </CredenzaHeader>
 
          <form
+            className="flex flex-1 flex-col overflow-hidden"
             onSubmit={(e) => {
                e.preventDefault();
                e.stopPropagation();

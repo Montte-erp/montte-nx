@@ -32,7 +32,7 @@ import { orpc } from "@/integrations/orpc/client";
 // ─────────────────────────────────────────────────────────────────────────────
 
 type PropertyType = "string" | "number" | "select";
-type SelectType = "category" | "bankAccount" | "creditCard";
+type SelectType = "category" | "bankAccount" | "creditCard" | "paymentMethod";
 
 type PropertyDef = {
    field: string;
@@ -62,6 +62,12 @@ const FILTER_PROPERTIES: PropertyDef[] = [
    },
    { field: "amount", label: "Valor", type: "number" },
    { field: "name", label: "Nome", type: "string" },
+   {
+      field: "paymentMethod",
+      label: "Forma de pagamento",
+      type: "select",
+      selectType: "paymentMethod" as SelectType,
+   },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -303,6 +309,36 @@ function CardValueSelect({
    );
 }
 
+const PAYMENT_METHOD_OPTIONS = [
+   { value: "pix", label: "Pix" },
+   { value: "credit_card", label: "Cartão de Crédito" },
+   { value: "debit_card", label: "Cartão de Débito" },
+   { value: "boleto", label: "Boleto" },
+   { value: "cash", label: "Dinheiro" },
+   { value: "transfer", label: "Transferência" },
+   { value: "other", label: "Outro" },
+];
+
+function PaymentMethodValueSelect({
+   value,
+   onChange,
+}: {
+   value: string;
+   onChange: (v: string) => void;
+}) {
+   return (
+      <Combobox
+         className="h-7 text-xs"
+         emptyMessage="Nenhuma forma."
+         onValueChange={(v) => onChange(v ?? "")}
+         options={PAYMENT_METHOD_OPTIONS}
+         placeholder="Selecionar..."
+         searchPlaceholder="Buscar..."
+         value={value}
+      />
+   );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Filter row value input
 // ─────────────────────────────────────────────────────────────────────────────
@@ -332,6 +368,9 @@ function FilterRowValueInput({
    }
    if (def.type === "select" && def.selectType === "creditCard") {
       return <CardValueSelect onChange={onChange} value={row.value} />;
+   }
+   if (def.type === "select" && def.selectType === "paymentMethod") {
+      return <PaymentMethodValueSelect onChange={onChange} value={row.value} />;
    }
    if (def.type === "number") {
       return (

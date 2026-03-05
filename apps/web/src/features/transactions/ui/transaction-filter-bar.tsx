@@ -108,20 +108,6 @@ export function presetToDateRange(preset: string): {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Payment method options
-// ─────────────────────────────────────────────────────────────────────────────
-
-const PAYMENT_METHODS = [
-   { value: "pix", label: "Pix" },
-   { value: "credit_card", label: "Cartão de Crédito" },
-   { value: "debit_card", label: "Cartão de Débito" },
-   { value: "boleto", label: "Boleto" },
-   { value: "cash", label: "Dinheiro" },
-   { value: "transfer", label: "Transferência" },
-   { value: "other", label: "Outro" },
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
 // TransactionFilterBar
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -132,12 +118,6 @@ export function TransactionFilterBar({
    // Data queries for filter dropdowns
    const { data: categories } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
-   );
-   const { data: bankAccounts } = useSuspenseQuery(
-      orpc.bankAccounts.getAll.queryOptions({}),
-   );
-   const { data: creditCards } = useSuspenseQuery(
-      orpc.creditCards.getAll.queryOptions({}),
    );
 
    // Debounced search via timeout ref
@@ -201,163 +181,128 @@ export function TransactionFilterBar({
    };
 
    return (
-      <div className="flex flex-wrap items-center gap-2">
-         {/* Search */}
+      <div className="flex flex-col gap-4">
+         {/* Row 1: Search */}
          <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
             <Input
-               className="pl-8 h-8 w-[220px]"
+               className="pl-8 h-8"
                onChange={(e) => handleSearchChange(e.target.value)}
-               placeholder="Buscar transação..."
+               placeholder="Buscar por nome, descrição ou contato..."
                value={searchInput}
             />
          </div>
 
-         {/* Date range */}
-         <DateRangePicker
-            clearLabel="Limpar período"
-            heading="Período"
-            label={dateLabel}
-            onClear={
-               hasDateFilter
-                  ? () =>
-                       onFiltersChange({
-                          ...filters,
-                          dateFrom: undefined,
-                          dateTo: undefined,
-                          datePreset: undefined,
-                          page: 1,
-                       })
-                  : undefined
-            }
-            onPresetSelect={(preset) => {
-               const { dateFrom, dateTo } = presetToDateRange(preset);
-               onFiltersChange({
-                  ...filters,
-                  dateFrom,
-                  dateTo,
-                  datePreset: preset,
-                  page: 1,
-               });
-            }}
-            onRangeSelect={(range) => {
-               const fmt = (d: Date) => d.toISOString().split("T")[0];
-               onFiltersChange({
-                  ...filters,
-                  dateFrom: fmt(range.from),
-                  dateTo: fmt(range.to),
-                  datePreset: undefined,
-                  page: 1,
-               });
-            }}
-            presets={DATE_RANGE_PRESETS}
-            selectedPreset={filters.datePreset ?? null}
-            selectedRange={selectedRange}
-            triggerClassName="h-8"
-            triggerVariant={hasDateFilter ? "secondary" : "outline"}
-         />
+         {/* Row 2: Filters */}
+         <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+            {/* Período */}
+            <div className="flex flex-col gap-2">
+               <span className="text-xs font-medium uppercase text-muted-foreground">Período</span>
+               <DateRangePicker
+                  clearLabel="Limpar período"
+                  heading="Período"
+                  label={dateLabel}
+                  onClear={
+                     hasDateFilter
+                        ? () =>
+                             onFiltersChange({
+                                ...filters,
+                                dateFrom: undefined,
+                                dateTo: undefined,
+                                datePreset: undefined,
+                                page: 1,
+                             })
+                        : undefined
+                  }
+                  onPresetSelect={(preset) => {
+                     const { dateFrom, dateTo } = presetToDateRange(preset);
+                     onFiltersChange({
+                        ...filters,
+                        dateFrom,
+                        dateTo,
+                        datePreset: preset,
+                        page: 1,
+                     });
+                  }}
+                  onRangeSelect={(range) => {
+                     const fmt = (d: Date) => d.toISOString().split("T")[0];
+                     onFiltersChange({
+                        ...filters,
+                        dateFrom: fmt(range.from),
+                        dateTo: fmt(range.to),
+                        datePreset: undefined,
+                        page: 1,
+                     });
+                  }}
+                  presets={DATE_RANGE_PRESETS}
+                  selectedPreset={filters.datePreset ?? null}
+                  selectedRange={selectedRange}
+                  triggerClassName="h-8"
+                  triggerVariant="outline"
+               />
+            </div>
 
-         {/* Type select */}
-         <Select
-            onValueChange={(v) =>
-               onFiltersChange({
-                  ...filters,
-                  type: v === "all" ? undefined : (v as TransactionType),
-                  page: 1,
-               })
-            }
-            value={filters.type ?? "all"}
-         >
-            <SelectTrigger className="h-8 w-[130px]">
-               <SelectValue placeholder="Tipo" />
-            </SelectTrigger>
-            <SelectContent>
-               <SelectItem value="all">Todos</SelectItem>
-               <SelectItem value="income">Receita</SelectItem>
-               <SelectItem value="expense">Despesa</SelectItem>
-               <SelectItem value="transfer">Transferência</SelectItem>
-            </SelectContent>
-         </Select>
+            {/* Tipo */}
+            <div className="flex flex-col gap-2">
+               <span className="text-xs font-medium uppercase text-muted-foreground">Tipo</span>
+               <Select
+                  onValueChange={(v) =>
+                     onFiltersChange({
+                        ...filters,
+                        type: v === "all" ? undefined : (v as TransactionType),
+                        page: 1,
+                     })
+                  }
+                  value={filters.type ?? "all"}
+               >
+                  <SelectTrigger className="h-8 sm:w-[130px]">
+                     <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                     <SelectItem value="all">Todos</SelectItem>
+                     <SelectItem value="income">Receita</SelectItem>
+                     <SelectItem value="expense">Despesa</SelectItem>
+                     <SelectItem value="transfer">Transferência</SelectItem>
+                  </SelectContent>
+               </Select>
+            </div>
 
-         {/* Categoria */}
-         <Select
-            onValueChange={(v) => setFilters((f) => ({ ...f, categoryId: v === "all" ? undefined : v, page: 1 }))}
-            value={filters.categoryId ?? "all"}
-         >
-            <SelectTrigger className="h-8 w-[150px]">
-               <SelectValue placeholder="Categoria" />
-            </SelectTrigger>
-            <SelectContent>
-               <SelectItem value="all">Todas categorias</SelectItem>
-               {categories.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-               ))}
-            </SelectContent>
-         </Select>
+            {/* Categoria */}
+            <div className="flex flex-col gap-2">
+               <span className="text-xs font-medium uppercase text-muted-foreground">Categoria</span>
+               <Select
+                  onValueChange={(v) => setFilters((f) => ({ ...f, categoryId: v === "all" ? undefined : v, page: 1 }))}
+                  value={filters.categoryId ?? "all"}
+               >
+                  <SelectTrigger className="h-8 sm:w-[150px]">
+                     <SelectValue placeholder="Todas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                     <SelectItem value="all">Todas</SelectItem>
+                     {categories.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                     ))}
+                  </SelectContent>
+               </Select>
+            </div>
 
-         {/* Conta */}
-         <Select
-            onValueChange={(v) => setFilters((f) => ({ ...f, bankAccountId: v === "all" ? undefined : v, page: 1 }))}
-            value={filters.bankAccountId ?? "all"}
-         >
-            <SelectTrigger className="h-8 w-[150px]">
-               <SelectValue placeholder="Conta" />
-            </SelectTrigger>
-            <SelectContent>
-               <SelectItem value="all">Todas contas</SelectItem>
-               {bankAccounts.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-               ))}
-            </SelectContent>
-         </Select>
+            {/* More filters popover + Clear */}
+            <div className="col-span-2 flex items-center gap-2 sm:self-end">
+               <TransactionFilterPopover
+                  onChange={(group) =>
+                     onFiltersChange({ ...filters, conditionGroup: group, page: 1 })
+                  }
+                  value={filters.conditionGroup}
+               />
 
-         {/* Cartão */}
-         <Select
-            onValueChange={(v) => setFilters((f) => ({ ...f, creditCardId: v === "all" ? undefined : v, page: 1 }))}
-            value={filters.creditCardId ?? "all"}
-         >
-            <SelectTrigger className="h-8 w-[150px]">
-               <SelectValue placeholder="Cartão" />
-            </SelectTrigger>
-            <SelectContent>
-               <SelectItem value="all">Todos cartões</SelectItem>
-               {creditCards.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-               ))}
-            </SelectContent>
-         </Select>
-
-         {/* Forma de pagamento */}
-         <Select
-            onValueChange={(v) => setFilters((f) => ({ ...f, paymentMethod: v === "all" ? undefined : v, page: 1 }))}
-            value={filters.paymentMethod ?? "all"}
-         >
-            <SelectTrigger className="h-8 w-[180px]">
-               <SelectValue placeholder="Forma de pagamento" />
-            </SelectTrigger>
-            <SelectContent>
-               <SelectItem value="all">Todas formas</SelectItem>
-               {PAYMENT_METHODS.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-               ))}
-            </SelectContent>
-         </Select>
-
-         {/* Condition builder popover */}
-         <TransactionFilterPopover
-            onChange={(group) =>
-               onFiltersChange({ ...filters, conditionGroup: group, page: 1 })
-            }
-            value={filters.conditionGroup}
-         />
-
-         {/* Clear all */}
-         {hasActiveFilters && (
-            <Button className="h-8 gap-1" onClick={handleClear} variant="ghost">
-               <X className="size-3.5" />
-               Limpar
-            </Button>
-         )}
+               {hasActiveFilters && (
+                  <Button className="h-8 gap-2" onClick={handleClear} variant="ghost">
+                     <X className="size-3.5" />
+                     Limpar
+                  </Button>
+               )}
+            </div>
+         </div>
       </div>
    );
 }

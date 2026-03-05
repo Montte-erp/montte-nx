@@ -171,10 +171,6 @@ export function WebhooksTable({
    }
 
    return (
-      <DataTable
-         columns={columns}
-         data={webhooks}
-         getRowId={(row) => row.id}
-      />
+      <DataTable columns={columns} data={webhooks} getRowId={(row) => row.id} />
    );
 }
