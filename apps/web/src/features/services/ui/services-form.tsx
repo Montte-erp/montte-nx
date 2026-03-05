@@ -1,6 +1,7 @@
 import { Button } from "@packages/ui/components/button";
 import {
    CredenzaBody,
+   CredenzaDescription,
    CredenzaFooter,
    CredenzaHeader,
    CredenzaTitle,
@@ -196,6 +197,11 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
             <CredenzaTitle>
                {isCreate ? "Novo Serviço" : "Editar Serviço"}
             </CredenzaTitle>
+            <CredenzaDescription>
+               {isCreate
+                  ? "Preencha as informações do serviço e adicione variantes de preço."
+                  : "Atualize as informações do serviço."}
+            </CredenzaDescription>
          </CredenzaHeader>
 
          <CredenzaBody className="space-y-6">
