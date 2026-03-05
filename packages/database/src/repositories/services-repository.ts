@@ -2,6 +2,7 @@ import { AppError, propagateError } from "@packages/utils/errors";
 import { and, count, eq, gte, lte } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import {
+   categories,
    contactSubscriptions,
    type NewContactSubscription,
    type NewService,
@@ -9,6 +10,7 @@ import {
    type SubscriptionStatus,
    services,
    serviceVariants,
+   tags,
 } from "../schema";
 
 // ---------------------------------------------------------------------------
@@ -18,8 +20,26 @@ import {
 export async function listServices(db: DatabaseInstance, teamId: string) {
    try {
       return await db
-         .select()
+         .select({
+            id: services.id,
+            teamId: services.teamId,
+            name: services.name,
+            description: services.description,
+            basePrice: services.basePrice,
+            type: services.type,
+            categoryId: services.categoryId,
+            tagId: services.tagId,
+            isActive: services.isActive,
+            createdAt: services.createdAt,
+            updatedAt: services.updatedAt,
+            categoryName: categories.name,
+            categoryColor: categories.color,
+            tagName: tags.name,
+            tagColor: tags.color,
+         })
          .from(services)
+         .leftJoin(categories, eq(services.categoryId, categories.id))
+         .leftJoin(tags, eq(services.tagId, tags.id))
          .where(eq(services.teamId, teamId))
          .orderBy(services.name);
    } catch (err) {
@@ -76,6 +96,36 @@ export async function deleteService(db: DatabaseInstance, id: string) {
       propagateError(err);
       throw AppError.database("Failed to delete service");
    }
+}
+
+export async function bulkCreateServices(
+   db: DatabaseInstance,
+   data: NewService[],
+): Promise<{ created: number; errors: { row: number; message: string }[] }> {
+   const errors: { row: number; message: string }[] = [];
+   let created = 0;
+
+   try {
+      await db.transaction(async (tx) => {
+         for (let i = 0; i < data.length; i++) {
+            try {
+               // biome-ignore lint/style/noNonNullAssertion: index is within bounds
+               await tx.insert(services).values(data[i]!);
+               created++;
+            } catch (err) {
+               errors.push({
+                  row: i,
+                  message: err instanceof Error ? err.message : "Unknown error",
+               });
+            }
+         }
+      });
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to bulk create services");
+   }
+
+   return { created, errors };
 }
 
 // ---------------------------------------------------------------------------

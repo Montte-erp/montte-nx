@@ -10,11 +10,14 @@ import {
    uuid,
 } from "drizzle-orm/pg-core";
 import { contacts } from "./contacts";
+import { categories } from "./categories";
 import {
    billingCycleEnum,
    serviceSourceEnum,
+   serviceTypeEnum,
    subscriptionStatusEnum,
 } from "./enums";
+import { tags } from "./tags";
 
 // ---------------------------------------------------------------------------
 // Services
@@ -27,7 +30,10 @@ export const services = pgTable(
       teamId: uuid("team_id").notNull(),
       name: text("name").notNull(),
       description: text("description"),
-      category: text("category"),
+      basePrice: integer("base_price").notNull().default(0), // cents (@f-o-t/money)
+      type: serviceTypeEnum("type").notNull().default("service"),
+      categoryId: uuid("category_id").references(() => categories.id, { onDelete: "set null" }),
+      tagId: uuid("tag_id").references(() => tags.id, { onDelete: "set null" }),
       isActive: boolean("is_active").notNull().default(true),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
@@ -145,7 +151,15 @@ export const resources = pgTable(
 // Relations
 // ---------------------------------------------------------------------------
 
-export const servicesRelations = relations(services, ({ many }) => ({
+export const servicesRelations = relations(services, ({ one, many }) => ({
+   category: one(categories, {
+      fields: [services.categoryId],
+      references: [categories.id],
+   }),
+   tag: one(tags, {
+      fields: [services.tagId],
+      references: [tags.id],
+   }),
    variants: many(serviceVariants),
    resources: many(resources),
 }));
