@@ -1,7 +1,9 @@
 import { relations, sql } from "drizzle-orm";
 import {
+   boolean,
    date,
    index,
+   integer,
    numeric,
    pgEnum,
    pgTable,
@@ -14,8 +16,19 @@ import { bankAccounts } from "./bank-accounts";
 import { categories } from "./categories";
 import { contacts } from "./contacts";
 import { creditCards } from "./credit-cards";
+import { services } from "./services";
 import { subcategories } from "./subcategories";
 import { tags } from "./tags";
+
+export const paymentMethodEnum = pgEnum("payment_method", [
+   "pix",
+   "credit_card",
+   "debit_card",
+   "boleto",
+   "cash",
+   "transfer",
+   "other",
+]);
 
 export const transactionTypeEnum = pgEnum("transaction_type", [
    "income",
@@ -34,7 +47,6 @@ export const transactions = pgTable(
       description: text("description"),
       date: date("date").notNull(),
       bankAccountId: uuid("bank_account_id")
-         .notNull()
          .references(() => bankAccounts.id, {
             onDelete: "restrict",
          }),
@@ -52,6 +64,11 @@ export const transactions = pgTable(
          onDelete: "set null",
       }),
       attachmentUrl: text("attachment_url"),
+      paymentMethod: paymentMethodEnum("payment_method"),
+      isInstallment: boolean("is_installment").default(false).notNull(),
+      installmentCount: integer("installment_count"),
+      installmentNumber: integer("installment_number"),
+      installmentGroupId: uuid("installment_group_id"),
       contactId: uuid("contact_id").references(() => contacts.id, {
          onDelete: "set null",
       }),
@@ -86,6 +103,27 @@ export const transactionTags = pgTable(
    (table) => [primaryKey({ columns: [table.transactionId, table.tagId] })],
 );
 
+export const transactionItems = pgTable("transaction_items", {
+   id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
+   transactionId: uuid("transaction_id")
+      .notNull()
+      .references(() => transactions.id, { onDelete: "cascade" }),
+   serviceId: uuid("service_id").references(() => services.id, {
+      onDelete: "set null",
+   }),
+   teamId: uuid("team_id").notNull(),
+   description: text("description"),
+   quantity: numeric("quantity", { precision: 12, scale: 4 })
+      .notNull()
+      .default("1"),
+   unitPrice: numeric("unit_price", { precision: 12, scale: 2 })
+      .notNull()
+      .default("0"),
+   createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+});
+
 export const transactionsRelations = relations(
    transactions,
    ({ one, many }) => ({
@@ -112,6 +150,7 @@ export const transactionsRelations = relations(
          references: [subcategories.id],
       }),
       transactionTags: many(transactionTags),
+      items: many(transactionItems),
       contact: one(contacts, {
          fields: [transactions.contactId],
          references: [contacts.id],
@@ -133,8 +172,24 @@ export const transactionTagsRelations = relations(
    }),
 );
 
+export const transactionItemsRelations = relations(
+   transactionItems,
+   ({ one }) => ({
+      transaction: one(transactions, {
+         fields: [transactionItems.transactionId],
+         references: [transactions.id],
+      }),
+      service: one(services, {
+         fields: [transactionItems.serviceId],
+         references: [services.id],
+      }),
+   }),
+);
+
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
 export type TransactionType = (typeof transactionTypeEnum.enumValues)[number];
 export type TransactionTag = typeof transactionTags.$inferSelect;
 export type NewTransactionTag = typeof transactionTags.$inferInsert;
+export type TransactionItem = typeof transactionItems.$inferSelect;
+export type NewTransactionItem = typeof transactionItems.$inferInsert;
