@@ -53,3 +53,4 @@ storybook-static
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 .worktrees
+worktrees
