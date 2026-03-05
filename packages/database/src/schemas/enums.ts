@@ -20,5 +20,9 @@ export type SubscriptionStatus =
    (typeof subscriptionStatusEnum.enumValues)[number];
 export type ServiceSource = (typeof serviceSourceEnum.enumValues)[number];
 
-export const serviceTypeEnum = pgEnum("service_type", ["service", "product", "subscription"]);
+export const serviceTypeEnum = pgEnum("service_type", [
+   "service",
+   "product",
+   "subscription",
+]);
 export type ServiceType = (typeof serviceTypeEnum.enumValues)[number];

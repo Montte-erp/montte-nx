@@ -1,3 +1,4 @@
+import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
@@ -7,30 +8,43 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
+import { Input } from "@packages/ui/components/input";
+import {
+   Select,
+   SelectContent,
+   SelectItem,
+   SelectTrigger,
+   SelectValue,
+} from "@packages/ui/components/select";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
    Briefcase,
+   Download,
    LayoutGrid,
    LayoutList,
    Pencil,
    Plus,
+   Search,
    Trash2,
+   Upload,
 } from "lucide-react";
-import { Suspense, useCallback } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
+import { ServiceImportCredenza } from "@/features/services/ui/service-import-credenza";
 import { ServicesAnalyticsHeader } from "@/features/services/ui/services-analytics-header";
 import {
    buildServiceColumns,
    type ServiceRow,
 } from "@/features/services/ui/services-columns";
 import { ServiceForm } from "@/features/services/ui/services-form";
+import { exportServicesCsv } from "@/features/services/utils/export-services-csv";
 import {
    useViewSwitch,
    type ViewConfig,
@@ -60,6 +74,12 @@ const SERVICES_BANNER: EarlyAccessBannerTemplate = {
    ],
 };
 
+const TYPE_FILTER_OPTIONS = [
+   { value: "service", label: "Prestação de serviço" },
+   { value: "product", label: "Produto" },
+   { value: "subscription", label: "Assinatura" },
+];
+
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/erp/services",
 )({
@@ -84,10 +104,88 @@ function ServicesSkeleton() {
 }
 
 // =============================================================================
+// Filters
+// =============================================================================
+
+interface FiltersState {
+   search: string;
+   type: string;
+   categoryId: string;
+}
+
+function ServiceFilters({
+   filters,
+   onChange,
+   categories,
+}: {
+   filters: FiltersState;
+   onChange: (f: FiltersState) => void;
+   categories: { id: string; name: string }[] | undefined;
+}) {
+   return (
+      <div className="flex flex-wrap items-center gap-2">
+         <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+            <Input
+               className="pl-8"
+               onChange={(e) =>
+                  onChange({ ...filters, search: e.target.value })
+               }
+               placeholder="Buscar serviços..."
+               value={filters.search}
+            />
+         </div>
+         <Select
+            onValueChange={(v) =>
+               onChange({ ...filters, type: v === "all" ? "" : v })
+            }
+            value={filters.type || "all"}
+         >
+            <SelectTrigger className="w-[180px]">
+               <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
+            <SelectContent>
+               <SelectItem value="all">Todos os tipos</SelectItem>
+               {TYPE_FILTER_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                     {opt.label}
+                  </SelectItem>
+               ))}
+            </SelectContent>
+         </Select>
+         <Select
+            onValueChange={(v) =>
+               onChange({ ...filters, categoryId: v === "all" ? "" : v })
+            }
+            value={filters.categoryId || "all"}
+         >
+            <SelectTrigger className="w-[180px]">
+               <SelectValue placeholder="Categoria" />
+            </SelectTrigger>
+            <SelectContent>
+               <SelectItem value="all">Todas categorias</SelectItem>
+               {categories?.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                     {cat.name}
+                  </SelectItem>
+               ))}
+            </SelectContent>
+         </Select>
+      </div>
+   );
+}
+
+// =============================================================================
 // List
 // =============================================================================
 
-function ServicesList({ view }: { view: "table" | "card" }) {
+function ServicesList({
+   view,
+   filters,
+}: {
+   view: "table" | "card";
+   filters: FiltersState;
+}) {
    const { data: servicesList } = useSuspenseQuery(
       orpc.services.getAll.queryOptions({}),
    );
@@ -101,6 +199,25 @@ function ServicesList({ view }: { view: "table" | "card" }) {
          onError: (e) => toast.error(e.message || "Erro ao excluir serviço."),
       }),
    );
+
+   const filtered = useMemo(() => {
+      let result = servicesList as ServiceRow[];
+      if (filters.search) {
+         const q = filters.search.toLowerCase();
+         result = result.filter(
+            (s) =>
+               s.name.toLowerCase().includes(q) ||
+               s.description?.toLowerCase().includes(q),
+         );
+      }
+      if (filters.type) {
+         result = result.filter((s) => s.type === filters.type);
+      }
+      if (filters.categoryId) {
+         result = result.filter((s) => s.categoryId === filters.categoryId);
+      }
+      return result;
+   }, [servicesList, filters]);
 
    const handleEdit = useCallback(
       (row: ServiceRow) => {
@@ -152,31 +269,36 @@ function ServicesList({ view }: { view: "table" | "card" }) {
    const columns = buildServiceColumns();
 
    return (
-      <DataTable
-         columns={columns}
-         data={servicesList as ServiceRow[]}
-         getRowId={(row) => row.id}
-         renderActions={({ row }) => (
-            <>
-               <Button
-                  onClick={() => handleEdit(row.original)}
-                  tooltip="Editar"
-                  variant="outline"
-               >
-                  <Pencil className="size-4" />
-               </Button>
-               <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(row.original)}
-                  tooltip="Excluir"
-                  variant="outline"
-               >
-                  <Trash2 className="size-4" />
-               </Button>
-            </>
-         )}
-         view={view}
-      />
+      <div className="space-y-2">
+         <div className="flex items-center gap-2">
+            <Badge variant="secondary">{filtered.length} serviços</Badge>
+         </div>
+         <DataTable
+            columns={columns}
+            data={filtered}
+            getRowId={(row) => row.id}
+            renderActions={({ row }) => (
+               <>
+                  <Button
+                     onClick={() => handleEdit(row.original)}
+                     tooltip="Editar"
+                     variant="outline"
+                  >
+                     <Pencil className="size-4" />
+                  </Button>
+                  <Button
+                     className="text-destructive hover:text-destructive"
+                     onClick={() => handleDelete(row.original)}
+                     tooltip="Excluir"
+                     variant="outline"
+                  >
+                     <Trash2 className="size-4" />
+                  </Button>
+               </>
+            )}
+            view={view}
+         />
+      </div>
    );
 }
 
@@ -191,20 +313,59 @@ function ServicesPage() {
       SERVICE_VIEWS,
    );
 
+   const [filters, setFilters] = useState<FiltersState>({
+      search: "",
+      type: "",
+      categoryId: "",
+   });
+
+   const { data: categories } = useQuery(
+      orpc.categories.getAll.queryOptions({}),
+   );
+
+   const { data: servicesList } = useQuery(
+      orpc.services.getAll.queryOptions({}),
+   );
+
    const handleCreate = useCallback(() => {
       openCredenza({
          children: <ServiceForm mode="create" onSuccess={closeCredenza} />,
       });
    }, [openCredenza, closeCredenza]);
 
+   const handleImport = useCallback(() => {
+      openCredenza({
+         children: <ServiceImportCredenza />,
+      });
+   }, [openCredenza]);
+
+   const handleExport = useCallback(() => {
+      if (servicesList && servicesList.length > 0) {
+         exportServicesCsv(servicesList as ServiceRow[]);
+         toast.success("CSV exportado.");
+      } else {
+         toast.info("Nenhum serviço para exportar.");
+      }
+   }, [servicesList]);
+
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
-               <Button onClick={handleCreate}>
-                  <Plus className="size-4 mr-1" />
-                  Novo Serviço
-               </Button>
+               <div className="flex items-center gap-2">
+                  <Button onClick={handleImport} variant="outline">
+                     <Upload className="size-4 mr-1" />
+                     Importar
+                  </Button>
+                  <Button onClick={handleExport} variant="outline">
+                     <Download className="size-4 mr-1" />
+                     Exportar
+                  </Button>
+                  <Button onClick={handleCreate}>
+                     <Plus className="size-4 mr-1" />
+                     Novo Serviço
+                  </Button>
+               </div>
             }
             description="Gerencie o catálogo de serviços"
             title="Serviços"
@@ -212,8 +373,13 @@ function ServicesPage() {
          />
          <ServicesAnalyticsHeader />
          <EarlyAccessBanner template={SERVICES_BANNER} />
+         <ServiceFilters
+            categories={categories}
+            filters={filters}
+            onChange={setFilters}
+         />
          <Suspense fallback={<ServicesSkeleton />}>
-            <ServicesList view={currentView} />
+            <ServicesList filters={filters} view={currentView} />
          </Suspense>
       </main>
    );

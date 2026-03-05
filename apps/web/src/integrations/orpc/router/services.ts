@@ -126,7 +126,9 @@ export const remove = protectedProcedure
 export const bulkCreate = protectedProcedure
    .input(
       z.object({
-         services: z.array(serviceSchema.required({ name: true, basePrice: true })),
+         services: z.array(
+            serviceSchema.required({ name: true, basePrice: true }),
+         ),
       }),
    )
    .handler(async ({ context, input }) => {

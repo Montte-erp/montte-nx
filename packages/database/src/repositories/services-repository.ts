@@ -1,5 +1,15 @@
 import { AppError, propagateError } from "@packages/utils/errors";
-import { type SQL, and, count, eq, gte, ilike, inArray, lte, or } from "drizzle-orm";
+import {
+   and,
+   count,
+   eq,
+   gte,
+   ilike,
+   inArray,
+   lte,
+   or,
+   type SQL,
+} from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import {
    categories,

@@ -9,8 +9,8 @@ import {
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
-import { contacts } from "./contacts";
 import { categories } from "./categories";
+import { contacts } from "./contacts";
 import {
    billingCycleEnum,
    serviceSourceEnum,
@@ -32,7 +32,9 @@ export const services = pgTable(
       description: text("description"),
       basePrice: integer("base_price").notNull().default(0), // cents (@f-o-t/money)
       type: serviceTypeEnum("type").notNull().default("service"),
-      categoryId: uuid("category_id").references(() => categories.id, { onDelete: "set null" }),
+      categoryId: uuid("category_id").references(() => categories.id, {
+         onDelete: "set null",
+      }),
       tagId: uuid("tag_id").references(() => tags.id, { onDelete: "set null" }),
       isActive: boolean("is_active").notNull().default(true),
       createdAt: timestamp("created_at", { withTimezone: true })

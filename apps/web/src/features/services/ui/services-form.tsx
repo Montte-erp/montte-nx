@@ -1,4 +1,5 @@
 import { Button } from "@packages/ui/components/button";
+import { Combobox } from "@packages/ui/components/combobox";
 import {
    CredenzaBody,
    CredenzaFooter,
@@ -11,7 +12,6 @@ import {
    FieldGroup,
    FieldLabel,
 } from "@packages/ui/components/field";
-import { Combobox } from "@packages/ui/components/combobox";
 import { Input } from "@packages/ui/components/input";
 import { MoneyInput } from "@packages/ui/components/money-input";
 import {
