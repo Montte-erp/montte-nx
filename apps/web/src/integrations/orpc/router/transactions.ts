@@ -7,9 +7,12 @@ import { getSubcategory } from "@packages/database/repositories/subcategories-re
 import { getTag } from "@packages/database/repositories/tags-repository";
 import {
    createTransaction,
+   createTransactionItems,
    deleteTransaction,
    getTransactionWithTags,
+   getTransactionsSummary,
    listTransactions,
+   replaceTransactionItems,
    updateTransaction,
 } from "@packages/database/repositories/transactions-repository";
 import { transactions } from "@packages/database/schemas/transactions";
@@ -34,6 +37,11 @@ const transactionSchema = createInsertSchema(transactions)
       attachmentUrl: true,
       contactId: true,
       creditCardId: true,
+      paymentMethod: true,
+      isInstallment: true,
+      installmentCount: true,
+      installmentNumber: true,
+      installmentGroupId: true,
    })
    .extend({
       name: z.string().max(200).nullable().optional(),
@@ -44,8 +52,16 @@ const transactionSchema = createInsertSchema(transactions)
          }),
       bankAccountId: z
          .string()
-         .uuid({ message: "Conta bancária obrigatória." }),
+         .uuid({ message: "Conta bancária obrigatória." })
+         .nullable()
+         .optional(),
       tagIds: z.array(z.string().uuid()).optional().default([]),
+      items: z.array(z.object({
+         serviceId: z.string().uuid().nullable().optional(),
+         description: z.string().max(500).nullable().optional(),
+         quantity: z.string(),
+         unitPrice: z.string(),
+      })).optional().default([]),
    });
 
 // =============================================================================
@@ -56,7 +72,7 @@ async function verifyTransactionRefs(
    db: Parameters<typeof getBankAccount>[0],
    teamId: string,
    input: {
-      bankAccountId: string;
+      bankAccountId?: string | null;
       destinationBankAccountId?: string | null;
       categoryId?: string | null;
       subcategoryId?: string | null;
@@ -64,11 +80,13 @@ async function verifyTransactionRefs(
       contactId?: string | null;
    },
 ) {
-   const account = await getBankAccount(db, input.bankAccountId);
-   if (!account || account.teamId !== teamId) {
-      throw new ORPCError("BAD_REQUEST", {
-         message: "Conta bancária inválida.",
-      });
+   if (input.bankAccountId) {
+      const account = await getBankAccount(db, input.bankAccountId);
+      if (!account || account.teamId !== teamId) {
+         throw new ORPCError("BAD_REQUEST", {
+            message: "Conta bancária inválida.",
+         });
+      }
    }
 
    if (input.destinationBankAccountId) {
@@ -136,8 +154,12 @@ export const create = protectedProcedure
          tagIds: input.tagIds,
          contactId: input.contactId,
       });
-      const { tagIds, ...data } = input;
-      return createTransaction(db, { ...data, teamId }, tagIds);
+      const { tagIds, items, ...data } = input;
+      const transaction = await createTransaction(db, { ...data, teamId }, tagIds);
+      if (items && items.length > 0 && transaction) {
+         await createTransactionItems(db, transaction.id, teamId, items);
+      }
+      return transaction;
    });
 
 export const getAll = protectedProcedure
@@ -160,6 +182,7 @@ export const getAll = protectedProcedure
             search: z.string().max(100).optional(),
             creditCardId: z.string().uuid().optional(),
             uncategorized: z.boolean().optional(),
+            paymentMethod: z.string().optional(),
             page: z.number().int().positive().default(1),
             pageSize: z.number().int().positive().max(100).default(20),
             conditionGroup: ConditionGroup.optional(),
@@ -169,6 +192,28 @@ export const getAll = protectedProcedure
    .handler(async ({ context, input }) => {
       const { db, teamId } = context;
       return listTransactions(db, { teamId, ...input });
+   });
+
+export const getSummary = protectedProcedure
+   .input(
+      z.object({
+         type: z.enum(["income", "expense", "transfer"]).optional(),
+         bankAccountId: z.string().uuid().optional(),
+         categoryId: z.string().uuid().optional(),
+         tagId: z.string().uuid().optional(),
+         contactId: z.string().uuid().optional(),
+         dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+         dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+         search: z.string().max(100).optional(),
+         creditCardId: z.string().uuid().optional(),
+         paymentMethod: z.string().optional(),
+         uncategorized: z.boolean().optional(),
+         conditionGroup: ConditionGroup.optional(),
+      }).optional(),
+   )
+   .handler(async ({ context, input }) => {
+      const { db, teamId } = context;
+      return getTransactionsSummary(db, { teamId, ...input });
    });
 
 export const getById = protectedProcedure
@@ -205,7 +250,7 @@ export const update = protectedProcedure
          input.contactId
       ) {
          await verifyTransactionRefs(db, teamId, {
-            bankAccountId: input.bankAccountId ?? existing.bankAccountId ?? "",
+            bankAccountId: input.bankAccountId ?? existing.bankAccountId,
             destinationBankAccountId: input.destinationBankAccountId,
             categoryId: input.categoryId,
             subcategoryId: input.subcategoryId,
@@ -213,8 +258,12 @@ export const update = protectedProcedure
             contactId: input.contactId,
          });
       }
-      const { id, tagIds, ...data } = input;
-      return updateTransaction(db, id, data, tagIds);
+      const { id, tagIds, items, ...data } = input;
+      const result = await updateTransaction(db, id, data, tagIds);
+      if (items !== undefined) {
+         await replaceTransactionItems(db, id, teamId, items);
+      }
+      return result;
    });
 
 export const remove = protectedProcedure
@@ -248,9 +297,9 @@ export const importBulk = protectedProcedure
       const { db, teamId } = context;
       let imported = 0;
       for (const t of input.transactions) {
-         const { tagIds, ...data } = t;
+         const { tagIds, items, ...data } = t;
          await verifyTransactionRefs(db, teamId, {
-            bankAccountId: data.bankAccountId ?? "",
+            bankAccountId: data.bankAccountId,
             destinationBankAccountId: data.destinationBankAccountId,
             categoryId: data.categoryId,
             subcategoryId: data.subcategoryId,
