@@ -391,7 +391,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                                     onClick={() =>
                                        arrayField.removeValue(index)
                                     }
-                                    tooltip="Remover variante"
+                                    aria-label="Remover variante"
                                     type="button"
                                     variant="outline"
                                  >
