@@ -215,6 +215,9 @@ function TransactionFormContent({
          contactId: transaction?.contactId ?? (null as string | null),
          creditCardId: transaction?.creditCardId ?? "",
          createAsBill: false as boolean,
+         paymentMethod: transaction?.paymentMethod ?? ("" as string),
+         isInstallment: transaction?.isInstallment ?? false,
+         installmentCount: transaction?.installmentCount ?? (null as number | null),
       },
       onSubmit: ({ value }) => {
          const dateStr = value.date
@@ -241,7 +244,7 @@ function TransactionFormContent({
             name: value.name?.trim() || null,
             amount: value.amount,
             date: dateStr,
-            bankAccountId: value.bankAccountId,
+            bankAccountId: value.bankAccountId || null,
             destinationBankAccountId:
                value.type === "transfer"
                   ? value.destinationBankAccountId || null
@@ -254,6 +257,9 @@ function TransactionFormContent({
             contactId: value.contactId,
             creditCardId:
                value.type === "expense" ? value.creditCardId || null : null,
+            paymentMethod: value.paymentMethod || null,
+            isInstallment: value.isInstallment,
+            installmentCount: value.isInstallment ? value.installmentCount : null,
          };
 
          if (isCreate) {
@@ -538,6 +544,85 @@ function TransactionFormContent({
                            </form.Field>
                         ) : null;
                      }}
+                  </form.Subscribe>
+
+                  {/* Forma de pagamento */}
+                  <form.Field name="paymentMethod">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel>Forma de pagamento</FieldLabel>
+                           <Select
+                              onValueChange={field.handleChange}
+                              value={field.state.value}
+                           >
+                              <SelectTrigger>
+                                 <SelectValue placeholder="Selecione (opcional)" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 <SelectItem value="pix">Pix</SelectItem>
+                                 <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+                                 <SelectItem value="debit_card">Cartão de Débito</SelectItem>
+                                 <SelectItem value="boleto">Boleto</SelectItem>
+                                 <SelectItem value="cash">Dinheiro</SelectItem>
+                                 <SelectItem value="transfer">Transferência</SelectItem>
+                                 <SelectItem value="other">Outro</SelectItem>
+                              </SelectContent>
+                           </Select>
+                        </Field>
+                     )}
+                  </form.Field>
+
+                  {/* Parcelado */}
+                  <form.Field name="isInstallment">
+                     {(field) => (
+                        <Field>
+                           <div className="flex items-center gap-2">
+                              <Checkbox
+                                 checked={field.state.value}
+                                 id="isInstallment"
+                                 onCheckedChange={(v) => {
+                                    field.handleChange(!!v);
+                                    if (!v) form.setFieldValue("installmentCount", null);
+                                 }}
+                              />
+                              {/* biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is Radix */}
+                              <label
+                                 className="text-sm cursor-pointer select-none"
+                                 htmlFor="isInstallment"
+                              >
+                                 Parcelado
+                              </label>
+                           </div>
+                        </Field>
+                     )}
+                  </form.Field>
+
+                  <form.Subscribe selector={(s) => s.values.isInstallment}>
+                     {(isInstallment) =>
+                        isInstallment ? (
+                           <form.Field name="installmentCount">
+                              {(field) => (
+                                 <Field>
+                                    <FieldLabel>Número de parcelas</FieldLabel>
+                                    <Input
+                                       id={field.name}
+                                       min={2}
+                                       max={72}
+                                       onBlur={field.handleBlur}
+                                       onChange={(e) =>
+                                          field.handleChange(
+                                             e.target.value ? Number(e.target.value) : null,
+                                          )
+                                       }
+                                       placeholder="Ex: 3"
+                                       type="number"
+                                       value={field.state.value ?? ""}
+                                    />
+                                 </Field>
+                              )}
+                           </form.Field>
+                        ) : null
+                     }
                   </form.Subscribe>
 
                   {/* Tags */}
