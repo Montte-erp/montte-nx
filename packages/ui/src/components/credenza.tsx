@@ -91,7 +91,14 @@ const CredenzaContent = ({ className, children, ...props }: CredenzaProps) => {
    const CredenzaContent = isDesktop ? DialogContent : DrawerContent;
 
    return (
-      <CredenzaContent className={cn("w-full max-w-4xl", className)} {...props}>
+      <CredenzaContent
+         className={cn(
+            "w-full max-w-4xl",
+            isDesktop ? "max-h-[85vh] flex flex-col" : "max-h-[90vh]",
+            className,
+         )}
+         {...props}
+      >
          {children}
       </CredenzaContent>
    );
@@ -140,7 +147,11 @@ const CredenzaBody = ({ className, children, ...props }: CredenzaProps) => {
    const { isDesktop } = useCredenzaContext();
    return (
       <div
-         className={cn(isDesktop ? "px-0 pb-4" : "pb-0 px-4", className)}
+         className={cn(
+            "flex-1 overflow-y-auto",
+            isDesktop ? "px-0 py-4" : "pb-0 px-4",
+            className,
+         )}
          {...props}
       >
          {children}
