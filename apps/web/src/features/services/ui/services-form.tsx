@@ -1,5 +1,5 @@
 import { Button } from "@packages/ui/components/button";
-import { Combobox } from "@packages/ui/components/combobox";
+
 import {
    CredenzaBody,
    CredenzaFooter,
@@ -26,7 +26,7 @@ import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { PlusCircle, Trash2 } from "lucide-react";
-import { useMemo, useTransition } from "react";
+import { useTransition } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import type { ServiceRow } from "./services-columns";
@@ -82,16 +82,6 @@ interface ServiceFormProps {
 export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
    const isCreate = mode === "create";
    const [isPending, startTransition] = useTransition();
-
-   const { data: allServices } = useQuery(
-      orpc.services.getAll.queryOptions({}),
-   );
-
-   const nameOptions = useMemo(() => {
-      if (!allServices) return [];
-      const unique = [...new Set(allServices.map((s) => s.name))];
-      return unique.map((name) => ({ value: name, label: name }));
-   }, [allServices]);
 
    const { data: categories } = useQuery(
       orpc.categories.getAll.queryOptions({}),
@@ -218,15 +208,10 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel>Nome *</FieldLabel>
-                           <Combobox
-                              className="w-full justify-between"
-                              emptyMessage="Nenhum serviço encontrado."
+                           <Input
                               onBlur={field.handleBlur}
-                              onCreate={(name) => field.handleChange(name)}
-                              onValueChange={(v) => field.handleChange(v)}
-                              options={nameOptions}
+                              onChange={(e) => field.handleChange(e.target.value)}
                               placeholder="Ex: Consultoria Mensal"
-                              searchPlaceholder="Buscar serviço..."
                               value={field.state.value}
                            />
                            {isInvalid && (
