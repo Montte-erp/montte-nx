@@ -76,22 +76,20 @@ export function buildBillsColumns(): ColumnDef<BillRow>[] {
          },
       },
       {
-         accessorKey: "category",
-         header: "Categoria",
+         id: "status",
+         header: "Status",
          cell: ({ row }) => {
-            const cat = row.original.category;
-            if (!cat)
-               return <span className="text-muted-foreground text-sm">—</span>;
+            const displayStatus = computeDisplayStatus(row.original);
+            const config = STATUS_CONFIG[displayStatus];
+            const Icon = config.icon;
             return (
-               <div className="flex items-center gap-1.5">
-                  {cat.color && (
-                     <span
-                        className="size-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: cat.color }}
-                     />
-                  )}
-                  <span className="text-sm">{cat.name}</span>
-               </div>
+               <Badge
+                  className="flex items-center gap-1 w-fit"
+                  variant={config.variant}
+               >
+                  <Icon className="size-3" />
+                  {config.label}
+               </Badge>
             );
          },
       },
@@ -114,20 +112,22 @@ export function buildBillsColumns(): ColumnDef<BillRow>[] {
          ),
       },
       {
-         id: "status",
-         header: "Status",
+         accessorKey: "category",
+         header: "Categoria",
          cell: ({ row }) => {
-            const displayStatus = computeDisplayStatus(row.original);
-            const config = STATUS_CONFIG[displayStatus];
-            const Icon = config.icon;
+            const cat = row.original.category;
+            if (!cat)
+               return <span className="text-muted-foreground text-sm">—</span>;
             return (
-               <Badge
-                  className="flex items-center gap-1 w-fit"
-                  variant={config.variant}
-               >
-                  <Icon className="size-3" />
-                  {config.label}
-               </Badge>
+               <div className="flex items-center gap-1.5">
+                  {cat.color && (
+                     <span
+                        className="size-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: cat.color }}
+                     />
+                  )}
+                  <span className="text-sm">{cat.name}</span>
+               </div>
             );
          },
       },

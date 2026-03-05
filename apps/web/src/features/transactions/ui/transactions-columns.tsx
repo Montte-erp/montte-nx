@@ -39,6 +39,34 @@ function formatDate(dateStr: string): string {
 export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
    return [
       {
+         accessorKey: "name",
+         header: "Nome",
+         cell: ({ row }) => {
+            const { name } = row.original;
+            if (!name)
+               return <span className="text-sm text-muted-foreground">—</span>;
+            return (
+               <span className="text-sm font-medium truncate max-w-[200px] block">
+                  {name}
+               </span>
+            );
+         },
+      },
+      {
+         accessorKey: "description",
+         header: "Descrição",
+         cell: ({ row }) => {
+            const { description } = row.original;
+            if (!description)
+               return <span className="text-sm text-muted-foreground">—</span>;
+            return (
+               <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
+                  {description}
+               </span>
+            );
+         },
+      },
+      {
          accessorKey: "date",
          header: "Data",
          cell: ({ row }) => (
@@ -48,16 +76,27 @@ export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
          ),
       },
       {
-         accessorKey: "name",
-         header: "Nome",
+         accessorKey: "amount",
+         header: "Valor",
          cell: ({ row }) => {
-            const { name, description } = row.original;
-            const label = name || description;
-            if (!label)
-               return <span className="text-sm text-muted-foreground">—</span>;
+            const { type, amount } = row.original;
+            if (type === "income") {
+               return (
+                  <span className="text-sm font-medium text-green-600 dark:text-green-500">
+                     {formatBRL(amount)}
+                  </span>
+               );
+            }
+            if (type === "expense") {
+               return (
+                  <span className="text-sm font-medium text-destructive">
+                     - {formatBRL(amount)}
+                  </span>
+               );
+            }
             return (
-               <span className="text-sm font-medium truncate max-w-[200px] block">
-                  {label}
+               <span className="text-sm font-medium text-muted-foreground">
+                  {formatBRL(amount)}
                </span>
             );
          },
@@ -101,32 +140,6 @@ export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
             if (!name)
                return <span className="text-xs text-muted-foreground">—</span>;
             return <span className="text-sm">{name}</span>;
-         },
-      },
-      {
-         accessorKey: "amount",
-         header: "Valor",
-         cell: ({ row }) => {
-            const { type, amount } = row.original;
-            if (type === "income") {
-               return (
-                  <span className="text-sm font-medium text-green-600 dark:text-green-500">
-                     {formatBRL(amount)}
-                  </span>
-               );
-            }
-            if (type === "expense") {
-               return (
-                  <span className="text-sm font-medium text-destructive">
-                     - {formatBRL(amount)}
-                  </span>
-               );
-            }
-            return (
-               <span className="text-sm font-medium text-muted-foreground">
-                  {formatBRL(amount)}
-               </span>
-            );
          },
       },
    ];

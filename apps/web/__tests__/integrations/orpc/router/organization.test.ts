@@ -119,7 +119,22 @@ describe("getActiveOrganization", () => {
 			{ id: "team-2" },
 		]);
 
-		const ctx = createOrgContext();
+		// Mock Stripe client with a saved payment method → projectLimit = 6
+		const mockStripeClient = {
+			paymentMethods: {
+				list: vi.fn().mockResolvedValueOnce({ data: [{ id: "pm_1" }] }),
+			},
+		};
+		const mockDbWithUser = {
+			...mockDb,
+			query: {
+				user: {
+					findFirst: vi.fn().mockResolvedValueOnce({ stripeCustomerId: "cus_123" }),
+				},
+			},
+		};
+
+		const ctx = createOrgContext({ stripeClient: mockStripeClient, db: mockDbWithUser });
 		const result = await call(orgRouter.getActiveOrganization, undefined, { context: ctx });
 
 		expect(mockAuth.api.getFullOrganization).toHaveBeenCalledWith({
@@ -129,7 +144,7 @@ describe("getActiveOrganization", () => {
 		expect(result).toEqual({
 			...fullOrg,
 			activeSubscription: { id: "sub_1", status: "active", plan: "pro" },
-			projectLimit: Number.POSITIVE_INFINITY,
+			projectLimit: 6,
 			projectCount: 2,
 		});
 	});
@@ -159,7 +174,7 @@ describe("getActiveOrganization", () => {
 		expect(mockAuth.api.listActiveSubscriptions).not.toHaveBeenCalled();
 	});
 
-	it("returns unlimited projectLimit when no active subscription exists", async () => {
+	it("returns default projectLimit of 1 when no stripe client is available", async () => {
 		const fullOrg = {
 			id: TEST_ORG_ID,
 			name: "Test Org",
@@ -172,13 +187,14 @@ describe("getActiveOrganization", () => {
 		]);
 		mockAuth.api.listOrganizationTeams.mockResolvedValueOnce([]);
 
+		// No stripeClient → falls back to projectLimit = 1
 		const ctx = createOrgContext();
 		const result = await call(orgRouter.getActiveOrganization, undefined, { context: ctx });
 
 		expect(result).toEqual({
 			...fullOrg,
 			activeSubscription: null,
-			projectLimit: Number.POSITIVE_INFINITY,
+			projectLimit: 1,
 			projectCount: 0,
 		});
 	});

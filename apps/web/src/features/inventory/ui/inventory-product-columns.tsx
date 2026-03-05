@@ -28,6 +28,20 @@ export function buildInventoryProductColumns(): ColumnDef<InventoryProductRow>[]
          ),
       },
       {
+         accessorKey: "description",
+         header: "Descrição",
+         cell: ({ row }) => {
+            const { description } = row.original;
+            if (!description)
+               return <span className="text-muted-foreground">—</span>;
+            return (
+               <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
+                  {description}
+               </span>
+            );
+         },
+      },
+      {
          accessorKey: "currentStock",
          header: "Estoque",
          cell: ({ row }) => (

@@ -50,22 +50,6 @@ export function buildBankAccountColumns(): ColumnDef<BankAccountRow>[] {
          ),
       },
       {
-         accessorKey: "type",
-         header: "Tipo",
-         cell: ({ row }) => (
-            <Badge variant="secondary">{TYPE_LABELS[row.original.type]}</Badge>
-         ),
-      },
-      {
-         accessorKey: "initialBalance",
-         header: "Saldo Inicial",
-         cell: ({ row }) => (
-            <span className="text-sm text-muted-foreground">
-               {formatBRL(row.original.initialBalance)}
-            </span>
-         ),
-      },
-      {
          accessorKey: "currentBalance",
          header: "Saldo Atual",
          cell: ({ row }) => {
@@ -113,6 +97,22 @@ export function buildBankAccountColumns(): ColumnDef<BankAccountRow>[] {
                </span>
             );
          },
+      },
+      {
+         accessorKey: "type",
+         header: "Tipo",
+         cell: ({ row }) => (
+            <Badge variant="secondary">{TYPE_LABELS[row.original.type]}</Badge>
+         ),
+      },
+      {
+         accessorKey: "initialBalance",
+         header: "Saldo Inicial",
+         cell: ({ row }) => (
+            <span className="text-sm text-muted-foreground">
+               {formatBRL(row.original.initialBalance)}
+            </span>
+         ),
       },
    ];
 }

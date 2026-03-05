@@ -18,6 +18,15 @@ export function buildServiceColumns(): ColumnDef<ServiceRow>[] {
          ),
       },
       {
+         accessorKey: "isActive",
+         header: "Status",
+         cell: ({ row }) => (
+            <Badge variant={row.original.isActive ? "default" : "secondary"}>
+               {row.original.isActive ? "Ativo" : "Inativo"}
+            </Badge>
+         ),
+      },
+      {
          accessorKey: "category",
          header: "Categoria",
          cell: ({ row }) =>
@@ -26,15 +35,6 @@ export function buildServiceColumns(): ColumnDef<ServiceRow>[] {
             ) : (
                <span className="text-muted-foreground">—</span>
             ),
-      },
-      {
-         accessorKey: "isActive",
-         header: "Status",
-         cell: ({ row }) => (
-            <Badge variant={row.original.isActive ? "default" : "secondary"}>
-               {row.original.isActive ? "Ativo" : "Inativo"}
-            </Badge>
-         ),
       },
    ];
 }
