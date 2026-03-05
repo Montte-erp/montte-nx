@@ -1,0 +1,798 @@
+import { Badge } from "@packages/ui/components/badge";
+import { Button } from "@packages/ui/components/button";
+import {
+   CredenzaBody,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
+import {
+   Select,
+   SelectContent,
+   SelectItem,
+   SelectTrigger,
+   SelectValue,
+} from "@packages/ui/components/select";
+import { defineStepper } from "@packages/ui/components/stepper";
+import {
+   Table,
+   TableBody,
+   TableCell,
+   TableHead,
+   TableHeader,
+   TableRow,
+} from "@packages/ui/components/table";
+import { useMutation } from "@tanstack/react-query";
+import {
+   AlertTriangle,
+   CheckCircle2,
+   ChevronRight,
+   Loader2,
+   UploadCloud,
+} from "lucide-react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
+import { useCredenza } from "@/hooks/use-credenza";
+import { orpc } from "@/integrations/orpc/client";
+
+// ---------------------------------------------------------------------------
+// Stepper definition
+// ---------------------------------------------------------------------------
+
+const { Stepper, useStepper } = defineStepper(
+   { id: "upload", title: "Arquivo" },
+   { id: "mapping", title: "Colunas" },
+   { id: "preview", title: "Prévia" },
+   { id: "confirm", title: "Importar" },
+);
+
+type ImportStepperMethods = ReturnType<typeof useStepper>;
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type ServiceField = "name" | "description" | "basePrice" | "category";
+
+type ColumnMapping = Record<ServiceField, string>;
+
+type RawCsvData = {
+   headers: string[];
+   rows: string[][];
+};
+
+type MappedRow = {
+   name: string;
+   description: string;
+   basePrice: string;
+   category: string;
+};
+
+type ValidatedRow = MappedRow & {
+   isValid: boolean;
+   errors: string[];
+   priceCents: number | null;
+};
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const FIELD_LABELS: Record<ServiceField, string> = {
+   name: "Nome *",
+   description: "Descrição",
+   basePrice: "Preço padrão *",
+   category: "Categoria",
+};
+
+const SERVICE_FIELDS: ServiceField[] = [
+   "name",
+   "description",
+   "basePrice",
+   "category",
+];
+
+const EMPTY_MAPPING: ColumnMapping = {
+   name: "",
+   description: "",
+   basePrice: "",
+   category: "",
+};
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function parsePriceToCents(raw: string): number | null {
+   const cleaned = raw
+      .replace(/R\$\s*/g, "")
+      .replace(/\./g, "")
+      .replace(",", ".")
+      .trim();
+   const num = Number.parseFloat(cleaned);
+   if (Number.isNaN(num)) return null;
+   return Math.round(num * 100);
+}
+
+function parseCsvContent(content: string): RawCsvData {
+   const lines = content.split(/\r?\n/).filter((l) => l.trim().length > 0);
+   if (lines.length === 0) return { headers: [], rows: [] };
+
+   const parseRow = (line: string): string[] => {
+      const fields: string[] = [];
+      let current = "";
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+         const char = line[i];
+         if (inQuotes) {
+            if (char === '"') {
+               if (line[i + 1] === '"') {
+                  current += '"';
+                  i++;
+               } else {
+                  inQuotes = false;
+               }
+            } else {
+               current += char;
+            }
+         } else if (char === '"') {
+            inQuotes = true;
+         } else if (char === "," || char === ";") {
+            fields.push(current.trim());
+            current = "";
+         } else {
+            current += char;
+         }
+      }
+      fields.push(current.trim());
+      return fields;
+   };
+
+   const headers = parseRow(lines[0]);
+   const rows = lines.slice(1).map(parseRow);
+
+   return { headers, rows };
+}
+
+function guessMapping(headers: string[]): Partial<ColumnMapping> {
+   const mapping: Partial<ColumnMapping> = {};
+   const lower = headers.map((h) => h.toLowerCase().trim());
+
+   const patterns: Record<ServiceField, string[]> = {
+      name: ["nome", "name", "servico", "serviço", "titulo", "título"],
+      description: ["descricao", "descrição", "description", "obs", "detalhe"],
+      basePrice: ["preco", "preço", "price", "valor", "value", "preco_padrao"],
+      category: ["categoria", "category", "cat", "grupo"],
+   };
+
+   for (const [field, candidates] of Object.entries(patterns)) {
+      const idx = lower.findIndex((h) => candidates.some((c) => h.includes(c)));
+      if (idx !== -1) {
+         mapping[field as ServiceField] = headers[idx];
+      }
+   }
+
+   return mapping;
+}
+
+function applyMapping(
+   row: string[],
+   headers: string[],
+   mapping: ColumnMapping,
+): MappedRow {
+   const get = (field: ServiceField): string => {
+      const header = mapping[field];
+      if (!header) return "";
+      const idx = headers.indexOf(header);
+      return idx !== -1 ? (row[idx] ?? "") : "";
+   };
+
+   return {
+      name: get("name"),
+      description: get("description"),
+      basePrice: get("basePrice"),
+      category: get("category"),
+   };
+}
+
+function validateRow(row: MappedRow): ValidatedRow {
+   const errors: string[] = [];
+   const priceCents = row.basePrice ? parsePriceToCents(row.basePrice) : 0;
+
+   if (!row.name.trim()) errors.push("Nome obrigatório");
+   if (row.basePrice && priceCents === null) errors.push("Preço inválido");
+
+   return {
+      ...row,
+      isValid: errors.length === 0,
+      errors,
+      priceCents: priceCents ?? null,
+   };
+}
+
+// ---------------------------------------------------------------------------
+// Step progress indicator
+// ---------------------------------------------------------------------------
+
+function StepIndicator({ methods }: { methods: ImportStepperMethods }) {
+   const steps = methods.state.all;
+   const currentIndex = methods.lookup.getIndex(methods.state.current.data.id);
+
+   return (
+      <div className="flex items-center gap-1.5 mb-1">
+         {steps.map((step, idx) => (
+            <div
+               className={[
+                  "h-1 rounded-full transition-all duration-300 flex-1",
+                  idx === currentIndex
+                     ? "bg-primary"
+                     : idx < currentIndex
+                       ? "bg-primary/50"
+                       : "bg-muted",
+               ].join(" ")}
+               key={step.id}
+            />
+         ))}
+      </div>
+   );
+}
+
+// ---------------------------------------------------------------------------
+// Step 1: Upload
+// ---------------------------------------------------------------------------
+
+interface UploadStepProps {
+   methods: ImportStepperMethods;
+   onFileReady: (rawCsv: RawCsvData) => void;
+}
+
+function UploadStep({ methods, onFileReady }: UploadStepProps) {
+   const fileInputRef = useRef<HTMLInputElement>(null);
+   const [isDragging, setIsDragging] = useState(false);
+   const [isParsing, setIsParsing] = useState(false);
+   const [selectedFileName, setSelectedFileName] = useState<string | null>(
+      null,
+   );
+
+   function handleTemplateDownload() {
+      const csv =
+         'Nome,Descrição,Preço padrão,Categoria\nConsultoria,Consultoria mensal,"R$ 1.500,00",Serviços';
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "modelo-servicos.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+   }
+
+   function processFile(file: File) {
+      setSelectedFileName(file.name);
+      setIsParsing(true);
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+         try {
+            const content = ev.target?.result as string;
+            const rawCsv = parseCsvContent(content);
+            if (rawCsv.headers.length === 0) {
+               toast.error("Arquivo CSV vazio ou inválido.");
+               setSelectedFileName(null);
+               return;
+            }
+            onFileReady(rawCsv);
+            methods.navigation.next();
+         } catch {
+            toast.error("Erro ao processar o arquivo. Verifique o formato.");
+            setSelectedFileName(null);
+         } finally {
+            setIsParsing(false);
+         }
+      };
+      reader.readAsText(file, "utf-8");
+   }
+
+   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      processFile(file);
+      e.target.value = "";
+   }
+
+   function handleDrop(e: React.DragEvent) {
+      e.preventDefault();
+      setIsDragging(false);
+      const file = e.dataTransfer.files?.[0];
+      if (!file) return;
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      if (ext !== "csv") {
+         toast.error("Formato não suportado. Use .csv");
+         return;
+      }
+      processFile(file);
+   }
+
+   return (
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Importar Serviços</CredenzaTitle>
+            <p className="text-sm text-muted-foreground mt-0.5">
+               Importe serviços via arquivo CSV
+            </p>
+         </CredenzaHeader>
+
+         <CredenzaBody className="flex flex-col gap-4 w-full overflow-auto">
+            <StepIndicator methods={methods} />
+
+            {/* biome-ignore lint/a11y/useKeyWithClickEvents: file drop zone handles keyboard via button */}
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: file drop zone */}
+            <div
+               className={[
+                  "relative flex flex-col items-center justify-center gap-3",
+                  "rounded-xl border-2 border-dashed p-8 text-center transition-colors duration-200",
+                  "cursor-pointer select-none",
+                  isDragging
+                     ? "border-primary bg-primary/5"
+                     : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30",
+                  isParsing ? "pointer-events-none opacity-60" : "",
+               ].join(" ")}
+               onClick={() => !isParsing && fileInputRef.current?.click()}
+               onDragLeave={() => setIsDragging(false)}
+               onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+               }}
+               onDrop={handleDrop}
+            >
+               <input
+                  accept=".csv"
+                  className="hidden"
+                  onChange={handleFileChange}
+                  ref={fileInputRef}
+                  type="file"
+               />
+               {isParsing ? (
+                  <Loader2 className="size-8 animate-spin text-muted-foreground" />
+               ) : (
+                  <UploadCloud className="size-8 text-muted-foreground" />
+               )}
+               <div>
+                  <p className="text-sm font-medium">
+                     {selectedFileName ??
+                        "Arraste um arquivo CSV ou clique para selecionar"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                     Formato aceito: .csv
+                  </p>
+               </div>
+            </div>
+
+            <Button
+               className="w-full"
+               onClick={handleTemplateDownload}
+               size="sm"
+               type="button"
+               variant="outline"
+            >
+               Baixar modelo CSV
+            </Button>
+         </CredenzaBody>
+      </>
+   );
+}
+
+// ---------------------------------------------------------------------------
+// Step 2: Column Mapping
+// ---------------------------------------------------------------------------
+
+interface MappingStepProps {
+   methods: ImportStepperMethods;
+   rawCsv: RawCsvData;
+   mapping: ColumnMapping;
+   onMappingChange: (mapping: ColumnMapping) => void;
+   onApply: (rows: MappedRow[]) => void;
+}
+
+function MappingStep({
+   methods,
+   rawCsv,
+   mapping,
+   onMappingChange,
+   onApply,
+}: MappingStepProps) {
+   const canProceed = mapping.name !== "" && mapping.basePrice !== "";
+
+   function handleNext() {
+      const mapped = rawCsv.rows.map((row) =>
+         applyMapping(row, rawCsv.headers, mapping),
+      );
+      onApply(mapped);
+      methods.navigation.next();
+   }
+
+   return (
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Mapear Colunas</CredenzaTitle>
+            <p className="text-sm text-muted-foreground mt-0.5">
+               Associe cada coluna do CSV a um campo do serviço
+            </p>
+         </CredenzaHeader>
+
+         <CredenzaBody className="flex flex-col gap-3 w-full overflow-auto">
+            <StepIndicator methods={methods} />
+
+            <div className="space-y-3">
+               {SERVICE_FIELDS.map((field) => (
+                  <div
+                     className="flex items-center justify-between gap-3"
+                     key={field}
+                  >
+                     <span className="text-sm font-medium min-w-[120px]">
+                        {FIELD_LABELS[field]}
+                     </span>
+                     <Select
+                        onValueChange={(v) =>
+                           onMappingChange({
+                              ...mapping,
+                              [field]: v === "__none__" ? "" : v,
+                           })
+                        }
+                        value={mapping[field] || "__none__"}
+                     >
+                        <SelectTrigger className="flex-1">
+                           <SelectValue placeholder="Selecionar coluna..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                           <SelectItem value="__none__">
+                              — Não mapear —
+                           </SelectItem>
+                           {rawCsv.headers.map((header) => (
+                              <SelectItem key={header} value={header}>
+                                 {header}
+                              </SelectItem>
+                           ))}
+                        </SelectContent>
+                     </Select>
+                  </div>
+               ))}
+            </div>
+
+            <div className="rounded-lg border bg-muted/20 p-3">
+               <p className="text-xs text-muted-foreground">
+                  Colunas detectadas: {rawCsv.headers.join(", ")}
+               </p>
+               <p className="text-xs text-muted-foreground mt-1">
+                  {rawCsv.rows.length} linha(s) de dados
+               </p>
+            </div>
+         </CredenzaBody>
+
+         <CredenzaFooter className="flex gap-2">
+            <Button
+               className="flex-none"
+               onClick={() => methods.navigation.prev()}
+               type="button"
+               variant="outline"
+            >
+               Voltar
+            </Button>
+            <Button
+               className="flex-1"
+               disabled={!canProceed}
+               onClick={handleNext}
+               type="button"
+            >
+               Continuar
+               <ChevronRight className="ml-1 size-4" />
+            </Button>
+         </CredenzaFooter>
+      </>
+   );
+}
+
+// ---------------------------------------------------------------------------
+// Step 3: Preview
+// ---------------------------------------------------------------------------
+
+interface PreviewStepProps {
+   methods: ImportStepperMethods;
+   rows: MappedRow[];
+}
+
+function PreviewStep({ methods, rows }: PreviewStepProps) {
+   const validated = rows.map(validateRow);
+   const validCount = validated.filter((r) => r.isValid).length;
+   const invalidCount = validated.filter((r) => !r.isValid).length;
+   const previewRows = validated.slice(0, 10);
+
+   return (
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Prévia dos Serviços</CredenzaTitle>
+            <p className="text-sm text-muted-foreground mt-0.5">
+               {rows.length} serviço(s) encontrado(s) no arquivo
+            </p>
+         </CredenzaHeader>
+
+         <CredenzaBody className="flex flex-col gap-3 w-full overflow-auto">
+            <StepIndicator methods={methods} />
+
+            <div className="flex items-center gap-2">
+               <Badge variant="default">{validCount} válido(s)</Badge>
+               {invalidCount > 0 && (
+                  <Badge variant="destructive">
+                     {invalidCount} com erro(s)
+                  </Badge>
+               )}
+            </div>
+
+            <div className="max-h-[300px] overflow-auto rounded-lg border">
+               <Table>
+                  <TableHeader>
+                     <TableRow>
+                        <TableHead className="text-xs">Nome</TableHead>
+                        <TableHead className="text-xs">Descrição</TableHead>
+                        <TableHead className="text-xs">Preço</TableHead>
+                        <TableHead className="text-xs">Categoria</TableHead>
+                        <TableHead className="text-xs w-[80px]">
+                           Status
+                        </TableHead>
+                     </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                     {previewRows.map((row, idx) => (
+                        <TableRow
+                           className={row.isValid ? "" : "bg-destructive/5"}
+                           key={`preview-${idx + 1}`}
+                        >
+                           <TableCell className="text-xs">
+                              {row.name || (
+                                 <span className="text-destructive italic">
+                                    vazio
+                                 </span>
+                              )}
+                           </TableCell>
+                           <TableCell className="text-xs max-w-[150px] truncate">
+                              {row.description || "—"}
+                           </TableCell>
+                           <TableCell className="text-xs">
+                              {row.basePrice || "—"}
+                           </TableCell>
+                           <TableCell className="text-xs">
+                              {row.category || "—"}
+                           </TableCell>
+                           <TableCell className="text-xs">
+                              {row.isValid ? (
+                                 <CheckCircle2 className="size-3.5 text-emerald-600" />
+                              ) : (
+                                 <span className="flex items-center gap-1 text-destructive">
+                                    <AlertTriangle className="size-3.5" />
+                                    <span className="text-[10px]">
+                                       {row.errors[0]}
+                                    </span>
+                                 </span>
+                              )}
+                           </TableCell>
+                        </TableRow>
+                     ))}
+                  </TableBody>
+               </Table>
+            </div>
+
+            {rows.length > 10 && (
+               <p className="text-xs text-muted-foreground text-center">
+                  Mostrando 10 de {rows.length} linhas
+               </p>
+            )}
+         </CredenzaBody>
+
+         <CredenzaFooter className="flex gap-2">
+            <Button
+               className="flex-none"
+               onClick={() => methods.navigation.prev()}
+               type="button"
+               variant="outline"
+            >
+               Voltar
+            </Button>
+            <Button
+               className="flex-1"
+               disabled={validCount === 0}
+               onClick={() => methods.navigation.next()}
+               type="button"
+            >
+               Continuar
+               <ChevronRight className="ml-1 size-4" />
+            </Button>
+         </CredenzaFooter>
+      </>
+   );
+}
+
+// ---------------------------------------------------------------------------
+// Step 4: Confirm & Import
+// ---------------------------------------------------------------------------
+
+interface ConfirmStepProps {
+   methods: ImportStepperMethods;
+   rows: MappedRow[];
+}
+
+function ConfirmStep({ methods, rows }: ConfirmStepProps) {
+   const { closeCredenza } = useCredenza();
+
+   const validated = rows.map(validateRow);
+   const validRows = validated.filter((r) => r.isValid);
+   const invalidCount = validated.filter((r) => !r.isValid).length;
+
+   const importMutation = useMutation(
+      orpc.services.bulkCreate.mutationOptions({
+         onSuccess: (data) => {
+            const count = Array.isArray(data) ? data.length : 0;
+            toast.success(`${count} serviço(s) importado(s) com sucesso.`);
+            closeCredenza();
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao importar serviços.");
+         },
+      }),
+   );
+
+   function handleImport() {
+      if (validRows.length === 0) return;
+
+      const payload = validRows.map((row) => ({
+         name: row.name.trim(),
+         description: row.description.trim() || null,
+         basePrice: row.priceCents ?? 0,
+         // category matching is left to the server or set null
+      }));
+
+      importMutation.mutate({ services: payload });
+   }
+
+   const isLoading = importMutation.isPending;
+
+   return (
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Confirmar Importação</CredenzaTitle>
+            <p className="text-sm text-muted-foreground mt-0.5">
+               Revise o resumo antes de importar
+            </p>
+         </CredenzaHeader>
+
+         <CredenzaBody className="flex flex-col gap-3 w-full overflow-auto">
+            <StepIndicator methods={methods} />
+
+            <div className="rounded-xl border overflow-hidden">
+               <div className="bg-muted/40 px-4 py-2.5 border-b">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                     Resumo
+                  </p>
+               </div>
+
+               <div className="divide-y">
+                  <div className="flex items-center justify-between px-4 py-2.5">
+                     <span className="text-sm text-muted-foreground">
+                        Total no arquivo
+                     </span>
+                     <span className="text-sm font-medium">{rows.length}</span>
+                  </div>
+
+                  {invalidCount > 0 && (
+                     <div className="flex items-center justify-between px-4 py-2.5">
+                        <span className="text-sm text-muted-foreground">
+                           Linhas com erro
+                        </span>
+                        <Badge className="text-xs" variant="destructive">
+                           {invalidCount}
+                        </Badge>
+                     </div>
+                  )}
+
+                  <div className="flex items-center justify-between bg-primary/5 px-4 py-2.5">
+                     <span className="text-sm font-medium">
+                        Serão importados
+                     </span>
+                     <span className="text-sm font-bold text-primary">
+                        {validRows.length}
+                     </span>
+                  </div>
+               </div>
+            </div>
+
+            {validRows.length === 0 && (
+               <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <AlertTriangle className="size-4 shrink-0 text-amber-600" />
+                  <p className="text-xs text-amber-700">
+                     Não há serviços válidos para importar.
+                  </p>
+               </div>
+            )}
+         </CredenzaBody>
+
+         <CredenzaFooter className="flex gap-2">
+            <Button
+               className="flex-none"
+               disabled={isLoading}
+               onClick={() => methods.navigation.prev()}
+               type="button"
+               variant="outline"
+            >
+               Voltar
+            </Button>
+            <Button
+               className="flex-1"
+               disabled={isLoading || validRows.length === 0}
+               onClick={handleImport}
+               type="button"
+            >
+               {isLoading ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+               ) : null}
+               Importar {validRows.length} serviço(s)
+            </Button>
+         </CredenzaFooter>
+      </>
+   );
+}
+
+// ---------------------------------------------------------------------------
+// Public export
+// ---------------------------------------------------------------------------
+
+export function ServiceImportCredenza() {
+   return (
+      <Stepper.Provider variant="line">
+         {({ methods }) => <ImportWizard methods={methods} />}
+      </Stepper.Provider>
+   );
+}
+
+function ImportWizard({ methods }: { methods: ImportStepperMethods }) {
+   const currentId = methods.state.current.data.id;
+
+   const [rawCsv, setRawCsv] = useState<RawCsvData | null>(null);
+   const [mappedRows, setMappedRows] = useState<MappedRow[]>([]);
+   const [columnMapping, setColumnMapping] =
+      useState<ColumnMapping>(EMPTY_MAPPING);
+
+   function handleFileReady(csv: RawCsvData) {
+      setRawCsv(csv);
+      const guessed = guessMapping(csv.headers);
+      setColumnMapping((prev) => ({ ...prev, ...guessed }));
+   }
+
+   function handleMappingApply(rows: MappedRow[]) {
+      setMappedRows(rows);
+   }
+
+   return (
+      <>
+         {currentId === "upload" && (
+            <UploadStep methods={methods} onFileReady={handleFileReady} />
+         )}
+
+         {currentId === "mapping" && rawCsv && (
+            <MappingStep
+               mapping={columnMapping}
+               methods={methods}
+               onApply={handleMappingApply}
+               onMappingChange={setColumnMapping}
+               rawCsv={rawCsv}
+            />
+         )}
+
+         {currentId === "preview" && (
+            <PreviewStep methods={methods} rows={mappedRows} />
+         )}
+
+         {currentId === "confirm" && (
+            <ConfirmStep methods={methods} rows={mappedRows} />
+         )}
+      </>
+   );
+}
