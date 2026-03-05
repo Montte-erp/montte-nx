@@ -1,5 +1,6 @@
 import { ORPCError } from "@orpc/server";
 import {
+   bulkCreateServices,
    countActiveSubscriptionsByVariant,
    createService,
    createSubscription as createSubscriptionRepo,
@@ -40,7 +41,10 @@ import {
 const serviceSchema = createInsertSchema(services).pick({
    name: true,
    description: true,
-   category: true,
+   basePrice: true,
+   type: true,
+   categoryId: true,
+   tagId: true,
    isActive: true,
 });
 
@@ -64,10 +68,21 @@ const subscriptionSchema = createInsertSchema(contactSubscriptions).pick({
 // Service Procedures
 // =============================================================================
 
-export const getAll = protectedProcedure.handler(async ({ context }) => {
-   const { db, teamId } = context;
-   return listServices(db, teamId);
-});
+export const getAll = protectedProcedure
+   .input(
+      z
+         .object({
+            search: z.string().optional(),
+            type: z.enum(["service", "product", "subscription"]).optional(),
+            categoryId: z.string().uuid().optional(),
+            contactId: z.string().uuid().optional(),
+         })
+         .optional(),
+   )
+   .handler(async ({ context, input }) => {
+      const { db, teamId } = context;
+      return listServices(db, teamId, input);
+   });
 
 export const create = protectedProcedure
    .input(serviceSchema)
@@ -107,6 +122,25 @@ export const remove = protectedProcedure
       await deleteService(db, input.id);
       return { success: true };
    });
+
+export const bulkCreate = protectedProcedure
+   .input(
+      z.object({
+         services: z.array(serviceSchema.required({ name: true, basePrice: true })),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      const { db, teamId } = context;
+      return bulkCreateServices(
+         db,
+         input.services.map((s) => ({ ...s, teamId })),
+      );
+   });
+
+export const exportAll = protectedProcedure.handler(async ({ context }) => {
+   const { db, teamId } = context;
+   return listServices(db, teamId);
+});
 
 // =============================================================================
 // Variant Procedures

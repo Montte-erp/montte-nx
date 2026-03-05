@@ -1,5 +1,5 @@
 import { AppError, propagateError } from "@packages/utils/errors";
-import { and, count, eq, gte, lte } from "drizzle-orm";
+import { type SQL, and, count, eq, gte, ilike, inArray, lte, or } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import {
    categories,
@@ -17,8 +17,51 @@ import {
 // Services CRUD
 // ---------------------------------------------------------------------------
 
-export async function listServices(db: DatabaseInstance, teamId: string) {
+export interface ListServicesFilters {
+   search?: string;
+   type?: "service" | "product" | "subscription";
+   categoryId?: string;
+   contactId?: string;
+}
+
+export async function listServices(
+   db: DatabaseInstance,
+   teamId: string,
+   filters?: ListServicesFilters,
+) {
    try {
+      const conditions: SQL[] = [eq(services.teamId, teamId)];
+
+      if (filters?.search) {
+         const pattern = `%${filters.search}%`;
+         const searchCondition = or(
+            ilike(services.name, pattern),
+            ilike(services.description, pattern),
+         );
+         if (searchCondition) conditions.push(searchCondition);
+      }
+
+      if (filters?.type) {
+         conditions.push(eq(services.type, filters.type));
+      }
+
+      if (filters?.categoryId) {
+         conditions.push(eq(services.categoryId, filters.categoryId));
+      }
+
+      if (filters?.contactId) {
+         // Find services used by this contact via service_variants → contact_subscriptions
+         const variantServiceIds = db
+            .selectDistinct({ serviceId: serviceVariants.serviceId })
+            .from(serviceVariants)
+            .innerJoin(
+               contactSubscriptions,
+               eq(serviceVariants.id, contactSubscriptions.variantId),
+            )
+            .where(eq(contactSubscriptions.contactId, filters.contactId));
+         conditions.push(inArray(services.id, variantServiceIds));
+      }
+
       return await db
          .select({
             id: services.id,
@@ -40,7 +83,7 @@ export async function listServices(db: DatabaseInstance, teamId: string) {
          .from(services)
          .leftJoin(categories, eq(services.categoryId, categories.id))
          .leftJoin(tags, eq(services.tagId, tags.id))
-         .where(eq(services.teamId, teamId))
+         .where(and(...conditions))
          .orderBy(services.name);
    } catch (err) {
       propagateError(err);
