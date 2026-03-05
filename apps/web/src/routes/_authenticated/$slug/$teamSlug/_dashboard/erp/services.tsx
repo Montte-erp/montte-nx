@@ -230,6 +230,7 @@ function ServicesList({
                   service={row}
                />
             ),
+            className: "w-full",
          });
       },
       [openCredenza, closeCredenza],
@@ -333,6 +334,7 @@ function ServicesPage() {
    const handleCreate = useCallback(() => {
       openCredenza({
          children: <ServiceForm mode="create" onSuccess={closeCredenza} />,
+         className: "w-full",
       });
    }, [openCredenza, closeCredenza]);
 
