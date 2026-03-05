@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
+import { format, of } from "@f-o-t/money";
 import { BillFromTransactionCredenza } from "@/features/bills/ui/bill-from-transaction-credenza";
 import { BulkCategorizeForm } from "@/features/transactions/ui/bulk-categorize-form";
 import { BulkMoveAccountForm } from "@/features/transactions/ui/bulk-move-account-form";
@@ -77,8 +78,28 @@ export function TransactionsList({
             dateTo: filters.dateTo,
             search: filters.search || undefined,
             conditionGroup: filters.conditionGroup,
+            bankAccountId: filters.bankAccountId,
+            creditCardId: filters.creditCardId,
+            paymentMethod: filters.paymentMethod,
+            categoryId: filters.categoryId,
             page: filters.page,
             pageSize: filters.pageSize,
+         },
+      }),
+   );
+
+   const { data: summary } = useSuspenseQuery(
+      orpc.transactions.getSummary.queryOptions({
+         input: {
+            type: filters.type,
+            dateFrom: filters.dateFrom,
+            dateTo: filters.dateTo,
+            search: filters.search || undefined,
+            conditionGroup: filters.conditionGroup,
+            bankAccountId: filters.bankAccountId,
+            creditCardId: filters.creditCardId,
+            paymentMethod: filters.paymentMethod,
+            categoryId: filters.categoryId,
          },
       }),
    );
@@ -271,29 +292,32 @@ export function TransactionsList({
 
    if (transactionData.length === 0 && filters.page === 1) {
       return (
-         <Empty>
-            <EmptyHeader>
-               <EmptyMedia variant="icon">
-                  <ArrowLeftRight className="size-6" />
-               </EmptyMedia>
-               <EmptyTitle>Nenhuma transação</EmptyTitle>
-               <EmptyDescription>
-                  {filters.search ||
-                  filters.type ||
-                  filters.dateFrom ||
-                  (filters.conditionGroup?.conditions.length ?? 0) > 0
-                     ? "Nenhuma transação encontrada para os filtros aplicados."
-                     : "Registre uma nova transação para começar a controlar suas finanças."}
-               </EmptyDescription>
-            </EmptyHeader>
-         </Empty>
+         <div className="space-y-4">
+            <SummaryBar summary={summary} />
+            <Empty>
+               <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                     <ArrowLeftRight className="size-6" />
+                  </EmptyMedia>
+                  <EmptyTitle>Nenhuma transação</EmptyTitle>
+                  <EmptyDescription>
+                     {filters.search ||
+                     filters.type ||
+                     filters.dateFrom ||
+                     (filters.conditionGroup?.conditions.length ?? 0) > 0
+                        ? "Nenhuma transação encontrada para os filtros aplicados."
+                        : "Registre uma nova transação para começar a controlar suas finanças."}
+                  </EmptyDescription>
+               </EmptyHeader>
+            </Empty>
+         </div>
       );
    }
 
    return (
       <>
+         <SummaryBar summary={summary} />
          <DataTable
-            view={view}
             columns={columns}
             columnVisibilityKey="transactions"
             data={transactionData}
@@ -358,6 +382,7 @@ export function TransactionsList({
                );
             }}
             rowSelection={rowSelection}
+            view={view}
          />
          <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
             <SelectionActionButton
@@ -381,5 +406,38 @@ export function TransactionsList({
             </SelectionActionButton>
          </SelectionActionBar>
       </>
+   );
+}
+
+function formatBRL(value: string | number): string {
+   return format(of(String(value), "BRL"), "pt-BR");
+}
+
+function SummaryBar({ summary }: { summary: { totalCount: number; incomeTotal: string; expenseTotal: string; balance: string } }) {
+   return (
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+         <div className="rounded-lg border bg-card p-3">
+            <p className="text-xs text-muted-foreground">Total de lançamentos</p>
+            <p className="text-lg font-semibold tabular-nums">{summary.totalCount}</p>
+         </div>
+         <div className="rounded-lg border bg-card p-3">
+            <p className="text-xs text-muted-foreground">Entradas</p>
+            <p className="text-lg font-semibold tabular-nums text-green-600 dark:text-green-500">
+               {formatBRL(summary.incomeTotal)}
+            </p>
+         </div>
+         <div className="rounded-lg border bg-card p-3">
+            <p className="text-xs text-muted-foreground">Saídas</p>
+            <p className="text-lg font-semibold tabular-nums text-destructive">
+               {formatBRL(summary.expenseTotal)}
+            </p>
+         </div>
+         <div className="rounded-lg border bg-card p-3">
+            <p className="text-xs text-muted-foreground">Saldo</p>
+            <p className={`text-lg font-semibold tabular-nums ${Number(summary.balance) >= 0 ? "text-green-600 dark:text-green-500" : "text-destructive"}`}>
+               {formatBRL(summary.balance)}
+            </p>
+         </div>
+      </div>
    );
 }

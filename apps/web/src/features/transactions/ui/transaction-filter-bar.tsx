@@ -9,8 +9,10 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@packages/ui/components/select";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Search, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import { orpc } from "@/integrations/orpc/client";
 import { TransactionFilterPopover } from "./transaction-filter-popover";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -26,6 +28,10 @@ export interface TransactionFilters {
    datePreset?: string;
    search: string;
    conditionGroup?: ConditionGroup;
+   bankAccountId?: string;
+   creditCardId?: string;
+   paymentMethod?: string;
+   categoryId?: string;
    page: number;
    pageSize: number;
 }
@@ -102,6 +108,20 @@ export function presetToDateRange(preset: string): {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Payment method options
+// ─────────────────────────────────────────────────────────────────────────────
+
+const PAYMENT_METHODS = [
+   { value: "pix", label: "Pix" },
+   { value: "credit_card", label: "Cartão de Crédito" },
+   { value: "debit_card", label: "Cartão de Débito" },
+   { value: "boleto", label: "Boleto" },
+   { value: "cash", label: "Dinheiro" },
+   { value: "transfer", label: "Transferência" },
+   { value: "other", label: "Outro" },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
 // TransactionFilterBar
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -109,6 +129,17 @@ export function TransactionFilterBar({
    filters,
    onFiltersChange,
 }: TransactionFilterBarProps) {
+   // Data queries for filter dropdowns
+   const { data: categories } = useSuspenseQuery(
+      orpc.categories.getAll.queryOptions({}),
+   );
+   const { data: bankAccounts } = useSuspenseQuery(
+      orpc.bankAccounts.getAll.queryOptions({}),
+   );
+   const { data: creditCards } = useSuspenseQuery(
+      orpc.creditCards.getAll.queryOptions({}),
+   );
+
    // Debounced search via timeout ref
    const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
    const [searchInput, setSearchInput] = useState(filters.search);
@@ -154,11 +185,19 @@ export function TransactionFilterBar({
       !!filters.type ||
       !!(filters.dateFrom || filters.dateTo) ||
       filters.search.length > 0 ||
-      (filters.conditionGroup?.conditions.length ?? 0) > 0;
+      (filters.conditionGroup?.conditions.length ?? 0) > 0 ||
+      !!filters.categoryId ||
+      !!filters.bankAccountId ||
+      !!filters.creditCardId ||
+      !!filters.paymentMethod;
 
    const handleClear = () => {
       setSearchInput("");
       onFiltersChange(DEFAULT_FILTERS);
+   };
+
+   const setFilters = (updater: (prev: TransactionFilters) => TransactionFilters) => {
+      onFiltersChange(updater(filters));
    };
 
    return (
@@ -237,6 +276,70 @@ export function TransactionFilterBar({
                <SelectItem value="income">Receita</SelectItem>
                <SelectItem value="expense">Despesa</SelectItem>
                <SelectItem value="transfer">Transferência</SelectItem>
+            </SelectContent>
+         </Select>
+
+         {/* Categoria */}
+         <Select
+            onValueChange={(v) => setFilters((f) => ({ ...f, categoryId: v === "all" ? undefined : v, page: 1 }))}
+            value={filters.categoryId ?? "all"}
+         >
+            <SelectTrigger className="h-8 w-[150px]">
+               <SelectValue placeholder="Categoria" />
+            </SelectTrigger>
+            <SelectContent>
+               <SelectItem value="all">Todas categorias</SelectItem>
+               {categories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+               ))}
+            </SelectContent>
+         </Select>
+
+         {/* Conta */}
+         <Select
+            onValueChange={(v) => setFilters((f) => ({ ...f, bankAccountId: v === "all" ? undefined : v, page: 1 }))}
+            value={filters.bankAccountId ?? "all"}
+         >
+            <SelectTrigger className="h-8 w-[150px]">
+               <SelectValue placeholder="Conta" />
+            </SelectTrigger>
+            <SelectContent>
+               <SelectItem value="all">Todas contas</SelectItem>
+               {bankAccounts.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+               ))}
+            </SelectContent>
+         </Select>
+
+         {/* Cartão */}
+         <Select
+            onValueChange={(v) => setFilters((f) => ({ ...f, creditCardId: v === "all" ? undefined : v, page: 1 }))}
+            value={filters.creditCardId ?? "all"}
+         >
+            <SelectTrigger className="h-8 w-[150px]">
+               <SelectValue placeholder="Cartão" />
+            </SelectTrigger>
+            <SelectContent>
+               <SelectItem value="all">Todos cartões</SelectItem>
+               {creditCards.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+               ))}
+            </SelectContent>
+         </Select>
+
+         {/* Forma de pagamento */}
+         <Select
+            onValueChange={(v) => setFilters((f) => ({ ...f, paymentMethod: v === "all" ? undefined : v, page: 1 }))}
+            value={filters.paymentMethod ?? "all"}
+         >
+            <SelectTrigger className="h-8 w-[180px]">
+               <SelectValue placeholder="Forma de pagamento" />
+            </SelectTrigger>
+            <SelectContent>
+               <SelectItem value="all">Todas formas</SelectItem>
+               {PAYMENT_METHODS.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+               ))}
             </SelectContent>
          </Select>
 
