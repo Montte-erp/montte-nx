@@ -26,6 +26,9 @@ import {
    type NewTransaction,
    transactions,
    transactionTags,
+   bankAccounts,
+   contacts,
+   transactionItems,
 } from "../schema";
 
 export interface ListTransactionsFilter {
@@ -42,6 +45,7 @@ export interface ListTransactionsFilter {
    pageSize?: number;
    uncategorized?: boolean;
    creditCardId?: string;
+   paymentMethod?: string;
    conditionGroup?: ConditionGroup;
 }
 
@@ -54,6 +58,7 @@ function conditionToSql(condition: Condition) {
       creditCardId: transactions.creditCardId,
       amount: transactions.amount,
       name: transactions.name,
+      paymentMethod: transactions.paymentMethod,
    };
 
    const col = colMap[condition.field];
@@ -160,11 +165,14 @@ export async function listTransactions(
          const searchCond = or(
             ilike(transactions.name, pattern),
             ilike(transactions.description, pattern),
+            ilike(contacts.name, pattern),
          );
          if (searchCond) conditions.push(searchCond);
       }
       if (filter.creditCardId)
          conditions.push(eq(transactions.creditCardId, filter.creditCardId));
+      if (filter.paymentMethod)
+         conditions.push(eq(transactions.paymentMethod, filter.paymentMethod as typeof transactions.paymentMethod.enumValues[number]));
       if (filter.uncategorized)
          conditions.push(isNull(transactions.categoryId));
 
@@ -198,6 +206,8 @@ export async function listTransactions(
                ...getTableColumns(transactions),
                categoryName: categories.name,
                creditCardName: creditCards.name,
+               bankAccountName: bankAccounts.name,
+               contactName: contacts.name,
             })
             .from(transactions)
             .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -205,6 +215,8 @@ export async function listTransactions(
                creditCards,
                eq(transactions.creditCardId, creditCards.id),
             )
+            .leftJoin(bankAccounts, eq(transactions.bankAccountId, bankAccounts.id))
+            .leftJoin(contacts, eq(transactions.contactId, contacts.id))
             .where(whereClause)
             .orderBy(desc(transactions.date));
 
@@ -231,6 +243,8 @@ export async function listTransactions(
          .from(transactions)
          .leftJoin(categories, eq(transactions.categoryId, categories.id))
          .leftJoin(creditCards, eq(transactions.creditCardId, creditCards.id))
+         .leftJoin(bankAccounts, eq(transactions.bankAccountId, bankAccounts.id))
+         .leftJoin(contacts, eq(transactions.contactId, contacts.id))
          .where(whereClause);
 
       const data = await db
@@ -238,10 +252,14 @@ export async function listTransactions(
             ...getTableColumns(transactions),
             categoryName: categories.name,
             creditCardName: creditCards.name,
+            bankAccountName: bankAccounts.name,
+            contactName: contacts.name,
          })
          .from(transactions)
          .leftJoin(categories, eq(transactions.categoryId, categories.id))
          .leftJoin(creditCards, eq(transactions.creditCardId, creditCards.id))
+         .leftJoin(bankAccounts, eq(transactions.bankAccountId, bankAccounts.id))
+         .leftJoin(contacts, eq(transactions.contactId, contacts.id))
          .where(whereClause)
          .orderBy(desc(transactions.date))
          .limit(pageSize)
@@ -251,6 +269,74 @@ export async function listTransactions(
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to list transactions");
+   }
+}
+
+export async function getTransactionsSummary(
+   db: DatabaseInstance,
+   filter: ListTransactionsFilter,
+) {
+   try {
+      const conditions = [eq(transactions.teamId, filter.teamId)];
+
+      if (filter.tagId) {
+         const taggedIds = await db
+            .select({ transactionId: transactionTags.transactionId })
+            .from(transactionTags)
+            .where(eq(transactionTags.tagId, filter.tagId));
+         if (taggedIds.length === 0)
+            return { totalCount: 0, incomeTotal: "0", expenseTotal: "0", balance: "0" };
+         conditions.push(
+            inArray(transactions.id, taggedIds.map((r) => r.transactionId)),
+         );
+      }
+
+      if (filter.type) conditions.push(eq(transactions.type, filter.type));
+      if (filter.bankAccountId)
+         conditions.push(eq(transactions.bankAccountId, filter.bankAccountId));
+      if (filter.categoryId)
+         conditions.push(eq(transactions.categoryId, filter.categoryId));
+      if (filter.contactId)
+         conditions.push(eq(transactions.contactId, filter.contactId));
+      if (filter.dateFrom)
+         conditions.push(gte(transactions.date, filter.dateFrom));
+      if (filter.dateTo) conditions.push(lte(transactions.date, filter.dateTo));
+      if (filter.search) {
+         const pattern = `%${filter.search}%`;
+         const searchCond = or(
+            ilike(transactions.name, pattern),
+            ilike(transactions.description, pattern),
+         );
+         if (searchCond) conditions.push(searchCond);
+      }
+      if (filter.creditCardId)
+         conditions.push(eq(transactions.creditCardId, filter.creditCardId));
+      if (filter.paymentMethod)
+         conditions.push(eq(transactions.paymentMethod, filter.paymentMethod as typeof transactions.paymentMethod.enumValues[number]));
+      if (filter.uncategorized)
+         conditions.push(isNull(transactions.categoryId));
+
+      const whereClause = and(...conditions);
+
+      const [result] = await db
+         .select({
+            totalCount: count(),
+            incomeTotal: sql<string>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'income' THEN ${transactions.amount} ELSE 0 END), 0)`,
+            expenseTotal: sql<string>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'expense' THEN ${transactions.amount} ELSE 0 END), 0)`,
+            balance: sql<string>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'income' THEN ${transactions.amount} WHEN ${transactions.type} = 'expense' THEN -${transactions.amount} ELSE 0 END), 0)`,
+         })
+         .from(transactions)
+         .where(whereClause);
+
+      return {
+         totalCount: result?.totalCount ?? 0,
+         incomeTotal: result?.incomeTotal ?? "0",
+         expenseTotal: result?.expenseTotal ?? "0",
+         balance: result?.balance ?? "0",
+      };
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to get transactions summary");
    }
 }
 
@@ -315,5 +401,58 @@ export async function deleteTransaction(db: DatabaseInstance, id: string) {
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to delete transaction");
+   }
+}
+
+export async function createTransactionItems(
+   db: DatabaseInstance,
+   transactionId: string,
+   teamId: string,
+   items: { serviceId?: string | null; description?: string | null; quantity: string; unitPrice: string }[],
+) {
+   if (items.length === 0) return;
+   try {
+      await db.insert(transactionItems).values(
+         items.map((item) => ({
+            transactionId,
+            teamId,
+            serviceId: item.serviceId ?? null,
+            description: item.description ?? null,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+         })),
+      );
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to create transaction items");
+   }
+}
+
+export async function getTransactionItems(db: DatabaseInstance, transactionId: string) {
+   try {
+      return db
+         .select()
+         .from(transactionItems)
+         .where(eq(transactionItems.transactionId, transactionId));
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to get transaction items");
+   }
+}
+
+export async function replaceTransactionItems(
+   db: DatabaseInstance,
+   transactionId: string,
+   teamId: string,
+   items: { serviceId?: string | null; description?: string | null; quantity: string; unitPrice: string }[],
+) {
+   try {
+      await db.delete(transactionItems).where(eq(transactionItems.transactionId, transactionId));
+      if (items.length > 0) {
+         await createTransactionItems(db, transactionId, teamId, items);
+      }
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to replace transaction items");
    }
 }
