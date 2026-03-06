@@ -1,4 +1,4 @@
-import { identifyClient, setClientGroup } from "@packages/posthog/client";
+import { identifyClient, setClientGroup } from "@/integrations/posthog/client";
 import {
    SidebarInset,
    SidebarManager,
@@ -16,6 +16,7 @@ import { BugReportForm } from "@/features/feedback/ui/bug-report-form";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { useCredenza } from "@/hooks/use-credenza";
+import { EarlyAccessProvider } from "@/hooks/use-early-access";
 import { useLastOrganization } from "@/hooks/use-last-organization";
 import { useSafeLocalStorage } from "@/hooks/use-local-storage";
 import { authClient } from "@/integrations/better-auth/auth-client";
@@ -124,6 +125,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
    ]);
 
    return (
+      <EarlyAccessProvider>
       <SidebarManagerProvider>
          <SidebarProvider
             className="h-svh"
@@ -162,5 +164,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <GlobalContextPanel />
          </SidebarProvider>
       </SidebarManagerProvider>
+      </EarlyAccessProvider>
    );
 }

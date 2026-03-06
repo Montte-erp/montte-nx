@@ -1,5 +1,6 @@
 import { createDb } from "@packages/database/client";
 import { env } from "@packages/environment/worker";
+import { startHealthHeartbeat, stopHealthHeartbeat } from "@packages/logging/health";
 import { initOtel, shutdownOtel } from "@packages/logging/otel";
 import { createQueueConnection } from "@packages/queue/connection";
 import { createRedisConnection } from "@packages/redis/connection";
@@ -9,9 +10,10 @@ import { startWebhookDeliveryWorker } from "./workers/webhook-delivery";
 // Initialize OTel SDK for PostHog logs
 if (env.POSTHOG_KEY) {
 	initOtel({
-		serviceName: "contentta-worker",
+		serviceName: "montte-worker",
 		posthogKey: env.POSTHOG_KEY,
 	});
+	startHealthHeartbeat({ serviceName: "montte-worker" });
 }
 
 async function main(): Promise<void> {
@@ -44,6 +46,7 @@ async function main(): Promise<void> {
 
 		await webhookWorker.close();
 		await redis.quit();
+		stopHealthHeartbeat();
 		await shutdownOtel();
 
 		console.log("[Worker] Shutdown complete");

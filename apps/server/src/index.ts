@@ -1,8 +1,9 @@
 import cors from "@elysiajs/cors";
-import { LoggingHandlerPlugin } from "@orpc/experimental-pino";
+import { FetchLoggingPlugin } from "@packages/logging/orpc-plugin";
 import { RPCHandler } from "@orpc/server/fetch";
 import { BatchHandlerPlugin } from "@orpc/server/plugins";
 import { env } from "@packages/environment/server";
+import { startHealthHeartbeat, stopHealthHeartbeat } from "@packages/logging/health";
 import { initOtel, shutdownOtel } from "@packages/logging/otel";
 import { shutdownPosthog } from "@packages/posthog/server";
 import { Elysia } from "elysia";
@@ -20,18 +21,19 @@ import sdkRouter from "./orpc/router";
 // Initialize OTel SDK for PostHog logs
 if (env.POSTHOG_KEY) {
    initOtel({
-      serviceName: "contentta-server",
+      serviceName: "montte-server",
       posthogKey: env.POSTHOG_KEY,
    });
+   startHealthHeartbeat({ serviceName: "montte-server" });
 }
 
-const logger = pino({ name: "contentta-server-rpc" });
+const logger = pino({ name: "montte-server-rpc" });
 
 // Initialize oRPC handler
 const orpcHandler = new RPCHandler(sdkRouter, {
    plugins: [
       new BatchHandlerPlugin(),
-      new LoggingHandlerPlugin({
+      new FetchLoggingPlugin({
          logger,
          generateId: () => crypto.randomUUID(),
          logRequestResponse: true,
@@ -100,6 +102,7 @@ console.log(`Server started on port ${app.server?.port}`);
 const shutdown = async (signal: string) => {
    console.log(`[Server] Received ${signal}, shutting down...`);
    await shutdownPosthog(posthog);
+   stopHealthHeartbeat();
    await shutdownOtel();
    process.exit(0);
 };

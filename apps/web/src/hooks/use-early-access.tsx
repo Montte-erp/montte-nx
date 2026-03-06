@@ -1,8 +1,10 @@
-import type { EarlyAccessFeature } from "@packages/posthog/client";
-import {
-   useEarlyAccessFeatures,
-   usePosthogFeatureFlags,
-} from "@packages/posthog/client";
+import type {
+   EarlyAccessFeature,
+   EarlyAccessStage,
+} from "@/integrations/posthog/client";
+import { normalizeEarlyAccessStage, usePostHog } from "@/integrations/posthog/client";
+import { orpc } from "@/integrations/orpc/client";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import {
    createContext,
    type ReactNode,
@@ -10,36 +12,18 @@ import {
    useContext,
    useEffect,
    useMemo,
+   useState,
 } from "react";
-import { useSafeLocalStorage } from "@/hooks/use-local-storage";
-
-type EnrolledFeaturesCache = Record<
-   string,
-   {
-      enrolled: boolean;
-      stage: "alpha" | "beta" | "concept" | "general-availability";
-      name: string;
-   }
->;
 
 type EarlyAccessContextValue = {
-   loaded: boolean;
-   enrolledFeatures: Set<string>;
    features: EarlyAccessFeature[];
    isEnrolled: (flagKey: string) => boolean;
-   getFeatureStage: (
-      flagKey: string,
-   ) => "alpha" | "beta" | "concept" | "general-availability" | null;
+   getFeatureStage: (flagKey: string) => EarlyAccessStage | null;
    updateEnrollment: (flagKey: string, isEnrolled: boolean) => void;
    isBannerVisible: boolean;
    dismissBanner: () => void;
 };
 
-// ---------------------------------------------------------------------------
-// Source of truth for all known early access features.
-// PostHog's getEarlyAccessFeatures is unreliable — define features here and
-// check enrollment individually via isFeatureEnabled (mirrors the SSR pattern).
-// ---------------------------------------------------------------------------
 const STATIC_FEATURES: EarlyAccessFeature[] = [
    {
       flagKey: "contacts",
@@ -84,42 +68,57 @@ const STATIC_FEATURES: EarlyAccessFeature[] = [
 ];
 
 const STATIC_FLAG_KEYS = new Set(
-   STATIC_FEATURES.map((f) => f.flagKey).filter((k): k is string => k !== null),
+   STATIC_FEATURES.map((f) => f.flagKey).filter(
+      (k): k is string => k !== null,
+   ),
 );
-
-const BANNER_DISMISSED_KEY = "montte:early-access-banner-dismissed";
-const ENROLLED_FEATURES_CACHE_KEY = "montte:enrolled-features";
 
 const EarlyAccessContext = createContext<EarlyAccessContextValue | null>(null);
 
 export function EarlyAccessProvider({ children }: { children: ReactNode }) {
-   const {
-      features: posthogFeatures,
-      loaded: posthogLoaded,
-      updateEnrollment,
-   } = useEarlyAccessFeatures();
+   const posthogClient = usePostHog();
+   const queryClient = useQueryClient();
 
-   // Use feature flags directly to check enrollment — same pattern as SSR.
-   const { flags, loaded: flagsLoaded } = usePosthogFeatureFlags();
+   // Enrollment from SSR (prefetched in _dashboard beforeLoad).
+   // useSuspenseQuery guarantees data is defined.
+   const { data } = useSuspenseQuery(
+      orpc.earlyAccess.getEnrolledFeatures.queryOptions(),
+   );
 
-   const [dismissedFlags, setDismissedFlagsState] = useSafeLocalStorage<
-      string[]
-   >(BANNER_DISMISSED_KEY, []);
+   const enrolledSet = useMemo(
+      () => new Set(data.enrolled),
+      [data],
+   );
 
-   const [enrolledCache, setEnrolledCache] =
-      useSafeLocalStorage<EnrolledFeaturesCache>(
-         ENROLLED_FEATURES_CACHE_KEY,
-         {},
+   // PostHog early access features (for stage/name overrides only)
+   const [posthogFeatures, setPosthogFeatures] = useState<
+      EarlyAccessFeature[]
+   >([]);
+
+   // Dismissed banner flags (in-memory, resets per session)
+   const [dismissedFlags, setDismissedFlags] = useState<Set<string>>(
+      new Set(),
+   );
+
+   useEffect(() => {
+      posthogClient.getEarlyAccessFeatures(
+         (rawFeatures: Array<EarlyAccessFeature & { stage?: string }>) => {
+            setPosthogFeatures(
+               rawFeatures.map((f) => ({
+                  ...f,
+                  stage: normalizeEarlyAccessStage(f.stage),
+               })),
+            );
+         },
+         true,
       );
+   }, [posthogClient]);
 
-   // Merge: PostHog data overrides static when available (so stage/name updates
-   // in PostHog are reflected). Static is the fallback when PostHog doesn't
-   // return the feature (getEarlyAccessFeatures is unreliable).
-   const mergedFeatures = useMemo<EarlyAccessFeature[]>(() => {
+   const features = useMemo<EarlyAccessFeature[]>(() => {
       const posthogByKey = new Map(
          posthogFeatures.filter((f) => f.flagKey).map((f) => [f.flagKey, f]),
       );
-      const staticWithOverrides = STATIC_FEATURES.map((f) =>
+      const merged = STATIC_FEATURES.map((f) =>
          f.flagKey && posthogByKey.has(f.flagKey)
             ? (posthogByKey.get(f.flagKey) as EarlyAccessFeature)
             : f,
@@ -127,113 +126,100 @@ export function EarlyAccessProvider({ children }: { children: ReactNode }) {
       const extra = posthogFeatures.filter(
          (f) => f.flagKey && !STATIC_FLAG_KEYS.has(f.flagKey),
       );
-      return [...staticWithOverrides, ...extra];
+      return [...merged, ...extra];
    }, [posthogFeatures]);
 
-   // Enrollment: check feature flags directly for known flags, fall back to cache.
-   const enrolledFeatures = useMemo(() => {
-      const enrolled = new Set<string>();
-
-      if (flagsLoaded) {
-         for (const feature of mergedFeatures) {
-            if (feature.flagKey && flags[feature.flagKey]) {
-               enrolled.add(feature.flagKey);
-            }
-         }
-      } else {
-         // Before flags load, use cache.
-         for (const [flagKey, entry] of Object.entries(enrolledCache)) {
-            if (entry.enrolled) enrolled.add(flagKey);
-         }
-      }
-
-      return enrolled;
-   }, [flagsLoaded, flags, mergedFeatures, enrolledCache]);
-
-   // Sync cache after flags load so it stays fresh for the next session.
-   useEffect(() => {
-      if (!flagsLoaded) return;
-      setEnrolledCache((prev) => {
-         const next: EnrolledFeaturesCache = { ...prev };
-         for (const feature of mergedFeatures) {
-            if (!feature.flagKey) continue;
-            next[feature.flagKey] = {
-               enrolled: Boolean(flags[feature.flagKey]),
-               stage: feature.stage,
-               name: feature.name,
-            };
-         }
-         return next;
-      });
-   }, [flagsLoaded, flags, mergedFeatures, setEnrolledCache]);
-
-   const loaded = flagsLoaded || posthogLoaded;
-
-   const isEnrolledFn = useCallback(
-      (flagKey: string) => enrolledFeatures.has(flagKey),
-      [enrolledFeatures],
+   const isEnrolled = useCallback(
+      (flagKey: string) => enrolledSet.has(flagKey),
+      [enrolledSet],
    );
 
    const getFeatureStage = useCallback(
-      (flagKey: string) => {
-         const feature = mergedFeatures.find((f) => f.flagKey === flagKey);
-         return feature?.stage ?? null;
+      (flagKey: string): EarlyAccessStage | null => {
+         const f = features.find((feat) => feat.flagKey === flagKey);
+         return f?.stage ?? null;
       },
-      [mergedFeatures],
+      [features],
    );
 
-   const updateEnrollmentWithCache = useCallback(
-      (flagKey: string, isEnrolledValue: boolean) => {
-         updateEnrollment(flagKey, isEnrolledValue);
-         setEnrolledCache((prev) => {
-            const existing = prev[flagKey];
-            const stage = existing?.stage ?? getFeatureStage(flagKey) ?? "beta";
-            const name = existing?.name ?? "";
-            return {
-               ...prev,
-               [flagKey]: { enrolled: isEnrolledValue, stage, name },
-            };
-         });
+   const queryKey =
+      orpc.earlyAccess.getEnrolledFeatures.queryOptions().queryKey;
+
+   const { mutate: mutateEnrollment } = useMutation(
+      orpc.earlyAccess.updateEnrollment.mutationOptions({
+         onMutate: async ({ flagKey, isEnrolled }) => {
+            await queryClient.cancelQueries({ queryKey });
+            const previous =
+               queryClient.getQueryData<{ enrolled: string[] }>(queryKey);
+
+            queryClient.setQueryData<{ enrolled: string[] }>(
+               queryKey,
+               (old) => {
+                  const current = old?.enrolled ?? [];
+                  const enrolled = isEnrolled
+                     ? [...new Set([...current, flagKey])]
+                     : current.filter((k) => k !== flagKey);
+                  return { enrolled };
+               },
+            );
+
+            // Also update client-side PostHog so local flags stay in sync
+            posthogClient.updateEarlyAccessFeatureEnrollment(
+               flagKey,
+               isEnrolled,
+            );
+
+            return { previous };
+         },
+         onError: (_err, _vars, ctx) => {
+            if (ctx?.previous) {
+               queryClient.setQueryData(queryKey, ctx.previous);
+            }
+         },
+         meta: { skipGlobalInvalidation: true },
+      }),
+   );
+
+   const handleUpdateEnrollment = useCallback(
+      (flagKey: string, value: boolean) => {
+         mutateEnrollment({ flagKey, isEnrolled: value });
       },
-      [updateEnrollment, setEnrolledCache, getFeatureStage],
+      [mutateEnrollment],
    );
 
    const isBannerVisible = useMemo(() => {
-      if (!loaded || mergedFeatures.length === 0) return false;
-      const dismissedSet = new Set(dismissedFlags);
-      return mergedFeatures.some(
+      if (features.length === 0) return false;
+      return features.some(
          (f) =>
             f.flagKey &&
-            !enrolledFeatures.has(f.flagKey) &&
-            !dismissedSet.has(f.flagKey),
+            !enrolledSet.has(f.flagKey) &&
+            !dismissedFlags.has(f.flagKey),
       );
-   }, [loaded, mergedFeatures, enrolledFeatures, dismissedFlags]);
+   }, [features, enrolledSet, dismissedFlags]);
 
    const dismissBanner = useCallback(() => {
-      const allFlagKeys = mergedFeatures
-         .map((f) => f.flagKey)
-         .filter((k): k is string => k !== null);
-      setDismissedFlagsState(allFlagKeys);
-   }, [mergedFeatures, setDismissedFlagsState]);
+      const allKeys = new Set(
+         features
+            .map((f) => f.flagKey)
+            .filter((k): k is string => k !== null),
+      );
+      setDismissedFlags(allKeys);
+   }, [features]);
 
    const value = useMemo<EarlyAccessContextValue>(
       () => ({
-         loaded,
-         enrolledFeatures,
-         features: mergedFeatures,
-         isEnrolled: isEnrolledFn,
+         features,
+         isEnrolled,
          getFeatureStage,
-         updateEnrollment: updateEnrollmentWithCache,
+         updateEnrollment: handleUpdateEnrollment,
          isBannerVisible,
          dismissBanner,
       }),
       [
-         loaded,
-         enrolledFeatures,
-         mergedFeatures,
-         isEnrolledFn,
+         features,
+         isEnrolled,
          getFeatureStage,
-         updateEnrollmentWithCache,
+         handleUpdateEnrollment,
          isBannerVisible,
          dismissBanner,
       ],

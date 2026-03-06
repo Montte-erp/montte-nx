@@ -14,7 +14,8 @@ export type RouterContext = {
 export function getContext(): RouterContext {
    const queryClient = new QueryClient({
       mutationCache: new MutationCache({
-         onSuccess: () => {
+         onSuccess: (_data, _variables, _context, mutation) => {
+            if (mutation.meta?.skipGlobalInvalidation) return;
             // Invalidate all queries on any successful mutation
             // This ensures cache stays fresh after oRPC mutations
             queryClient.invalidateQueries();

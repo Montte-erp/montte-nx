@@ -5,7 +5,7 @@ import type React from "react";
 import { useCallback } from "react";
 import { BankAccountForm } from "@/features/bank-accounts/ui/bank-accounts-form";
 import { CategoryForm } from "@/features/categories/ui/categories-form";
-import { TransactionSheet } from "@/features/transactions/ui/transactions-sheet";
+import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
 import { useCredenza } from "@/hooks/use-credenza";
 import type { TaskDefinition } from "../task-definitions";
 
@@ -42,7 +42,7 @@ export function QuickStartTask({
       } else if (task.id === "add_transaction") {
          openCredenza({
             children: (
-               <TransactionSheet mode="create" onSuccess={closeCredenza} />
+               <TransactionCredenza mode="create" onSuccess={closeCredenza} />
             ),
          });
       }

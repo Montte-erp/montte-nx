@@ -1,7 +1,7 @@
 import "@/polyfill";
 import "@/integrations/otel/init";
 
-import { LoggingHandlerPlugin } from "@orpc/experimental-pino";
+import { FetchLoggingPlugin } from "@packages/logging/orpc-plugin";
 import { SmartCoercionPlugin } from "@orpc/json-schema";
 import { onError } from "@orpc/server";
 import { CompressionPlugin, RPCHandler } from "@orpc/server/fetch";
@@ -14,7 +14,7 @@ import router from "@/integrations/orpc/router";
 import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import { auth, db, posthog } from "@/integrations/orpc/server-instances";
 
-const logger = pino({ name: "contentta-web-api" });
+const logger = pino({ name: "montte-web-api" });
 
 const handler = new RPCHandler(router, {
    interceptors: [
@@ -29,7 +29,7 @@ const handler = new RPCHandler(router, {
       new SmartCoercionPlugin({
          schemaConverters: [new ZodToJsonSchemaConverter()],
       }),
-      new LoggingHandlerPlugin({
+      new FetchLoggingPlugin<ORPCContextWithAuth>({
          logger,
          generateId: () => crypto.randomUUID(),
          logRequestResponse: true,

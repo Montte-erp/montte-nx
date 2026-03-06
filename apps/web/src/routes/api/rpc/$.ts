@@ -1,7 +1,7 @@
 import "@/polyfill";
 import "@/integrations/otel/init";
 
-import { LoggingHandlerPlugin } from "@orpc/experimental-pino";
+import { FetchLoggingPlugin } from "@packages/logging/orpc-plugin";
 import { RPCHandler } from "@orpc/server/fetch";
 import { BatchHandlerPlugin } from "@orpc/server/plugins";
 import { createFileRoute } from "@tanstack/react-router";
@@ -15,12 +15,12 @@ import {
    stripeClient,
 } from "@/integrations/orpc/server-instances";
 
-const logger = pino({ name: "contentta-web-rpc" });
+const logger = pino({ name: "montte-web-rpc" });
 
 const handler = new RPCHandler(router, {
    plugins: [
       new BatchHandlerPlugin(),
-      new LoggingHandlerPlugin({
+      new FetchLoggingPlugin<ORPCContextWithAuth>({
          logger,
          generateId: () => crypto.randomUUID(),
          logRequestResponse: true,

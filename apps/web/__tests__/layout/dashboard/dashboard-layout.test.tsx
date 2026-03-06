@@ -19,7 +19,7 @@ if (!window.matchMedia) {
    })) as typeof window.matchMedia;
 }
 
-vi.mock("@packages/posthog/client", () => ({
+vi.mock("@/integrations/posthog/client", () => ({
    identifyClient: vi.fn(),
    setClientGroup: vi.fn(),
 }));

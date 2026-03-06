@@ -99,7 +99,7 @@ export const navGroups: NavGroupDef[] = [
       items: [
          {
             id: "transactions",
-            label: "Transações",
+            label: "Lançamentos",
             icon: ArrowLeftRight,
             route: "/$slug/$teamSlug/transactions",
             quickAction: { type: "create", target: "sheet" },
@@ -142,7 +142,7 @@ export const navGroups: NavGroupDef[] = [
          },
          {
             id: "bills",
-            label: "Contas",
+            label: "Contas a Pagar/Receber",
             icon: Receipt,
             route: "/$slug/$teamSlug/bills",
             configurable: true,

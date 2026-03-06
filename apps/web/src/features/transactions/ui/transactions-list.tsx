@@ -51,7 +51,7 @@ import {
    formatBRL,
    type TransactionRow,
 } from "@/features/transactions/ui/transactions-columns";
-import { TransactionSheet } from "@/features/transactions/ui/transactions-sheet";
+import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -143,7 +143,7 @@ export function TransactionsList({
       (transaction: TransactionRow) => {
          openCredenza({
             children: (
-               <TransactionSheet
+               <TransactionCredenza
                   mode="edit"
                   onSuccess={closeCredenza}
                   transaction={transaction}

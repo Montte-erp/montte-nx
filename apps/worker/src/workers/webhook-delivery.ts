@@ -1,23 +1,26 @@
 import { Worker } from "bullmq";
 import type { ConnectionOptions } from "bullmq";
 import type { DatabaseInstance } from "@packages/database/client";
+import { emitJobLog } from "@packages/logging/health";
 import {
 	WEBHOOK_DELIVERY_QUEUE,
 	type WebhookDeliveryJobData,
 } from "@packages/queue/webhook-delivery";
 import { deliverWebhook } from "../jobs/deliver-webhook";
 
-/**
- * Start the webhook delivery BullMQ worker.
- * Returns the worker instance for graceful shutdown.
- */
+const SERVICE_NAME = "montte-worker";
+
 export function startWebhookDeliveryWorker(
 	connection: ConnectionOptions,
 	db: DatabaseInstance,
 ): Worker<WebhookDeliveryJobData> {
+	const jobStartTimes = new Map<string, number>();
+
 	const worker = new Worker<WebhookDeliveryJobData>(
 		WEBHOOK_DELIVERY_QUEUE,
 		async (job) => {
+			jobStartTimes.set(job.id ?? "", Date.now());
+			emitJobLog({ serviceName: SERVICE_NAME, jobName: WEBHOOK_DELIVERY_QUEUE, jobId: job.id, event: "started" });
 			await deliverWebhook(db, job.data);
 		},
 		{
@@ -27,14 +30,30 @@ export function startWebhookDeliveryWorker(
 	);
 
 	worker.on("completed", (job) => {
-		console.log(`[Worker] Webhook job ${job.id} completed`);
+		const start = jobStartTimes.get(job.id ?? "");
+		jobStartTimes.delete(job.id ?? "");
+		emitJobLog({
+			serviceName: SERVICE_NAME,
+			jobName: WEBHOOK_DELIVERY_QUEUE,
+			jobId: job.id,
+			event: "completed",
+			durationMs: start ? Date.now() - start : undefined,
+		});
 	});
 
 	worker.on("failed", (job, err) => {
-		console.error(
-			`[Worker] Webhook job ${job?.id} failed (attempt ${job?.attemptsMade}/${job?.opts.attempts}):`,
-			err.message,
-		);
+		const start = jobStartTimes.get(job?.id ?? "");
+		jobStartTimes.delete(job?.id ?? "");
+		emitJobLog({
+			serviceName: SERVICE_NAME,
+			jobName: WEBHOOK_DELIVERY_QUEUE,
+			jobId: job?.id,
+			event: "failed",
+			durationMs: start ? Date.now() - start : undefined,
+			error: err.message,
+			attempt: job?.attemptsMade,
+			maxAttempts: job?.opts.attempts,
+		});
 	});
 
 	console.log("[Worker] Webhook delivery worker started");

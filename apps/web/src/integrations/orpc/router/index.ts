@@ -14,6 +14,7 @@ import * as chatRouter from "./chat";
 import * as contactsRouter from "./contacts";
 import * as creditCardsRouter from "./credit-cards";
 import * as dashboardsRouter from "./dashboards";
+import * as earlyAccessRouter from "./early-access";
 import * as dataSourcesRouter from "./data-sources";
 import * as discussionsRouter from "./discussions";
 import * as eventCatalogRouter from "./event-catalog";
@@ -53,6 +54,7 @@ export default {
    chat: chatRouter,
    dashboards: dashboardsRouter,
    dataSources: dataSourcesRouter,
+   earlyAccess: earlyAccessRouter,
    discussions: discussionsRouter,
    eventCatalog: eventCatalogRouter,
    feedback: feedbackRouter,

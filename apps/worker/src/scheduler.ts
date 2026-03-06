@@ -1,10 +1,39 @@
 import * as cron from "node-cron";
 import type { DatabaseInstance } from "@packages/database/client";
 import type { Redis } from "ioredis";
+import { emitCronLog } from "@packages/logging/health";
 import { generateBillOccurrences } from "./jobs/generate-bill-occurrences";
 import { runReconcileCredits } from "./jobs/reconcile-credits";
 import { runRefreshInsights } from "./jobs/refresh-insights";
 import { runRefreshViews } from "./jobs/refresh-views";
+
+const SERVICE_NAME = "montte-worker";
+
+async function runWithTelemetry(
+	taskName: string,
+	fn: () => Promise<void>,
+): Promise<void> {
+	const start = Date.now();
+	emitCronLog({ serviceName: SERVICE_NAME, taskName, event: "started" });
+	try {
+		await fn();
+		emitCronLog({
+			serviceName: SERVICE_NAME,
+			taskName,
+			event: "completed",
+			durationMs: Date.now() - start,
+		});
+	} catch (error) {
+		emitCronLog({
+			serviceName: SERVICE_NAME,
+			taskName,
+			event: "failed",
+			durationMs: Date.now() - start,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		console.error(`[Scheduler] ${taskName} failed:`, error);
+	}
+}
 
 /**
  * Start all scheduled (cron) jobs.
@@ -18,36 +47,24 @@ export function startScheduler(
 
 	// Hourly: refresh materialized views, then reconcile credit counters
 	const hourlyTask = cron.schedule("0 * * * *", async () => {
-		console.log("[Scheduler] Running hourly billing reconciliation...");
-		try {
+		await runWithTelemetry("hourly-billing-reconciliation", async () => {
 			await runRefreshViews(db);
 			await runReconcileCredits(db, redis);
-			console.log("[Scheduler] Hourly billing reconciliation complete");
-		} catch (error) {
-			console.error("[Scheduler] Hourly job failed:", error);
-		}
+		});
 	});
 
 	// Every 3 hours: refresh insight cached results
 	const insightsTask = cron.schedule("0 */3 * * *", async () => {
-		console.log("[Scheduler] Running insight cache refresh...");
-		try {
+		await runWithTelemetry("insight-cache-refresh", async () => {
 			await runRefreshInsights(db);
-			console.log("[Scheduler] Insight cache refresh complete");
-		} catch (error) {
-			console.error("[Scheduler] Insight refresh job failed:", error);
-		}
+		});
 	});
 
 	// Daily at 6am: generate upcoming bill occurrences for active recurrence groups
 	const billRecurrenceTask = cron.schedule("0 6 * * *", async () => {
-		console.log("[Scheduler] Running bill recurrence generation...");
-		try {
+		await runWithTelemetry("bill-recurrence-generation", async () => {
 			await generateBillOccurrences(db);
-			console.log("[Scheduler] Bill recurrence generation complete");
-		} catch (error) {
-			console.error("[Scheduler] Bill recurrence job failed:", error);
-		}
+		});
 	});
 
 	tasks.push(hourlyTask, insightsTask, billRecurrenceTask);

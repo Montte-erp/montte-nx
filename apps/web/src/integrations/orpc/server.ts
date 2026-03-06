@@ -110,7 +110,7 @@ const withOrganization = withAuth.use(async ({ context, next }) => {
 /**
  * Telemetry middleware - captures request metrics and identifies users
  */
-const otelLogger = logs.getLogger("contentta-web-orpc");
+const otelLogger = logs.getLogger("montte-web-orpc");
 
 const withTelemetry = withOrganization.use(
    async ({ context, path, next }, input) => {

@@ -9,17 +9,9 @@
       "typescript": "catalog:development"
    },
    "exports": {
-      "./client": {
-         "default": "./src/client.tsx",
-         "types": "./dist/src/client.d.ts"
-      },
       "./server": {
          "default": "./src/server.ts",
          "types": "./dist/src/server.d.ts"
-      },
-      "./early-access-ssr": {
-         "default": "./src/early-access-ssr.ts",
-         "types": "./dist/src/early-access-ssr.d.ts"
       },
       "./sdk/server": {
          "default": "./src/sdk/server.ts",

@@ -14,7 +14,7 @@ import {
 import { TransactionImportCredenza } from "@/features/transactions/ui/transaction-import-credenza";
 import { TransactionPrerequisitesBlocker } from "@/features/transactions/ui/transaction-prerequisites-blocker";
 import { TransactionsList } from "@/features/transactions/ui/transactions-list";
-import { TransactionSheet } from "@/features/transactions/ui/transactions-sheet";
+import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
 import { TransactionsSkeleton } from "@/features/transactions/ui/transactions-skeleton";
 import type { ViewConfig } from "@/features/view-switch/hooks/use-view-switch";
 import { useViewSwitch } from "@/features/view-switch/hooks/use-view-switch";
@@ -89,7 +89,7 @@ function TransactionsPage() {
          return;
       }
       openCredenza({
-         children: <TransactionSheet mode="create" onSuccess={closeCredenza} />,
+         children: <TransactionCredenza mode="create" onSuccess={closeCredenza} />,
       });
    }, [hasBankAccounts, openCredenza, closeCredenza, navigate, slug, teamSlug]);
 

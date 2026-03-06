@@ -5,9 +5,14 @@ export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard",
 )({
    beforeLoad: async ({ context }) => {
-      const status = await context.queryClient.fetchQuery(
-         context.orpc.onboarding.getOnboardingStatus.queryOptions(),
-      );
+      const [status] = await Promise.all([
+         context.queryClient.fetchQuery(
+            context.orpc.onboarding.getOnboardingStatus.queryOptions(),
+         ),
+         context.queryClient.prefetchQuery(
+            context.orpc.earlyAccess.getEnrolledFeatures.queryOptions(),
+         ),
+      ]);
 
       if (
          !status.organization.onboardingCompleted ||

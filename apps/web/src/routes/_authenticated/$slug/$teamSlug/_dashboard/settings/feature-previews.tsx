@@ -42,7 +42,7 @@ const FEATURE_ICONS: Record<string, React.ElementType> = {
 };
 
 function FeaturePreviewsPage() {
-   const { features, loaded, isEnrolled, updateEnrollment } = useEarlyAccess();
+   const { features, isEnrolled, updateEnrollment } = useEarlyAccess();
 
    // Filter state - starts with all stages selected
    const [selectedStages, setSelectedStages] = useState<Set<FeatureStage>>(
@@ -152,17 +152,13 @@ function FeaturePreviewsPage() {
             </div>
          </div>
 
-         {!loaded && (
-            <p className="text-sm text-muted-foreground">Carregando...</p>
-         )}
-
-         {loaded && filteredFeatures.length === 0 && (
+         {filteredFeatures.length === 0 && (
             <p className="text-sm text-muted-foreground">
                Nenhuma funcionalidade encontrada com os filtros selecionados.
             </p>
          )}
 
-         {loaded && filteredFeatures.length > 0 && (
+         {filteredFeatures.length > 0 && (
             <ItemGroup>
                {filteredFeatures.map((feature, index) => {
                   if (!feature.flagKey) return null;

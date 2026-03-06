@@ -24,6 +24,14 @@
       "./otel": {
          "default": "./src/otel.ts",
          "types": "./dist/src/otel.d.ts"
+      },
+      "./health": {
+         "default": "./src/health.ts",
+         "types": "./dist/src/health.d.ts"
+      },
+      "./orpc-plugin": {
+         "default": "./src/orpc-plugin.ts",
+         "types": "./dist/src/orpc-plugin.d.ts"
       }
    },
    "files": [
@@ -35,11 +43,14 @@
    },
    "dependencies": {
       "@logtail/pino": "catalog:logging",
+      "@opentelemetry/api-logs": "^0.213.0",
       "@opentelemetry/exporter-logs-otlp-http": "^0.213.0",
       "@opentelemetry/resources": "^2.6.0",
       "@opentelemetry/sdk-logs": "^0.213.0",
       "@opentelemetry/sdk-node": "^0.213.0",
-      "@orpc/otel": "^1.13.6",
+      "@orpc/experimental-pino": "catalog:orpc",
+      "@orpc/otel": "catalog:orpc",
+      "@orpc/server": "catalog:orpc",
       "pino": "catalog:logging",
       "pino-opentelemetry-transport": "^3.0.0"
    },

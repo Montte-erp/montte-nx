@@ -141,20 +141,72 @@ export const create = protectedProcedure
    .input(transactionSchema)
    .handler(async ({ context, input }) => {
       const { db, teamId } = context;
-      if (input.type === "transfer" && !input.destinationBankAccountId) {
-         throw new ORPCError("BAD_REQUEST", {
-            message: "Transferências exigem uma conta de destino.",
-         });
+      if (input.type === "transfer") {
+         if (!input.destinationBankAccountId) {
+            throw new ORPCError("BAD_REQUEST", {
+               message: "Transferências exigem uma conta de destino.",
+            });
+         }
+         if (!input.bankAccountId) {
+            throw new ORPCError("BAD_REQUEST", {
+               message: "Transferências exigem uma conta de origem.",
+            });
+         }
+         if (input.bankAccountId === input.destinationBankAccountId) {
+            throw new ORPCError("BAD_REQUEST", {
+               message: "Conta de origem e destino devem ser diferentes.",
+            });
+         }
       }
       await verifyTransactionRefs(db, teamId, {
          bankAccountId: input.bankAccountId,
          destinationBankAccountId: input.destinationBankAccountId,
-         categoryId: input.categoryId,
-         subcategoryId: input.subcategoryId,
+         categoryId: input.type === "transfer" ? null : input.categoryId,
+         subcategoryId: input.type === "transfer" ? null : input.subcategoryId,
          tagIds: input.tagIds,
          contactId: input.contactId,
       });
       const { tagIds, items, ...data } = input;
+
+      if (input.type === "transfer") {
+         // Create 2 records: expense in source account, income in destination account
+         const transferGroupId = crypto.randomUUID();
+         const baseData = {
+            ...data,
+            teamId,
+            categoryId: null,
+            subcategoryId: null,
+            installmentGroupId: transferGroupId,
+         };
+
+         const sourceTransaction = await createTransaction(
+            db,
+            {
+               ...baseData,
+               type: "transfer",
+               bankAccountId: input.bankAccountId,
+               destinationBankAccountId: input.destinationBankAccountId,
+            },
+            tagIds,
+         );
+
+         await createTransaction(
+            db,
+            {
+               ...baseData,
+               type: "transfer",
+               bankAccountId: input.destinationBankAccountId,
+               destinationBankAccountId: input.bankAccountId,
+            },
+            tagIds,
+         );
+
+         if (items && items.length > 0 && sourceTransaction) {
+            await createTransactionItems(db, sourceTransaction.id, teamId, items);
+         }
+         return sourceTransaction;
+      }
+
       const transaction = await createTransaction(db, { ...data, teamId }, tagIds);
       if (items && items.length > 0 && transaction) {
          await createTransactionItems(db, transaction.id, teamId, items);

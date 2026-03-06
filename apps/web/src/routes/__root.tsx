@@ -1,6 +1,9 @@
 import { env } from "@packages/environment/client";
 
-import { PostHogWrapper, PosthogRouterTracker } from "@packages/posthog/client";
+import {
+   PostHogWrapper,
+   PosthogRouterTracker,
+} from "@/integrations/posthog/client";
 import { Toaster } from "@packages/ui/components/sonner";
 import { ThemeProvider } from "@packages/ui/lib/theme-provider";
 import appCss from "@packages/ui/styles/globals.css?url";
@@ -15,7 +18,6 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
 import { GlobalCredenza } from "@/hooks/use-credenza";
-import { EarlyAccessProvider } from "@/hooks/use-early-access";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import type { RouterContext } from "../integrations/tanstack-query/root-provider";
 
@@ -65,42 +67,40 @@ function RootDocument({ children }: { children: React.ReactNode }) {
          </head>
          <body>
             <PostHogWrapper env={env}>
-               <EarlyAccessProvider>
-                  <ThemeProvider
-                     attribute="class"
-                     defaultTheme="system"
-                     enableSystem
-                  >
-                     {children}
-                     <PosthogRouterTracker
-                        location={{
-                           href:
-                              typeof window !== "undefined"
-                                 ? window.location.href
-                                 : "",
-                           pathname: routerState.location.pathname,
-                           search: routerState.location.search,
+               <ThemeProvider
+                  attribute="class"
+                  defaultTheme="system"
+                  enableSystem
+               >
+                  {children}
+                  <PosthogRouterTracker
+                     location={{
+                        href:
+                           typeof window !== "undefined"
+                              ? window.location.href
+                              : "",
+                        pathname: routerState.location.pathname,
+                        search: routerState.location.search,
+                     }}
+                  />
+                  <Toaster richColors />
+                  <GlobalCredenza />
+                  <GlobalAlertDialog />
+                  <ClientOnly>
+                     <TanStackDevtools
+                        config={{
+                           position: "top-right",
                         }}
+                        plugins={[
+                           {
+                              name: "Tanstack Router",
+                              render: <TanStackRouterDevtoolsPanel />,
+                           },
+                           TanStackQueryDevtools,
+                        ]}
                      />
-                     <Toaster richColors />
-                     <GlobalCredenza />
-                     <GlobalAlertDialog />
-                     <ClientOnly>
-                        <TanStackDevtools
-                           config={{
-                              position: "top-right",
-                           }}
-                           plugins={[
-                              {
-                                 name: "Tanstack Router",
-                                 render: <TanStackRouterDevtoolsPanel />,
-                              },
-                              TanStackQueryDevtools,
-                           ]}
-                        />
-                     </ClientOnly>
-                  </ThemeProvider>
-               </EarlyAccessProvider>
+                  </ClientOnly>
+               </ThemeProvider>
             </PostHogWrapper>
             <Scripts />
          </body>

@@ -1,7 +1,7 @@
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { BatchLinkPlugin } from "@orpc/client/plugins";
-import posthog from "posthog-js";
+import posthogJs from "posthog-js";
 import type {
    InferRouterInputs,
    InferRouterOutputs,
@@ -42,7 +42,7 @@ const getORPCClient = createIsomorphicFn()
       const link = new RPCLink({
          url: `${window.location.origin}/api/rpc`, // Use relative URL - SSR safe, no window reference needed
          headers: () => {
-            const posthogSessionId = posthog.getSessionId?.();
+            const posthogSessionId = posthogJs.get_session_id?.();
             return {
                ...(posthogSessionId
                   ? { "X-PostHog-Session-Id": posthogSessionId }

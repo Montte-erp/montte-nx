@@ -7,6 +7,7 @@ import {
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
 import { FeatureStageBadge } from "@packages/ui/components/feature-stage-badge";
+import { useMemo } from "react";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 import { useFinanceNavPreferences } from "@/layout/dashboard/hooks/use-finance-nav-preferences";
 import { useSidebarVisibility } from "@/layout/dashboard/hooks/use-sidebar-visibility";
@@ -28,6 +29,29 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
    const { hiddenItems, toggleItem: toggleVisibility } = useSidebarVisibility();
    const { wantedItems, toggleItem: toggleWanted } = useFinanceNavPreferences();
    const { updateEnrollment, getFeatureStage, isEnrolled } = useEarlyAccess();
+
+   // Filter out early-access items that the user hasn't enrolled in yet.
+   // Those features are discoverable via the Feature Previews settings page instead.
+   const visibleLabeledNavGroups = useMemo(
+      () =>
+         labeledNavGroups
+            .map((g) => ({
+               ...g,
+               items: g.items.filter(
+                  (item) => !item.earlyAccessFlag || isEnrolled(item.earlyAccessFlag),
+               ),
+            }))
+            .filter((g) => g.items.length > 0),
+      [isEnrolled],
+   );
+
+   const visibleMainEarlyAccessItems = useMemo(
+      () =>
+         mainEarlyAccessItems.filter(
+            (item) => !item.earlyAccessFlag || isEnrolled(item.earlyAccessFlag!),
+         ),
+      [isEnrolled],
+   );
 
    const isChecked = (item: NavItemDef): boolean => {
       if (item.earlyAccessFlag) {
@@ -143,14 +167,14 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
                Selecione os itens que deseja ver na barra lateral.
             </p>
             <div className="flex flex-col gap-6">
-               {labeledNavGroups.map((group) =>
+               {visibleLabeledNavGroups.map((group) =>
                   renderSection(group.id, group.label!, group.items),
                )}
-               {mainEarlyAccessItems.length > 0 &&
+               {visibleMainEarlyAccessItems.length > 0 &&
                   renderSection(
                      "funcionalidades",
                      "Funcionalidades",
-                     mainEarlyAccessItems,
+                     visibleMainEarlyAccessItems,
                   )}
             </div>
             <div className="flex justify-end mt-6">
