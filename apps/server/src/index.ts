@@ -1,8 +1,12 @@
 import cors from "@elysiajs/cors";
+import { LoggingHandlerPlugin } from "@orpc/experimental-pino";
 import { RPCHandler } from "@orpc/server/fetch";
 import { BatchHandlerPlugin } from "@orpc/server/plugins";
 import { env } from "@packages/environment/server";
+import { initOtel, shutdownOtel } from "@packages/logging/otel";
+import { shutdownPosthog } from "@packages/posthog/server";
 import { Elysia } from "elysia";
+import pino from "pino";
 import { auth } from "./integrations/auth";
 import { db } from "./integrations/database";
 import { minioClient } from "./integrations/minio";
@@ -13,9 +17,27 @@ import {
 } from "./mcp/handler";
 import sdkRouter from "./orpc/router";
 
+// Initialize OTel SDK for PostHog logs
+if (env.POSTHOG_KEY) {
+   initOtel({
+      serviceName: "contentta-server",
+      posthogKey: env.POSTHOG_KEY,
+   });
+}
+
+const logger = pino({ name: "contentta-server-rpc" });
+
 // Initialize oRPC handler
 const orpcHandler = new RPCHandler(sdkRouter, {
-   plugins: [new BatchHandlerPlugin()],
+   plugins: [
+      new BatchHandlerPlugin(),
+      new LoggingHandlerPlugin({
+         logger,
+         generateId: () => crypto.randomUUID(),
+         logRequestResponse: true,
+         logRequestAbort: true,
+      }),
+   ],
 });
 
 // oRPC endpoint handler
@@ -73,5 +95,15 @@ const app = new Elysia({
    .listen(process.env.PORT ?? 9877);
 
 console.log(`Server started on port ${app.server?.port}`);
+
+// Graceful shutdown
+const shutdown = async (signal: string) => {
+   console.log(`[Server] Received ${signal}, shutting down...`);
+   await shutdownPosthog(posthog);
+   await shutdownOtel();
+   process.exit(0);
+};
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
 
 export type App = typeof app;

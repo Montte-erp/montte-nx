@@ -1,14 +1,20 @@
 import "@/polyfill";
+import "@/integrations/otel/init";
+
+import { LoggingHandlerPlugin } from "@orpc/experimental-pino";
 import { SmartCoercionPlugin } from "@orpc/json-schema";
 import { onError } from "@orpc/server";
 import { CompressionPlugin, RPCHandler } from "@orpc/server/fetch";
 import { BatchHandlerPlugin } from "@orpc/server/plugins";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { createFileRoute } from "@tanstack/react-router";
+import pino from "pino";
 
 import router from "@/integrations/orpc/router";
 import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import { auth, db, posthog } from "@/integrations/orpc/server-instances";
+
+const logger = pino({ name: "contentta-web-api" });
 
 const handler = new RPCHandler(router, {
    interceptors: [
@@ -22,6 +28,12 @@ const handler = new RPCHandler(router, {
       new BatchHandlerPlugin(),
       new SmartCoercionPlugin({
          schemaConverters: [new ZodToJsonSchemaConverter()],
+      }),
+      new LoggingHandlerPlugin({
+         logger,
+         generateId: () => crypto.randomUUID(),
+         logRequestResponse: true,
+         logRequestAbort: true,
       }),
    ],
 });

@@ -1,8 +1,11 @@
 import "@/polyfill";
+import "@/integrations/otel/init";
 
+import { LoggingHandlerPlugin } from "@orpc/experimental-pino";
 import { RPCHandler } from "@orpc/server/fetch";
 import { BatchHandlerPlugin } from "@orpc/server/plugins";
 import { createFileRoute } from "@tanstack/react-router";
+import pino from "pino";
 import router from "@/integrations/orpc/router";
 import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import {
@@ -12,8 +15,18 @@ import {
    stripeClient,
 } from "@/integrations/orpc/server-instances";
 
+const logger = pino({ name: "contentta-web-rpc" });
+
 const handler = new RPCHandler(router, {
-   plugins: [new BatchHandlerPlugin()],
+   plugins: [
+      new BatchHandlerPlugin(),
+      new LoggingHandlerPlugin({
+         logger,
+         generateId: () => crypto.randomUUID(),
+         logRequestResponse: true,
+         logRequestAbort: true,
+      }),
+   ],
 });
 
 async function handle({ request }: { request: Request }) {
