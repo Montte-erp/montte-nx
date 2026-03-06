@@ -32,6 +32,10 @@
       "./orpc-plugin": {
          "default": "./src/orpc-plugin.ts",
          "types": "./dist/src/orpc-plugin.d.ts"
+      },
+      "./root": {
+         "default": "./src/root.ts",
+         "types": "./dist/src/root.d.ts"
       }
    },
    "files": [

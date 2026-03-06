@@ -25,10 +25,13 @@ import {
    services,
    serviceVariants,
 } from "@packages/database/schemas/services";
+import { getLogger } from "@packages/logging/root";
 import { eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
+
+const logger = getLogger().child({ module: "router:services" });
 import {
    cancelPendingBillsForSubscription,
    generateBillsForSubscription,
@@ -283,10 +286,7 @@ export const createSubscription = protectedProcedure
             await generateBillsForSubscription(db, sub, variant, service.name);
          }
       } catch (err) {
-         console.error(
-            "[services] Failed to generate bills for subscription:",
-            err,
-         );
+         logger.error({ err }, "Failed to generate bills for subscription");
       }
 
       return sub;
@@ -321,7 +321,7 @@ export const cancelSubscription = protectedProcedure
       });
 
       await cancelPendingBillsForSubscription(db, input.id).catch((err) => {
-         console.error("[services] Failed to cancel pending bills:", err);
+         logger.error({ err }, "Failed to cancel pending bills");
       });
 
       return cancelled;

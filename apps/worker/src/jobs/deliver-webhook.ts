@@ -5,7 +5,10 @@ import {
 	updateWebhookDeliveryStatus,
 	updateWebhookLastSuccess,
 } from "@packages/database/repositories/webhook-repository";
+import { getLogger } from "@packages/logging/root";
 import type { WebhookDeliveryJobData } from "@packages/queue/webhook-delivery";
+
+const logger = getLogger().child({ module: "job:webhook" });
 
 function generateSignature(
 	payload: string,
@@ -61,7 +64,7 @@ export async function deliverWebhook(
 			});
 
 			await updateWebhookLastSuccess(db, webhookEndpointId);
-			console.log(`[Worker] Webhook delivered to ${url} (attempt ${attemptNumber})`);
+			logger.info({ url, attemptNumber }, "Webhook delivered");
 		} else {
 			throw new Error(`HTTP ${response.status}: ${responseBody.slice(0, 500)}`);
 		}
@@ -73,17 +76,17 @@ export async function deliverWebhook(
 			status: "retrying",
 			errorMessage,
 			attemptNumber,
-		}).catch((e) => console.error("[Worker] Failed to update delivery status:", e));
+		}).catch((e) => logger.error({ err: e }, "Failed to update delivery status"));
 
 		// If this was the last attempt, mark as failed
 		if (attemptNumber >= 5) {
 			await updateWebhookDeliveryStatus(db, deliveryId, {
 				status: "failed",
 				errorMessage: `Max attempts reached: ${errorMessage}`,
-			}).catch((e) => console.error("[Worker] Failed to mark delivery as failed:", e));
+			}).catch((e) => logger.error({ err: e }, "Failed to mark delivery as failed"));
 
 			await incrementWebhookFailureCount(db, webhookEndpointId).catch((e) =>
-				console.error("[Worker] Failed to increment failure count:", e),
+				logger.error({ err: e }, "Failed to increment failure count"),
 			);
 		}
 

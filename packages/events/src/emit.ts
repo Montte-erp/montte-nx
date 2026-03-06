@@ -15,7 +15,10 @@ import {
 import type { StripeClient } from "@packages/stripe";
 import { STRIPE_METER_EVENTS } from "@packages/stripe/constants";
 import type { Queue } from "bullmq";
+import { getLogger } from "@packages/logging/root";
 import type { EmitFn, EventCategory } from "./catalog";
+
+const logger = getLogger().child({ module: "events" });
 import { incrementUsage, isWithinFreeTier } from "./credits";
 import { getEventPrice } from "./utils";
 
@@ -158,10 +161,7 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
                   timestamp: Math.floor(Date.now() / 1000),
                });
             } catch (stripeErr) {
-               console.error(
-                  `[Events] Failed to send meter event ${meterEventName} to Stripe:`,
-                  stripeErr,
-               );
+               logger.error({ err: stripeErr, meterEventName }, "Failed to send meter event to Stripe");
                // Don't throw — meter billing failure should not block the main flow
             }
          }
@@ -222,12 +222,12 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
                });
             }
          } catch (error) {
-            console.error("[Events] Failed to trigger webhooks:", error);
+            logger.error({ err: error }, "Failed to trigger webhooks");
             // Don't throw — webhooks should not block events
          }
       }
    } catch (error) {
-      console.error(`[Events] Failed to emit ${eventName}:`, error);
+      logger.error({ err: error, eventName }, "Failed to emit event");
       // Don't throw -- events should not block the main flow
    }
 }
@@ -306,10 +306,7 @@ export async function emitEventBatch(
          }
       }
    } catch (error) {
-      console.error(
-         `[Events] Failed to emit batch of ${eventList.length} events:`,
-         error,
-      );
+      logger.error({ err: error, batchSize: eventList.length }, "Failed to emit event batch");
       // Don't throw -- events should not block the main flow
    }
 }

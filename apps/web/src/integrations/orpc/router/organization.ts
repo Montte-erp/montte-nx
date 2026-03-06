@@ -6,9 +6,12 @@ import {
    generatePresignedPutUrl,
    getMinioClient,
 } from "@packages/files/client";
+import { getLogger } from "@packages/logging/root";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { authenticatedProcedure, protectedProcedure } from "../server";
+
+const logger = getLogger().child({ module: "router:organization" });
 
 // =============================================================================
 // Procedures
@@ -332,7 +335,7 @@ export const generateLogoUploadUrl = protectedProcedure
             publicUrl: `/api/files/${bucketName}/${fileName}`,
          };
       } catch (error) {
-         console.error("Failed to generate presigned URL:", error);
+         logger.error({ err: error }, "Failed to generate presigned URL");
          throw new ORPCError("INTERNAL_SERVER_ERROR", {
             message: "Failed to generate upload URL",
          });
@@ -359,7 +362,7 @@ export const updateLogo = protectedProcedure
 
          return { success: true };
       } catch (error) {
-         console.error("Failed to update organization logo:", error);
+         logger.error({ err: error }, "Failed to update organization logo");
          throw new ORPCError("INTERNAL_SERVER_ERROR", {
             message: "Failed to update logo",
          });

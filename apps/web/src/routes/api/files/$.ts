@@ -1,6 +1,9 @@
 import { env } from "@packages/environment/server";
 import { getMinioClient } from "@packages/files/client";
+import { getLogger } from "@packages/logging/root";
 import { createFileRoute } from "@tanstack/react-router";
+
+const logger = getLogger().child({ module: "api:files" });
 
 async function handle({
    request: _request,
@@ -52,7 +55,7 @@ async function handle({
          },
       });
    } catch (error) {
-      console.error("[Files API] Error serving file:", error);
+      logger.error({ err: error }, "Error serving file");
       return new Response("File not found", { status: 404 });
    }
 }

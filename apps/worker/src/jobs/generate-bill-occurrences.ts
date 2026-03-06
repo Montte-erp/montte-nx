@@ -4,6 +4,9 @@ import {
    getActiveRecurrenceSettings,
    getLastBillForRecurrenceGroup,
 } from "@packages/database/repositories/bills-repository";
+import { getLogger } from "@packages/logging/root";
+
+const logger = getLogger().child({ module: "job:bills" });
 
 function computeNextDueDate(from: string, frequency: string): string {
    const d = new Date(from);
@@ -64,9 +67,7 @@ export async function generateBillOccurrences(
 
       if (toCreate.length > 0) {
          await createBillsBatch(db, toCreate);
-         console.log(
-            `[BillRecurrence] Created ${toCreate.length} occurrences for group ${setting.id}`,
-         );
+         logger.info({ count: toCreate.length, recurrenceGroupId: setting.id }, "Created bill occurrences");
       }
    }
 }

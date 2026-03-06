@@ -1,5 +1,8 @@
 import type { Octokit } from "@octokit/rest";
+import { getLogger } from "@packages/logging/root";
 import type { FeedbackAdapter, FeedbackPayload } from "../schemas";
+
+const logger = getLogger().child({ module: "feedback:github" });
 
 const EMOJI_RATINGS = ["😡", "😕", "😐", "🙂", "🤩"];
 
@@ -83,7 +86,7 @@ export function githubAdapter(config: GitHubAdapterConfig): FeedbackAdapter {
                labels: issue.labels,
             });
          } catch (err) {
-            console.error("[github-adapter] issue creation failed", err);
+            logger.error({ err }, "Issue creation failed");
             throw err;
          }
       },

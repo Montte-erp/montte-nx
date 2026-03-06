@@ -14,7 +14,12 @@ import {
    useReactTable,
    type VisibilityState,
 } from "@tanstack/react-table";
-import { ArrowDown, ArrowUp, ArrowUpDown, Settings2 } from "lucide-react";
+import {
+   ArrowDown,
+   ArrowUp,
+   ArrowUpDown,
+   Settings2,
+} from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 
 import { cn } from "../lib/utils";
@@ -138,8 +143,14 @@ function getPageNumbers(currentPage: number, totalPages: number): number[] {
 
 function ColumnVisibilityToggle<TData>({
    table,
+   columnVisibility,
+   onColumnVisibilityChange,
 }: {
    table: TanStackTable<TData>;
+   columnVisibility: VisibilityState;
+   onColumnVisibilityChange: (
+      updater: VisibilityState | ((old: VisibilityState) => VisibilityState),
+   ) => void;
 }) {
    const toggleableColumns = table
       .getAllColumns()
@@ -159,9 +170,14 @@ function ColumnVisibilityToggle<TData>({
             <DropdownMenuSeparator />
             {toggleableColumns.map((column) => (
                <DropdownMenuCheckboxItem
-                  checked={column.getIsVisible()}
                   key={column.id}
-                  onCheckedChange={(value) => column.toggleVisibility(value)}
+                  checked={columnVisibility[column.id] !== false}
+                  onCheckedChange={(value) =>
+                     onColumnVisibilityChange((prev) => ({
+                        ...prev,
+                        [column.id]: !!value,
+                     }))
+                  }
                   onSelect={(e) => e.preventDefault()}
                >
                   {typeof column.columnDef.header === "string"
@@ -439,7 +455,7 @@ export function DataTable<TData, TValue>({
                      </>
                   )}
                </div>
-               {columnVisibilityKey && <ColumnVisibilityToggle table={table} />}
+               {columnVisibilityKey && <ColumnVisibilityToggle table={table} columnVisibility={columnVisibility} onColumnVisibilityChange={handleColumnVisibilityChange} />}
             </div>
 
             {/* Card grid */}
@@ -571,7 +587,7 @@ export function DataTable<TData, TValue>({
                               {header.column.id === "__actions" ? (
                                  columnVisibilityKey ? (
                                     <div className="flex items-center justify-end">
-                                       <ColumnVisibilityToggle table={table} />
+                                       <ColumnVisibilityToggle table={table} columnVisibility={columnVisibility} onColumnVisibilityChange={handleColumnVisibilityChange} />
                                     </div>
                                  ) : null
                               ) : header.isPlaceholder ? null : header.column.getCanSort() ? (

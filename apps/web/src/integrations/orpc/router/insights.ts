@@ -16,9 +16,12 @@ import {
    emitInsightDeleted,
    emitInsightUpdated,
 } from "@packages/events/insight";
+import { getLogger } from "@packages/logging/root";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
+
+const logger = getLogger().child({ module: "router:insights" });
 
 const createInsightSchema = z.object({
    name: z.string().min(1),
@@ -195,9 +198,7 @@ export const refreshDashboard = protectedProcedure
          try {
             const insight = await getInsightById(db, insightId);
             if (!insight) {
-               console.warn(
-                  `[Insights] Insight ${insightId} not found during refresh`,
-               );
+               logger.warn({ insightId }, "Insight not found during refresh");
                return;
             }
 
@@ -211,10 +212,7 @@ export const refreshDashboard = protectedProcedure
                })
                .where(eq(insights.id, insightId));
          } catch (error) {
-            console.error(
-               `[Insights] Failed to refresh insight ${insightId}:`,
-               error,
-            );
+            logger.error({ err: error, insightId }, "Failed to refresh insight");
             // Continue with other insights even if one fails
          }
       });

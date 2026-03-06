@@ -1,4 +1,7 @@
 import type { DatabaseInstance } from "@packages/database/client";
+import { getLogger } from "@packages/logging/root";
+
+const logger = getLogger().child({ module: "events:views" });
 import {
    contentTrafficSources,
    currentMonthStorageCost,
@@ -35,9 +38,9 @@ export async function refreshUsageViews(db: DatabaseInstance): Promise<void> {
       ]);
 
       const duration = Date.now() - startTime;
-      console.log(`[Events] Refreshed materialized views in ${duration}ms`);
+      logger.info({ duration }, "Refreshed materialized views");
    } catch (error) {
-      console.error("[Events] Failed to refresh materialized views:", error);
+      logger.error({ err: error }, "Failed to refresh materialized views");
       throw error;
    }
 }

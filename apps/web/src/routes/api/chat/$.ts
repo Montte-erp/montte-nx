@@ -11,7 +11,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import type { ModelMessage } from "ai";
 import { createUIMessageStreamResponse } from "ai";
 
+import { getLogger } from "@packages/logging/root";
 import { auth, db } from "@/integrations/orpc/server-instances";
+
+const logger = getLogger().child({ module: "api:chat" });
 
 export const Route = createFileRoute("/api/chat/$")({
    server: {
@@ -48,11 +51,7 @@ export const Route = createFileRoute("/api/chat/$")({
                      // the client regardless of its specific type.
                      // Log them so we can eventually build proper UI renderers.
                      if (typeof type === "string" && type.startsWith("data-")) {
-                        console.log(
-                           "[data-stream] filtered part:",
-                           type,
-                           chunk,
-                        );
+                        logger.debug({ type, chunk }, "Filtered data-stream part");
                         return;
                      }
                      controller.enqueue(chunk);

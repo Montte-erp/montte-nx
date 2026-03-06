@@ -396,6 +396,9 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                      categoria: "",
                      subcategoria: "",
                      tags: "",
+                     forma_pagamento: "",
+                     parcelado: "",
+                     num_parcelas: "",
                      isDuplicate: false,
                   };
                });
@@ -534,15 +537,6 @@ function ColumnMappingStep({
    ];
 
    const previewRows = rows.slice(0, 3);
-
-   function getPreviewValue(field: keyof ColumnMapping): string {
-      const header = mapping[field];
-      if (!header || header === "__none__") return "—";
-      const idx = headers.indexOf(header);
-      if (idx === -1) return "—";
-      const firstRow = rows[0];
-      return firstRow?.[idx] ?? "—";
-   }
 
    function canProceed(): boolean {
       return REQUIRED_FIELDS.every(
@@ -1216,7 +1210,7 @@ function ConfirmStep({
                subcategoryId: null as string | null,
                tagIds: [] as string[],
                attachmentUrl: null as string | null,
-               paymentMethod: row.forma_pagamento || null,
+               paymentMethod: (row.forma_pagamento || null) as "pix" | "credit_card" | "debit_card" | "boleto" | "cash" | "transfer" | "other" | "cheque" | "automatic_debit" | null,
                isInstallment: row.parcelado
                   ? ["sim", "yes", "true", "1"].includes(
                        row.parcelado.toLowerCase().trim(),
@@ -1437,6 +1431,9 @@ function ImportWizard({ methods }: { methods: ImportStepperMethods }) {
       categoria: "",
       subcategoria: "",
       tags: "",
+      forma_pagamento: "",
+      parcelado: "",
+      num_parcelas: "",
    });
 
    function handleFileReady(

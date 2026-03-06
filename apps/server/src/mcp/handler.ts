@@ -1,4 +1,5 @@
 import { env } from "@packages/environment/server";
+import { getLogger } from "@packages/logging/root";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import {
    createMcpHandler,
@@ -6,6 +7,8 @@ import {
    withMcpAuth,
 } from "mcp-handler";
 import { registerTools } from "./tools";
+
+const logger = getLogger().child({ module: "mcp" });
 
 const AUTH_SERVER_URL = env.BETTER_AUTH_URL;
 const JWKS_URL = `${AUTH_SERVER_URL}/api/auth/jwks`;
@@ -48,9 +51,7 @@ export const mcpRequestHandler = withMcpAuth(
             typeof payload.sub === "string" ? payload.sub : undefined;
 
          if (!organizationId || !userId) {
-            console.error(
-               "JWT missing required claims: organizationId or userId",
-            );
+            logger.error("JWT missing required claims: organizationId or userId");
             return undefined;
          }
 
@@ -67,7 +68,7 @@ export const mcpRequestHandler = withMcpAuth(
             extra: { organizationId, userId },
          };
       } catch (err) {
-         console.error("JWT verification failed:", err);
+         logger.error({ err }, "JWT verification failed");
          return undefined;
       }
    },

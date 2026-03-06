@@ -1,4 +1,7 @@
 import type { DatabaseInstance } from "@packages/database/client";
+import { getLogger } from "@packages/logging/root";
+
+const logger = getLogger().child({ module: "events:reconcile" });
 import { currentMonthUsageByEvent } from "@packages/database/schema";
 import { FREE_TIER_LIMITS } from "@packages/stripe/constants";
 import type { Redis } from "ioredis";
@@ -56,11 +59,9 @@ export async function reconcileUsageCounters(
       await pipeline.exec();
 
       const duration = Date.now() - startTime;
-      console.log(
-         `[Events] Reconciled usage counters for ${orgEventCounts.size} organizations in ${duration}ms`,
-      );
+      logger.info({ organizations: orgEventCounts.size, duration }, "Reconciled usage counters");
    } catch (error) {
-      console.error("[Events] Failed to reconcile usage counters:", error);
+      logger.error({ err: error }, "Failed to reconcile usage counters");
       throw error;
    }
 }

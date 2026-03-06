@@ -2,11 +2,14 @@ import { createDb } from "@packages/database/client";
 import { env } from "@packages/environment/worker";
 import { startHealthHeartbeat, stopHealthHeartbeat } from "@packages/logging/health";
 import { initOtel, shutdownOtel } from "@packages/logging/otel";
+import { initLogger } from "@packages/logging/root";
 import { getElysiaPosthogConfig, shutdownPosthog } from "@packages/posthog/server";
 import { createQueueConnection } from "@packages/queue/connection";
 import { createRedisConnection } from "@packages/redis/connection";
 import { startScheduler } from "./scheduler";
 import { startWebhookDeliveryWorker } from "./workers/webhook-delivery";
+
+const logger = initLogger({ name: "montte-worker", level: "info" });
 
 // Initialize OTel SDK for PostHog logs
 initOtel({
@@ -18,7 +21,7 @@ const posthog = getElysiaPosthogConfig(env);
 startHealthHeartbeat({ serviceName: "montte-worker", posthog });
 
 async function main(): Promise<void> {
-	console.log("[Worker] Starting Montte Worker...");
+	logger.info("Starting Montte Worker...");
 
 	// 1. Initialize Redis
 	const redis = createRedisConnection(env.REDIS_URL);
@@ -35,11 +38,11 @@ async function main(): Promise<void> {
 	// 5. Start scheduled jobs
 	const scheduledTasks = startScheduler(db, redis);
 
-	console.log("[Worker] All systems running");
+	logger.info("All systems running");
 
 	// Graceful shutdown
 	const shutdown = async (signal: string) => {
-		console.log(`[Worker] Received ${signal}, shutting down...`);
+		logger.info({ signal }, "Received shutdown signal");
 
 		for (const task of scheduledTasks) {
 			task.stop();
@@ -51,7 +54,7 @@ async function main(): Promise<void> {
 		await shutdownPosthog(posthog);
 		await shutdownOtel();
 
-		console.log("[Worker] Shutdown complete");
+		logger.info("Shutdown complete");
 		process.exit(0);
 	};
 
@@ -60,6 +63,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
-	console.error("[Worker] Fatal error:", error);
+	logger.fatal({ err: error }, "Fatal error");
 	process.exit(1);
 });

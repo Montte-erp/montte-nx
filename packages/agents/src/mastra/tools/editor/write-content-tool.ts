@@ -1,5 +1,8 @@
 import { createTool } from "@mastra/core/tools";
+import { getLogger } from "@packages/logging/root";
 import { z } from "zod";
+
+const logger = getLogger().child({ module: "agents:editor" });
 
 export const writeContentTool = createTool({
    id: "write-content",
@@ -30,7 +33,7 @@ export const writeContentTool = createTool({
             await onBodyUpdate("write-content", { markdown });
          } catch (err) {
             // best-effort — don't fail the tool if the update callback throws
-            console.error("[write-content] onBodyUpdate failed:", err);
+            logger.error({ err }, "onBodyUpdate failed");
          }
       }
 

@@ -2,6 +2,9 @@ import { Worker } from "bullmq";
 import type { ConnectionOptions } from "bullmq";
 import type { DatabaseInstance } from "@packages/database/client";
 import { emitJobLog } from "@packages/logging/health";
+import { getLogger } from "@packages/logging/root";
+
+const logger = getLogger().child({ module: "worker:budget-alerts" });
 import {
 	BUDGET_ALERTS_QUEUE,
 	type BudgetAlertJobData,
@@ -54,6 +57,6 @@ export function startBudgetAlertsWorker(
 		});
 	});
 
-	console.log("[Worker] Budget alerts worker started");
+	logger.info("Budget alerts worker started");
 	return worker;
 }

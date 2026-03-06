@@ -29,6 +29,9 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import type Stripe from "stripe";
 import { z } from "zod";
 import { createBetterAuthStorage } from "./cache";
+import { getLogger } from "@packages/logging/root";
+
+const logger = getLogger().child({ module: "auth" });
 
 export const ORGANIZATION_LIMIT = 3;
 
@@ -116,10 +119,7 @@ export function createAuth(config: SimplifiedAuthConfig) {
                      // User will be redirected to onboarding by route guards.
                      return { data: session };
                   } catch (error) {
-                     console.error(
-                        "Error in session create before hook:",
-                        error,
-                     );
+                     logger.error({ err: error }, "Error in session create before hook");
                      return { data: session };
                   }
                },
@@ -184,7 +184,7 @@ export function createAuth(config: SimplifiedAuthConfig) {
             expiresIn: 60 * 15, // 15 minutes
             async sendMagicLink({ email, url }) {
                if (!isProduction) {
-                  console.log(`[DEV] Magic link for ${email}: ${url}`);
+                  logger.info({ email, url }, "DEV magic link generated");
                   devMagicLinkStore.set(email, url);
                   return;
                }
@@ -204,7 +204,7 @@ export function createAuth(config: SimplifiedAuthConfig) {
             },
             async sendVerificationOTP({ email, otp, type }) {
                if (!isProduction) {
-                  console.log(`[DEV] OTP for ${email} (${type}): ${otp}`);
+                  logger.info({ email, type, otp }, "DEV OTP generated");
                   return;
                }
                await sendEmailOTP(resendClient, { email, otp, type });
@@ -310,9 +310,7 @@ export function createAuth(config: SimplifiedAuthConfig) {
             async sendInvitationEmail(data) {
                const inviteLink = `${getDomain()}/callback/organization/invitation/${data.id}`;
                if (!isProduction) {
-                  console.log(
-                     `[DEV] Organization invitation for ${data.email}: ${inviteLink}`,
-                  );
+                  logger.info({ email: data.email, inviteLink }, "DEV organization invitation generated");
                   return;
                }
                await sendOrganizationInvitation(resendClient, {
@@ -426,10 +424,7 @@ export function createAuth(config: SimplifiedAuthConfig) {
                      },
                   });
                } catch (error) {
-                  console.error(
-                     "PostHog: Failed to capture subscription_started event:",
-                     error,
-                  );
+                  logger.error({ err: error }, "Failed to capture subscription_started event");
                }
             },
             onSubscriptionCancel: async ({
@@ -449,10 +444,7 @@ export function createAuth(config: SimplifiedAuthConfig) {
                      },
                   });
                } catch (error) {
-                  console.error(
-                     "PostHog: Failed to capture subscription_canceled event:",
-                     error,
-                  );
+                  logger.error({ err: error }, "Failed to capture subscription_canceled event");
                }
             },
          }),

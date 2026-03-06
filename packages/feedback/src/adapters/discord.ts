@@ -1,4 +1,7 @@
+import { getLogger } from "@packages/logging/root";
 import type { FeedbackAdapter, FeedbackPayload } from "../schemas";
+
+const logger = getLogger().child({ module: "feedback:discord" });
 
 const EMOJI_RATINGS = ["😡", "😕", "😐", "🙂", "🤩"];
 
@@ -97,13 +100,10 @@ export function discordAdapter(config: DiscordAdapterConfig): FeedbackAdapter {
                }),
             });
             if (!response.ok) {
-               console.error("[discord-adapter] webhook delivery failed", {
-                  status: response.status,
-                  statusText: response.statusText,
-               });
+               logger.error({ status: response.status, statusText: response.statusText }, "Webhook delivery failed");
             }
          } catch (err) {
-            console.error("[discord-adapter] webhook request failed", err);
+            logger.error({ err }, "Webhook request failed");
          }
       },
    };

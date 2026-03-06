@@ -1,4 +1,7 @@
+import { getLogger } from "@packages/logging/root";
 import { AppError } from "@packages/utils/errors";
+
+const logger = getLogger().child({ module: "search" });
 import { exaProvider } from "./providers/exa-provider";
 import { firecrawlProvider } from "./providers/firecrawl-provider";
 import { tavilyProvider } from "./providers/tavily-provider";
@@ -75,10 +78,7 @@ export async function search(
 			return { results, provider: providerId };
 		} catch (error) {
 			// Log and continue to next provider
-			console.warn(
-				`Search provider ${providerId} failed, trying next:`,
-				(error as Error).message,
-			);
+			logger.warn({ err: error, providerId }, "Search provider failed, trying next");
 			continue;
 		}
 	}
@@ -116,10 +116,7 @@ export async function crawl(
 			return { result, provider: providerId };
 		} catch (error) {
 			// Log and continue to next provider
-			console.warn(
-				`Crawl provider ${providerId} failed, trying next:`,
-				(error as Error).message,
-			);
+			logger.warn({ err: error, providerId }, "Crawl provider failed, trying next");
 			continue;
 		}
 	}

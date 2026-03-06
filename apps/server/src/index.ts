@@ -7,7 +7,7 @@ import { startHealthHeartbeat, stopHealthHeartbeat } from "@packages/logging/hea
 import { initOtel, shutdownOtel } from "@packages/logging/otel";
 import { shutdownPosthog } from "@packages/posthog/server";
 import { Elysia } from "elysia";
-import pino from "pino";
+import { initLogger } from "@packages/logging/root";
 import { auth } from "./integrations/auth";
 import { db } from "./integrations/database";
 import { minioClient } from "./integrations/minio";
@@ -26,7 +26,7 @@ initOtel({
 });
 startHealthHeartbeat({ serviceName: "montte-server", posthog });
 
-const logger = pino({ name: "montte-server-rpc" });
+const logger = initLogger({ name: "montte-server", level: "info" });
 
 // Initialize oRPC handler
 const orpcHandler = new RPCHandler(sdkRouter, {
@@ -95,11 +95,11 @@ const app = new Elysia({
    }))
    .listen(process.env.PORT ?? 9877);
 
-console.log(`Server started on port ${app.server?.port}`);
+logger.info({ port: app.server?.port }, "Server started");
 
 // Graceful shutdown
 const shutdown = async (signal: string) => {
-   console.log(`[Server] Received ${signal}, shutting down...`);
+   logger.info({ signal }, "Received signal, shutting down");
    await shutdownPosthog(posthog);
    stopHealthHeartbeat();
    await shutdownOtel();

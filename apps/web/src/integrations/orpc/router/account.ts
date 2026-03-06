@@ -4,8 +4,11 @@ import {
    generatePresignedPutUrl,
    getMinioClient,
 } from "@packages/files/client";
+import { getLogger } from "@packages/logging/root";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
+
+const logger = getLogger().child({ module: "router:account" });
 
 /**
  * Verify the user's current password
@@ -172,7 +175,7 @@ export const generateAvatarUploadUrl = protectedProcedure
             publicUrl: `/api/files/${bucketName}/${fileName}`,
          };
       } catch (error) {
-         console.error("Failed to generate avatar upload URL:", error);
+         logger.error({ err: error }, "Failed to generate avatar upload URL");
          throw new ORPCError("INTERNAL_SERVER_ERROR", {
             message: "Failed to generate upload URL",
          });

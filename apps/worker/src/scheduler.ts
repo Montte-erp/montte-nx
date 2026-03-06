@@ -2,6 +2,9 @@ import * as cron from "node-cron";
 import type { DatabaseInstance } from "@packages/database/client";
 import type { Redis } from "ioredis";
 import { emitCronLog } from "@packages/logging/health";
+import { getLogger } from "@packages/logging/root";
+
+const logger = getLogger().child({ module: "scheduler" });
 import { generateBillOccurrences } from "./jobs/generate-bill-occurrences";
 import { runReconcileCredits } from "./jobs/reconcile-credits";
 import { runRefreshInsights } from "./jobs/refresh-insights";
@@ -31,7 +34,7 @@ async function runWithTelemetry(
 			durationMs: Date.now() - start,
 			error: error instanceof Error ? error.message : String(error),
 		});
-		console.error(`[Scheduler] ${taskName} failed:`, error);
+		logger.error({ err: error, taskName }, "Scheduled task failed");
 	}
 }
 
@@ -68,9 +71,7 @@ export function startScheduler(
 	});
 
 	tasks.push(hourlyTask, insightsTask, billRecurrenceTask);
-	console.log(
-		"[Scheduler] Cron jobs registered (hourly billing reconciliation, 3-hourly insight refresh, daily bill recurrence)",
-	);
+	logger.info("Cron jobs registered (hourly billing reconciliation, 3-hourly insight refresh, daily bill recurrence)");
 
 	return tasks;
 }

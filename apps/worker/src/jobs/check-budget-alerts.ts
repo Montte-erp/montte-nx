@@ -7,12 +7,15 @@ import { teamMember, user, team } from "@packages/database/schema";
 import { env } from "@packages/environment/worker";
 import { createEmitFn } from "@packages/events/emit";
 import { emitFinanceBudgetAlertTriggered } from "@packages/events/finance";
+import { getLogger } from "@packages/logging/root";
 import type { BudgetAlertJobData } from "@packages/queue/budget-alerts";
 import {
 	getResendClient,
 	sendBudgetAlertEmail,
 } from "@packages/transactional/client";
 import { eq } from "drizzle-orm";
+
+const logger = getLogger().child({ module: "job:budget-alerts" });
 
 const fmt = (n: number) =>
 	new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
@@ -29,21 +32,15 @@ export async function checkBudgetAlerts(
 		const goals = await getGoalsForAlertCheck(db, { month, year });
 
 		if (goals.length === 0) {
-			console.log(
-				`[Worker] No budget goals to alert for ${month}/${year}`,
-			);
+			logger.info({ month, year }, "No budget goals to alert");
 			return;
 		}
 
-		console.log(
-			`[Worker] Found ${goals.length} budget goal(s) to alert for ${month}/${year}`,
-		);
+		logger.info({ month, year, count: goals.length }, "Found budget goals to alert");
 
 		const resendApiKey = env.RESEND_API_KEY;
 		if (!resendApiKey) {
-			console.error(
-				"[Worker] RESEND_API_KEY is not set — skipping budget alert emails",
-			);
+			logger.error("RESEND_API_KEY is not set — skipping budget alert emails");
 			return;
 		}
 
@@ -88,10 +85,7 @@ export async function checkBudgetAlerts(
 						alertThreshold: goal.alertThreshold ?? 0,
 						month: monthName,
 					}).catch((err: unknown) => {
-						console.error(
-							`[Worker] Failed to send budget alert email to ${member.email}:`,
-							err,
-						);
+						logger.error({ err, email: member.email }, "Failed to send budget alert email");
 					});
 				}
 
@@ -120,17 +114,12 @@ export async function checkBudgetAlerts(
 					);
 				}
 
-				console.log(
-					`[Worker] Budget alert sent for goal ${goal.id} (${categoryName}, ${goal.percentUsed}%)`,
-				);
+				logger.info({ goalId: goal.id, categoryName, percentUsed: goal.percentUsed }, "Budget alert sent");
 			} catch (err) {
-				console.error(
-					`[Worker] Failed to process budget alert for goal ${goal.id}:`,
-					err,
-				);
+				logger.error({ err, goalId: goal.id }, "Failed to process budget alert");
 			}
 		}
 	} catch (err) {
-		console.error("[Worker] checkBudgetAlerts failed:", err);
+		logger.error({ err }, "checkBudgetAlerts failed");
 	}
 }

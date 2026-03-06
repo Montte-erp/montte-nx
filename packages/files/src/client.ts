@@ -1,5 +1,8 @@
 import type { ServerEnv } from "@packages/environment/server";
+import { getLogger } from "@packages/logging/root";
 import { Client } from "minio";
+
+const logger = getLogger().child({ module: "files" });
 
 export const parseEndpoint = (endpointUrl: string) => {
    // 1. Ensure the URL has a protocol so the URL constructor works correctly.
@@ -22,7 +25,7 @@ export const parseEndpoint = (endpointUrl: string) => {
          useSSL,
       };
    } catch (error) {
-      console.error(`Invalid endpoint URL provided: ${endpointUrl} - ${error}`);
+      logger.error({ err: error, endpointUrl }, "Invalid endpoint URL provided");
       return {
          endPoint: "localhost",
          port: 9000,
@@ -113,7 +116,7 @@ export async function streamFileForProxy(
          contentType = stat.metaData["content-type"];
       }
    } catch (err) {
-      console.error("Error fetching file metadata:", err);
+      logger.error({ err }, "Error fetching file metadata");
       // fallback to default
    }
    return { buffer, contentType };

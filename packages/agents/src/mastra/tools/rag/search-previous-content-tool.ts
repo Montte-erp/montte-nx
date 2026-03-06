@@ -1,5 +1,8 @@
 import { createTool } from "@mastra/core/tools";
+import { getLogger } from "@packages/logging/root";
 import { AppError, propagateError } from "@packages/utils/errors";
+
+const logger = getLogger().child({ module: "agents:rag" });
 import { embed } from "ai";
 import { z } from "zod";
 import {
@@ -118,7 +121,7 @@ export const searchPreviousContentTool = createTool({
             mode,
          };
       } catch (error) {
-         console.error("Failed to search previous content:", error);
+         logger.error({ err: error }, "Failed to search previous content");
          propagateError(error);
          throw AppError.internal(
             `Failed to search previous content: ${(error as Error).message}`,

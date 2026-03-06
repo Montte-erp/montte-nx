@@ -1,5 +1,8 @@
 import { MDocument } from "@mastra/rag";
+import { getLogger } from "@packages/logging/root";
 import { AppError, propagateError } from "@packages/utils/errors";
+
+const logger = getLogger().child({ module: "agents:rag" });
 import { embed, embedMany } from "ai";
 import { pgVectorStore } from "../../utils";
 import {
@@ -170,7 +173,7 @@ export async function batchIndexContent(
          const result = await indexContent(content);
          results.push(result);
       } catch (err) {
-         console.error(`Failed to index content ${content.id}:`, err);
+         logger.error({ err, contentId: content.id }, "Failed to index content");
          results.push({
             id: content.id,
             metadataIndexed: false,

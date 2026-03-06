@@ -7,19 +7,19 @@ import { onError } from "@orpc/server";
 import { CompressionPlugin, RPCHandler } from "@orpc/server/fetch";
 import { BatchHandlerPlugin } from "@orpc/server/plugins";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
+import { getLogger } from "@packages/logging/root";
 import { createFileRoute } from "@tanstack/react-router";
-import pino from "pino";
 
 import router from "@/integrations/orpc/router";
 import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import { auth, db, posthog } from "@/integrations/orpc/server-instances";
 
-const logger = pino({ name: "montte-web-api" });
+const logger = getLogger().child({ module: "api:rpc" });
 
 const handler = new RPCHandler(router, {
    interceptors: [
       onError((error) => {
-         console.error(error);
+         logger.error({ err: error }, "oRPC handler error");
       }),
    ],
    plugins: [

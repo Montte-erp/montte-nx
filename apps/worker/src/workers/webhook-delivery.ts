@@ -2,6 +2,9 @@ import { Worker } from "bullmq";
 import type { ConnectionOptions } from "bullmq";
 import type { DatabaseInstance } from "@packages/database/client";
 import { emitJobLog } from "@packages/logging/health";
+import { getLogger } from "@packages/logging/root";
+
+const logger = getLogger().child({ module: "worker:webhook" });
 import {
 	WEBHOOK_DELIVERY_QUEUE,
 	type WebhookDeliveryJobData,
@@ -56,6 +59,6 @@ export function startWebhookDeliveryWorker(
 		});
 	});
 
-	console.log("[Worker] Webhook delivery worker started");
+	logger.info("Webhook delivery worker started");
 	return worker;
 }

@@ -1,4 +1,7 @@
+import { getLogger } from "@packages/logging/root";
 import type { MinioClient } from "./client";
+
+const logger = getLogger().child({ module: "files:cleanup" });
 
 export async function cleanupOrphanedFiles(
    bucketName: string,
@@ -27,7 +30,7 @@ export async function cleanupOrphanedFiles(
             await minioClient.removeObject(bucketName, obj.name);
             deletedCount++;
          } catch (error) {
-            console.error(`Failed to delete orphaned file: ${obj.name}`, error);
+            logger.error({ err: error, fileName: obj.name }, "Failed to delete orphaned file");
          }
       }
    }

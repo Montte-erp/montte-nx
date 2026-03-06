@@ -1,5 +1,7 @@
+import { getLogger } from "@packages/logging/root";
 import { Redis } from "ioredis";
 
+const logger = getLogger().child({ module: "redis" });
 let redisConnection: Redis | null = null;
 
 export function createRedisConnection(url: string): Redis {
@@ -12,11 +14,11 @@ export function createRedisConnection(url: string): Redis {
    });
 
    redisConnection.on("error", (err) => {
-      console.error("[Redis] Connection error:", err.message);
+      logger.error({ err }, "Connection error");
    });
 
    redisConnection.on("connect", () => {
-      console.log("[Redis] Connected successfully");
+      logger.info("Connected successfully");
    });
 
    return redisConnection;
@@ -26,7 +28,7 @@ export async function closeRedisConnection(): Promise<void> {
    if (redisConnection) {
       await redisConnection.quit();
       redisConnection = null;
-      console.log("[Redis] Connection closed");
+      logger.info("Connection closed");
    }
 }
 

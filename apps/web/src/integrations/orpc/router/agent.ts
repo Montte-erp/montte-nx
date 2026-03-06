@@ -16,8 +16,11 @@ import {
 import { getProductSettings } from "@packages/database/repositories/product-settings-repository";
 import { emitAiChatMessage } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
+import { getLogger } from "@packages/logging/root";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
+
+const logger = getLogger().child({ module: "router:agent" });
 
 // ---------------------------------------------------------------------------
 // Streaming chunk types (previously in @/features/editor/schemas)
@@ -170,7 +173,7 @@ export const copilotStream = protectedProcedure
             },
          } satisfies FIMChunk;
       } catch (error) {
-         console.error("[copilotStream] FIM agent error:", error);
+         logger.error({ err: error }, "FIM agent error");
          yield {
             text: "",
             done: true,

@@ -1,7 +1,10 @@
 import { computeInsightData } from "@packages/analytics/compute-insight";
 import type { DatabaseInstance } from "@packages/database/client";
 import { insights } from "@packages/database/schemas/insights";
+import { getLogger } from "@packages/logging/root";
 import { eq } from "drizzle-orm";
+
+const logger = getLogger().child({ module: "job:insights" });
 
 /**
  * Background job that refreshes cached results for all insights.
@@ -11,13 +14,13 @@ export async function runRefreshInsights(
 	db: DatabaseInstance,
 ): Promise<void> {
 	const startTime = Date.now();
-	console.log("[Worker] Starting insight cache refresh...");
+	logger.info("Starting insight cache refresh...");
 
 	try {
 		// Fetch all insights
 		const allInsights = await db.select().from(insights);
 
-		console.log(`[Worker] Found ${allInsights.length} insights to refresh`);
+		logger.info({ count: allInsights.length }, "Found insights to refresh");
 
 		let successCount = 0;
 		let failureCount = 0;
@@ -37,20 +40,15 @@ export async function runRefreshInsights(
 
 				successCount++;
 			} catch (error) {
-				console.error(
-					`[Worker] Failed to refresh insight ${insight.id} (${insight.name}):`,
-					error,
-				);
+				logger.error({ err: error, insightId: insight.id, insightName: insight.name }, "Failed to refresh insight");
 				failureCount++;
 			}
 		}
 
 		const duration = Date.now() - startTime;
-		console.log(
-			`[Worker] Insight cache refresh completed in ${duration}ms (${successCount} succeeded, ${failureCount} failed)`,
-		);
+		logger.info({ durationMs: duration, successCount, failureCount }, "Insight cache refresh completed");
 	} catch (error) {
-		console.error("[Worker] Insight cache refresh failed:", error);
+		logger.error({ err: error }, "Insight cache refresh failed");
 		throw error;
 	}
 }

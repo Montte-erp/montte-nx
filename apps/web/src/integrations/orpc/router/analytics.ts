@@ -5,8 +5,11 @@ import { executeTimeSeriesQuery } from "@packages/analytics/compute-time-series"
 import { insightConfigSchema } from "@packages/analytics/types";
 import { getDefaultDashboard as fetchDefaultDashboard } from "@packages/database/repositories/dashboard-repository";
 import { getInsightsByIds } from "@packages/database/repositories/insight-repository";
+import { getLogger } from "@packages/logging/root";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
+
+const logger = getLogger().child({ module: "router:analytics" });
 
 // =============================================================================
 // Analytics Procedures
@@ -46,10 +49,7 @@ export const getDefaultDashboard = protectedProcedure.handler(
    async ({ context }) => {
       const { db, organizationId, teamId } = context;
 
-      console.log("[Analytics] getDefaultDashboard called:", {
-         organizationId,
-         teamId,
-      });
+      logger.info({ organizationId, teamId }, "getDefaultDashboard called");
 
       try {
          const dashboard = await fetchDefaultDashboard(
@@ -57,14 +57,10 @@ export const getDefaultDashboard = protectedProcedure.handler(
             organizationId,
             teamId,
          );
-         console.log("[Analytics] Dashboard found:", dashboard.id);
+         logger.info({ dashboardId: dashboard.id }, "Dashboard found");
          return dashboard;
       } catch (error) {
-         console.error("[Analytics] Dashboard query failed:", {
-            organizationId,
-            teamId,
-            error,
-         });
+         logger.error({ err: error, organizationId, teamId }, "Dashboard query failed");
          // Check if it's a not found error
          if (error instanceof Error && error.message.includes("not found")) {
             throw new ORPCError("NOT_FOUND", {

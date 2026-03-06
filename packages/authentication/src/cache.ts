@@ -1,4 +1,7 @@
+import { getLogger } from "@packages/logging/root";
 import type { Redis } from "ioredis";
+
+const logger = getLogger().child({ module: "auth:cache" });
 
 export interface SecondaryStorage {
    get: (key: string) => Promise<string | null>;
@@ -23,10 +26,7 @@ export function createBetterAuthStorage(
          try {
             return await redis.get(prefixKey(key));
          } catch (error) {
-            console.error(
-               `[BetterAuth Storage] Error getting key ${key}:`,
-               error,
-            );
+            logger.error({ err: error, key }, "Error getting key");
             return null;
          }
       },
@@ -40,10 +40,7 @@ export function createBetterAuthStorage(
                await redis.set(prefixed, value);
             }
          } catch (error) {
-            console.error(
-               `[BetterAuth Storage] Error setting key ${key}:`,
-               error,
-            );
+            logger.error({ err: error, key }, "Error setting key");
          }
       },
 
@@ -51,10 +48,7 @@ export function createBetterAuthStorage(
          try {
             await redis.del(prefixKey(key));
          } catch (error) {
-            console.error(
-               `[BetterAuth Storage] Error deleting key ${key}:`,
-               error,
-            );
+            logger.error({ err: error, key }, "Error deleting key");
          }
       },
    };
