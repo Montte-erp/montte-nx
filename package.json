@@ -4,11 +4,13 @@
       "@commitlint/cli": "20.4.1",
       "@commitlint/config-conventional": "20.4.1",
       "@nx/js": "22.5.1",
+      "@rolldown/plugin-babel": "^0.2.0",
       "@swc-node/register": "1.11.1",
       "@swc/core": "1.15.11",
       "@swc/helpers": "0.5.18",
       "@tooling/typescript": "workspace:*",
       "@typescript/native-preview": "^7.0.0-dev.20260211.1",
+      "@vitejs/plugin-react": "6.0.0-beta.0",
       "bun-types": "latest",
       "dotenv": "catalog:enviroment",
       "husky": "9.1.7",
@@ -297,5 +299,15 @@
          "packages/*",
          "apps/*"
       ]
+   },
+   "dependencies": {
+      "@opentelemetry/api-logs": "^0.213.0",
+      "@opentelemetry/exporter-logs-otlp-http": "^0.213.0",
+      "@opentelemetry/resources": "^2.6.0",
+      "@opentelemetry/sdk-logs": "^0.213.0",
+      "@opentelemetry/sdk-node": "^0.213.0",
+      "@orpc/experimental-pino": "^1.13.6",
+      "@orpc/otel": "^1.13.6",
+      "pino-opentelemetry-transport": "^3.0.0"
    }
 }
