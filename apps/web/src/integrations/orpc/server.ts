@@ -1,3 +1,4 @@
+import { logs } from "@opentelemetry/api-logs";
 import { ORPCError, os } from "@orpc/server";
 import type { AuthInstance } from "@packages/authentication/server";
 import type { DatabaseInstance } from "@packages/database/client";
@@ -109,6 +110,8 @@ const withOrganization = withAuth.use(async ({ context, next }) => {
 /**
  * Telemetry middleware - captures request metrics and identifies users
  */
+const otelLogger = logs.getLogger("contentta-web-orpc");
+
 const withTelemetry = withOrganization.use(
    async ({ context, path, next }, input) => {
       const startDate = new Date();
@@ -118,6 +121,26 @@ const withTelemetry = withOrganization.use(
       const userName = context.session?.user?.name;
       const hasConsent = context.session?.user?.telemetryConsent;
       const organizationId = context.organizationId;
+      const teamId = context.teamId;
+
+      // Read PostHog session ID from frontend header (links logs to session replay)
+      const sessionId = context.headers.get("x-posthog-session-id");
+
+      // PostHog identification attributes for OTel log records
+      const otelIdentity = {
+         posthogDistinctId: userId ?? "anonymous",
+         ...(sessionId ? { sessionId } : {}),
+         organizationId,
+         teamId,
+         path: path.join("."),
+      };
+
+      // Emit OTel log: request started (linked to user + session replay)
+      otelLogger.emit({
+         severityText: "info",
+         body: `oRPC request: ${path.join(".")}`,
+         attributes: otelIdentity,
+      });
 
       // Identify user if consented
       if (userId && hasConsent && posthog) {
@@ -142,10 +165,25 @@ const withTelemetry = withOrganization.use(
          error = err instanceof Error ? err : new Error(String(err));
          throw err;
       } finally {
-         // Capture telemetry for all requests
+         const durationMs = Date.now() - startDate.getTime();
+
+         // Emit OTel log: request completed/failed (linked to user + session replay)
+         otelLogger.emit({
+            severityText: isSuccess ? "info" : "error",
+            body: isSuccess
+               ? `oRPC completed: ${path.join(".")} (${durationMs}ms)`
+               : `oRPC error: ${path.join(".")} — ${error?.message}`,
+            attributes: {
+               ...otelIdentity,
+               durationMs,
+               success: isSuccess,
+               ...(error ? { errorName: error.name, errorMessage: error.message } : {}),
+            },
+         });
+
+         // Capture PostHog analytics events
          if (userId && hasConsent && posthog) {
             try {
-               const durationMs = Date.now() - startDate.getTime();
                const rootPath = path[0];
 
                if (!isSuccess && error) {
