@@ -20,6 +20,10 @@
       "./types": {
          "default": "./src/types.ts",
          "types": "./dist/src/types.d.ts"
+      },
+      "./otel": {
+         "default": "./src/otel.ts",
+         "types": "./dist/src/otel.d.ts"
       }
    },
    "files": [
@@ -31,7 +35,13 @@
    },
    "dependencies": {
       "@logtail/pino": "catalog:logging",
-      "pino": "catalog:logging"
+      "@opentelemetry/exporter-logs-otlp-http": "^0.213.0",
+      "@opentelemetry/resources": "^2.6.0",
+      "@opentelemetry/sdk-logs": "^0.213.0",
+      "@opentelemetry/sdk-node": "^0.213.0",
+      "@orpc/otel": "^1.13.6",
+      "pino": "catalog:logging",
+      "pino-opentelemetry-transport": "^3.0.0"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
