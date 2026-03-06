@@ -152,14 +152,29 @@ export async function listBankAccountsWithBalance(
                .select({
                   income: sql<string>`COALESCE(SUM(CASE WHEN type = 'income' THEN amount::numeric ELSE 0 END), 0)`,
                   expense: sql<string>`COALESCE(SUM(CASE WHEN type = 'expense' THEN amount::numeric ELSE 0 END), 0)`,
+                  transferOut: sql<string>`COALESCE(SUM(CASE WHEN type = 'transfer' THEN amount::numeric ELSE 0 END), 0)`,
                })
                .from(transactions)
                .where(eq(transactions.bankAccountId, account.id));
 
+            const [transferInRow] = await db
+               .select({
+                  transferIn: sql<string>`COALESCE(SUM(amount::numeric), 0)`,
+               })
+               .from(transactions)
+               .where(
+                  and(
+                     eq(transactions.destinationBankAccountId, account.id),
+                     eq(transactions.type, "transfer"),
+                  ),
+               );
+
             const currentBalance =
                Number(account.initialBalance) +
                Number(row?.income ?? 0) -
-               Number(row?.expense ?? 0);
+               Number(row?.expense ?? 0) -
+               Number(row?.transferOut ?? 0) +
+               Number(transferInRow?.transferIn ?? 0);
 
             const [billsRow] = await db
                .select({

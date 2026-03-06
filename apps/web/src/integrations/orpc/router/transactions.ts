@@ -169,20 +169,14 @@ export const create = protectedProcedure
       const { tagIds, items, ...data } = input;
 
       if (input.type === "transfer") {
-         // Create 2 records: expense in source account, income in destination account
-         const transferGroupId = crypto.randomUUID();
-         const baseData = {
-            ...data,
-            teamId,
-            categoryId: null,
-            subcategoryId: null,
-            installmentGroupId: transferGroupId,
-         };
-
-         const sourceTransaction = await createTransaction(
+         // Single record: bankAccountId = origin (negative effect), destinationBankAccountId = destination (positive effect)
+         const transaction = await createTransaction(
             db,
             {
-               ...baseData,
+               ...data,
+               teamId,
+               categoryId: null,
+               subcategoryId: null,
                type: "transfer",
                bankAccountId: input.bankAccountId,
                destinationBankAccountId: input.destinationBankAccountId,
@@ -190,21 +184,10 @@ export const create = protectedProcedure
             tagIds,
          );
 
-         await createTransaction(
-            db,
-            {
-               ...baseData,
-               type: "transfer",
-               bankAccountId: input.destinationBankAccountId,
-               destinationBankAccountId: input.bankAccountId,
-            },
-            tagIds,
-         );
-
-         if (items && items.length > 0 && sourceTransaction) {
-            await createTransactionItems(db, sourceTransaction.id, teamId, items);
+         if (items && items.length > 0 && transaction) {
+            await createTransactionItems(db, transaction.id, teamId, items);
          }
-         return sourceTransaction;
+         return transaction;
       }
 
       const transaction = await createTransaction(db, { ...data, teamId }, tagIds);

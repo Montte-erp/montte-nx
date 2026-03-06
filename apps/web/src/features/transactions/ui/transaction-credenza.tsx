@@ -362,6 +362,25 @@ function TransactionFormContent({
                                        );
                                        form.setFieldValue("creditCardId", "");
                                        form.setFieldValue("contactId", null);
+                                    } else {
+                                       // Clear category if it doesn't match the new type
+                                       const currentCatId =
+                                          form.getFieldValue("categoryId");
+                                       if (currentCatId) {
+                                          const cat = categories.find(
+                                             (c) => c.id === currentCatId,
+                                          );
+                                          if (cat?.type && cat.type !== v) {
+                                             form.setFieldValue(
+                                                "categoryId",
+                                                "",
+                                             );
+                                             form.setFieldValue(
+                                                "subcategoryId",
+                                                "",
+                                             );
+                                          }
+                                       }
                                     }
                                  }}
                                  value={field.state.value}
@@ -816,14 +835,20 @@ function TransactionFormContent({
                                                    <SelectValue placeholder="Selecione a categoria" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                   {categories.map((cat) => (
-                                                      <SelectItem
-                                                         key={cat.id}
-                                                         value={cat.id}
-                                                      >
-                                                         {cat.name}
-                                                      </SelectItem>
-                                                   ))}
+                                                   {categories
+                                                      .filter(
+                                                         (cat) =>
+                                                            !cat.type ||
+                                                            cat.type === type,
+                                                      )
+                                                      .map((cat) => (
+                                                         <SelectItem
+                                                            key={cat.id}
+                                                            value={cat.id}
+                                                         >
+                                                            {cat.name}
+                                                         </SelectItem>
+                                                      ))}
                                                 </SelectContent>
                                              </Select>
                                           </Field>

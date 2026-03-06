@@ -364,30 +364,43 @@ function BillFormInner({ mode, defaultType, bill, onSuccess }: BillFormProps) {
                )}
 
                {/* Category */}
-               {categories.length > 0 && (
-                  <form.Field name="categoryId">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>Categoria</FieldLabel>
-                           <Select
-                              onValueChange={field.handleChange}
-                              value={field.state.value}
-                           >
-                              <SelectTrigger>
-                                 <SelectValue placeholder="Selecione uma categoria (opcional)" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                 {categories.map((cat) => (
-                                    <SelectItem key={cat.id} value={cat.id}>
-                                       {cat.name}
-                                    </SelectItem>
-                                 ))}
-                              </SelectContent>
-                           </Select>
-                        </Field>
-                     )}
-                  </form.Field>
-               )}
+               <form.Subscribe selector={(s) => s.values.type}>
+                  {(billType) => {
+                     const categoryType =
+                        billType === "receivable" ? "income" : "expense";
+                     const filtered = categories.filter(
+                        (cat) => !cat.type || cat.type === categoryType,
+                     );
+                     if (filtered.length === 0) return null;
+                     return (
+                        <form.Field name="categoryId">
+                           {(field) => (
+                              <Field>
+                                 <FieldLabel>Categoria</FieldLabel>
+                                 <Select
+                                    onValueChange={field.handleChange}
+                                    value={field.state.value}
+                                 >
+                                    <SelectTrigger>
+                                       <SelectValue placeholder="Selecione uma categoria (opcional)" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                       {filtered.map((cat) => (
+                                          <SelectItem
+                                             key={cat.id}
+                                             value={cat.id}
+                                          >
+                                             {cat.name}
+                                          </SelectItem>
+                                       ))}
+                                    </SelectContent>
+                                 </Select>
+                              </Field>
+                           )}
+                        </form.Field>
+                     );
+                  }}
+               </form.Subscribe>
 
                {/* Description */}
                <form.Field name="description">
