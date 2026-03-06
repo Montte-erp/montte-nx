@@ -10,6 +10,7 @@ export function getElysiaPosthogConfig(
       flushAt: 20,
       flushInterval: 10000,
       host: env.POSTHOG_HOST,
+      enableExceptionAutocapture: true,
    });
    return internalPosthog;
 }
@@ -64,7 +65,7 @@ export function captureError(posthog: PostHog, props: CaptureErrorProps) {
       props;
    posthog.capture({
       distinctId: userId,
-      event: "trpc_error",
+      event: "orpc_error",
       properties: {
          code,
          errorId,
