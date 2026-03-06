@@ -28,7 +28,6 @@ import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import {
    ArrowLeftRight,
-   CalendarDays,
    FolderOpen,
    Hash,
    Landmark,
@@ -169,27 +168,6 @@ export function TransactionsList({
          });
       },
       [openAlertDialog, deleteMutation],
-   );
-
-   const handleInstallment = useCallback(
-      (tx: TransactionRow) => {
-         openCredenza({
-            children: (
-               <BillFromTransactionCredenza
-                  bankAccountId={tx.bankAccountId}
-                  categoryId={tx.categoryId}
-                  mode="installment"
-                  onSuccess={closeCredenza}
-                  transactionAmount={tx.amount}
-                  transactionDate={tx.date}
-                  transactionId={tx.id}
-                  transactionName={tx.name ?? ""}
-                  transactionType={tx.type}
-               />
-            ),
-         });
-      },
-      [openCredenza, closeCredenza],
    );
 
    const handleRecurring = useCallback(
@@ -372,12 +350,6 @@ export function TransactionsList({
                            <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Mais ações</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                 onClick={() => handleInstallment(tx)}
-                              >
-                                 <CalendarDays className="size-4" />
-                                 Parcelar Lançamento
-                              </DropdownMenuItem>
                               <DropdownMenuItem
                                  onClick={() => handleRecurring(tx)}
                               >

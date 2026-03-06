@@ -324,7 +324,7 @@ function TransactionFormContent({
                      <form.Field name="name">
                         {(field) => (
                            <Field>
-                              <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
+                              <FieldLabel htmlFor={field.name}>Nome <span className="text-destructive">*</span></FieldLabel>
                               <Input
                                  id={field.name}
                                  onBlur={field.handleBlur}
@@ -411,10 +411,9 @@ function TransactionFormContent({
                         type: s.values.type,
                         bankAccountId: s.values.bankAccountId,
                         categoryId: s.values.categoryId,
-                        isInstallment: s.values.isInstallment,
                      })}
                   >
-                     {({ type, bankAccountId, categoryId, isInstallment }) => {
+                     {({ type, bankAccountId, categoryId }) => {
                         const isTransfer = type === "transfer";
                         const selectedSubcategories =
                            categories.find((c) => c.id === categoryId)
@@ -817,43 +816,94 @@ function TransactionFormContent({
 
                               {!isTransfer && (
                                  <>
-                                    <form.Field name="categoryId">
-                                       {(field) => (
-                                          <Field>
-                                             <FieldLabel>Categoria</FieldLabel>
-                                             <Select
-                                                onValueChange={(v) => {
-                                                   field.handleChange(v);
-                                                   form.setFieldValue(
-                                                      "subcategoryId",
-                                                      "",
-                                                   );
-                                                }}
-                                                value={field.state.value}
-                                             >
-                                                <SelectTrigger>
-                                                   <SelectValue placeholder="Selecione a categoria" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                   {categories
-                                                      .filter(
-                                                         (cat) =>
-                                                            !cat.type ||
-                                                            cat.type === type,
+                                    {/* Categoria + Forma de pagamento (2 cols) */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                       <form.Field name="categoryId">
+                                          {(field) => (
+                                             <Field>
+                                                <FieldLabel>
+                                                   Categoria
+                                                </FieldLabel>
+                                                <Select
+                                                   onValueChange={(v) => {
+                                                      field.handleChange(v);
+                                                      form.setFieldValue(
+                                                         "subcategoryId",
+                                                         "",
+                                                      );
+                                                   }}
+                                                   value={field.state.value}
+                                                >
+                                                   <SelectTrigger>
+                                                      <SelectValue placeholder="Selecione a categoria" />
+                                                   </SelectTrigger>
+                                                   <SelectContent>
+                                                      {categories
+                                                         .filter(
+                                                            (cat) =>
+                                                               !cat.type ||
+                                                               cat.type ===
+                                                                  type,
+                                                         )
+                                                         .map((cat) => (
+                                                            <SelectItem
+                                                               key={cat.id}
+                                                               value={cat.id}
+                                                            >
+                                                               {cat.name}
+                                                            </SelectItem>
+                                                         ))}
+                                                   </SelectContent>
+                                                </Select>
+                                             </Field>
+                                          )}
+                                       </form.Field>
+
+                                       <form.Field name="paymentMethod">
+                                          {(field) => (
+                                             <Field>
+                                                <FieldLabel>
+                                                   Forma de pagamento
+                                                </FieldLabel>
+                                                <Select
+                                                   onValueChange={(v) =>
+                                                      field.handleChange(
+                                                         v as PaymentMethod,
                                                       )
-                                                      .map((cat) => (
-                                                         <SelectItem
-                                                            key={cat.id}
-                                                            value={cat.id}
-                                                         >
-                                                            {cat.name}
-                                                         </SelectItem>
-                                                      ))}
-                                                </SelectContent>
-                                             </Select>
-                                          </Field>
-                                       )}
-                                    </form.Field>
+                                                   }
+                                                   value={field.state.value}
+                                                >
+                                                   <SelectTrigger>
+                                                      <SelectValue placeholder="Selecione (opcional)" />
+                                                   </SelectTrigger>
+                                                   <SelectContent>
+                                                      <SelectItem value="pix">
+                                                         Pix
+                                                      </SelectItem>
+                                                      <SelectItem value="credit_card">
+                                                         Cartão
+                                                      </SelectItem>
+                                                      <SelectItem value="boleto">
+                                                         Boleto
+                                                      </SelectItem>
+                                                      <SelectItem value="cash">
+                                                         Dinheiro
+                                                      </SelectItem>
+                                                      <SelectItem value="transfer">
+                                                         Transferência
+                                                      </SelectItem>
+                                                      <SelectItem value="cheque">
+                                                         Cheque
+                                                      </SelectItem>
+                                                      <SelectItem value="automatic_debit">
+                                                         Débito Automático
+                                                      </SelectItem>
+                                                   </SelectContent>
+                                                </Select>
+                                             </Field>
+                                          )}
+                                       </form.Field>
+                                    </div>
 
                                     {categoryId &&
                                        selectedSubcategories.length > 0 && (
@@ -889,110 +939,6 @@ function TransactionFormContent({
                                              )}
                                           </form.Field>
                                        )}
-
-                                    <form.Field name="paymentMethod">
-                                       {(field) => (
-                                          <Field>
-                                             <FieldLabel>
-                                                Forma de pagamento
-                                             </FieldLabel>
-                                             <Select
-                                                onValueChange={(v) =>
-                                                   field.handleChange(
-                                                      v as PaymentMethod,
-                                                   )
-                                                }
-                                                value={field.state.value}
-                                             >
-                                                <SelectTrigger>
-                                                   <SelectValue placeholder="Selecione (opcional)" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                   <SelectItem value="pix">
-                                                      Pix
-                                                   </SelectItem>
-                                                   <SelectItem value="credit_card">
-                                                      Cartão
-                                                   </SelectItem>
-                                                   <SelectItem value="boleto">
-                                                      Boleto
-                                                   </SelectItem>
-                                                   <SelectItem value="cash">
-                                                      Dinheiro
-                                                   </SelectItem>
-                                                   <SelectItem value="transfer">
-                                                      Transferência
-                                                   </SelectItem>
-                                                   <SelectItem value="cheque">
-                                                      Cheque
-                                                   </SelectItem>
-                                                   <SelectItem value="automatic_debit">
-                                                      Débito Automático
-                                                   </SelectItem>
-                                                </SelectContent>
-                                             </Select>
-                                          </Field>
-                                       )}
-                                    </form.Field>
-
-                                    <form.Field name="isInstallment">
-                                       {(field) => (
-                                          <Field>
-                                             <div className="flex items-center gap-2">
-                                                <Checkbox
-                                                   checked={field.state.value}
-                                                   id="isInstallment"
-                                                   onCheckedChange={(v) => {
-                                                      field.handleChange(!!v);
-                                                      if (!v)
-                                                         form.setFieldValue(
-                                                            "installmentCount",
-                                                            null,
-                                                         );
-                                                   }}
-                                                />
-                                                <label
-                                                   className="text-sm cursor-pointer select-none"
-                                                   htmlFor="isInstallment"
-                                                >
-                                                   Parcelado
-                                                </label>
-                                             </div>
-                                          </Field>
-                                       )}
-                                    </form.Field>
-
-                                    {isInstallment && (
-                                       <form.Field name="installmentCount">
-                                          {(field) => (
-                                             <Field>
-                                                <FieldLabel>
-                                                   Número de parcelas
-                                                </FieldLabel>
-                                                <Input
-                                                   id={field.name}
-                                                   max={72}
-                                                   min={2}
-                                                   onBlur={field.handleBlur}
-                                                   onChange={(e) =>
-                                                      field.handleChange(
-                                                         e.target.value
-                                                            ? Number(
-                                                                 e.target.value,
-                                                              )
-                                                            : null,
-                                                      )
-                                                   }
-                                                   placeholder="Ex: 3"
-                                                   type="number"
-                                                   value={
-                                                      field.state.value ?? ""
-                                                   }
-                                                />
-                                             </Field>
-                                          )}
-                                       </form.Field>
-                                    )}
                                  </>
                               )}
                            </>
@@ -1062,6 +1008,74 @@ function TransactionFormContent({
                         </Field>
                      )}
                   </form.Field>
+
+                  <form.Subscribe
+                     selector={(s) => ({
+                        type: s.values.type,
+                        isInstallment: s.values.isInstallment,
+                     })}
+                  >
+                     {({ type, isInstallment }) =>
+                        type !== "transfer" ? (
+                           <>
+                              <form.Field name="isInstallment">
+                                 {(field) => (
+                                    <Field>
+                                       <div className="flex items-center gap-2">
+                                          <Checkbox
+                                             checked={field.state.value}
+                                             id="isInstallment"
+                                             onCheckedChange={(v) => {
+                                                field.handleChange(!!v);
+                                                if (!v)
+                                                   form.setFieldValue(
+                                                      "installmentCount",
+                                                      null,
+                                                   );
+                                             }}
+                                          />
+                                          <label
+                                             className="text-sm cursor-pointer select-none"
+                                             htmlFor="isInstallment"
+                                          >
+                                             Parcelado
+                                          </label>
+                                       </div>
+                                    </Field>
+                                 )}
+                              </form.Field>
+
+                              {isInstallment && (
+                                 <form.Field name="installmentCount">
+                                    {(field) => (
+                                       <Field>
+                                          <FieldLabel>
+                                             Número de parcelas
+                                          </FieldLabel>
+                                          <Input
+                                             id={field.name}
+                                             max={72}
+                                             min={2}
+                                             onBlur={field.handleBlur}
+                                             onChange={(e) =>
+                                                field.handleChange(
+                                                   e.target.value
+                                                      ? Number(e.target.value)
+                                                      : null,
+                                                )
+                                             }
+                                             placeholder="Ex: 3"
+                                             type="number"
+                                             value={field.state.value ?? ""}
+                                          />
+                                       </Field>
+                                    )}
+                                 </form.Field>
+                              )}
+                           </>
+                        ) : null
+                     }
+                  </form.Subscribe>
 
                   {isCreate && (
                      <form.Subscribe

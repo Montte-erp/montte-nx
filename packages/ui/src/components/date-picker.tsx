@@ -81,7 +81,7 @@ export const DatePicker = ({
             >
                <CalendarIcon className="mr-2 h-4 w-4" />
                {date ? (
-                  format(date, "PPP")
+                  format(date, "dd/MM/yyyy")
                ) : (
                   <span>{placeholder ?? "Pick a date"}</span>
                )}
