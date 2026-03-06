@@ -1,9 +1,18 @@
 import { createDb } from "@packages/database/client";
 import { env } from "@packages/environment/worker";
+import { initOtel, shutdownOtel } from "@packages/logging/otel";
 import { createQueueConnection } from "@packages/queue/connection";
 import { createRedisConnection } from "@packages/redis/connection";
 import { startScheduler } from "./scheduler";
 import { startWebhookDeliveryWorker } from "./workers/webhook-delivery";
+
+// Initialize OTel SDK for PostHog logs
+if (env.POSTHOG_KEY) {
+	initOtel({
+		serviceName: "contentta-worker",
+		posthogKey: env.POSTHOG_KEY,
+	});
+}
 
 async function main(): Promise<void> {
 	console.log("[Worker] Starting Montte Worker...");
@@ -35,6 +44,7 @@ async function main(): Promise<void> {
 
 		await webhookWorker.close();
 		await redis.quit();
+		await shutdownOtel();
 
 		console.log("[Worker] Shutdown complete");
 		process.exit(0);

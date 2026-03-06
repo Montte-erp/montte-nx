@@ -8,6 +8,7 @@ export interface WorkerLoggerEnv {
    LOGTAIL_SOURCE_TOKEN?: string;
    BETTER_STACK_HEARTBEAT_URL?: string;
    LOG_LEVEL?: LogLevel;
+   POSTHOG_KEY?: string;
 }
 
 export function getWorkerLogger(env: WorkerLoggerEnv): Logger {
@@ -17,6 +18,7 @@ export function getWorkerLogger(env: WorkerLoggerEnv): Logger {
          logtailToken: env.LOGTAIL_SOURCE_TOKEN,
          logtailEndpoint: env.LOGTAIL_ENDPOINT,
          level: env.LOG_LEVEL || "info",
+         enableOtel: !!env.POSTHOG_KEY,
       });
    }
    return workerLogger;
