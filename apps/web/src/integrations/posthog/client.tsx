@@ -47,6 +47,7 @@ function getReactPosthogConfig(env: PosthogEnv) {
       capture_pageleave: true,
       capture_pageview: false,
       capture_performance: true,
+      enable_exception_autocapture: true,
    };
 }
 
