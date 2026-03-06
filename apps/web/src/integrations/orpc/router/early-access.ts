@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { protectedProcedure } from "../server";
 import { posthog } from "../server-instances";
 
@@ -12,9 +11,9 @@ const FLAG_KEYS = new Set([
 
 /**
  * Returns the set of early access feature flag keys the current user is enrolled in.
- * Uses posthog-node's getAllFlags which does remote evaluation via PostHog's
- * /decide endpoint — this has access to $feature_enrollment person properties
- * (unlike local evaluation which doesn't).
+ * Uses posthog-node's getAllFlags — without a personalApiKey configured,
+ * it skips local evaluation and calls /flags/?v=2 remotely, which has
+ * access to $feature_enrollment person properties.
  */
 export const getEnrolledFeatures = protectedProcedure.handler(
    async ({ context }) => {
@@ -36,34 +35,3 @@ export const getEnrolledFeatures = protectedProcedure.handler(
       }
    },
 );
-
-/**
- * Server-side enrollment update for early access features.
- * Mirrors posthog-js's updateEarlyAccessFeatureEnrollment: captures a
- * $feature_enrollment_update event with $set to persist the person property.
- * Flushes to ensure the event reaches PostHog before responding.
- */
-export const updateEnrollment = protectedProcedure
-   .input(
-      z.object({
-         flagKey: z.string(),
-         isEnrolled: z.boolean(),
-      }),
-   )
-   .handler(async ({ context, input }) => {
-      posthog.capture({
-         distinctId: context.userId,
-         event: "$feature_enrollment_update",
-         properties: {
-            $feature_flag: input.flagKey,
-            $feature_enrollment: input.isEnrolled,
-            $set: {
-               [`$feature_enrollment/${input.flagKey}`]: input.isEnrolled,
-            },
-         },
-      });
-
-      await posthog.flush();
-
-      return { success: true };
-   });

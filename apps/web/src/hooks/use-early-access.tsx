@@ -4,7 +4,7 @@ import type {
 } from "@/integrations/posthog/client";
 import { normalizeEarlyAccessStage, usePostHog } from "@/integrations/posthog/client";
 import { orpc } from "@/integrations/orpc/client";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import {
    createContext,
    type ReactNode,
@@ -142,49 +142,28 @@ export function EarlyAccessProvider({ children }: { children: ReactNode }) {
       [features],
    );
 
-   const queryKey =
-      orpc.earlyAccess.getEnrolledFeatures.queryOptions().queryKey;
-
-   const { mutate: mutateEnrollment } = useMutation(
-      orpc.earlyAccess.updateEnrollment.mutationOptions({
-         onMutate: async ({ flagKey, isEnrolled }) => {
-            await queryClient.cancelQueries({ queryKey });
-            const previous =
-               queryClient.getQueryData<{ enrolled: string[] }>(queryKey);
-
-            queryClient.setQueryData<{ enrolled: string[] }>(
-               queryKey,
-               (old) => {
-                  const current = old?.enrolled ?? [];
-                  const enrolled = isEnrolled
-                     ? [...new Set([...current, flagKey])]
-                     : current.filter((k) => k !== flagKey);
-                  return { enrolled };
-               },
-            );
-
-            // Also update client-side PostHog so local flags stay in sync
-            posthogClient.updateEarlyAccessFeatureEnrollment(
-               flagKey,
-               isEnrolled,
-            );
-
-            return { previous };
-         },
-         onError: (_err, _vars, ctx) => {
-            if (ctx?.previous) {
-               queryClient.setQueryData(queryKey, ctx.previous);
-            }
-         },
-         meta: { skipGlobalInvalidation: true },
-      }),
-   );
-
    const handleUpdateEnrollment = useCallback(
       (flagKey: string, value: boolean) => {
-         mutateEnrollment({ flagKey, isEnrolled: value });
+         const queryKey =
+            orpc.earlyAccess.getEnrolledFeatures.queryOptions().queryKey;
+
+         // Optimistically update the query cache
+         queryClient.setQueryData<{ enrolled: string[] }>(
+            queryKey,
+            (old) => {
+               const current = old?.enrolled ?? [];
+               const enrolled = value
+                  ? [...new Set([...current, flagKey])]
+                  : current.filter((k) => k !== flagKey);
+               return { enrolled };
+            },
+         );
+
+         // Use the native posthog-js SDK method — it handles
+         // $feature_enrollment_update event + $set person property
+         posthogClient.updateEarlyAccessFeatureEnrollment(flagKey, value);
       },
-      [mutateEnrollment],
+      [queryClient, posthogClient],
    );
 
    const isBannerVisible = useMemo(() => {
