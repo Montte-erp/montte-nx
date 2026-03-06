@@ -4,7 +4,8 @@ import type { Logger, LoggerConfig } from "./types";
 const isDevelopment = process.env.NODE_ENV !== "production";
 
 export function createLogger(config: LoggerConfig): Logger {
-   const { name, level = "info", logtailToken, logtailEndpoint } = config;
+   const { name, level = "info", logtailToken, logtailEndpoint, enableOtel } =
+      config;
 
    // Build transport targets
    const targets: pino.TransportTargetOptions[] = [];
@@ -42,6 +43,14 @@ export function createLogger(config: LoggerConfig): Logger {
       targets.push({
          target: "@logtail/pino",
          options: logtailOptions,
+         level,
+      });
+   }
+
+   // OTel transport: bridges Pino logs to OpenTelemetry LogRecordProcessor
+   if (enableOtel) {
+      targets.push({
+         target: "pino-opentelemetry-transport",
          level,
       });
    }
