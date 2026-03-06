@@ -183,6 +183,17 @@ function DashboardFilterBar({ dashboard }: { dashboard: Dashboard }) {
    const refreshMutation = useMutation(
       orpc.insights.refreshDashboard.mutationOptions({
          onSuccess: () => {
+            // Reset insight queries so tiles re-suspend with loading skeletons
+            const insightIds = [
+               ...new Set(dashboard.tiles.map((t) => t.insightId)),
+            ];
+            for (const insightId of insightIds) {
+               queryClient.resetQueries({
+                  queryKey: orpc.insights.getById.queryKey({
+                     input: { id: insightId },
+                  }),
+               });
+            }
             queryClient.invalidateQueries({
                queryKey: orpc.analytics.getDashboardInsights.queryKey({
                   input: { dashboardId: dashboard.id },

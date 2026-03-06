@@ -27,13 +27,24 @@ const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId",
 )({
-   loader: ({ context, params }) => {
+   loader: async ({ context, params }) => {
       setChatMode("analytics");
-      context.queryClient.prefetchQuery(
+      const dashboard = await context.queryClient.ensureQueryData(
          orpc.dashboards.getById.queryOptions({
             input: { id: params.dashboardId },
          }),
       );
+
+      const insightIds = [
+         ...new Set(dashboard.tiles.map((tile) => tile.insightId)),
+      ];
+      for (const insightId of insightIds) {
+         context.queryClient.prefetchQuery(
+            orpc.insights.getById.queryOptions({
+               input: { id: insightId },
+            }),
+         );
+      }
    },
    component: DashboardViewPage,
 });

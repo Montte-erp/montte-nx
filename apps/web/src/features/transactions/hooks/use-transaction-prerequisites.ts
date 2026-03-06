@@ -1,8 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { orpc } from "@/integrations/orpc/client";
 
 export function useTransactionPrerequisites() {
-   const { data: bankAccounts = [] } = useQuery(
+   const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
    );
 

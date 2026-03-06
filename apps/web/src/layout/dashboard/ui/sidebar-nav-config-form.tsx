@@ -2,6 +2,7 @@ import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import {
    CredenzaBody,
+   CredenzaDescription,
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
@@ -135,6 +136,7 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
       <>
          <CredenzaHeader>
             <CredenzaTitle>Personalizar barra lateral</CredenzaTitle>
+            <CredenzaDescription>Escolha quais itens exibir na navegação.</CredenzaDescription>
          </CredenzaHeader>
          <CredenzaBody>
             <p className="text-sm text-muted-foreground mb-6">

@@ -32,7 +32,7 @@ export type TransactionRow = {
    updatedAt: Date | string;
 };
 
-function formatBRL(value: string | number): string {
+export function formatBRL(value: string | number): string {
    return format(of(String(value), "BRL"), "pt-BR");
 }
 

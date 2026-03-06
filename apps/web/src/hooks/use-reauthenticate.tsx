@@ -1,4 +1,11 @@
 import { Button } from "@packages/ui/components/button";
+import {
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Label } from "@packages/ui/components/label";
 import { PasswordInput } from "@packages/ui/components/password-input";
 import { useMutation } from "@tanstack/react-query";
@@ -32,28 +39,31 @@ function ReauthContent({ onSuccess, onCancel }: ReauthContentProps) {
    });
 
    return (
-      <div className="p-6 space-y-4">
-         <div>
-            <h3 className="text-lg font-medium">Confirmar identidade</h3>
-            <p className="text-sm text-muted-foreground">
-               Digite sua senha para continuar.
-            </p>
-         </div>
-         <div className="space-y-1.5">
-            <Label htmlFor="reauth-password">Senha</Label>
-            <PasswordInput
-               autoFocus
-               id="reauth-password"
-               onChange={(e) => setPassword(e.target.value)}
-               onKeyDown={(e) => {
-                  if (e.key === "Enter" && password.length > 0)
-                     verifyMutation.mutate();
-               }}
-               placeholder="••••••••"
-               value={password}
-            />
-         </div>
-         <div className="flex gap-2">
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Confirmar identidade</CredenzaTitle>
+            <CredenzaDescription>Digite sua senha para continuar.</CredenzaDescription>
+         </CredenzaHeader>
+         <CredenzaBody className="space-y-4">
+            <div className="space-y-1.5">
+               <Label htmlFor="reauth-password">Senha</Label>
+               <PasswordInput
+                  autoFocus
+                  id="reauth-password"
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => {
+                     if (e.key === "Enter" && password.length > 0)
+                        verifyMutation.mutate();
+                  }}
+                  placeholder="••••••••"
+                  value={password}
+               />
+            </div>
+         </CredenzaBody>
+         <CredenzaFooter className="flex gap-2">
+            <Button onClick={onCancel} variant="outline">
+               Cancelar
+            </Button>
             <Button
                disabled={password.length === 0 || verifyMutation.isPending}
                onClick={() => verifyMutation.mutate()}
@@ -63,11 +73,8 @@ function ReauthContent({ onSuccess, onCancel }: ReauthContentProps) {
                )}
                Confirmar
             </Button>
-            <Button onClick={onCancel} variant="outline">
-               Cancelar
-            </Button>
-         </div>
-      </div>
+         </CredenzaFooter>
+      </>
    );
 }
 

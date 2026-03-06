@@ -40,6 +40,14 @@ export const Route = createFileRoute(
             input: { page: 1, pageSize: 20 },
          }),
       );
+      context.queryClient.prefetchQuery(
+         orpc.transactions.getSummary.queryOptions({
+            input: {
+               dateFrom: DEFAULT_FILTERS.dateFrom,
+               dateTo: DEFAULT_FILTERS.dateTo,
+            },
+         }),
+      );
    },
    component: TransactionsPage,
 });

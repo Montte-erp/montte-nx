@@ -1,4 +1,9 @@
 import { Button } from "@packages/ui/components/button";
+import {
+   CredenzaDescription,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Input } from "@packages/ui/components/input";
 import { Label } from "@packages/ui/components/label";
 import {
@@ -91,6 +96,11 @@ export function InventoryMovementCredenza({
    );
 
    return (
+      <>
+      <CredenzaHeader>
+         <CredenzaTitle>Movimentação de estoque</CredenzaTitle>
+         <CredenzaDescription>Registre entradas e saídas do produto.</CredenzaDescription>
+      </CredenzaHeader>
       <Tabs defaultValue="purchase">
          <TabsList className="w-full">
             <TabsTrigger className="flex-1" value="purchase">
@@ -244,5 +254,6 @@ export function InventoryMovementCredenza({
             </form>
          </TabsContent>
       </Tabs>
+      </>
    );
 }

@@ -42,7 +42,7 @@ export function BulkMoveAccountForm({
             </CredenzaDescription>
          </CredenzaHeader>
          <CredenzaBody className="flex items-end gap-2">
-            <div className="flex-1 space-y-2">
+            <div className="flex flex-1 flex-col gap-2">
                <p className="text-sm font-medium">Conta de Origem</p>
                <Combobox
                   emptyMessage="Nenhuma conta encontrada."
@@ -54,7 +54,7 @@ export function BulkMoveAccountForm({
                />
             </div>
             <ArrowRight className="size-4 mb-[18px] shrink-0 text-muted-foreground" />
-            <div className="flex-1 space-y-2">
+            <div className="flex flex-1 flex-col gap-2">
                <p className="text-sm font-medium">Conta de Destino</p>
                <Combobox
                   emptyMessage="Nenhuma conta encontrada."

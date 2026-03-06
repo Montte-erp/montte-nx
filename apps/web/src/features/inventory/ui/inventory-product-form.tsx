@@ -1,4 +1,9 @@
 import { Button } from "@packages/ui/components/button";
+import {
+   CredenzaDescription,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Input } from "@packages/ui/components/input";
 import { Label } from "@packages/ui/components/label";
 import { Textarea } from "@packages/ui/components/textarea";
@@ -74,6 +79,11 @@ export function InventoryProductForm({
    );
 
    return (
+      <>
+      <CredenzaHeader>
+         <CredenzaTitle>{mode === "create" ? "Novo produto" : "Editar produto"}</CredenzaTitle>
+         <CredenzaDescription>Preencha as informações do produto.</CredenzaDescription>
+      </CredenzaHeader>
       <form className="space-y-4" onSubmit={handleSubmit}>
          <div className="space-y-1.5">
             <Label htmlFor="name">Nome do produto</Label>
@@ -155,5 +165,6 @@ export function InventoryProductForm({
             {mode === "create" ? "Criar produto" : "Salvar alterações"}
          </Button>
       </form>
+      </>
    );
 }

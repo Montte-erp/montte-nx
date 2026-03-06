@@ -17,7 +17,11 @@ import {
 } from "@packages/ui/components/dropdown-menu";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { cn } from "@packages/ui/lib/utils";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+   useQuery,
+   useQueryClient,
+   useSuspenseQuery,
+} from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import {
    AlertCircle,
@@ -159,19 +163,11 @@ function DashboardInsightContent({
    globalFilters?: Condition[];
    globalDateRange?: DashboardDateRange;
 }) {
-   const {
-      data: insight,
-      isLoading,
-      error,
-   } = useQuery(
+   const { data: insight } = useSuspenseQuery(
       orpc.insights.getById.queryOptions({
          input: { id: insightId },
       }),
    );
-
-   if (isLoading) return <TileLoadingSkeleton />;
-   if (error) return <TileErrorState error={error} />;
-   if (!insight) return null;
 
    const parsed = insightConfigSchema.safeParse(insight.config);
    if (!parsed.success) {
@@ -190,17 +186,7 @@ function DashboardInsightContent({
       globalDateRange,
    );
 
-   return (
-      <ErrorBoundary
-         fallbackRender={({ error }) => (
-            <TileErrorState error={error as Error} />
-         )}
-      >
-         <Suspense fallback={<TileLoadingSkeleton />}>
-            <InsightPreview config={config} />
-         </Suspense>
-      </ErrorBoundary>
-   );
+   return <InsightPreview config={config} />;
 }
 
 /**
@@ -334,7 +320,7 @@ export function DashboardTile({
 
    const handleRefresh = () => {
       if (!insightId) return;
-      queryClient.invalidateQueries({
+      queryClient.resetQueries({
          queryKey: orpc.insights.getById.queryKey({
             input: { id: insightId },
          }),
@@ -478,11 +464,19 @@ export function DashboardTile({
             {/* Chart / content area */}
             <div className="px-4 pb-4">
                {insightId ? (
-                  <DashboardInsightContent
-                     globalDateRange={globalDateRange}
-                     globalFilters={globalFilters}
-                     insightId={insightId}
-                  />
+                  <ErrorBoundary
+                     fallbackRender={({ error }) => (
+                        <TileErrorState error={error as Error} />
+                     )}
+                  >
+                     <Suspense fallback={<TileLoadingSkeleton />}>
+                        <DashboardInsightContent
+                           globalDateRange={globalDateRange}
+                           globalFilters={globalFilters}
+                           insightId={insightId}
+                        />
+                     </Suspense>
+                  </ErrorBoundary>
                ) : (
                   children
                )}

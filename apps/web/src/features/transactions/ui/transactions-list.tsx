@@ -40,15 +40,15 @@ import {
    TrendingDown,
    TrendingUp,
 } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { toast } from "sonner";
-import { format, of } from "@f-o-t/money";
 import { BillFromTransactionCredenza } from "@/features/bills/ui/bill-from-transaction-credenza";
 import { BulkCategorizeForm } from "@/features/transactions/ui/bulk-categorize-form";
 import { BulkMoveAccountForm } from "@/features/transactions/ui/bulk-move-account-form";
 import type { TransactionFilters } from "@/features/transactions/ui/transaction-filter-bar";
 import {
    buildTransactionColumns,
+   formatBRL,
    type TransactionRow,
 } from "@/features/transactions/ui/transactions-columns";
 import { TransactionSheet } from "@/features/transactions/ui/transactions-sheet";
@@ -297,11 +297,11 @@ export function TransactionsList({
       onClear,
    ]);
 
-   const columns = useMemo(() => buildTransactionColumns(), []);
+   const columns = buildTransactionColumns();
 
    if (transactionData.length === 0 && filters.page === 1) {
       return (
-         <div className="space-y-4">
+         <div className="flex flex-col gap-4">
             <SummaryBar summary={summary} />
             <Empty>
                <EmptyHeader>
@@ -418,11 +418,16 @@ export function TransactionsList({
    );
 }
 
-function formatBRL(value: string | number): string {
-   return format(of(String(value), "BRL"), "pt-BR");
-}
-
-function SummaryBar({ summary }: { summary: { totalCount: number; incomeTotal: string; expenseTotal: string; balance: string } }) {
+function SummaryBar({
+   summary,
+}: {
+   summary: {
+      totalCount: number;
+      incomeTotal: string;
+      expenseTotal: string;
+      balance: string;
+   };
+}) {
    return (
       <div className="grid grid-cols-2 gap-4 rounded-lg border bg-card px-4 py-2.5 sm:flex sm:items-center">
          <Announcement>
@@ -453,7 +458,9 @@ function SummaryBar({ summary }: { summary: { totalCount: number; incomeTotal: s
                Lançamentos
             </AnnouncementTag>
             <AnnouncementTitle>
-               <span className="tabular-nums font-semibold">{summary.totalCount}</span>
+               <span className="tabular-nums font-semibold">
+                  {summary.totalCount}
+               </span>
             </AnnouncementTitle>
          </Announcement>
          <Announcement>
@@ -462,7 +469,9 @@ function SummaryBar({ summary }: { summary: { totalCount: number; incomeTotal: s
                Saldo
             </AnnouncementTag>
             <AnnouncementTitle>
-               <span className={`tabular-nums font-semibold ${Number(summary.balance) >= 0 ? "text-green-600 dark:text-green-500" : "text-destructive"}`}>
+               <span
+                  className={`tabular-nums font-semibold ${Number(summary.balance) >= 0 ? "text-green-600 dark:text-green-500" : "text-destructive"}`}
+               >
                   {formatBRL(summary.balance)}
                </span>
             </AnnouncementTitle>

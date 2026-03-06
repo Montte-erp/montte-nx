@@ -1,9 +1,19 @@
 import { generateFromObjects } from "@f-o-t/csv";
 import { generateBankStatement } from "@f-o-t/ofx";
 import { Button } from "@packages/ui/components/button";
+import {
+   Choicebox,
+   ChoiceboxIndicator,
+   ChoiceboxItem,
+   ChoiceboxItemDescription,
+   ChoiceboxItemHeader,
+   ChoiceboxItemTitle,
+} from "@packages/ui/components/choicebox";
 import { Combobox } from "@packages/ui/components/combobox";
 import {
    CredenzaBody,
+   CredenzaClose,
+   CredenzaDescription,
    CredenzaFooter,
    CredenzaHeader,
    CredenzaTitle,
@@ -11,11 +21,8 @@ import {
 import { DatePicker } from "@packages/ui/components/date-picker";
 import { Field, FieldGroup, FieldLabel } from "@packages/ui/components/field";
 import { Spinner } from "@packages/ui/components/spinner";
-import {
-   ToggleGroup,
-   ToggleGroupItem,
-} from "@packages/ui/components/toggle-group";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { Download, FileSpreadsheet, Landmark } from "lucide-react";
 import { Suspense, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
@@ -272,6 +279,9 @@ function ExportForm({ dateFrom, dateTo }: TransactionExportCredenzaProps) {
       <>
          <CredenzaHeader>
             <CredenzaTitle>Exportar Transações</CredenzaTitle>
+            <CredenzaDescription>
+               Selecione o formato e o período para exportar.
+            </CredenzaDescription>
          </CredenzaHeader>
 
          <CredenzaBody>
@@ -279,26 +289,40 @@ function ExportForm({ dateFrom, dateTo }: TransactionExportCredenzaProps) {
                {/* Format selector */}
                <Field>
                   <FieldLabel>Formato</FieldLabel>
-                  <ToggleGroup
-                     className="w-full"
+                  <Choicebox
+                     className="grid grid-cols-2 gap-4"
                      onValueChange={(v) => {
                         if (v) setFormat(v as ExportFormat);
                      }}
-                     type="single"
                      value={format}
-                     variant="outline"
                   >
-                     <ToggleGroupItem className="flex-1" value="csv">
-                        CSV
-                     </ToggleGroupItem>
-                     <ToggleGroupItem className="flex-1" value="ofx">
-                        OFX
-                     </ToggleGroupItem>
-                  </ToggleGroup>
+                     <ChoiceboxItem id="format-csv" value="csv">
+                        <FileSpreadsheet className="size-5 text-muted-foreground" />
+                        <ChoiceboxItemHeader>
+                           <ChoiceboxItemTitle>CSV</ChoiceboxItemTitle>
+                           <ChoiceboxItemDescription>
+                              Planilha compatível com Excel e Google Sheets
+                           </ChoiceboxItemDescription>
+                        </ChoiceboxItemHeader>
+                        <ChoiceboxIndicator id="format-csv" />
+                     </ChoiceboxItem>
+
+                     <ChoiceboxItem id="format-ofx" value="ofx">
+                        <Landmark className="size-5 text-muted-foreground" />
+                        <ChoiceboxItemHeader>
+                           <ChoiceboxItemTitle>OFX</ChoiceboxItemTitle>
+                           <ChoiceboxItemDescription>
+                              Extrato bancário para importação em outros
+                              sistemas
+                           </ChoiceboxItemDescription>
+                        </ChoiceboxItemHeader>
+                        <ChoiceboxIndicator id="format-ofx" />
+                     </ChoiceboxItem>
+                  </Choicebox>
                </Field>
 
                {/* Date range */}
-               <div className="grid grid-cols-2 gap-3">
+               <div className="grid grid-cols-2 gap-4">
                   <Field>
                      <FieldLabel>Data inicial</FieldLabel>
                      <DatePicker
@@ -339,17 +363,38 @@ function ExportForm({ dateFrom, dateTo }: TransactionExportCredenzaProps) {
                      />
                   </Field>
                ) : null}
+
+               {/* Export summary */}
+               <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="text-xs text-muted-foreground">
+                     {format === "csv" ? "CSV" : "OFX"} &middot;{" "}
+                     {periodFrom.toLocaleDateString("pt-BR")} até{" "}
+                     {periodTo.toLocaleDateString("pt-BR")}
+                     {format === "ofx" && selectedAccount
+                        ? ` · ${selectedAccount.name}`
+                        : null}
+                  </p>
+               </div>
             </FieldGroup>
          </CredenzaBody>
 
-         <CredenzaFooter>
+         <CredenzaFooter className="flex gap-2">
+            <CredenzaClose asChild>
+               <Button className="flex-1" variant="outline">
+                  Cancelar
+               </Button>
+            </CredenzaClose>
             <Button
-               className="w-full"
+               className="flex-1"
                disabled={!canDownload || isPending}
                onClick={handleDownload}
                type="button"
             >
-               {isPending ? <Spinner className="size-4 mr-2" /> : null}
+               {isPending ? (
+                  <Spinner className="size-4 mr-2" />
+               ) : (
+                  <Download className="size-4 mr-2" />
+               )}
                Baixar
             </Button>
          </CredenzaFooter>
@@ -371,6 +416,9 @@ export function TransactionExportCredenza({
             <>
                <CredenzaHeader>
                   <CredenzaTitle>Exportar Transações</CredenzaTitle>
+                  <CredenzaDescription>
+                     Selecione o formato e o período para exportar.
+                  </CredenzaDescription>
                </CredenzaHeader>
                <CredenzaBody className="flex items-center justify-center py-8">
                   <Spinner className="size-6" />

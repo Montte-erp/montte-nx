@@ -217,7 +217,8 @@ function TransactionFormContent({
          createAsBill: false as boolean,
          paymentMethod: transaction?.paymentMethod ?? ("" as string),
          isInstallment: transaction?.isInstallment ?? false,
-         installmentCount: transaction?.installmentCount ?? (null as number | null),
+         installmentCount:
+            transaction?.installmentCount ?? (null as number | null),
       },
       onSubmit: ({ value }) => {
          const dateStr = value.date
@@ -259,7 +260,9 @@ function TransactionFormContent({
                value.type === "expense" ? value.creditCardId || null : null,
             paymentMethod: value.paymentMethod || null,
             isInstallment: value.isInstallment,
-            installmentCount: value.isInstallment ? value.installmentCount : null,
+            installmentCount: value.isInstallment
+               ? value.installmentCount
+               : null,
          };
 
          if (isCreate) {
@@ -561,11 +564,17 @@ function TransactionFormContent({
                               </SelectTrigger>
                               <SelectContent>
                                  <SelectItem value="pix">Pix</SelectItem>
-                                 <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
-                                 <SelectItem value="debit_card">Cartão de Débito</SelectItem>
+                                 <SelectItem value="credit_card">
+                                    Cartão de Crédito
+                                 </SelectItem>
+                                 <SelectItem value="debit_card">
+                                    Cartão de Débito
+                                 </SelectItem>
                                  <SelectItem value="boleto">Boleto</SelectItem>
                                  <SelectItem value="cash">Dinheiro</SelectItem>
-                                 <SelectItem value="transfer">Transferência</SelectItem>
+                                 <SelectItem value="transfer">
+                                    Transferência
+                                 </SelectItem>
                                  <SelectItem value="other">Outro</SelectItem>
                               </SelectContent>
                            </Select>
@@ -583,7 +592,11 @@ function TransactionFormContent({
                                  id="isInstallment"
                                  onCheckedChange={(v) => {
                                     field.handleChange(!!v);
-                                    if (!v) form.setFieldValue("installmentCount", null);
+                                    if (!v)
+                                       form.setFieldValue(
+                                          "installmentCount",
+                                          null,
+                                       );
                                  }}
                               />
                               {/* biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is Radix */}
@@ -607,12 +620,14 @@ function TransactionFormContent({
                                     <FieldLabel>Número de parcelas</FieldLabel>
                                     <Input
                                        id={field.name}
-                                       min={2}
                                        max={72}
+                                       min={2}
                                        onBlur={field.handleBlur}
                                        onChange={(e) =>
                                           field.handleChange(
-                                             e.target.value ? Number(e.target.value) : null,
+                                             e.target.value
+                                                ? Number(e.target.value)
+                                                : null,
                                           )
                                        }
                                        placeholder="Ex: 3"

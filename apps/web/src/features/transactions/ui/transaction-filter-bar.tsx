@@ -176,7 +176,9 @@ export function TransactionFilterBar({
       onFiltersChange(DEFAULT_FILTERS);
    };
 
-   const setFilters = (updater: (prev: TransactionFilters) => TransactionFilters) => {
+   const setFilters = (
+      updater: (prev: TransactionFilters) => TransactionFilters,
+   ) => {
       onFiltersChange(updater(filters));
    };
 
@@ -197,7 +199,9 @@ export function TransactionFilterBar({
          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
             {/* Período */}
             <div className="flex flex-col gap-2">
-               <span className="text-xs font-medium uppercase text-muted-foreground">Período</span>
+               <span className="text-xs font-medium uppercase text-muted-foreground">
+                  Período
+               </span>
                <DateRangePicker
                   clearLabel="Limpar período"
                   heading="Período"
@@ -244,7 +248,9 @@ export function TransactionFilterBar({
 
             {/* Tipo */}
             <div className="flex flex-col gap-2">
-               <span className="text-xs font-medium uppercase text-muted-foreground">Tipo</span>
+               <span className="text-xs font-medium uppercase text-muted-foreground">
+                  Tipo
+               </span>
                <Select
                   onValueChange={(v) =>
                      onFiltersChange({
@@ -269,9 +275,17 @@ export function TransactionFilterBar({
 
             {/* Categoria */}
             <div className="flex flex-col gap-2">
-               <span className="text-xs font-medium uppercase text-muted-foreground">Categoria</span>
+               <span className="text-xs font-medium uppercase text-muted-foreground">
+                  Categoria
+               </span>
                <Select
-                  onValueChange={(v) => setFilters((f) => ({ ...f, categoryId: v === "all" ? undefined : v, page: 1 }))}
+                  onValueChange={(v) =>
+                     setFilters((f) => ({
+                        ...f,
+                        categoryId: v === "all" ? undefined : v,
+                        page: 1,
+                     }))
+                  }
                   value={filters.categoryId ?? "all"}
                >
                   <SelectTrigger className="h-8 sm:w-[150px]">
@@ -280,7 +294,9 @@ export function TransactionFilterBar({
                   <SelectContent>
                      <SelectItem value="all">Todas</SelectItem>
                      {categories.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        <SelectItem key={c.id} value={c.id}>
+                           {c.name}
+                        </SelectItem>
                      ))}
                   </SelectContent>
                </Select>
@@ -290,13 +306,21 @@ export function TransactionFilterBar({
             <div className="col-span-2 flex items-center gap-2 sm:self-end">
                <TransactionFilterPopover
                   onChange={(group) =>
-                     onFiltersChange({ ...filters, conditionGroup: group, page: 1 })
+                     onFiltersChange({
+                        ...filters,
+                        conditionGroup: group,
+                        page: 1,
+                     })
                   }
                   value={filters.conditionGroup}
                />
 
                {hasActiveFilters && (
-                  <Button className="h-8 gap-2" onClick={handleClear} variant="ghost">
+                  <Button
+                     className="h-8 gap-2"
+                     onClick={handleClear}
+                     variant="ghost"
+                  >
                      <X className="size-3.5" />
                      Limpar
                   </Button>

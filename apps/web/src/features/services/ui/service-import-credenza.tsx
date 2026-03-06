@@ -3,6 +3,7 @@ import { Button } from "@packages/ui/components/button";
 import {
    CredenzaBody,
    CredenzaFooter,
+   CredenzaDescription,
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
@@ -24,13 +25,18 @@ import {
 } from "@packages/ui/components/table";
 import { useMutation } from "@tanstack/react-query";
 import {
+   Dropzone,
+   DropzoneContent,
+   DropzoneEmptyState,
+} from "@packages/ui/components/dropzone";
+import {
    AlertTriangle,
    CheckCircle2,
    ChevronRight,
+   FileSpreadsheet,
    Loader2,
-   UploadCloud,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -248,12 +254,8 @@ interface UploadStepProps {
 }
 
 function UploadStep({ methods, onFileReady }: UploadStepProps) {
-   const fileInputRef = useRef<HTMLInputElement>(null);
-   const [isDragging, setIsDragging] = useState(false);
    const [isParsing, setIsParsing] = useState(false);
-   const [selectedFileName, setSelectedFileName] = useState<string | null>(
-      null,
-   );
+   const [selectedFile, setSelectedFile] = useState<File | undefined>();
 
    function handleTemplateDownload() {
       const csv =
@@ -268,7 +270,7 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
    }
 
    function processFile(file: File) {
-      setSelectedFileName(file.name);
+      setSelectedFile(file);
       setIsParsing(true);
 
       const reader = new FileReader();
@@ -278,14 +280,14 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
             const rawCsv = parseCsvContent(content);
             if (rawCsv.headers.length === 0) {
                toast.error("Arquivo CSV vazio ou inválido.");
-               setSelectedFileName(null);
+               setSelectedFile(undefined);
                return;
             }
             onFileReady(rawCsv);
             methods.navigation.next();
          } catch {
             toast.error("Erro ao processar o arquivo. Verifique o formato.");
-            setSelectedFileName(null);
+            setSelectedFile(undefined);
          } finally {
             setIsParsing(false);
          }
@@ -293,80 +295,44 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
       reader.readAsText(file, "utf-8");
    }
 
-   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      processFile(file);
-      e.target.value = "";
-   }
-
-   function handleDrop(e: React.DragEvent) {
-      e.preventDefault();
-      setIsDragging(false);
-      const file = e.dataTransfer.files?.[0];
-      if (!file) return;
-      const ext = file.name.split(".").pop()?.toLowerCase();
-      if (ext !== "csv") {
-         toast.error("Formato não suportado. Use .csv");
-         return;
-      }
-      processFile(file);
-   }
-
    return (
       <>
          <CredenzaHeader>
             <CredenzaTitle>Importar Serviços</CredenzaTitle>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <CredenzaDescription>
                Importe serviços via arquivo CSV
-            </p>
+            </CredenzaDescription>
          </CredenzaHeader>
 
          <CredenzaBody className="flex flex-col gap-4 w-full overflow-auto">
             <StepIndicator methods={methods} />
 
-            {/* biome-ignore lint/a11y/useKeyWithClickEvents: file drop zone handles keyboard via button */}
-            {/* biome-ignore lint/a11y/noStaticElementInteractions: file drop zone */}
-            <div
-               className={[
-                  "relative flex flex-col items-center justify-center gap-3",
-                  "rounded-xl border-2 border-dashed p-8 text-center transition-colors duration-200",
-                  "cursor-pointer select-none",
-                  isDragging
-                     ? "border-primary bg-primary/5"
-                     : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30",
-                  isParsing ? "pointer-events-none opacity-60" : "",
-               ].join(" ")}
-               onClick={() => !isParsing && fileInputRef.current?.click()}
-               onDragLeave={() => setIsDragging(false)}
-               onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDragging(true);
+            <Dropzone
+               accept={{ "text/csv": [".csv"] }}
+               disabled={isParsing}
+               maxFiles={1}
+               onDrop={([file]) => {
+                  if (file) processFile(file);
                }}
-               onDrop={handleDrop}
+               src={selectedFile ? [selectedFile] : undefined}
             >
-               <input
-                  accept=".csv"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  ref={fileInputRef}
-                  type="file"
-               />
-               {isParsing ? (
-                  <Loader2 className="size-8 animate-spin text-muted-foreground" />
-               ) : (
-                  <UploadCloud className="size-8 text-muted-foreground" />
-               )}
-               <div>
-                  <p className="text-sm font-medium">
-                     {selectedFileName ??
-                        "Arraste um arquivo CSV ou clique para selecionar"}
+               <DropzoneEmptyState>
+                  {isParsing ? (
+                     <Loader2 className="size-8 animate-spin text-muted-foreground" />
+                  ) : (
+                     <FileSpreadsheet className="size-8 text-muted-foreground" />
+                  )}
+                  <p className="text-sm font-medium mt-2">
+                     {isParsing
+                        ? "Processando arquivo..."
+                        : "Arraste um arquivo CSV ou clique para selecionar"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                      Formato aceito: .csv
                   </p>
-               </div>
-            </div>
+               </DropzoneEmptyState>
+               <DropzoneContent />
+            </Dropzone>
 
             <Button
                className="w-full"
@@ -415,9 +381,9 @@ function MappingStep({
       <>
          <CredenzaHeader>
             <CredenzaTitle>Mapear Colunas</CredenzaTitle>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <CredenzaDescription>
                Associe cada coluna do CSV a um campo do serviço
-            </p>
+            </CredenzaDescription>
          </CredenzaHeader>
 
          <CredenzaBody className="flex flex-col gap-3 w-full overflow-auto">
@@ -511,9 +477,9 @@ function PreviewStep({ methods, rows }: PreviewStepProps) {
       <>
          <CredenzaHeader>
             <CredenzaTitle>Prévia dos Serviços</CredenzaTitle>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <CredenzaDescription>
                {rows.length} serviço(s) encontrado(s) no arquivo
-            </p>
+            </CredenzaDescription>
          </CredenzaHeader>
 
          <CredenzaBody className="flex flex-col gap-3 w-full overflow-auto">
@@ -659,9 +625,9 @@ function ConfirmStep({ methods, rows }: ConfirmStepProps) {
       <>
          <CredenzaHeader>
             <CredenzaTitle>Confirmar Importação</CredenzaTitle>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <CredenzaDescription>
                Revise o resumo antes de importar
-            </p>
+            </CredenzaDescription>
          </CredenzaHeader>
 
          <CredenzaBody className="flex flex-col gap-3 w-full overflow-auto">

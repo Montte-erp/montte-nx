@@ -7,10 +7,16 @@ import { Checkbox } from "@packages/ui/components/checkbox";
 import { Combobox } from "@packages/ui/components/combobox";
 import {
    CredenzaBody,
+   CredenzaDescription,
    CredenzaFooter,
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
+import {
+   Dropzone,
+   DropzoneContent,
+   DropzoneEmptyState,
+} from "@packages/ui/components/dropzone";
 import { defineStepper } from "@packages/ui/components/stepper";
 import {
    Table,
@@ -40,9 +46,8 @@ import {
    FileText,
    HelpCircle,
    Loader2,
-   UploadCloud,
 } from "lucide-react";
-import { Suspense, useRef, useState, useTransition } from "react";
+import { Suspense, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { closeCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -119,7 +124,12 @@ type RawCsvData = {
 // Constants
 // ---------------------------------------------------------------------------
 
-const REQUIRED_FIELDS: (keyof ColumnMapping)[] = ["data", "valor"];
+const REQUIRED_FIELDS: (keyof ColumnMapping)[] = [
+   "data",
+   "nome",
+   "tipo",
+   "valor",
+];
 
 const FIELD_LABELS: Record<keyof ColumnMapping, string> = {
    data: "Data *",
@@ -284,7 +294,7 @@ function StepIndicator({ methods }: { methods: ImportStepperMethods }) {
    const currentIndex = methods.lookup.getIndex(methods.state.current.data.id);
 
    return (
-      <div className="flex items-center gap-1.5 mb-1">
+      <div className="flex items-center gap-2 mb-1">
          {steps.map((step, idx) => (
             <div
                className={[
@@ -316,12 +326,8 @@ interface UploadStepProps {
 }
 
 function UploadStep({ methods, onFileReady }: UploadStepProps) {
-   const fileInputRef = useRef<HTMLInputElement>(null);
-   const [isDragging, setIsDragging] = useState(false);
    const [isParsing, setIsParsing] = useState(false);
-   const [selectedFileName, setSelectedFileName] = useState<string | null>(
-      null,
-   );
+   const [selectedFile, setSelectedFile] = useState<File | undefined>();
 
    function handleTemplateDownload() {
       const exampleRow = {
@@ -357,7 +363,7 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
    }
 
    function processFile(file: File) {
-      setSelectedFileName(file.name);
+      setSelectedFile(file);
       setIsParsing(true);
 
       const reader = new FileReader();
@@ -406,7 +412,7 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
             }
          } catch {
             toast.error("Erro ao processar o arquivo. Verifique o formato.");
-            setSelectedFileName(null);
+            setSelectedFile(undefined);
          } finally {
             setIsParsing(false);
          }
@@ -414,110 +420,59 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
       reader.readAsText(file, "utf-8");
    }
 
-   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      processFile(file);
-      e.target.value = "";
-   }
-
-   function handleDrop(e: React.DragEvent) {
-      e.preventDefault();
-      setIsDragging(false);
-      const file = e.dataTransfer.files?.[0];
-      if (!file) return;
-      const ext = file.name.split(".").pop()?.toLowerCase();
-      if (ext !== "csv" && ext !== "ofx") {
-         toast.error("Formato não suportado. Use .csv ou .ofx");
-         return;
-      }
-      processFile(file);
-   }
-
-   function handleDragOver(e: React.DragEvent) {
-      e.preventDefault();
-      setIsDragging(true);
-   }
-
-   function handleDragLeave() {
-      setIsDragging(false);
-   }
-
    return (
       <>
          <CredenzaHeader>
             <CredenzaTitle>Importar Transações</CredenzaTitle>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <CredenzaDescription>
                Importe suas transações via arquivo CSV ou OFX
-            </p>
+            </CredenzaDescription>
          </CredenzaHeader>
 
          <CredenzaBody className="flex flex-col gap-4 w-full overflow-auto">
             <StepIndicator methods={methods} />
 
             {/* Drop zone */}
-            {/* biome-ignore lint/a11y/useKeyWithClickEvents: file drop zone handles keyboard via button */}
-            <div
-               className={[
-                  "relative flex flex-col items-center justify-center gap-3",
-                  "rounded-xl border-2 border-dashed p-8 text-center transition-colors duration-200",
-                  "cursor-pointer select-none",
-                  "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30",
-                  isParsing ? "pointer-events-none opacity-60" : "",
-               ].join(" ")}
-               onClick={() => !isParsing && fileInputRef.current?.click()}
-               onDragLeave={handleDragLeave}
-               onDragOver={handleDragOver}
-               onDrop={handleDrop}
+            <Dropzone
+               accept={{
+                  "text/csv": [".csv"],
+                  "application/x-ofx": [".ofx"],
+               }}
+               disabled={isParsing}
+               maxFiles={1}
+               onDrop={([file]) => {
+                  if (file) processFile(file);
+               }}
+               src={selectedFile ? [selectedFile] : undefined}
             >
-               <input
-                  accept=".csv,.ofx"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  ref={fileInputRef}
-                  type="file"
-               />
-
-               {isParsing ? (
-                  <Loader2 className="size-8 text-primary animate-spin" />
-               ) : (
-                  <UploadCloud
-                     className={[
-                        "size-8 transition-colors",
-                        isDragging ? "text-primary" : "text-muted-foreground",
-                     ].join(" ")}
-                  />
-               )}
-
-               <div>
-                  <p className="font-medium text-sm">
-                     {isParsing
-                        ? "Processando arquivo..."
-                        : selectedFileName
-                          ? selectedFileName
-                          : "Arraste e solte ou clique para selecionar"}
-                  </p>
-                  {!isParsing && !selectedFileName && (
-                     <p className="text-xs text-muted-foreground mt-1">
-                        Suporta arquivos <strong>.CSV</strong> e{" "}
-                        <strong>.OFX</strong>
-                     </p>
+               <DropzoneEmptyState>
+                  {isParsing ? (
+                     <Loader2 className="size-8 text-primary animate-spin" />
+                  ) : (
+                     <>
+                        <FileSpreadsheet className="size-8 text-muted-foreground" />
+                        <p className="font-medium text-sm mt-2">
+                           Arraste e solte ou clique para selecionar
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                           Suporta arquivos <strong>.CSV</strong> e{" "}
+                           <strong>.OFX</strong>
+                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                           <div className="flex items-center gap-2 rounded-md border bg-background px-2.5 py-1">
+                              <FileSpreadsheet className="size-3.5 text-emerald-600" />
+                              <span className="text-xs font-medium">CSV</span>
+                           </div>
+                           <div className="flex items-center gap-2 rounded-md border bg-background px-2.5 py-1">
+                              <FileText className="size-3.5 text-blue-600" />
+                              <span className="text-xs font-medium">OFX</span>
+                           </div>
+                        </div>
+                     </>
                   )}
-               </div>
-
-               {!isParsing && (
-                  <div className="flex items-center gap-2">
-                     <div className="flex items-center gap-1.5 rounded-md border bg-background px-2.5 py-1">
-                        <FileSpreadsheet className="size-3.5 text-emerald-600" />
-                        <span className="text-xs font-medium">CSV</span>
-                     </div>
-                     <div className="flex items-center gap-1.5 rounded-md border bg-background px-2.5 py-1">
-                        <FileText className="size-3.5 text-blue-600" />
-                        <span className="text-xs font-medium">OFX</span>
-                     </div>
-                  </div>
-               )}
-            </div>
+               </DropzoneEmptyState>
+               <DropzoneContent />
+            </Dropzone>
 
             {/* Info cards */}
             <div className="grid grid-cols-2 gap-2">
@@ -604,13 +559,17 @@ function ColumnMappingStep({
       methods.navigation.next();
    }
 
+   const otherFields = (
+      Object.keys(FIELD_LABELS) as (keyof ColumnMapping)[]
+   ).filter((f) => !REQUIRED_FIELDS.includes(f));
+
    return (
       <>
          <CredenzaHeader>
             <CredenzaTitle>Mapear Colunas</CredenzaTitle>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <CredenzaDescription>
                Relacione as colunas do seu arquivo com os campos do sistema
-            </p>
+            </CredenzaDescription>
          </CredenzaHeader>
 
          <CredenzaBody className="flex flex-col gap-4">
@@ -656,57 +615,57 @@ function ColumnMappingStep({
             </div>
 
             {/* Column mapping */}
-            <div className="grid grid-cols-2 gap-2">
-               {(Object.keys(FIELD_LABELS) as (keyof ColumnMapping)[]).map(
-                  (field) => {
-                     const isRequired = REQUIRED_FIELDS.includes(field);
-                     const previewVal = getPreviewValue(field);
-                     const isMapped =
-                        mapping[field] && mapping[field] !== "__none__";
+            <div className="flex flex-col gap-4">
+               {/* Required fields row */}
+               <div className="grid gap-4 grid-cols-4">
+                  {REQUIRED_FIELDS.map((field) => (
+                     <div className="flex flex-col gap-2" key={field}>
+                        <label className="text-xs font-medium text-muted-foreground">
+                           {FIELD_LABELS[field]?.replace(" *", "")}
+                           <span className="text-destructive ml-0.5">*</span>
+                        </label>
+                        <Combobox
+                           className="w-full h-8 text-xs"
+                           emptyMessage="Nenhuma coluna"
+                           onValueChange={(v) =>
+                              onMappingChange({
+                                 ...mapping,
+                                 [field]: v === "__none__" ? "" : v,
+                              })
+                           }
+                           options={headerOptions}
+                           placeholder="Selecionar coluna..."
+                           searchPlaceholder="Buscar coluna..."
+                           value={mapping[field] || "__none__"}
+                        />
+                     </div>
+                  ))}
+               </div>
 
-                     return (
-                        <div
-                           className={[
-                              "grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-lg p-2",
-                              isMapped
-                                 ? "bg-primary/5 border border-primary/20"
-                                 : "bg-muted/30 border border-transparent",
-                           ].join(" ")}
-                           key={field}
-                        >
-                           <div className="min-w-0">
-                              <p className="text-xs font-medium truncate">
-                                 {FIELD_LABELS[field]}
-                              </p>
-                              {isMapped && (
-                                 <p className="text-xs text-muted-foreground truncate">
-                                    Ex: {previewVal}
-                                 </p>
-                              )}
-                           </div>
-
-                           <ChevronRight className="size-3 text-muted-foreground shrink-0" />
-
-                           <Combobox
-                              className="w-full h-8 text-xs"
-                              emptyMessage="Nenhuma coluna"
-                              onValueChange={(v) =>
-                                 onMappingChange({
-                                    ...mapping,
-                                    [field]: v === "__none__" ? "" : v,
-                                 })
-                              }
-                              options={headerOptions}
-                              placeholder={
-                                 isRequired ? "Obrigatório" : "Ignorar"
-                              }
-                              searchPlaceholder="Buscar coluna..."
-                              value={mapping[field] || "__none__"}
-                           />
-                        </div>
-                     );
-                  },
-               )}
+               {/* Optional fields — 3 per row */}
+               <div className="grid grid-cols-3 gap-4">
+                  {otherFields.map((field) => (
+                     <div className="flex flex-col gap-2" key={field}>
+                        <label className="text-xs font-medium text-muted-foreground">
+                           {FIELD_LABELS[field]?.replace(" *", "")}
+                        </label>
+                        <Combobox
+                           className="w-full h-8 text-xs"
+                           emptyMessage="Nenhuma coluna"
+                           onValueChange={(v) =>
+                              onMappingChange({
+                                 ...mapping,
+                                 [field]: v === "__none__" ? "" : v,
+                              })
+                           }
+                           options={headerOptions}
+                           placeholder="— Ignorar —"
+                           searchPlaceholder="Buscar coluna..."
+                           value={mapping[field] || "__none__"}
+                        />
+                     </div>
+                  ))}
+               </div>
             </div>
          </CredenzaBody>
 
@@ -911,9 +870,9 @@ function PreviewStep({
       <TooltipProvider>
          <CredenzaHeader>
             <CredenzaTitle>Prévia das Transações</CredenzaTitle>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <CredenzaDescription>
                {rows.length} transação(ões) encontrada(s) no arquivo
-            </p>
+            </CredenzaDescription>
          </CredenzaHeader>
 
          <CredenzaBody className="flex flex-col gap-2 w-full">
@@ -995,7 +954,7 @@ function PreviewStep({
             {/* Duplicate check controls */}
             <div className="flex items-center gap-2 flex-wrap">
                <Button
-                  className="h-8 text-xs gap-1.5"
+                  className="h-8 text-xs gap-2"
                   disabled={isCheckingDuplicates || rows.length === 0}
                   onClick={handleCheckDuplicates}
                   size="sm"
@@ -1011,14 +970,14 @@ function PreviewStep({
                </Button>
 
                {duplicateCheckDone && (
-                  <div className="flex items-center gap-1.5 ml-auto">
+                  <div className="flex items-center gap-2 ml-auto">
                      {duplicateCount > 0 ? (
                         <>
                            <Badge className="text-xs" variant="destructive">
                               {duplicateCount} duplicata(s)
                            </Badge>
                            {/* biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is a Radix button */}
-                           <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                           <label className="flex items-center gap-2 cursor-pointer select-none">
                               <Checkbox
                                  checked={ignoreDuplicates}
                                  className="size-3.5"
@@ -1258,9 +1217,11 @@ function ConfirmStep({
                tagIds: [] as string[],
                attachmentUrl: null as string | null,
                paymentMethod: row.forma_pagamento || null,
-               isInstallment: ["sim", "yes", "true", "1"].includes(
-                  row.parcelado.toLowerCase().trim(),
-               ),
+               isInstallment: row.parcelado
+                  ? ["sim", "yes", "true", "1"].includes(
+                       row.parcelado.toLowerCase().trim(),
+                    )
+                  : false,
                installmentCount: row.num_parcelas
                   ? Number.parseInt(row.num_parcelas, 10) || null
                   : null,
@@ -1277,12 +1238,12 @@ function ConfirmStep({
       <>
          <CredenzaHeader>
             <CredenzaTitle>Confirmar Importação</CredenzaTitle>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <CredenzaDescription>
                Revise o resumo antes de importar
-            </p>
+            </CredenzaDescription>
          </CredenzaHeader>
 
-         <CredenzaBody className="flex flex-col gap-3">
+         <CredenzaBody className="flex flex-col gap-4">
             <StepIndicator methods={methods} />
 
             {/* Summary card */}
@@ -1428,6 +1389,9 @@ function StepLoadingFallback({ title }: { title: string }) {
       <>
          <CredenzaHeader>
             <CredenzaTitle>{title}</CredenzaTitle>
+            <CredenzaDescription>
+               Aguarde enquanto processamos...
+            </CredenzaDescription>
          </CredenzaHeader>
          <CredenzaBody className="flex items-center justify-center py-12">
             <Loader2 className="size-6 animate-spin text-muted-foreground" />

@@ -541,7 +541,7 @@ export function TransactionFilterPopover({
    return (
       <Popover onOpenChange={handleOpenChange} open={open}>
          <PopoverTrigger asChild>
-            <Button className="h-8 gap-1.5" variant="outline">
+            <Button className="h-8 gap-2" variant="outline">
                <Filter className="size-3.5" />
                Filtros
                {activeCount > 0 && (
@@ -556,9 +556,9 @@ export function TransactionFilterPopover({
             {/* Header */}
             <div className="flex items-center justify-between px-3 py-2.5 border-b">
                <span className="text-sm font-medium">Filtros</span>
-               <div className="flex items-center gap-3">
+               <div className="flex items-center gap-2">
                   {/* AND/OR toggle */}
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                      <span>Combinar:</span>
                      <ToggleGroup
                         onValueChange={(v) => {
@@ -584,7 +584,7 @@ export function TransactionFilterPopover({
                      </ToggleGroup>
                   </div>
                   {/* Advanced toggle */}
-                  <div className="flex items-center gap-1.5 text-xs">
+                  <div className="flex items-center gap-2 text-xs">
                      <span className="text-muted-foreground">Avançado</span>
                      <Switch
                         checked={advanced}
@@ -597,7 +597,7 @@ export function TransactionFilterPopover({
             {/* Column labels */}
             {rows.length > 0 && (
                <div
-                  className={`grid gap-1.5 px-3 pt-2 pb-1 ${advanced ? "grid-cols-[160px_140px_1fr_80px_28px]" : "grid-cols-[160px_140px_1fr_28px]"}`}
+                  className={`grid gap-2 px-3 pt-2 pb-1 ${advanced ? "grid-cols-[160px_140px_1fr_80px_28px]" : "grid-cols-[160px_140px_1fr_28px]"}`}
                >
                   <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
                      Propriedade
@@ -618,9 +618,9 @@ export function TransactionFilterPopover({
             )}
 
             {/* Rows */}
-            <div className="flex flex-col gap-1.5 px-3 pt-1 pb-2.5 max-h-[320px] overflow-y-auto">
+            <div className="flex flex-col gap-2 px-3 pt-1 pb-2.5 max-h-[320px] overflow-y-auto">
                {rows.length === 0 ? (
-                  <div className="flex flex-col items-center gap-1.5 py-7 text-center">
+                  <div className="flex flex-col items-center gap-2 py-7 text-center">
                      <Filter className="size-6 text-muted-foreground/30" />
                      <p className="text-sm text-muted-foreground">
                         Nenhum filtro ativo
@@ -638,7 +638,7 @@ export function TransactionFilterPopover({
 
                      return (
                         <div
-                           className={`grid gap-1.5 items-center ${advanced ? "grid-cols-[160px_140px_1fr_80px_28px]" : "grid-cols-[160px_140px_1fr_28px]"}`}
+                           className={`grid gap-2 items-center ${advanced ? "grid-cols-[160px_140px_1fr_80px_28px]" : "grid-cols-[160px_140px_1fr_28px]"}`}
                            key={row.id}
                         >
                            {/* Property select */}
@@ -691,7 +691,7 @@ export function TransactionFilterPopover({
 
                            {/* Weight (advanced only) */}
                            {advanced && (
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-2">
                                  <Slider
                                     className="flex-1"
                                     max={100}
@@ -729,7 +729,7 @@ export function TransactionFilterPopover({
 
             {/* Advanced threshold */}
             {advanced && (
-               <div className="px-3 py-2 flex items-center gap-3 border-b">
+               <div className="px-3 py-2 flex items-center gap-2 border-b">
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
                      Correspondência mínima:
                   </span>
@@ -752,14 +752,14 @@ export function TransactionFilterPopover({
             {/* Footer */}
             <div className="flex items-center justify-between px-3 py-2">
                <Button
-                  className="h-7 text-xs gap-1 text-muted-foreground"
+                  className="h-7 text-xs gap-2 text-muted-foreground"
                   onClick={handleAddRow}
                   variant="ghost"
                >
                   <Plus className="size-3.5" />
                   Adicionar filtro
                </Button>
-               <div className="flex items-center gap-1.5">
+               <div className="flex items-center gap-2">
                   <Button
                      className="h-7 text-xs"
                      onClick={handleClear}
