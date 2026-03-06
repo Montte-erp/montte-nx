@@ -19,13 +19,12 @@ import {
 import sdkRouter from "./orpc/router";
 
 // Initialize OTel SDK for PostHog logs
-if (env.POSTHOG_KEY) {
-   initOtel({
-      serviceName: "montte-server",
-      posthogKey: env.POSTHOG_KEY,
-   });
-   startHealthHeartbeat({ serviceName: "montte-server" });
-}
+initOtel({
+   serviceName: "montte-server",
+   posthogKey: env.POSTHOG_KEY,
+   posthogHost: env.POSTHOG_HOST,
+});
+startHealthHeartbeat({ serviceName: "montte-server", posthog });
 
 const logger = pino({ name: "montte-server-rpc" });
 

@@ -63,12 +63,8 @@ export const env = createEnv({
          .enum(["trace", "debug", "info", "warn", "error", "fatal"])
          .optional()
          .default("info"),
-      LOGTAIL_ENDPOINT: z.url().optional(),
-      LOGTAIL_SOURCE_TOKEN: z.string().optional(),
-
       // Worker
       WORKER_CONCURRENCY: z.coerce.number().optional().default(5),
-      BETTER_STACK_HEARTBEAT_URL: z.url().optional(),
 
       // Discord (Optional - feedback notifications)
       DISCORD_FEEDBACK_WEBHOOK_URL: z.url().optional(),

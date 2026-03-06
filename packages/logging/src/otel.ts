@@ -4,12 +4,12 @@ import { BatchLogRecordProcessor } from "@opentelemetry/sdk-logs";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { ORPCInstrumentation } from "@orpc/otel";
 
-const POSTHOG_OTEL_LOGS_URL = "https://us.i.posthog.com/i/v1/logs";
-
 export interface OtelConfig {
 	serviceName: string;
 	/** PostHog project token (phc_...) */
 	posthogKey: string;
+	/** PostHog host (e.g. https://us.i.posthog.com or your reverse proxy) */
+	posthogHost: string;
 }
 
 let sdk: NodeSDK | null = null;
@@ -25,7 +25,7 @@ export function initOtel(config: OtelConfig): NodeSDK {
 		logRecordProcessors: [
 			new BatchLogRecordProcessor(
 				new OTLPLogExporter({
-					url: POSTHOG_OTEL_LOGS_URL,
+					url: `${config.posthogHost.replace(/\/$/, "")}/i/v1/logs`,
 					headers: {
 						Authorization: `Bearer ${config.posthogKey}`,
 					},

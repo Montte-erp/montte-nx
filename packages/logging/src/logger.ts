@@ -4,8 +4,7 @@ import type { Logger, LoggerConfig } from "./types";
 const isDevelopment = process.env.NODE_ENV !== "production";
 
 export function createLogger(config: LoggerConfig): Logger {
-   const { name, level = "info", logtailToken, logtailEndpoint, enableOtel } =
-      config;
+   const { name, level = "info", enableOtel } = config;
 
    // Build transport targets
    const targets: pino.TransportTargetOptions[] = [];
@@ -25,24 +24,6 @@ export function createLogger(config: LoggerConfig): Logger {
       targets.push({
          target: "pino/file",
          options: { destination: 1 }, // stdout
-         level,
-      });
-   }
-
-   // Logtail transport if token provided
-   if (logtailToken) {
-      const logtailOptions: Record<string, unknown> = {
-         sourceToken: logtailToken,
-      };
-
-      // Add custom endpoint for EU or other regions
-      if (logtailEndpoint) {
-         logtailOptions.options = { endpoint: logtailEndpoint };
-      }
-
-      targets.push({
-         target: "@logtail/pino",
-         options: logtailOptions,
          level,
       });
    }

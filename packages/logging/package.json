@@ -42,7 +42,6 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "@logtail/pino": "catalog:logging",
       "@opentelemetry/api-logs": "^0.213.0",
       "@opentelemetry/exporter-logs-otlp-http": "^0.213.0",
       "@opentelemetry/resources": "^2.6.0",
@@ -52,6 +51,7 @@
       "@orpc/otel": "catalog:orpc",
       "@orpc/server": "catalog:orpc",
       "pino": "catalog:logging",
+      "posthog-node": "catalog:analytics-client",
       "pino-opentelemetry-transport": "^3.0.0"
    },
    "devDependencies": {

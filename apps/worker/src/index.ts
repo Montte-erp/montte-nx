@@ -2,19 +2,20 @@ import { createDb } from "@packages/database/client";
 import { env } from "@packages/environment/worker";
 import { startHealthHeartbeat, stopHealthHeartbeat } from "@packages/logging/health";
 import { initOtel, shutdownOtel } from "@packages/logging/otel";
+import { getElysiaPosthogConfig, shutdownPosthog } from "@packages/posthog/server";
 import { createQueueConnection } from "@packages/queue/connection";
 import { createRedisConnection } from "@packages/redis/connection";
 import { startScheduler } from "./scheduler";
 import { startWebhookDeliveryWorker } from "./workers/webhook-delivery";
 
 // Initialize OTel SDK for PostHog logs
-if (env.POSTHOG_KEY) {
-	initOtel({
-		serviceName: "montte-worker",
-		posthogKey: env.POSTHOG_KEY,
-	});
-	startHealthHeartbeat({ serviceName: "montte-worker" });
-}
+initOtel({
+	serviceName: "montte-worker",
+	posthogKey: env.POSTHOG_KEY,
+	posthogHost: env.POSTHOG_HOST,
+});
+const posthog = getElysiaPosthogConfig(env);
+startHealthHeartbeat({ serviceName: "montte-worker", posthog });
 
 async function main(): Promise<void> {
 	console.log("[Worker] Starting Montte Worker...");
@@ -47,6 +48,7 @@ async function main(): Promise<void> {
 		await webhookWorker.close();
 		await redis.quit();
 		stopHealthHeartbeat();
+		await shutdownPosthog(posthog);
 		await shutdownOtel();
 
 		console.log("[Worker] Shutdown complete");

@@ -16,12 +16,9 @@ export const env = createEnv({
          .enum(["trace", "debug", "info", "warn", "error", "fatal"])
          .optional()
          .default("info"),
-      LOGTAIL_ENDPOINT: z.string().url().optional(),
-      LOGTAIL_SOURCE_TOKEN: z.string().optional(),
-      BETTER_STACK_HEARTBEAT_URL: z.string().url().optional(),
-
-      // PostHog (Optional - for OTel log shipping)
-      POSTHOG_KEY: z.string().optional(),
+      // PostHog
+      POSTHOG_HOST: z.string().url(),
+      POSTHOG_KEY: z.string(),
    },
 
    runtimeEnv: process.env,

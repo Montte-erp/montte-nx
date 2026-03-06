@@ -1,9 +1,11 @@
 import { logs } from "@opentelemetry/api-logs";
+import type { PostHog } from "posthog-node";
 
 const logger = logs.getLogger("health");
 
 export interface HealthConfig {
 	serviceName: string;
+	posthog: PostHog;
 	intervalMs?: number;
 }
 
@@ -11,32 +13,52 @@ let healthInterval: ReturnType<typeof setInterval> | null = null;
 let startTime: number | null = null;
 
 /**
- * Starts periodic health heartbeat OTel logs.
+ * Starts periodic health heartbeat via OTel logs + PostHog events.
  * Emits uptime, memory usage, and service metadata every interval.
  */
 export function startHealthHeartbeat(config: HealthConfig): void {
 	if (healthInterval) return;
 
-	const interval = config.intervalMs ?? 60_000; // Default: 1 minute
+	const interval = config.intervalMs ?? 60_000;
 	startTime = Date.now();
 
-	healthInterval = setInterval(() => {
+	const emit = () => {
 		const mem = process.memoryUsage();
 		const uptimeMs = Date.now() - (startTime ?? Date.now());
 
+		const properties = {
+			serviceName: config.serviceName,
+			uptimeMs,
+			heapUsedMb: Math.round(mem.heapUsed / 1024 / 1024),
+			heapTotalMb: Math.round(mem.heapTotal / 1024 / 1024),
+			rssMb: Math.round(mem.rss / 1024 / 1024),
+			externalMb: Math.round(mem.external / 1024 / 1024),
+		};
+
+		// OTel log
 		logger.emit({
 			severityText: "info",
 			body: `health heartbeat: ${config.serviceName}`,
 			attributes: {
 				"service.name": config.serviceName,
 				"health.uptimeMs": uptimeMs,
-				"health.heapUsedMb": Math.round(mem.heapUsed / 1024 / 1024),
-				"health.heapTotalMb": Math.round(mem.heapTotal / 1024 / 1024),
-				"health.rssMb": Math.round(mem.rss / 1024 / 1024),
-				"health.externalMb": Math.round(mem.external / 1024 / 1024),
+				"health.heapUsedMb": properties.heapUsedMb,
+				"health.heapTotalMb": properties.heapTotalMb,
+				"health.rssMb": properties.rssMb,
+				"health.externalMb": properties.externalMb,
 			},
 		});
-	}, interval);
+
+		// PostHog event
+		config.posthog.capture({
+			distinctId: `service:${config.serviceName}`,
+			event: "health_heartbeat",
+			properties,
+		});
+	};
+
+	emit();
+	healthInterval = setInterval(emit, interval);
 }
 
 export function stopHealthHeartbeat(): void {

@@ -1,12 +1,11 @@
+import { env } from "@packages/environment/server";
 import { startHealthHeartbeat } from "@packages/logging/health";
 import { initOtel } from "@packages/logging/otel";
+import { posthog } from "@/integrations/orpc/server-instances";
 
-const posthogKey = process.env.POSTHOG_KEY;
-
-if (posthogKey && typeof window === "undefined") {
-	initOtel({
-		serviceName: "montte-web",
-		posthogKey,
-	});
-	startHealthHeartbeat({ serviceName: "montte-web" });
-}
+initOtel({
+	serviceName: "montte-web",
+	posthogKey: env.POSTHOG_KEY,
+	posthogHost: env.POSTHOG_HOST,
+});
+startHealthHeartbeat({ serviceName: "montte-web", posthog });
