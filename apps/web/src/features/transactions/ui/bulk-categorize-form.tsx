@@ -30,10 +30,10 @@ export function BulkCategorizeForm({
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>Categorizar transações</CredenzaTitle>
+            <CredenzaTitle>Categorizar lançamentos</CredenzaTitle>
             <CredenzaDescription>
                Aplicar categoria a {selectedCount}{" "}
-               {selectedCount === 1 ? "transação" : "transações"}
+               {selectedCount === 1 ? "lançamento" : "lançamentos"}
             </CredenzaDescription>
          </CredenzaHeader>
          <CredenzaBody>

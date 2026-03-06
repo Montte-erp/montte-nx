@@ -45,12 +45,21 @@ type PaymentMethod =
    | "boleto"
    | "cash"
    | "transfer"
-   | "other";
+   | "other"
+   | "cheque"
+   | "automatic_debit";
 
 const amountSchema = z
    .string()
    .refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0, {
       message: "Valor deve ser maior que zero.",
+   });
+
+const requiredStringSchema = z.string().min(1, "Campo obrigatório.");
+const requiredDateSchema = z
+   .any()
+   .refine((v) => v instanceof Date && !Number.isNaN(v.getTime()), {
+      message: "Campo obrigatório.",
    });
 
 interface TransactionCredenzaProps {
@@ -167,11 +176,11 @@ function TransactionFormContent({
    const createMutation = useMutation(
       orpc.transactions.create.mutationOptions({
          onSuccess: () => {
-            toast.success("Transação criada com sucesso.");
+            toast.success("Lançamento criado com sucesso.");
             onSuccess();
          },
          onError: (error) => {
-            toast.error(error.message || "Erro ao criar transação.");
+            toast.error(error.message || "Erro ao criar lançamento.");
          },
       }),
    );
@@ -179,11 +188,11 @@ function TransactionFormContent({
    const updateMutation = useMutation(
       orpc.transactions.update.mutationOptions({
          onSuccess: () => {
-            toast.success("Transação atualizada com sucesso.");
+            toast.success("Lançamento atualizado com sucesso.");
             onSuccess();
          },
          onError: (error) => {
-            toast.error(error.message || "Erro ao atualizar transação.");
+            toast.error(error.message || "Erro ao atualizar lançamento.");
          },
       }),
    );
@@ -291,12 +300,12 @@ function TransactionFormContent({
       <>
          <CredenzaHeader>
             <CredenzaTitle>
-               {isCreate ? "Nova Transação" : "Editar Transação"}
+               {isCreate ? "Novo Lançamento" : "Editar Lançamento"}
             </CredenzaTitle>
             <CredenzaDescription>
                {isCreate
-                  ? "Registre uma nova transação financeira."
-                  : "Atualize os dados da transação."}
+                  ? "Registre um novo lançamento financeiro."
+                  : "Atualize os dados do lançamento."}
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -332,7 +341,10 @@ function TransactionFormContent({
                      <form.Field name="type">
                         {(field) => (
                            <Field>
-                              <FieldLabel>Tipo</FieldLabel>
+                              <FieldLabel>
+                                 Tipo{" "}
+                                 <span className="text-destructive">*</span>
+                              </FieldLabel>
                               <Select
                                  onValueChange={(v) => {
                                     field.handleChange(v as TransactionType);
@@ -349,6 +361,7 @@ function TransactionFormContent({
                                           null,
                                        );
                                        form.setFieldValue("creditCardId", "");
+                                       form.setFieldValue("contactId", null);
                                     }
                                  }}
                                  value={field.state.value}
@@ -394,27 +407,11 @@ function TransactionFormContent({
                                  <>
                                     {/* Transfer: Row 2 — Data + Valor (2 cols) */}
                                     <div className="grid grid-cols-2 gap-4">
-                                       <form.Field name="date">
-                                          {(field) => (
-                                             <Field>
-                                                <FieldLabel>Data</FieldLabel>
-                                                <DatePicker
-                                                   className="w-full"
-                                                   date={field.state.value}
-                                                   onSelect={(d) =>
-                                                      field.handleChange(
-                                                         d as Date,
-                                                      )
-                                                   }
-                                                   placeholder="Selecione"
-                                                />
-                                             </Field>
-                                          )}
-                                       </form.Field>
-
                                        <form.Field
-                                          name="amount"
-                                          validators={{ onBlur: amountSchema }}
+                                          name="date"
+                                          validators={{
+                                             onSubmit: requiredDateSchema,
+                                          }}
                                        >
                                           {(field) => {
                                              const isInvalid =
@@ -423,7 +420,52 @@ function TransactionFormContent({
                                              return (
                                                 <Field data-invalid={isInvalid}>
                                                    <FieldLabel>
-                                                      Valor
+                                                      Data{" "}
+                                                      <span className="text-destructive">
+                                                         *
+                                                      </span>
+                                                   </FieldLabel>
+                                                   <DatePicker
+                                                      className="w-full"
+                                                      date={field.state.value}
+                                                      onSelect={(d) =>
+                                                         field.handleChange(
+                                                            d as Date,
+                                                         )
+                                                      }
+                                                      placeholder="Selecione"
+                                                   />
+                                                   {isInvalid && (
+                                                      <FieldError
+                                                         errors={
+                                                            field.state.meta
+                                                               .errors
+                                                         }
+                                                      />
+                                                   )}
+                                                </Field>
+                                             );
+                                          }}
+                                       </form.Field>
+
+                                       <form.Field
+                                          name="amount"
+                                          validators={{
+                                             onBlur: amountSchema,
+                                             onSubmit: amountSchema,
+                                          }}
+                                       >
+                                          {(field) => {
+                                             const isInvalid =
+                                                field.state.meta.isTouched &&
+                                                !field.state.meta.isValid;
+                                             return (
+                                                <Field data-invalid={isInvalid}>
+                                                   <FieldLabel>
+                                                      Valor{" "}
+                                                      <span className="text-destructive">
+                                                         *
+                                                      </span>
                                                    </FieldLabel>
                                                    <MoneyInput
                                                       disabled={isPending}
@@ -451,115 +493,11 @@ function TransactionFormContent({
 
                                     {/* Transfer: Row 3 — Origem + Destino (2 cols) */}
                                     <div className="grid grid-cols-2 gap-4">
-                                       <form.Field name="bankAccountId">
-                                          {(field) => (
-                                             <Field>
-                                                <FieldLabel>
-                                                   Conta de Origem
-                                                </FieldLabel>
-                                                <Select
-                                                   onValueChange={(v) => {
-                                                      field.handleChange(v);
-                                                      if (
-                                                         v ===
-                                                         form.getFieldValue(
-                                                            "destinationBankAccountId",
-                                                         )
-                                                      ) {
-                                                         form.setFieldValue(
-                                                            "destinationBankAccountId",
-                                                            "",
-                                                         );
-                                                      }
-                                                   }}
-                                                   value={field.state.value}
-                                                >
-                                                   <SelectTrigger>
-                                                      <SelectValue placeholder="Selecione" />
-                                                   </SelectTrigger>
-                                                   <SelectContent>
-                                                      {bankAccounts.map(
-                                                         (account) => (
-                                                            <SelectItem
-                                                               key={account.id}
-                                                               value={
-                                                                  account.id
-                                                               }
-                                                            >
-                                                               {account.name}
-                                                            </SelectItem>
-                                                         ),
-                                                      )}
-                                                   </SelectContent>
-                                                </Select>
-                                             </Field>
-                                          )}
-                                       </form.Field>
-
-                                       <form.Field name="destinationBankAccountId">
-                                          {(field) => (
-                                             <Field>
-                                                <FieldLabel>
-                                                   Conta de Destino
-                                                </FieldLabel>
-                                                <Select
-                                                   onValueChange={
-                                                      field.handleChange
-                                                   }
-                                                   value={field.state.value}
-                                                >
-                                                   <SelectTrigger>
-                                                      <SelectValue placeholder="Selecione" />
-                                                   </SelectTrigger>
-                                                   <SelectContent>
-                                                      {bankAccounts
-                                                         .filter(
-                                                            (a) =>
-                                                               a.id !==
-                                                               bankAccountId,
-                                                         )
-                                                         .map((account) => (
-                                                            <SelectItem
-                                                               key={account.id}
-                                                               value={
-                                                                  account.id
-                                                               }
-                                                            >
-                                                               {account.name}
-                                                            </SelectItem>
-                                                         ))}
-                                                   </SelectContent>
-                                                </Select>
-                                             </Field>
-                                          )}
-                                       </form.Field>
-                                    </div>
-                                 </>
-                              ) : (
-                                 <>
-                                    {/* Non-transfer: Row 2 — Data + Valor + Conta (3 cols) */}
-                                    <div className="grid grid-cols-3 gap-4">
-                                       <form.Field name="date">
-                                          {(field) => (
-                                             <Field>
-                                                <FieldLabel>Data</FieldLabel>
-                                                <DatePicker
-                                                   className="w-full"
-                                                   date={field.state.value}
-                                                   onSelect={(d) =>
-                                                      field.handleChange(
-                                                         d as Date,
-                                                      )
-                                                   }
-                                                   placeholder="Selecione"
-                                                />
-                                             </Field>
-                                          )}
-                                       </form.Field>
-
                                        <form.Field
-                                          name="amount"
-                                          validators={{ onBlur: amountSchema }}
+                                          name="bankAccountId"
+                                          validators={{
+                                             onSubmit: requiredStringSchema,
+                                          }}
                                        >
                                           {(field) => {
                                              const isInvalid =
@@ -568,7 +506,186 @@ function TransactionFormContent({
                                              return (
                                                 <Field data-invalid={isInvalid}>
                                                    <FieldLabel>
-                                                      Valor
+                                                      Conta de Origem{" "}
+                                                      <span className="text-destructive">
+                                                         *
+                                                      </span>
+                                                   </FieldLabel>
+                                                   <Select
+                                                      onValueChange={(v) => {
+                                                         field.handleChange(v);
+                                                         if (
+                                                            v ===
+                                                            form.getFieldValue(
+                                                               "destinationBankAccountId",
+                                                            )
+                                                         ) {
+                                                            form.setFieldValue(
+                                                               "destinationBankAccountId",
+                                                               "",
+                                                            );
+                                                         }
+                                                      }}
+                                                      value={field.state.value}
+                                                   >
+                                                      <SelectTrigger>
+                                                         <SelectValue placeholder="Selecione" />
+                                                      </SelectTrigger>
+                                                      <SelectContent>
+                                                         {bankAccounts.map(
+                                                            (account) => (
+                                                               <SelectItem
+                                                                  key={
+                                                                     account.id
+                                                                  }
+                                                                  value={
+                                                                     account.id
+                                                                  }
+                                                               >
+                                                                  {account.name}
+                                                               </SelectItem>
+                                                            ),
+                                                         )}
+                                                      </SelectContent>
+                                                   </Select>
+                                                   {isInvalid && (
+                                                      <FieldError
+                                                         errors={
+                                                            field.state.meta
+                                                               .errors
+                                                         }
+                                                      />
+                                                   )}
+                                                </Field>
+                                             );
+                                          }}
+                                       </form.Field>
+
+                                       <form.Field
+                                          name="destinationBankAccountId"
+                                          validators={{
+                                             onSubmit: requiredStringSchema,
+                                          }}
+                                       >
+                                          {(field) => {
+                                             const isInvalid =
+                                                field.state.meta.isTouched &&
+                                                !field.state.meta.isValid;
+                                             return (
+                                                <Field data-invalid={isInvalid}>
+                                                   <FieldLabel>
+                                                      Conta de Destino{" "}
+                                                      <span className="text-destructive">
+                                                         *
+                                                      </span>
+                                                   </FieldLabel>
+                                                   <Select
+                                                      onValueChange={
+                                                         field.handleChange
+                                                      }
+                                                      value={field.state.value}
+                                                   >
+                                                      <SelectTrigger>
+                                                         <SelectValue placeholder="Selecione" />
+                                                      </SelectTrigger>
+                                                      <SelectContent>
+                                                         {bankAccounts
+                                                            .filter(
+                                                               (a) =>
+                                                                  a.id !==
+                                                                  bankAccountId,
+                                                            )
+                                                            .map((account) => (
+                                                               <SelectItem
+                                                                  key={
+                                                                     account.id
+                                                                  }
+                                                                  value={
+                                                                     account.id
+                                                                  }
+                                                               >
+                                                                  {account.name}
+                                                               </SelectItem>
+                                                            ))}
+                                                      </SelectContent>
+                                                   </Select>
+                                                   {isInvalid && (
+                                                      <FieldError
+                                                         errors={
+                                                            field.state.meta
+                                                               .errors
+                                                         }
+                                                      />
+                                                   )}
+                                                </Field>
+                                             );
+                                          }}
+                                       </form.Field>
+                                    </div>
+                                 </>
+                              ) : (
+                                 <>
+                                    {/* Non-transfer: Row 2 — Data + Valor + Conta (3 cols) */}
+                                    <div className="grid grid-cols-3 gap-4">
+                                       <form.Field
+                                          name="date"
+                                          validators={{
+                                             onSubmit: requiredDateSchema,
+                                          }}
+                                       >
+                                          {(field) => {
+                                             const isInvalid =
+                                                field.state.meta.isTouched &&
+                                                !field.state.meta.isValid;
+                                             return (
+                                                <Field data-invalid={isInvalid}>
+                                                   <FieldLabel>
+                                                      Data{" "}
+                                                      <span className="text-destructive">
+                                                         *
+                                                      </span>
+                                                   </FieldLabel>
+                                                   <DatePicker
+                                                      className="w-full"
+                                                      date={field.state.value}
+                                                      onSelect={(d) =>
+                                                         field.handleChange(
+                                                            d as Date,
+                                                         )
+                                                      }
+                                                      placeholder="Selecione"
+                                                   />
+                                                   {isInvalid && (
+                                                      <FieldError
+                                                         errors={
+                                                            field.state.meta
+                                                               .errors
+                                                         }
+                                                      />
+                                                   )}
+                                                </Field>
+                                             );
+                                          }}
+                                       </form.Field>
+
+                                       <form.Field
+                                          name="amount"
+                                          validators={{
+                                             onBlur: amountSchema,
+                                             onSubmit: amountSchema,
+                                          }}
+                                       >
+                                          {(field) => {
+                                             const isInvalid =
+                                                field.state.meta.isTouched &&
+                                                !field.state.meta.isValid;
+                                             return (
+                                                <Field data-invalid={isInvalid}>
+                                                   <FieldLabel>
+                                                      Valor{" "}
+                                                      <span className="text-destructive">
+                                                         *
+                                                      </span>
                                                    </FieldLabel>
                                                    <MoneyInput
                                                       disabled={isPending}
@@ -593,36 +710,61 @@ function TransactionFormContent({
                                           }}
                                        </form.Field>
 
-                                       <form.Field name="bankAccountId">
-                                          {(field) => (
-                                             <Field>
-                                                <FieldLabel>Conta</FieldLabel>
-                                                <Select
-                                                   onValueChange={
-                                                      field.handleChange
-                                                   }
-                                                   value={field.state.value}
-                                                >
-                                                   <SelectTrigger>
-                                                      <SelectValue placeholder="Selecione" />
-                                                   </SelectTrigger>
-                                                   <SelectContent>
-                                                      {bankAccounts.map(
-                                                         (account) => (
-                                                            <SelectItem
-                                                               key={account.id}
-                                                               value={
-                                                                  account.id
-                                                               }
-                                                            >
-                                                               {account.name}
-                                                            </SelectItem>
-                                                         ),
-                                                      )}
-                                                   </SelectContent>
-                                                </Select>
-                                             </Field>
-                                          )}
+                                       <form.Field
+                                          name="bankAccountId"
+                                          validators={{
+                                             onSubmit: requiredStringSchema,
+                                          }}
+                                       >
+                                          {(field) => {
+                                             const isInvalid =
+                                                field.state.meta.isTouched &&
+                                                !field.state.meta.isValid;
+                                             return (
+                                                <Field data-invalid={isInvalid}>
+                                                   <FieldLabel>
+                                                      Conta{" "}
+                                                      <span className="text-destructive">
+                                                         *
+                                                      </span>
+                                                   </FieldLabel>
+                                                   <Select
+                                                      onValueChange={
+                                                         field.handleChange
+                                                      }
+                                                      value={field.state.value}
+                                                   >
+                                                      <SelectTrigger>
+                                                         <SelectValue placeholder="Selecione" />
+                                                      </SelectTrigger>
+                                                      <SelectContent>
+                                                         {bankAccounts.map(
+                                                            (account) => (
+                                                               <SelectItem
+                                                                  key={
+                                                                     account.id
+                                                                  }
+                                                                  value={
+                                                                     account.id
+                                                                  }
+                                                               >
+                                                                  {account.name}
+                                                               </SelectItem>
+                                                            ),
+                                                         )}
+                                                      </SelectContent>
+                                                   </Select>
+                                                   {isInvalid && (
+                                                      <FieldError
+                                                         errors={
+                                                            field.state.meta
+                                                               .errors
+                                                         }
+                                                      />
+                                                   )}
+                                                </Field>
+                                             );
+                                          }}
                                        </form.Field>
                                     </div>
                                  </>
@@ -745,10 +887,7 @@ function TransactionFormContent({
                                                       Pix
                                                    </SelectItem>
                                                    <SelectItem value="credit_card">
-                                                      Cartão de Crédito
-                                                   </SelectItem>
-                                                   <SelectItem value="debit_card">
-                                                      Cartão de Débito
+                                                      Cartão
                                                    </SelectItem>
                                                    <SelectItem value="boleto">
                                                       Boleto
@@ -759,8 +898,11 @@ function TransactionFormContent({
                                                    <SelectItem value="transfer">
                                                       Transferência
                                                    </SelectItem>
-                                                   <SelectItem value="other">
-                                                      Outro
+                                                   <SelectItem value="cheque">
+                                                      Cheque
+                                                   </SelectItem>
+                                                   <SelectItem value="automatic_debit">
+                                                      Débito Automático
                                                    </SelectItem>
                                                 </SelectContent>
                                              </Select>
@@ -853,21 +995,31 @@ function TransactionFormContent({
                      )}
                   </form.Field>
 
-                  <form.Field name="contactId">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>Contato</FieldLabel>
-                           <Suspense
-                              fallback={<Skeleton className="h-9 w-full" />}
-                           >
-                              <ContactCombobox
-                                 onChange={field.handleChange}
-                                 value={field.state.value}
-                              />
-                           </Suspense>
-                        </Field>
-                     )}
-                  </form.Field>
+                  <form.Subscribe
+                     selector={(s) => s.values.type}
+                  >
+                     {(type) =>
+                        type !== "transfer" ? (
+                           <form.Field name="contactId">
+                              {(field) => (
+                                 <Field>
+                                    <FieldLabel>Contato</FieldLabel>
+                                    <Suspense
+                                       fallback={
+                                          <Skeleton className="h-9 w-full" />
+                                       }
+                                    >
+                                       <ContactCombobox
+                                          onChange={field.handleChange}
+                                          value={field.state.value}
+                                       />
+                                    </Suspense>
+                                 </Field>
+                              )}
+                           </form.Field>
+                        ) : null
+                     }
+                  </form.Subscribe>
 
                   <form.Field name="description">
                      {(field) => (
@@ -878,7 +1030,7 @@ function TransactionFormContent({
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
                               }
-                              placeholder="Observações sobre a transação (opcional)"
+                              placeholder="Observações sobre o lançamento (opcional)"
                               rows={3}
                               value={field.state.value}
                            />
@@ -899,7 +1051,7 @@ function TransactionFormContent({
                               <>
                                  {isFuture && (
                                     <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 text-sm text-amber-700 dark:text-amber-300">
-                                       Esta transação é no futuro. Considere
+                                       Este lançamento é no futuro. Considere
                                        registrá-la como conta a pagar.
                                     </div>
                                  )}
@@ -955,7 +1107,7 @@ function TransactionFormContent({
                            {createAsBill
                               ? "Criar conta a pagar"
                               : isCreate
-                                ? "Criar transação"
+                                ? "Criar lançamento"
                                 : "Salvar alterações"}
                         </Button>
                      );
@@ -978,7 +1130,7 @@ export function TransactionCredenza({
             <>
                <CredenzaHeader>
                   <CredenzaTitle>
-                     {mode === "create" ? "Nova Transação" : "Editar Transação"}
+                     {mode === "create" ? "Novo Lançamento" : "Editar Lançamento"}
                   </CredenzaTitle>
                </CredenzaHeader>
                <CredenzaBody className="flex items-center justify-center py-8">

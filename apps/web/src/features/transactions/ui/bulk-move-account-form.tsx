@@ -34,10 +34,10 @@ export function BulkMoveAccountForm({
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>Transferir transações</CredenzaTitle>
+            <CredenzaTitle>Transferir lançamentos</CredenzaTitle>
             <CredenzaDescription>
                Converter {selectedCount}{" "}
-               {selectedCount === 1 ? "transação" : "transações"} em
+               {selectedCount === 1 ? "lançamento" : "lançamentos"} em
                transferências entre contas
             </CredenzaDescription>
          </CredenzaHeader>

@@ -270,7 +270,7 @@ function ExportForm({ dateFrom, dateTo }: TransactionExportCredenzaProps) {
                toast.success("Exportação OFX concluída.");
             }
          } catch {
-            toast.error("Erro ao exportar transações.");
+            toast.error("Erro ao exportar lançamentos.");
          }
       });
    }
@@ -278,7 +278,7 @@ function ExportForm({ dateFrom, dateTo }: TransactionExportCredenzaProps) {
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>Exportar Transações</CredenzaTitle>
+            <CredenzaTitle>Exportar Lançamentos</CredenzaTitle>
             <CredenzaDescription>
                Selecione o formato e o período para exportar.
             </CredenzaDescription>
@@ -415,7 +415,7 @@ export function TransactionExportCredenza({
          fallback={
             <>
                <CredenzaHeader>
-                  <CredenzaTitle>Exportar Transações</CredenzaTitle>
+                  <CredenzaTitle>Exportar Lançamentos</CredenzaTitle>
                   <CredenzaDescription>
                      Selecione o formato e o período para exportar.
                   </CredenzaDescription>

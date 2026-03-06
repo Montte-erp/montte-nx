@@ -28,6 +28,8 @@ export const paymentMethodEnum = pgEnum("payment_method", [
    "cash",
    "transfer",
    "other",
+   "cheque",
+   "automatic_debit",
 ]);
 
 export const transactionTypeEnum = pgEnum("transaction_type", [

@@ -423,9 +423,9 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>Importar Transações</CredenzaTitle>
+            <CredenzaTitle>Importar Lançamentos</CredenzaTitle>
             <CredenzaDescription>
-               Importe suas transações via arquivo CSV ou OFX
+               Importe seus lançamentos via arquivo CSV ou OFX
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -869,9 +869,9 @@ function PreviewStep({
    return (
       <TooltipProvider>
          <CredenzaHeader>
-            <CredenzaTitle>Prévia das Transações</CredenzaTitle>
+            <CredenzaTitle>Prévia dos Lançamentos</CredenzaTitle>
             <CredenzaDescription>
-               {rows.length} transação(ões) encontrada(s) no arquivo
+               {rows.length} lançamento(s) encontrada(s) no arquivo
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -1010,7 +1010,7 @@ function PreviewStep({
                         </button>
                      </TooltipTrigger>
                      <TooltipContent className="max-w-52 text-xs" side="left">
-                        Verifica se as transações importadas já existem no
+                        Verifica se os lançamentos importados já existem no
                         sistema com base em valor (45%), data (35%) e conta
                         (20%).
                      </TooltipContent>
@@ -1083,7 +1083,7 @@ function PreviewStep({
                               className="py-6 text-center text-xs text-muted-foreground"
                               colSpan={5}
                            >
-                              Nenhuma transação para importar
+                              Nenhum lançamento para importar
                            </TableCell>
                         </TableRow>
                      )}
@@ -1095,7 +1095,7 @@ function PreviewStep({
                <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5">
                   <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600" />
                   <p className="text-xs text-amber-700">
-                     {duplicateCount} transação(ões) marcada(s) como duplicata
+                     {duplicateCount} lançamento(s) marcada(s) como duplicata
                      serão ignoradas.
                   </p>
                </div>
@@ -1172,12 +1172,12 @@ function ConfirmStep({
       orpc.transactions.importBulk.mutationOptions({
          onSuccess: (data) => {
             toast.success(
-               `${data.imported} transação(ões) importada(s) com sucesso.`,
+               `${data.imported} lançamento(s) importada(s) com sucesso.`,
             );
             onSuccess();
          },
          onError: (error) => {
-            toast.error(error.message || "Erro ao importar transações.");
+            toast.error(error.message || "Erro ao importar lançamentos.");
          },
       }),
    );
@@ -1333,7 +1333,7 @@ function ConfirmStep({
                         Ignorar duplicados no servidor
                      </p>
                      <p className="text-xs text-muted-foreground">
-                        Transações exatamente iguais já existentes serão
+                        Lançamentos exatamente iguais já existentes serão
                         ignoradas automaticamente.
                      </p>
                   </div>
@@ -1344,7 +1344,7 @@ function ConfirmStep({
                <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
                   <AlertTriangle className="size-4 shrink-0 text-amber-600" />
                   <p className="text-xs text-amber-700">
-                     Não há transações para importar após aplicar os filtros.
+                     Não há lançamentos para importar após aplicar os filtros.
                   </p>
                </div>
             )}
@@ -1373,7 +1373,7 @@ function ConfirmStep({
                {isLoading ? (
                   <Loader2 className="mr-2 size-4 animate-spin" />
                ) : null}
-               Importar {visibleRows.length} transação(ões)
+               Importar {visibleRows.length} lançamento(s)
             </Button>
          </CredenzaFooter>
       </>
@@ -1486,7 +1486,7 @@ function ImportWizard({ methods }: { methods: ImportStepperMethods }) {
 
          {currentId === "preview" && (
             <Suspense
-               fallback={<StepLoadingFallback title="Prévia das Transações" />}
+               fallback={<StepLoadingFallback title="Prévia dos Lançamentos" />}
             >
                <PreviewStep
                   defaults={defaults}

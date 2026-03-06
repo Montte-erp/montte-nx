@@ -20,7 +20,7 @@ export function TransactionPrerequisitesBlocker({
          <CredenzaHeader>
             <CredenzaTitle>Conta bancária necessária</CredenzaTitle>
             <CredenzaDescription>
-               Para criar uma transação, você precisa ter pelo menos uma conta
+               Para criar um lançamento, você precisa ter pelo menos uma conta
                bancária cadastrada.
             </CredenzaDescription>
          </CredenzaHeader>
@@ -31,7 +31,7 @@ export function TransactionPrerequisitesBlocker({
                </div>
                <p className="text-sm text-muted-foreground max-w-xs">
                   Cadastre uma conta bancária primeiro. Você poderá criar
-                  transações logo após.
+                  lançamentos logo após.
                </p>
             </div>
          </CredenzaBody>

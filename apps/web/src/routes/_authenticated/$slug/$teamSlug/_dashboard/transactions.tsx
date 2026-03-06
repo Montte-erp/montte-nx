@@ -136,12 +136,12 @@ function TransactionsPage() {
             actions={
                <Button onClick={handleCreate}>
                   <Plus className="size-4" />
-                  <span className="sr-only sm:not-sr-only">Nova Transação</span>
+                  <span className="sr-only sm:not-sr-only">Novo Lançamento</span>
                </Button>
             }
             description="Gerencie suas receitas, despesas e transferências"
             panelActions={panelActions}
-            title="Transações"
+            title="Lançamentos"
             viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <TransactionFilterBar filters={filters} onFiltersChange={setFilters} />

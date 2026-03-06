@@ -119,10 +119,10 @@ export function TransactionsList({
    const deleteMutation = useMutation(
       orpc.transactions.remove.mutationOptions({
          onSuccess: () => {
-            toast.success("Transação excluída com sucesso.");
+            toast.success("Lançamento excluído com sucesso.");
          },
          onError: (error) => {
-            toast.error(error.message || "Erro ao excluir transação.");
+            toast.error(error.message || "Erro ao excluir lançamento.");
          },
       }),
    );
@@ -130,7 +130,7 @@ export function TransactionsList({
    const updateMutation = useMutation(
       orpc.transactions.update.mutationOptions({
          onError: (error) => {
-            toast.error(error.message || "Erro ao atualizar transações.");
+            toast.error(error.message || "Erro ao atualizar lançamentos.");
          },
       }),
    );
@@ -157,9 +157,9 @@ export function TransactionsList({
    const handleDelete = useCallback(
       (transaction: TransactionRow) => {
          openAlertDialog({
-            title: "Excluir transação",
+            title: "Excluir lançamento",
             description:
-               "Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.",
+               "Tem certeza que deseja excluir este lançamento? Esta ação não pode ser desfeita.",
             actionLabel: "Excluir",
             cancelLabel: "Cancelar",
             variant: "destructive",
@@ -215,9 +215,9 @@ export function TransactionsList({
 
    const handleBulkDelete = useCallback(() => {
       openAlertDialog({
-         title: `Excluir ${selectedCount} ${selectedCount === 1 ? "transação" : "transações"}`,
+         title: `Excluir ${selectedCount} ${selectedCount === 1 ? "lançamento" : "lançamentos"}`,
          description:
-            "Tem certeza que deseja excluir as transações selecionadas? Esta ação não pode ser desfeita.",
+            "Tem certeza que deseja excluir os lançamentos selecionados? Esta ação não pode ser desfeita.",
          actionLabel: "Excluir",
          cancelLabel: "Cancelar",
          variant: "destructive",
@@ -243,7 +243,7 @@ export function TransactionsList({
                   onClear();
                   closeCredenza();
                   toast.success(
-                     `${selectedCount} ${selectedCount === 1 ? "transação categorizada" : "transações categorizadas"}.`,
+                     `${selectedCount} ${selectedCount === 1 ? "lançamento categorizado" : "lançamentos categorizados"}.`,
                   );
                }}
                onCancel={closeCredenza}
@@ -279,7 +279,7 @@ export function TransactionsList({
                   onClear();
                   closeCredenza();
                   toast.success(
-                     `${selectedCount} ${selectedCount === 1 ? "transação convertida" : "transações convertidas"} em transferências.`,
+                     `${selectedCount} ${selectedCount === 1 ? "lançamento convertido" : "lançamentos convertidos"} em transferências.`,
                   );
                }}
                onCancel={closeCredenza}
@@ -308,14 +308,14 @@ export function TransactionsList({
                   <EmptyMedia variant="icon">
                      <ArrowLeftRight className="size-6" />
                   </EmptyMedia>
-                  <EmptyTitle>Nenhuma transação</EmptyTitle>
+                  <EmptyTitle>Nenhum lançamento</EmptyTitle>
                   <EmptyDescription>
                      {filters.search ||
                      filters.type ||
                      filters.dateFrom ||
                      (filters.conditionGroup?.conditions.length ?? 0) > 0
-                        ? "Nenhuma transação encontrada para os filtros aplicados."
-                        : "Registre uma nova transação para começar a controlar suas finanças."}
+                        ? "Nenhum lançamento encontrado para os filtros aplicados."
+                        : "Registre um novo lançamento para começar a controlar suas finanças."}
                   </EmptyDescription>
                </EmptyHeader>
             </Empty>
@@ -376,13 +376,13 @@ export function TransactionsList({
                                  onClick={() => handleInstallment(tx)}
                               >
                                  <CalendarDays className="size-4" />
-                                 Parcelar Transação
+                                 Parcelar Lançamento
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                  onClick={() => handleRecurring(tx)}
                               >
                                  <Repeat className="size-4" />
-                                 Criar Transação Recorrente
+                                 Criar Lançamento Recorrente
                               </DropdownMenuItem>
                            </DropdownMenuContent>
                         </DropdownMenu>

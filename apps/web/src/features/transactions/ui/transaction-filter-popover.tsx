@@ -311,12 +311,12 @@ function CardValueSelect({
 
 const PAYMENT_METHOD_OPTIONS = [
    { value: "pix", label: "Pix" },
-   { value: "credit_card", label: "Cartão de Crédito" },
-   { value: "debit_card", label: "Cartão de Débito" },
+   { value: "credit_card", label: "Cartão" },
    { value: "boleto", label: "Boleto" },
    { value: "cash", label: "Dinheiro" },
    { value: "transfer", label: "Transferência" },
-   { value: "other", label: "Outro" },
+   { value: "cheque", label: "Cheque" },
+   { value: "automatic_debit", label: "Débito Automático" },
 ];
 
 function PaymentMethodValueSelect({
@@ -626,7 +626,7 @@ export function TransactionFilterPopover({
                         Nenhum filtro ativo
                      </p>
                      <p className="text-xs text-muted-foreground/60">
-                        Adicione filtros para refinar as transações exibidas
+                        Adicione filtros para refinar os lançamentos exibidos
                      </p>
                   </div>
                ) : (
