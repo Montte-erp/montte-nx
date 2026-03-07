@@ -93,6 +93,7 @@ async function verifyTransactionRefs(
       subcategoryId?: string | null;
       tagIds?: string[];
       contactId?: string | null;
+      date?: Date | string | null;
    },
 ) {
    if (input.bankAccountId) {
@@ -102,6 +103,15 @@ async function verifyTransactionRefs(
             message: "Conta bancária inválida.",
          });
       }
+      if (account.initialBalanceDate && input.date) {
+         const txDate = new Date(input.date);
+         const balanceDate = new Date(account.initialBalanceDate);
+         if (txDate < balanceDate) {
+            throw new ORPCError("BAD_REQUEST", {
+               message: `Não é possível registrar lançamentos antes da data do saldo inicial (${balanceDate.toLocaleDateString("pt-BR")}).`,
+            });
+         }
+      }
    }
 
    if (input.destinationBankAccountId) {
@@ -110,6 +120,15 @@ async function verifyTransactionRefs(
          throw new ORPCError("BAD_REQUEST", {
             message: "Conta de destino inválida.",
          });
+      }
+      if (dest.initialBalanceDate && input.date) {
+         const txDate = new Date(input.date);
+         const balanceDate = new Date(dest.initialBalanceDate);
+         if (txDate < balanceDate) {
+            throw new ORPCError("BAD_REQUEST", {
+               message: `Não é possível registrar lançamentos antes da data do saldo inicial da conta de destino (${balanceDate.toLocaleDateString("pt-BR")}).`,
+            });
+         }
       }
    }
 
@@ -180,6 +199,7 @@ export const create = protectedProcedure
          subcategoryId: input.type === "transfer" ? null : input.subcategoryId,
          tagIds: input.tagIds,
          contactId: input.contactId,
+         date: input.date,
       });
       const { tagIds, items, ...data } = input;
 
@@ -293,7 +313,9 @@ export const getById = protectedProcedure
 
 export const update = protectedProcedure
    .input(
-      z.object({ id: z.string().uuid() }).merge(transactionBaseSchema.partial()),
+      z
+         .object({ id: z.string().uuid() })
+         .merge(transactionBaseSchema.partial()),
    )
    .handler(async ({ context, input }) => {
       const { db, teamId } = context;
@@ -318,6 +340,7 @@ export const update = protectedProcedure
             subcategoryId: input.subcategoryId,
             tagIds: input.tagIds,
             contactId: input.contactId,
+            date: input.date ?? existing.date,
          });
       }
       const { id, tagIds, items, ...data } = input;
@@ -366,6 +389,7 @@ export const importBulk = protectedProcedure
             categoryId: data.categoryId,
             subcategoryId: data.subcategoryId,
             tagIds,
+            date: data.date,
          });
          await createTransaction(db, { ...data, teamId }, tagIds);
          imported++;

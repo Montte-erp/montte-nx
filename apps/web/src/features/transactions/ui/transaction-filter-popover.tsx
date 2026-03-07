@@ -190,9 +190,10 @@ function CategoryValueSelectInner({
    value: string;
    onChange: (v: string) => void;
 }) {
-   const { data: categories } = useSuspenseQuery(
+   const { data: categoriesResult } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
+   const categories = categoriesResult.data;
    const options = categories.map((c) => ({ value: c.id, label: c.name }));
    return (
       <Combobox

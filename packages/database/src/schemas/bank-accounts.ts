@@ -26,9 +26,18 @@ export const bankAccounts = pgTable(
       type: bankAccountTypeEnum("type").notNull().default("checking"),
       color: text("color").notNull().default("#6366f1"),
       iconUrl: text("icon_url"),
+      bankCode: text("bank_code"),
+      bankName: text("bank_name"),
+      nickname: text("nickname"),
+      branch: text("branch"),
+      accountNumber: text("account_number"),
       initialBalance: numeric("initial_balance", { precision: 12, scale: 2 })
          .notNull()
          .default("0"),
+      initialBalanceDate: timestamp("initial_balance_date", {
+         withTimezone: true,
+      }),
+      notes: text("notes"),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
          .defaultNow(),

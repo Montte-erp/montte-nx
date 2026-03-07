@@ -123,6 +123,7 @@ function TagCombobox({
             <div className="flex items-center gap-2">
                <Input
                   className="h-7 text-xs"
+                  onChange={(e) => setNewTagName(e.target.value)}
                   onKeyDown={(e) => {
                      if (e.key === "Enter" && newTagName.trim()) {
                         e.preventDefault();
@@ -130,7 +131,6 @@ function TagCombobox({
                         setNewTagName("");
                      }
                   }}
-                  onChange={(e) => setNewTagName(e.target.value)}
                   placeholder={`Nova ${label}...`}
                   value={newTagName}
                />
@@ -176,11 +176,11 @@ function ContactCombobox({
    return (
       <Combobox
          className="w-full"
+         createLabel="Criar contato"
          emptyMessage="Nenhum contato encontrado."
+         onCreate={onCreate}
          onValueChange={(v) => onChange(v || null)}
          options={options}
-         onCreate={onCreate}
-         createLabel="Criar contato"
          placeholder="Selecionar contato..."
          searchPlaceholder="Buscar contato..."
          value={value ?? ""}
@@ -199,9 +199,10 @@ function TransactionFormContent({
    const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
    );
-   const { data: categories } = useSuspenseQuery(
+   const { data: categoriesResult } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
+   const categories = categoriesResult.data;
    const { data: creditCards } = useSuspenseQuery(
       orpc.creditCards.getAll.queryOptions({}),
    );
@@ -636,7 +637,16 @@ function TransactionFormContent({
                                                    </FieldLabel>
                                                    <Combobox
                                                       className="w-full"
+                                                      createLabel="Criar conta"
                                                       emptyMessage="Nenhuma conta cadastrada."
+                                                      onCreate={(name) =>
+                                                         createBankAccountMutation.mutate(
+                                                            {
+                                                               name,
+                                                               type: "checking",
+                                                            },
+                                                         )
+                                                      }
                                                       onValueChange={(v) => {
                                                          field.handleChange(v);
                                                          if (
@@ -657,15 +667,6 @@ function TransactionFormContent({
                                                             label: account.name,
                                                          }),
                                                       )}
-                                                      onCreate={(name) =>
-                                                         createBankAccountMutation.mutate(
-                                                            {
-                                                               name,
-                                                               type: "checking",
-                                                            },
-                                                         )
-                                                      }
-                                                      createLabel="Criar conta"
                                                       placeholder="Selecione a conta..."
                                                       searchPlaceholder="Buscar conta..."
                                                       value={field.state.value}
@@ -703,7 +704,16 @@ function TransactionFormContent({
                                                    </FieldLabel>
                                                    <Combobox
                                                       className="w-full"
+                                                      createLabel="Criar conta"
                                                       emptyMessage="Nenhuma conta cadastrada."
+                                                      onCreate={(name) =>
+                                                         createBankAccountMutation.mutate(
+                                                            {
+                                                               name,
+                                                               type: "checking",
+                                                            },
+                                                         )
+                                                      }
                                                       onValueChange={
                                                          field.handleChange
                                                       }
@@ -717,15 +727,6 @@ function TransactionFormContent({
                                                             value: account.id,
                                                             label: account.name,
                                                          }))}
-                                                      onCreate={(name) =>
-                                                         createBankAccountMutation.mutate(
-                                                            {
-                                                               name,
-                                                               type: "checking",
-                                                            },
-                                                         )
-                                                      }
-                                                      createLabel="Criar conta"
                                                       placeholder="Selecione a conta..."
                                                       searchPlaceholder="Buscar conta..."
                                                       value={field.state.value}
@@ -851,7 +852,16 @@ function TransactionFormContent({
                                                    </FieldLabel>
                                                    <Combobox
                                                       className="w-full"
+                                                      createLabel="Criar conta"
                                                       emptyMessage="Nenhuma conta cadastrada."
+                                                      onCreate={(name) =>
+                                                         createBankAccountMutation.mutate(
+                                                            {
+                                                               name,
+                                                               type: "checking",
+                                                            },
+                                                         )
+                                                      }
                                                       onValueChange={
                                                          field.handleChange
                                                       }
@@ -861,15 +871,6 @@ function TransactionFormContent({
                                                             label: account.name,
                                                          }),
                                                       )}
-                                                      onCreate={(name) =>
-                                                         createBankAccountMutation.mutate(
-                                                            {
-                                                               name,
-                                                               type: "checking",
-                                                            },
-                                                         )
-                                                      }
-                                                      createLabel="Criar conta"
                                                       placeholder="Selecione a conta..."
                                                       searchPlaceholder="Buscar conta..."
                                                       value={field.state.value}
@@ -899,7 +900,17 @@ function TransactionFormContent({
                                           </FieldLabel>
                                           <Combobox
                                              className="w-full"
+                                             createLabel="Criar cartão"
                                              emptyMessage="Nenhum cartão cadastrado."
+                                             onCreate={(name) =>
+                                                createCreditCardMutation.mutate(
+                                                   {
+                                                      name,
+                                                      closingDay: 25,
+                                                      dueDay: 5,
+                                                   },
+                                                )
+                                             }
                                              onValueChange={(v) =>
                                                 field.handleChange(v || "")
                                              }
@@ -907,14 +918,6 @@ function TransactionFormContent({
                                                 value: c.id,
                                                 label: c.name,
                                              }))}
-                                             onCreate={(name) =>
-                                                createCreditCardMutation.mutate({
-                                                   name,
-                                                   closingDay: 25,
-                                                   dueDay: 5,
-                                                })
-                                             }
-                                             createLabel="Criar cartão"
                                              placeholder="Selecionar cartão (opcional)..."
                                              searchPlaceholder="Buscar cartão..."
                                              value={field.state.value}
@@ -944,7 +947,22 @@ function TransactionFormContent({
                                                 </FieldLabel>
                                                 <Combobox
                                                    className="w-full"
+                                                   createLabel="Criar categoria"
                                                    emptyMessage="Nenhuma categoria cadastrada."
+                                                   onCreate={(name) =>
+                                                      createCategoryMutation.mutate(
+                                                         {
+                                                            name,
+                                                            type:
+                                                               type ===
+                                                                  "income" ||
+                                                               type ===
+                                                                  "expense"
+                                                                  ? type
+                                                                  : undefined,
+                                                         },
+                                                      )
+                                                   }
                                                    onValueChange={(v) => {
                                                       field.handleChange(v);
                                                       form.setFieldValue(
@@ -962,27 +980,13 @@ function TransactionFormContent({
                                                          value: cat.id,
                                                          label: cat.name,
                                                       }))}
-                                                   onCreate={(name) =>
-                                                      createCategoryMutation.mutate(
-                                                         {
-                                                            name,
-                                                            type:
-                                                               type === "income" ||
-                                                               type === "expense"
-                                                                  ? type
-                                                                  : undefined,
-                                                         },
-                                                      )
-                                                   }
-                                                   createLabel="Criar categoria"
                                                    placeholder="Selecione a categoria..."
                                                    searchPlaceholder="Buscar categoria..."
                                                    value={field.state.value}
                                                 />
                                                 <FieldError
                                                    errors={
-                                                      field.state.meta
-                                                         .errors
+                                                      field.state.meta.errors
                                                    }
                                                 />
                                              </Field>
@@ -1036,41 +1040,41 @@ function TransactionFormContent({
                                     </div>
 
                                     {categoryId && (
-                                          <form.Field name="subcategoryId">
-                                             {(field) => (
-                                                <Field>
-                                                   <FieldLabel>
-                                                      Subcategoria
-                                                   </FieldLabel>
-                                                   <Combobox
-                                                      className="w-full"
-                                                      emptyMessage="Nenhuma subcategoria."
-                                                      onValueChange={
-                                                         field.handleChange
-                                                      }
-                                                      options={selectedSubcategories.map(
-                                                         (s) => ({
-                                                            value: s.id,
-                                                            label: s.name,
-                                                         }),
-                                                      )}
-                                                      onCreate={(name) =>
-                                                         createSubcategoryMutation.mutate(
-                                                            {
-                                                               name,
-                                                               categoryId,
-                                                            },
-                                                         )
-                                                      }
-                                                      createLabel="Criar subcategoria"
-                                                      placeholder="Selecione a subcategoria..."
-                                                      searchPlaceholder="Buscar subcategoria..."
-                                                      value={field.state.value}
-                                                   />
-                                                </Field>
-                                             )}
-                                          </form.Field>
-                                       )}
+                                       <form.Field name="subcategoryId">
+                                          {(field) => (
+                                             <Field>
+                                                <FieldLabel>
+                                                   Subcategoria
+                                                </FieldLabel>
+                                                <Combobox
+                                                   className="w-full"
+                                                   createLabel="Criar subcategoria"
+                                                   emptyMessage="Nenhuma subcategoria."
+                                                   onCreate={(name) =>
+                                                      createSubcategoryMutation.mutate(
+                                                         {
+                                                            name,
+                                                            categoryId,
+                                                         },
+                                                      )
+                                                   }
+                                                   onValueChange={
+                                                      field.handleChange
+                                                   }
+                                                   options={selectedSubcategories.map(
+                                                      (s) => ({
+                                                         value: s.id,
+                                                         label: s.name,
+                                                      }),
+                                                   )}
+                                                   placeholder="Selecione a subcategoria..."
+                                                   searchPlaceholder="Buscar subcategoria..."
+                                                   value={field.state.value}
+                                                />
+                                             </Field>
+                                          )}
+                                       </form.Field>
+                                    )}
                                  </>
                               )}
                            </>
@@ -1284,8 +1288,14 @@ function TransactionFormContent({
                                                    <SelectValue placeholder="Selecione a frequência" />
                                                 </SelectTrigger>
                                                 <SelectContent>
+                                                   <SelectItem value="daily">
+                                                      Diária
+                                                   </SelectItem>
                                                    <SelectItem value="weekly">
                                                       Semanal
+                                                   </SelectItem>
+                                                   <SelectItem value="biweekly">
+                                                      Quinzenal
                                                    </SelectItem>
                                                    <SelectItem value="monthly">
                                                       Mensal

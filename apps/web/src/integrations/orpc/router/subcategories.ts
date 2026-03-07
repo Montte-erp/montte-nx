@@ -17,9 +17,13 @@ import { protectedProcedure } from "../server";
 // Validation Schemas
 // =============================================================================
 
-const subcategorySchema = createInsertSchema(subcategories).pick({
-   name: true,
-});
+const subcategorySchema = createInsertSchema(subcategories)
+   .pick({ name: true })
+   .extend({
+      keywords: z.array(z.string()).nullable().optional(),
+      isReturn: z.boolean().optional(),
+      notes: z.string().nullable().optional(),
+   });
 
 // =============================================================================
 // Subcategory Procedures
@@ -52,6 +56,9 @@ export const create = protectedProcedure
          teamId,
          categoryId: input.categoryId,
          name: input.name,
+         keywords: input.keywords ?? null,
+         isReturn: input.isReturn ?? false,
+         notes: input.notes ?? null,
       });
    });
 
@@ -65,7 +72,12 @@ export const update = protectedProcedure
             message: "Subcategoria não encontrada.",
          });
       }
-      return updateSubcategory(db, input.id, { name: input.name });
+      return updateSubcategory(db, input.id, {
+         name: input.name,
+         keywords: input.keywords ?? null,
+         isReturn: input.isReturn ?? false,
+         notes: input.notes ?? null,
+      });
    });
 
 export const remove = protectedProcedure

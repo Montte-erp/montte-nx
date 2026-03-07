@@ -79,9 +79,10 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
    const isCreate = mode === "create";
    const [isPending, startTransition] = useTransition();
 
-   const { data: categories } = useQuery(
+   const { data: categoriesResult } = useQuery(
       orpc.categories.getAll.queryOptions({}),
    );
+   const categories = categoriesResult?.data;
 
    const { data: tags } = useQuery(orpc.tags.getAll.queryOptions({}));
 

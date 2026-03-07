@@ -23,9 +23,10 @@ export function BulkCategorizeForm({
 }) {
    const [categoryId, setCategoryId] = useState<string | undefined>();
    const [isPending, startTransition] = useTransition();
-   const { data: categories } = useSuspenseQuery(
+   const { data: categoriesResult } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
+   const categories = categoriesResult.data;
 
    return (
       <>

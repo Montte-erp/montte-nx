@@ -1,5 +1,12 @@
 import { relations, sql } from "drizzle-orm";
-import { index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+   boolean,
+   index,
+   pgTable,
+   text,
+   timestamp,
+   uuid,
+} from "drizzle-orm/pg-core";
 import { categories } from "./categories";
 
 export const subcategories = pgTable(
@@ -11,6 +18,9 @@ export const subcategories = pgTable(
          .references(() => categories.id, { onDelete: "cascade" }),
       teamId: uuid("team_id").notNull(),
       name: text("name").notNull(),
+      keywords: text("keywords").array(),
+      isReturn: boolean("is_return").notNull().default(false),
+      notes: text("notes"),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
          .defaultNow(),

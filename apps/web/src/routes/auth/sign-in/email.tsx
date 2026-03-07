@@ -38,10 +38,12 @@ function SignInEmailPage() {
                   toast.error(error.message);
                },
                onRequest: () => {
-                  toast.loading("Entrando na sua conta...");
+                  toast.loading("Entrando na sua conta...", {
+                     id: "sign-in-email",
+                  });
                },
                onSuccess: () => {
-                  toast.success("Bem-vindo de volta!");
+                  toast.success("Bem-vindo de volta!", { id: "sign-in-email" });
                   router.navigate({ to: "/auth/callback" });
                },
             },

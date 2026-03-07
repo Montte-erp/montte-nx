@@ -34,6 +34,7 @@ import { BillInstallmentPreview } from "./bill-installment-preview";
 // ---------------------------------------------------------------------------
 
 const FREQUENCY_OPTIONS = [
+   { value: "daily", label: "Diária" },
    { value: "weekly", label: "Semanal" },
    { value: "biweekly", label: "Quinzenal" },
    { value: "monthly", label: "Mensal" },

@@ -19,6 +19,8 @@ export const categories = pgTable(
       color: text("color"),
       icon: text("icon"),
       isArchived: boolean("is_archived").notNull().default(false),
+      keywords: text("keywords").array(),
+      notes: text("notes"),
       type: text("type"), // "income" | "expense" | null
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()

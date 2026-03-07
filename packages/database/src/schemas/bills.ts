@@ -23,6 +23,7 @@ export const billStatusEnum = pgEnum("bill_status", [
 ]);
 
 export const recurrenceFrequencyEnum = pgEnum("recurrence_frequency", [
+   "daily",
    "weekly",
    "biweekly",
    "monthly",

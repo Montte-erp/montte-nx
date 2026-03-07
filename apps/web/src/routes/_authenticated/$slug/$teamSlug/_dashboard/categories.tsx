@@ -17,14 +17,16 @@ import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
    Archive,
+   Download,
    FolderOpen,
    LayoutGrid,
    LayoutList,
    Pencil,
    Plus,
    Trash2,
+   Upload,
 } from "lucide-react";
-import { Suspense, useCallback } from "react";
+import { Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import {
@@ -32,6 +34,12 @@ import {
    type CategoryRow,
 } from "@/features/categories/ui/categories-columns";
 import { CategoryForm } from "@/features/categories/ui/categories-form";
+import {
+   CategoryFilterBar,
+   type CategoryFilters,
+} from "@/features/categories/ui/category-filter-bar";
+import { CategoryImportCredenza } from "@/features/categories/ui/category-import-credenza";
+import { exportCategoriesCsv } from "@/features/categories/utils/export-categories-csv";
 import {
    useViewSwitch,
    type ViewConfig,
@@ -65,7 +73,7 @@ const CATEGORY_VIEWS: [
 
 function CategoriesSkeleton() {
    return (
-      <div className="space-y-3">
+      <div className="flex flex-col gap-4">
          {Array.from({ length: 5 }).map((_, index) => (
             <Skeleton className="h-12 w-full" key={`skeleton-${index + 1}`} />
          ))}
@@ -79,9 +87,15 @@ function CategoriesSkeleton() {
 
 interface CategoriesListProps {
    view: "table" | "card";
+   filters: CategoryFilters;
+   onFiltersChange: (filters: CategoryFilters) => void;
 }
 
-function CategoriesList({ view }: CategoriesListProps) {
+function CategoriesList({
+   view,
+   filters,
+   onFiltersChange,
+}: CategoriesListProps) {
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const {
@@ -92,9 +106,19 @@ function CategoriesList({ view }: CategoriesListProps) {
       onClear,
    } = useRowSelection();
 
-   const { data: categories } = useSuspenseQuery(
-      orpc.categories.getAll.queryOptions({}),
+   const { data: result } = useSuspenseQuery(
+      orpc.categories.getAll.queryOptions({
+         input: {
+            search: filters.search || undefined,
+            type: filters.type,
+            includeArchived: filters.includeArchived || undefined,
+            page: filters.page,
+            pageSize: 50,
+         },
+      }),
    );
+
+   const categories = result.data;
 
    const deleteMutation = useMutation(
       orpc.categories.remove.mutationOptions({
@@ -125,6 +149,7 @@ function CategoriesList({ view }: CategoriesListProps) {
                      name: category.name,
                      color: category.color,
                      icon: category.icon,
+                     keywords: category.keywords,
                      type: category.type,
                   }}
                   mode="edit"
@@ -163,9 +188,7 @@ function CategoriesList({ view }: CategoriesListProps) {
       const deletableIds = selectedIds.filter(
          (id) => !categories.find((c) => c.id === id)?.isDefault,
       );
-      if (deletableIds.length === 0) {
-         return;
-      }
+      if (deletableIds.length === 0) return;
       openAlertDialog({
          title: `Excluir ${deletableIds.length} ${deletableIds.length === 1 ? "categoria" : "categorias"}`,
          description:
@@ -193,7 +216,9 @@ function CategoriesList({ view }: CategoriesListProps) {
                </EmptyMedia>
                <EmptyTitle>Nenhuma categoria</EmptyTitle>
                <EmptyDescription>
-                  Adicione uma categoria para organizar suas transações.
+                  {filters.search || filters.type
+                     ? "Nenhuma categoria encontrada com os filtros atuais."
+                     : "Adicione uma categoria para organizar suas transações."}
                </EmptyDescription>
             </EmptyHeader>
          </Empty>
@@ -240,6 +265,36 @@ function CategoriesList({ view }: CategoriesListProps) {
             rowSelection={rowSelection}
             view={view}
          />
+         {result.totalPages > 1 && (
+            <div className="flex items-center justify-between">
+               <p className="text-sm text-muted-foreground">
+                  Página {result.page} de {result.totalPages} (
+                  {result.totalCount} categorias)
+               </p>
+               <div className="flex gap-2">
+                  <Button
+                     disabled={result.page <= 1}
+                     onClick={() =>
+                        onFiltersChange({ ...filters, page: filters.page - 1 })
+                     }
+                     size="sm"
+                     variant="outline"
+                  >
+                     Anterior
+                  </Button>
+                  <Button
+                     disabled={result.page >= result.totalPages}
+                     onClick={() =>
+                        onFiltersChange({ ...filters, page: filters.page + 1 })
+                     }
+                     size="sm"
+                     variant="outline"
+                  >
+                     Próxima
+                  </Button>
+               </div>
+            </div>
+         )}
          <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
             <SelectionActionButton
                icon={<Trash2 className="size-3.5" />}
@@ -264,27 +319,65 @@ function CategoriesPage() {
       CATEGORY_VIEWS,
    );
 
+   const [filters, setFilters] = useState<CategoryFilters>({
+      search: "",
+      type: undefined,
+      includeArchived: false,
+      page: 1,
+   });
+
    const handleCreate = useCallback(() => {
       openCredenza({
          children: <CategoryForm mode="create" onSuccess={closeCredenza} />,
       });
    }, [openCredenza, closeCredenza]);
 
+   const handleImport = useCallback(() => {
+      openCredenza({
+         children: <CategoryImportCredenza onSuccess={closeCredenza} />,
+      });
+   }, [openCredenza, closeCredenza]);
+
+   const handleExport = useCallback(async () => {
+      try {
+         const data = await orpc.categories.exportAll.call({});
+         exportCategoriesCsv(data);
+         toast.success("Categorias exportadas com sucesso.");
+      } catch {
+         toast.error("Erro ao exportar categorias.");
+      }
+   }, []);
+
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
-               <Button onClick={handleCreate}>
-                  <Plus className="size-4 mr-1" />
-                  Nova Categoria
-               </Button>
+               <div className="flex gap-2">
+                  <Button onClick={handleImport} variant="outline">
+                     <Upload className="size-4 mr-1" />
+                     Importar
+                  </Button>
+                  <Button onClick={handleExport} variant="outline">
+                     <Download className="size-4 mr-1" />
+                     Exportar
+                  </Button>
+                  <Button onClick={handleCreate}>
+                     <Plus className="size-4 mr-1" />
+                     Nova Categoria
+                  </Button>
+               </div>
             }
             description="Gerencie as categorias das suas transações"
             title="Categorias"
             viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
+         <CategoryFilterBar filters={filters} onFiltersChange={setFilters} />
          <Suspense fallback={<CategoriesSkeleton />}>
-            <CategoriesList view={currentView} />
+            <CategoriesList
+               filters={filters}
+               onFiltersChange={setFilters}
+               view={currentView}
+            />
          </Suspense>
       </main>
    );

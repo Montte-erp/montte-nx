@@ -50,9 +50,10 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
    const { data: accounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
    );
-   const { data: categories } = useSuspenseQuery(
+   const { data: categoriesResult } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
+   const categories = categoriesResult.data;
 
    const updateMutation = useMutation(
       orpc.bills.update.mutationOptions({

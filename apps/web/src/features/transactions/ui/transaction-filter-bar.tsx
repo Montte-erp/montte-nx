@@ -128,9 +128,10 @@ export function TransactionFilterBar({
    onFiltersChange,
 }: TransactionFilterBarProps) {
    // Data queries for filter dropdowns
-   const { data: categories } = useSuspenseQuery(
+   const { data: categoriesResult } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
+   const categories = categoriesResult.data;
    const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
    );

@@ -24,6 +24,13 @@ const bankAccountSchema = createInsertSchema(bankAccounts)
       color: true,
       iconUrl: true,
       initialBalance: true,
+      bankCode: true,
+      bankName: true,
+      nickname: true,
+      branch: true,
+      accountNumber: true,
+      initialBalanceDate: true,
+      notes: true,
    })
    .extend({
       color: z
@@ -38,6 +45,7 @@ const bankAccountSchema = createInsertSchema(bankAccounts)
             message: "Saldo inicial inválido.",
          })
          .optional(),
+      initialBalanceDate: z.coerce.date().optional().nullable(),
    });
 
 // =============================================================================

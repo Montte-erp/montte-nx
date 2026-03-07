@@ -51,8 +51,10 @@ export type CategoryRow = {
    isDefault: boolean;
    color: string | null;
    icon: string | null;
+   keywords: string[] | null;
    type: string | null;
-   subcategories: { id: string; name: string }[];
+   subcategories: { id: string; name: string; keywords: string[] | null }[];
+   createdAt: string | Date;
 };
 
 export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
@@ -98,6 +100,41 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
             if (type === "expense")
                return <Badge variant="destructive">Despesa</Badge>;
             return <span className="text-sm text-muted-foreground">—</span>;
+         },
+      },
+      {
+         accessorKey: "keywords",
+         header: "Palavras-chave",
+         cell: ({ row }) => {
+            const { keywords } = row.original;
+            if (!keywords || keywords.length === 0)
+               return <span className="text-sm text-muted-foreground">—</span>;
+            return (
+               <div className="flex flex-wrap gap-1">
+                  {keywords.slice(0, 3).map((kw) => (
+                     <Badge key={kw} variant="secondary">
+                        {kw}
+                     </Badge>
+                  ))}
+                  {keywords.length > 3 && (
+                     <Badge variant="secondary">+{keywords.length - 3}</Badge>
+                  )}
+               </div>
+            );
+         },
+      },
+      {
+         accessorKey: "subcategories",
+         header: "Subcategorias",
+         cell: ({ row }) => {
+            const count = row.original.subcategories.length;
+            if (count === 0)
+               return <span className="text-sm text-muted-foreground">—</span>;
+            return (
+               <Badge variant="outline">
+                  {count} {count === 1 ? "subcategoria" : "subcategorias"}
+               </Badge>
+            );
          },
       },
    ];

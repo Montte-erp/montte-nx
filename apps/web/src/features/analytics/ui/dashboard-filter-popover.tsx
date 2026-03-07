@@ -234,13 +234,18 @@ function CategoryComboboxInner({
    value: string;
    onChange: (v: string) => void;
 }) {
-   const { data } = useSuspenseQuery(orpc.categories.getAll.queryOptions({}));
+   const { data: categoriesResult } = useSuspenseQuery(
+      orpc.categories.getAll.queryOptions({}),
+   );
    return (
       <Combobox
          className="h-7 text-xs"
          emptyMessage="Nenhuma categoria."
          onValueChange={(v) => onChange(v ?? "")}
-         options={data.map((c) => ({ value: c.id, label: c.name }))}
+         options={categoriesResult.data.map((c) => ({
+            value: c.id,
+            label: c.name,
+         }))}
          placeholder="Selecionar categoria..."
          searchPlaceholder="Buscar categoria..."
          value={value}

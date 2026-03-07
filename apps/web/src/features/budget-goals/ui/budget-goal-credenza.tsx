@@ -139,9 +139,10 @@ export function BudgetGoalCredenza({
 }: BudgetGoalCredenzaProps) {
    const isCreate = mode === "create";
 
-   const { data: categories } = useSuspenseQuery(
+   const { data: categoriesResult } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
+   const categories = categoriesResult.data;
 
    const expenseCategories = categories.filter(
       (c) => c.type === "expense" || c.type === null,
@@ -234,41 +235,101 @@ export function BudgetGoalCredenza({
             </CredenzaDescription>
          </CredenzaHeader>
 
-         <CredenzaBody className="space-y-4">
+         <CredenzaBody>
             <FieldGroup>
                {isCreate && (
-                  <form.Field name="targetType">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>Tipo</FieldLabel>
-                           <Select
-                              onValueChange={(v) =>
-                                 field.handleChange(
-                                    v as "category" | "subcategory",
-                                 )
-                              }
-                              value={field.state.value}
-                           >
-                              <SelectTrigger>
-                                 <SelectValue placeholder="Selecione o tipo" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                 <SelectItem value="category">
-                                    Categoria
-                                 </SelectItem>
-                                 <SelectItem value="subcategory">
-                                    Subcategoria
-                                 </SelectItem>
-                              </SelectContent>
-                           </Select>
-                        </Field>
-                     )}
+                  <div className="grid grid-cols-2 gap-4">
+                     <form.Field name="targetType">
+                        {(field) => (
+                           <Field>
+                              <FieldLabel>Tipo</FieldLabel>
+                              <Select
+                                 onValueChange={(v) =>
+                                    field.handleChange(
+                                       v as "category" | "subcategory",
+                                    )
+                                 }
+                                 value={field.state.value}
+                              >
+                                 <SelectTrigger>
+                                    <SelectValue placeholder="Selecione o tipo" />
+                                 </SelectTrigger>
+                                 <SelectContent>
+                                    <SelectItem value="category">
+                                       Categoria
+                                    </SelectItem>
+                                    <SelectItem value="subcategory">
+                                       Subcategoria
+                                    </SelectItem>
+                                 </SelectContent>
+                              </Select>
+                           </Field>
+                        )}
+                     </form.Field>
+
+                     <form.Field name="limitAmount">
+                        {(field) => {
+                           const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid;
+                           return (
+                              <Field data-invalid={isInvalid}>
+                                 <FieldLabel>Limite (R$)</FieldLabel>
+                                 <Input
+                                    min="0.01"
+                                    onBlur={field.handleBlur}
+                                    onChange={(e) =>
+                                       field.handleChange(e.target.value)
+                                    }
+                                    placeholder="0,00"
+                                    step="0.01"
+                                    type="number"
+                                    value={field.state.value}
+                                 />
+                                 {isInvalid && (
+                                    <FieldError
+                                       errors={field.state.meta.errors}
+                                    />
+                                 )}
+                              </Field>
+                           );
+                        }}
+                     </form.Field>
+                  </div>
+               )}
+
+               {!isCreate && (
+                  <form.Field name="limitAmount">
+                     {(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           !field.state.meta.isValid;
+                        return (
+                           <Field data-invalid={isInvalid}>
+                              <FieldLabel>Limite (R$)</FieldLabel>
+                              <Input
+                                 min="0.01"
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                 }
+                                 placeholder="0,00"
+                                 step="0.01"
+                                 type="number"
+                                 value={field.state.value}
+                              />
+                              {isInvalid && (
+                                 <FieldError errors={field.state.meta.errors} />
+                              )}
+                           </Field>
+                        );
+                     }}
                   </form.Field>
                )}
 
                <form.Subscribe selector={(s) => s.values.targetType}>
                   {(targetType) => (
-                     <>
+                     <div className="grid grid-cols-2 gap-4">
                         <form.Field name="categoryId">
                            {(field) => {
                               const isInvalid =
@@ -282,7 +343,14 @@ export function BudgetGoalCredenza({
                                  }));
 
                               return (
-                                 <Field data-invalid={isInvalid}>
+                                 <Field
+                                    className={
+                                       targetType === "category"
+                                          ? "col-span-2"
+                                          : undefined
+                                    }
+                                    data-invalid={isInvalid}
+                                 >
                                     <FieldLabel>Categoria</FieldLabel>
                                     <Combobox
                                        className="w-full justify-between"
@@ -385,35 +453,9 @@ export function BudgetGoalCredenza({
                               }}
                            </form.Subscribe>
                         )}
-                     </>
+                     </div>
                   )}
                </form.Subscribe>
-
-               <form.Field name="limitAmount">
-                  {(field) => {
-                     const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
-                     return (
-                        <Field data-invalid={isInvalid}>
-                           <FieldLabel>Limite (R$)</FieldLabel>
-                           <Input
-                              min="0.01"
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="0,00"
-                              step="0.01"
-                              type="number"
-                              value={field.state.value}
-                           />
-                           {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                           )}
-                        </Field>
-                     );
-                  }}
-               </form.Field>
 
                <form.Field name="alertEnabled">
                   {(alertEnabledField) => (
@@ -435,7 +477,7 @@ export function BudgetGoalCredenza({
                                     field.state.meta.isTouched &&
                                     !field.state.meta.isValid;
                                  return (
-                                    <div className="mt-3">
+                                    <div className="mt-2">
                                        <FieldLabel>
                                           Alertar quando atingir{" "}
                                           {field.state.value}% do limite

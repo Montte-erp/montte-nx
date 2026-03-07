@@ -154,7 +154,7 @@ export const navGroups: NavGroupDef[] = [
    },
    {
       id: "erp",
-      label: "ERP",
+      label: "Negócio",
       items: [
          {
             id: "contacts",

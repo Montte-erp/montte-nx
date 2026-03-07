@@ -41,7 +41,14 @@ const installmentSchema = z.object({
 });
 
 const recurrenceSchema = z.object({
-   frequency: z.enum(["weekly", "biweekly", "monthly", "quarterly", "yearly"]),
+   frequency: z.enum([
+      "daily",
+      "weekly",
+      "biweekly",
+      "monthly",
+      "quarterly",
+      "yearly",
+   ]),
    windowMonths: z.number().int().min(1).max(12).default(3),
    endsAt: z
       .string()

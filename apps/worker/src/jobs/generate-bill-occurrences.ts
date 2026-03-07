@@ -11,6 +11,9 @@ const logger = getLogger().child({ module: "job:bills" });
 function computeNextDueDate(from: string, frequency: string): string {
    const d = new Date(from);
    switch (frequency) {
+      case "daily":
+         d.setDate(d.getDate() + 1);
+         break;
       case "weekly":
          d.setDate(d.getDate() + 7);
          break;

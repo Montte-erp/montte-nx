@@ -323,9 +323,10 @@ function ServicesPage() {
       categoryId: "",
    });
 
-   const { data: categories } = useQuery(
+   const { data: categoriesResult } = useQuery(
       orpc.categories.getAll.queryOptions({}),
    );
+   const categories = categoriesResult?.data;
 
    const { data: servicesList } = useQuery(
       orpc.services.getAll.queryOptions({}),

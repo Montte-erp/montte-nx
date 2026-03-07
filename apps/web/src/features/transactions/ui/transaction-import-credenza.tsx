@@ -716,9 +716,10 @@ function PreviewStep({
    const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
    );
-   const { data: categories } = useSuspenseQuery(
+   const { data: categoriesResult } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
+   const categories = categoriesResult.data;
 
    const bankAccountOptions = bankAccounts.map((acc) => ({
       value: acc.id,
@@ -1146,9 +1147,10 @@ function ConfirmStep({
    const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
    );
-   const { data: categories } = useSuspenseQuery(
+   const { data: categoriesResult } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
+   const categories = categoriesResult.data;
 
    const visibleRows = ignoreDuplicates
       ? rows.filter((r) => !r.isDuplicate)

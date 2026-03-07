@@ -1,6 +1,6 @@
 import { AppError, propagateError } from "@packages/utils/errors";
 import type { SQL } from "drizzle-orm";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import {
    categories,
@@ -51,30 +51,75 @@ export async function seedDefaultCategories(
 export async function listCategories(
    db: DatabaseInstance,
    teamId: string,
-   opts?: { includeArchived?: boolean },
+   opts?: {
+      includeArchived?: boolean;
+      search?: string;
+      type?: "income" | "expense";
+      page?: number;
+      pageSize?: number;
+   },
 ) {
    try {
       const catConditions: SQL[] = [eq(categories.teamId, teamId)];
       if (!opts?.includeArchived) {
          catConditions.push(eq(categories.isArchived, false));
       }
+      if (opts?.type) {
+         catConditions.push(eq(categories.type, opts.type));
+      }
+      if (opts?.search) {
+         const pattern = `%${opts.search}%`;
+         catConditions.push(
+            or(
+               ilike(categories.name, pattern),
+               sql`${categories.keywords}::text ILIKE ${pattern}`,
+            ) as SQL,
+         );
+      }
+
+      const page = opts?.page ?? 1;
+      const pageSize = opts?.pageSize ?? 50;
+
+      const [countResult] = await db
+         .select({ count: sql<number>`count(*)::int` })
+         .from(categories)
+         .where(and(...catConditions));
+
+      const totalCount = countResult?.count ?? 0;
 
       const cats = await db
          .select()
          .from(categories)
          .where(and(...catConditions))
-         .orderBy(categories.name);
+         .orderBy(categories.name)
+         .limit(pageSize)
+         .offset((page - 1) * pageSize);
 
-      const subs = await db
-         .select()
-         .from(subcategories)
-         .where(eq(subcategories.teamId, teamId))
-         .orderBy(subcategories.name);
+      const catIds = cats.map((c) => c.id);
+      const subs =
+         catIds.length > 0
+            ? await db
+                 .select()
+                 .from(subcategories)
+                 .where(
+                    and(
+                       eq(subcategories.teamId, teamId),
+                       inArray(subcategories.categoryId, catIds),
+                    ),
+                 )
+                 .orderBy(subcategories.name)
+            : [];
 
-      return cats.map((cat) => ({
-         ...cat,
-         subcategories: subs.filter((s) => s.categoryId === cat.id),
-      }));
+      return {
+         data: cats.map((cat) => ({
+            ...cat,
+            subcategories: subs.filter((s) => s.categoryId === cat.id),
+         })),
+         totalCount,
+         page,
+         pageSize,
+         totalPages: Math.ceil(totalCount / pageSize),
+      };
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to list categories");

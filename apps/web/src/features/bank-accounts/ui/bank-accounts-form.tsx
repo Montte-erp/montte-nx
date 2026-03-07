@@ -15,6 +15,7 @@ import {
    CommandItem,
    CommandList,
 } from "@packages/ui/components/command";
+import { Combobox } from "@packages/ui/components/combobox";
 import {
    CredenzaBody,
    CredenzaDescription,
@@ -36,9 +37,10 @@ import {
    PopoverTrigger,
 } from "@packages/ui/components/popover";
 import { Spinner } from "@packages/ui/components/spinner";
+import { Textarea } from "@packages/ui/components/textarea";
 import { cn } from "@packages/ui/lib/utils";
 import { useForm } from "@tanstack/react-form";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import Color from "color";
 import {
    CheckIcon,
@@ -52,6 +54,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
+import { useBrazilianBanks } from "../hooks/use-brazilian-banks";
 
 type BankAccountType =
    | "checking"
@@ -101,8 +104,21 @@ interface BankAccountFormProps {
       color: string;
       iconUrl?: string | null;
       initialBalance: string;
+      bankCode?: string | null;
+      bankName?: string | null;
+      nickname?: string | null;
+      branch?: string | null;
+      accountNumber?: string | null;
+      initialBalanceDate?: Date | string | null;
+      notes?: string | null;
    };
    onSuccess: () => void;
+}
+
+function formatDateForInput(date: Date | string | null | undefined): string {
+   if (!date) return new Date().toISOString().split("T")[0];
+   const d = typeof date === "string" ? new Date(date) : date;
+   return d.toISOString().split("T")[0];
 }
 
 export function BankAccountForm({
@@ -112,6 +128,7 @@ export function BankAccountForm({
 }: BankAccountFormProps) {
    const isCreate = mode === "create";
    const [typeOpen, setTypeOpen] = useState(false);
+   const { bankOptions, isLoading: banksLoading } = useBrazilianBanks();
 
    const createMutation = useMutation(
       orpc.bankAccounts.create.mutationOptions({
@@ -141,26 +158,44 @@ export function BankAccountForm({
       defaultValues: {
          color: account?.color ?? "#6366f1",
          initialBalance: account?.initialBalance ?? "0",
+         initialBalanceDate: formatDateForInput(account?.initialBalanceDate),
          name: account?.name ?? "",
          type: (account?.type ?? "checking") as BankAccountType,
+         bankCode: account?.bankCode ?? "",
+         nickname: account?.nickname ?? "",
+         branch: account?.branch ?? "",
+         accountNumber: account?.accountNumber ?? "",
+         notes: account?.notes ?? "",
       },
       onSubmit: async ({ value }) => {
+         const selectedBank = bankOptions.find(
+            (b) => b.value === value.bankCode,
+         );
          const resolvedName =
-            value.type === "cash" ? "Caixa Físico" : value.name.trim();
+            value.type === "cash"
+               ? "Caixa Físico"
+               : (value.nickname || selectedBank?.label || value.name).trim();
+
+         const payload = {
+            color: value.color,
+            initialBalance: value.initialBalance,
+            initialBalanceDate: value.initialBalanceDate
+               ? new Date(value.initialBalanceDate)
+               : null,
+            name: resolvedName,
+            type: value.type,
+            bankCode: value.bankCode || null,
+            bankName: selectedBank?.label || null,
+            nickname: value.nickname || null,
+            branch: value.branch || null,
+            accountNumber: value.accountNumber || null,
+            notes: value.notes || null,
+         };
+
          if (isCreate) {
-            createMutation.mutate({
-               color: value.color,
-               initialBalance: value.initialBalance,
-               name: resolvedName,
-               type: value.type,
-            });
+            createMutation.mutate(payload);
          } else if (account) {
-            updateMutation.mutate({
-               color: value.color,
-               id: account.id,
-               name: resolvedName,
-               type: value.type,
-            });
+            updateMutation.mutate({ id: account.id, ...payload });
          }
       },
    });
@@ -185,8 +220,9 @@ export function BankAccountForm({
             </CredenzaDescription>
          </CredenzaHeader>
 
-         <CredenzaBody className="space-y-4">
+         <CredenzaBody className="flex flex-col gap-4">
             <FieldGroup>
+               {/* Tipo de Conta */}
                <form.Field name="type">
                   {(field) => {
                      const isInvalid =
@@ -263,38 +299,154 @@ export function BankAccountForm({
                   }}
                </form.Field>
 
+               {/* Banco + Apelido (side by side) */}
                <form.Subscribe selector={(s) => s.values.type}>
                   {(type) =>
                      type !== "cash" ? (
-                        <form.Field name="name">
-                           {(field) => {
-                              const isInvalid =
-                                 field.state.meta.isTouched &&
-                                 !field.state.meta.isValid;
-                              return (
-                                 <Field data-invalid={isInvalid}>
-                                    <FieldLabel>Nome</FieldLabel>
+                        <div className="grid grid-cols-2 gap-4">
+                           <form.Field name="bankCode">
+                              {(field) => {
+                                 const isInvalid =
+                                    field.state.meta.isTouched &&
+                                    !field.state.meta.isValid;
+                                 return (
+                                    <Field data-invalid={isInvalid}>
+                                       <FieldLabel>Banco *</FieldLabel>
+                                       <Combobox
+                                          className="w-full"
+                                          disabled={banksLoading}
+                                          emptyMessage="Nenhum banco encontrado."
+                                          onBlur={field.handleBlur}
+                                          onValueChange={(v) =>
+                                             field.handleChange(v)
+                                          }
+                                          options={bankOptions}
+                                          placeholder={
+                                             banksLoading
+                                                ? "Carregando..."
+                                                : "Selecionar banco..."
+                                          }
+                                          searchPlaceholder="Pesquisar"
+                                          value={field.state.value}
+                                       />
+                                       {isInvalid && (
+                                          <FieldError
+                                             errors={field.state.meta.errors}
+                                          />
+                                       )}
+                                    </Field>
+                                 );
+                              }}
+                           </form.Field>
+
+                           <form.Field name="nickname">
+                              {(field) => (
+                                 <Field>
+                                    <FieldLabel>Apelido</FieldLabel>
                                     <Input
                                        onBlur={field.handleBlur}
                                        onChange={(e) =>
                                           field.handleChange(e.target.value)
                                        }
-                                       placeholder="Ex: Nubank, Itaú Corrente"
+                                       placeholder="Ex: Conta principal"
                                        value={field.state.value}
                                     />
-                                    {isInvalid && (
-                                       <FieldError
-                                          errors={field.state.meta.errors}
-                                       />
-                                    )}
                                  </Field>
-                              );
-                           }}
-                        </form.Field>
+                              )}
+                           </form.Field>
+                        </div>
                      ) : null
                   }
                </form.Subscribe>
 
+               {/* Agência + Conta (side by side) */}
+               <form.Subscribe selector={(s) => s.values.type}>
+                  {(type) =>
+                     type !== "cash" ? (
+                        <div className="grid grid-cols-2 gap-4">
+                           <form.Field name="branch">
+                              {(field) => (
+                                 <Field>
+                                    <FieldLabel>Agência</FieldLabel>
+                                    <Input
+                                       onBlur={field.handleBlur}
+                                       onChange={(e) =>
+                                          field.handleChange(e.target.value)
+                                       }
+                                       placeholder="0001"
+                                       value={field.state.value}
+                                    />
+                                 </Field>
+                              )}
+                           </form.Field>
+
+                           <form.Field name="accountNumber">
+                              {(field) => (
+                                 <Field>
+                                    <FieldLabel>Conta</FieldLabel>
+                                    <Input
+                                       onBlur={field.handleBlur}
+                                       onChange={(e) =>
+                                          field.handleChange(e.target.value)
+                                       }
+                                       placeholder="12345-6"
+                                       value={field.state.value}
+                                    />
+                                 </Field>
+                              )}
+                           </form.Field>
+                        </div>
+                     ) : null
+                  }
+               </form.Subscribe>
+
+               {/* Saldo Inicial + Data do Saldo (side by side) */}
+               {isCreate && (
+                  <div className="grid grid-cols-2 gap-4">
+                     <form.Field name="initialBalance">
+                        {(field) => {
+                           const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid;
+                           return (
+                              <Field data-invalid={isInvalid}>
+                                 <FieldLabel>Saldo Inicial *</FieldLabel>
+                                 <MoneyInput
+                                    onChange={(v) =>
+                                       field.handleChange(String(v ?? 0))
+                                    }
+                                    value={field.state.value}
+                                    valueInCents={false}
+                                 />
+                                 {isInvalid && (
+                                    <FieldError
+                                       errors={field.state.meta.errors}
+                                    />
+                                 )}
+                              </Field>
+                           );
+                        }}
+                     </form.Field>
+
+                     <form.Field name="initialBalanceDate">
+                        {(field) => (
+                           <Field>
+                              <FieldLabel>Data do Saldo Inicial *</FieldLabel>
+                              <Input
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                 }
+                                 type="date"
+                                 value={field.state.value}
+                              />
+                           </Field>
+                        )}
+                     </form.Field>
+                  </div>
+               )}
+
+               {/* Cor */}
                <form.Field name="color">
                   {(field) => {
                      const isInvalid =
@@ -363,30 +515,23 @@ export function BankAccountForm({
                   }}
                </form.Field>
 
-               {isCreate && (
-                  <form.Field name="initialBalance">
-                     {(field) => {
-                        const isInvalid =
-                           field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
-                        return (
-                           <Field data-invalid={isInvalid}>
-                              <FieldLabel>Saldo Inicial</FieldLabel>
-                              <MoneyInput
-                                 onChange={(v) =>
-                                    field.handleChange(String(v ?? 0))
-                                 }
-                                 value={field.state.value}
-                                 valueInCents={false}
-                              />
-                              {isInvalid && (
-                                 <FieldError errors={field.state.meta.errors} />
-                              )}
-                           </Field>
-                        );
-                     }}
-                  </form.Field>
-               )}
+               {/* Outras informações */}
+               <form.Field name="notes">
+                  {(field) => (
+                     <Field>
+                        <FieldLabel>Outras informações</FieldLabel>
+                        <Textarea
+                           onBlur={field.handleBlur}
+                           onChange={(e) =>
+                              field.handleChange(e.target.value)
+                           }
+                           placeholder="Informações adicionais sobre a conta..."
+                           rows={3}
+                           value={field.state.value}
+                        />
+                     </Field>
+                  )}
+               </form.Field>
             </FieldGroup>
          </CredenzaBody>
 
