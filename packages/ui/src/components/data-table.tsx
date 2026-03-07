@@ -14,12 +14,7 @@ import {
    useReactTable,
    type VisibilityState,
 } from "@tanstack/react-table";
-import {
-   ArrowDown,
-   ArrowUp,
-   ArrowUpDown,
-   Settings2,
-} from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Settings2 } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 
 import { cn } from "../lib/utils";
@@ -170,8 +165,8 @@ function ColumnVisibilityToggle<TData>({
             <DropdownMenuSeparator />
             {toggleableColumns.map((column) => (
                <DropdownMenuCheckboxItem
-                  key={column.id}
                   checked={columnVisibility[column.id] !== false}
+                  key={column.id}
                   onCheckedChange={(value) =>
                      onColumnVisibilityChange((prev) => ({
                         ...prev,
@@ -455,7 +450,13 @@ export function DataTable<TData, TValue>({
                      </>
                   )}
                </div>
-               {columnVisibilityKey && <ColumnVisibilityToggle table={table} columnVisibility={columnVisibility} onColumnVisibilityChange={handleColumnVisibilityChange} />}
+               {columnVisibilityKey && (
+                  <ColumnVisibilityToggle
+                     columnVisibility={columnVisibility}
+                     onColumnVisibilityChange={handleColumnVisibilityChange}
+                     table={table}
+                  />
+               )}
             </div>
 
             {/* Card grid */}
@@ -587,7 +588,13 @@ export function DataTable<TData, TValue>({
                               {header.column.id === "__actions" ? (
                                  columnVisibilityKey ? (
                                     <div className="flex items-center justify-end">
-                                       <ColumnVisibilityToggle table={table} columnVisibility={columnVisibility} onColumnVisibilityChange={handleColumnVisibilityChange} />
+                                       <ColumnVisibilityToggle
+                                          columnVisibility={columnVisibility}
+                                          onColumnVisibilityChange={
+                                             handleColumnVisibilityChange
+                                          }
+                                          table={table}
+                                       />
                                     </div>
                                  ) : null
                               ) : header.isPlaceholder ? null : header.column.getCanSort() ? (

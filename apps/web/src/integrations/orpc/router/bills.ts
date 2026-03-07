@@ -268,11 +268,12 @@ export const pay = protectedProcedure
             }),
          date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
          bankAccountId: z.string().uuid().optional(),
+         paymentType: z.enum(["total", "partial"]).default("total"),
       }),
    )
    .handler(async ({ context, input }) => {
       const { db, teamId } = context;
-      const { id, amount, date, bankAccountId } = input;
+      const { id, amount, date, bankAccountId, paymentType } = input;
 
       const bill = await getBill(db, id);
       if (!bill || bill.teamId !== teamId) {
@@ -290,6 +291,12 @@ export const pay = protectedProcedure
       if (bill.status === "cancelled") {
          throw new ORPCError("BAD_REQUEST", {
             message: "Não é possível pagar uma conta cancelada.",
+         });
+      }
+
+      if (paymentType === "partial" && Number(amount) >= Number(bill.amount)) {
+         throw new ORPCError("BAD_REQUEST", {
+            message: "Valor parcial deve ser menor que o valor da conta.",
          });
       }
 
@@ -330,6 +337,11 @@ export const pay = protectedProcedure
          throw new ORPCError("INTERNAL_SERVER_ERROR", {
             message: "Falha ao criar transação.",
          });
+      }
+
+      if (paymentType === "partial") {
+         const remaining = (Number(bill.amount) - Number(amount)).toFixed(2);
+         return updateBill(db, id, { amount: remaining });
       }
 
       return updateBill(db, id, {

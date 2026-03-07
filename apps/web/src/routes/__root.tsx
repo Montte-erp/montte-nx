@@ -1,9 +1,4 @@
 import { env } from "@packages/environment/client";
-
-import {
-   PostHogWrapper,
-   PosthogRouterTracker,
-} from "@/integrations/posthog/client";
 import { Toaster } from "@packages/ui/components/sonner";
 import { ThemeProvider } from "@packages/ui/lib/theme-provider";
 import appCss from "@packages/ui/styles/globals.css?url";
@@ -18,6 +13,10 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
 import { GlobalCredenza } from "@/hooks/use-credenza";
+import {
+   PostHogWrapper,
+   PosthogRouterTracker,
+} from "@/integrations/posthog/client";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import type { RouterContext } from "../integrations/tanstack-query/root-provider";
 

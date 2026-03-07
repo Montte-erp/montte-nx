@@ -2,6 +2,7 @@ import type { DatabaseInstance } from "@packages/database/client";
 import { getLogger } from "@packages/logging/root";
 
 const logger = getLogger().child({ module: "events:views" });
+
 import {
    contentTrafficSources,
    currentMonthStorageCost,

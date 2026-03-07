@@ -13,6 +13,7 @@ export const bankAccountTypeEnum = pgEnum("bank_account_type", [
    "checking",
    "savings",
    "investment",
+   "payment",
    "cash",
 ]);
 

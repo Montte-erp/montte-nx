@@ -7,6 +7,7 @@ import {
    DropdownMenuTrigger,
 } from "@packages/ui/components/dropdown-menu";
 import { Input } from "@packages/ui/components/input";
+import { SidebarTrigger } from "@packages/ui/components/sidebar";
 import { cn } from "@packages/ui/lib/utils";
 import { useStore } from "@tanstack/react-store";
 import { Check, MoreVertical, Pencil, X } from "lucide-react";
@@ -17,7 +18,6 @@ import {
    useRef,
    useState,
 } from "react";
-import { SidebarTrigger } from "@packages/ui/components/sidebar";
 import { ContextPanelHeaderActions } from "@/features/context-panel/context-panel-header-actions";
 import type {
    PageViewSwitchConfig,

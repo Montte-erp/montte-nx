@@ -43,6 +43,8 @@ export type NavItemDef = {
       | "general-availability";
    /** Whether the item can be hidden by the user via sidebar visibility settings */
    configurable?: boolean;
+   /** Per-accountType label overrides */
+   labelOverrides?: Partial<Record<"personal" | "business", string>>;
 };
 
 export type NavGroupDef = {
@@ -132,6 +134,7 @@ export const navGroups: NavGroupDef[] = [
             icon: Tags,
             route: "/$slug/$teamSlug/tags",
             configurable: true,
+            labelOverrides: { business: "Centros de Custo" },
          },
          {
             id: "goals",

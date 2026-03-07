@@ -27,12 +27,16 @@ import {
 } from "@packages/ui/components/select";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
+import { Switch } from "@packages/ui/components/switch";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
+import * as React from "react";
 import { Suspense } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { useAccountType } from "@/hooks/use-account-type";
 import { orpc } from "@/integrations/orpc/client";
 import type { TransactionRow } from "./transactions-columns";
 
@@ -71,50 +75,82 @@ interface TransactionCredenzaProps {
 function TagCombobox({
    selectedIds,
    onChange,
+   onCreate,
 }: {
    selectedIds: string[];
    onChange: (ids: string[]) => void;
+   onCreate?: (name: string) => void;
 }) {
    const { data: tags } = useSuspenseQuery(orpc.tags.getAll.queryOptions({}));
+   const { isBusiness } = useAccountType();
+   const [newTagName, setNewTagName] = React.useState("");
 
-   if (tags.length === 0) {
-      return (
-         <p className="text-sm text-muted-foreground">
-            Nenhuma tag cadastrada.
-         </p>
-      );
-   }
+   const label = isBusiness ? "centro de custo" : "tag";
 
    return (
-      <div className="flex flex-wrap gap-x-4 gap-y-2">
-         {tags.map((tag) => {
-            const checked = selectedIds.includes(tag.id);
-            return (
-               // biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is Radix
-               <label
-                  className="flex items-center gap-2 cursor-pointer select-none"
-                  key={tag.id}
-               >
-                  <Checkbox
-                     checked={checked}
-                     onCheckedChange={() => {
-                        onChange(
-                           checked
-                              ? selectedIds.filter((id) => id !== tag.id)
-                              : [...selectedIds, tag.id],
-                        );
-                     }}
-                  />
-                  {tag.color ? (
-                     <span
-                        className="size-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: tag.color }}
+      <div className="flex flex-col gap-2">
+         <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {tags.map((tag) => {
+               const checked = selectedIds.includes(tag.id);
+               return (
+                  // biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is Radix
+                  <label
+                     className="flex items-center gap-2 cursor-pointer select-none"
+                     key={tag.id}
+                  >
+                     <Checkbox
+                        checked={checked}
+                        onCheckedChange={() => {
+                           onChange(
+                              checked
+                                 ? selectedIds.filter((id) => id !== tag.id)
+                                 : [...selectedIds, tag.id],
+                           );
+                        }}
                      />
-                  ) : null}
-                  <span className="text-sm">{tag.name}</span>
-               </label>
-            );
-         })}
+                     {tag.color ? (
+                        <span
+                           className="size-2.5 rounded-full shrink-0"
+                           style={{ backgroundColor: tag.color }}
+                        />
+                     ) : null}
+                     <span className="text-sm">{tag.name}</span>
+                  </label>
+               );
+            })}
+         </div>
+         {onCreate && (
+            <div className="flex items-center gap-2">
+               <Input
+                  className="h-7 text-xs"
+                  onKeyDown={(e) => {
+                     if (e.key === "Enter" && newTagName.trim()) {
+                        e.preventDefault();
+                        onCreate(newTagName.trim());
+                        setNewTagName("");
+                     }
+                  }}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  placeholder={`Nova ${label}...`}
+                  value={newTagName}
+               />
+               <Button
+                  className="h-7 text-xs"
+                  disabled={!newTagName.trim()}
+                  onClick={() => {
+                     if (newTagName.trim()) {
+                        onCreate(newTagName.trim());
+                        setNewTagName("");
+                     }
+                  }}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+               >
+                  <Plus className="size-3" />
+               </Button>
+            </div>
+         )}
       </div>
    );
 }
@@ -122,21 +158,15 @@ function TagCombobox({
 function ContactCombobox({
    value,
    onChange,
+   onCreate,
 }: {
    value: string | null;
    onChange: (id: string | null) => void;
+   onCreate?: (name: string) => void;
 }) {
    const { data: contacts } = useSuspenseQuery(
       orpc.contacts.getAll.queryOptions({}),
    );
-
-   if (contacts.length === 0) {
-      return (
-         <p className="text-sm text-muted-foreground">
-            Nenhum contato cadastrado.
-         </p>
-      );
-   }
 
    const options: ComboboxOption[] = contacts.map((c) => ({
       value: c.id,
@@ -149,6 +179,8 @@ function ContactCombobox({
          emptyMessage="Nenhum contato encontrado."
          onValueChange={(v) => onChange(v || null)}
          options={options}
+         onCreate={onCreate}
+         createLabel="Criar contato"
          placeholder="Selecionar contato..."
          searchPlaceholder="Buscar contato..."
          value={value ?? ""}
@@ -162,6 +194,7 @@ function TransactionFormContent({
    onSuccess,
 }: TransactionCredenzaProps) {
    const isCreate = mode === "create";
+   const { isBusiness } = useAccountType();
 
    const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
@@ -209,6 +242,63 @@ function TransactionFormContent({
       }),
    );
 
+   const createBankAccountMutation = useMutation(
+      orpc.bankAccounts.create.mutationOptions({
+         onSuccess: (data) => {
+            toast.success("Conta criada.");
+            form.setFieldValue("bankAccountId", data.id);
+         },
+      }),
+   );
+
+   const createCategoryMutation = useMutation(
+      orpc.categories.create.mutationOptions({
+         onSuccess: (data) => {
+            toast.success("Categoria criada.");
+            form.setFieldValue("categoryId", data.id);
+         },
+      }),
+   );
+
+   const createSubcategoryMutation = useMutation(
+      orpc.subcategories.create.mutationOptions({
+         onSuccess: (data) => {
+            toast.success("Subcategoria criada.");
+            form.setFieldValue("subcategoryId", data.id);
+         },
+      }),
+   );
+
+   const createCreditCardMutation = useMutation(
+      orpc.creditCards.create.mutationOptions({
+         onSuccess: (data) => {
+            toast.success("Cartão criado.");
+            form.setFieldValue("creditCardId", data.id);
+         },
+      }),
+   );
+
+   const createContactMutation = useMutation(
+      orpc.contacts.create.mutationOptions({
+         onSuccess: (data) => {
+            toast.success("Contato criado.");
+            form.setFieldValue("contactId", data.id);
+         },
+      }),
+   );
+
+   const createTagMutation = useMutation(
+      orpc.tags.create.mutationOptions({
+         onSuccess: (data) => {
+            toast.success("Tag criada.");
+            form.setFieldValue("tagIds", [
+               ...form.getFieldValue("tagIds"),
+               data.id,
+            ]);
+         },
+      }),
+   );
+
    const isPending =
       createMutation.isPending ||
       updateMutation.isPending ||
@@ -239,6 +329,9 @@ function TransactionFormContent({
          isInstallment: transaction?.isInstallment ?? false,
          installmentCount:
             transaction?.installmentCount ?? (null as number | null),
+         isRecurring: false as boolean,
+         recurringFrequency: null as string | null,
+         recurringCount: null as number | null,
       },
       onSubmit: ({ value }) => {
          const dateStr = value.date
@@ -324,7 +417,10 @@ function TransactionFormContent({
                      <form.Field name="name">
                         {(field) => (
                            <Field>
-                              <FieldLabel htmlFor={field.name}>Nome <span className="text-destructive">*</span></FieldLabel>
+                              <FieldLabel htmlFor={field.name}>
+                                 Nome{" "}
+                                 <span className="text-destructive">*</span>
+                              </FieldLabel>
                               <Input
                                  id={field.name}
                                  onBlur={field.handleBlur}
@@ -358,6 +454,15 @@ function TransactionFormContent({
                                        );
                                        form.setFieldValue(
                                           "installmentCount",
+                                          null,
+                                       );
+                                       form.setFieldValue("isRecurring", false);
+                                       form.setFieldValue(
+                                          "recurringFrequency",
+                                          null,
+                                       );
+                                       form.setFieldValue(
+                                          "recurringCount",
                                           null,
                                        );
                                        form.setFieldValue("creditCardId", "");
@@ -529,7 +634,9 @@ function TransactionFormContent({
                                                          *
                                                       </span>
                                                    </FieldLabel>
-                                                   <Select
+                                                   <Combobox
+                                                      className="w-full"
+                                                      emptyMessage="Nenhuma conta cadastrada."
                                                       onValueChange={(v) => {
                                                          field.handleChange(v);
                                                          if (
@@ -544,28 +651,25 @@ function TransactionFormContent({
                                                             );
                                                          }
                                                       }}
+                                                      options={bankAccounts.map(
+                                                         (account) => ({
+                                                            value: account.id,
+                                                            label: account.name,
+                                                         }),
+                                                      )}
+                                                      onCreate={(name) =>
+                                                         createBankAccountMutation.mutate(
+                                                            {
+                                                               name,
+                                                               type: "checking",
+                                                            },
+                                                         )
+                                                      }
+                                                      createLabel="Criar conta"
+                                                      placeholder="Selecione a conta..."
+                                                      searchPlaceholder="Buscar conta..."
                                                       value={field.state.value}
-                                                   >
-                                                      <SelectTrigger>
-                                                         <SelectValue placeholder="Selecione" />
-                                                      </SelectTrigger>
-                                                      <SelectContent>
-                                                         {bankAccounts.map(
-                                                            (account) => (
-                                                               <SelectItem
-                                                                  key={
-                                                                     account.id
-                                                                  }
-                                                                  value={
-                                                                     account.id
-                                                                  }
-                                                               >
-                                                                  {account.name}
-                                                               </SelectItem>
-                                                            ),
-                                                         )}
-                                                      </SelectContent>
-                                                   </Select>
+                                                   />
                                                    {isInvalid && (
                                                       <FieldError
                                                          errors={
@@ -597,36 +701,35 @@ function TransactionFormContent({
                                                          *
                                                       </span>
                                                    </FieldLabel>
-                                                   <Select
+                                                   <Combobox
+                                                      className="w-full"
+                                                      emptyMessage="Nenhuma conta cadastrada."
                                                       onValueChange={
                                                          field.handleChange
                                                       }
+                                                      options={bankAccounts
+                                                         .filter(
+                                                            (a) =>
+                                                               a.id !==
+                                                               bankAccountId,
+                                                         )
+                                                         .map((account) => ({
+                                                            value: account.id,
+                                                            label: account.name,
+                                                         }))}
+                                                      onCreate={(name) =>
+                                                         createBankAccountMutation.mutate(
+                                                            {
+                                                               name,
+                                                               type: "checking",
+                                                            },
+                                                         )
+                                                      }
+                                                      createLabel="Criar conta"
+                                                      placeholder="Selecione a conta..."
+                                                      searchPlaceholder="Buscar conta..."
                                                       value={field.state.value}
-                                                   >
-                                                      <SelectTrigger>
-                                                         <SelectValue placeholder="Selecione" />
-                                                      </SelectTrigger>
-                                                      <SelectContent>
-                                                         {bankAccounts
-                                                            .filter(
-                                                               (a) =>
-                                                                  a.id !==
-                                                                  bankAccountId,
-                                                            )
-                                                            .map((account) => (
-                                                               <SelectItem
-                                                                  key={
-                                                                     account.id
-                                                                  }
-                                                                  value={
-                                                                     account.id
-                                                                  }
-                                                               >
-                                                                  {account.name}
-                                                               </SelectItem>
-                                                            ))}
-                                                      </SelectContent>
-                                                   </Select>
+                                                   />
                                                    {isInvalid && (
                                                       <FieldError
                                                          errors={
@@ -746,32 +849,31 @@ function TransactionFormContent({
                                                          *
                                                       </span>
                                                    </FieldLabel>
-                                                   <Select
+                                                   <Combobox
+                                                      className="w-full"
+                                                      emptyMessage="Nenhuma conta cadastrada."
                                                       onValueChange={
                                                          field.handleChange
                                                       }
+                                                      options={bankAccounts.map(
+                                                         (account) => ({
+                                                            value: account.id,
+                                                            label: account.name,
+                                                         }),
+                                                      )}
+                                                      onCreate={(name) =>
+                                                         createBankAccountMutation.mutate(
+                                                            {
+                                                               name,
+                                                               type: "checking",
+                                                            },
+                                                         )
+                                                      }
+                                                      createLabel="Criar conta"
+                                                      placeholder="Selecione a conta..."
+                                                      searchPlaceholder="Buscar conta..."
                                                       value={field.state.value}
-                                                   >
-                                                      <SelectTrigger>
-                                                         <SelectValue placeholder="Selecione" />
-                                                      </SelectTrigger>
-                                                      <SelectContent>
-                                                         {bankAccounts.map(
-                                                            (account) => (
-                                                               <SelectItem
-                                                                  key={
-                                                                     account.id
-                                                                  }
-                                                                  value={
-                                                                     account.id
-                                                                  }
-                                                               >
-                                                                  {account.name}
-                                                               </SelectItem>
-                                                            ),
-                                                         )}
-                                                      </SelectContent>
-                                                   </Select>
+                                                   />
                                                    {isInvalid && (
                                                       <FieldError
                                                          errors={
@@ -805,6 +907,14 @@ function TransactionFormContent({
                                                 value: c.id,
                                                 label: c.name,
                                              }))}
+                                             onCreate={(name) =>
+                                                createCreditCardMutation.mutate({
+                                                   name,
+                                                   closingDay: 25,
+                                                   dueDay: 5,
+                                                })
+                                             }
+                                             createLabel="Criar cartão"
                                              placeholder="Selecionar cartão (opcional)..."
                                              searchPlaceholder="Buscar cartão..."
                                              value={field.state.value}
@@ -818,13 +928,23 @@ function TransactionFormContent({
                                  <>
                                     {/* Categoria + Forma de pagamento (2 cols) */}
                                     <div className="grid grid-cols-2 gap-4">
-                                       <form.Field name="categoryId">
+                                       <form.Field
+                                          name="categoryId"
+                                          validators={{
+                                             onSubmit: ({ value }) =>
+                                                !value
+                                                   ? "Categoria é obrigatória."
+                                                   : undefined,
+                                          }}
+                                       >
                                           {(field) => (
                                              <Field>
                                                 <FieldLabel>
                                                    Categoria
                                                 </FieldLabel>
-                                                <Select
+                                                <Combobox
+                                                   className="w-full"
+                                                   emptyMessage="Nenhuma categoria cadastrada."
                                                    onValueChange={(v) => {
                                                       field.handleChange(v);
                                                       form.setFieldValue(
@@ -832,29 +952,39 @@ function TransactionFormContent({
                                                          "",
                                                       );
                                                    }}
+                                                   options={categories
+                                                      .filter(
+                                                         (cat) =>
+                                                            !cat.type ||
+                                                            cat.type === type,
+                                                      )
+                                                      .map((cat) => ({
+                                                         value: cat.id,
+                                                         label: cat.name,
+                                                      }))}
+                                                   onCreate={(name) =>
+                                                      createCategoryMutation.mutate(
+                                                         {
+                                                            name,
+                                                            type:
+                                                               type === "income" ||
+                                                               type === "expense"
+                                                                  ? type
+                                                                  : undefined,
+                                                         },
+                                                      )
+                                                   }
+                                                   createLabel="Criar categoria"
+                                                   placeholder="Selecione a categoria..."
+                                                   searchPlaceholder="Buscar categoria..."
                                                    value={field.state.value}
-                                                >
-                                                   <SelectTrigger>
-                                                      <SelectValue placeholder="Selecione a categoria" />
-                                                   </SelectTrigger>
-                                                   <SelectContent>
-                                                      {categories
-                                                         .filter(
-                                                            (cat) =>
-                                                               !cat.type ||
-                                                               cat.type ===
-                                                                  type,
-                                                         )
-                                                         .map((cat) => (
-                                                            <SelectItem
-                                                               key={cat.id}
-                                                               value={cat.id}
-                                                            >
-                                                               {cat.name}
-                                                            </SelectItem>
-                                                         ))}
-                                                   </SelectContent>
-                                                </Select>
+                                                />
+                                                <FieldError
+                                                   errors={
+                                                      field.state.meta
+                                                         .errors
+                                                   }
+                                                />
                                              </Field>
                                           )}
                                        </form.Field>
@@ -905,36 +1035,38 @@ function TransactionFormContent({
                                        </form.Field>
                                     </div>
 
-                                    {categoryId &&
-                                       selectedSubcategories.length > 0 && (
+                                    {categoryId && (
                                           <form.Field name="subcategoryId">
                                              {(field) => (
                                                 <Field>
                                                    <FieldLabel>
                                                       Subcategoria
                                                    </FieldLabel>
-                                                   <Select
+                                                   <Combobox
+                                                      className="w-full"
+                                                      emptyMessage="Nenhuma subcategoria."
                                                       onValueChange={
                                                          field.handleChange
                                                       }
+                                                      options={selectedSubcategories.map(
+                                                         (s) => ({
+                                                            value: s.id,
+                                                            label: s.name,
+                                                         }),
+                                                      )}
+                                                      onCreate={(name) =>
+                                                         createSubcategoryMutation.mutate(
+                                                            {
+                                                               name,
+                                                               categoryId,
+                                                            },
+                                                         )
+                                                      }
+                                                      createLabel="Criar subcategoria"
+                                                      placeholder="Selecione a subcategoria..."
+                                                      searchPlaceholder="Buscar subcategoria..."
                                                       value={field.state.value}
-                                                   >
-                                                      <SelectTrigger>
-                                                         <SelectValue placeholder="Selecione a subcategoria" />
-                                                      </SelectTrigger>
-                                                      <SelectContent>
-                                                         {selectedSubcategories.map(
-                                                            (s) => (
-                                                               <SelectItem
-                                                                  key={s.id}
-                                                                  value={s.id}
-                                                               >
-                                                                  {s.name}
-                                                               </SelectItem>
-                                                            ),
-                                                         )}
-                                                      </SelectContent>
-                                                   </Select>
+                                                   />
                                                 </Field>
                                              )}
                                           </form.Field>
@@ -946,50 +1078,67 @@ function TransactionFormContent({
                      }}
                   </form.Subscribe>
 
-                  <form.Field name="tagIds">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>Tags</FieldLabel>
-                           <Suspense
-                              fallback={
-                                 <p className="text-sm text-muted-foreground">
-                                    Carregando tags...
-                                 </p>
-                              }
-                           >
-                              <TagCombobox
-                                 onChange={field.handleChange}
-                                 selectedIds={field.state.value}
-                              />
-                           </Suspense>
-                        </Field>
-                     )}
-                  </form.Field>
-
-                  <form.Subscribe
-                     selector={(s) => s.values.type}
-                  >
-                     {(type) =>
-                        type !== "transfer" ? (
-                           <form.Field name="contactId">
+                  <form.Subscribe selector={(s) => s.values.type}>
+                     {(type) => (
+                        <div className="grid grid-cols-2 gap-4">
+                           <form.Field name="tagIds">
                               {(field) => (
                                  <Field>
-                                    <FieldLabel>Contato</FieldLabel>
+                                    <FieldLabel>
+                                       {isBusiness
+                                          ? "Centros de Custo"
+                                          : "Tags"}
+                                    </FieldLabel>
                                     <Suspense
                                        fallback={
-                                          <Skeleton className="h-9 w-full" />
+                                          <p className="text-sm text-muted-foreground">
+                                             {isBusiness
+                                                ? "Carregando centros de custo..."
+                                                : "Carregando tags..."}
+                                          </p>
                                        }
                                     >
-                                       <ContactCombobox
+                                       <TagCombobox
                                           onChange={field.handleChange}
-                                          value={field.state.value}
+                                          onCreate={(name) =>
+                                             createTagMutation.mutate({
+                                                name,
+                                             })
+                                          }
+                                          selectedIds={field.state.value}
                                        />
                                     </Suspense>
                                  </Field>
                               )}
                            </form.Field>
-                        ) : null
-                     }
+
+                           {type !== "transfer" ? (
+                              <form.Field name="contactId">
+                                 {(field) => (
+                                    <Field>
+                                       <FieldLabel>Contato</FieldLabel>
+                                       <Suspense
+                                          fallback={
+                                             <Skeleton className="h-9 w-full" />
+                                          }
+                                       >
+                                          <ContactCombobox
+                                             onChange={field.handleChange}
+                                             onCreate={(name) =>
+                                                createContactMutation.mutate({
+                                                   name,
+                                                   type: "ambos",
+                                                })
+                                             }
+                                             value={field.state.value}
+                                          />
+                                       </Suspense>
+                                    </Field>
+                                 )}
+                              </form.Field>
+                           ) : null}
+                        </div>
+                     )}
                   </form.Subscribe>
 
                   <form.Field name="description">
@@ -1013,37 +1162,83 @@ function TransactionFormContent({
                      selector={(s) => ({
                         type: s.values.type,
                         isInstallment: s.values.isInstallment,
+                        isRecurring: s.values.isRecurring,
                      })}
                   >
-                     {({ type, isInstallment }) =>
+                     {({ type, isInstallment, isRecurring }) =>
                         type !== "transfer" ? (
-                           <>
-                              <form.Field name="isInstallment">
-                                 {(field) => (
-                                    <Field>
-                                       <div className="flex items-center gap-2">
-                                          <Checkbox
+                           <div className="flex flex-col gap-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                 <form.Field name="isInstallment">
+                                    {(field) => (
+                                       <div className="flex items-center justify-between rounded-lg border p-3">
+                                          <label
+                                             className="text-sm font-medium cursor-pointer select-none"
+                                             htmlFor="isInstallment"
+                                          >
+                                             Parcelado
+                                          </label>
+                                          <Switch
                                              checked={field.state.value}
                                              id="isInstallment"
                                              onCheckedChange={(v) => {
-                                                field.handleChange(!!v);
+                                                field.handleChange(v);
                                                 if (!v)
                                                    form.setFieldValue(
                                                       "installmentCount",
                                                       null,
                                                    );
+                                                if (v) {
+                                                   form.setFieldValue(
+                                                      "isRecurring",
+                                                      false,
+                                                   );
+                                                   form.setFieldValue(
+                                                      "recurringFrequency",
+                                                      null,
+                                                   );
+                                                }
                                              }}
                                           />
-                                          <label
-                                             className="text-sm cursor-pointer select-none"
-                                             htmlFor="isInstallment"
-                                          >
-                                             Parcelado
-                                          </label>
                                        </div>
-                                    </Field>
-                                 )}
-                              </form.Field>
+                                    )}
+                                 </form.Field>
+
+                                 <form.Field name="isRecurring">
+                                    {(field) => (
+                                       <div className="flex items-center justify-between rounded-lg border p-3">
+                                          <label
+                                             className="text-sm font-medium cursor-pointer select-none"
+                                             htmlFor="isRecurring"
+                                          >
+                                             Recorrente
+                                          </label>
+                                          <Switch
+                                             checked={field.state.value}
+                                             id="isRecurring"
+                                             onCheckedChange={(v) => {
+                                                field.handleChange(v);
+                                                if (!v)
+                                                   form.setFieldValue(
+                                                      "recurringFrequency",
+                                                      null,
+                                                   );
+                                                if (v) {
+                                                   form.setFieldValue(
+                                                      "isInstallment",
+                                                      false,
+                                                   );
+                                                   form.setFieldValue(
+                                                      "installmentCount",
+                                                      null,
+                                                   );
+                                                }
+                                             }}
+                                          />
+                                       </div>
+                                    )}
+                                 </form.Field>
+                              </div>
 
                               {isInstallment && (
                                  <form.Field name="installmentCount">
@@ -1072,7 +1267,66 @@ function TransactionFormContent({
                                     )}
                                  </form.Field>
                               )}
-                           </>
+
+                              {isRecurring && (
+                                 <div className="grid grid-cols-2 gap-4">
+                                    <form.Field name="recurringFrequency">
+                                       {(field) => (
+                                          <Field>
+                                             <FieldLabel>Frequência</FieldLabel>
+                                             <Select
+                                                onValueChange={
+                                                   field.handleChange
+                                                }
+                                                value={field.state.value ?? ""}
+                                             >
+                                                <SelectTrigger>
+                                                   <SelectValue placeholder="Selecione a frequência" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                   <SelectItem value="weekly">
+                                                      Semanal
+                                                   </SelectItem>
+                                                   <SelectItem value="monthly">
+                                                      Mensal
+                                                   </SelectItem>
+                                                   <SelectItem value="yearly">
+                                                      Anual
+                                                   </SelectItem>
+                                                </SelectContent>
+                                             </Select>
+                                          </Field>
+                                       )}
+                                    </form.Field>
+
+                                    <form.Field name="recurringCount">
+                                       {(field) => (
+                                          <Field>
+                                             <FieldLabel>Repetições</FieldLabel>
+                                             <Input
+                                                id={field.name}
+                                                max={120}
+                                                min={2}
+                                                onBlur={field.handleBlur}
+                                                onChange={(e) =>
+                                                   field.handleChange(
+                                                      e.target.value
+                                                         ? Number(
+                                                              e.target.value,
+                                                           )
+                                                         : null,
+                                                   )
+                                                }
+                                                placeholder="Ex: 12"
+                                                type="number"
+                                                value={field.state.value ?? ""}
+                                             />
+                                          </Field>
+                                       )}
+                                    </form.Field>
+                                 </div>
+                              )}
+                           </div>
                         ) : null
                      }
                   </form.Subscribe>
@@ -1169,7 +1423,9 @@ export function TransactionCredenza({
             <>
                <CredenzaHeader>
                   <CredenzaTitle>
-                     {mode === "create" ? "Novo Lançamento" : "Editar Lançamento"}
+                     {mode === "create"
+                        ? "Novo Lançamento"
+                        : "Editar Lançamento"}
                   </CredenzaTitle>
                </CredenzaHeader>
                <CredenzaBody className="flex items-center justify-center py-8">

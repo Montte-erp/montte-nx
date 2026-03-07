@@ -5,6 +5,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { DefaultHeader } from "@/components/default-header";
 import type { PanelAction } from "@/features/context-panel/context-panel-store";
 import { useTransactionPrerequisites } from "@/features/transactions/hooks/use-transaction-prerequisites";
+import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
 import { TransactionExportCredenza } from "@/features/transactions/ui/transaction-export-credenza";
 import {
    DEFAULT_FILTERS,
@@ -14,7 +15,6 @@ import {
 import { TransactionImportCredenza } from "@/features/transactions/ui/transaction-import-credenza";
 import { TransactionPrerequisitesBlocker } from "@/features/transactions/ui/transaction-prerequisites-blocker";
 import { TransactionsList } from "@/features/transactions/ui/transactions-list";
-import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
 import { TransactionsSkeleton } from "@/features/transactions/ui/transactions-skeleton";
 import type { ViewConfig } from "@/features/view-switch/hooks/use-view-switch";
 import { useViewSwitch } from "@/features/view-switch/hooks/use-view-switch";
@@ -89,7 +89,9 @@ function TransactionsPage() {
          return;
       }
       openCredenza({
-         children: <TransactionCredenza mode="create" onSuccess={closeCredenza} />,
+         children: (
+            <TransactionCredenza mode="create" onSuccess={closeCredenza} />
+         ),
       });
    }, [hasBankAccounts, openCredenza, closeCredenza, navigate, slug, teamSlug]);
 
@@ -136,7 +138,9 @@ function TransactionsPage() {
             actions={
                <Button onClick={handleCreate}>
                   <Plus className="size-4" />
-                  <span className="sr-only sm:not-sr-only">Novo Lançamento</span>
+                  <span className="sr-only sm:not-sr-only">
+                     Novo Lançamento
+                  </span>
                </Button>
             }
             description="Gerencie suas receitas, despesas e transferências"

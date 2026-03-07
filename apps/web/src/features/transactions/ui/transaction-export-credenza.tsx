@@ -38,7 +38,12 @@ interface TransactionExportCredenzaProps {
 
 type ExportFormat = "csv" | "ofx";
 
-type BankAccountType = "checking" | "savings" | "investment" | "cash";
+type BankAccountType =
+   | "checking"
+   | "savings"
+   | "investment"
+   | "payment"
+   | "cash";
 
 // ---------------------------------------------------------------------------
 // Helpers

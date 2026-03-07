@@ -32,6 +32,7 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import Color from "color";
 import { toast } from "sonner";
+import { useAccountType } from "@/hooks/use-account-type";
 import { orpc } from "@/integrations/orpc/client";
 
 interface TagFormProps {
@@ -46,15 +47,20 @@ interface TagFormProps {
 
 export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
    const isCreate = mode === "create";
+   const { isBusiness } = useAccountType();
+   const entityName = isBusiness ? "centro de custo" : "tag";
+   const entityNameCapitalized = isBusiness ? "Centro de custo" : "Tag";
 
    const createMutation = useMutation(
       orpc.tags.create.mutationOptions({
          onSuccess: () => {
-            toast.success("Tag criada com sucesso.");
+            toast.success(
+               `${entityNameCapitalized} ${isBusiness ? "criado" : "criada"} com sucesso.`,
+            );
             onSuccess();
          },
          onError: (error) => {
-            toast.error(error.message || "Erro ao criar tag.");
+            toast.error(error.message || `Erro ao criar ${entityName}.`);
          },
       }),
    );
@@ -62,11 +68,13 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
    const updateMutation = useMutation(
       orpc.tags.update.mutationOptions({
          onSuccess: () => {
-            toast.success("Tag atualizada com sucesso.");
+            toast.success(
+               `${entityNameCapitalized} ${isBusiness ? "atualizado" : "atualizada"} com sucesso.`,
+            );
             onSuccess();
          },
          onError: (error) => {
-            toast.error(error.message || "Erro ao atualizar tag.");
+            toast.error(error.message || `Erro ao atualizar ${entityName}.`);
          },
       }),
    );
@@ -103,12 +111,22 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
       >
          <CredenzaHeader>
             <CredenzaTitle>
-               {isCreate ? "Nova Tag" : "Editar Tag"}
+               {isCreate
+                  ? isBusiness
+                     ? "Novo Centro de Custo"
+                     : "Nova Tag"
+                  : isBusiness
+                    ? "Editar Centro de Custo"
+                    : "Editar Tag"}
             </CredenzaTitle>
             <CredenzaDescription>
                {isCreate
-                  ? "Adicione uma nova tag para categorizar suas transações."
-                  : "Atualize as informações da tag."}
+                  ? isBusiness
+                     ? "Adicione um novo centro de custo para categorizar suas transações."
+                     : "Adicione uma nova tag para categorizar suas transações."
+                  : isBusiness
+                    ? "Atualize as informações do centro de custo."
+                    : "Atualize as informações da tag."}
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -225,7 +243,11 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
                         updateMutation.isPending) && (
                         <Spinner className="size-4 mr-2" />
                      )}
-                     {isCreate ? "Criar tag" : "Salvar alterações"}
+                     {isCreate
+                        ? isBusiness
+                           ? "Criar centro de custo"
+                           : "Criar tag"
+                        : "Salvar alterações"}
                   </Button>
                )}
             </form.Subscribe>

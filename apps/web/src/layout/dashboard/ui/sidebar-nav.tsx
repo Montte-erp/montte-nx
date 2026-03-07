@@ -19,6 +19,7 @@ import {
 } from "@tanstack/react-router";
 import { ChevronRight, Search, Settings2 } from "lucide-react";
 import { useCallback } from "react";
+import { useAccountType } from "@/hooks/use-account-type";
 import { useCredenza } from "@/hooks/use-credenza";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 import { useFinanceNavPreferences } from "@/layout/dashboard/hooks/use-finance-nav-preferences";
@@ -52,9 +53,11 @@ function NavItem({
 }) {
    const Icon = item.icon;
    const { getFeatureStage } = useEarlyAccess();
+   const { accountType } = useAccountType();
    const stage = item.earlyAccessFlag
       ? getFeatureStage(item.earlyAccessFlag)
       : null;
+   const resolvedLabel = item.labelOverrides?.[accountType] ?? item.label;
 
    const handleClick = useCallback(
       (e: React.MouseEvent) => {
@@ -77,7 +80,7 @@ function NavItem({
                   ? {
                        children: (
                           <span className="flex items-center gap-1.5">
-                             {item.label}
+                             {resolvedLabel}
                              <FeatureStageBadge isTooltip stage={stage} />
                           </span>
                        ),
@@ -88,7 +91,7 @@ function NavItem({
             {item.subPanel ? (
                <>
                   <Icon />
-                  <span>{item.label}</span>
+                  <span>{resolvedLabel}</span>
                   {stage && (
                      <FeatureStageBadge
                         className="ml-auto group-data-[collapsible=icon]:hidden"
@@ -104,7 +107,7 @@ function NavItem({
                   to={item.route}
                >
                   <Icon />
-                  <span>{item.label}</span>
+                  <span>{resolvedLabel}</span>
                   {stage && (
                      <FeatureStageBadge
                         className="ml-auto group-data-[collapsible=icon]:hidden"

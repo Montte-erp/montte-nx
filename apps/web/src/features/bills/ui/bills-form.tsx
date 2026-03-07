@@ -23,112 +23,35 @@ import {
    SelectValue,
 } from "@packages/ui/components/select";
 import { Spinner } from "@packages/ui/components/spinner";
-import { Switch } from "@packages/ui/components/switch";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { useStore } from "@tanstack/react-store";
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
-import { BillInstallmentPreview } from "./bill-installment-preview";
 import type { BillRow } from "./bills-columns";
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const FREQUENCY_OPTIONS = [
-   { value: "weekly", label: "Semanal" },
-   { value: "biweekly", label: "Quinzenal" },
-   { value: "monthly", label: "Mensal" },
-   { value: "quarterly", label: "Trimestral" },
-   { value: "yearly", label: "Anual" },
-] as const;
-
-const SPLIT_MODE_OPTIONS = [
-   { value: "equal", label: "Dividido igualmente" },
-   { value: "fixed", label: "Valor fixo por parcela" },
-] as const;
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type SplitMode = "equal" | "fixed";
-type Frequency = "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
-
 interface BillFormProps {
-   mode: "create" | "edit";
-   defaultType?: "payable" | "receivable";
-   bill?: BillRow;
+   bill: BillRow;
    onSuccess: () => void;
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function addMonths(dateStr: string, months: number): string {
-   const d = new Date(`${dateStr}T00:00:00`);
-   d.setMonth(d.getMonth() + months);
-   return d.toISOString().substring(0, 10);
-}
-
-function buildInstallmentItems(
-   amount: string,
-   count: number,
-   splitMode: SplitMode,
-   dueDate: string,
-) {
-   if (!amount || !count || count < 2 || !dueDate) return [];
-
-   const totalAmount = Number(amount);
-   if (Number.isNaN(totalAmount) || totalAmount <= 0) return [];
-
-   return Array.from({ length: count }, (_, i) => {
-      const itemAmount =
-         splitMode === "equal"
-            ? (totalAmount / count).toFixed(2)
-            : String(totalAmount);
-      return {
-         index: i + 1,
-         dueDate: addMonths(dueDate, i),
-         amount: itemAmount,
-      };
-   });
 }
 
 // ---------------------------------------------------------------------------
 // Inner component (reads suspense data)
 // ---------------------------------------------------------------------------
 
-function BillFormInner({ mode, defaultType, bill, onSuccess }: BillFormProps) {
-   const isCreate = mode === "create";
+function BillFormInner({ bill, onSuccess }: BillFormProps) {
    const today = new Date().toISOString().substring(0, 10);
-
-   // Installment / recurrence toggles (create only)
-   const [isInstallment, setIsInstallment] = useState(false);
-   const [isRecurring, setIsRecurring] = useState(false);
-   const [splitMode, setSplitMode] = useState<SplitMode>("equal");
 
    const { data: accounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
    );
    const { data: categories } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
-   );
-
-   const createMutation = useMutation(
-      orpc.bills.create.mutationOptions({
-         onSuccess: () => {
-            toast.success("Conta criada com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao criar conta.");
-         },
-      }),
    );
 
    const updateMutation = useMutation(
@@ -145,25 +68,17 @@ function BillFormInner({ mode, defaultType, bill, onSuccess }: BillFormProps) {
 
    const form = useForm({
       defaultValues: {
-         type:
-            bill?.type ??
-            defaultType ??
-            ("payable" as "payable" | "receivable"),
-         name: bill?.name ?? "",
-         amount: bill?.amount ?? "",
-         dueDate: bill?.dueDate ?? today,
-         bankAccountId: bill?.bankAccount?.id ?? "",
-         categoryId: bill?.category?.id ?? "",
+         type: bill.type as "payable" | "receivable",
+         name: bill.name ?? "",
+         amount: bill.amount ?? "",
+         dueDate: bill.dueDate ?? today,
+         bankAccountId: bill.bankAccount?.id ?? "",
+         categoryId: bill.category?.id ?? "",
          description: "",
-         // Installment fields
-         installmentCount: 2,
-         // Recurrence fields
-         frequency: "monthly" as Frequency,
-         windowMonths: 3,
-         recurrenceEndsAt: "",
       },
       onSubmit: async ({ value }) => {
-         const billBase = {
+         await updateMutation.mutateAsync({
+            id: bill.id,
             type: value.type,
             name: value.name.trim(),
             amount: value.amount,
@@ -171,44 +86,11 @@ function BillFormInner({ mode, defaultType, bill, onSuccess }: BillFormProps) {
             bankAccountId: value.bankAccountId || null,
             categoryId: value.categoryId || null,
             description: value.description?.trim() || null,
-         };
-
-         if (isCreate) {
-            await createMutation.mutateAsync({
-               bill: billBase,
-               installment: isInstallment
-                  ? {
-                       mode: splitMode,
-                       count: value.installmentCount,
-                    }
-                  : undefined,
-               recurrence: isRecurring
-                  ? {
-                       frequency: value.frequency,
-                       windowMonths: value.windowMonths,
-                       endsAt: value.recurrenceEndsAt || null,
-                    }
-                  : undefined,
-            });
-         } else if (bill) {
-            await updateMutation.mutateAsync({
-               id: bill.id,
-               ...billBase,
-            });
-         }
+         });
       },
    });
 
-   // Live installment preview data
-   const formValues = useStore(form.baseStore, (s) => s.values);
-   const previewItems = buildInstallmentItems(
-      formValues.amount,
-      formValues.installmentCount,
-      splitMode,
-      formValues.dueDate,
-   );
-
-   const isPending = createMutation.isPending || updateMutation.isPending;
+   const isPending = updateMutation.isPending;
 
    return (
       <form
@@ -220,13 +102,9 @@ function BillFormInner({ mode, defaultType, bill, onSuccess }: BillFormProps) {
          }}
       >
          <CredenzaHeader>
-            <CredenzaTitle>
-               {isCreate ? "Nova Conta" : "Editar Conta"}
-            </CredenzaTitle>
+            <CredenzaTitle>Editar Conta</CredenzaTitle>
             <CredenzaDescription>
-               {isCreate
-                  ? "Adicione uma nova conta a pagar ou receber."
-                  : "Atualize as informações da conta."}
+               Atualize as informações da conta.
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -418,180 +296,6 @@ function BillFormInner({ mode, defaultType, bill, onSuccess }: BillFormProps) {
                   )}
                </form.Field>
             </FieldGroup>
-
-            {/* ----------------------------------------------------------- */}
-            {/* Installment section — create only                            */}
-            {/* ----------------------------------------------------------- */}
-            {isCreate && (
-               <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                     <Switch
-                        checked={isInstallment}
-                        onCheckedChange={(v) => {
-                           setIsInstallment(v);
-                           if (v) setIsRecurring(false);
-                        }}
-                     />
-                     <span className="text-sm font-medium">Parcelar</span>
-                  </div>
-
-                  {isInstallment && (
-                     <div className="space-y-3 pl-2 border-l-2 border-muted ml-2">
-                        {/* Split mode */}
-                        <Field>
-                           <FieldLabel>Modo de divisão</FieldLabel>
-                           <Select
-                              onValueChange={(v) =>
-                                 setSplitMode(v as SplitMode)
-                              }
-                              value={splitMode}
-                           >
-                              <SelectTrigger>
-                                 <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                 {SPLIT_MODE_OPTIONS.map((opt) => (
-                                    <SelectItem
-                                       key={opt.value}
-                                       value={opt.value}
-                                    >
-                                       {opt.label}
-                                    </SelectItem>
-                                 ))}
-                              </SelectContent>
-                           </Select>
-                        </Field>
-
-                        {/* Installment count */}
-                        <form.Field name="installmentCount">
-                           {(field) => (
-                              <Field>
-                                 <FieldLabel>Número de parcelas</FieldLabel>
-                                 <Input
-                                    min={2}
-                                    onBlur={field.handleBlur}
-                                    onChange={(e) =>
-                                       field.handleChange(
-                                          Number.parseInt(e.target.value, 10) ||
-                                             2,
-                                       )
-                                    }
-                                    type="number"
-                                    value={field.state.value}
-                                 />
-                                 <FieldError errors={field.state.meta.errors} />
-                              </Field>
-                           )}
-                        </form.Field>
-
-                        {/* Live preview */}
-                        {previewItems.length > 0 && (
-                           <BillInstallmentPreview items={previewItems} />
-                        )}
-                     </div>
-                  )}
-               </div>
-            )}
-
-            {/* ----------------------------------------------------------- */}
-            {/* Recurrence section — create only                             */}
-            {/* ----------------------------------------------------------- */}
-            {isCreate && (
-               <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                     <Switch
-                        checked={isRecurring}
-                        onCheckedChange={(v) => {
-                           setIsRecurring(v);
-                           if (v) setIsInstallment(false);
-                        }}
-                     />
-                     <span className="text-sm font-medium">Recorrente</span>
-                  </div>
-
-                  {isRecurring && (
-                     <div className="space-y-3 pl-2 border-l-2 border-muted ml-2">
-                        {/* Frequency */}
-                        <form.Field name="frequency">
-                           {(field) => (
-                              <Field>
-                                 <FieldLabel>Frequência</FieldLabel>
-                                 <Select
-                                    onValueChange={(v) =>
-                                       field.handleChange(v as Frequency)
-                                    }
-                                    value={field.state.value}
-                                 >
-                                    <SelectTrigger>
-                                       <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                       {FREQUENCY_OPTIONS.map((opt) => (
-                                          <SelectItem
-                                             key={opt.value}
-                                             value={opt.value}
-                                          >
-                                             {opt.label}
-                                          </SelectItem>
-                                       ))}
-                                    </SelectContent>
-                                 </Select>
-                              </Field>
-                           )}
-                        </form.Field>
-
-                        {/* Window months */}
-                        <form.Field name="windowMonths">
-                           {(field) => (
-                              <Field>
-                                 <FieldLabel>
-                                    Gerar contas para quantos meses?
-                                 </FieldLabel>
-                                 <Input
-                                    max={12}
-                                    min={1}
-                                    onBlur={field.handleBlur}
-                                    onChange={(e) =>
-                                       field.handleChange(
-                                          Number.parseInt(e.target.value, 10) ||
-                                             1,
-                                       )
-                                    }
-                                    type="number"
-                                    value={field.state.value}
-                                 />
-                                 <FieldError errors={field.state.meta.errors} />
-                              </Field>
-                           )}
-                        </form.Field>
-
-                        {/* Recurrence ends at */}
-                        <form.Field name="recurrenceEndsAt">
-                           {(field) => (
-                              <Field>
-                                 <FieldLabel>Encerrar em (opcional)</FieldLabel>
-                                 <DatePicker
-                                    date={
-                                       field.state.value
-                                          ? new Date(
-                                               `${field.state.value}T00:00:00`,
-                                            )
-                                          : undefined
-                                    }
-                                    onSelect={(d) =>
-                                       field.handleChange(
-                                          d?.toISOString().substring(0, 10) ??
-                                             "",
-                                       )
-                                    }
-                                 />
-                              </Field>
-                           )}
-                        </form.Field>
-                     </div>
-                  )}
-               </div>
-            )}
          </CredenzaBody>
 
          <CredenzaFooter>
@@ -607,7 +311,7 @@ function BillFormInner({ mode, defaultType, bill, onSuccess }: BillFormProps) {
                      {(state.isSubmitting || isPending) && (
                         <Spinner className="size-4 mr-2" />
                      )}
-                     {isCreate ? "Criar conta" : "Salvar alterações"}
+                     Salvar alterações
                   </Button>
                )}
             </form.Subscribe>

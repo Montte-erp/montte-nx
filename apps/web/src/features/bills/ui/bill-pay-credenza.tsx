@@ -60,6 +60,7 @@ function BillPayCredenzaInner({ bill, onSuccess }: BillPayCredenzaProps) {
 
    const form = useForm({
       defaultValues: {
+         paymentType: "total" as "total" | "partial",
          amount: bill.amount,
          date: today,
          bankAccountId: defaultBankAccountId,
@@ -70,12 +71,15 @@ function BillPayCredenzaInner({ bill, onSuccess }: BillPayCredenzaProps) {
             amount: value.amount,
             date: value.date,
             bankAccountId: value.bankAccountId || undefined,
+            paymentType: value.paymentType,
          });
       },
    });
 
    const title =
       bill.type === "payable" ? "Registrar Pagamento" : "Registrar Recebimento";
+
+   const isPayable = bill.type === "payable";
 
    return (
       <>
@@ -93,26 +97,92 @@ function BillPayCredenzaInner({ bill, onSuccess }: BillPayCredenzaProps) {
                }}
             >
                <FieldGroup>
-                  <form.Field name="amount">
+                  <form.Field name="paymentType">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel>
+                              {isPayable
+                                 ? "Tipo de Pagamento"
+                                 : "Tipo de Recebimento"}
+                           </FieldLabel>
+                           <Select
+                              onValueChange={(v) => {
+                                 const payType = v as "total" | "partial";
+                                 field.handleChange(payType);
+                                 if (payType === "total") {
+                                    form.setFieldValue("amount", bill.amount);
+                                 }
+                              }}
+                              value={field.state.value}
+                           >
+                              <SelectTrigger>
+                                 <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 <SelectItem value="total">
+                                    {isPayable
+                                       ? "Pagamento Total"
+                                       : "Recebimento Total"}
+                                 </SelectItem>
+                                 <SelectItem value="partial">
+                                    {isPayable
+                                       ? "Pagamento Parcial"
+                                       : "Recebimento Parcial"}
+                                 </SelectItem>
+                              </SelectContent>
+                           </Select>
+                        </Field>
+                     )}
+                  </form.Field>
+                  <form.Field
+                     name="amount"
+                     validators={{
+                        onChange: ({ value, fieldApi }) => {
+                           const payType =
+                              fieldApi.form.getFieldValue("paymentType");
+                           if (payType === "partial") {
+                              const numValue = Number(value);
+                              const billAmount = Number(bill.amount);
+                              if (numValue >= billAmount) {
+                                 return "Valor deve ser menor que o valor da conta.";
+                              }
+                           }
+                           return undefined;
+                        },
+                     }}
+                  >
                      {(field) => (
                         <Field>
                            <FieldLabel>Valor</FieldLabel>
-                           <MoneyInput
-                              onChange={(v) =>
-                                 field.handleChange(
-                                    v !== undefined ? String(v / 100) : "",
-                                 )
-                              }
-                              value={
-                                 field.state.value
-                                    ? Math.round(
-                                         Number(field.state.value) * 100,
-                                      )
-                                    : 0
-                              }
-                              valueInCents={true}
+                           <form.Subscribe
+                              selector={(s) => s.values.paymentType}
+                           >
+                              {(paymentType) => (
+                                 <MoneyInput
+                                    disabled={paymentType === "total"}
+                                    onChange={(v) =>
+                                       field.handleChange(
+                                          v !== undefined
+                                             ? String(v / 100)
+                                             : "",
+                                       )
+                                    }
+                                    value={
+                                       field.state.value
+                                          ? Math.round(
+                                               Number(field.state.value) * 100,
+                                            )
+                                          : 0
+                                    }
+                                    valueInCents={true}
+                                 />
+                              )}
+                           </form.Subscribe>
+                           <FieldError
+                              errors={field.state.meta.errors.map((e) =>
+                                 typeof e === "string" ? { message: e } : e,
+                              )}
                            />
-                           <FieldError errors={field.state.meta.errors} />
                         </Field>
                      )}
                   </form.Field>

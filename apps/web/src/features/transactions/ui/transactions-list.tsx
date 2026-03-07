@@ -44,13 +44,13 @@ import { toast } from "sonner";
 import { BillFromTransactionCredenza } from "@/features/bills/ui/bill-from-transaction-credenza";
 import { BulkCategorizeForm } from "@/features/transactions/ui/bulk-categorize-form";
 import { BulkMoveAccountForm } from "@/features/transactions/ui/bulk-move-account-form";
+import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
 import type { TransactionFilters } from "@/features/transactions/ui/transaction-filter-bar";
 import {
    buildTransactionColumns,
    formatBRL,
    type TransactionRow,
 } from "@/features/transactions/ui/transactions-columns";
-import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";

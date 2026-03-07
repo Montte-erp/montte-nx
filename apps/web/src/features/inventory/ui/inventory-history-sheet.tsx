@@ -80,7 +80,9 @@ export function InventoryHistorySheet({ product }: InventoryHistorySheetProps) {
       <div className="space-y-4">
          <CredenzaHeader>
             <CredenzaTitle>Histórico de {product.name}</CredenzaTitle>
-            <CredenzaDescription>Veja todas as movimentações deste produto.</CredenzaDescription>
+            <CredenzaDescription>
+               Veja todas as movimentações deste produto.
+            </CredenzaDescription>
          </CredenzaHeader>
          <Suspense
             fallback={

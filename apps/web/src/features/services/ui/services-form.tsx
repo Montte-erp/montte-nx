@@ -6,12 +6,7 @@ import {
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
-import {
-   Field,
-   FieldError,
-
-   FieldLabel,
-} from "@packages/ui/components/field";
+import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { MoneyInput } from "@packages/ui/components/money-input";
 import {
@@ -454,7 +449,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                                                    >
                                                       {
                                                          BILLING_CYCLE_LABELS[
-                                                         cycle
+                                                            cycle
                                                          ]
                                                       }
                                                    </SelectItem>
@@ -467,9 +462,9 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                               </form.Field>
 
                               <Button
+                                 aria-label="Remover variante"
                                  className="h-9 w-9"
                                  onClick={() => arrayField.removeValue(index)}
-                                 aria-label="Remover variante"
                                  size="icon"
                                  type="button"
                                  variant="ghost"

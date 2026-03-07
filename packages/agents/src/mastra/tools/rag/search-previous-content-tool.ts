@@ -3,6 +3,7 @@ import { getLogger } from "@packages/logging/root";
 import { AppError, propagateError } from "@packages/utils/errors";
 
 const logger = getLogger().child({ module: "agents:rag" });
+
 import { embed } from "ai";
 import { z } from "zod";
 import {

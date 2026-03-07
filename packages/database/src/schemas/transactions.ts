@@ -48,10 +48,9 @@ export const transactions = pgTable(
       amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
       description: text("description"),
       date: date("date").notNull(),
-      bankAccountId: uuid("bank_account_id")
-         .references(() => bankAccounts.id, {
-            onDelete: "restrict",
-         }),
+      bankAccountId: uuid("bank_account_id").references(() => bankAccounts.id, {
+         onDelete: "restrict",
+      }),
       destinationBankAccountId: uuid("destination_bank_account_id").references(
          () => bankAccounts.id,
          { onDelete: "restrict" },

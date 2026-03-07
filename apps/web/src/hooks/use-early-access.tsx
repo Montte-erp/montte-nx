@@ -1,9 +1,3 @@
-import type {
-   EarlyAccessFeature,
-   EarlyAccessStage,
-} from "@/integrations/posthog/client";
-import { normalizeEarlyAccessStage, usePostHog } from "@/integrations/posthog/client";
-import { orpc } from "@/integrations/orpc/client";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import {
    createContext,
@@ -14,6 +8,15 @@ import {
    useMemo,
    useState,
 } from "react";
+import { orpc } from "@/integrations/orpc/client";
+import type {
+   EarlyAccessFeature,
+   EarlyAccessStage,
+} from "@/integrations/posthog/client";
+import {
+   normalizeEarlyAccessStage,
+   usePostHog,
+} from "@/integrations/posthog/client";
 
 type EarlyAccessContextValue = {
    features: EarlyAccessFeature[];
@@ -68,9 +71,7 @@ const STATIC_FEATURES: EarlyAccessFeature[] = [
 ];
 
 const STATIC_FLAG_KEYS = new Set(
-   STATIC_FEATURES.map((f) => f.flagKey).filter(
-      (k): k is string => k !== null,
-   ),
+   STATIC_FEATURES.map((f) => f.flagKey).filter((k): k is string => k !== null),
 );
 
 const EarlyAccessContext = createContext<EarlyAccessContextValue | null>(null);
@@ -85,20 +86,15 @@ export function EarlyAccessProvider({ children }: { children: ReactNode }) {
       orpc.earlyAccess.getEnrolledFeatures.queryOptions(),
    );
 
-   const enrolledSet = useMemo(
-      () => new Set(data.enrolled),
-      [data],
-   );
+   const enrolledSet = useMemo(() => new Set(data.enrolled), [data]);
 
    // PostHog early access features (for stage/name overrides only)
-   const [posthogFeatures, setPosthogFeatures] = useState<
-      EarlyAccessFeature[]
-   >([]);
+   const [posthogFeatures, setPosthogFeatures] = useState<EarlyAccessFeature[]>(
+      [],
+   );
 
    // Dismissed banner flags (in-memory, resets per session)
-   const [dismissedFlags, setDismissedFlags] = useState<Set<string>>(
-      new Set(),
-   );
+   const [dismissedFlags, setDismissedFlags] = useState<Set<string>>(new Set());
 
    useEffect(() => {
       posthogClient.getEarlyAccessFeatures(
@@ -148,16 +144,13 @@ export function EarlyAccessProvider({ children }: { children: ReactNode }) {
             orpc.earlyAccess.getEnrolledFeatures.queryOptions().queryKey;
 
          // Optimistically update the query cache
-         queryClient.setQueryData<{ enrolled: string[] }>(
-            queryKey,
-            (old) => {
-               const current = old?.enrolled ?? [];
-               const enrolled = value
-                  ? [...new Set([...current, flagKey])]
-                  : current.filter((k) => k !== flagKey);
-               return { enrolled };
-            },
-         );
+         queryClient.setQueryData<{ enrolled: string[] }>(queryKey, (old) => {
+            const current = old?.enrolled ?? [];
+            const enrolled = value
+               ? [...new Set([...current, flagKey])]
+               : current.filter((k) => k !== flagKey);
+            return { enrolled };
+         });
 
          // Use the native posthog-js SDK method — it handles
          // $feature_enrollment_update event + $set person property
@@ -178,9 +171,7 @@ export function EarlyAccessProvider({ children }: { children: ReactNode }) {
 
    const dismissBanner = useCallback(() => {
       const allKeys = new Set(
-         features
-            .map((f) => f.flagKey)
-            .filter((k): k is string => k !== null),
+         features.map((f) => f.flagKey).filter((k): k is string => k !== null),
       );
       setDismissedFlags(allKeys);
    }, [features]);
@@ -211,10 +202,16 @@ export function EarlyAccessProvider({ children }: { children: ReactNode }) {
    );
 }
 
+const FALLBACK: EarlyAccessContextValue = {
+   features: [],
+   isEnrolled: () => false,
+   getFeatureStage: () => null,
+   updateEnrollment: () => {},
+   isBannerVisible: false,
+   dismissBanner: () => {},
+};
+
 export function useEarlyAccess() {
    const ctx = useContext(EarlyAccessContext);
-   if (!ctx) {
-      throw new Error("useEarlyAccess must be used within EarlyAccessProvider");
-   }
-   return ctx;
+   return ctx ?? FALLBACK;
 }

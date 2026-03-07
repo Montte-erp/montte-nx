@@ -95,7 +95,11 @@ export function Combobox({
    };
 
    const showCreateOption =
-      onCreate && search.trim().length > 0 && filteredOptions.length === 0;
+      onCreate &&
+      search.trim().length > 0 &&
+      !filteredOptions.some(
+         (o) => o.label.toLowerCase() === search.trim().toLowerCase(),
+      );
 
    return (
       <Popover onOpenChange={setOpen} open={open}>
@@ -122,7 +126,10 @@ export function Combobox({
                   value={search}
                />
                <CommandList ref={refCallback}>
-                  {showCreateOption ? (
+                  {filteredOptions.length === 0 && !showCreateOption && (
+                     <CommandEmpty>{emptyMessage}</CommandEmpty>
+                  )}
+                  {showCreateOption && (
                      <CommandGroup>
                         <CommandItem
                            onSelect={handleCreate}
@@ -132,8 +139,6 @@ export function Combobox({
                            {createLabel} "{search.trim()}"
                         </CommandItem>
                      </CommandGroup>
-                  ) : (
-                     <CommandEmpty>{emptyMessage}</CommandEmpty>
                   )}
                   <CommandGroup>
                      <div

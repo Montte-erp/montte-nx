@@ -43,6 +43,7 @@ import Color from "color";
 import {
    CheckIcon,
    ChevronsUpDownIcon,
+   CreditCard,
    Landmark,
    PiggyBank,
    TrendingUp,
@@ -52,13 +53,23 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 
-type BankAccountType = "checking" | "savings" | "investment" | "cash";
+type BankAccountType =
+   | "checking"
+   | "savings"
+   | "investment"
+   | "payment"
+   | "cash";
 
 const TYPE_OPTIONS: {
    value: BankAccountType;
    label: string;
    icon: React.ReactNode;
 }[] = [
+   {
+      value: "cash",
+      label: "Caixa Físico",
+      icon: <Wallet className="size-4" />,
+   },
    {
       value: "checking",
       label: "Conta Corrente",
@@ -70,14 +81,14 @@ const TYPE_OPTIONS: {
       icon: <PiggyBank className="size-4" />,
    },
    {
+      value: "payment",
+      label: "Conta Pagamento",
+      icon: <CreditCard className="size-4" />,
+   },
+   {
       value: "investment",
       label: "Conta Investimento",
       icon: <TrendingUp className="size-4" />,
-   },
-   {
-      value: "cash",
-      label: "Carteira",
-      icon: <Wallet className="size-4" />,
    },
 ];
 
@@ -135,7 +146,7 @@ export function BankAccountForm({
       },
       onSubmit: async ({ value }) => {
          const resolvedName =
-            value.type === "cash" ? "Dinheiro" : value.name.trim();
+            value.type === "cash" ? "Caixa Físico" : value.name.trim();
          if (isCreate) {
             createMutation.mutate({
                color: value.color,
@@ -165,12 +176,12 @@ export function BankAccountForm({
       >
          <CredenzaHeader>
             <CredenzaTitle>
-               {isCreate ? "Nova Conta Bancária" : "Editar Conta Bancária"}
+               {isCreate ? "Novo Banco" : "Editar Banco"}
             </CredenzaTitle>
             <CredenzaDescription>
                {isCreate
-                  ? "Adicione uma nova conta para organizar suas finanças."
-                  : "Atualize as informações da conta bancária."}
+                  ? "O cadastro de banco possui duas partes: Seleção do tipo da conta e as informações sobre o banco."
+                  : "Atualize as informações do banco."}
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -185,7 +196,7 @@ export function BankAccountForm({
                      );
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel>Tipo</FieldLabel>
+                           <FieldLabel>Tipo de Conta</FieldLabel>
                            <Popover onOpenChange={setTypeOpen} open={typeOpen}>
                               <PopoverTrigger asChild>
                                  <Button

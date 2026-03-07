@@ -19,8 +19,41 @@ import { createSlug } from "@packages/utils/text";
 import { eq, sql } from "drizzle-orm";
 
 const logger = getLogger().child({ module: "router:onboarding" });
+
 import { z } from "zod";
 import { authenticatedProcedure, protectedProcedure } from "../server";
+import { posthog } from "../server-instances";
+
+const EARLY_ACCESS_FLAG_KEYS = [
+   "contacts",
+   "inventory",
+   "services",
+   "advanced-analytics",
+   "data-management",
+];
+
+async function enrollInAllFeatures(userId: string, organizationId: string) {
+   try {
+      for (const flagKey of EARLY_ACCESS_FLAG_KEYS) {
+         posthog.capture({
+            distinctId: userId,
+            event: "$feature_enrollment_update",
+            properties: {
+               $feature_flag: flagKey,
+               $feature_enrollment: true,
+               $set: { [`$feature_enrollment/${flagKey}`]: true },
+            },
+            groups: { organization: organizationId },
+         });
+      }
+      logger.info(
+         { userId, flagCount: EARLY_ACCESS_FLAG_KEYS.length },
+         "Enrolled user in all early access features",
+      );
+   } catch (error) {
+      logger.error({ err: error }, "Failed to enroll in early access features");
+   }
+}
 
 async function runOnboardingCompletion(
    tx: DatabaseInstance,
@@ -122,14 +155,25 @@ export const createWorkspace = authenticatedProcedure
 
       const slug = createSlug(input.workspaceName);
 
-      logger.info({ userId, workspaceName: input.workspaceName, slug, accountType: input.accountType }, "Starting workspace creation");
+      logger.info(
+         {
+            userId,
+            workspaceName: input.workspaceName,
+            slug,
+            accountType: input.accountType,
+         },
+         "Starting workspace creation",
+      );
 
       const org = await auth.api.createOrganization({
          headers,
          body: { name: input.workspaceName, slug },
       });
 
-      logger.info({ orgId: org?.id, orgSlug: org?.slug }, "Organization created");
+      logger.info(
+         { orgId: org?.id, orgSlug: org?.slug },
+         "Organization created",
+      );
 
       if (!org?.id) {
          throw new ORPCError("INTERNAL_SERVER_ERROR", {
@@ -179,7 +223,19 @@ export const createWorkspace = authenticatedProcedure
       });
       logger.info("Transaction committed");
 
-      logger.info({ orgId: org.id, orgSlug: org.slug ?? slug, teamId: createdTeam.id, teamSlug: slug }, "Onboarding complete");
+      if (input.accountType === "business") {
+         await enrollInAllFeatures(userId, org.id);
+      }
+
+      logger.info(
+         {
+            orgId: org.id,
+            orgSlug: org.slug ?? slug,
+            teamId: createdTeam.id,
+            teamSlug: slug,
+         },
+         "Onboarding complete",
+      );
 
       return {
          orgId: org.id,
@@ -262,6 +318,9 @@ export const getOnboardingStatus = protectedProcedure.handler(
             onboardingProducts: currentTeam.onboardingProducts ?? null,
             tasks: Object.keys(tasks).length > 0 ? tasks : null,
             name: currentTeam.name,
+            accountType:
+               (currentTeam.accountType as "personal" | "business") ??
+               "personal",
          },
       };
    },

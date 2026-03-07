@@ -25,7 +25,10 @@ export const parseEndpoint = (endpointUrl: string) => {
          useSSL,
       };
    } catch (error) {
-      logger.error({ err: error, endpointUrl }, "Invalid endpoint URL provided");
+      logger.error(
+         { err: error, endpointUrl },
+         "Invalid endpoint URL provided",
+      );
       return {
          endPoint: "localhost",
          port: 9000,

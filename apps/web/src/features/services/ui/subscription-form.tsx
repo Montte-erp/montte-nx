@@ -3,8 +3,8 @@ import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
    CredenzaBody,
-   CredenzaFooter,
    CredenzaDescription,
+   CredenzaFooter,
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
@@ -140,7 +140,9 @@ export function SubscriptionForm({
       <form className="h-full flex flex-col" onSubmit={handleSubmit}>
          <CredenzaHeader>
             <CredenzaTitle>Nova Assinatura</CredenzaTitle>
-            <CredenzaDescription>Crie uma assinatura recorrente para o serviço.</CredenzaDescription>
+            <CredenzaDescription>
+               Crie uma assinatura recorrente para o serviço.
+            </CredenzaDescription>
          </CredenzaHeader>
 
          <CredenzaBody className="space-y-4">

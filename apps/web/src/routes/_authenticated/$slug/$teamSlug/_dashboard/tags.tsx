@@ -28,6 +28,7 @@ import {
    useViewSwitch,
    type ViewConfig,
 } from "@/features/view-switch/hooks/use-view-switch";
+import { useAccountType } from "@/hooks/use-account-type";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -72,24 +73,33 @@ interface TagsListProps {
 function TagsList({ view }: TagsListProps) {
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
+   const { isBusiness } = useAccountType();
+
+   const entityName = isBusiness ? "centro de custo" : "tag";
 
    const { data: tags } = useSuspenseQuery(orpc.tags.getAll.queryOptions({}));
 
    const deleteMutation = useMutation(
       orpc.tags.remove.mutationOptions({
          onSuccess: () => {
-            toast.success("Tag excluída com sucesso.");
+            toast.success(
+               `${isBusiness ? "Centro de custo excluído" : "Tag excluída"} com sucesso.`,
+            );
          },
          onError: (error) => {
-            toast.error(error.message || "Erro ao excluir tag.");
+            toast.error(error.message || `Erro ao excluir ${entityName}.`);
          },
       }),
    );
 
    const archiveMutation = useMutation(
       orpc.tags.archive.mutationOptions({
-         onSuccess: () => toast.success("Tag arquivada."),
-         onError: (e) => toast.error(e.message || "Erro ao arquivar tag."),
+         onSuccess: () =>
+            toast.success(
+               `${isBusiness ? "Centro de custo arquivado" : "Tag arquivada"}.`,
+            ),
+         onError: (e) =>
+            toast.error(e.message || `Erro ao arquivar ${entityName}.`),
       }),
    );
 
@@ -107,8 +117,8 @@ function TagsList({ view }: TagsListProps) {
    const handleDelete = useCallback(
       (tag: TagRow) => {
          openAlertDialog({
-            title: "Excluir tag",
-            description: `Tem certeza que deseja excluir a tag "${tag.name}"? Esta ação não pode ser desfeita.`,
+            title: `Excluir ${entityName}`,
+            description: `Tem certeza que deseja excluir ${isBusiness ? "o centro de custo" : "a tag"} "${tag.name}"? Esta ação não pode ser desfeita.`,
             actionLabel: "Excluir",
             cancelLabel: "Cancelar",
             variant: "destructive",
@@ -134,9 +144,13 @@ function TagsList({ view }: TagsListProps) {
                <EmptyMedia variant="icon">
                   <Tag className="size-6" />
                </EmptyMedia>
-               <EmptyTitle>Nenhuma tag</EmptyTitle>
+               <EmptyTitle>
+                  {isBusiness ? "Nenhum centro de custo" : "Nenhuma tag"}
+               </EmptyTitle>
                <EmptyDescription>
-                  Adicione uma tag para categorizar suas transações.
+                  {isBusiness
+                     ? "Adicione um centro de custo para categorizar suas transações."
+                     : "Adicione uma tag para categorizar suas transações."}
                </EmptyDescription>
             </EmptyHeader>
          </Empty>
@@ -187,6 +201,7 @@ function TagsList({ view }: TagsListProps) {
 
 function TagsPage() {
    const { openCredenza, closeCredenza } = useCredenza();
+   const { isBusiness } = useAccountType();
    const { currentView, setView, views } = useViewSwitch(
       "finance:tags:view",
       TAG_VIEWS,
@@ -204,11 +219,15 @@ function TagsPage() {
             actions={
                <Button onClick={handleCreate}>
                   <Plus className="size-4 mr-1" />
-                  Nova Tag
+                  {isBusiness ? "Novo Centro de Custo" : "Nova Tag"}
                </Button>
             }
-            description="Gerencie suas tags para categorizar transações"
-            title="Tags"
+            description={
+               isBusiness
+                  ? "Gerencie seus centros de custo para categorizar transações"
+                  : "Gerencie suas tags para categorizar transações"
+            }
+            title={isBusiness ? "Centros de Custo" : "Tags"}
             viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <Suspense fallback={<TagsSkeleton />}>

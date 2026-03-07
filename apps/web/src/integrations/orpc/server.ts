@@ -177,7 +177,9 @@ const withTelemetry = withOrganization.use(
                ...otelIdentity,
                durationMs,
                success: isSuccess,
-               ...(error ? { errorName: error.name, errorMessage: error.message } : {}),
+               ...(error
+                  ? { errorName: error.name, errorMessage: error.message }
+                  : {}),
             },
          });
 

@@ -1,4 +1,3 @@
-import { identifyClient, setClientGroup } from "@/integrations/posthog/client";
 import {
    SidebarInset,
    SidebarManager,
@@ -21,6 +20,7 @@ import { useLastOrganization } from "@/hooks/use-last-organization";
 import { useSafeLocalStorage } from "@/hooks/use-local-storage";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
+import { identifyClient, setClientGroup } from "@/integrations/posthog/client";
 import { AppSidebar } from "./app-sidebar";
 import { SidebarSubPanel } from "./sidebar-sub-panel";
 
@@ -126,44 +126,44 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
    return (
       <EarlyAccessProvider>
-      <SidebarManagerProvider>
-         <SidebarProvider
-            className="h-svh"
-            onOpenChange={handleSidebarChange}
-            open={sidebarOpen}
-         >
-            <SidebarManager
-               name="main"
-               style={
-                  {
-                     "--sidebar-width": "28rem",
-                  } as React.CSSProperties
-               }
+         <SidebarManagerProvider>
+            <SidebarProvider
+               className="h-svh"
+               onOpenChange={handleSidebarChange}
+               open={sidebarOpen}
             >
-               <AppSidebar />
-            </SidebarManager>
+               <SidebarManager
+                  name="main"
+                  style={
+                     {
+                        "--sidebar-width": "28rem",
+                     } as React.CSSProperties
+                  }
+               >
+                  <AppSidebar />
+               </SidebarManager>
 
-            <SidebarInset className="flex flex-col overflow-hidden bg-sidebar">
-               <SidebarSubPanel />
-               <div className=" flex flex-1 flex-col overflow-hidden rounded-xl bg-background">
-                  <main
-                     className={cn(
-                        "relative flex-1",
-                        isChatPage
-                           ? "overflow-hidden "
-                           : isSettingsPage
-                             ? "overflow-hidden p-4"
-                             : "overflow-y-auto p-4",
-                     )}
-                  >
-                     {children}
-                  </main>
-               </div>
-               <AutoBugReporter />
-            </SidebarInset>
-            <GlobalContextPanel />
-         </SidebarProvider>
-      </SidebarManagerProvider>
+               <SidebarInset className="flex flex-col overflow-hidden bg-sidebar">
+                  <SidebarSubPanel />
+                  <div className=" flex flex-1 flex-col overflow-hidden rounded-xl bg-background">
+                     <main
+                        className={cn(
+                           "relative flex-1",
+                           isChatPage
+                              ? "overflow-hidden "
+                              : isSettingsPage
+                                ? "overflow-hidden p-4"
+                                : "overflow-y-auto p-4",
+                        )}
+                     >
+                        {children}
+                     </main>
+                  </div>
+                  <AutoBugReporter />
+               </SidebarInset>
+               <GlobalContextPanel />
+            </SidebarProvider>
+         </SidebarManagerProvider>
       </EarlyAccessProvider>
    );
 }

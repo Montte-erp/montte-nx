@@ -80,91 +80,96 @@ export function InventoryProductForm({
 
    return (
       <>
-      <CredenzaHeader>
-         <CredenzaTitle>{mode === "create" ? "Novo produto" : "Editar produto"}</CredenzaTitle>
-         <CredenzaDescription>Preencha as informações do produto.</CredenzaDescription>
-      </CredenzaHeader>
-      <form className="space-y-4" onSubmit={handleSubmit}>
-         <div className="space-y-1.5">
-            <Label htmlFor="name">Nome do produto</Label>
-            <Input
-               defaultValue={defaultValues?.name}
-               id="name"
-               name="name"
-               placeholder="Ex: Picolé Morango"
-               required
-            />
-         </div>
-
-         <div className="space-y-1.5">
-            <Label htmlFor="description">Descrição (opcional)</Label>
-            <Textarea
-               defaultValue={defaultValues?.description ?? ""}
-               id="description"
-               name="description"
-               rows={2}
-            />
-         </div>
-
-         <div className="grid grid-cols-2 gap-3">
+         <CredenzaHeader>
+            <CredenzaTitle>
+               {mode === "create" ? "Novo produto" : "Editar produto"}
+            </CredenzaTitle>
+            <CredenzaDescription>
+               Preencha as informações do produto.
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-1.5">
-               <Label htmlFor="baseUnit">Unidade base</Label>
+               <Label htmlFor="name">Nome do produto</Label>
                <Input
-                  defaultValue={defaultValues?.baseUnit ?? "un"}
-                  id="baseUnit"
-                  name="baseUnit"
-                  placeholder="un, g, mL"
+                  defaultValue={defaultValues?.name}
+                  id="name"
+                  name="name"
+                  placeholder="Ex: Picolé Morango"
                   required
                />
             </div>
+
             <div className="space-y-1.5">
-               <Label htmlFor="purchaseUnit">Unidade de compra</Label>
-               <Input
-                  defaultValue={defaultValues?.purchaseUnit ?? "caixa"}
-                  id="purchaseUnit"
-                  name="purchaseUnit"
-                  placeholder="caixa, kg, L"
-                  required
+               <Label htmlFor="description">Descrição (opcional)</Label>
+               <Textarea
+                  defaultValue={defaultValues?.description ?? ""}
+                  id="description"
+                  name="description"
+                  rows={2}
                />
             </div>
-         </div>
 
-         <div className="space-y-1.5">
-            <Label htmlFor="purchaseUnitFactor">
-               Fator de conversão (quantas unidades base por unidade de compra)
-            </Label>
-            <Input
-               defaultValue={defaultValues?.purchaseUnitFactor ?? "1"}
-               id="purchaseUnitFactor"
-               min="0.0001"
-               name="purchaseUnitFactor"
-               placeholder="Ex: 12 (1 caixa = 12 un)"
-               step="any"
-               type="number"
-            />
-            <p className="text-xs text-muted-foreground">
-               Para unidades padrão (kg→g, L→mL), a conversão é automática.
-            </p>
-         </div>
+            <div className="grid grid-cols-2 gap-3">
+               <div className="space-y-1.5">
+                  <Label htmlFor="baseUnit">Unidade base</Label>
+                  <Input
+                     defaultValue={defaultValues?.baseUnit ?? "un"}
+                     id="baseUnit"
+                     name="baseUnit"
+                     placeholder="un, g, mL"
+                     required
+                  />
+               </div>
+               <div className="space-y-1.5">
+                  <Label htmlFor="purchaseUnit">Unidade de compra</Label>
+                  <Input
+                     defaultValue={defaultValues?.purchaseUnit ?? "caixa"}
+                     id="purchaseUnit"
+                     name="purchaseUnit"
+                     placeholder="caixa, kg, L"
+                     required
+                  />
+               </div>
+            </div>
 
-         <div className="space-y-1.5">
-            <Label htmlFor="sellingPrice">Preço de venda (opcional)</Label>
-            <Input
-               defaultValue={defaultValues?.sellingPrice ?? ""}
-               id="sellingPrice"
-               min="0"
-               name="sellingPrice"
-               placeholder="0.00"
-               step="0.01"
-               type="number"
-            />
-         </div>
+            <div className="space-y-1.5">
+               <Label htmlFor="purchaseUnitFactor">
+                  Fator de conversão (quantas unidades base por unidade de
+                  compra)
+               </Label>
+               <Input
+                  defaultValue={defaultValues?.purchaseUnitFactor ?? "1"}
+                  id="purchaseUnitFactor"
+                  min="0.0001"
+                  name="purchaseUnitFactor"
+                  placeholder="Ex: 12 (1 caixa = 12 un)"
+                  step="any"
+                  type="number"
+               />
+               <p className="text-xs text-muted-foreground">
+                  Para unidades padrão (kg→g, L→mL), a conversão é automática.
+               </p>
+            </div>
 
-         <Button className="w-full" disabled={isPending} type="submit">
-            {isPending && <Loader2 className="size-4 mr-2 animate-spin" />}
-            {mode === "create" ? "Criar produto" : "Salvar alterações"}
-         </Button>
-      </form>
+            <div className="space-y-1.5">
+               <Label htmlFor="sellingPrice">Preço de venda (opcional)</Label>
+               <Input
+                  defaultValue={defaultValues?.sellingPrice ?? ""}
+                  id="sellingPrice"
+                  min="0"
+                  name="sellingPrice"
+                  placeholder="0.00"
+                  step="0.01"
+                  type="number"
+               />
+            </div>
+
+            <Button className="w-full" disabled={isPending} type="submit">
+               {isPending && <Loader2 className="size-4 mr-2 animate-spin" />}
+               {mode === "create" ? "Criar produto" : "Salvar alterações"}
+            </Button>
+         </form>
       </>
    );
 }

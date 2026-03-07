@@ -1,7 +1,6 @@
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { BatchLinkPlugin } from "@orpc/client/plugins";
-import posthogJs from "posthog-js";
 import type {
    InferRouterInputs,
    InferRouterOutputs,
@@ -11,6 +10,7 @@ import { createRouterClient } from "@orpc/server";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
+import posthogJs from "posthog-js";
 import router from "./router";
 import type { ORPCContextWithAuth } from "./server";
 import { auth, db, posthog, stripeClient } from "./server-instances";

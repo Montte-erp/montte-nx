@@ -30,11 +30,10 @@ import {
    LayoutList,
    MoreHorizontal,
    Pencil,
-   Plus,
    Trash2,
    XCircle,
 } from "lucide-react";
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import { BillPayCredenza } from "@/features/bills/ui/bill-pay-credenza";
@@ -193,9 +192,7 @@ function BillsList({ type, view }: BillsListProps) {
    const handleEdit = useCallback(
       (bill: BillRow) => {
          openCredenza({
-            children: (
-               <BillForm bill={bill} mode="edit" onSuccess={closeCredenza} />
-            ),
+            children: <BillForm bill={bill} onSuccess={closeCredenza} />,
          });
       },
       [openCredenza, closeCredenza],
@@ -245,8 +242,8 @@ function BillsList({ type, view }: BillsListProps) {
                <EmptyTitle>Nenhuma conta encontrada</EmptyTitle>
                <EmptyDescription>
                   {type === "payable"
-                     ? "Adicione uma conta a pagar para começar a controlar seus pagamentos."
-                     : "Adicione uma conta a receber para começar a controlar seus recebimentos."}
+                     ? "Contas a pagar são criadas automaticamente a partir de lançamentos."
+                     : "Contas a receber são criadas automaticamente a partir de lançamentos."}
                </EmptyDescription>
             </EmptyHeader>
          </Empty>
@@ -330,42 +327,19 @@ function BillsList({ type, view }: BillsListProps) {
 // =============================================================================
 
 function BillsPage() {
-   const { openCredenza, closeCredenza } = useCredenza();
-   const [tab, setTab] = useState<"payable" | "receivable">("payable");
    const { currentView, setView, views } = useViewSwitch(
       "finance:bills:view",
       BILL_VIEWS,
    );
 
-   const handleCreate = useCallback(() => {
-      openCredenza({
-         children: (
-            <BillForm
-               defaultType={tab}
-               mode="create"
-               onSuccess={closeCredenza}
-            />
-         ),
-      });
-   }, [openCredenza, closeCredenza, tab]);
-
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
-            actions={
-               <Button onClick={handleCreate}>
-                  <Plus className="size-4 mr-1" />
-                  Nova Conta
-               </Button>
-            }
             description="Gerencie suas contas a pagar e a receber"
             title="Contas"
             viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
-         <Tabs
-            onValueChange={(v) => setTab(v as "payable" | "receivable")}
-            value={tab}
-         >
+         <Tabs defaultValue="payable">
             <TabsList>
                <TabsTrigger value="payable">A Pagar</TabsTrigger>
                <TabsTrigger value="receivable">A Receber</TabsTrigger>

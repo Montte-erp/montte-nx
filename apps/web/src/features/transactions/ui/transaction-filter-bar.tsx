@@ -15,6 +15,18 @@ import { useMemo, useRef, useState } from "react";
 import { orpc } from "@/integrations/orpc/client";
 import { TransactionFilterPopover } from "./transaction-filter-popover";
 
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+   pix: "Pix",
+   credit_card: "Cartão de Crédito",
+   debit_card: "Cartão de Débito",
+   boleto: "Boleto",
+   cash: "Dinheiro",
+   transfer: "Transferência",
+   other: "Outro",
+   cheque: "Cheque",
+   automatic_debit: "Débito Automático",
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
@@ -119,6 +131,12 @@ export function TransactionFilterBar({
    const { data: categories } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
+   const { data: bankAccounts } = useSuspenseQuery(
+      orpc.bankAccounts.getAll.queryOptions({}),
+   );
+   const { data: creditCards } = useSuspenseQuery(
+      orpc.creditCards.getAll.queryOptions({}),
+   );
 
    // Debounced search via timeout ref
    const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -196,7 +214,7 @@ export function TransactionFilterBar({
          </div>
 
          {/* Row 2: Filters */}
-         <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
             {/* Período */}
             <div className="flex flex-col gap-2">
                <span className="text-xs font-medium uppercase text-muted-foreground">
@@ -298,6 +316,95 @@ export function TransactionFilterBar({
                            {c.name}
                         </SelectItem>
                      ))}
+                  </SelectContent>
+               </Select>
+            </div>
+
+            {/* Conta */}
+            <div className="flex flex-col gap-2">
+               <span className="text-xs font-medium uppercase text-muted-foreground">
+                  Conta
+               </span>
+               <Select
+                  onValueChange={(v) =>
+                     setFilters((f) => ({
+                        ...f,
+                        bankAccountId: v === "all" ? undefined : v,
+                        page: 1,
+                     }))
+                  }
+                  value={filters.bankAccountId ?? "all"}
+               >
+                  <SelectTrigger className="h-8 sm:w-[150px]">
+                     <SelectValue placeholder="Todas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                     <SelectItem value="all">Todas</SelectItem>
+                     {bankAccounts.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                           {a.name}
+                        </SelectItem>
+                     ))}
+                  </SelectContent>
+               </Select>
+            </div>
+
+            {/* Cartão */}
+            <div className="flex flex-col gap-2">
+               <span className="text-xs font-medium uppercase text-muted-foreground">
+                  Cartão
+               </span>
+               <Select
+                  onValueChange={(v) =>
+                     setFilters((f) => ({
+                        ...f,
+                        creditCardId: v === "all" ? undefined : v,
+                        page: 1,
+                     }))
+                  }
+                  value={filters.creditCardId ?? "all"}
+               >
+                  <SelectTrigger className="h-8 sm:w-[150px]">
+                     <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                     <SelectItem value="all">Todos</SelectItem>
+                     {creditCards.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                           {c.name}
+                        </SelectItem>
+                     ))}
+                  </SelectContent>
+               </Select>
+            </div>
+
+            {/* Forma de pagamento */}
+            <div className="flex flex-col gap-2">
+               <span className="text-xs font-medium uppercase text-muted-foreground">
+                  Forma de pagamento
+               </span>
+               <Select
+                  onValueChange={(v) =>
+                     setFilters((f) => ({
+                        ...f,
+                        paymentMethod: v === "all" ? undefined : v,
+                        page: 1,
+                     }))
+                  }
+                  value={filters.paymentMethod ?? "all"}
+               >
+                  <SelectTrigger className="h-8 sm:w-[170px]">
+                     <SelectValue placeholder="Todas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                     <SelectItem value="all">Todas</SelectItem>
+                     {Object.entries(PAYMENT_METHOD_LABELS).map(
+                        ([value, label]) => (
+                           <SelectItem key={value} value={value}>
+                              {label}
+                           </SelectItem>
+                        ),
+                     )}
                   </SelectContent>
                </Select>
             </div>

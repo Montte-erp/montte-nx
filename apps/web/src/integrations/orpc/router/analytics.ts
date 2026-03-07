@@ -60,7 +60,10 @@ export const getDefaultDashboard = protectedProcedure.handler(
          logger.info({ dashboardId: dashboard.id }, "Dashboard found");
          return dashboard;
       } catch (error) {
-         logger.error({ err: error, organizationId, teamId }, "Dashboard query failed");
+         logger.error(
+            { err: error, organizationId, teamId },
+            "Dashboard query failed",
+         );
          // Check if it's a not found error
          if (error instanceof Error && error.message.includes("not found")) {
             throw new ORPCError("NOT_FOUND", {

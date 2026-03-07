@@ -1,7 +1,8 @@
-import { getLogger } from "@packages/logging/root";
 import { Octokit } from "@octokit/rest";
+import { getLogger } from "@packages/logging/root";
 
 const logger = getLogger().child({ module: "feedback" });
+
 import { env } from "@packages/environment/server";
 import type { FeedbackAdapter, FeedbackPayload } from "./schemas";
 
@@ -69,7 +70,10 @@ export function createFeedbackSender(config: FeedbackSenderConfig) {
 
          for (const [i, result] of results.entries()) {
             if (result.status === "rejected") {
-               logger.error({ err: result.reason, adapter: adapters[i]?.name }, "Adapter failed");
+               logger.error(
+                  { err: result.reason, adapter: adapters[i]?.name },
+                  "Adapter failed",
+               );
             }
          }
       },

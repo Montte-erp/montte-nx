@@ -2,11 +2,16 @@ import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
    CredenzaBody,
-   CredenzaFooter,
    CredenzaDescription,
+   CredenzaFooter,
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
+import {
+   Dropzone,
+   DropzoneContent,
+   DropzoneEmptyState,
+} from "@packages/ui/components/dropzone";
 import {
    Select,
    SelectContent,
@@ -24,11 +29,6 @@ import {
    TableRow,
 } from "@packages/ui/components/table";
 import { useMutation } from "@tanstack/react-query";
-import {
-   Dropzone,
-   DropzoneContent,
-   DropzoneEmptyState,
-} from "@packages/ui/components/dropzone";
 import {
    AlertTriangle,
    CheckCircle2,

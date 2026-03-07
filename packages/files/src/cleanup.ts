@@ -30,7 +30,10 @@ export async function cleanupOrphanedFiles(
             await minioClient.removeObject(bucketName, obj.name);
             deletedCount++;
          } catch (error) {
-            logger.error({ err: error, fileName: obj.name }, "Failed to delete orphaned file");
+            logger.error(
+               { err: error, fileName: obj.name },
+               "Failed to delete orphaned file",
+            );
          }
       }
    }

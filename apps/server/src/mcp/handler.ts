@@ -51,7 +51,9 @@ export const mcpRequestHandler = withMcpAuth(
             typeof payload.sub === "string" ? payload.sub : undefined;
 
          if (!organizationId || !userId) {
-            logger.error("JWT missing required claims: organizationId or userId");
+            logger.error(
+               "JWT missing required claims: organizationId or userId",
+            );
             return undefined;
          }
 

@@ -8,8 +8,8 @@ import { insightConfigSchema } from "@packages/analytics/types";
 import { Button } from "@packages/ui/components/button";
 import {
    CredenzaBody,
-   CredenzaFooter,
    CredenzaDescription,
+   CredenzaFooter,
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
@@ -104,7 +104,9 @@ export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
          <>
             <CredenzaHeader>
                <CredenzaTitle>Configurar insight</CredenzaTitle>
-               <CredenzaDescription>Ajuste as configurações do insight.</CredenzaDescription>
+               <CredenzaDescription>
+                  Ajuste as configurações do insight.
+               </CredenzaDescription>
             </CredenzaHeader>
             <CredenzaBody className="h-[500px] flex items-center justify-center">
                <InsightLoadingState />
@@ -119,7 +121,9 @@ export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
             <CredenzaTitle className="text-base">
                {insight?.name ?? "Configurar insight"}
             </CredenzaTitle>
-            <CredenzaDescription>Ajuste as configurações do insight.</CredenzaDescription>
+            <CredenzaDescription>
+               Ajuste as configurações do insight.
+            </CredenzaDescription>
          </CredenzaHeader>
 
          <CredenzaBody className="p-0 overflow-hidden">

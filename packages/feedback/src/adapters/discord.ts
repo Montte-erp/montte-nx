@@ -100,7 +100,10 @@ export function discordAdapter(config: DiscordAdapterConfig): FeedbackAdapter {
                }),
             });
             if (!response.ok) {
-               logger.error({ status: response.status, statusText: response.statusText }, "Webhook delivery failed");
+               logger.error(
+                  { status: response.status, statusText: response.statusText },
+                  "Webhook delivery failed",
+               );
             }
          } catch (err) {
             logger.error({ err }, "Webhook request failed");

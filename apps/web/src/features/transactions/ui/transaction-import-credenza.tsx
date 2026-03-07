@@ -1210,7 +1210,17 @@ function ConfirmStep({
                subcategoryId: null as string | null,
                tagIds: [] as string[],
                attachmentUrl: null as string | null,
-               paymentMethod: (row.forma_pagamento || null) as "pix" | "credit_card" | "debit_card" | "boleto" | "cash" | "transfer" | "other" | "cheque" | "automatic_debit" | null,
+               paymentMethod: (row.forma_pagamento || null) as
+                  | "pix"
+                  | "credit_card"
+                  | "debit_card"
+                  | "boleto"
+                  | "cash"
+                  | "transfer"
+                  | "other"
+                  | "cheque"
+                  | "automatic_debit"
+                  | null,
                isInstallment: row.parcelado
                   ? ["sim", "yes", "true", "1"].includes(
                        row.parcelado.toLowerCase().trim(),

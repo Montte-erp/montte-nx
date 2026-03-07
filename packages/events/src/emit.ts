@@ -6,6 +6,7 @@ import {
    findMatchingWebhooks,
 } from "@packages/database/repositories/webhook-repository";
 import { events } from "@packages/database/schemas/events";
+import { getLogger } from "@packages/logging/root";
 import type { PostHog } from "@packages/posthog/server";
 import { createQueueConnection } from "@packages/queue/connection";
 import {
@@ -15,10 +16,10 @@ import {
 import type { StripeClient } from "@packages/stripe";
 import { STRIPE_METER_EVENTS } from "@packages/stripe/constants";
 import type { Queue } from "bullmq";
-import { getLogger } from "@packages/logging/root";
 import type { EmitFn, EventCategory } from "./catalog";
 
 const logger = getLogger().child({ module: "events" });
+
 import { incrementUsage, isWithinFreeTier } from "./credits";
 import { getEventPrice } from "./utils";
 
@@ -161,7 +162,10 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
                   timestamp: Math.floor(Date.now() / 1000),
                });
             } catch (stripeErr) {
-               logger.error({ err: stripeErr, meterEventName }, "Failed to send meter event to Stripe");
+               logger.error(
+                  { err: stripeErr, meterEventName },
+                  "Failed to send meter event to Stripe",
+               );
                // Don't throw — meter billing failure should not block the main flow
             }
          }
@@ -306,7 +310,10 @@ export async function emitEventBatch(
          }
       }
    } catch (error) {
-      logger.error({ err: error, batchSize: eventList.length }, "Failed to emit event batch");
+      logger.error(
+         { err: error, batchSize: eventList.length },
+         "Failed to emit event batch",
+      );
       // Don't throw -- events should not block the main flow
    }
 }

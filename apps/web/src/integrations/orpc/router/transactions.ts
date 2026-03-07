@@ -9,8 +9,8 @@ import {
    createTransaction,
    createTransactionItems,
    deleteTransaction,
-   getTransactionWithTags,
    getTransactionsSummary,
+   getTransactionWithTags,
    listTransactions,
    replaceTransactionItems,
    updateTransaction,
@@ -24,7 +24,7 @@ import { protectedProcedure } from "../server";
 // Validation Schemas
 // =============================================================================
 
-const transactionSchema = createInsertSchema(transactions)
+const transactionBaseSchema = createInsertSchema(transactions)
    .pick({
       type: true,
       amount: true,
@@ -56,13 +56,28 @@ const transactionSchema = createInsertSchema(transactions)
          .nullable()
          .optional(),
       tagIds: z.array(z.string().uuid()).optional().default([]),
-      items: z.array(z.object({
-         serviceId: z.string().uuid().nullable().optional(),
-         description: z.string().max(500).nullable().optional(),
-         quantity: z.string(),
-         unitPrice: z.string(),
-      })).optional().default([]),
+      items: z
+         .array(
+            z.object({
+               serviceId: z.string().uuid().nullable().optional(),
+               description: z.string().max(500).nullable().optional(),
+               quantity: z.string(),
+               unitPrice: z.string(),
+            }),
+         )
+         .optional()
+         .default([]),
    });
+
+const transactionSchema = transactionBaseSchema.superRefine((data, ctx) => {
+   if (data.type !== "transfer" && !data.categoryId) {
+      ctx.addIssue({
+         code: z.ZodIssueCode.custom,
+         message: "Categoria é obrigatória para receitas e despesas.",
+         path: ["categoryId"],
+      });
+   }
+});
 
 // =============================================================================
 // Helpers
@@ -190,7 +205,11 @@ export const create = protectedProcedure
          return transaction;
       }
 
-      const transaction = await createTransaction(db, { ...data, teamId }, tagIds);
+      const transaction = await createTransaction(
+         db,
+         { ...data, teamId },
+         tagIds,
+      );
       if (items && items.length > 0 && transaction) {
          await createTransactionItems(db, transaction.id, teamId, items);
       }
@@ -231,20 +250,28 @@ export const getAll = protectedProcedure
 
 export const getSummary = protectedProcedure
    .input(
-      z.object({
-         type: z.enum(["income", "expense", "transfer"]).optional(),
-         bankAccountId: z.string().uuid().optional(),
-         categoryId: z.string().uuid().optional(),
-         tagId: z.string().uuid().optional(),
-         contactId: z.string().uuid().optional(),
-         dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-         dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-         search: z.string().max(100).optional(),
-         creditCardId: z.string().uuid().optional(),
-         paymentMethod: z.string().optional(),
-         uncategorized: z.boolean().optional(),
-         conditionGroup: ConditionGroup.optional(),
-      }).optional(),
+      z
+         .object({
+            type: z.enum(["income", "expense", "transfer"]).optional(),
+            bankAccountId: z.string().uuid().optional(),
+            categoryId: z.string().uuid().optional(),
+            tagId: z.string().uuid().optional(),
+            contactId: z.string().uuid().optional(),
+            dateFrom: z
+               .string()
+               .regex(/^\d{4}-\d{2}-\d{2}$/)
+               .optional(),
+            dateTo: z
+               .string()
+               .regex(/^\d{4}-\d{2}-\d{2}$/)
+               .optional(),
+            search: z.string().max(100).optional(),
+            creditCardId: z.string().uuid().optional(),
+            paymentMethod: z.string().optional(),
+            uncategorized: z.boolean().optional(),
+            conditionGroup: ConditionGroup.optional(),
+         })
+         .optional(),
    )
    .handler(async ({ context, input }) => {
       const { db, teamId } = context;
@@ -266,7 +293,7 @@ export const getById = protectedProcedure
 
 export const update = protectedProcedure
    .input(
-      z.object({ id: z.string().uuid() }).merge(transactionSchema.partial()),
+      z.object({ id: z.string().uuid() }).merge(transactionBaseSchema.partial()),
    )
    .handler(async ({ context, input }) => {
       const { db, teamId } = context;
@@ -320,7 +347,7 @@ export const importBulk = protectedProcedure
       z.object({
          transactions: z
             .array(
-               transactionSchema.extend({
+               transactionBaseSchema.extend({
                   name: z.string().max(200).nullable().optional(),
                }),
             )

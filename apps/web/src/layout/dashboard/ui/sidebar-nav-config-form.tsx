@@ -38,7 +38,8 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
             .map((g) => ({
                ...g,
                items: g.items.filter(
-                  (item) => !item.earlyAccessFlag || isEnrolled(item.earlyAccessFlag),
+                  (item) =>
+                     !item.earlyAccessFlag || isEnrolled(item.earlyAccessFlag),
                ),
             }))
             .filter((g) => g.items.length > 0),
@@ -48,7 +49,8 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
    const visibleMainEarlyAccessItems = useMemo(
       () =>
          mainEarlyAccessItems.filter(
-            (item) => !item.earlyAccessFlag || isEnrolled(item.earlyAccessFlag!),
+            (item) =>
+               !item.earlyAccessFlag || isEnrolled(item.earlyAccessFlag!),
          ),
       [isEnrolled],
    );
@@ -160,7 +162,9 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
       <>
          <CredenzaHeader>
             <CredenzaTitle>Personalizar barra lateral</CredenzaTitle>
-            <CredenzaDescription>Escolha quais itens exibir na navegação.</CredenzaDescription>
+            <CredenzaDescription>
+               Escolha quais itens exibir na navegação.
+            </CredenzaDescription>
          </CredenzaHeader>
          <CredenzaBody>
             <p className="text-sm text-muted-foreground mb-6">

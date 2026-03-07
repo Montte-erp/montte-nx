@@ -2,6 +2,7 @@ import { getLogger } from "@packages/logging/root";
 import { AppError, propagateError } from "@packages/utils/errors";
 
 const logger = getLogger().child({ module: "db:auth" });
+
 import { createSlug, generateRandomSuffix } from "@packages/utils/text";
 import { eq } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
@@ -162,12 +163,15 @@ export async function createDefaultOrganization(
          });
       }
 
-      logger.info({
-         organizationId: createdOrganization.id,
-         organizationName: orgName,
-         organizationSlug: orgSlug,
-         userId,
-      }, "Created organization");
+      logger.info(
+         {
+            organizationId: createdOrganization.id,
+            organizationName: orgName,
+            organizationSlug: orgSlug,
+            userId,
+         },
+         "Created organization",
+      );
 
       return createdOrganization;
    } catch (err) {
@@ -265,11 +269,14 @@ export async function ensureDefaultProject(
          createdAt: now,
       });
 
-      logger.info({
-         teamId: created.id,
-         teamName: created.name,
-         organizationId,
-      }, "Created default team");
+      logger.info(
+         {
+            teamId: created.id,
+            teamName: created.name,
+            organizationId,
+         },
+         "Created default team",
+      );
 
       return created;
    } catch (err) {

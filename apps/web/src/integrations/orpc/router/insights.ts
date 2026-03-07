@@ -212,7 +212,10 @@ export const refreshDashboard = protectedProcedure
                })
                .where(eq(insights.id, insightId));
          } catch (error) {
-            logger.error({ err: error, insightId }, "Failed to refresh insight");
+            logger.error(
+               { err: error, insightId },
+               "Failed to refresh insight",
+            );
             // Continue with other insights even if one fails
          }
       });

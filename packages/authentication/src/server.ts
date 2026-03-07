@@ -5,6 +5,7 @@ import type { DatabaseInstance } from "@packages/database/client";
 import { findMemberByUserId } from "@packages/database/repositories/auth-repository";
 import { getDomain, isProduction } from "@packages/environment/helpers";
 import type { ServerEnv } from "@packages/environment/server";
+import { getLogger } from "@packages/logging/root";
 import { getElysiaPosthogConfig } from "@packages/posthog/server";
 import { createRedisConnection } from "@packages/redis/connection";
 import { getStripeClient } from "@packages/stripe";
@@ -29,7 +30,6 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import type Stripe from "stripe";
 import { z } from "zod";
 import { createBetterAuthStorage } from "./cache";
-import { getLogger } from "@packages/logging/root";
 
 const logger = getLogger().child({ module: "auth" });
 
@@ -119,7 +119,10 @@ export function createAuth(config: SimplifiedAuthConfig) {
                      // User will be redirected to onboarding by route guards.
                      return { data: session };
                   } catch (error) {
-                     logger.error({ err: error }, "Error in session create before hook");
+                     logger.error(
+                        { err: error },
+                        "Error in session create before hook",
+                     );
                      return { data: session };
                   }
                },
@@ -310,7 +313,10 @@ export function createAuth(config: SimplifiedAuthConfig) {
             async sendInvitationEmail(data) {
                const inviteLink = `${getDomain()}/callback/organization/invitation/${data.id}`;
                if (!isProduction) {
-                  logger.info({ email: data.email, inviteLink }, "DEV organization invitation generated");
+                  logger.info(
+                     { email: data.email, inviteLink },
+                     "DEV organization invitation generated",
+                  );
                   return;
                }
                await sendOrganizationInvitation(resendClient, {
@@ -424,7 +430,10 @@ export function createAuth(config: SimplifiedAuthConfig) {
                      },
                   });
                } catch (error) {
-                  logger.error({ err: error }, "Failed to capture subscription_started event");
+                  logger.error(
+                     { err: error },
+                     "Failed to capture subscription_started event",
+                  );
                }
             },
             onSubscriptionCancel: async ({
@@ -444,7 +453,10 @@ export function createAuth(config: SimplifiedAuthConfig) {
                      },
                   });
                } catch (error) {
-                  logger.error({ err: error }, "Failed to capture subscription_canceled event");
+                  logger.error(
+                     { err: error },
+                     "Failed to capture subscription_canceled event",
+                  );
                }
             },
          }),

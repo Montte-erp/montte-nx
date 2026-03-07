@@ -1,13 +1,16 @@
 import cors from "@elysiajs/cors";
-import { FetchLoggingPlugin } from "@packages/logging/orpc-plugin";
 import { RPCHandler } from "@orpc/server/fetch";
 import { BatchHandlerPlugin } from "@orpc/server/plugins";
 import { env } from "@packages/environment/server";
-import { startHealthHeartbeat, stopHealthHeartbeat } from "@packages/logging/health";
+import {
+   startHealthHeartbeat,
+   stopHealthHeartbeat,
+} from "@packages/logging/health";
+import { FetchLoggingPlugin } from "@packages/logging/orpc-plugin";
 import { initOtel, shutdownOtel } from "@packages/logging/otel";
+import { initLogger } from "@packages/logging/root";
 import { shutdownPosthog } from "@packages/posthog/server";
 import { Elysia } from "elysia";
-import { initLogger } from "@packages/logging/root";
 import { auth } from "./integrations/auth";
 import { db } from "./integrations/database";
 import { minioClient } from "./integrations/minio";

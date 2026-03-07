@@ -4,8 +4,8 @@ import {
    parseDecimalToMinorUnits,
 } from "@f-o-t/money";
 import type { DatabaseInstance } from "@packages/database/client";
-import { getLogger } from "@packages/logging/root";
 import { eventCatalog } from "@packages/database/schemas/event-catalog";
+import { getLogger } from "@packages/logging/root";
 import { eq } from "drizzle-orm";
 
 const logger = getLogger().child({ module: "events:utils" });
@@ -31,7 +31,10 @@ export async function getEventPrice(
       .limit(1);
 
    if (!catalogEntry) {
-      logger.warn({ eventName }, "Event not found in catalog, defaulting to $0");
+      logger.warn(
+         { eventName },
+         "Event not found in catalog, defaulting to $0",
+      );
       return {
          price: createMoney(0n, CURRENCY, PRICE_SCALE),
          isBillable: false,

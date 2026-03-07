@@ -21,14 +21,14 @@ import {
 } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import {
+   bankAccounts,
    categories,
+   contacts,
    creditCards,
    type NewTransaction,
+   transactionItems,
    transactions,
    transactionTags,
-   bankAccounts,
-   contacts,
-   transactionItems,
 } from "../schema";
 
 export interface ListTransactionsFilter {
@@ -172,7 +172,12 @@ export async function listTransactions(
       if (filter.creditCardId)
          conditions.push(eq(transactions.creditCardId, filter.creditCardId));
       if (filter.paymentMethod)
-         conditions.push(eq(transactions.paymentMethod, filter.paymentMethod as typeof transactions.paymentMethod.enumValues[number]));
+         conditions.push(
+            eq(
+               transactions.paymentMethod,
+               filter.paymentMethod as (typeof transactions.paymentMethod.enumValues)[number],
+            ),
+         );
       if (filter.uncategorized)
          conditions.push(isNull(transactions.categoryId));
 
@@ -215,7 +220,10 @@ export async function listTransactions(
                creditCards,
                eq(transactions.creditCardId, creditCards.id),
             )
-            .leftJoin(bankAccounts, eq(transactions.bankAccountId, bankAccounts.id))
+            .leftJoin(
+               bankAccounts,
+               eq(transactions.bankAccountId, bankAccounts.id),
+            )
             .leftJoin(contacts, eq(transactions.contactId, contacts.id))
             .where(whereClause)
             .orderBy(desc(transactions.date));
@@ -243,7 +251,10 @@ export async function listTransactions(
          .from(transactions)
          .leftJoin(categories, eq(transactions.categoryId, categories.id))
          .leftJoin(creditCards, eq(transactions.creditCardId, creditCards.id))
-         .leftJoin(bankAccounts, eq(transactions.bankAccountId, bankAccounts.id))
+         .leftJoin(
+            bankAccounts,
+            eq(transactions.bankAccountId, bankAccounts.id),
+         )
          .leftJoin(contacts, eq(transactions.contactId, contacts.id))
          .where(whereClause);
 
@@ -258,7 +269,10 @@ export async function listTransactions(
          .from(transactions)
          .leftJoin(categories, eq(transactions.categoryId, categories.id))
          .leftJoin(creditCards, eq(transactions.creditCardId, creditCards.id))
-         .leftJoin(bankAccounts, eq(transactions.bankAccountId, bankAccounts.id))
+         .leftJoin(
+            bankAccounts,
+            eq(transactions.bankAccountId, bankAccounts.id),
+         )
          .leftJoin(contacts, eq(transactions.contactId, contacts.id))
          .where(whereClause)
          .orderBy(desc(transactions.date))
@@ -285,9 +299,17 @@ export async function getTransactionsSummary(
             .from(transactionTags)
             .where(eq(transactionTags.tagId, filter.tagId));
          if (taggedIds.length === 0)
-            return { totalCount: 0, incomeTotal: "0", expenseTotal: "0", balance: "0" };
+            return {
+               totalCount: 0,
+               incomeTotal: "0",
+               expenseTotal: "0",
+               balance: "0",
+            };
          conditions.push(
-            inArray(transactions.id, taggedIds.map((r) => r.transactionId)),
+            inArray(
+               transactions.id,
+               taggedIds.map((r) => r.transactionId),
+            ),
          );
       }
 
@@ -312,7 +334,12 @@ export async function getTransactionsSummary(
       if (filter.creditCardId)
          conditions.push(eq(transactions.creditCardId, filter.creditCardId));
       if (filter.paymentMethod)
-         conditions.push(eq(transactions.paymentMethod, filter.paymentMethod as typeof transactions.paymentMethod.enumValues[number]));
+         conditions.push(
+            eq(
+               transactions.paymentMethod,
+               filter.paymentMethod as (typeof transactions.paymentMethod.enumValues)[number],
+            ),
+         );
       if (filter.uncategorized)
          conditions.push(isNull(transactions.categoryId));
 
@@ -408,7 +435,12 @@ export async function createTransactionItems(
    db: DatabaseInstance,
    transactionId: string,
    teamId: string,
-   items: { serviceId?: string | null; description?: string | null; quantity: string; unitPrice: string }[],
+   items: {
+      serviceId?: string | null;
+      description?: string | null;
+      quantity: string;
+      unitPrice: string;
+   }[],
 ) {
    if (items.length === 0) return;
    try {
@@ -428,7 +460,10 @@ export async function createTransactionItems(
    }
 }
 
-export async function getTransactionItems(db: DatabaseInstance, transactionId: string) {
+export async function getTransactionItems(
+   db: DatabaseInstance,
+   transactionId: string,
+) {
    try {
       return db
          .select()
@@ -444,10 +479,17 @@ export async function replaceTransactionItems(
    db: DatabaseInstance,
    transactionId: string,
    teamId: string,
-   items: { serviceId?: string | null; description?: string | null; quantity: string; unitPrice: string }[],
+   items: {
+      serviceId?: string | null;
+      description?: string | null;
+      quantity: string;
+      unitPrice: string;
+   }[],
 ) {
    try {
-      await db.delete(transactionItems).where(eq(transactionItems.transactionId, transactionId));
+      await db
+         .delete(transactionItems)
+         .where(eq(transactionItems.transactionId, transactionId));
       if (items.length > 0) {
          await createTransactionItems(db, transactionId, teamId, items);
       }

@@ -1,9 +1,9 @@
 import "@/polyfill";
 import "@/integrations/otel/init";
 
-import { FetchLoggingPlugin } from "@packages/logging/orpc-plugin";
 import { RPCHandler } from "@orpc/server/fetch";
 import { BatchHandlerPlugin } from "@orpc/server/plugins";
+import { FetchLoggingPlugin } from "@packages/logging/orpc-plugin";
 import { createFileRoute } from "@tanstack/react-router";
 import pino from "pino";
 import router from "@/integrations/orpc/router";

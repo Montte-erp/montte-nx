@@ -42,7 +42,9 @@ function ReauthContent({ onSuccess, onCancel }: ReauthContentProps) {
       <>
          <CredenzaHeader>
             <CredenzaTitle>Confirmar identidade</CredenzaTitle>
-            <CredenzaDescription>Digite sua senha para continuar.</CredenzaDescription>
+            <CredenzaDescription>
+               Digite sua senha para continuar.
+            </CredenzaDescription>
          </CredenzaHeader>
          <CredenzaBody className="space-y-4">
             <div className="space-y-1.5">
