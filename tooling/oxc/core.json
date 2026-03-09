@@ -1,0 +1,21 @@
+{
+   "$schema": "../../node_modules/oxlint/configuration_schema.json",
+   "extends": ["./base.json"],
+   "rules": {
+      "no-restricted-imports": [
+         "error",
+         {
+            "patterns": [
+               {
+                  "group": ["@packages/*"],
+                  "message": "core/ cannot depend on packages/"
+               },
+               {
+                  "group": ["@/*"],
+                  "message": "core/ cannot depend on app internals"
+               }
+            ]
+         }
+      ]
+   }
+}
