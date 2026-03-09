@@ -1,0 +1,1 @@
+{ "extends": ["../../tooling/oxc/packages.json"] }
