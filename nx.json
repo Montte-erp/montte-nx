@@ -21,7 +21,7 @@
          "plugin": "@nx/js/typescript",
          "options": {
             "build": {
-               "configName": "tsconfig.lib.json",
+               "configName": "tsconfig.json",
                "targetName": "build"
             },
             "typecheck": {

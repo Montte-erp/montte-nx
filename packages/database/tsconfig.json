@@ -1,4 +1,4 @@
 {
-   "extends": "@tooling/typescript/typecheck.json",
-   "include": ["src", "src/schemas/**/*.ts"]
+   "extends": "@tooling/typescript/core.json",
+   "include": ["src"]
 }

@@ -28,7 +28,7 @@
       "./postcss.config": "./postcss.config.mjs"
    },
    "scripts": {
-      "build": "tsc --build tsconfig.lib.json",
+      "build": "tsc --noEmit",
       "check": "oxlint ./src",
       "typecheck": "tsgo"
    },

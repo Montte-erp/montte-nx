@@ -1,24 +1,7 @@
 {
+   "extends": "@tooling/typescript/app.json",
    "compilerOptions": {
-      "target": "ES2022",
-      "module": "ESNext",
-      "moduleResolution": "bundler",
-      "lib": ["ES2022"],
-      "types": ["bun-types"],
-      "strict": true,
-      "skipLibCheck": true,
-      "noEmit": true,
-      "esModuleInterop": true,
-      "isolatedModules": true,
-      "verbatimModuleSyntax": true,
-      "noUnusedLocals": true,
-      "noUnusedParameters": true,
-      "noUncheckedIndexedAccess": true,
-      "tsBuildInfoFile": ".cache/tsbuildinfo.json",
-      "jsx": "react-jsx"
+      "lib": ["ES2022"]
    },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "references": []
+   "include": ["src"]
 }

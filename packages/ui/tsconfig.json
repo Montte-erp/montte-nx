@@ -1,13 +1,10 @@
 {
-   "extends": "@tooling/typescript/typecheck.json",
+   "extends": "@tooling/typescript/tsconfig.package.json",
    "compilerOptions": {
       "jsx": "react-jsx",
-      "types": ["bun-types"],
-      "lib": ["dom", "ES2022"],
       "paths": {
          "@packages/ui/*": ["./src/*"]
       }
    },
-   "include": ["src"],
-   "exclude": ["node_modules"]
+   "include": ["src"]
 }
