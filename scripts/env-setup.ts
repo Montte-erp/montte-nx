@@ -323,7 +323,9 @@ program
    .action((options) => {
       if (!options.confirm) {
          console.log(
-            colors.red("⚠️  This will remove all .env files from the monorepo!"),
+            colors.red(
+               "⚠️  This will remove all .env files from the monorepo!",
+            ),
          );
          console.log(colors.yellow("Are you sure you want to continue? (y/N)"));
 

@@ -4,88 +4,88 @@
 #   podman-compose logs electric -f
 
 services:
-  minio:
-    image: docker.io/minio/minio:latest
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin123
-      MINIO_DEFAULT_BUCKETS: montte-documents
-    volumes:
-      - miniodata:/data
-    ports:
-      - "9000:9000" # S3 API
-      - "9001:9001" # Web Console
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+   minio:
+      image: docker.io/minio/minio:latest
+      command: server /data --console-address ":9001"
+      environment:
+         MINIO_ROOT_USER: minioadmin
+         MINIO_ROOT_PASSWORD: minioadmin123
+         MINIO_DEFAULT_BUCKETS: montte-documents
+      volumes:
+         - miniodata:/data
+      ports:
+         - "9000:9000" # S3 API
+         - "9001:9001" # Web Console
+      healthcheck:
+         test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+         interval: 30s
+         timeout: 20s
+         retries: 3
 
-  contentta-db:
-    image: docker.io/postgres:15
-    command: postgres -c wal_level=logical
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: montte
-    volumes:
-      - montte_pgdata:/var/lib/postgresql/data
-    ports:
-      - "5433:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d montte"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+   contentta-db:
+      image: docker.io/postgres:15
+      command: postgres -c wal_level=logical
+      environment:
+         POSTGRES_USER: postgres
+         POSTGRES_PASSWORD: password
+         POSTGRES_DB: montte
+      volumes:
+         - montte_pgdata:/var/lib/postgresql/data
+      ports:
+         - "5433:5432"
+      healthcheck:
+         test: ["CMD-SHELL", "pg_isready -U postgres -d montte"]
+         interval: 10s
+         timeout: 5s
+         retries: 5
 
-  redis:
-    image: redis:7-alpine
-    container_name: montte-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+   redis:
+      image: redis:7-alpine
+      container_name: montte-redis
+      ports:
+         - "6379:6379"
+      volumes:
+         - redis_data:/data
+      command: redis-server --appendonly yes
+      healthcheck:
+         test: ["CMD", "redis-cli", "ping"]
+         interval: 10s
+         timeout: 5s
+         retries: 5
 
-  pgvector:
-    image: docker.io/pgvector/pgvector:pg16
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: montte_vectors 
-    volumes:
-      - pgvector_data:/var/lib/postgresql/data
-    ports:
-      - "8000:5432"
+   pgvector:
+      image: docker.io/pgvector/pgvector:pg16
+      environment:
+         POSTGRES_USER: postgres
+         POSTGRES_PASSWORD: password
+         POSTGRES_DB: montte_vectors
+      volumes:
+         - pgvector_data:/var/lib/postgresql/data
+      ports:
+         - "8000:5432"
 
-  electric:
-    image: electricsql/electric:latest
-    environment:
-      DATABASE_URL: postgresql://postgres:password@contentta-db:5432/montte
-      # Local dev only — replace with ELECTRIC_SECRET in production:
-      #   ELECTRIC_SECRET: <strong-random-secret>
-      # The same secret must be set as ELECTRIC_SECRET in the web app's .env
-      ELECTRIC_INSECURE: "true"
-    ports:
-      - "5133:3000"
-    depends_on:
-      contentta-db:
-        condition: service_healthy
-    restart: on-failure
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/v1/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+   electric:
+      image: electricsql/electric:latest
+      environment:
+         DATABASE_URL: postgresql://postgres:password@contentta-db:5432/montte
+         # Local dev only — replace with ELECTRIC_SECRET in production:
+         #   ELECTRIC_SECRET: <strong-random-secret>
+         # The same secret must be set as ELECTRIC_SECRET in the web app's .env
+         ELECTRIC_INSECURE: "true"
+      ports:
+         - "5133:3000"
+      depends_on:
+         contentta-db:
+            condition: service_healthy
+      restart: on-failure
+      healthcheck:
+         test: ["CMD", "curl", "-f", "http://localhost:3000/v1/health"]
+         interval: 10s
+         timeout: 5s
+         retries: 5
 
 volumes:
-  montte_pgdata:
-  miniodata:
-  redis_data:
-  pgvector_data:
+   montte_pgdata:
+   miniodata:
+   redis_data:
+   pgvector_data:

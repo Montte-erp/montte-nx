@@ -1,9 +1,9 @@
 import { Octokit } from "@octokit/rest";
-import { getLogger } from "@packages/logging/root";
+import { getLogger } from "@core/logging/root";
 
 const logger = getLogger().child({ module: "feedback" });
 
-import { env } from "@packages/environment/server";
+import { env } from "@core/environment/server";
 import type { FeedbackAdapter, FeedbackPayload } from "./schemas";
 
 // =============================================================================

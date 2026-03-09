@@ -7,8 +7,8 @@ import {
    getBankAccount,
    listBankAccountsWithBalance,
    updateBankAccount,
-} from "@packages/database/repositories/bank-accounts-repository";
-import { bankAccounts } from "@packages/database/schemas/bank-accounts";
+} from "@core/database/repositories/bank-accounts-repository";
+import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";

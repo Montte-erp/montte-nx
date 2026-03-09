@@ -4,14 +4,14 @@ Stripe integration package for subscription management via better-auth.
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `STRIPE_SECRET_KEY` | Yes | Your Stripe secret API key (starts with `sk_`) |
-| `STRIPE_WEBHOOK_SECRET` | Yes | Webhook signing secret for verifying Stripe events (starts with `whsec_`) |
-| `STRIPE_BASIC_PRICE_ID` | No | Price ID for the Basic plan monthly subscription |
-| `STRIPE_BASIC_ANNUAL_PRICE_ID` | No | Price ID for the Basic plan annual subscription |
-| `STRIPE_PRO_PRICE_ID` | No | Price ID for the Pro plan monthly subscription |
-| `STRIPE_PRO_ANNUAL_PRICE_ID` | No | Price ID for the Pro plan annual subscription |
+| Variable                       | Required | Description                                                               |
+| ------------------------------ | -------- | ------------------------------------------------------------------------- |
+| `STRIPE_SECRET_KEY`            | Yes      | Your Stripe secret API key (starts with `sk_`)                            |
+| `STRIPE_WEBHOOK_SECRET`        | Yes      | Webhook signing secret for verifying Stripe events (starts with `whsec_`) |
+| `STRIPE_BASIC_PRICE_ID`        | No       | Price ID for the Basic plan monthly subscription                          |
+| `STRIPE_BASIC_ANNUAL_PRICE_ID` | No       | Price ID for the Basic plan annual subscription                           |
+| `STRIPE_PRO_PRICE_ID`          | No       | Price ID for the Pro plan monthly subscription                            |
+| `STRIPE_PRO_ANNUAL_PRICE_ID`   | No       | Price ID for the Pro plan annual subscription                             |
 
 ## Setup Guide
 
@@ -88,10 +88,10 @@ Subscriptions are tied to organizations, not individual users. When subscribing:
 
 ```typescript
 await betterAuthClient.subscription.upgrade({
-  plan: "pro",
-  referenceId: organization.id, // Organization ID
-  successUrl: "/plans?success=true",
-  cancelUrl: "/plans",
+   plan: "pro",
+   referenceId: organization.id, // Organization ID
+   successUrl: "/plans?success=true",
+   cancelUrl: "/plans",
 });
 ```
 
@@ -116,4 +116,3 @@ All members of the organization inherit the same subscription plan.
 - Webhook might not be configured or is failing
 - Check that `STRIPE_WEBHOOK_SECRET` is set correctly
 - Verify the subscription table exists in database
-

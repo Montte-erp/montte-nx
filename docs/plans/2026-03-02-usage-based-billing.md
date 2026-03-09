@@ -13,6 +13,7 @@
 ## Context & Decisions
 
 ### What changes
+
 - **Remove:** `ai.completion` (FIM), `ai.image_generation` events and all references
 - **Add events:** `contact.*`, `inventory.*`, `service.*`, `nfe.*`, `document.signed`
 - **Plans removed:** FREE/LITE/PRO replaced by fully metered (no base subscription)
@@ -22,26 +23,27 @@
 
 ### New event catalog
 
-| Event | Category | Free/mês | Price BRL |
-|-------|----------|----------|-----------|
-| `finance.transaction_created` | finance | 500 | R$0,001 |
-| `finance.bank_account_connected` | finance | 500 | free |
-| `ai.chat_message` | ai | 20 | R$0,02 |
-| `ai.agent_action` | ai | 5 | R$0,04 |
-| `webhook.delivered` | webhook | 500 | R$0,0005 |
-| `contact.created` | contact | 50 | R$0,01 |
-| `contact.updated` | contact | 50 | free |
-| `contact.deleted` | contact | 50 | free |
-| `inventory.item_created` | inventory | 50 | R$0,01 |
-| `inventory.item_updated` | inventory | 50 | free |
-| `inventory.item_deleted` | inventory | 50 | free |
-| `service.created` | service | 20 | R$0,01 |
-| `service.updated` | service | 20 | free |
-| `service.deleted` | service | 20 | free |
-| `nfe.emitted` | nfe | 5 | R$0,15 |
-| `document.signed` | document | 10 | R$0,10 |
+| Event                            | Category  | Free/mês | Price BRL |
+| -------------------------------- | --------- | -------- | --------- |
+| `finance.transaction_created`    | finance   | 500      | R$0,001   |
+| `finance.bank_account_connected` | finance   | 500      | free      |
+| `ai.chat_message`                | ai        | 20       | R$0,02    |
+| `ai.agent_action`                | ai        | 5        | R$0,04    |
+| `webhook.delivered`              | webhook   | 500      | R$0,0005  |
+| `contact.created`                | contact   | 50       | R$0,01    |
+| `contact.updated`                | contact   | 50       | free      |
+| `contact.deleted`                | contact   | 50       | free      |
+| `inventory.item_created`         | inventory | 50       | R$0,01    |
+| `inventory.item_updated`         | inventory | 50       | free      |
+| `inventory.item_deleted`         | inventory | 50       | free      |
+| `service.created`                | service   | 20       | R$0,01    |
+| `service.updated`                | service   | 20       | free      |
+| `service.deleted`                | service   | 20       | free      |
+| `nfe.emitted`                    | nfe       | 5        | R$0,15    |
+| `document.signed`                | document  | 10       | R$0,10    |
 
 ### Stripe Meters to create (one-time in Stripe dashboard)
+
 - `finance_transactions` → `finance.transaction_created`
 - `ai_chat_messages` → `ai.chat_message`
 - `ai_agent_actions` → `ai.agent_action`
@@ -53,6 +55,7 @@
 - `document_signatures` → `document.signed`
 
 ### Platform Addons (Stripe Products)
+
 - **Boost** R$199/mês — SSO, white label, 2FA enforcement, unlimited projects
 - **Scale** R$599/mês — Boost + SAML, RBAC, audit logs, SLA 24h
 - **Enterprise** R$2.500+/mês — holdings, multiple CNPJs, SLA 4h, custom
@@ -61,6 +64,7 @@
 - **Bundle Mensageria** R$59/mês — Telegram + WhatsApp
 
 ### AI model
+
 Default: `qwen/qwen3.5-35b-a3b` ($0.25/M input, $1/M output)
 
 ---
@@ -68,6 +72,7 @@ Default: `qwen/qwen3.5-35b-a3b` ($0.25/M input, $1/M output)
 ## Task 1: Remove CMS-era events and image generation
 
 **Files:**
+
 - Modify: `packages/events/src/ai.ts`
 - Modify: `packages/events/src/catalog.ts`
 - Modify: `packages/events/src/credits.ts`
@@ -77,6 +82,7 @@ Default: `qwen/qwen3.5-35b-a3b` ($0.25/M input, $1/M output)
 **Step 1: Remove `ai.completion` and `ai.image_generation` from `ai.ts`**
 
 Delete:
+
 - `AI_PRICING["ai.completion"]`
 - `AI_PRICING["ai.image_generation"]`
 - `IMAGE_MODEL_PRICING` constant and all image model entries
@@ -191,6 +197,7 @@ git commit -m "feat(billing): remove FIM/image events, add new categories and pr
 ## Task 2: Add contact, inventory, service, nfe, document event files
 
 **Files:**
+
 - Create: `packages/events/src/contact.ts`
 - Create: `packages/events/src/inventory.ts`
 - Create: `packages/events/src/service.ts`
@@ -210,7 +217,8 @@ export const CONTACT_EVENTS = {
    "contact.deleted": "contact.deleted",
 } as const;
 
-export type ContactEventName = (typeof CONTACT_EVENTS)[keyof typeof CONTACT_EVENTS];
+export type ContactEventName =
+   (typeof CONTACT_EVENTS)[keyof typeof CONTACT_EVENTS];
 
 export const contactCreatedSchema = z.object({
    contactId: z.string().uuid(),
@@ -223,19 +231,45 @@ export function emitContactCreated(
    ctx: { organizationId: string; userId?: string; teamId?: string },
    properties: ContactCreatedEvent,
 ) {
-   return emit({ ...ctx, eventName: CONTACT_EVENTS["contact.created"], eventCategory: EVENT_CATEGORIES.contact, properties });
+   return emit({
+      ...ctx,
+      eventName: CONTACT_EVENTS["contact.created"],
+      eventCategory: EVENT_CATEGORIES.contact,
+      properties,
+   });
 }
 
-export const contactUpdatedSchema = z.object({ contactId: z.string().uuid(), changedFields: z.array(z.string()) });
+export const contactUpdatedSchema = z.object({
+   contactId: z.string().uuid(),
+   changedFields: z.array(z.string()),
+});
 export type ContactUpdatedEvent = z.infer<typeof contactUpdatedSchema>;
-export function emitContactUpdated(emit: EmitFn, ctx: { organizationId: string; userId?: string; teamId?: string }, properties: ContactUpdatedEvent) {
-   return emit({ ...ctx, eventName: CONTACT_EVENTS["contact.updated"], eventCategory: EVENT_CATEGORIES.contact, properties });
+export function emitContactUpdated(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: ContactUpdatedEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: CONTACT_EVENTS["contact.updated"],
+      eventCategory: EVENT_CATEGORIES.contact,
+      properties,
+   });
 }
 
 export const contactDeletedSchema = z.object({ contactId: z.string().uuid() });
 export type ContactDeletedEvent = z.infer<typeof contactDeletedSchema>;
-export function emitContactDeleted(emit: EmitFn, ctx: { organizationId: string; userId?: string; teamId?: string }, properties: ContactDeletedEvent) {
-   return emit({ ...ctx, eventName: CONTACT_EVENTS["contact.deleted"], eventCategory: EVENT_CATEGORIES.contact, properties });
+export function emitContactDeleted(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: ContactDeletedEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: CONTACT_EVENTS["contact.deleted"],
+      eventCategory: EVENT_CATEGORIES.contact,
+      properties,
+   });
 }
 ```
 
@@ -251,28 +285,67 @@ export const INVENTORY_EVENTS = {
    "inventory.item_deleted": "inventory.item_deleted",
 } as const;
 
-export type InventoryEventName = (typeof INVENTORY_EVENTS)[keyof typeof INVENTORY_EVENTS];
+export type InventoryEventName =
+   (typeof INVENTORY_EVENTS)[keyof typeof INVENTORY_EVENTS];
 
 export const inventoryItemCreatedSchema = z.object({
    itemId: z.string().uuid(),
    sku: z.string().optional(),
    type: z.enum(["product", "service", "raw_material"]).optional(),
 });
-export type InventoryItemCreatedEvent = z.infer<typeof inventoryItemCreatedSchema>;
-export function emitInventoryItemCreated(emit: EmitFn, ctx: { organizationId: string; userId?: string; teamId?: string }, properties: InventoryItemCreatedEvent) {
-   return emit({ ...ctx, eventName: INVENTORY_EVENTS["inventory.item_created"], eventCategory: EVENT_CATEGORIES.inventory, properties });
+export type InventoryItemCreatedEvent = z.infer<
+   typeof inventoryItemCreatedSchema
+>;
+export function emitInventoryItemCreated(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: InventoryItemCreatedEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: INVENTORY_EVENTS["inventory.item_created"],
+      eventCategory: EVENT_CATEGORIES.inventory,
+      properties,
+   });
 }
 
-export const inventoryItemUpdatedSchema = z.object({ itemId: z.string().uuid(), changedFields: z.array(z.string()) });
-export type InventoryItemUpdatedEvent = z.infer<typeof inventoryItemUpdatedSchema>;
-export function emitInventoryItemUpdated(emit: EmitFn, ctx: { organizationId: string; userId?: string; teamId?: string }, properties: InventoryItemUpdatedEvent) {
-   return emit({ ...ctx, eventName: INVENTORY_EVENTS["inventory.item_updated"], eventCategory: EVENT_CATEGORIES.inventory, properties });
+export const inventoryItemUpdatedSchema = z.object({
+   itemId: z.string().uuid(),
+   changedFields: z.array(z.string()),
+});
+export type InventoryItemUpdatedEvent = z.infer<
+   typeof inventoryItemUpdatedSchema
+>;
+export function emitInventoryItemUpdated(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: InventoryItemUpdatedEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: INVENTORY_EVENTS["inventory.item_updated"],
+      eventCategory: EVENT_CATEGORIES.inventory,
+      properties,
+   });
 }
 
-export const inventoryItemDeletedSchema = z.object({ itemId: z.string().uuid() });
-export type InventoryItemDeletedEvent = z.infer<typeof inventoryItemDeletedSchema>;
-export function emitInventoryItemDeleted(emit: EmitFn, ctx: { organizationId: string; userId?: string; teamId?: string }, properties: InventoryItemDeletedEvent) {
-   return emit({ ...ctx, eventName: INVENTORY_EVENTS["inventory.item_deleted"], eventCategory: EVENT_CATEGORIES.inventory, properties });
+export const inventoryItemDeletedSchema = z.object({
+   itemId: z.string().uuid(),
+});
+export type InventoryItemDeletedEvent = z.infer<
+   typeof inventoryItemDeletedSchema
+>;
+export function emitInventoryItemDeleted(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: InventoryItemDeletedEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: INVENTORY_EVENTS["inventory.item_deleted"],
+      eventCategory: EVENT_CATEGORIES.inventory,
+      properties,
+   });
 }
 ```
 
@@ -288,24 +361,58 @@ export const SERVICE_EVENTS = {
    "service.deleted": "service.deleted",
 } as const;
 
-export type ServiceEventName = (typeof SERVICE_EVENTS)[keyof typeof SERVICE_EVENTS];
+export type ServiceEventName =
+   (typeof SERVICE_EVENTS)[keyof typeof SERVICE_EVENTS];
 
-export const serviceCreatedSchema = z.object({ serviceId: z.string().uuid(), name: z.string() });
+export const serviceCreatedSchema = z.object({
+   serviceId: z.string().uuid(),
+   name: z.string(),
+});
 export type ServiceCreatedEvent = z.infer<typeof serviceCreatedSchema>;
-export function emitServiceCreated(emit: EmitFn, ctx: { organizationId: string; userId?: string; teamId?: string }, properties: ServiceCreatedEvent) {
-   return emit({ ...ctx, eventName: SERVICE_EVENTS["service.created"], eventCategory: EVENT_CATEGORIES.service, properties });
+export function emitServiceCreated(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: ServiceCreatedEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: SERVICE_EVENTS["service.created"],
+      eventCategory: EVENT_CATEGORIES.service,
+      properties,
+   });
 }
 
-export const serviceUpdatedSchema = z.object({ serviceId: z.string().uuid(), changedFields: z.array(z.string()) });
+export const serviceUpdatedSchema = z.object({
+   serviceId: z.string().uuid(),
+   changedFields: z.array(z.string()),
+});
 export type ServiceUpdatedEvent = z.infer<typeof serviceUpdatedSchema>;
-export function emitServiceUpdated(emit: EmitFn, ctx: { organizationId: string; userId?: string; teamId?: string }, properties: ServiceUpdatedEvent) {
-   return emit({ ...ctx, eventName: SERVICE_EVENTS["service.updated"], eventCategory: EVENT_CATEGORIES.service, properties });
+export function emitServiceUpdated(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: ServiceUpdatedEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: SERVICE_EVENTS["service.updated"],
+      eventCategory: EVENT_CATEGORIES.service,
+      properties,
+   });
 }
 
 export const serviceDeletedSchema = z.object({ serviceId: z.string().uuid() });
 export type ServiceDeletedEvent = z.infer<typeof serviceDeletedSchema>;
-export function emitServiceDeleted(emit: EmitFn, ctx: { organizationId: string; userId?: string; teamId?: string }, properties: ServiceDeletedEvent) {
-   return emit({ ...ctx, eventName: SERVICE_EVENTS["service.deleted"], eventCategory: EVENT_CATEGORIES.service, properties });
+export function emitServiceDeleted(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: ServiceDeletedEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: SERVICE_EVENTS["service.deleted"],
+      eventCategory: EVENT_CATEGORIES.service,
+      properties,
+   });
 }
 ```
 
@@ -330,14 +437,35 @@ export const nfeEmittedSchema = z.object({
    tipo: z.enum(["NFe", "NFSe", "NFCe"]),
 });
 export type NfeEmittedEvent = z.infer<typeof nfeEmittedSchema>;
-export function emitNfeEmitted(emit: EmitFn, ctx: { organizationId: string; userId?: string; teamId?: string }, properties: NfeEmittedEvent) {
-   return emit({ ...ctx, eventName: NFE_EVENTS["nfe.emitted"], eventCategory: EVENT_CATEGORIES.nfe, properties });
+export function emitNfeEmitted(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: NfeEmittedEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: NFE_EVENTS["nfe.emitted"],
+      eventCategory: EVENT_CATEGORIES.nfe,
+      properties,
+   });
 }
 
-export const nfeCancelledSchema = z.object({ nfeId: z.string().uuid(), motivo: z.string() });
+export const nfeCancelledSchema = z.object({
+   nfeId: z.string().uuid(),
+   motivo: z.string(),
+});
 export type NfeCancelledEvent = z.infer<typeof nfeCancelledSchema>;
-export function emitNfeCancelled(emit: EmitFn, ctx: { organizationId: string; userId?: string; teamId?: string }, properties: NfeCancelledEvent) {
-   return emit({ ...ctx, eventName: NFE_EVENTS["nfe.cancelled"], eventCategory: EVENT_CATEGORIES.nfe, properties });
+export function emitNfeCancelled(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: NfeCancelledEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: NFE_EVENTS["nfe.cancelled"],
+      eventCategory: EVENT_CATEGORIES.nfe,
+      properties,
+   });
 }
 ```
 
@@ -351,7 +479,8 @@ export const DOCUMENT_EVENTS = {
    "document.signed": "document.signed",
 } as const;
 
-export type DocumentEventName = (typeof DOCUMENT_EVENTS)[keyof typeof DOCUMENT_EVENTS];
+export type DocumentEventName =
+   (typeof DOCUMENT_EVENTS)[keyof typeof DOCUMENT_EVENTS];
 
 export const documentSignedSchema = z.object({
    documentId: z.string().uuid(),
@@ -359,14 +488,24 @@ export const documentSignedSchema = z.object({
    signerCpfHash: z.string(), // hashed, never store raw CPF
 });
 export type DocumentSignedEvent = z.infer<typeof documentSignedSchema>;
-export function emitDocumentSigned(emit: EmitFn, ctx: { organizationId: string; userId?: string; teamId?: string }, properties: DocumentSignedEvent) {
-   return emit({ ...ctx, eventName: DOCUMENT_EVENTS["document.signed"], eventCategory: EVENT_CATEGORIES.document, properties });
+export function emitDocumentSigned(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: DocumentSignedEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: DOCUMENT_EVENTS["document.signed"],
+      eventCategory: EVENT_CATEGORIES.document,
+      properties,
+   });
 }
 ```
 
 **Step 6: Add exports to `packages/events/package.json`**
 
 Add to the `exports` field:
+
 ```json
 "./contact": "./src/contact.ts",
 "./inventory": "./src/inventory.ts",
@@ -387,6 +526,7 @@ git commit -m "feat(events): add contact, inventory, service, nfe, document even
 ## Task 3: Rewrite free tier enforcement (replace credit pools with per-product counters)
 
 **Files:**
+
 - Modify: `packages/events/src/credits.ts`
 
 **Context:** The old system had two pools (`ai` and `platform`) tracked in Redis. The new system tracks each billable event name independently: `usage:{orgId}:{eventName}` in Redis with monthly TTL.
@@ -508,6 +648,7 @@ git commit -m "feat(billing): replace two-pool credit system with per-product fr
 ## Task 4: Wire Stripe Meter Events into `emitEvent()`
 
 **Files:**
+
 - Modify: `packages/events/src/emit.ts`
 - Modify: `packages/events/package.json` (if stripeClient needs to be passed)
 
@@ -521,8 +662,8 @@ import type Stripe from "stripe";
 export interface EmitEventParams {
    db: DatabaseInstance;
    posthog?: PostHog;
-   stripeClient?: Stripe;           // ← new
-   stripeCustomerId?: string;       // ← new (org's Stripe customer ID)
+   stripeClient?: Stripe; // ← new
+   stripeCustomerId?: string; // ← new (org's Stripe customer ID)
    organizationId: string;
    eventName: string;
    eventCategory: EventCategory;
@@ -555,7 +696,10 @@ if (params.stripeClient && params.stripeCustomerId) {
          // Also increment local free tier counter
          await incrementUsage(organizationId, eventName);
       } catch (meterError) {
-         console.error(`[Events] Stripe meter report failed for ${eventName}:`, meterError);
+         console.error(
+            `[Events] Stripe meter report failed for ${eventName}:`,
+            meterError,
+         );
          // Don't throw — meter failure must not block the main flow
       }
    }
@@ -571,7 +715,8 @@ export function createEmitFn(
    stripeClient?: Stripe,
    stripeCustomerId?: string,
 ): EmitFn {
-   return (params) => emitEvent({ ...params, db, posthog, stripeClient, stripeCustomerId });
+   return (params) =>
+      emitEvent({ ...params, db, posthog, stripeClient, stripeCustomerId });
 }
 ```
 
@@ -590,7 +735,12 @@ const org = await db.query.organization.findFirst({
    columns: { stripeCustomerId: true },
 });
 
-const emit = createEmitFn(db, posthog, stripeClient, org?.stripeCustomerId ?? undefined);
+const emit = createEmitFn(
+   db,
+   posthog,
+   stripeClient,
+   org?.stripeCustomerId ?? undefined,
+);
 ```
 
 **Step 5: Commit**
@@ -605,6 +755,7 @@ git commit -m "feat(billing): report Stripe meter events from emitEvent() after 
 ## Task 5: Update Better Auth Stripe plugin config
 
 **Files:**
+
 - Modify: `packages/authentication/src/server.ts`
 - Modify: `packages/environment/src/server.ts` (add new env vars)
 
@@ -720,6 +871,7 @@ git commit -m "feat(billing): configure Stripe metered plans and addon products 
 ## Task 6: Update seed-event-catalog.ts
 
 **Files:**
+
 - Modify: `scripts/seed-event-catalog.ts`
 
 **Step 1: Replace `EVENT_PRICING` array**
@@ -736,44 +888,276 @@ import { DOCUMENT_EVENTS } from "@packages/events/document";
 
 const EVENT_PRICING: EventPricing[] = [
    // Finance
-   { eventName: FINANCE_EVENTS["finance.transaction_created"], category: EVENT_CATEGORIES.finance, pricePerEvent: "0.001000", freeTierLimit: 500, displayName: "Transação Financeira", description: "Registrada quando uma transação financeira é criada.", isBillable: true },
-   { eventName: FINANCE_EVENTS["finance.transaction_updated"], category: EVENT_CATEGORIES.finance, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Transação Atualizada", description: "Registrada quando uma transação é atualizada.", isBillable: false },
-   { eventName: FINANCE_EVENTS["finance.bank_account_connected"], category: EVENT_CATEGORIES.finance, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Conta Bancária Conectada", description: "Registrada quando uma conta bancária é conectada.", isBillable: false },
-   { eventName: FINANCE_EVENTS["finance.category_created"], category: EVENT_CATEGORIES.finance, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Categoria Criada", description: "Registrada quando uma categoria é criada.", isBillable: false },
-   { eventName: FINANCE_EVENTS["finance.tag_created"], category: EVENT_CATEGORIES.finance, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Tag Criada", description: "Registrada quando uma tag é criada.", isBillable: false },
+   {
+      eventName: FINANCE_EVENTS["finance.transaction_created"],
+      category: EVENT_CATEGORIES.finance,
+      pricePerEvent: "0.001000",
+      freeTierLimit: 500,
+      displayName: "Transação Financeira",
+      description: "Registrada quando uma transação financeira é criada.",
+      isBillable: true,
+   },
+   {
+      eventName: FINANCE_EVENTS["finance.transaction_updated"],
+      category: EVENT_CATEGORIES.finance,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Transação Atualizada",
+      description: "Registrada quando uma transação é atualizada.",
+      isBillable: false,
+   },
+   {
+      eventName: FINANCE_EVENTS["finance.bank_account_connected"],
+      category: EVENT_CATEGORIES.finance,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Conta Bancária Conectada",
+      description: "Registrada quando uma conta bancária é conectada.",
+      isBillable: false,
+   },
+   {
+      eventName: FINANCE_EVENTS["finance.category_created"],
+      category: EVENT_CATEGORIES.finance,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Categoria Criada",
+      description: "Registrada quando uma categoria é criada.",
+      isBillable: false,
+   },
+   {
+      eventName: FINANCE_EVENTS["finance.tag_created"],
+      category: EVENT_CATEGORIES.finance,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Tag Criada",
+      description: "Registrada quando uma tag é criada.",
+      isBillable: false,
+   },
    // AI
-   { eventName: AI_EVENTS["ai.chat_message"], category: EVENT_CATEGORIES.ai, pricePerEvent: "0.020000", freeTierLimit: 20, displayName: "Mensagem de Chat IA", description: "Registrada por mensagem no chat com a IA.", isBillable: true },
-   { eventName: AI_EVENTS["ai.agent_action"], category: EVENT_CATEGORIES.ai, pricePerEvent: "0.040000", freeTierLimit: 5, displayName: "Ação de Agente IA", description: "Registrada por ação discreta de um agente IA.", isBillable: true },
+   {
+      eventName: AI_EVENTS["ai.chat_message"],
+      category: EVENT_CATEGORIES.ai,
+      pricePerEvent: "0.020000",
+      freeTierLimit: 20,
+      displayName: "Mensagem de Chat IA",
+      description: "Registrada por mensagem no chat com a IA.",
+      isBillable: true,
+   },
+   {
+      eventName: AI_EVENTS["ai.agent_action"],
+      category: EVENT_CATEGORIES.ai,
+      pricePerEvent: "0.040000",
+      freeTierLimit: 5,
+      displayName: "Ação de Agente IA",
+      description: "Registrada por ação discreta de um agente IA.",
+      isBillable: true,
+   },
    // Webhooks
-   { eventName: WEBHOOK_EVENTS["webhook.endpoint.created"], category: EVENT_CATEGORIES.webhook, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Endpoint Criado", description: "Registrada quando um endpoint de webhook é criado.", isBillable: false },
-   { eventName: WEBHOOK_EVENTS["webhook.endpoint.updated"], category: EVENT_CATEGORIES.webhook, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Endpoint Atualizado", description: "Registrada quando um endpoint é atualizado.", isBillable: false },
-   { eventName: WEBHOOK_EVENTS["webhook.endpoint.deleted"], category: EVENT_CATEGORIES.webhook, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Endpoint Deletado", description: "Registrada quando um endpoint é deletado.", isBillable: false },
-   { eventName: WEBHOOK_EVENTS["webhook.delivered"], category: EVENT_CATEGORIES.webhook, pricePerEvent: "0.000500", freeTierLimit: 500, displayName: "Webhook Entregue", description: "Registrada por entrega bem-sucedida de webhook.", isBillable: true },
+   {
+      eventName: WEBHOOK_EVENTS["webhook.endpoint.created"],
+      category: EVENT_CATEGORIES.webhook,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Endpoint Criado",
+      description: "Registrada quando um endpoint de webhook é criado.",
+      isBillable: false,
+   },
+   {
+      eventName: WEBHOOK_EVENTS["webhook.endpoint.updated"],
+      category: EVENT_CATEGORIES.webhook,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Endpoint Atualizado",
+      description: "Registrada quando um endpoint é atualizado.",
+      isBillable: false,
+   },
+   {
+      eventName: WEBHOOK_EVENTS["webhook.endpoint.deleted"],
+      category: EVENT_CATEGORIES.webhook,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Endpoint Deletado",
+      description: "Registrada quando um endpoint é deletado.",
+      isBillable: false,
+   },
+   {
+      eventName: WEBHOOK_EVENTS["webhook.delivered"],
+      category: EVENT_CATEGORIES.webhook,
+      pricePerEvent: "0.000500",
+      freeTierLimit: 500,
+      displayName: "Webhook Entregue",
+      description: "Registrada por entrega bem-sucedida de webhook.",
+      isBillable: true,
+   },
    // Dashboards (free)
-   { eventName: DASHBOARD_EVENTS["dashboard.created"], category: EVENT_CATEGORIES.dashboard, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Dashboard Criado", description: "Registrada quando um dashboard é criado.", isBillable: false },
-   { eventName: DASHBOARD_EVENTS["dashboard.updated"], category: EVENT_CATEGORIES.dashboard, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Dashboard Atualizado", description: "Registrada quando um dashboard é atualizado.", isBillable: false },
-   { eventName: DASHBOARD_EVENTS["dashboard.deleted"], category: EVENT_CATEGORIES.dashboard, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Dashboard Deletado", description: "Registrada quando um dashboard é deletado.", isBillable: false },
+   {
+      eventName: DASHBOARD_EVENTS["dashboard.created"],
+      category: EVENT_CATEGORIES.dashboard,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Dashboard Criado",
+      description: "Registrada quando um dashboard é criado.",
+      isBillable: false,
+   },
+   {
+      eventName: DASHBOARD_EVENTS["dashboard.updated"],
+      category: EVENT_CATEGORIES.dashboard,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Dashboard Atualizado",
+      description: "Registrada quando um dashboard é atualizado.",
+      isBillable: false,
+   },
+   {
+      eventName: DASHBOARD_EVENTS["dashboard.deleted"],
+      category: EVENT_CATEGORIES.dashboard,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Dashboard Deletado",
+      description: "Registrada quando um dashboard é deletado.",
+      isBillable: false,
+   },
    // Insights (free)
-   { eventName: INSIGHT_EVENTS["insight.created"], category: EVENT_CATEGORIES.insight, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Insight Criado", description: "Registrada quando um insight é criado.", isBillable: false },
-   { eventName: INSIGHT_EVENTS["insight.updated"], category: EVENT_CATEGORIES.insight, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Insight Atualizado", description: "Registrada quando um insight é atualizado.", isBillable: false },
-   { eventName: INSIGHT_EVENTS["insight.deleted"], category: EVENT_CATEGORIES.insight, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Insight Deletado", description: "Registrada quando um insight é deletado.", isBillable: false },
+   {
+      eventName: INSIGHT_EVENTS["insight.created"],
+      category: EVENT_CATEGORIES.insight,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Insight Criado",
+      description: "Registrada quando um insight é criado.",
+      isBillable: false,
+   },
+   {
+      eventName: INSIGHT_EVENTS["insight.updated"],
+      category: EVENT_CATEGORIES.insight,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Insight Atualizado",
+      description: "Registrada quando um insight é atualizado.",
+      isBillable: false,
+   },
+   {
+      eventName: INSIGHT_EVENTS["insight.deleted"],
+      category: EVENT_CATEGORIES.insight,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Insight Deletado",
+      description: "Registrada quando um insight é deletado.",
+      isBillable: false,
+   },
    // Contacts
-   { eventName: CONTACT_EVENTS["contact.created"], category: EVENT_CATEGORIES.contact, pricePerEvent: "0.010000", freeTierLimit: 50, displayName: "Contato Criado", description: "Registrada quando um contato é criado.", isBillable: true },
-   { eventName: CONTACT_EVENTS["contact.updated"], category: EVENT_CATEGORIES.contact, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Contato Atualizado", description: "Registrada quando um contato é atualizado.", isBillable: false },
-   { eventName: CONTACT_EVENTS["contact.deleted"], category: EVENT_CATEGORIES.contact, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Contato Deletado", description: "Registrada quando um contato é deletado.", isBillable: false },
+   {
+      eventName: CONTACT_EVENTS["contact.created"],
+      category: EVENT_CATEGORIES.contact,
+      pricePerEvent: "0.010000",
+      freeTierLimit: 50,
+      displayName: "Contato Criado",
+      description: "Registrada quando um contato é criado.",
+      isBillable: true,
+   },
+   {
+      eventName: CONTACT_EVENTS["contact.updated"],
+      category: EVENT_CATEGORIES.contact,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Contato Atualizado",
+      description: "Registrada quando um contato é atualizado.",
+      isBillable: false,
+   },
+   {
+      eventName: CONTACT_EVENTS["contact.deleted"],
+      category: EVENT_CATEGORIES.contact,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Contato Deletado",
+      description: "Registrada quando um contato é deletado.",
+      isBillable: false,
+   },
    // Inventory
-   { eventName: INVENTORY_EVENTS["inventory.item_created"], category: EVENT_CATEGORIES.inventory, pricePerEvent: "0.010000", freeTierLimit: 50, displayName: "Item de Estoque Criado", description: "Registrada quando um item de estoque é criado.", isBillable: true },
-   { eventName: INVENTORY_EVENTS["inventory.item_updated"], category: EVENT_CATEGORIES.inventory, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Item Atualizado", description: "Registrada quando um item é atualizado.", isBillable: false },
-   { eventName: INVENTORY_EVENTS["inventory.item_deleted"], category: EVENT_CATEGORIES.inventory, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Item Deletado", description: "Registrada quando um item é deletado.", isBillable: false },
+   {
+      eventName: INVENTORY_EVENTS["inventory.item_created"],
+      category: EVENT_CATEGORIES.inventory,
+      pricePerEvent: "0.010000",
+      freeTierLimit: 50,
+      displayName: "Item de Estoque Criado",
+      description: "Registrada quando um item de estoque é criado.",
+      isBillable: true,
+   },
+   {
+      eventName: INVENTORY_EVENTS["inventory.item_updated"],
+      category: EVENT_CATEGORIES.inventory,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Item Atualizado",
+      description: "Registrada quando um item é atualizado.",
+      isBillable: false,
+   },
+   {
+      eventName: INVENTORY_EVENTS["inventory.item_deleted"],
+      category: EVENT_CATEGORIES.inventory,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Item Deletado",
+      description: "Registrada quando um item é deletado.",
+      isBillable: false,
+   },
    // Services
-   { eventName: SERVICE_EVENTS["service.created"], category: EVENT_CATEGORIES.service, pricePerEvent: "0.010000", freeTierLimit: 20, displayName: "Serviço Criado", description: "Registrada quando um serviço é criado.", isBillable: true },
-   { eventName: SERVICE_EVENTS["service.updated"], category: EVENT_CATEGORIES.service, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Serviço Atualizado", description: "Registrada quando um serviço é atualizado.", isBillable: false },
-   { eventName: SERVICE_EVENTS["service.deleted"], category: EVENT_CATEGORIES.service, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "Serviço Deletado", description: "Registrada quando um serviço é deletado.", isBillable: false },
+   {
+      eventName: SERVICE_EVENTS["service.created"],
+      category: EVENT_CATEGORIES.service,
+      pricePerEvent: "0.010000",
+      freeTierLimit: 20,
+      displayName: "Serviço Criado",
+      description: "Registrada quando um serviço é criado.",
+      isBillable: true,
+   },
+   {
+      eventName: SERVICE_EVENTS["service.updated"],
+      category: EVENT_CATEGORIES.service,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Serviço Atualizado",
+      description: "Registrada quando um serviço é atualizado.",
+      isBillable: false,
+   },
+   {
+      eventName: SERVICE_EVENTS["service.deleted"],
+      category: EVENT_CATEGORIES.service,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "Serviço Deletado",
+      description: "Registrada quando um serviço é deletado.",
+      isBillable: false,
+   },
    // NF-e
-   { eventName: NFE_EVENTS["nfe.emitted"], category: EVENT_CATEGORIES.nfe, pricePerEvent: "0.150000", freeTierLimit: 5, displayName: "NF-e Emitida", description: "Registrada por emissão de nota fiscal eletrônica.", isBillable: true },
-   { eventName: NFE_EVENTS["nfe.cancelled"], category: EVENT_CATEGORIES.nfe, pricePerEvent: "0.000000", freeTierLimit: 0, displayName: "NF-e Cancelada", description: "Registrada quando uma NF-e é cancelada.", isBillable: false },
+   {
+      eventName: NFE_EVENTS["nfe.emitted"],
+      category: EVENT_CATEGORIES.nfe,
+      pricePerEvent: "0.150000",
+      freeTierLimit: 5,
+      displayName: "NF-e Emitida",
+      description: "Registrada por emissão de nota fiscal eletrônica.",
+      isBillable: true,
+   },
+   {
+      eventName: NFE_EVENTS["nfe.cancelled"],
+      category: EVENT_CATEGORIES.nfe,
+      pricePerEvent: "0.000000",
+      freeTierLimit: 0,
+      displayName: "NF-e Cancelada",
+      description: "Registrada quando uma NF-e é cancelada.",
+      isBillable: false,
+   },
    // Document Signature
-   { eventName: DOCUMENT_EVENTS["document.signed"], category: EVENT_CATEGORIES.document, pricePerEvent: "0.100000", freeTierLimit: 10, displayName: "Documento Assinado", description: "Registrada por assinatura digital de documento.", isBillable: true },
+   {
+      eventName: DOCUMENT_EVENTS["document.signed"],
+      category: EVENT_CATEGORIES.document,
+      pricePerEvent: "0.100000",
+      freeTierLimit: 10,
+      displayName: "Documento Assinado",
+      description: "Registrada por assinatura digital de documento.",
+      isBillable: true,
+   },
 ];
 ```
 
@@ -797,6 +1181,7 @@ git commit -m "feat(billing): update event catalog seed for PostHog-style metere
 ## Task 7: Update billing UI — `billing-overview.tsx`
 
 **Files:**
+
 - Modify: `apps/web/src/features/billing/ui/billing-overview.tsx`
 
 **Context:** Remove CMS-era category gates (content, SEO, experiments, clusters). Replace with ERP modules. Show per-product usage bars with free tier + overage.
@@ -807,13 +1192,13 @@ Replace with ERP-relevant PostHog feature flags:
 
 ```typescript
 const EARLY_ACCESS_CATEGORY_GATES = {
-   contact:   { flag: "contacts",   fallbackStage: "alpha" },
-   inventory: { flag: "inventory",  fallbackStage: "alpha" },
-   service:   { flag: "services",   fallbackStage: "alpha" },
-   nfe:       { flag: "nfe",        fallbackStage: "alpha" },
-   document:  { flag: "document-signing", fallbackStage: "alpha" },
-   telegram:  { flag: "telegram",   fallbackStage: "alpha" },
-   whatsapp:  { flag: "whatsapp",   fallbackStage: "alpha" },
+   contact: { flag: "contacts", fallbackStage: "alpha" },
+   inventory: { flag: "inventory", fallbackStage: "alpha" },
+   service: { flag: "services", fallbackStage: "alpha" },
+   nfe: { flag: "nfe", fallbackStage: "alpha" },
+   document: { flag: "document-signing", fallbackStage: "alpha" },
+   telegram: { flag: "telegram", fallbackStage: "alpha" },
+   whatsapp: { flag: "whatsapp", fallbackStage: "alpha" },
 } as const;
 ```
 
@@ -821,20 +1206,21 @@ const EARLY_ACCESS_CATEGORY_GATES = {
 
 Replace the categories map to reflect ERP modules:
 
-| Category key | Display name | Icon |
-|-------------|-------------|------|
-| `finance` | Finanças | `Wallet` |
-| `ai` | Inteligência Artificial | `Sparkles` |
-| `webhook` | Webhooks | `Webhook` |
-| `contact` | Contatos | `Users` |
-| `inventory` | Estoque | `Package` |
-| `service` | Serviços | `Briefcase` |
-| `nfe` | Notas Fiscais | `FileText` |
-| `document` | Assinaturas Digitais | `PenLine` |
+| Category key | Display name            | Icon        |
+| ------------ | ----------------------- | ----------- |
+| `finance`    | Finanças                | `Wallet`    |
+| `ai`         | Inteligência Artificial | `Sparkles`  |
+| `webhook`    | Webhooks                | `Webhook`   |
+| `contact`    | Contatos                | `Users`     |
+| `inventory`  | Estoque                 | `Package`   |
+| `service`    | Serviços                | `Briefcase` |
+| `nfe`        | Notas Fiscais           | `FileText`  |
+| `document`   | Assinaturas Digitais    | `PenLine`   |
 
 **Step 3: Update free tier display**
 
 Each product card should show:
+
 - Used / Free tier limit (e.g., "12 / 20 mensagens")
 - Progress bar (green while within free tier, amber when >80%, red when exceeded)
 - Overage cost if exceeded
@@ -856,11 +1242,13 @@ git commit -m "feat(billing): update billing overview for PostHog-style ERP modu
 ## Task 8: Update billing oRPC router
 
 **Files:**
+
 - Modify: `apps/web/src/integrations/orpc/router/billing.ts`
 
 **Step 1: Update `getCurrentUsage` to return per-product data**
 
 The procedure should return an array of:
+
 ```typescript
 {
    eventName: string;
@@ -893,6 +1281,7 @@ git commit -m "feat(billing): update billing router for per-product usage querie
 ## Task 9: Update onboarding — remove plan selection references
 
 **Files:**
+
 - Modify: `apps/web/src/features/onboarding/ui/onboarding-wizard.tsx`
 - Modify: `apps/web/src/integrations/orpc/router/onboarding.ts`
 
@@ -922,6 +1311,7 @@ bun run typecheck 2>&1 | head -50
 Fix any remaining TypeScript errors from the removed exports (`PlanName`, `PLAN_CREDIT_BUDGETS`, `getCreditPool`, `AI_PRICING`, `IMAGE_MODEL_PRICING`, etc.).
 
 Commit all fixes:
+
 ```bash
 git commit -m "fix(billing): resolve type errors from billing model migration"
 ```

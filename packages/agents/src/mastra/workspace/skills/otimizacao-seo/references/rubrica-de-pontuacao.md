@@ -23,9 +23,11 @@
 - 11–15 pts: keyword no início + tamanho ideal + promessa clara
 
 ✅ **Exemplo bom**
+
 > “Checklist de SEO para Blogs: 10 Passos que Funcionam”
 
 ❌ **Exemplo ruim**
+
 > “SEO”
 
 ## 2) Meta description (10 pts)
@@ -43,9 +45,11 @@
 - 8–10 pts: keyword + valor + tamanho ideal
 
 ✅ **Exemplo bom**
+
 > “Otimize seus posts com um checklist de SEO atualizado: título, headings, links e imagens para ranquear melhor.”
 
 ❌ **Exemplo ruim**
+
 > “SEO para blog.”
 
 ## 3) Headings (15 pts)
@@ -64,9 +68,11 @@
 - 11–15 pts: hierarquia sólida + distribuição consistente
 
 ✅ **Exemplo bom**
+
 > H2: “Como aplicar SEO em posts de blog”
 
 ❌ **Exemplo ruim**
+
 > H1: “Introdução” dentro do corpo
 
 ## 4) Comprimento (10 pts)
@@ -97,9 +103,11 @@
 - 11–15 pts: natural + consistente
 
 ✅ **Exemplo bom**
+
 > “SEO para blogs é o conjunto de práticas on‑page…”
 
 ❌ **Exemplo ruim**
+
 > “SEO para blogs SEO para blogs SEO para blogs…”
 
 ## 6) Links (10 pts)
@@ -118,9 +126,11 @@
 - 8–10 pts: distribuição e qualidade excelentes
 
 ✅ **Exemplo bom**
+
 > “Veja o guia de pesquisa de palavras‑chave”
 
 ❌ **Exemplo ruim**
+
 > “Clique aqui”
 
 ## 7) Quick Answer (10 pts)
@@ -137,6 +147,7 @@
 - 8–10 pts: claro e direto
 
 ✅ **Exemplo bom**
+
 > “SEO para blogs é o conjunto de práticas on‑page que melhora ranqueamento e leitura.”
 
 ## 8) Estrutura (5 pts)
@@ -167,6 +178,7 @@
 - 5 pts: resumo + CTA claro
 
 ✅ **Exemplo bom**
+
 > “Agora aplique o checklist e revise seu post com as ferramentas de SEO.”
 
 ## 10) Imagens (5 pts)
@@ -183,6 +195,7 @@
 - 5 pts: alt detalhado e relevante
 
 ✅ **Exemplo bom**
+
 > Alt: “Exemplo de estrutura de headings em um post de blog”
 
 ---

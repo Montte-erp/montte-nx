@@ -6,8 +6,8 @@ import {
    getContact,
    listContacts,
    updateContact,
-} from "@packages/database/repositories/contacts-repository";
-import { contacts } from "@packages/database/schemas/contacts";
+} from "@core/database/repositories/contacts-repository";
+import { contacts } from "@core/database/schemas/contacts";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";

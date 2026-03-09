@@ -1,0 +1,69 @@
+{
+   "name": "@core/database",
+   "version": "0.12.1",
+   "private": true,
+   "license": "Apache-2.0",
+   "files": [
+      "dist"
+   ],
+   "type": "module",
+   "exports": {
+      ".": {
+         "types": "./dist/src/index.d.ts",
+         "default": "./src/index.ts"
+      },
+      "./client": {
+         "types": "./dist/src/client.d.ts",
+         "default": "./src/client.ts"
+      },
+      "./default-insights": {
+         "types": "./dist/src/default-insights.d.ts",
+         "default": "./src/default-insights.ts"
+      },
+      "./repositories/*": {
+         "types": "./dist/src/repositories/*.d.ts",
+         "default": "./src/repositories/*.ts"
+      },
+      "./schema": {
+         "types": "./dist/src/schema.d.ts",
+         "default": "./src/schema.ts"
+      },
+      "./schemas/*": {
+         "types": "./dist/src/schemas/*.d.ts",
+         "default": "./src/schemas/*.ts"
+      }
+   },
+   "scripts": {
+      "build": "tsc --build",
+      "check": "oxlint ./src",
+      "db-push-local": "dotenv -e .env.local drizzle-kit push",
+      "db-push-prod": "dotenv -e .env.production drizzle-kit push",
+      "db-studio-local": "dotenv -e .env.local drizzle-kit studio",
+      "db-studio-prod": "dotenv -e .env.production drizzle-kit studio",
+      "env:copy-example": "shx -- cp -n .env.example .env",
+      "env:remove": "shx -- rm -f .env",
+      "env:run": "dotenv -e .env.local --",
+      "generate": "bun run env:run drizzle-kit generate ",
+      "generate:custom": "bun run env:run drizzle-kit generate --custom",
+      "migrate": "bun run env:run drizzle-kit migrate",
+      "push": "bun run env:run drizzle-kit push",
+      "studio": "bun run env:run drizzle-kit studio",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@core/utils": "workspace:*",
+      "@f-o-t/condition-evaluator": "catalog:fot",
+      "drizzle-orm": "catalog:database",
+      "drizzle-zod": "catalog:database",
+      "pg": "catalog:database",
+      "zod": "catalog:validation"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "@types/pg": "catalog:database",
+      "dotenv-cli": "catalog:enviroment",
+      "drizzle-kit": "catalog:database",
+      "shx": "catalog:enviroment",
+      "typescript": "catalog:development"
+   }
+}

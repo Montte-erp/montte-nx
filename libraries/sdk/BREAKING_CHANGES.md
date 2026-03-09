@@ -5,6 +5,7 @@ This document outlines all breaking changes introduced in version 2.0.0 of the C
 ## Overview
 
 Version 2.0.0 represents a fundamental architectural shift:
+
 - From class-based to functional API
 - From REST-style methods to oRPC procedures
 - From manual request handling to type-safe client generation
@@ -15,6 +16,7 @@ Version 2.0.0 represents a fundamental architectural shift:
 ### 1. Package Name Change
 
 **Old:**
+
 ```bash
 npm install @f-o-t/contentagen-sdk
 # or
@@ -22,11 +24,13 @@ npm install @contentagen/sdk
 ```
 
 **New:**
+
 ```bash
 npm install @contentta/sdk
 ```
 
 **Action Required:**
+
 1. Uninstall the old package: `npm uninstall @f-o-t/contentagen-sdk` or `npm uninstall @contentagen/sdk`
 2. Install the new package: `npm install @contentta/sdk`
 3. Update all import statements from `@f-o-t/contentagen-sdk` or `@contentagen/sdk` to `@contentta/sdk`
@@ -36,27 +40,30 @@ npm install @contentta/sdk
 ### 2. API Surface: Class-Based → Functional
 
 **Old:**
+
 ```typescript
 import { ContentaGenSDK } from "@contentagen/sdk";
 
 const sdk = new ContentaGenSDK({
-  apiKey: "your-api-key",
-  locale: "en-US",
-  host: "https://custom.api.example.com",
+   apiKey: "your-api-key",
+   locale: "en-US",
+   host: "https://custom.api.example.com",
 });
 ```
 
 **New:**
+
 ```typescript
 import { createSdk } from "@contentta/sdk";
 
 const sdk = createSdk({
-  apiKey: "your-api-key",
-  host: "https://custom.api.example.com",
+   apiKey: "your-api-key",
+   host: "https://custom.api.example.com",
 });
 ```
 
 **Changes:**
+
 - Constructor `new ContentaGenSDK()` → Factory function `createSdk()`
 - `locale` configuration removed (now handled server-side via user preferences)
 - `host` configuration remains the same
@@ -70,71 +77,74 @@ All methods have been reorganized into namespaced procedures following oRPC conv
 #### Content Methods
 
 **Old:**
+
 ```typescript
 // List content
 const { posts, total } = await sdk.listContentByAgent({
-  agentId: "agent-uuid",
-  status: ["approved", "draft"],
-  limit: 10,
-  page: 1,
+   agentId: "agent-uuid",
+   status: ["approved", "draft"],
+   limit: 10,
+   page: 1,
 });
 
 // Get by slug
 const post = await sdk.getContentBySlug({
-  slug: "my-post-slug",
-  agentId: "agent-uuid",
+   slug: "my-post-slug",
+   agentId: "agent-uuid",
 });
 
 // Get related slugs
 const relatedSlugs = await sdk.getRelatedSlugs({
-  slug: "my-post-slug",
-  agentId: "agent-uuid",
+   slug: "my-post-slug",
+   agentId: "agent-uuid",
 });
 
 // Get author
 const author = await sdk.getAuthorByAgentId({
-  agentId: "agent-uuid",
+   agentId: "agent-uuid",
 });
 
 // Get content image
 const image = await sdk.getContentImage({
-  contentId: "content-uuid",
+   contentId: "content-uuid",
 });
 ```
 
 **New:**
+
 ```typescript
 // List content
 const { posts, total } = await sdk.content.list({
-  agentId: "agent-uuid",
-  limit: "10",
-  page: "1",
+   agentId: "agent-uuid",
+   limit: "10",
+   page: "1",
 });
 
 // Get by slug
 const post = await sdk.content.get({
-  agentId: "agent-uuid",
-  slug: "my-post-slug",
+   agentId: "agent-uuid",
+   slug: "my-post-slug",
 });
 
 // Get related slugs
 const relatedSlugs = await sdk.content.getRelatedSlugs({
-  agentId: "agent-uuid",
-  slug: "my-post-slug",
+   agentId: "agent-uuid",
+   slug: "my-post-slug",
 });
 
 // Get author
 const author = await sdk.content.getAuthor({
-  agentId: "agent-uuid",
+   agentId: "agent-uuid",
 });
 
 // Get analytics (includes image data)
 const analytics = await sdk.content.getAnalytics({
-  contentId: "content-uuid",
+   contentId: "content-uuid",
 });
 ```
 
 **Changes:**
+
 - `listContentByAgent()` → `sdk.content.list()`
 - `getContentBySlug()` → `sdk.content.get()`
 - `getRelatedSlugs()` → `sdk.content.getRelatedSlugs()`
@@ -152,72 +162,79 @@ Browser-specific functionality (events and forms) has been consolidated into a s
 #### Events
 
 **Old:**
+
 ```typescript
 import { createEventTracker } from "@contentagen/sdk/events";
 
 const tracker = createEventTracker({
-  apiKey: "your-api-key",
-  organizationId: "org-uuid",
+   apiKey: "your-api-key",
+   organizationId: "org-uuid",
 });
 
 tracker.track("page_view", { page: "/blog" });
 ```
 
 **New:**
+
 ```typescript
 import { createEventTracker } from "@contentta/sdk/browser";
 
 const tracker = createEventTracker({
-  apiKey: "your-api-key",
-  organizationId: "org-uuid",
+   apiKey: "your-api-key",
+   organizationId: "org-uuid",
 });
 
 tracker.track("page_view", { page: "/blog" });
 ```
 
 **Changes:**
+
 - Import path changed: `@contentagen/sdk/events` → `@contentta/sdk/browser`
 - API remains the same
 
 #### Forms
 
 **Old:**
+
 ```typescript
 import { createFormsClient } from "@contentagen/sdk/forms";
 
 const forms = createFormsClient({
-  apiKey: "your-api-key",
-  organizationId: "org-uuid",
+   apiKey: "your-api-key",
+   organizationId: "org-uuid",
 });
 
 await forms.embedForm("form-id", "container-id");
 ```
 
 **New:**
+
 ```typescript
 import { createFormsClient } from "@contentta/sdk/browser";
 
 const forms = createFormsClient({
-  apiKey: "your-api-key",
-  organizationId: "org-uuid",
+   apiKey: "your-api-key",
+   organizationId: "org-uuid",
 });
 
 await forms.embedForm("form-id", "container-id");
 ```
 
 **Changes:**
+
 - Import path changed: `@contentagen/sdk/forms` → `@contentta/sdk/browser`
 - API remains the same
 
 #### Unified Browser SDK
 
 **New in v2.0.0:**
+
 ```typescript
 import { createBrowserSdk } from "@contentta/sdk/browser";
 
 const sdk = createBrowserSdk({
-  apiKey: "your-api-key",
-  organizationId: "org-uuid",
+   apiKey: "your-api-key",
+   organizationId: "org-uuid",
 });
 
 // Both tracker and forms available
@@ -232,27 +249,29 @@ This unified approach is recommended for browser environments where you need bot
 ### 5. Analytics Integration
 
 **Old:**
+
 ```typescript
 // Get content with separate analytics call
 const post = await sdk.getContentBySlug({
-  slug: "my-post",
-  agentId: "agent-uuid",
+   slug: "my-post",
+   agentId: "agent-uuid",
 });
 
 // Analytics not available through SDK
 ```
 
 **New:**
+
 ```typescript
 // Get content
 const post = await sdk.content.get({
-  agentId: "agent-uuid",
-  slug: "my-post",
+   agentId: "agent-uuid",
+   slug: "my-post",
 });
 
 // Get content with analytics
 const withAnalytics = await sdk.content.getAnalytics({
-  contentId: post.id,
+   contentId: post.id,
 });
 
 // Access analytics data
@@ -261,6 +280,7 @@ console.log(withAnalytics.image);
 ```
 
 **Changes:**
+
 - New `sdk.content.getAnalytics()` method provides analytics data alongside content
 - Image data now available through analytics endpoint
 
@@ -269,25 +289,28 @@ console.log(withAnalytics.image);
 ### 6. Error Handling
 
 **Old:**
+
 ```typescript
 try {
-  const sdk = new ContentaGenSDK({ apiKey: "" });
+   const sdk = new ContentaGenSDK({ apiKey: "" });
 } catch (err) {
-  // Error codes: SDK_E001, SDK_E002, SDK_E003, SDK_E004
+   // Error codes: SDK_E001, SDK_E002, SDK_E003, SDK_E004
 }
 ```
 
 **New:**
+
 ```typescript
 try {
-  const sdk = createSdk({ apiKey: "" });
+   const sdk = createSdk({ apiKey: "" });
 } catch (err) {
-  // Standard Error with message
-  // oRPC client handles API errors with proper typing
+   // Standard Error with message
+   // oRPC client handles API errors with proper typing
 }
 ```
 
 **Changes:**
+
 - Custom error codes removed
 - Standard JavaScript errors used
 - oRPC client provides typed error responses
@@ -297,28 +320,31 @@ try {
 ### 7. TypeScript Types
 
 **Old:**
+
 ```typescript
 import {
-  ContentaGenSDK,
-  ShareStatus,
-  ContentListResponseSchema,
-  ContentSelectSchema,
+   ContentaGenSDK,
+   ShareStatus,
+   ContentListResponseSchema,
+   ContentSelectSchema,
 } from "@contentagen/sdk";
 ```
 
 **New:**
+
 ```typescript
 import {
-  createSdk,
-  ShareStatus,
-  ContentList,
-  ContentSelect,
-  ContentListResponseSchema,
-  ContentSelectSchema,
+   createSdk,
+   ShareStatus,
+   ContentList,
+   ContentSelect,
+   ContentListResponseSchema,
+   ContentSelectSchema,
 } from "@contentta/sdk";
 ```
 
 **Changes:**
+
 - `ContentaGenSDK` class no longer exported (use `createSdk` return type)
 - All Zod schemas still available for validation
 - TypeScript types extracted from schemas for better IDE support
@@ -328,32 +354,35 @@ import {
 ### 8. PostHog Analytics Helper
 
 **Old:**
+
 ```typescript
 import { createPostHogHelper } from "@contentagen/sdk/posthog";
 
 const helper = createPostHogHelper();
 const script = helper.trackBlogPostView({
-  id: "post-id",
-  slug: "post-slug",
-  title: "Post Title",
-  agentId: "agent-uuid",
+   id: "post-id",
+   slug: "post-slug",
+   title: "Post Title",
+   agentId: "agent-uuid",
 });
 ```
 
 **New:**
+
 ```typescript
 import { createPostHogHelper } from "@contentta/sdk/posthog";
 
 const helper = createPostHogHelper();
 const script = helper.trackBlogPostView({
-  id: "post-id",
-  slug: "post-slug",
-  title: "Post Title",
-  agentId: "agent-uuid",
+   id: "post-id",
+   slug: "post-slug",
+   title: "Post Title",
+   agentId: "agent-uuid",
 });
 ```
 
 **Changes:**
+
 - Import path updated to new package name
 - API remains the same
 
@@ -369,40 +398,40 @@ import { createEventTracker } from "@contentagen/sdk/events";
 import { createFormsClient } from "@contentagen/sdk/forms";
 
 const sdk = new ContentaGenSDK({
-  apiKey: "your-api-key",
-  locale: "en-US",
+   apiKey: "your-api-key",
+   locale: "en-US",
 });
 
 const tracker = createEventTracker({
-  apiKey: "your-api-key",
-  organizationId: "org-uuid",
+   apiKey: "your-api-key",
+   organizationId: "org-uuid",
 });
 
 const forms = createFormsClient({
-  apiKey: "your-api-key",
-  organizationId: "org-uuid",
+   apiKey: "your-api-key",
+   organizationId: "org-uuid",
 });
 
 async function example() {
-  // List content
-  const { posts, total } = await sdk.listContentByAgent({
-    agentId: "agent-uuid",
-    status: "approved",
-    limit: 10,
-    page: 1,
-  });
+   // List content
+   const { posts, total } = await sdk.listContentByAgent({
+      agentId: "agent-uuid",
+      status: "approved",
+      limit: 10,
+      page: 1,
+   });
 
-  // Get content
-  const post = await sdk.getContentBySlug({
-    slug: posts[0].meta.slug!,
-    agentId: "agent-uuid",
-  });
+   // Get content
+   const post = await sdk.getContentBySlug({
+      slug: posts[0].meta.slug!,
+      agentId: "agent-uuid",
+   });
 
-  // Track event
-  tracker.track("page_view", { page: "/blog" });
+   // Track event
+   tracker.track("page_view", { page: "/blog" });
 
-  // Embed form
-  await forms.embedForm("form-id", "container-id");
+   // Embed form
+   await forms.embedForm("form-id", "container-id");
 }
 ```
 
@@ -413,33 +442,33 @@ import { createSdk } from "@contentta/sdk";
 import { createBrowserSdk } from "@contentta/sdk/browser";
 
 const sdk = createSdk({
-  apiKey: "your-api-key",
+   apiKey: "your-api-key",
 });
 
 const browser = createBrowserSdk({
-  apiKey: "your-api-key",
-  organizationId: "org-uuid",
+   apiKey: "your-api-key",
+   organizationId: "org-uuid",
 });
 
 async function example() {
-  // List content
-  const { posts, total } = await sdk.content.list({
-    agentId: "agent-uuid",
-    limit: "10",
-    page: "1",
-  });
+   // List content
+   const { posts, total } = await sdk.content.list({
+      agentId: "agent-uuid",
+      limit: "10",
+      page: "1",
+   });
 
-  // Get content
-  const post = await sdk.content.get({
-    agentId: "agent-uuid",
-    slug: posts[0].meta.slug!,
-  });
+   // Get content
+   const post = await sdk.content.get({
+      agentId: "agent-uuid",
+      slug: posts[0].meta.slug!,
+   });
 
-  // Track event
-  browser.tracker.track("page_view", { page: "/blog" });
+   // Track event
+   browser.tracker.track("page_view", { page: "/blog" });
 
-  // Embed form
-  await browser.forms.embedForm("form-id", "container-id");
+   // Embed form
+   await browser.forms.embedForm("form-id", "container-id");
 }
 ```
 
@@ -447,19 +476,19 @@ async function example() {
 
 ## Summary of Breaking Changes
 
-| Category | Old | New |
-|----------|-----|-----|
-| Package Name | `@f-o-t/contentagen-sdk` or `@contentagen/sdk` | `@contentta/sdk` |
-| API Style | Class-based (`new ContentaGenSDK()`) | Functional (`createSdk()`) |
-| Content List | `sdk.listContentByAgent()` | `sdk.content.list()` |
-| Content Get | `sdk.getContentBySlug()` | `sdk.content.get()` |
-| Related Slugs | `sdk.getRelatedSlugs()` | `sdk.content.getRelatedSlugs()` |
-| Author | `sdk.getAuthorByAgentId()` | `sdk.content.getAuthor()` |
-| Image | `sdk.getContentImage()` | `sdk.content.getAnalytics()` |
-| Events Import | `@contentagen/sdk/events` | `@contentta/sdk/browser` |
-| Forms Import | `@contentagen/sdk/forms` | `@contentta/sdk/browser` |
-| Locale Config | Constructor option | Removed (server-side) |
-| Parameter Types | Numbers (`limit: 10`) | Strings (`limit: "10"`) |
+| Category        | Old                                            | New                             |
+| --------------- | ---------------------------------------------- | ------------------------------- |
+| Package Name    | `@f-o-t/contentagen-sdk` or `@contentagen/sdk` | `@contentta/sdk`                |
+| API Style       | Class-based (`new ContentaGenSDK()`)           | Functional (`createSdk()`)      |
+| Content List    | `sdk.listContentByAgent()`                     | `sdk.content.list()`            |
+| Content Get     | `sdk.getContentBySlug()`                       | `sdk.content.get()`             |
+| Related Slugs   | `sdk.getRelatedSlugs()`                        | `sdk.content.getRelatedSlugs()` |
+| Author          | `sdk.getAuthorByAgentId()`                     | `sdk.content.getAuthor()`       |
+| Image           | `sdk.getContentImage()`                        | `sdk.content.getAnalytics()`    |
+| Events Import   | `@contentagen/sdk/events`                      | `@contentta/sdk/browser`        |
+| Forms Import    | `@contentagen/sdk/forms`                       | `@contentta/sdk/browser`        |
+| Locale Config   | Constructor option                             | Removed (server-side)           |
+| Parameter Types | Numbers (`limit: 10`)                          | Strings (`limit: "10"`)         |
 
 ---
 

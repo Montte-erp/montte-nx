@@ -23,7 +23,7 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "@packages/environment": "workspace:*",
+      "@core/environment": "workspace:*",
       "stripe": "catalog:payments"
    },
    "devDependencies": {

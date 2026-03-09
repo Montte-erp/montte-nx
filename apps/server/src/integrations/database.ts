@@ -1,5 +1,5 @@
-import { createDb } from "@packages/database/client";
-import { env } from "@packages/environment/server";
+import { createDb } from "@core/database/client";
+import { env } from "@core/environment/server";
 
 export const db = createDb({
    databaseUrl: env.DATABASE_URL,

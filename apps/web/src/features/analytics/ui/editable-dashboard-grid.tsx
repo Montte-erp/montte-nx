@@ -1,8 +1,8 @@
 import type {
    Dashboard,
    DashboardTile as DashboardTileType,
-} from "@packages/database/schemas/dashboards";
-import type { Insight } from "@packages/database/schemas/insights";
+} from "@core/database/schemas/dashboards";
+import type { Insight } from "@core/database/schemas/insights";
 import { Button } from "@packages/ui/components/button";
 import {
    Card,

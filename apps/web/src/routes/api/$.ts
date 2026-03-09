@@ -6,8 +6,8 @@ import { onError } from "@orpc/server";
 import { CompressionPlugin, RPCHandler } from "@orpc/server/fetch";
 import { BatchHandlerPlugin } from "@orpc/server/plugins";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import { FetchLoggingPlugin } from "@packages/logging/orpc-plugin";
-import { getLogger } from "@packages/logging/root";
+import { FetchLoggingPlugin } from "@core/logging/orpc-plugin";
+import { getLogger } from "@core/logging/root";
 import { createFileRoute } from "@tanstack/react-router";
 
 import router from "@/integrations/orpc/router";

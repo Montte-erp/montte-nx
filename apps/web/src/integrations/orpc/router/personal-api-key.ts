@@ -3,12 +3,12 @@ import {
    createKey,
    listKeysByUserId,
    revokeKey,
-} from "@packages/database/repositories/personal-api-key-repository";
+} from "@core/database/repositories/personal-api-key-repository";
 import type {
    OrganizationAccess,
    PersonalApiKeyScopes,
    ScopeAccess,
-} from "@packages/database/schemas/personal-api-key";
+} from "@core/database/schemas/personal-api-key";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

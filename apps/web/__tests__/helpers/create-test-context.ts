@@ -14,7 +14,7 @@ export const TEST_TEAM_ID = "test-team-00000000-0000-0000-0000-000000000001";
 // =============================================================================
 
 type MockContextOverrides = {
-	[K in keyof ORPCContextWithAuth]?: unknown;
+   [K in keyof ORPCContextWithAuth]?: unknown;
 } & Record<string, unknown>;
 
 // =============================================================================
@@ -28,25 +28,28 @@ type MockContextOverrides = {
  * Pass partial overrides to customize specific fields.
  */
 export function createTestContext(
-	overrides: MockContextOverrides = {},
+   overrides: MockContextOverrides = {},
 ): ORPCContextWithAuth {
-	return {
-		auth: { api: {} },
-		db: {},
-		headers: new Headers({ Authorization: "Bearer test-token" }),
-		request: new Request("http://localhost"),
-		session: {
-			user: { id: TEST_USER_ID },
-			session: { activeOrganizationId: TEST_ORG_ID, activeTeamId: TEST_TEAM_ID },
-		},
-		posthog: {
-			capture: vi.fn(),
-			identify: vi.fn(),
-			groupIdentify: vi.fn(),
-			shutdown: vi.fn(),
-		},
-		...overrides,
-	} as unknown as ORPCContextWithAuth;
+   return {
+      auth: { api: {} },
+      db: {},
+      headers: new Headers({ Authorization: "Bearer test-token" }),
+      request: new Request("http://localhost"),
+      session: {
+         user: { id: TEST_USER_ID },
+         session: {
+            activeOrganizationId: TEST_ORG_ID,
+            activeTeamId: TEST_TEAM_ID,
+         },
+      },
+      posthog: {
+         capture: vi.fn(),
+         identify: vi.fn(),
+         groupIdentify: vi.fn(),
+         shutdown: vi.fn(),
+      },
+      ...overrides,
+   } as unknown as ORPCContextWithAuth;
 }
 
 /**
@@ -54,12 +57,12 @@ export function createTestContext(
  * Use this to assert UNAUTHORIZED errors from the `withAuth` middleware.
  */
 export function createUnauthenticatedContext(
-	overrides: MockContextOverrides = {},
+   overrides: MockContextOverrides = {},
 ): ORPCContextWithAuth {
-	return createTestContext({
-		session: null,
-		...overrides,
-	});
+   return createTestContext({
+      session: null,
+      ...overrides,
+   });
 }
 
 /**
@@ -67,13 +70,13 @@ export function createUnauthenticatedContext(
  * Use this to assert FORBIDDEN errors from the `withOrganization` middleware.
  */
 export function createNoOrgContext(
-	overrides: MockContextOverrides = {},
+   overrides: MockContextOverrides = {},
 ): ORPCContextWithAuth {
-	return createTestContext({
-		session: {
-			user: { id: TEST_USER_ID },
-			session: { activeOrganizationId: null },
-		},
-		...overrides,
-	});
+   return createTestContext({
+      session: {
+         user: { id: TEST_USER_ID },
+         session: { activeOrganizationId: null },
+      },
+      ...overrides,
+   });
 }

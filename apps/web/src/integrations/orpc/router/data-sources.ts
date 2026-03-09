@@ -5,7 +5,7 @@ import {
    getDataSource,
    listDataSources,
    updateDataSource,
-} from "@packages/database/repositories/data-source-repository";
+} from "@core/database/repositories/data-source-repository";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

@@ -1,4 +1,4 @@
-import { getLogger } from "@packages/logging/root";
+import { getLogger } from "@core/logging/root";
 import type { MinioClient } from "./client";
 
 const logger = getLogger().child({ module: "files:cleanup" });

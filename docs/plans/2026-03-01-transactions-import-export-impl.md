@@ -13,6 +13,7 @@
 ## Task 1: Install @f-o-t/csv and @f-o-t/ofx
 
 **Files:**
+
 - Modify: `package.json` (root) — fot catalog at line ~281
 - Modify: `apps/web/package.json` — dependencies section
 
@@ -62,6 +63,7 @@ git commit -m "feat(deps): add @f-o-t/csv and @f-o-t/ofx"
 ## Task 2: Add `importBulk` oRPC procedure
 
 **Files:**
+
 - Modify: `apps/web/src/integrations/orpc/router/transactions.ts`
 - Modify: `apps/web/src/integrations/orpc/router/index.ts`
 
@@ -101,6 +103,7 @@ export const importBulk = protectedProcedure
 The transactions router is already registered as `transactions: transactionsRouter`. The new `importBulk` export is automatically included since it imports the whole namespace — no change needed to `index.ts`.
 
 Verify by checking the import line in `index.ts`:
+
 ```typescript
 import * as transactionsRouter from "./transactions";
 // → orpc.transactions.importBulk is now available
@@ -126,12 +129,14 @@ git commit -m "feat(transactions): add importBulk oRPC procedure"
 ## Task 3: Categories — expandable subcategory rows
 
 **Files:**
+
 - Modify: `apps/web/src/features/categories/ui/categories-columns.tsx`
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/finance/categories.tsx`
 
 ### Step 1: Update `categories-columns.tsx`
 
 Replace the current file with the version below. Key changes:
+
 - Remove the `"subcategories"` inline column
 - Add an expand/collapse chevron as the first column using `row.getToggleExpandedHandler()`
 
@@ -366,11 +371,13 @@ git commit -m "feat(categories): expandable subcategory rows in table"
 ## Task 4: TransactionExportCredenza
 
 **Files:**
+
 - Create: `apps/web/src/features/transactions/ui/transaction-export-credenza.tsx`
 
 ### Step 1: Create the file
 
 The export modal:
+
 1. Format selector: CSV | OFX (radio via `ToggleGroup`)
 2. When OFX is selected: account selector is required (needed for OFX metadata)
 3. Date range picker pre-filled with props `dateFrom` / `dateTo`
@@ -635,6 +642,7 @@ git commit -m "feat(transactions): add TransactionExportCredenza"
 ## Task 5: TransactionImportCredenza
 
 **Files:**
+
 - Create: `apps/web/src/features/transactions/ui/transaction-import-credenza.tsx`
 
 This is a 2-step modal. Use local `step` state: `"upload"` | `"preview"`.
@@ -1235,6 +1243,7 @@ git commit -m "feat(transactions): add TransactionImportCredenza with duplicate 
 ## Task 6: Wire Export + Import buttons to TransactionsPage
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/finance/transactions.tsx`
 
 ### Step 1: Add imports to `transactions.tsx`

@@ -5,23 +5,27 @@
 ## 1) Estrutura
 
 ### Hierarquia de headings
+
 - H2 para seções principais.
 - H3 para subseções.
 - Sem saltos de H2 para H4.
 
 ✅ **Exemplo**
+
 ```
 ## O que é SEO local
 ### Benefícios para negócios físicos
 ```
 
 ❌ **Exemplo**
+
 ```
 ## O que é SEO local
 #### Benefícios para negócios físicos
 ```
 
 ### Frequência de H2
+
 - H2 a cada **200–300 palavras**.
 - Evitar blocos longos sem divisão.
 
@@ -32,6 +36,7 @@
 “900 palavras seguidas sem nenhuma divisão.”
 
 ### Introdução objetiva
+
 - Responde a intenção do leitor nos **primeiros 2–3 parágrafos**.
 - Evita preâmbulos longos.
 
@@ -42,6 +47,7 @@
 “Desde a origem da internet, o marketing digital vem mudando…”
 
 ### Conclusão com takeaways + CTA
+
 - Resuma 2–3 aprendizados.
 - Inclua CTA claro (comentário, download, contato, próximo passo).
 
@@ -54,6 +60,7 @@
 ## 2) Qualidade
 
 ### Claims com evidências
+
 - Cada promessa forte precisa de prova (dados, estudo, experiência explicada).
 
 ✅ **Exemplo**
@@ -63,6 +70,7 @@
 “A maioria das pessoas faz pesquisas online.”
 
 ### Dados específicos
+
 - Prefira números, intervalos e benchmarks.
 
 ✅ **Exemplo**
@@ -72,6 +80,7 @@
 “Sites rápidos convertem melhor.”
 
 ### Profundidade consistente
+
 - Seções com nível semelhante de detalhe.
 - Evite seções “finas” (1 parágrafo curto).
 
@@ -84,6 +93,7 @@
 ## 3) Tom e voz
 
 ### Consistência de voz
+
 - Conversacional, mas autoritativo.
 - Evitar abruptos entre formal e informal.
 
@@ -94,6 +104,7 @@
 “Vamos direto ao ponto.” → “Outrossim, convém salientar…”
 
 ### Adequação ao público
+
 - Termos técnicos explicados quando necessário.
 - Não subestimar nem superestimar o leitor.
 
@@ -104,6 +115,7 @@
 “CTR é óbvio, não vou explicar.”
 
 ### Evitar alarmismo/clickbait
+
 - Sem promessas irreais.
 - Sem urgência artificial.
 
@@ -116,6 +128,7 @@
 ## 4) Legibilidade
 
 ### Parágrafos curtos
+
 - 2–4 frases por parágrafo.
 - Evitar blocos de 6–8 frases.
 
@@ -126,6 +139,7 @@
 “Parágrafo com 10 linhas e sem quebra.”
 
 ### Variação de frases
+
 - Misturar frases curtas e médias.
 - Evitar períodos longos em sequência.
 
@@ -136,6 +150,7 @@
 “O processo exige planejamento, execução, mensuração, validação e repetição.”
 
 ### Flesch ≥ 60
+
 - Meta mínima de leitura confortável.
 - Se ficar abaixo, justificar tecnicidade.
 
@@ -148,6 +163,7 @@
 ## 5) Fact-checking
 
 ### Estatísticas com fonte
+
 - Sempre indicar fonte e ano.
 - Preferir fontes oficiais.
 
@@ -158,6 +174,7 @@
 “Estudos mostram…” (sem fonte)
 
 ### Claims verificáveis
+
 - “O que” + “por quê” + “como verificar”.
 
 ✅ **Exemplo**
@@ -167,6 +184,7 @@
 “A taxa de abertura é muito alta.”
 
 ### Atualização de informação
+
 - Checar se dados são recentes (preferência: últimos 3 anos).
 
 ✅ **Exemplo**
@@ -213,9 +231,9 @@
    - ✅ Encerramento com ação
    - ❌ Encerramento neutro
 
-10. **Fatos sem fonte**
-    - ✅ Com referência
-    - ❌ Sem referência
+10.   **Fatos sem fonte**
+      - ✅ Com referência
+      - ❌ Sem referência
 
 ## 7) Ferramentas de análise (como usar no relatório)
 
@@ -229,18 +247,22 @@
 ## 8) Formato do relatório final
 
 ### Resumo executivo
+
 - 2–4 frases sobre o estado geral.
 - 1–2 riscos críticos.
 
 ### Achados por prioridade
+
 - **Alta**: comprometem compreensão, credibilidade ou SEO.
 - **Média**: problemas de profundidade ou estrutura.
 - **Baixa**: ajustes de estilo e polimento.
 
 ### Plano de ação
+
 - 3–6 ações na ordem de impacto.
 
 ✅ **Exemplo (resumido)**
+
 ```
 Resumo: bom conteúdo, mas falta evidência em duas seções.
 Alta: claims sem fonte nos parágrafos 3 e 7.

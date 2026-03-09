@@ -12,18 +12,19 @@
 
 ## Key File Map
 
-| File | Role |
-|------|------|
-| `apps/web/src/features/analytics/ui/dashboard-view.tsx` | Owns `isEditingLayout` state, header actions, page actions, toast |
+| File                                                             | Role                                                                           |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `apps/web/src/features/analytics/ui/dashboard-view.tsx`          | Owns `isEditingLayout` state, header actions, page actions, toast              |
 | `apps/web/src/features/analytics/ui/editable-dashboard-grid.tsx` | Accepts `isEditingLayout`, exposes save/cancel refs, removes UnsavedChangesBar |
-| `apps/web/src/features/analytics/ui/dashboard-grid.tsx` | Handles resize drag end, passes `isEditing` + `onResize` down |
-| `apps/web/src/features/analytics/ui/dashboard-tile.tsx` | Adds `useDraggable` resize handle at bottom-right corner |
+| `apps/web/src/features/analytics/ui/dashboard-grid.tsx`          | Handles resize drag end, passes `isEditing` + `onResize` down                  |
+| `apps/web/src/features/analytics/ui/dashboard-tile.tsx`          | Adds `useDraggable` resize handle at bottom-right corner                       |
 
 ---
 
 ## Task 1: Update `EditableDashboardGrid` — accept edit mode, remove UnsavedChangesBar, expose refs
 
 **Files:**
+
 - Modify: `apps/web/src/features/analytics/ui/editable-dashboard-grid.tsx`
 
 **Step 1: Add `isEditingLayout`, `onSaveReady`, `onCancelReady` to the props interface**
@@ -99,9 +100,7 @@ Update the `DashboardGrid` call to also pass `isEditing` and `onResize`:
 
 ```tsx
 if (localTiles.length === 0 && !isEditingLayout) {
-   return (
-      <Card>...</Card>
-   );
+   return <Card>...</Card>;
 }
 ```
 
@@ -126,6 +125,7 @@ git commit -m "feat(dashboards): wire isEditingLayout into EditableDashboardGrid
 ## Task 2: Update `DashboardGrid` — handle resize drag end + expose isEditing
 
 **Files:**
+
 - Modify: `apps/web/src/features/analytics/ui/dashboard-grid.tsx`
 
 **Step 1: Add new props and imports**
@@ -206,9 +206,7 @@ const handleDragEnd = (event: DragEndEvent) => {
 
    // Sortable reorder drag
    if (over && active.id !== over.id) {
-      const oldIndex = sortedTiles.findIndex(
-         (t) => t.insightId === active.id,
-      );
+      const oldIndex = sortedTiles.findIndex((t) => t.insightId === active.id);
       const newIndex = sortedTiles.findIndex((t) => t.insightId === over.id);
       const reordered = arrayMove(sortedTiles, oldIndex, newIndex).map(
          (tile, index) => ({ ...tile, order: index }),
@@ -246,6 +244,7 @@ git commit -m "feat(dashboards): handle resize drag end in DashboardGrid"
 ## Task 3: Add resize handle to `DashboardTile`
 
 **Files:**
+
 - Modify: `apps/web/src/features/analytics/ui/dashboard-tile.tsx`
 
 **Step 1: Add `useDraggable` import**
@@ -321,20 +320,24 @@ To:
 Place it just before the closing `</div>` of the card (after the chart content area):
 
 ```tsx
-{/* Resize handle — only in edit mode */}
-{isEditing && (
-   <div
-      ref={setResizeRef}
-      {...resizeListeners}
-      {...resizeAttributes}
-      className={cn(
-         "absolute bottom-1 right-1 size-5 flex items-center justify-center rounded cursor-ew-resize opacity-30 hover:opacity-100 transition-opacity select-none",
-         isResizing && "opacity-100",
-      )}
-   >
-      <GripHorizontal className="size-3 text-muted-foreground" />
-   </div>
-)}
+{
+   /* Resize handle — only in edit mode */
+}
+{
+   isEditing && (
+      <div
+         ref={setResizeRef}
+         {...resizeListeners}
+         {...resizeAttributes}
+         className={cn(
+            "absolute bottom-1 right-1 size-5 flex items-center justify-center rounded cursor-ew-resize opacity-30 hover:opacity-100 transition-opacity select-none",
+            isResizing && "opacity-100",
+         )}
+      >
+         <GripHorizontal className="size-3 text-muted-foreground" />
+      </div>
+   );
+}
 ```
 
 **Step 6: Verify no TypeScript errors**
@@ -357,6 +360,7 @@ git commit -m "feat(dashboards): add resize handle to DashboardTile using useDra
 ## Task 4: Orchestrate edit mode in `DashboardView`
 
 **Files:**
+
 - Modify: `apps/web/src/features/analytics/ui/dashboard-view.tsx`
 
 **Step 1: Add new imports**
@@ -371,7 +375,16 @@ import { usePageActions } from "@/features/context-panel/use-context-panel";
 Also add `Check`, `Loader2`, `RotateCcw` to existing lucide imports (they move from `editable-dashboard-grid.tsx`):
 
 ```tsx
-import { Check, Clock, Layout, Loader2, Plus, RefreshCw, RotateCcw, X } from "lucide-react";
+import {
+   Check,
+   Clock,
+   Layout,
+   Loader2,
+   Plus,
+   RefreshCw,
+   RotateCcw,
+   X,
+} from "lucide-react";
 ```
 
 **Step 2: Add `isEditingLayout` state and save/cancel refs to `DashboardView`**
@@ -395,10 +408,13 @@ usePageActions([
       onClick: () => {
          if (!isEditingLayout) {
             setIsEditingLayout(true);
-            toast.info("Editando o dashboard — salve para persistir as alterações", {
-               id: "dashboard-edit-mode",
-               duration: Number.POSITIVE_INFINITY,
-            });
+            toast.info(
+               "Editando o dashboard — salve para persistir as alterações",
+               {
+                  id: "dashboard-edit-mode",
+                  duration: Number.POSITIVE_INFINITY,
+               },
+            );
          }
       },
    },
@@ -426,16 +442,18 @@ For `handleSave`, the grid's mutation has its own `isPending`. To keep it simple
 Add `onSaveComplete?: () => void` to `EditableDashboardGridProps` (in Task 1 file — add it now).
 
 In `EditableDashboardGrid.handleSave`:
+
 ```tsx
 const handleSave = useCallback(() => {
    saveMutation.mutate(
       { id: dashboard.id, tiles: localTiles },
-      { onSuccess: () => onSaveComplete?.() }
+      { onSuccess: () => onSaveComplete?.() },
    );
 }, [saveMutation, dashboard.id, localTiles, onSaveComplete]);
 ```
 
 In `DashboardView`, pass:
+
 ```tsx
 onSaveComplete={() => {
    setIsEditingLayout(false);
@@ -513,14 +531,20 @@ return (
          <EditableDashboardGrid
             dashboard={dashboard}
             isEditingLayout={isEditingLayout}
-            onCancelReady={(fn) => { cancelRef.current = fn; }}
-            onOpenAddInsight={(fn) => { addInsightRef.current = fn; }}
+            onCancelReady={(fn) => {
+               cancelRef.current = fn;
+            }}
+            onOpenAddInsight={(fn) => {
+               addInsightRef.current = fn;
+            }}
             onSaveComplete={() => {
                setIsEditingLayout(false);
                setIsSaving(false);
                toast.dismiss("dashboard-edit-mode");
             }}
-            onSaveReady={(fn) => { saveRef.current = fn; }}
+            onSaveReady={(fn) => {
+               saveRef.current = fn;
+            }}
          />
       </div>
    </main>
@@ -549,6 +573,7 @@ git commit -m "feat(dashboards): add edit mode toggle with Cancel/Save header bu
 > If you completed Task 4 and realize `onSaveComplete` was not added in Task 1, do it now.
 
 **Files:**
+
 - Modify: `apps/web/src/features/analytics/ui/editable-dashboard-grid.tsx`
 
 **Step 1: Add `onSaveComplete` to the interface**
@@ -620,7 +645,7 @@ Open `http://localhost:5173` → navigate to any dashboard.
 **Step 4: Enter edit mode via context panel**
 
 - [ ] Click "Editar layout" in the context panel
-- [ ] Toast appears: *"Editando o dashboard — salve para persistir as alterações"*
+- [ ] Toast appears: _"Editando o dashboard — salve para persistir as alterações"_
 - [ ] Header shows Cancel + Save buttons (replacing "Adicionar insight")
 - [ ] Tiles show drag handle (GripVertical) on the left
 - [ ] Tiles show resize handle (GripHorizontal dots) at bottom-right corner

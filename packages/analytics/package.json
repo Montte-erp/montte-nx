@@ -39,8 +39,8 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "@packages/database": "workspace:*",
-      "@packages/utils": "workspace:*",
+      "@core/database": "workspace:*",
+      "@core/utils": "workspace:*",
       "drizzle-orm": "catalog:database",
       "zod": "catalog:validation"
    },

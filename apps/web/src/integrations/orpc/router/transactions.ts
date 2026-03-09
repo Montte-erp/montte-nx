@@ -1,10 +1,10 @@
 import { ConditionGroup } from "@f-o-t/condition-evaluator";
 import { ORPCError } from "@orpc/server";
-import { getBankAccount } from "@packages/database/repositories/bank-accounts-repository";
-import { getCategory } from "@packages/database/repositories/categories-repository";
-import { getContact } from "@packages/database/repositories/contacts-repository";
-import { getSubcategory } from "@packages/database/repositories/subcategories-repository";
-import { getTag } from "@packages/database/repositories/tags-repository";
+import { getBankAccount } from "@core/database/repositories/bank-accounts-repository";
+import { getCategory } from "@core/database/repositories/categories-repository";
+import { getContact } from "@core/database/repositories/contacts-repository";
+import { getSubcategory } from "@core/database/repositories/subcategories-repository";
+import { getTag } from "@core/database/repositories/tags-repository";
 import {
    createTransaction,
    createTransactionItems,
@@ -14,8 +14,8 @@ import {
    listTransactions,
    replaceTransactionItems,
    updateTransaction,
-} from "@packages/database/repositories/transactions-repository";
-import { transactions } from "@packages/database/schemas/transactions";
+} from "@core/database/repositories/transactions-repository";
+import { transactions } from "@core/database/schemas/transactions";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";

@@ -128,7 +128,6 @@ function IconOption({ value, label }: { value: string; label: string }) {
    );
 }
 
-
 type AccountType = "totalizadora" | "subconta";
 
 interface CategoryFormProps {
@@ -156,7 +155,8 @@ export function CategoryForm({
 }: CategoryFormProps) {
    const isCreate = mode === "create";
    const [accountType, setAccountType] = useState<AccountType>(
-      initialAccountType ?? (category?.categoryId ? "subconta" : "totalizadora"),
+      initialAccountType ??
+         (category?.categoryId ? "subconta" : "totalizadora"),
    );
 
    const isSubconta = accountType === "subconta";
@@ -352,10 +352,7 @@ export function CategoryForm({
                                  </SelectTrigger>
                                  <SelectContent>
                                     {parentCategories.map((cat) => (
-                                       <SelectItem
-                                          key={cat.id}
-                                          value={cat.id}
-                                       >
+                                       <SelectItem key={cat.id} value={cat.id}>
                                           {cat.name}
                                        </SelectItem>
                                     ))}
@@ -383,9 +380,7 @@ export function CategoryForm({
                                  value={field.state.value}
                               />
                               {isInvalid && (
-                                 <FieldError
-                                    errors={field.state.meta.errors}
-                                 />
+                                 <FieldError errors={field.state.meta.errors} />
                               )}
                            </Field>
                         );
@@ -523,8 +518,7 @@ export function CategoryForm({
                                                          )
                                                       }
                                                       style={{
-                                                         backgroundColor:
-                                                            color,
+                                                         backgroundColor: color,
                                                       }}
                                                       type="button"
                                                    />

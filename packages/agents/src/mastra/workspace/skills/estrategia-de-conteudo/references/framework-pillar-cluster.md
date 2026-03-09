@@ -11,18 +11,22 @@ Eles funcionam como “temas mãe”.
 ### Abordagens possíveis
 
 **Product‑led (produto como centro)**
+
 - O pilar nasce da proposta do produto.
 - Ex.: “Automação de conteúdo”, “CMS com IA”.
 
 **Audience‑led (audiência como centro)**
+
 - O pilar nasce da dor da audiência.
 - Ex.: “Gestão editorial”, “Escalar produção”.
 
 **Search‑led (busca como centro)**
+
 - O pilar nasce do volume de pesquisa.
 - Ex.: “SEO para SaaS”, “Pesquisa de palavras‑chave”.
 
 **Competitor‑led (lacunas do mercado)**
+
 - O pilar nasce do que concorrentes não cobrem bem.
 - Ex.: “Operações editoriais avançadas”.
 
@@ -44,6 +48,7 @@ Pillar Topic (tema principal)
 Pillar: Estratégia de conteúdo
 → Cluster: Planejamento
 → Artigos:
+
 - Como criar calendário editorial semanal
 - Template de briefing editorial
 - Ritmo ideal de publicação
@@ -51,6 +56,7 @@ Pillar: Estratégia de conteúdo
 Pillar: SEO
 → Cluster: Keyword research
 → Artigos:
+
 - Como encontrar palavras‑chave long‑tail
 - Ferramentas gratuitas para pesquisa
 - Erros comuns de intenção de busca
@@ -60,6 +66,7 @@ Pillar: SEO
 Interlink é o que transforma posts isolados em sistema.
 
 Regras práticas:
+
 - Cada post aponta para 1 pilar.
 - Cada post aponta para 2 clusters do mesmo pilar.
 - Cada post aponta para 1 estágio adjacente do funil.
@@ -67,6 +74,7 @@ Regras práticas:
 ### Exemplo de links
 
 Post: “Como criar calendário editorial semanal”
+
 - Link para pilar: “Guia completo de estratégia de conteúdo”.
 - Link para cluster: “Template de briefing editorial”.
 - Link para cluster: “Fluxo de revisão com IA”.
@@ -77,15 +85,18 @@ Post: “Como criar calendário editorial semanal”
 O modelo Hub & Spoke organiza conhecimento.
 
 **Hub (pilar):**
+
 - Post longo e abrangente.
 - Centraliza o tema.
 - Recebe links de todos os spoke posts.
 
 **Spokes (posts derivados):**
+
 - Abordam subtemas específicos.
 - Cada spoke aponta de volta para o hub.
 
 ### Benefícios
+
 - Melhora autoridade tópica.
 - Aumenta tempo de navegação.
 - Facilita atualização e auditoria.
@@ -93,21 +104,25 @@ O modelo Hub & Spoke organiza conhecimento.
 ## 5) Tipos de conteúdo por estágio
 
 ### Awareness
+
 - Guias introdutórios
 - Conceitos e definições
 - Conteúdo educativo
 
 ### Consideration
+
 - Comparativos
 - Listas de ferramentas
 - Análises de alternativas
 
 ### Decision
+
 - Reviews e provas sociais
 - Preços e planos
 - Cases e depoimentos
 
 ### Implementation
+
 - Tutoriais
 - Templates
 - Checklists e playbooks
@@ -115,18 +130,22 @@ O modelo Hub & Spoke organiza conhecimento.
 ## 6) Conteúdos estratégicos por objetivo
 
 ### Use‑case
+
 Mostra aplicação prática do produto.
 Ex.: “Como equipes pequenas escalam conteúdo”.
 
 ### Hub pages
+
 Páginas de referência e coleta de links.
 Ex.: “Guia completo de SEO para blogs”.
 
 ### Thought leadership
+
 Opiniões originais e visão de mercado.
 Ex.: “Por que conteúdo sem distribuição falha”.
 
 ### Data‑driven
+
 Post baseado em dados e pesquisa própria.
 Ex.: “Análise de 300 títulos que ranquearam”.
 

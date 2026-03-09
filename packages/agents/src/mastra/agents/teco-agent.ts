@@ -1,7 +1,7 @@
 import { Agent } from "@mastra/core/agent";
 import { createWorkspaceTools } from "@mastra/core/workspace";
 import { Memory } from "@mastra/memory";
-import type { InstructionMemoryItem } from "@packages/database/schemas/instruction-memory";
+import type { InstructionMemoryItem } from "@core/database/schemas/instruction-memory";
 import { DEFAULT_CONTENT_MODEL_ID } from "../../models";
 import {
    buildLanguageInstruction,

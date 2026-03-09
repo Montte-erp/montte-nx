@@ -6,9 +6,9 @@ import {
    getBudgetGoal,
    listBudgetGoals,
    updateBudgetGoal,
-} from "@packages/database/repositories/budget-goals-repository";
-import { getCategory } from "@packages/database/repositories/categories-repository";
-import { getSubcategory } from "@packages/database/repositories/subcategories-repository";
+} from "@core/database/repositories/budget-goals-repository";
+import { getCategory } from "@core/database/repositories/categories-repository";
+import { getSubcategory } from "@core/database/repositories/subcategories-repository";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

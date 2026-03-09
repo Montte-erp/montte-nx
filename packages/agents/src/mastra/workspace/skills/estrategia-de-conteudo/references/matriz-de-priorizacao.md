@@ -15,11 +15,13 @@ Ela combina impacto, adequação e esforço.
 Avalia o impacto no cliente.
 
 Critérios:
+
 - Frequência do tema nas conversas.
 - % de clientes afetados.
 - Carga emocional (dor intensa ou urgente).
 
 Escala sugerida (1 a 5):
+
 - 1: dor rara ou pouco relevante.
 - 3: dor comum, mas não crítica.
 - 5: dor recorrente e urgente.
@@ -29,11 +31,13 @@ Escala sugerida (1 a 5):
 Mede o alinhamento com o produto e diferencial.
 
 Critérios:
+
 - Conexão direta com funcionalidades.
 - Insights únicos que a marca tem.
 - Histórias e casos de clientes.
 
 Escala sugerida (1 a 5):
+
 - 1: pouco alinhado ao produto.
 - 3: alinhado, mas sem diferencial.
 - 5: alinhado e com visão única.
@@ -43,12 +47,14 @@ Escala sugerida (1 a 5):
 Avalia o potencial de tráfego.
 
 Critérios:
+
 - Volume de busca estimado.
 - Competitividade da SERP.
 - Oportunidades de long‑tail.
 - Tendência (crescimento ou queda).
 
 Escala sugerida (1 a 5):
+
 - 1: baixo volume e alta competição.
 - 3: volume médio ou long‑tail promissor.
 - 5: alta demanda e baixa competição.
@@ -58,11 +64,13 @@ Escala sugerida (1 a 5):
 Mede esforço de produção.
 
 Critérios:
+
 - Expertise disponível.
 - Necessidade de pesquisa profunda.
 - Acesso a dados e ativos.
 
 Escala sugerida (1 a 5):
+
 - 1: alto esforço e pouca base.
 - 3: esforço médio e base parcial.
 - 5: fácil execução com ativos prontos.
@@ -81,16 +89,16 @@ Pontuação final =
 
 Copie e preencha:
 
-Tema: __________________________
-Pilar: _________________________
-Estágio do funil: ______________
+Tema: \***\*\*\*\*\*\*\***\_\_\***\*\*\*\*\*\*\***
+Pilar: \***\*\*\*\*\*\*\***\_\***\*\*\*\*\*\*\***
+Estágio do funil: **\*\***\_\_**\*\***
 
-Customer Impact (1‑5): ________
-Content‑Market Fit (1‑5): ______
-Search Potential (1‑5): _______
-Resources (1‑5): ______________
+Customer Impact (1‑5): **\_\_\_\_**
+Content‑Market Fit (1‑5): **\_\_**
+Search Potential (1‑5): **\_\_\_**
+Resources (1‑5): **\*\***\_\_**\*\***
 
-Pontuação final: _______________
+Pontuação final: **\*\***\_\_\_**\*\***
 Status: [ ] Priorizar [ ] Backlog [ ] Descartar
 
 ## Exemplo rápido

@@ -5,7 +5,7 @@ import {
    getAction,
    listActions,
    updateAction,
-} from "@packages/database/repositories/action-repository";
+} from "@core/database/repositories/action-repository";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

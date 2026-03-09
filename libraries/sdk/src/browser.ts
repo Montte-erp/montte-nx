@@ -25,23 +25,20 @@
 // ── Re-exports from Forms ───────────────────────────────────────
 
 export type { FormDefinition, FormField } from "./forms.ts";
-export {
-	createFormsClient,
-	MontteFormsClient,
-} from "./forms.ts";
+export { createFormsClient, MontteFormsClient } from "./forms.ts";
 
 // ── Re-exports from Event Tracker ──────────────────────────────
 
 export {
-	createEventTracker,
-	createEventTracker as createTracker,
-	MontteEventTracker,
+   createEventTracker,
+   createEventTracker as createTracker,
+   MontteEventTracker,
 } from "./events/client.ts";
 
 export type {
-	EventBatch,
-	MontteSdkConfig,
-	TrackedEvent,
+   EventBatch,
+   MontteSdkConfig,
+   TrackedEvent,
 } from "./events/types.ts";
 
 // ── Browser SDK Factory ─────────────────────────────────────────
@@ -51,8 +48,8 @@ import type { MontteSdkConfig } from "./events/types.ts";
 import { createFormsClient } from "./forms.ts";
 
 export interface BrowserSdk {
-	tracker: ReturnType<typeof createEventTracker>;
-	forms: ReturnType<typeof createFormsClient>;
+   tracker: ReturnType<typeof createEventTracker>;
+   forms: ReturnType<typeof createFormsClient>;
 }
 
 /**
@@ -77,8 +74,8 @@ export interface BrowserSdk {
  * ```
  */
 export function createBrowserSdk(config: MontteSdkConfig): BrowserSdk {
-	const tracker = createEventTracker(config);
-	const forms = createFormsClient(config, tracker);
+   const tracker = createEventTracker(config);
+   const forms = createFormsClient(config, tracker);
 
-	return { tracker, forms };
+   return { tracker, forms };
 }

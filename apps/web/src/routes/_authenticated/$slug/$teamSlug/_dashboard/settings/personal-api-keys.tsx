@@ -1,4 +1,4 @@
-import type { ScopeAccess } from "@packages/database/schemas/personal-api-key";
+import type { ScopeAccess } from "@core/database/schemas/personal-api-key";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Card, CardContent } from "@packages/ui/components/card";

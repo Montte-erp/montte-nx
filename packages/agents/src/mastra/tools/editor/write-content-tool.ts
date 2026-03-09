@@ -1,5 +1,5 @@
 import { createTool } from "@mastra/core/tools";
-import { getLogger } from "@packages/logging/root";
+import { getLogger } from "@core/logging/root";
 import { z } from "zod";
 
 const logger = getLogger().child({ module: "agents:editor" });

@@ -1,9 +1,9 @@
-import type { DatabaseInstance } from "@packages/database/client";
-import { bills } from "@packages/database/schemas/bills";
+import type { DatabaseInstance } from "@core/database/client";
+import { bills } from "@core/database/schemas/bills";
 import type {
    ContactSubscription,
    ServiceVariant,
-} from "@packages/database/schemas/services";
+} from "@core/database/schemas/services";
 import { and, eq } from "drizzle-orm";
 
 /**

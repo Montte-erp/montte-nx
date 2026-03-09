@@ -1,22 +1,22 @@
 import { ORPCError } from "@orpc/server";
 import { computeInsightData } from "@packages/analytics/compute-insight";
 import { insightConfigSchema } from "@packages/analytics/types";
-import { getDashboardById } from "@packages/database/repositories/dashboard-repository";
+import { getDashboardById } from "@core/database/repositories/dashboard-repository";
 import {
    createInsight,
    deleteInsight,
    getInsightById,
    listInsightsByTeam,
    updateInsight,
-} from "@packages/database/repositories/insight-repository";
-import { insights } from "@packages/database/schemas/insights";
+} from "@core/database/repositories/insight-repository";
+import { insights } from "@core/database/schemas/insights";
 import { createEmitFn } from "@packages/events/emit";
 import {
    emitInsightCreated,
    emitInsightDeleted,
    emitInsightUpdated,
 } from "@packages/events/insight";
-import { getLogger } from "@packages/logging/root";
+import { getLogger } from "@core/logging/root";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../server";

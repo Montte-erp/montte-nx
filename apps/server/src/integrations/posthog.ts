@@ -1,4 +1,4 @@
-import { env } from "@packages/environment/server";
+import { env } from "@core/environment/server";
 import { getElysiaPosthogConfig } from "@packages/posthog/server";
 
 export const posthog = getElysiaPosthogConfig({

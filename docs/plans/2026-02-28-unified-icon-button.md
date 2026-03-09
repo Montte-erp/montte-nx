@@ -13,11 +13,13 @@
 ### Task 1: Extend `button.tsx` — variants + tooltip prop
 
 **Files:**
+
 - Modify: `packages/ui/src/components/button.tsx`
 
 **Step 1: Add Tooltip imports at the top of the file**
 
 Add after the existing imports:
+
 ```typescript
 import {
    Tooltip,
@@ -29,6 +31,7 @@ import {
 **Step 2: Add `icon-solid` and `icon-outline` to the CVA variants block**
 
 Replace:
+
 ```typescript
          variant: {
             default: "bg-primary text-primary-foreground hover:bg-primary/90",
@@ -44,6 +47,7 @@ Replace:
 ```
 
 With:
+
 ```typescript
          variant: {
             default: "bg-primary text-primary-foreground hover:bg-primary/90",
@@ -64,6 +68,7 @@ With:
 **Step 3: Add `tooltip` and `tooltipSide` props + conditional wrapping**
 
 Replace the entire `Button` function:
+
 ```typescript
 function Button({
    className,
@@ -124,6 +129,7 @@ git commit -m "feat(button): add icon-solid/icon-outline variants and tooltip pr
 ### Task 2: Migrate `page-header.tsx`
 
 **Files:**
+
 - Modify: `apps/web/src/components/page-header.tsx`
 
 **Step 1: Remove Tooltip imports**
@@ -133,6 +139,7 @@ Find the import block that includes `Tooltip`, `TooltipContent`, `TooltipTrigger
 **Step 2: Replace the three Tooltip+Button blocks**
 
 Replace save button (lines ~98–110):
+
 ```tsx
 // BEFORE
 <Tooltip>
@@ -162,6 +169,7 @@ Replace save button (lines ~98–110):
 ```
 
 Replace cancel button (lines ~111–124):
+
 ```tsx
 // BEFORE
 <Tooltip>
@@ -193,6 +201,7 @@ Replace cancel button (lines ~111–124):
 ```
 
 Replace edit button (lines ~140–152):
+
 ```tsx
 // BEFORE
 <Tooltip>
@@ -233,6 +242,7 @@ git commit -m "refactor(page-header): use Button tooltip prop"
 ### Task 3: Migrate `context-panel-header-actions.tsx`
 
 **Files:**
+
 - Modify: `apps/web/src/features/context-panel/context-panel-header-actions.tsx`
 
 **Step 1: Replace the entire file content**
@@ -293,6 +303,7 @@ git commit -m "refactor(context-panel): use Button tooltip prop"
 ### Task 4: Migrate `context-panel.tsx` (tab buttons)
 
 **Files:**
+
 - Modify: `apps/web/src/features/context-panel/context-panel.tsx`
 
 **Step 1: Remove Tooltip/TooltipProvider imports from tooltip**
@@ -302,6 +313,7 @@ Check the imports at the top of the file. Remove `Tooltip`, `TooltipContent`, `T
 **Step 2: Replace the tab button map**
 
 Replace (lines ~122–144):
+
 ```tsx
 // BEFORE
 <TooltipProvider>
@@ -364,6 +376,7 @@ git commit -m "refactor(context-panel): use Button tooltip prop for tab buttons"
 ### Task 5: Migrate `organization-roles.tsx`
 
 **Files:**
+
 - Modify: `apps/web/src/features/roles/ui/organization-roles.tsx`
 
 **Step 1: Remove Tooltip imports**
@@ -373,6 +386,7 @@ Remove `Tooltip`, `TooltipContent`, `TooltipTrigger` from the tooltip import.
 **Step 2: Replace the icon button**
 
 Replace (lines ~173–185):
+
 ```tsx
 // BEFORE
 <Tooltip>
@@ -412,6 +426,7 @@ git commit -m "refactor(roles): use Button tooltip prop"
 ### Task 6: Migrate `webhooks-table.tsx`
 
 **Files:**
+
 - Modify: `apps/web/src/features/webhooks/ui/webhooks-table.tsx`
 
 **Note:** Line 159 wraps a `<span>` (NOT a Button) — do NOT change that Tooltip. Only migrate line 210 (the edit button).
@@ -461,6 +476,7 @@ git commit -m "refactor(webhooks): use Button tooltip prop for edit button"
 ### Task 7: Migrate `settings/security.tsx`
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/security.tsx`
 
 **Step 1: Replace the session details button (lines ~257–279)**
@@ -523,6 +539,7 @@ git commit -m "refactor(security): use Button tooltip prop"
 ### Task 8: Migrate `settings/project/general.tsx`
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general.tsx`
 
 **Step 1: Replace copy API key button (lines ~321–340)**
@@ -605,6 +622,7 @@ git commit -m "refactor(project-settings): use Button tooltip prop"
 ### Task 9: Migrate `settings/organization/members.tsx`
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members.tsx`
 
 **Step 1: Replace role toggle button at line ~472**
@@ -703,6 +721,7 @@ git commit -m "refactor(members): use Button tooltip prop"
 ### Task 10: Migrate `packages/ui` assistant-ui files
 
 **Files:**
+
 - Modify: `packages/ui/src/components/assistant-ui/attachment.tsx`
 - Modify: `packages/ui/src/components/assistant-ui/markdown-text.tsx`
 
@@ -763,6 +782,7 @@ git commit -m "refactor(members): use Button tooltip prop"
 **Step 3: Update imports in attachment.tsx**
 
 Remove `TooltipIconButton` import. Add `Button` import if not already present:
+
 ```typescript
 import { Button } from "@packages/ui/components/button";
 ```
@@ -807,6 +827,7 @@ git commit -m "refactor(assistant-ui): replace TooltipIconButton with Button too
 ### Task 11: Migrate `teco-chat/thread.tsx`
 
 **Files:**
+
 - Modify: `apps/web/src/features/teco-chat/ui/thread.tsx`
 
 **Step 1: Replace scroll-to-bottom button (lines ~149–155)**
@@ -1008,6 +1029,7 @@ git commit -m "refactor(teco-chat): replace TooltipIconButton with Button toolti
 ### Task 12: Delete `tooltip-icon-button.tsx`
 
 **Files:**
+
 - Delete: `packages/ui/src/components/assistant-ui/tooltip-icon-button.tsx`
 
 **Step 1: Delete the file**
@@ -1057,11 +1079,11 @@ Expected: no lint/format errors.
 
 These use `<Tooltip>` to wrap non-Button elements or have complex Radix composition — leave them as-is:
 
-| File | Reason |
-|------|--------|
-| `apps/web/src/features/feedback/ui/feedback-fab.tsx` | Double `asChild` composition: `TooltipTrigger asChild` > `PopoverTrigger asChild` > `Button` — tooltip prop would break PopoverTrigger merge |
-| `apps/web/src/layout/dashboard/ui/sub-sidebar-new-menu.tsx` | Wraps `<div>` containing `<DropdownMenuItem>`, not a Button |
-| `apps/web/src/layout/dashboard/ui/sub-sidebar-context-menu.tsx` | Wraps `<div>` containing `<DropdownMenuItem>`, not a Button |
-| `apps/web/src/layout/dashboard/ui/theme-switcher.tsx` | Wraps native `<button>` element, not the Button component |
-| `apps/web/src/features/webhooks/ui/webhooks-table.tsx` line 159 | Wraps `<span>` for hover info, not a Button |
-| `apps/web/src/routes/.../danger-zone.tsx` line 91 | Wraps `<span tabIndex={0}>` around disabled Button for tooltip on disabled element |
+| File                                                            | Reason                                                                                                                                       |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web/src/features/feedback/ui/feedback-fab.tsx`            | Double `asChild` composition: `TooltipTrigger asChild` > `PopoverTrigger asChild` > `Button` — tooltip prop would break PopoverTrigger merge |
+| `apps/web/src/layout/dashboard/ui/sub-sidebar-new-menu.tsx`     | Wraps `<div>` containing `<DropdownMenuItem>`, not a Button                                                                                  |
+| `apps/web/src/layout/dashboard/ui/sub-sidebar-context-menu.tsx` | Wraps `<div>` containing `<DropdownMenuItem>`, not a Button                                                                                  |
+| `apps/web/src/layout/dashboard/ui/theme-switcher.tsx`           | Wraps native `<button>` element, not the Button component                                                                                    |
+| `apps/web/src/features/webhooks/ui/webhooks-table.tsx` line 159 | Wraps `<span>` for hover info, not a Button                                                                                                  |
+| `apps/web/src/routes/.../danger-zone.tsx` line 91               | Wraps `<span tabIndex={0}>` around disabled Button for tooltip on disabled element                                                           |

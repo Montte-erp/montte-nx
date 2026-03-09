@@ -79,7 +79,11 @@ vi.mock("@/integrations/orpc/client", () => ({
             queryOptions: () => ({
                queryKey: ["session.getSession"],
                queryFn: async () => ({
-                  user: { name: "Test User", email: "test@test.com", image: null },
+                  user: {
+                     name: "Test User",
+                     email: "test@test.com",
+                     image: null,
+                  },
                }),
             }),
             queryKey: () => ["session.getSession"],
@@ -87,7 +91,6 @@ vi.mock("@/integrations/orpc/client", () => ({
       },
    },
 }));
-
 
 vi.mock("@tanstack/react-router", () => ({
    useParams: () => ({ slug: "acme-co" }),
@@ -112,10 +115,13 @@ function renderWithClient() {
       },
    });
 
-   queryClient.setQueryData(["organization.getOrganizations"], [
-      { id: "org_1", name: "Acme", slug: "acme-co" },
-      { id: "org_2", name: "Beta", slug: "beta-co" },
-   ]);
+   queryClient.setQueryData(
+      ["organization.getOrganizations"],
+      [
+         { id: "org_1", name: "Acme", slug: "acme-co" },
+         { id: "org_2", name: "Beta", slug: "beta-co" },
+      ],
+   );
    queryClient.setQueryData(["session.getSession"], {
       user: { name: "Test User", email: "test@test.com", image: null },
    });

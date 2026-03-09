@@ -5,7 +5,7 @@ import {
    FieldLabel,
 } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
-import { createSlug } from "@packages/utils/text";
+import { createSlug } from "@core/utils/text";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import {

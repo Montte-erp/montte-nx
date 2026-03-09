@@ -23,6 +23,7 @@ Mas há um detalhe que a maioria ignora: os algoritmos agora priorizam profundid
 Em 2026, o Google reforçou ainda mais os sinais de **Experience, Expertise, Authoritativeness e Trustworthiness (EEAT)**. Blogs menores escritos por pessoas com experiência real vivida estão superando blogs corporativos sem rosto — especialmente em espaços competitivos como SaaS.
 
 O que isso significa na prática: marcas com credibilidade social comprovada ganham. Isso inclui:
+
 - Participação em podcasts e entrevistas
 - Reviews em sites de terceiros (G2, Capterra)
 - Menções e citações em publicações relevantes
@@ -37,6 +38,7 @@ Diferente de campanhas pagas que flutuam conforme orçamento e concorrência, o 
 Ferramentas como Google Gemini, ChatGPT, Perplexity e outros LLMs começaram a responder diretamente às dúvidas dos usuários, sintetizando conteúdos de múltiplas fontes. Isso criou o **GEO (Generative Engine Optimization)** — focado em tornar o conteúdo facilmente interpretável e citado por sistemas que geram respostas diretas.
 
 Elementos-chave do GEO:
+
 - Conteúdo direto, bem segmentado e semanticamente claro
 - Uso consistente de dados estruturados (schema markup)
 - Blocos de resposta objetiva para perguntas específicas
@@ -53,6 +55,7 @@ O algoritmo do Google continua ficando mais inteligente sobre quais páginas con
 ### 1. Alinhe conteúdo com intenção do comprador (Intent-Based Strategy)
 
 Mapeie a jornada do usuário e crie conteúdo para cada estágio:
+
 - **Consciência do problema**: "Por que minha equipe perde tempo com tarefas repetitivas?"
 - **Consideração de solução**: "Melhores ferramentas de automação para equipes de marketing"
 - **Decisão de compra**: "Comparativo: Software X vs Software Y"
@@ -64,6 +67,7 @@ Dica: Palavras-chave de "problema" podem ser mais eficazes que palavras-chave de
 Não é mais apenas sobre keywords individuais. Sistemas de IA e busca "puxam" segmentos precisos (parágrafos, listas, tabelas) e preferem conteúdo bem marcado e verificável.
 
 Estrutura recomendada:
+
 - Pilar central: Guia definitivo sobre o tema
 - Clusters de conteúdo: Subtópicos relacionados interligados
 - Links internos estratégicos entre todos os conteúdos do cluster
@@ -73,6 +77,7 @@ Estrutura recomendada:
 Crie landing pages programáticas para cada variação de keyword de cauda longa. Exemplo de sucesso: KrispCall criou páginas para cada código de área dos EUA, gerando 82% de todo o tráfego americano.
 
 Aplicações para SaaS:
+
 - Páginas por integração: "[Seu SaaS] + [Ferramenta popular]"
 - Páginas por setor: "[Software] para [Indústria específica]"
 - Páginas por caso de uso: "Como usar [Software] para [Objetivo]"
@@ -82,6 +87,7 @@ Aplicações para SaaS:
 Buscas zero-click estão aumentando: respostas são entregues diretamente nos resultados/visões de IA; cliques se deslocam para fontes citadas.
 
 Táticas:
+
 - Respostas diretas nos primeiros 100 caracteres
 - Listas numeradas e bullets estruturados
 - Tabelas comparativas claras
@@ -92,6 +98,7 @@ Táticas:
 Later (ferramenta de social media) adicionou um Glossário de Social Media com mais de 200 páginas de conteúdo. O impacto foi imediato — essas páginas geraram 60% do tráfego total do site.
 
 Ideias para SaaS:
+
 - Glossário de termos da indústria
 - Biblioteca de templates e frameworks
 - Calculadoras e ferramentas gratuitas
@@ -102,6 +109,7 @@ Ideias para SaaS:
 SEO não para nos motores de busca. Aproveite outras plataformas e canais para reaproveitar e distribuir seu conteúdo, estendendo seu alcance e vida útil.
 
 Canais para reaproveitamento:
+
 - YouTube: Transforme artigos em vídeos (SEO multimodal)
 - LinkedIn: Posts nativos e newsletters
 - Podcasts: Entrevistas e discussões de tópicos dos artigos
@@ -112,6 +120,7 @@ Canais para reaproveitamento:
 À medida que você cobre tópicos focados no produto, comece a subir no funil para alcançar um público mais amplo. Preencha lacunas de conteúdo com assuntos que atraem audiência mais ampla enquanto demonstra expertise.
 
 Exemplo de progressão:
+
 1. "Como usar [funcionalidade específica]"
 2. "Melhores práticas de [processo relacionado]"
 3. "Tendências futuras de [indústria mais ampla]"
@@ -121,6 +130,7 @@ Exemplo de progressão:
 As empresas que integram SEO com produto, vendas e equipes de sucesso do cliente criam canais de crescimento duráveis que se compoundam ao longo do tempo.
 
 Pontos de integração:
+
 - **Produto**: Use dados de busca para priorizar features
 - **Vendas**: Crie conteúdo que responda objeções comuns
 - **CS**: Desenvolva materiais de onboarding baseados em dúvidas frequentes
@@ -148,14 +158,14 @@ Conteúdo que não é facilmente citável por assistentes de IA perde visibilida
 
 ## Métricas que realmente importam para SEO de SaaS
 
-| Métrica | Por que importa | Meta sugerida |
-|---------|-----------------|---------------|
-| Pipeline influenciado por orgânico | Conexão direta com receita | 20-30% do pipeline total |
-| CAC do canal orgânico | Eficiência de aquisição | 30-50% menor que paid |
-| Trials/free signups de orgânico | Conversão para usuário | Crescimento mensal 10%+ |
-| Keywords no top 3 (intenção alta) | Visibilidade de alto valor | +20% ao ano |
-| Share of voice vs concorrentes | Posição de mercado | Top 3 da categoria |
-| Tempo até primeiro valor (orgânico) | Qualidade do tráfego | Igual ou menor que outros canais |
+| Métrica                             | Por que importa            | Meta sugerida                    |
+| ----------------------------------- | -------------------------- | -------------------------------- |
+| Pipeline influenciado por orgânico  | Conexão direta com receita | 20-30% do pipeline total         |
+| CAC do canal orgânico               | Eficiência de aquisição    | 30-50% menor que paid            |
+| Trials/free signups de orgânico     | Conversão para usuário     | Crescimento mensal 10%+          |
+| Keywords no top 3 (intenção alta)   | Visibilidade de alto valor | +20% ao ano                      |
+| Share of voice vs concorrentes      | Posição de mercado         | Top 3 da categoria               |
+| Tempo até primeiro valor (orgânico) | Qualidade do tráfego       | Igual ou menor que outros canais |
 
 ---
 
@@ -195,9 +205,11 @@ O mercado SaaS está mais competitivo que nunca. SEO deixou de ser opcional — 
 ---
 
 ## Palavras-chave principais
+
 SEO para SaaS, EEAT, GEO, otimização para mecanismos de busca, marketing de conteúdo B2B, autoridade tópica, SEO 2026, crescimento orgânico SaaS, intenção de busca, programmatic SEO
 
 ## Fontes e referências
+
 - TenSpeed.io: SaaS SEO Growth Strategies 2026
 - SmartClick Agency: SaaS SEO Statistics 2026
 - Flippa: SaaS SEO Strategies That Drive Pipeline

@@ -16,19 +16,19 @@ A unified "Contatos" module to manage clients and suppliers. One entity type wit
 
 ### New table: `contacts`
 
-| Field          | Type                          | Notes                        |
-|----------------|-------------------------------|------------------------------|
-| `id`           | UUID PK                       |                              |
-| `teamId`       | UUID FK                       | team-scoped                  |
-| `name`         | text (required)               |                              |
-| `type`         | enum: cliente/fornecedor/ambos| required                     |
-| `email`        | text                          | optional                     |
-| `phone`        | text                          | optional                     |
-| `document`     | text                          | CPF or CNPJ raw value        |
-| `documentType` | enum: cpf/cnpj/null           | optional                     |
-| `notes`        | text                          | optional                     |
-| `createdAt`    | timestamp                     | defaultNow                   |
-| `updatedAt`    | timestamp                     | defaultNow                   |
+| Field          | Type                           | Notes                 |
+| -------------- | ------------------------------ | --------------------- |
+| `id`           | UUID PK                        |                       |
+| `teamId`       | UUID FK                        | team-scoped           |
+| `name`         | text (required)                |                       |
+| `type`         | enum: cliente/fornecedor/ambos | required              |
+| `email`        | text                           | optional              |
+| `phone`        | text                           | optional              |
+| `document`     | text                           | CPF or CNPJ raw value |
+| `documentType` | enum: cpf/cnpj/null            | optional              |
+| `notes`        | text                           | optional              |
+| `createdAt`    | timestamp                      | defaultNow            |
+| `updatedAt`    | timestamp                      | defaultNow            |
 
 Indexes: `team_id`, unique(`team_id`, `name`)
 
@@ -42,15 +42,16 @@ Indexes: `team_id`, unique(`team_id`, `name`)
 
 **New router:** `apps/web/src/integrations/orpc/router/contacts.ts`
 
-| Procedure | Input | Notes |
-|-----------|-------|-------|
-| `getAll`  | `{ teamId, type? }` | optional type filter |
-| `getById` | `{ id }` | includes linked transaction count |
-| `create`  | contact fields | CPF/CNPJ validation |
-| `update`  | `{ id, ...fields }` | |
-| `remove`  | `{ id }` | blocks if has linked transactions |
+| Procedure | Input               | Notes                             |
+| --------- | ------------------- | --------------------------------- |
+| `getAll`  | `{ teamId, type? }` | optional type filter              |
+| `getById` | `{ id }`            | includes linked transaction count |
+| `create`  | contact fields      | CPF/CNPJ validation               |
+| `update`  | `{ id, ...fields }` |                                   |
+| `remove`  | `{ id }`            | blocks if has linked transactions |
 
 **Updates to `transactions.ts` router:**
+
 - Add optional `contactId` to create/update inputs
 - Add `contactId` filter to `getAll`
 - Include contact name in `getAll` response (join)

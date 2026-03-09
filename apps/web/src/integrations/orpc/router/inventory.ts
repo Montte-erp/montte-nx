@@ -11,12 +11,12 @@ import {
    listInventoryProducts,
    updateInventoryProduct,
    upsertInventorySettings,
-} from "@packages/database/repositories/inventory-repository";
-import { createTransaction } from "@packages/database/repositories/transactions-repository";
+} from "@core/database/repositories/inventory-repository";
+import { createTransaction } from "@core/database/repositories/transactions-repository";
 import {
    inventoryProducts,
    inventorySettings,
-} from "@packages/database/schemas/inventory";
+} from "@core/database/schemas/inventory";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";

@@ -1,4 +1,4 @@
-import type { BudgetGoalWithProgress } from "@packages/database/repositories/budget-goals-repository";
+import type { BudgetGoalWithProgress } from "@core/database/repositories/budget-goals-repository";
 import { Badge } from "@packages/ui/components/badge";
 import type { ColumnDef } from "@tanstack/react-table";
 import {

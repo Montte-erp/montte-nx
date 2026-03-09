@@ -13,10 +13,10 @@ import {
    DEFAULT_CONTENT_MODEL_ID,
    getModelPreset,
 } from "@packages/agents/models";
-import { getProductSettings } from "@packages/database/repositories/product-settings-repository";
+import { getProductSettings } from "@core/database/repositories/product-settings-repository";
 import { emitAiChatMessage } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
-import { getLogger } from "@packages/logging/root";
+import { getLogger } from "@core/logging/root";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

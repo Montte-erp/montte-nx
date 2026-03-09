@@ -14,7 +14,7 @@ import {
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { Textarea } from "@packages/ui/components/textarea";
-import { createSlug } from "@packages/utils/text";
+import { createSlug } from "@core/utils/text";
 import { useForm } from "@tanstack/react-form";
 import { Building } from "lucide-react";
 import { useCallback, useMemo, useTransition } from "react";

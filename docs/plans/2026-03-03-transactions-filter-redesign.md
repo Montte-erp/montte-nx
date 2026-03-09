@@ -21,13 +21,13 @@ The Filters popover uses `@f-o-t/condition-evaluator` condition builder with pre
 
 Five elements, always in this order:
 
-| Element | Component | Notes |
-|---|---|---|
-| Search | `Input` | Debounced 350ms, unchanged |
-| Date picker | `DateRangePicker` | Existing component, unchanged |
-| Type select | `Select` | Replaces `ToggleGroup`: Todos / Receita / Despesa / Transferência |
-| Filters button | `TransactionFilterPopover` | Badge shows active condition count |
-| Clear button | `Button` | Only visible when `hasActiveFilters` |
+| Element        | Component                  | Notes                                                             |
+| -------------- | -------------------------- | ----------------------------------------------------------------- |
+| Search         | `Input`                    | Debounced 350ms, unchanged                                        |
+| Date picker    | `DateRangePicker`          | Existing component, unchanged                                     |
+| Type select    | `Select`                   | Replaces `ToggleGroup`: Todos / Receita / Despesa / Transferência |
+| Filters button | `TransactionFilterPopover` | Badge shows active condition count                                |
+| Clear button   | `Button`                   | Only visible when `hasActiveFilters`                              |
 
 ---
 
@@ -37,13 +37,13 @@ Condition builder with pre-defined properties for the transactions domain.
 
 ### Transaction Properties
 
-| Field | Label | Type | Operators | Value UI |
-|---|---|---|---|---|
-| `categoryId` | Categoria | string | `eq`, `neq`, `is_empty`, `is_not_empty` | Combobox |
-| `bankAccountId` | Conta | string | `eq`, `neq`, `is_empty`, `is_not_empty` | Combobox |
-| `creditCardId` | Cartão | string | `eq`, `neq`, `is_empty`, `is_not_empty` | Combobox |
-| `amount` | Valor | number | `eq`, `gt`, `gte`, `lt`, `lte`, `between` | Number input |
-| `name` | Nome | string | `contains`, `not_contains`, `starts_with`, `ends_with` | Text input |
+| Field           | Label     | Type   | Operators                                              | Value UI     |
+| --------------- | --------- | ------ | ------------------------------------------------------ | ------------ |
+| `categoryId`    | Categoria | string | `eq`, `neq`, `is_empty`, `is_not_empty`                | Combobox     |
+| `bankAccountId` | Conta     | string | `eq`, `neq`, `is_empty`, `is_not_empty`                | Combobox     |
+| `creditCardId`  | Cartão    | string | `eq`, `neq`, `is_empty`, `is_not_empty`                | Combobox     |
+| `amount`        | Valor     | number | `eq`, `gt`, `gte`, `lt`, `lte`, `between`              | Number input |
+| `name`          | Nome      | string | `contains`, `not_contains`, `starts_with`, `ends_with` | Text input   |
 
 ### Popover Structure
 
@@ -94,20 +94,21 @@ Toggled by "Avançado" switch in the popover header.
 
 ```typescript
 interface TransactionFilters {
-  search: string;
-  type?: "income" | "expense" | "transfer";
-  dateFrom?: string;
-  dateTo?: string;
-  datePreset?: string;
-  conditionGroup?: ConditionGroup; // from @f-o-t/condition-evaluator
-  page: number;
-  pageSize: number;
+   search: string;
+   type?: "income" | "expense" | "transfer";
+   dateFrom?: string;
+   dateTo?: string;
+   datePreset?: string;
+   conditionGroup?: ConditionGroup; // from @f-o-t/condition-evaluator
+   page: number;
+   pageSize: number;
 }
 ```
 
 ### Server-Side (oRPC `transactions.getAll`)
 
 **Standard mode** (`scoringMode: "binary"` or undefined):
+
 - Translate each condition to a Drizzle `where` clause
 - `eq`, `neq` → `eq()` / `ne()`
 - `gt`, `gte`, `lt`, `lte` → `gt()` / `gte()` / `lt()` / `lte()`
@@ -117,6 +118,7 @@ interface TransactionFilters {
 - AND/OR maps to Drizzle `and()` / `or()`
 
 **Advanced mode** (`scoringMode: "weighted"`):
+
 - Fetch a broader result set (omit condition SQL, keep other filters)
 - Run `evaluateConditionGroup()` from `@f-o-t/condition-evaluator` on each row server-side
 - Filter to rows where `result.passed === true`

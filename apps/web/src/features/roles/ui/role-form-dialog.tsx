@@ -13,7 +13,7 @@ import { Label } from "@packages/ui/components/label";
 import { Separator } from "@packages/ui/components/separator";
 import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
-import { PERMISSION_GROUPS } from "@packages/utils/permissions";
+import { PERMISSION_GROUPS } from "@core/utils/permissions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";

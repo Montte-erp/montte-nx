@@ -1,5 +1,5 @@
 import { describe, expect, it, mock } from "bun:test";
-import type { DatabaseInstance } from "@packages/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 
 // ---------------------------------------------------------------------------
 // Mocks — must be declared before importing the module under test
@@ -10,7 +10,7 @@ const mockFindMatchingWebhooks = mock<
 >(async () => []);
 const mockCreateWebhookDelivery = mock(async () => ({ id: "delivery-1" }));
 
-mock.module("@packages/database/repositories/webhook-repository", () => ({
+mock.module("@core/database/repositories/webhook-repository", () => ({
    findMatchingWebhooks: mockFindMatchingWebhooks,
    createWebhookDelivery: mockCreateWebhookDelivery,
 }));

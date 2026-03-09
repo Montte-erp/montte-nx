@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/server";
-import { isOrganizationOwner } from "@packages/database/repositories/auth-repository";
-import { customRoles, memberRoles } from "@packages/database/schemas/roles";
+import { isOrganizationOwner } from "@core/database/repositories/auth-repository";
+import { customRoles, memberRoles } from "@core/database/schemas/roles";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../server";

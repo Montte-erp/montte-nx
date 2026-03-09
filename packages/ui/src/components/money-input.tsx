@@ -9,11 +9,10 @@ import {
 } from "@packages/ui/components/input-group";
 import * as React from "react";
 
-interface MoneyInputProps
-   extends Omit<
-      React.InputHTMLAttributes<HTMLInputElement>,
-      "onChange" | "value"
-   > {
+interface MoneyInputProps extends Omit<
+   React.InputHTMLAttributes<HTMLInputElement>,
+   "onChange" | "value"
+> {
    value?: number | string;
    onChange?: (value: number | undefined) => void;
    placeholder?: string;

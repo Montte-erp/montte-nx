@@ -13,6 +13,7 @@
 ## Task 1: Move finance route files up one level
 
 **Files:**
+
 - Move: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/finance/` → `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/`
 - Modify (createFileRoute string only in each): all 8 files listed below
 
@@ -40,15 +41,15 @@ Run: `mv apps/web/src/routes/_authenticated/\$slug/\$teamSlug/_dashboard/finance
 
 For each file, move it up one directory and update its `createFileRoute` string (remove `finance/` from the path). Do them one at a time:
 
-| File | Old route id fragment | New route id fragment |
-|------|----------------------|----------------------|
+| File                        | Old route id fragment              | New route id fragment      |
+| --------------------------- | ---------------------------------- | -------------------------- |
 | `finance/bank-accounts.tsx` | `_dashboard/finance/bank-accounts` | `_dashboard/bank-accounts` |
-| `finance/tags.tsx` | `_dashboard/finance/tags` | `_dashboard/tags` |
-| `finance/credit-cards.tsx` | `_dashboard/finance/credit-cards` | `_dashboard/credit-cards` |
-| `finance/transactions.tsx` | `_dashboard/finance/transactions` | `_dashboard/transactions` |
-| `finance/bills.tsx` | `_dashboard/finance/bills` | `_dashboard/bills` |
-| `finance/categories.tsx` | `_dashboard/finance/categories` | `_dashboard/categories` |
-| `finance/goals.tsx` | `_dashboard/finance/goals` | `_dashboard/goals` |
+| `finance/tags.tsx`          | `_dashboard/finance/tags`          | `_dashboard/tags`          |
+| `finance/credit-cards.tsx`  | `_dashboard/finance/credit-cards`  | `_dashboard/credit-cards`  |
+| `finance/transactions.tsx`  | `_dashboard/finance/transactions`  | `_dashboard/transactions`  |
+| `finance/bills.tsx`         | `_dashboard/finance/bills`         | `_dashboard/bills`         |
+| `finance/categories.tsx`    | `_dashboard/finance/categories`    | `_dashboard/categories`    |
+| `finance/goals.tsx`         | `_dashboard/finance/goals`         | `_dashboard/goals`         |
 
 Run the same `mv` command for each, then open each file and change the `createFileRoute(...)` string identically to Step 1.
 
@@ -70,6 +71,7 @@ git commit -m "chore: move finance routes up one level (remove finance/ prefix)"
 ## Task 2: Update sidebar nav items
 
 **Files:**
+
 - Modify: `apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts`
 
 **Step 1: Remove `finance` group, keep items — move into a new unlabeled or ERP group**
@@ -227,6 +229,7 @@ git commit -m "chore: remove finance group from sidebar, update nav routes to to
 ## Task 3: Replace `insights/new` with inline empty-insight creation
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/index.tsx`
 - Modify: `apps/web/src/features/analytics/hooks/use-insight-config.ts`
 - Delete: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/new.tsx`
@@ -248,6 +251,7 @@ export const DEFAULT_KPI_CONFIG: KpiConfig = {
 **Step 2: Update `insights/index.tsx` — replace navigation with create mutation**
 
 Replace the entire `InsightsListPage` function. Key changes:
+
 1. Import `DEFAULT_KPI_CONFIG` and add `useTransition`
 2. Replace `navigate to new` with a `createMutation` + `startTransition` pattern
 3. Update both the page header button and the context panel action
@@ -362,6 +366,7 @@ git commit -m "feat(insights): create empty insight on click instead of navigati
 ## Task 4: Add `EarlyAccessBanner` to analytics screens
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/index.tsx`
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId.tsx`
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/index.tsx`
@@ -383,6 +388,7 @@ const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
 ```
 
 Import in each file:
+
 ```ts
 import {
    EarlyAccessBanner,
@@ -468,6 +474,7 @@ git commit -m "feat: add early access feedback banner to analytics screens"
 ## Task 5: Add `EarlyAccessBanner` to contacts screen
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/contacts.tsx` (new path from Task 1)
 
 **Step 1: Add banner to `ContactsPage`**
@@ -488,6 +495,7 @@ const CONTACTS_BANNER: EarlyAccessBannerTemplate = {
 ```
 
 Import:
+
 ```ts
 import {
    EarlyAccessBanner,

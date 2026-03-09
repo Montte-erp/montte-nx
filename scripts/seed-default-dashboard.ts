@@ -12,9 +12,9 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { createDb } from "@packages/database/client";
-import { dashboards } from "@packages/database/schemas/dashboards";
-import { insights } from "@packages/database/schemas/insights";
+import { createDb } from "@core/database/client";
+import { dashboards } from "@core/database/schemas/dashboards";
+import { insights } from "@core/database/schemas/insights";
 import { DEFAULT_INSIGHTS } from "@packages/analytics/default-dashboard";
 import chalk from "chalk";
 import { Command } from "commander";

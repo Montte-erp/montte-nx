@@ -1,4 +1,4 @@
-import { activityLogs } from "@packages/database/schemas/activity-logs";
+import { activityLogs } from "@core/database/schemas/activity-logs";
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../server";

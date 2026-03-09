@@ -6,9 +6,9 @@ import {
    getCategory,
    listCategories,
    updateCategory,
-} from "@packages/database/repositories/categories-repository";
-import { createSubcategory } from "@packages/database/repositories/subcategories-repository";
-import { categories } from "@packages/database/schemas/categories";
+} from "@core/database/repositories/categories-repository";
+import { createSubcategory } from "@core/database/repositories/subcategories-repository";
+import { categories } from "@core/database/schemas/categories";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";

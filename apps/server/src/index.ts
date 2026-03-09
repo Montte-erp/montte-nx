@@ -1,14 +1,14 @@
 import cors from "@elysiajs/cors";
 import { RPCHandler } from "@orpc/server/fetch";
 import { BatchHandlerPlugin } from "@orpc/server/plugins";
-import { env } from "@packages/environment/server";
+import { env } from "@core/environment/server";
 import {
    startHealthHeartbeat,
    stopHealthHeartbeat,
-} from "@packages/logging/health";
-import { FetchLoggingPlugin } from "@packages/logging/orpc-plugin";
-import { initOtel, shutdownOtel } from "@packages/logging/otel";
-import { initLogger } from "@packages/logging/root";
+} from "@core/logging/health";
+import { FetchLoggingPlugin } from "@core/logging/orpc-plugin";
+import { initOtel, shutdownOtel } from "@core/logging/otel";
+import { initLogger } from "@core/logging/root";
 import { shutdownPosthog } from "@packages/posthog/server";
 import { Elysia } from "elysia";
 import { auth } from "./integrations/auth";

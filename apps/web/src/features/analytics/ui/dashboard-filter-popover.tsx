@@ -3,7 +3,7 @@ import type {
    NumberCondition,
    StringCondition,
 } from "@f-o-t/condition-evaluator";
-import type { Dashboard } from "@packages/database/schemas/dashboards";
+import type { Dashboard } from "@core/database/schemas/dashboards";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Combobox } from "@packages/ui/components/combobox";

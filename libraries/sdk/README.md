@@ -3,6 +3,7 @@
 Official TypeScript SDK for interacting with the Contentta API.
 
 ## Features
+
 - Type-safe oRPC client with full TypeScript support
 - Modular API structure with organized namespaces (`content`, `events`, `forms`)
 - Input validation with Zod schemas and shared schema exports
@@ -15,16 +16,19 @@ Official TypeScript SDK for interacting with the Contentta API.
 ## Installation
 
 npm:
+
 ```bash
 npm install @contentta/sdk
 ```
 
 yarn:
+
 ```bash
 yarn add @contentta/sdk
 ```
 
 bun:
+
 ```bash
 bun add @contentta/sdk
 ```
@@ -37,73 +41,73 @@ bun add @contentta/sdk
 import { createSdk } from "@contentta/sdk";
 
 const sdk = createSdk({
-  apiKey: "YOUR_API_KEY",
-  host: "https://custom.api.example.com", // Optional: custom API host
+   apiKey: "YOUR_API_KEY",
+   host: "https://custom.api.example.com", // Optional: custom API host
 });
 
 async function example() {
-  const agentId = "00000000-0000-0000-0000-000000000000";
+   const agentId = "00000000-0000-0000-0000-000000000000";
 
-  // List content by agent
-  const { posts, total } = await sdk.content.list({
-    agentId,
-    status: ["approved", "draft"],
-    limit: "10",
-    page: "1",
-  });
+   // List content by agent
+   const { posts, total } = await sdk.content.list({
+      agentId,
+      status: ["approved", "draft"],
+      limit: "10",
+      page: "1",
+   });
 
-  console.log(`Found ${total} posts`);
-  console.log(posts[0].meta.title);
+   console.log(`Found ${total} posts`);
+   console.log(posts[0].meta.title);
 
-  // Get content by slug
-  const content = await sdk.content.get({
-    slug: "my-post-slug",
-    agentId,
-  });
+   // Get content by slug
+   const content = await sdk.content.get({
+      slug: "my-post-slug",
+      agentId,
+   });
 
-  console.log(content.body);
+   console.log(content.body);
 
-  // Get related slugs for a post
-  const relatedSlugs = await sdk.content.getRelatedSlugs({
-    slug: "my-post-slug",
-    agentId,
-  });
+   // Get related slugs for a post
+   const relatedSlugs = await sdk.content.getRelatedSlugs({
+      slug: "my-post-slug",
+      agentId,
+   });
 
-  console.log(relatedSlugs);
+   console.log(relatedSlugs);
 
-  // Get author info by agent ID
-  const author = await sdk.content.getAuthor({
-    agentId,
-  });
+   // Get author info by agent ID
+   const author = await sdk.content.getAuthor({
+      agentId,
+   });
 
-  console.log(author.name);
-  console.log(author.profilePhoto?.data); // base64 image data
+   console.log(author.name);
+   console.log(author.profilePhoto?.data); // base64 image data
 
-  // Get the image data for a specific content ID
-  const image = await sdk.content.getImage({
-    contentId: content.id,
-  });
-
-  console.log(image?.contentType);
-  console.log(image?.data); // base64 image data
-
-  // Track events
-  await sdk.events.track({
-    eventName: "content.page.view",
-    properties: {
+   // Get the image data for a specific content ID
+   const image = await sdk.content.getImage({
       contentId: content.id,
-      contentSlug: "my-post-slug",
-      pageUrl: "https://example.com/blog/my-post-slug",
-    },
-  });
+   });
 
-  // Get form definition
-  const form = await sdk.forms.get({
-    formId: "form-uuid",
-  });
+   console.log(image?.contentType);
+   console.log(image?.data); // base64 image data
 
-  console.log(form.name);
-  console.log(form.fields);
+   // Track events
+   await sdk.events.track({
+      eventName: "content.page.view",
+      properties: {
+         contentId: content.id,
+         contentSlug: "my-post-slug",
+         pageUrl: "https://example.com/blog/my-post-slug",
+      },
+   });
+
+   // Get form definition
+   const form = await sdk.forms.get({
+      formId: "form-uuid",
+   });
+
+   console.log(form.name);
+   console.log(form.fields);
 }
 
 example().catch(console.error);
@@ -115,17 +119,17 @@ example().catch(console.error);
 import { createBrowserSdk } from "@contentta/sdk/browser";
 
 const sdk = createBrowserSdk({
-  apiKey: "YOUR_API_KEY",
-  organizationId: "YOUR_ORG_ID",
-  batchSize: 10,
-  flushInterval: 30000,
-  debug: true,
+   apiKey: "YOUR_API_KEY",
+   organizationId: "YOUR_ORG_ID",
+   batchSize: 10,
+   flushInterval: 30000,
+   debug: true,
 });
 
 // Track custom events
 sdk.tracker.track("button_click", {
-  buttonId: "cta-signup",
-  page: "/pricing",
+   buttonId: "cta-signup",
+   page: "/pricing",
 });
 
 // Auto-track page views (includes scroll depth, time on page, CTA clicks)
@@ -136,7 +140,7 @@ await sdk.forms.embedForm("form-uuid", "form-container-id");
 
 // Clean up on page unload
 window.addEventListener("beforeunload", () => {
-  sdk.tracker.destroy();
+   sdk.tracker.destroy();
 });
 ```
 
@@ -175,6 +179,7 @@ const { posts, total } = await sdk.content.list({
 ```
 
 Returns:
+
 ```typescript
 {
   posts: Array<{
@@ -228,6 +233,7 @@ const author = await sdk.content.getAuthor({
 ```
 
 Returns:
+
 ```typescript
 {
   name: string;
@@ -291,6 +297,7 @@ const form = await sdk.forms.get({
 ```
 
 Returns:
+
 ```typescript
 {
   id: string;
@@ -323,6 +330,7 @@ const result = await sdk.forms.submit({
 ```
 
 Returns:
+
 ```typescript
 {
   success: boolean;
@@ -364,8 +372,8 @@ Track a custom event.
 
 ```typescript
 sdk.tracker.track("button_click", {
-  buttonId: "cta-signup",
-  page: "/pricing",
+   buttonId: "cta-signup",
+   page: "/pricing",
 });
 ```
 
@@ -406,6 +414,7 @@ await sdk.forms.embedForm("form-uuid", "form-container-id");
 ```
 
 This will:
+
 - Fetch the form definition
 - Render the form with pre-styled components
 - Set up validation and submission handling
@@ -425,10 +434,10 @@ const posthog = createPostHogHelper();
 
 // Track blog post views
 const trackingScript = posthog.trackBlogPostView({
-  id: "content-uuid",
-  slug: "content-slug",
-  title: "Post Title",
-  agentId: "agent-uuid",
+   id: "content-uuid",
+   slug: "content-slug",
+   title: "Post Title",
+   agentId: "agent-uuid",
 });
 
 // Inject trackingScript into your HTML
@@ -440,28 +449,28 @@ All types are fully documented with TypeScript. Import them for type safety:
 
 ```typescript
 import type {
-  // Content types
-  ContentList,
-  ContentSelect,
-  ContentMeta,
-  ContentRequest,
-  ContentStats,
-  ContentStatus,
-  ContentWithAnalytics,
-  ShareStatus,
-  Image,
+   // Content types
+   ContentList,
+   ContentSelect,
+   ContentMeta,
+   ContentRequest,
+   ContentStats,
+   ContentStatus,
+   ContentWithAnalytics,
+   ShareStatus,
+   Image,
 
-  // Event types
-  TrackedEvent,
-  EventBatch,
-  ContenttaSdkConfig,
+   // Event types
+   TrackedEvent,
+   EventBatch,
+   ContenttaSdkConfig,
 
-  // Form types
-  FormDefinition,
-  FormField,
+   // Form types
+   FormDefinition,
+   FormField,
 
-  // Analytics types
-  AnalyticsResponse,
+   // Analytics types
+   AnalyticsResponse,
 } from "@contentta/sdk";
 ```
 
@@ -471,21 +480,21 @@ For runtime validation:
 
 ```typescript
 import {
-  // Content schemas
-  ContentListResponseSchema,
-  ContentSelectSchema,
-  ContentMetaSchema,
-  ContentRequestSchema,
-  ContentStatsSchema,
-  ContentStatusValues,
-  ContentWithAnalyticsSchema,
-  ShareStatusValues,
-  GetContentBySlugInputSchema,
-  ListContentByAgentInputSchema,
-  ImageSchema,
+   // Content schemas
+   ContentListResponseSchema,
+   ContentSelectSchema,
+   ContentMetaSchema,
+   ContentRequestSchema,
+   ContentStatsSchema,
+   ContentStatusValues,
+   ContentWithAnalyticsSchema,
+   ShareStatusValues,
+   GetContentBySlugInputSchema,
+   ListContentByAgentInputSchema,
+   ImageSchema,
 
-  // Analytics schemas
-  AnalyticsResponseSchema,
+   // Analytics schemas
+   AnalyticsResponseSchema,
 } from "@contentta/sdk";
 ```
 
@@ -499,19 +508,20 @@ import { createSdk } from "@contentta/sdk";
 const sdk = createSdk({ apiKey: "your-api-key" });
 
 try {
-  const content = await sdk.content.get({
-    slug: "non-existent",
-    agentId: "agent-uuid",
-  });
+   const content = await sdk.content.get({
+      slug: "non-existent",
+      agentId: "agent-uuid",
+   });
 } catch (error) {
-  // Error includes status code, message, and cause
-  console.error("Error:", error.message);
-  console.error("Status:", error.status);
-  console.error("Cause:", error.cause);
+   // Error includes status code, message, and cause
+   console.error("Error:", error.message);
+   console.error("Status:", error.status);
+   console.error("Cause:", error.cause);
 }
 ```
 
 Common error scenarios:
+
 - **Authentication errors**: Invalid API key
 - **Not found errors**: Content/form/agent not found
 - **Validation errors**: Invalid input parameters
@@ -522,30 +532,30 @@ Common error scenarios:
 Shapes shown here reflect the runtime Zod schemas returned by the SDK.
 
 - ContentList
-  - posts: Array of summary objects:
-    - `id`: string
-    - `meta`: { title?: string; description?: string; keywords?: string[]; slug?: string; sources?: string[] }
-    - `imageUrl`: string | null
-    - `status`: "draft" | "approved"
-		- `shareStatus`: "private" | "shared"
-    - `stats`: { wordsCount?: string; readTimeMinutes?: string; qualityScore?: string }
-    - `createdAt`: Date
-    - `image`: { data: string; contentType: string } | null
-  - total: number
+   - posts: Array of summary objects:
+      - `id`: string
+      - `meta`: { title?: string; description?: string; keywords?: string[]; slug?: string; sources?: string[] }
+      - `imageUrl`: string | null
+      - `status`: "draft" | "approved"
+      - `shareStatus`: "private" | "shared"
+      - `stats`: { wordsCount?: string; readTimeMinutes?: string; qualityScore?: string }
+      - `createdAt`: Date
+      - `image`: { data: string; contentType: string } | null
+   - total: number
 
 - ContentSelect
-  - `id`: string
-  - `agentId`: string
-  - `imageUrl`: string | null
-  - `body`: string
-  - `status`: "draft" | "approved"
-	- `shareStatus`: "private" | "shared"
-  - `meta`: { title?: string; description?: string; keywords?: string[]; slug?: string; sources?: string[] }
-  - `request`: { description: string; layout: "tutorial" | "interview" | "article" | "changelog" }
-  - `stats`: { wordsCount?: string; readTimeMinutes?: string; qualityScore?: string }
-  - `createdAt`: Date
-  - `updatedAt`: Date
-  - `image`: { data: string; contentType: string } | null
+   - `id`: string
+   - `agentId`: string
+   - `imageUrl`: string | null
+   - `body`: string
+   - `status`: "draft" | "approved"
+   - `shareStatus`: "private" | "shared"
+   - `meta`: { title?: string; description?: string; keywords?: string[]; slug?: string; sources?: string[] }
+   - `request`: { description: string; layout: "tutorial" | "interview" | "article" | "changelog" }
+   - `stats`: { wordsCount?: string; readTimeMinutes?: string; qualityScore?: string }
+   - `createdAt`: Date
+   - `updatedAt`: Date
+   - `image`: { data: string; contentType: string } | null
 
 ## Complete Examples
 
@@ -555,35 +565,35 @@ Shapes shown here reflect the runtime Zod schemas returned by the SDK.
 import { createSdk } from "@contentta/sdk";
 
 const sdk = createSdk({
-  apiKey: process.env.CONTENTTA_API_KEY!,
+   apiKey: process.env.CONTENTTA_API_KEY!,
 });
 
 async function getBlogPosts(page = 1, pageSize = 12) {
-  try {
-    const { posts, total } = await sdk.content.list({
-      agentId: process.env.AGENT_ID!,
-      status: "approved",
-      limit: String(pageSize),
-      page: String(page),
-    });
+   try {
+      const { posts, total } = await sdk.content.list({
+         agentId: process.env.AGENT_ID!,
+         status: "approved",
+         limit: String(pageSize),
+         page: String(page),
+      });
 
-    const totalPages = Math.ceil(total / pageSize);
+      const totalPages = Math.ceil(total / pageSize);
 
-    return {
-      posts,
-      pagination: {
-        page,
-        pageSize,
-        total,
-        totalPages,
-        hasNext: page < totalPages,
-        hasPrev: page > 1,
-      },
-    };
-  } catch (error) {
-    console.error("Failed to fetch blog posts:", error);
-    throw error;
-  }
+      return {
+         posts,
+         pagination: {
+            page,
+            pageSize,
+            total,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
+         },
+      };
+   } catch (error) {
+      console.error("Failed to fetch blog posts:", error);
+      throw error;
+   }
 }
 
 // Usage
@@ -599,33 +609,34 @@ console.log(`Showing ${posts.length} of ${pagination.total} posts`);
 import { createSdk } from "@contentta/sdk";
 
 const sdk = createSdk({
-  apiKey: process.env.CONTENTTA_API_KEY!,
+   apiKey: process.env.CONTENTTA_API_KEY!,
 });
 
 async function getBlogPostDetail(slug: string) {
-  const agentId = process.env.AGENT_ID!;
+   const agentId = process.env.AGENT_ID!;
 
-  try {
-    // Fetch post, related content, and author in parallel
-    const [content, relatedSlugs, author] = await Promise.all([
-      sdk.content.get({ slug, agentId }),
-      sdk.content.getRelatedSlugs({ slug, agentId }),
-      sdk.content.getAuthor({ agentId }),
-    ]);
+   try {
+      // Fetch post, related content, and author in parallel
+      const [content, relatedSlugs, author] = await Promise.all([
+         sdk.content.get({ slug, agentId }),
+         sdk.content.getRelatedSlugs({ slug, agentId }),
+         sdk.content.getAuthor({ agentId }),
+      ]);
 
-    return {
-      content,
-      relatedSlugs,
-      author,
-    };
-  } catch (error) {
-    console.error("Failed to fetch blog post:", error);
-    throw error;
-  }
+      return {
+         content,
+         relatedSlugs,
+         author,
+      };
+   } catch (error) {
+      console.error("Failed to fetch blog post:", error);
+      throw error;
+   }
 }
 
 // Usage
-const { content, relatedSlugs, author } = await getBlogPostDetail("my-post-slug");
+const { content, relatedSlugs, author } =
+   await getBlogPostDetail("my-post-slug");
 console.log(`Title: ${content.meta.title}`);
 console.log(`Author: ${author.name}`);
 console.log(`Related posts: ${relatedSlugs.length}`);
@@ -639,35 +650,41 @@ console.log(`Related posts: ${relatedSlugs.length}`);
 import { createBrowserSdk } from "@contentta/sdk/browser";
 
 const sdk = createBrowserSdk({
-  apiKey: import.meta.env.VITE_CONTENTTA_API_KEY,
-  organizationId: import.meta.env.VITE_CONTENTTA_ORG_ID,
-  debug: import.meta.env.DEV,
+   apiKey: import.meta.env.VITE_CONTENTTA_API_KEY,
+   organizationId: import.meta.env.VITE_CONTENTTA_ORG_ID,
+   debug: import.meta.env.DEV,
 });
 
 // Initialize analytics on page load
 document.addEventListener("DOMContentLoaded", () => {
-  const contentId = document.querySelector("[data-content-id]")?.getAttribute("data-content-id");
-  const contentSlug = document.querySelector("[data-content-slug]")?.getAttribute("data-content-slug");
+   const contentId = document
+      .querySelector("[data-content-id]")
+      ?.getAttribute("data-content-id");
+   const contentSlug = document
+      .querySelector("[data-content-slug]")
+      ?.getAttribute("data-content-slug");
 
-  if (contentId && contentSlug) {
-    // Auto-track page views, scroll depth, time on page, and CTA clicks
-    sdk.tracker.autoTrackPageViews(contentId, contentSlug);
-  }
+   if (contentId && contentSlug) {
+      // Auto-track page views, scroll depth, time on page, and CTA clicks
+      sdk.tracker.autoTrackPageViews(contentId, contentSlug);
+   }
 
-  // Track custom events
-  document.querySelectorAll("[data-track]").forEach((element) => {
-    element.addEventListener("click", () => {
-      const eventName = element.getAttribute("data-track");
-      const eventData = JSON.parse(element.getAttribute("data-track-data") || "{}");
+   // Track custom events
+   document.querySelectorAll("[data-track]").forEach((element) => {
+      element.addEventListener("click", () => {
+         const eventName = element.getAttribute("data-track");
+         const eventData = JSON.parse(
+            element.getAttribute("data-track-data") || "{}",
+         );
 
-      sdk.tracker.track(eventName!, eventData);
-    });
-  });
+         sdk.tracker.track(eventName!, eventData);
+      });
+   });
 });
 
 // Clean up on page unload
 window.addEventListener("beforeunload", () => {
-  sdk.tracker.destroy();
+   sdk.tracker.destroy();
 });
 ```
 
@@ -678,25 +695,25 @@ window.addEventListener("beforeunload", () => {
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Contact Us</title>
-</head>
-<body>
-  <h1>Contact Us</h1>
-  <div id="contact-form"></div>
+   <head>
+      <title>Contact Us</title>
+   </head>
+   <body>
+      <h1>Contact Us</h1>
+      <div id="contact-form"></div>
 
-  <script type="module">
-    import { createBrowserSdk } from "@contentta/sdk/browser";
+      <script type="module">
+         import { createBrowserSdk } from "@contentta/sdk/browser";
 
-    const sdk = createBrowserSdk({
-      apiKey: "your-api-key",
-      organizationId: "your-org-id",
-    });
+         const sdk = createBrowserSdk({
+            apiKey: "your-api-key",
+            organizationId: "your-org-id",
+         });
 
-    // Embed form
-    await sdk.forms.embedForm("form-uuid", "contact-form");
-  </script>
-</body>
+         // Embed form
+         await sdk.forms.embedForm("form-uuid", "contact-form");
+      </script>
+   </body>
 </html>
 ```
 
@@ -708,45 +725,49 @@ window.addEventListener("beforeunload", () => {
 import { createSdk } from "@contentta/sdk";
 
 const sdk = createSdk({
-  apiKey: process.env.CONTENTTA_API_KEY!,
+   apiKey: process.env.CONTENTTA_API_KEY!,
 });
 
 // Track events from your backend
 async function trackContentPublication(contentId: string) {
-  await sdk.events.track({
-    eventName: "content.published",
-    properties: {
-      contentId,
-      publishedAt: Date.now(),
-      publishedBy: "system",
-    },
-  });
+   await sdk.events.track({
+      eventName: "content.published",
+      properties: {
+         contentId,
+         publishedAt: Date.now(),
+         publishedBy: "system",
+      },
+   });
 }
 
 // Batch track multiple events
-async function trackBatchEvents(events: Array<{ eventName: string; properties: Record<string, unknown> }>) {
-  await sdk.events.batch({
-    events: events.map((event) => ({
-      ...event,
-      timestamp: Date.now(),
-    })),
-  });
+async function trackBatchEvents(
+   events: Array<{ eventName: string; properties: Record<string, unknown> }>,
+) {
+   await sdk.events.batch({
+      events: events.map((event) => ({
+         ...event,
+         timestamp: Date.now(),
+      })),
+   });
 }
 
 // Usage
 await trackContentPublication("content-uuid");
 
 await trackBatchEvents([
-  { eventName: "content.created", properties: { contentId: "uuid-1" } },
-  { eventName: "content.approved", properties: { contentId: "uuid-1" } },
-  { eventName: "content.published", properties: { contentId: "uuid-1" } },
+   { eventName: "content.created", properties: { contentId: "uuid-1" } },
+   { eventName: "content.approved", properties: { contentId: "uuid-1" } },
+   { eventName: "content.published", properties: { contentId: "uuid-1" } },
 ]);
 ```
 
 ## Changelog
+
 See [CHANGELOG.md](./CHANGELOG.md) for version history and updates.
 
 ## License
+
 Apache License 2.0
 
 ## Star History

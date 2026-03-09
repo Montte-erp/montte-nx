@@ -29,11 +29,13 @@ A single-page inventory module. Users manage a product catalog with stock levels
 ## Step 1 — Install `@f-o-t/uom`
 
 **Root `package.json`** — add to `"fot"` catalog:
+
 ```json
 "@f-o-t/uom": "1.0.6"
 ```
 
 **`apps/web/package.json`** — add to dependencies:
+
 ```json
 "@f-o-t/uom": "catalog:fot"
 ```
@@ -41,15 +43,31 @@ A single-page inventory module. Users manage a product catalog with stock levels
 Run `bun install`.
 
 **Register custom units at app startup** in `apps/web/src/main.tsx`:
+
 ```typescript
 import { registerUnit } from "@f-o-t/uom";
 
 for (const def of [
-  { symbol: "un", name: "Unidade", category: "count", toBaseMultiplier: 1000000000000n },
-  { symbol: "cx", name: "Caixa",   category: "count", toBaseMultiplier: 1000000000000n },
-  { symbol: "pct", name: "Pacote", category: "count", toBaseMultiplier: 1000000000000n },
+   {
+      symbol: "un",
+      name: "Unidade",
+      category: "count",
+      toBaseMultiplier: 1000000000000n,
+   },
+   {
+      symbol: "cx",
+      name: "Caixa",
+      category: "count",
+      toBaseMultiplier: 1000000000000n,
+   },
+   {
+      symbol: "pct",
+      name: "Pacote",
+      category: "count",
+      toBaseMultiplier: 1000000000000n,
+   },
 ]) {
-  registerUnit(def);
+   registerUnit(def);
 }
 ```
 
@@ -62,81 +80,119 @@ for (const def of [
 ```typescript
 import { sql } from "drizzle-orm";
 import {
-  index, integer, numeric, pgEnum, pgTable,
-  text, timestamp, uniqueIndex, uuid,
+   index,
+   integer,
+   numeric,
+   pgEnum,
+   pgTable,
+   text,
+   timestamp,
+   uniqueIndex,
+   uuid,
 } from "drizzle-orm/pg-core";
 import { transactions } from "./transactions";
 
 // ─── Categories ──────────────────────────────────────────────────────────────
 
 export const inventoryCategories = pgTable(
-  "inventory_categories",
-  {
-    id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-    teamId: uuid("team_id").notNull(),
-    name: text("name").notNull(),
-    color: text("color").notNull().default("#6b7280"),
-    icon: text("icon"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-  },
-  (t) => [
-    index("inv_categories_team_idx").on(t.teamId),
-    uniqueIndex("inv_categories_name_unique").on(t.teamId, t.name),
-  ],
+   "inventory_categories",
+   {
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
+      teamId: uuid("team_id").notNull(),
+      name: text("name").notNull(),
+      color: text("color").notNull().default("#6b7280"),
+      icon: text("icon"),
+      createdAt: timestamp("created_at", { withTimezone: true })
+         .notNull()
+         .defaultNow(),
+      updatedAt: timestamp("updated_at", { withTimezone: true })
+         .notNull()
+         .defaultNow()
+         .$onUpdate(() => new Date()),
+   },
+   (t) => [
+      index("inv_categories_team_idx").on(t.teamId),
+      uniqueIndex("inv_categories_name_unique").on(t.teamId, t.name),
+   ],
 );
 
 // ─── Products ────────────────────────────────────────────────────────────────
 
 export const inventoryProducts = pgTable(
-  "inventory_products",
-  {
-    id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-    teamId: uuid("team_id").notNull(),
-    categoryId: uuid("category_id").references(() => inventoryCategories.id, { onDelete: "set null" }),
-    name: text("name").notNull(),
-    sku: text("sku"),
-    description: text("description"),
-    unit: text("unit").notNull().default("un"),     // UnitSymbol: "kg", "L", "un", etc.
-    costPrice: numeric("cost_price", { precision: 12, scale: 2 }),
-    salePrice: numeric("sale_price", { precision: 12, scale: 2 }),
-    minStock: numeric("min_stock", { precision: 15, scale: 6 }).notNull().default("0"),
-    isActive: integer("is_active").notNull().default(1),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-  },
-  (t) => [
-    index("inv_products_team_idx").on(t.teamId),
-    uniqueIndex("inv_products_sku_unique").on(t.teamId, t.sku),
-  ],
+   "inventory_products",
+   {
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
+      teamId: uuid("team_id").notNull(),
+      categoryId: uuid("category_id").references(() => inventoryCategories.id, {
+         onDelete: "set null",
+      }),
+      name: text("name").notNull(),
+      sku: text("sku"),
+      description: text("description"),
+      unit: text("unit").notNull().default("un"), // UnitSymbol: "kg", "L", "un", etc.
+      costPrice: numeric("cost_price", { precision: 12, scale: 2 }),
+      salePrice: numeric("sale_price", { precision: 12, scale: 2 }),
+      minStock: numeric("min_stock", { precision: 15, scale: 6 })
+         .notNull()
+         .default("0"),
+      isActive: integer("is_active").notNull().default(1),
+      createdAt: timestamp("created_at", { withTimezone: true })
+         .notNull()
+         .defaultNow(),
+      updatedAt: timestamp("updated_at", { withTimezone: true })
+         .notNull()
+         .defaultNow()
+         .$onUpdate(() => new Date()),
+   },
+   (t) => [
+      index("inv_products_team_idx").on(t.teamId),
+      uniqueIndex("inv_products_sku_unique").on(t.teamId, t.sku),
+   ],
 );
 
 // ─── Movements ───────────────────────────────────────────────────────────────
 
 export const inventoryMovementTypeEnum = pgEnum("inventory_movement_type", [
-  "entrada", "saida", "ajuste_positivo", "ajuste_negativo", "devolucao", "perda",
+   "entrada",
+   "saida",
+   "ajuste_positivo",
+   "ajuste_negativo",
+   "devolucao",
+   "perda",
 ]);
 
 export const inventoryMovements = pgTable(
-  "inventory_movements",
-  {
-    id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-    teamId: uuid("team_id").notNull(),
-    productId: uuid("product_id").notNull().references(() => inventoryProducts.id, { onDelete: "cascade" }),
-    type: inventoryMovementTypeEnum("type").notNull(),
-    quantity: numeric("quantity", { precision: 15, scale: 6 }).notNull(), // signed: positive=in, negative=out
-    unit: text("unit").notNull(),
-    unitCost: numeric("unit_cost", { precision: 12, scale: 2 }),
-    transactionId: uuid("transaction_id").references(() => transactions.id, { onDelete: "set null" }),
-    notes: text("notes"),
-    date: timestamp("date", { withTimezone: true }).notNull().defaultNow(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [
-    index("inv_movements_team_idx").on(t.teamId),
-    index("inv_movements_product_idx").on(t.productId),
-    index("inv_movements_date_idx").on(t.date),
-  ],
+   "inventory_movements",
+   {
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
+      teamId: uuid("team_id").notNull(),
+      productId: uuid("product_id")
+         .notNull()
+         .references(() => inventoryProducts.id, { onDelete: "cascade" }),
+      type: inventoryMovementTypeEnum("type").notNull(),
+      quantity: numeric("quantity", { precision: 15, scale: 6 }).notNull(), // signed: positive=in, negative=out
+      unit: text("unit").notNull(),
+      unitCost: numeric("unit_cost", { precision: 12, scale: 2 }),
+      transactionId: uuid("transaction_id").references(() => transactions.id, {
+         onDelete: "set null",
+      }),
+      notes: text("notes"),
+      date: timestamp("date", { withTimezone: true }).notNull().defaultNow(),
+      createdAt: timestamp("created_at", { withTimezone: true })
+         .notNull()
+         .defaultNow(),
+   },
+   (t) => [
+      index("inv_movements_team_idx").on(t.teamId),
+      index("inv_movements_product_idx").on(t.productId),
+      index("inv_movements_date_idx").on(t.date),
+   ],
 );
 
 export type InventoryCategory = typeof inventoryCategories.$inferSelect;
@@ -273,6 +329,7 @@ export const getTopProducts = protectedProcedure
 ```
 
 **Register in `apps/web/src/integrations/orpc/router/index.ts`:**
+
 ```typescript
 import * as inventory from "./inventory";
 export const router = { ...existing, inventory };
@@ -295,18 +352,21 @@ apps/web/src/features/inventory/
 ```
 
 ### `use-uom-units.ts`
+
 ```typescript
 import { getAllUnits, type UnitDefinition } from "@f-o-t/uom";
 
 export function useUomUnits(): UnitDefinition[] {
-  return getAllUnits();
+   return getAllUnits();
 }
 ```
 
 ### `inventory-columns.tsx`
+
 Columns: Name, SKU, Category (badge), Unit, Current Stock (`format(of(qty, unit))`), Cost/Sale Price, Status (low-stock badge), Actions.
 
 Row actions:
+
 - **Registrar Movimentação** → opens `InventoryMovementCredenza`
 - **Editar** → opens `InventoryProductForm` sheet in edit mode
 - **Arquivar / Excluir** → `useAlertDialog`
@@ -314,19 +374,22 @@ Row actions:
 Expandable row (`renderSubComponent`): `<InventoryMovementList productId={row.id} />`
 
 ### `inventory-movement-credenza.tsx`
+
 Fields:
+
 - **Tipo** — Select: Entrada / Saída / Ajuste+ / Ajuste− / Devolução / Perda (grouped as "Entradas" / "Saídas")
 - **Quantidade** — Number input (unit shown as suffix, e.g. "kg")
 - **Custo unitário** — MoneyInput (optional)
 - **Data** — DatePicker
 - **Notas** — Textarea
 - **Transação** — Toggle group: "Nenhuma" | "Vincular existente" | "Criar automático"
-  - "Vincular existente" → transaction Combobox
-  - "Criar automático" → shows estimated transaction type and description
+   - "Vincular existente" → transaction Combobox
+   - "Criar automático" → shows estimated transaction type and description
 
 Uses `useCredenza` global hook.
 
 ### `inventory-product-form.tsx`
+
 Fields: Name, SKU, Description, Unit (Combobox from `useUomUnits()` grouped by category), Category (Combobox), Cost Price, Sale Price, Min Stock.
 
 Uses `useSheet` global hook.
@@ -378,9 +441,11 @@ The seed script and the "create team" flow both check for the `inventory` featur
 ## Step 8 — Sidebar + Early Access
 
 ### Sidebar
+
 **File:** `apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts`
 
 Add new group:
+
 ```typescript
 {
   id: "inventory",
@@ -398,9 +463,11 @@ Add new group:
 ```
 
 ### Billing overview
+
 **File:** `apps/web/src/features/billing/ui/billing-overview.tsx`
 
 Add to `VOLUME_FEATURE_CONFIG`:
+
 ```typescript
 inventory: {
   label: "Inventário",
@@ -413,33 +480,34 @@ inventory: {
 ```
 
 ### PostHog
+
 Create early access feature flag `inventory` with stage `alpha` in PostHog. This gates the sidebar item and billing card.
 
 ---
 
 ## File Checklist
 
-| File | Action |
-|------|--------|
-| `package.json` (root) | Edit — add `@f-o-t/uom: 1.0.6` to fot catalog |
-| `apps/web/package.json` | Edit — add `@f-o-t/uom: catalog:fot` |
-| `apps/web/src/main.tsx` | Edit — register `un`, `cx`, `pct` custom units |
-| `packages/database/src/schemas/inventory.ts` | Create |
-| `packages/database/src/schema.ts` | Edit — export inventory schema |
-| `packages/database/src/repositories/inventory-repository.ts` | Create |
-| `apps/web/src/integrations/orpc/router/inventory.ts` | Create |
-| `apps/web/src/integrations/orpc/router/index.ts` | Edit — register `inventory` |
-| `apps/web/src/features/inventory/hooks/use-uom-units.ts` | Create |
-| `apps/web/src/features/inventory/ui/inventory-product-form.tsx` | Create |
-| `apps/web/src/features/inventory/ui/inventory-product-card.tsx` | Create |
-| `apps/web/src/features/inventory/ui/inventory-columns.tsx` | Create |
-| `apps/web/src/features/inventory/ui/inventory-movement-credenza.tsx` | Create |
-| `apps/web/src/features/inventory/ui/inventory-movement-list.tsx` | Create |
-| `apps/web/src/routes/.../inventory/index.tsx` | Create |
-| `apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts` | Edit — add Inventário group |
-| `apps/web/src/features/billing/ui/billing-overview.tsx` | Edit — add to VOLUME_FEATURE_CONFIG |
-| `packages/database/src/default-insights.ts` | Edit — add INVENTORY_DEFAULT_INSIGHTS |
-| `scripts/seed-default-dashboard.ts` | Edit — seed inventory dashboard when flag active |
+| File                                                                 | Action                                           |
+| -------------------------------------------------------------------- | ------------------------------------------------ |
+| `package.json` (root)                                                | Edit — add `@f-o-t/uom: 1.0.6` to fot catalog    |
+| `apps/web/package.json`                                              | Edit — add `@f-o-t/uom: catalog:fot`             |
+| `apps/web/src/main.tsx`                                              | Edit — register `un`, `cx`, `pct` custom units   |
+| `packages/database/src/schemas/inventory.ts`                         | Create                                           |
+| `packages/database/src/schema.ts`                                    | Edit — export inventory schema                   |
+| `packages/database/src/repositories/inventory-repository.ts`         | Create                                           |
+| `apps/web/src/integrations/orpc/router/inventory.ts`                 | Create                                           |
+| `apps/web/src/integrations/orpc/router/index.ts`                     | Edit — register `inventory`                      |
+| `apps/web/src/features/inventory/hooks/use-uom-units.ts`             | Create                                           |
+| `apps/web/src/features/inventory/ui/inventory-product-form.tsx`      | Create                                           |
+| `apps/web/src/features/inventory/ui/inventory-product-card.tsx`      | Create                                           |
+| `apps/web/src/features/inventory/ui/inventory-columns.tsx`           | Create                                           |
+| `apps/web/src/features/inventory/ui/inventory-movement-credenza.tsx` | Create                                           |
+| `apps/web/src/features/inventory/ui/inventory-movement-list.tsx`     | Create                                           |
+| `apps/web/src/routes/.../inventory/index.tsx`                        | Create                                           |
+| `apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts`              | Edit — add Inventário group                      |
+| `apps/web/src/features/billing/ui/billing-overview.tsx`              | Edit — add to VOLUME_FEATURE_CONFIG              |
+| `packages/database/src/default-insights.ts`                          | Edit — add INVENTORY_DEFAULT_INSIGHTS            |
+| `scripts/seed-default-dashboard.ts`                                  | Edit — seed inventory dashboard when flag active |
 
 ---
 

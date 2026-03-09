@@ -1,5 +1,5 @@
-import type { DatabaseInstance } from "@packages/database/client";
-import { getLogger } from "@packages/logging/root";
+import type { DatabaseInstance } from "@core/database/client";
+import { getLogger } from "@core/logging/root";
 
 const logger = getLogger().child({ module: "events:views" });
 
@@ -13,7 +13,7 @@ import {
    dailyUsageByEvent,
    monthlyAiUsage,
    monthlySdkUsage,
-} from "@packages/database/schema";
+} from "@core/database/schema";
 
 /**
  * Refresh all materialized views (billing + analytics).

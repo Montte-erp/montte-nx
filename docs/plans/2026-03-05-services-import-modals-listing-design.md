@@ -9,16 +9,16 @@
 
 ## Decisões Chave
 
-| Decisão | Escolha | Motivo |
-|---------|---------|--------|
-| Preço padrão | `services.basePrice` (integer, cents) | Simplifica listagem e importação |
-| Nome no form | Combobox (autocomplete) | Sugere nomes existentes, permite novos |
-| Tipo do serviço | Enum: `service / product / subscription` | PM pediu filtro por tipo |
-| Categoria | FK → `categories.id` (substitui campo texto) | Reutiliza categorias existentes do time |
-| Tag | FK → `tags.id` no serviço | Uma tag por serviço |
-| Cliente/Fornecedor filtro | Via `contact_subscriptions` join | Sem novo campo; usa assinaturas existentes |
-| Variantes × basePrice | Variantes herdam basePrice como default | Menor fricção ao criar variantes |
-| Variantes na UI | Gerenciadas dentro do modal de edição | Sem renderSubComponent (removido do DataTable) |
+| Decisão                   | Escolha                                      | Motivo                                         |
+| ------------------------- | -------------------------------------------- | ---------------------------------------------- |
+| Preço padrão              | `services.basePrice` (integer, cents)        | Simplifica listagem e importação               |
+| Nome no form              | Combobox (autocomplete)                      | Sugere nomes existentes, permite novos         |
+| Tipo do serviço           | Enum: `service / product / subscription`     | PM pediu filtro por tipo                       |
+| Categoria                 | FK → `categories.id` (substitui campo texto) | Reutiliza categorias existentes do time        |
+| Tag                       | FK → `tags.id` no serviço                    | Uma tag por serviço                            |
+| Cliente/Fornecedor filtro | Via `contact_subscriptions` join             | Sem novo campo; usa assinaturas existentes     |
+| Variantes × basePrice     | Variantes herdam basePrice como default      | Menor fricção ao criar variantes               |
+| Variantes na UI           | Gerenciadas dentro do modal de edição        | Sem renderSubComponent (removido do DataTable) |
 
 ---
 
@@ -36,7 +36,11 @@ tag_id        UUID REFERENCES tags(id)       -- nullable
 ### Novo enum
 
 ```typescript
-export const serviceTypeEnum = pgEnum("service_type", ["service", "product", "subscription"]);
+export const serviceTypeEnum = pgEnum("service_type", [
+   "service",
+   "product",
+   "subscription",
+]);
 ```
 
 ### Migração
@@ -51,22 +55,23 @@ export const serviceTypeEnum = pgEnum("service_type", ["service", "product", "su
 
 ### Procedures atualizadas
 
-| Procedure | Mudança |
-|-----------|---------|
+| Procedure         | Mudança                                                                                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `services.getAll` | Join com `categories` e `tags`. Retorna `categoryName`, `tagName`, `basePrice`, `type`. Aceita filtros opcionais: `type`, `categoryId`, `contactId`, `search` |
-| `services.create` | Aceita `basePrice`, `type`, `categoryId`, `tagId` |
-| `services.update` | Aceita mesmos campos novos |
+| `services.create` | Aceita `basePrice`, `type`, `categoryId`, `tagId`                                                                                                             |
+| `services.update` | Aceita mesmos campos novos                                                                                                                                    |
 
 ### Novas procedures
 
-| Procedure | Descrição |
-|-----------|-----------|
+| Procedure             | Descrição                                                                                                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `services.bulkCreate` | Import em lote. Input: array de `{ name, description?, basePrice, type, categoryId?, tagId? }`. Retorna `{ created: number, errors: { row: number, message: string }[] }` |
-| `services.export` | Retorna dados CSV-ready (array de objetos flat) da lista filtrada |
+| `services.export`     | Retorna dados CSV-ready (array de objetos flat) da lista filtrada                                                                                                         |
 
 ### Filtro Cliente/Fornecedor
 
 Query em `getAll` com `contactId` opcional:
+
 ```sql
 services
   JOIN service_variants ON ...
@@ -80,12 +85,12 @@ services
 
 ### Colunas
 
-| Coluna | Tipo | Notas |
-|--------|------|-------|
-| Nome | text, font-medium | — |
-| Preço padrão | `formatAmount(fromMinorUnits(cents, "BRL"), "pt-BR")` | @f-o-t/money |
-| Categoria | Badge com cor da categoria | "—" se null |
-| Ações | edit / delete | Via `renderActions` |
+| Coluna       | Tipo                                                  | Notas               |
+| ------------ | ----------------------------------------------------- | ------------------- |
+| Nome         | text, font-medium                                     | —                   |
+| Preço padrão | `formatAmount(fromMinorUnits(cents, "BRL"), "pt-BR")` | @f-o-t/money        |
+| Categoria    | Badge com cor da categoria                            | "—" se null         |
+| Ações        | edit / delete                                         | Via `renderActions` |
 
 ### Busca e Filtros
 
@@ -100,10 +105,10 @@ Badge no header: `"{count} serviços"` (sobre lista filtrada).
 
 ### Header Actions
 
-| Ação | UI | Comportamento |
-|------|----|---------------|
-| Importar | Button outline | Abre `ServiceImportCredenza` |
-| Exportar | Button outline | Download CSV da lista atual |
+| Ação           | UI             | Comportamento                    |
+| -------------- | -------------- | -------------------------------- |
+| Importar       | Button outline | Abre `ServiceImportCredenza`     |
+| Exportar       | Button outline | Download CSV da lista atual      |
 | Adicionar novo | Button primary | Abre `ServiceForm` mode="create" |
 
 ### View Switch
@@ -116,14 +121,14 @@ Table / Card (padrão existente com `useViewSwitch`).
 
 ### Campos
 
-| Campo | Componente | Obrigatório | Notas |
-|-------|-----------|-------------|-------|
-| Nome | Combobox (autocomplete) | Sim | Sugere nomes de serviços existentes |
-| Descrição | Textarea | Não | — |
-| Tipo | Select | Sim | Serviço / Produto / Assinatura |
-| Preço padrão | MoneyInput | Sim | BRL cents, @f-o-t/money |
-| Categoria | Select (categorias do time) | Sim | FK → categories |
-| Tag | Select (tags do time) | Não | FK → tags |
+| Campo        | Componente                  | Obrigatório | Notas                               |
+| ------------ | --------------------------- | ----------- | ----------------------------------- |
+| Nome         | Combobox (autocomplete)     | Sim         | Sugere nomes de serviços existentes |
+| Descrição    | Textarea                    | Não         | —                                   |
+| Tipo         | Select                      | Sim         | Serviço / Produto / Assinatura      |
+| Preço padrão | MoneyInput                  | Sim         | BRL cents, @f-o-t/money             |
+| Categoria    | Select (categorias do time) | Sim         | FK → categories                     |
+| Tag          | Select (tags do time)       | Não         | FK → tags                           |
 
 ### Seção de Variantes (abaixo de divider)
 
@@ -166,19 +171,20 @@ CSV gerado client-side a partir da lista filtrada. Colunas: Nome, Descrição, P
 
 ## 7. Validações
 
-| Campo | Regra |
-|-------|-------|
-| `name` | Obrigatório, trim, min 1 char |
-| `basePrice` | Obrigatório, ≥ 0 |
-| `type` | Obrigatório, enum válido |
+| Campo        | Regra                            |
+| ------------ | -------------------------------- |
+| `name`       | Obrigatório, trim, min 1 char    |
+| `basePrice`  | Obrigatório, ≥ 0                 |
+| `type`       | Obrigatório, enum válido         |
 | `categoryId` | Obrigatório (no form), FK válida |
-| `tagId` | Opcional, FK válida se fornecido |
+| `tagId`      | Opcional, FK válida se fornecido |
 
 ---
 
 ## 8. Arquivos a Modificar/Criar
 
 ### Modificar
+
 - `packages/database/src/schemas/services.ts` — adicionar campos + enum
 - `apps/web/src/integrations/orpc/router/services.ts` — novos campos + novas procedures
 - `apps/web/src/features/services/ui/services-form.tsx` — campos novos + variantes no edit
@@ -186,14 +192,15 @@ CSV gerado client-side a partir da lista filtrada. Colunas: Nome, Descrição, P
 - `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/erp/services.tsx` — filtros, busca, totalizador, ações
 
 ### Criar
+
 - `apps/web/src/features/services/ui/service-import-credenza.tsx` — fluxo de importação
 
 ---
 
 ## 9. Riscos & Mitigações
 
-| Risco | Mitigação |
-|-------|-----------|
-| Serviços existentes sem `basePrice` | Default `0`, form obriga atualizar |
-| Campo `category` texto → `categoryId` FK | Migration script: match por nome, senão `null` |
-| Import com categorias inexistentes | Criar categoria automaticamente ou rejeitar linha com erro |
+| Risco                                    | Mitigação                                                  |
+| ---------------------------------------- | ---------------------------------------------------------- |
+| Serviços existentes sem `basePrice`      | Default `0`, form obriga atualizar                         |
+| Campo `category` texto → `categoryId` FK | Migration script: match por nome, senão `null`             |
+| Import com categorias inexistentes       | Criar categoria automaticamente ou rejeitar linha com erro |

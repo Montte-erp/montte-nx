@@ -15,6 +15,7 @@
 ### Task 1: Install OXC and create tooling/oxc
 
 **Files:**
+
 - Create: `tooling/oxc/package.json`
 - Create: `tooling/oxc/base.json` — shared oxlint rules
 - Create: `tooling/oxc/core.json` — core boundary enforcement
@@ -63,12 +64,21 @@ Core packages cannot import from `@packages/*` or apps:
 {
    "extends": ["./base.json"],
    "rules": {
-      "no-restricted-imports": ["error", {
-         "patterns": [
-            { "group": ["@packages/*"], "message": "core/ cannot depend on packages/" },
-            { "group": ["@/*"], "message": "core/ cannot depend on app internals" }
-         ]
-      }]
+      "no-restricted-imports": [
+         "error",
+         {
+            "patterns": [
+               {
+                  "group": ["@packages/*"],
+                  "message": "core/ cannot depend on packages/"
+               },
+               {
+                  "group": ["@/*"],
+                  "message": "core/ cannot depend on app internals"
+               }
+            ]
+         }
+      ]
    }
 }
 ```
@@ -81,11 +91,17 @@ Packages cannot import from apps:
 {
    "extends": ["./base.json"],
    "rules": {
-      "no-restricted-imports": ["error", {
-         "patterns": [
-            { "group": ["@/*"], "message": "packages/ cannot depend on app internals" }
-         ]
-      }]
+      "no-restricted-imports": [
+         "error",
+         {
+            "patterns": [
+               {
+                  "group": ["@/*"],
+                  "message": "packages/ cannot depend on app internals"
+               }
+            ]
+         }
+      ]
    }
 }
 ```
@@ -194,6 +210,7 @@ git commit -m "chore: add per-workspace oxlint configs with boundary rules"
 ### Task 3: Update root scripts and remove Biome
 
 **Files:**
+
 - Modify: `package.json` (root) — replace `check`/`format` scripts
 - Delete: `biome.json`
 
@@ -246,6 +263,7 @@ git commit -m "chore: migrate from Biome to OXC (oxlint + oxfmt)"
 ### Task 4: Create new shared TypeScript presets
 
 **Files:**
+
 - Create: `tooling/typescript/core.json`
 - Create: `tooling/typescript/package.json` (replace existing)
 - Create: `tooling/typescript/app.json`
@@ -471,10 +489,10 @@ SDK keeps its own config (publishable, unique needs):
       "verbatimModuleSyntax": true,
       "isolatedModules": true,
       "allowImportingTsExtensions": true,
-      "noUncheckedIndexedAccess": true
+      "noUncheckedIndexedAccess": true,
    },
    "include": ["src"],
-   "exclude": ["node_modules", "dist"]
+   "exclude": ["node_modules", "dist"],
 }
 ```
 
@@ -518,6 +536,7 @@ git commit -m "refactor: migrate all tsconfigs to 3 shared presets (core, packag
 ### Task 6: Create `core/` directory and update workspace config
 
 **Files:**
+
 - Create: `core/` directory
 - Modify: `package.json` (root) — add `core/*` to workspaces
 - Modify: `nx.json` — add `core/*` to release projects
@@ -583,6 +602,7 @@ mv packages/utils core/utils
 **Step 3: Update internal dependencies between core packages**
 
 In each core package's `package.json`, update references to other core packages:
+
 - `@core/database` → depends on `@core/utils`
 - `@core/authentication` → depends on `@core/database`, `@core/environment`, `@core/redis`
 - `@core/environment` → depends on `@core/utils`
@@ -611,14 +631,14 @@ git commit -m "chore: move infrastructure packages to core/"
 
 **Search and replace patterns:**
 
-| Old | New |
-|---|---|
-| `@packages/database` | `@core/database` |
+| Old                        | New                    |
+| -------------------------- | ---------------------- |
+| `@packages/database`       | `@core/database`       |
 | `@packages/authentication` | `@core/authentication` |
-| `@packages/environment` | `@core/environment` |
-| `@packages/redis` | `@core/redis` |
-| `@packages/logging` | `@core/logging` |
-| `@packages/utils` | `@core/utils` |
+| `@packages/environment`    | `@core/environment`    |
+| `@packages/redis`          | `@core/redis`          |
+| `@packages/logging`        | `@core/logging`        |
+| `@packages/utils`          | `@core/utils`          |
 
 **Step 1: Bulk find-and-replace in source files**
 
@@ -636,10 +656,12 @@ find apps packages libraries scripts core -type f \( -name "*.ts" -o -name "*.ts
 **Step 2: Update dependency references in all package.json files**
 
 In every `package.json` under `apps/`, `packages/`, `libraries/`:
+
 - `"@packages/database": "workspace:*"` → `"@core/database": "workspace:*"`
 - Repeat for all 6 packages
 
 Files to update:
+
 - `apps/web/package.json`, `apps/server/package.json`, `apps/worker/package.json`
 - `packages/agents/package.json`, `packages/analytics/package.json`, `packages/arcjet/package.json`
 - `packages/events/package.json`, `packages/feedback/package.json`, `packages/files/package.json`
@@ -698,6 +720,7 @@ git commit -m "docs: update CLAUDE.md for restructured monorepo"
 ### Task 10: Update Drizzle dependencies
 
 **Files:**
+
 - Modify: `package.json` (root) — update catalog versions
 - Modify: `core/database/package.json` — remove `drizzle-zod`
 
@@ -769,6 +792,7 @@ git commit -m "refactor: migrate drizzle-zod imports to drizzle-orm/zod"
 31 schema files with v1-style `relations()` → centralized `defineRelations()`.
 
 **Files:**
+
 - Create: `core/database/src/relations.ts`
 - Modify: 31 schema files — remove `relations()` exports
 - Modify: `core/database/src/schema.ts` — export relations
@@ -830,6 +854,7 @@ export const relations = defineRelations(schema, (r) => ({
 **Step 3: Remove v1 relation exports from schema files**
 
 In each of the 31 schema files:
+
 - Delete the `*Relations` export (e.g., `transactionsRelations`, `transactionTagsRelations`)
 - Remove `relations` from the `drizzle-orm` import
 - Keep table definitions and type exports
@@ -965,15 +990,16 @@ git commit -m "fix: resolve issues from monorepo infrastructure overhaul"
 
 ## Summary
 
-| Phase | Tasks | Impact |
-|-------|-------|--------|
-| **Phase 0: Biome → OXC** | Tasks 1-3 | Replace Biome with oxlint + oxfmt, add boundary enforcement |
-| **Phase 1: TypeScript cleanup** | Tasks 4-5 | Consolidate ~36 tsconfigs into 3 presets, delete tsconfig.lib.json files |
-| **Phase 2: Restructure** | Tasks 6-9 | Move 6 packages to `core/`, update ~349 imports, clean up |
-| **Phase 3: Drizzle v1** | Tasks 10-13 | Upgrade deps, migrate drizzle-zod, rewrite 31 relation files, add schema generation |
-| **Phase 4: Verify** | Task 14 | Full build/test/lint/format cycle |
+| Phase                           | Tasks       | Impact                                                                              |
+| ------------------------------- | ----------- | ----------------------------------------------------------------------------------- |
+| **Phase 0: Biome → OXC**        | Tasks 1-3   | Replace Biome with oxlint + oxfmt, add boundary enforcement                         |
+| **Phase 1: TypeScript cleanup** | Tasks 4-5   | Consolidate ~36 tsconfigs into 3 presets, delete tsconfig.lib.json files            |
+| **Phase 2: Restructure**        | Tasks 6-9   | Move 6 packages to `core/`, update ~349 imports, clean up                           |
+| **Phase 3: Drizzle v1**         | Tasks 10-13 | Upgrade deps, migrate drizzle-zod, rewrite 31 relation files, add schema generation |
+| **Phase 4: Verify**             | Task 14     | Full build/test/lint/format cycle                                                   |
 
 ### Risk notes
+
 - **Relations v2 migration (Task 12)** is the highest-risk task — every `.query.*` call depends on correct relations. Test thoroughly.
 - **Better Auth schema (auth.ts)** has relations managed by Better Auth — verify these still work after v2 migration or exclude them from `defineRelations()`.
 - **Import renames (Task 8)** are mechanical but wide-reaching — typecheck catches misses.

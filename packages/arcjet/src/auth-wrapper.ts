@@ -1,4 +1,4 @@
-import type { AuthInstance } from "@packages/authentication/server";
+import type { AuthInstance } from "@core/authentication/server";
 
 export async function wrapAuthHandler(
    authInstance: AuthInstance,

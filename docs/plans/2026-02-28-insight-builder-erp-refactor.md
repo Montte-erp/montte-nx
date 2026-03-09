@@ -15,53 +15,58 @@ Inventory tables do not exist yet — the design is finance-first but structural
 
 Three explicit types, each mapped to a specific chart:
 
-| Type | Chart | Question |
-|------|-------|----------|
-| `kpi` | Number card | "What is my total X right now?" |
-| `time_series` | Line or Bar | "How is X changing over time?" |
-| `breakdown` | Bar | "Where is X coming from / going to?" |
+| Type          | Chart       | Question                             |
+| ------------- | ----------- | ------------------------------------ |
+| `kpi`         | Number card | "What is my total X right now?"      |
+| `time_series` | Line or Bar | "How is X changing over time?"       |
+| `breakdown`   | Bar         | "Where is X coming from / going to?" |
 
 ### Config Schema
 
 ```typescript
 type Measure = {
-  aggregation: "sum" | "count" | "avg"
-  // sum/avg operate on amount; count counts transactions
-}
+   aggregation: "sum" | "count" | "avg";
+   // sum/avg operate on amount; count counts transactions
+};
 
 type TransactionFilters = {
-  dateRange: DateRange
-  transactionType?: ("income" | "expense" | "transfer")[]
-  bankAccountIds?: string[]
-  categoryIds?: string[]
-  tagIds?: string[]
-}
+   dateRange: DateRange;
+   transactionType?: ("income" | "expense" | "transfer")[];
+   bankAccountIds?: string[];
+   categoryIds?: string[];
+   tagIds?: string[];
+};
 
 type KpiConfig = {
-  type: "kpi"
-  measure: Measure
-  filters: TransactionFilters
-  compare?: boolean
-}
+   type: "kpi";
+   measure: Measure;
+   filters: TransactionFilters;
+   compare?: boolean;
+};
 
 type TimeSeriesConfig = {
-  type: "time_series"
-  measure: Measure
-  filters: TransactionFilters
-  interval: "day" | "week" | "month"
-  chartType: "line" | "bar"
-  compare?: boolean
-}
+   type: "time_series";
+   measure: Measure;
+   filters: TransactionFilters;
+   interval: "day" | "week" | "month";
+   chartType: "line" | "bar";
+   compare?: boolean;
+};
 
 type BreakdownConfig = {
-  type: "breakdown"
-  measure: Measure
-  filters: TransactionFilters
-  groupBy: "category" | "bank_account" | "transaction_type" | "subcategory" | "tag"
-  limit?: number
-}
+   type: "breakdown";
+   measure: Measure;
+   filters: TransactionFilters;
+   groupBy:
+      | "category"
+      | "bank_account"
+      | "transaction_type"
+      | "subcategory"
+      | "tag";
+   limit?: number;
+};
 
-type InsightConfig = KpiConfig | TimeSeriesConfig | BreakdownConfig
+type InsightConfig = KpiConfig | TimeSeriesConfig | BreakdownConfig;
 ```
 
 The `insights` database table shape is unchanged — only the JSONB `config` content and the `type` enum values change (`kpi` / `time_series` / `breakdown`).
@@ -70,19 +75,19 @@ The `insights` database table shape is unchanged — only the JSONB `config` con
 
 ```typescript
 type KpiResult = {
-  value: number
-  comparison?: { value: number; percentageChange: number }
-}
+   value: number;
+   comparison?: { value: number; percentageChange: number };
+};
 
 type TimeSeriesResult = {
-  data: Array<{ date: string; value: number }>
-  comparison?: { data: Array<{ date: string; value: number }> }
-}
+   data: Array<{ date: string; value: number }>;
+   comparison?: { data: Array<{ date: string; value: number }> };
+};
 
 type BreakdownResult = {
-  data: Array<{ label: string; value: number; color?: string }>
-  total: number
-}
+   data: Array<{ label: string; value: number; color?: string }>;
+   total: number;
+};
 ```
 
 ### UI Components
@@ -96,6 +101,7 @@ type BreakdownResult = {
 - `BreakdownQueryBuilder` — measure selector + group by selector + limit (Top 5 / Top 10 / All)
 
 **Shared filter bar (all types):**
+
 - Date range picker
 - Transaction type multi-select (Income / Expense / Transfer)
 - Bank account multi-select
@@ -121,17 +127,18 @@ Each module runs a single Drizzle query on `transactions`, filtering by `teamId`
 
 ### Default Insights
 
-| Name | Type | Measure | Filters | Extra |
-|------|------|---------|---------|-------|
-| Receita este mês | kpi | sum(amount) | income, this month | compare=true |
-| Despesas este mês | kpi | sum(amount) | expense, this month | compare=true |
-| Saldo líquido | kpi | sum(amount) | this month | compare=true |
-| Receita vs Despesas | time_series | sum(amount) | this month | bar, monthly, income+expense |
-| Gastos por categoria | breakdown | sum(amount) | expense, 30d | groupBy=category, top 10 |
+| Name                 | Type        | Measure     | Filters             | Extra                        |
+| -------------------- | ----------- | ----------- | ------------------- | ---------------------------- |
+| Receita este mês     | kpi         | sum(amount) | income, this month  | compare=true                 |
+| Despesas este mês    | kpi         | sum(amount) | expense, this month | compare=true                 |
+| Saldo líquido        | kpi         | sum(amount) | this month          | compare=true                 |
+| Receita vs Despesas  | time_series | sum(amount) | this month          | bar, monthly, income+expense |
+| Gastos por categoria | breakdown   | sum(amount) | expense, 30d        | groupBy=category, top 10     |
 
 ### Migration
 
 Existing insights use event-based configs that will break. Migration steps:
+
 1. Delete all existing insights in DB
 2. Re-seed with new default insights via seed script
 

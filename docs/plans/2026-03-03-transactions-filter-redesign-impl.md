@@ -5,6 +5,7 @@
 **Goal:** Replace the spread-out transactions FilterBar with a compact `[Search] [Date] [Type Select] [Filters Popover] [Clear]` pattern backed by `@f-o-t/condition-evaluator` ConditionGroup, with server-side translation to Drizzle WHERE clauses (standard) or post-filter evaluation (advanced/weighted).
 
 **Architecture:**
+
 - New `transaction-filter-popover.tsx`: condition builder using `ConditionGroup` from `@f-o-t/condition-evaluator`, supports standard AND/OR mode and advanced weighted mode
 - New `transaction-filter-bar.tsx`: slim bar that composes search + date + type select + filter popover, extracted from `transactions.tsx`
 - Backend: `getAll` router accepts optional `conditionGroup`, repository translates to SQL (binary) or post-filters via `evaluateConditionGroup` (weighted)
@@ -33,6 +34,7 @@ Wave 3 (after Wave 2):
 ## Task 1: Create `transaction-filter-popover.tsx`
 
 **Files:**
+
 - Create: `apps/web/src/features/transactions/ui/transaction-filter-popover.tsx`
 
 This is a new condition builder popover for the transactions domain.
@@ -40,18 +42,25 @@ This is a new condition builder popover for the transactions domain.
 ### Key Types
 
 ```typescript
-import type { ConditionGroup, StringCondition, NumberCondition } from "@f-o-t/condition-evaluator";
+import type {
+   ConditionGroup,
+   StringCondition,
+   NumberCondition,
+} from "@f-o-t/condition-evaluator";
 ```
 
 The component exports:
 
 ```typescript
 interface TransactionFilterPopoverProps {
-  value: ConditionGroup | undefined;
-  onChange: (group: ConditionGroup | undefined) => void;
+   value: ConditionGroup | undefined;
+   onChange: (group: ConditionGroup | undefined) => void;
 }
 
-export function TransactionFilterPopover({ value, onChange }: TransactionFilterPopoverProps)
+export function TransactionFilterPopover({
+   value,
+   onChange,
+}: TransactionFilterPopoverProps);
 ```
 
 ### Property Definitions
@@ -59,20 +68,35 @@ export function TransactionFilterPopover({ value, onChange }: TransactionFilterP
 ```typescript
 // Replace FILTER_PROPERTIES from dashboard-filter-popover.tsx with ERP-domain properties:
 const FILTER_PROPERTIES: PropertyDef[] = [
-  { field: "categoryId",    label: "Categoria",    type: "select", selectType: "category"    },
-  { field: "bankAccountId", label: "Conta",        type: "select", selectType: "bankAccount" },
-  { field: "creditCardId",  label: "Cartão",       type: "select", selectType: "creditCard"  },
-  { field: "amount",        label: "Valor",        type: "number"                            },
-  { field: "name",          label: "Nome",         type: "string"                            },
+   {
+      field: "categoryId",
+      label: "Categoria",
+      type: "select",
+      selectType: "category",
+   },
+   {
+      field: "bankAccountId",
+      label: "Conta",
+      type: "select",
+      selectType: "bankAccount",
+   },
+   {
+      field: "creditCardId",
+      label: "Cartão",
+      type: "select",
+      selectType: "creditCard",
+   },
+   { field: "amount", label: "Valor", type: "number" },
+   { field: "name", label: "Nome", type: "string" },
 ];
 
 type PropertyType = "string" | "number" | "select";
 
 type PropertyDef = {
-  field: string;
-  label: string;
-  type: PropertyType;
-  selectType?: "category" | "bankAccount" | "creditCard";
+   field: string;
+   label: string;
+   type: PropertyType;
+   selectType?: "category" | "bankAccount" | "creditCard";
 };
 ```
 
@@ -80,30 +104,30 @@ type PropertyDef = {
 
 ```typescript
 const STRING_OPERATORS = [
-  { value: "contains",     label: "contém"           },
-  { value: "not_contains", label: "não contém"       },
-  { value: "eq",           label: "é igual a"        },
-  { value: "neq",          label: "não é igual a"    },
-  { value: "starts_with",  label: "começa com"       },
-  { value: "ends_with",    label: "termina com"      },
-  { value: "is_empty",     label: "está vazio"       },
-  { value: "is_not_empty", label: "não está vazio"   },
+   { value: "contains", label: "contém" },
+   { value: "not_contains", label: "não contém" },
+   { value: "eq", label: "é igual a" },
+   { value: "neq", label: "não é igual a" },
+   { value: "starts_with", label: "começa com" },
+   { value: "ends_with", label: "termina com" },
+   { value: "is_empty", label: "está vazio" },
+   { value: "is_not_empty", label: "não está vazio" },
 ];
 
 const SELECT_OPERATORS = [
-  { value: "eq",           label: "é igual a"        },
-  { value: "neq",          label: "não é igual a"    },
-  { value: "is_empty",     label: "está vazio"       },
-  { value: "is_not_empty", label: "não está vazio"   },
+   { value: "eq", label: "é igual a" },
+   { value: "neq", label: "não é igual a" },
+   { value: "is_empty", label: "está vazio" },
+   { value: "is_not_empty", label: "não está vazio" },
 ];
 
 const NUMBER_OPERATORS = [
-  { value: "eq",  label: "=" },
-  { value: "neq", label: "≠" },
-  { value: "gt",  label: ">" },
-  { value: "gte", label: "≥" },
-  { value: "lt",  label: "<" },
-  { value: "lte", label: "≤" },
+   { value: "eq", label: "=" },
+   { value: "neq", label: "≠" },
+   { value: "gt", label: ">" },
+   { value: "gte", label: "≥" },
+   { value: "lt", label: "<" },
+   { value: "lte", label: "≤" },
 ];
 ```
 
@@ -113,11 +137,11 @@ const NUMBER_OPERATORS = [
 const NO_VALUE_OPERATORS = new Set(["is_empty", "is_not_empty"]);
 
 interface FilterRow {
-  id: string;       // stable row key
-  field: string;    // e.g. "categoryId"
-  operator: string; // e.g. "eq"
-  value: string;    // string representation of the value (id for selects, number as string)
-  weight: number;   // 0-100, used in advanced mode, default: 50
+   id: string; // stable row key
+   field: string; // e.g. "categoryId"
+   operator: string; // e.g. "eq"
+   value: string; // string representation of the value (id for selects, number as string)
+   weight: number; // 0-100, used in advanced mode, default: 50
 }
 ```
 
@@ -135,19 +159,21 @@ const [threshold, setThreshold] = useState(70); // 0-100
 
 ```typescript
 const handleOpenChange = (next: boolean) => {
-  if (next && value) {
-    // hydrate rows from existing ConditionGroup
-    setRows(value.conditions.map(conditionToRow));
-    setGroupOperator(value.operator);
-    setAdvanced(value.scoringMode === "weighted");
-    setThreshold(value.threshold !== undefined ? Math.round(value.threshold * 100) : 70);
-  } else if (next) {
-    setRows([]);
-    setGroupOperator("AND");
-    setAdvanced(false);
-    setThreshold(70);
-  }
-  setOpen(next);
+   if (next && value) {
+      // hydrate rows from existing ConditionGroup
+      setRows(value.conditions.map(conditionToRow));
+      setGroupOperator(value.operator);
+      setAdvanced(value.scoringMode === "weighted");
+      setThreshold(
+         value.threshold !== undefined ? Math.round(value.threshold * 100) : 70,
+      );
+   } else if (next) {
+      setRows([]);
+      setGroupOperator("AND");
+      setAdvanced(false);
+      setThreshold(70);
+   }
+   setOpen(next);
 };
 ```
 
@@ -155,36 +181,46 @@ const handleOpenChange = (next: boolean) => {
 
 ```typescript
 function conditionToRow(c: Condition): FilterRow {
-  const rawValue = "value" in c && c.value !== undefined && c.value !== null
-    ? String(c.value)
-    : "";
-  const weight = c.options?.weight !== undefined ? Math.round(c.options.weight * 100) : 50;
-  return { id: c.id, field: c.field, operator: c.operator as string, value: rawValue, weight };
+   const rawValue =
+      "value" in c && c.value !== undefined && c.value !== null
+         ? String(c.value)
+         : "";
+   const weight =
+      c.options?.weight !== undefined ? Math.round(c.options.weight * 100) : 50;
+   return {
+      id: c.id,
+      field: c.field,
+      operator: c.operator as string,
+      value: rawValue,
+      weight,
+   };
 }
 
 function rowToCondition(row: FilterRow, advanced: boolean): Condition {
-  const def = FILTER_PROPERTIES.find(p => p.field === row.field) ?? { type: "string" };
-  const options = advanced ? { weight: row.weight / 100 } : undefined;
-  const noValue = NO_VALUE_OPERATORS.has(row.operator);
+   const def = FILTER_PROPERTIES.find((p) => p.field === row.field) ?? {
+      type: "string",
+   };
+   const options = advanced ? { weight: row.weight / 100 } : undefined;
+   const noValue = NO_VALUE_OPERATORS.has(row.operator);
 
-  if (def.type === "number") {
-    return {
+   if (def.type === "number") {
+      return {
+         id: row.id,
+         type: "number",
+         field: row.field,
+         operator: row.operator as z.infer<typeof NumberCondition>["operator"],
+         value: noValue || row.value === "" ? undefined : Number(row.value),
+         options,
+      };
+   }
+   return {
       id: row.id,
-      type: "number",
+      type: "string",
       field: row.field,
-      operator: row.operator as z.infer<typeof NumberCondition>["operator"],
-      value: noValue || row.value === "" ? undefined : Number(row.value),
+      operator: row.operator as z.infer<typeof StringCondition>["operator"],
+      value: noValue ? undefined : row.value || undefined,
       options,
-    };
-  }
-  return {
-    id: row.id,
-    type: "string",
-    field: row.field,
-    operator: row.operator as z.infer<typeof StringCondition>["operator"],
-    value: noValue ? undefined : (row.value || undefined),
-    options,
-  };
+   };
 }
 ```
 
@@ -192,19 +228,21 @@ function rowToCondition(row: FilterRow, advanced: boolean): Condition {
 
 ```typescript
 const handleApply = () => {
-  if (rows.length === 0) {
-    onChange(undefined);
-    setOpen(false);
-    return;
-  }
-  const group: ConditionGroup = {
-    id: "transaction-filters",
-    operator: groupOperator,
-    ...(advanced ? { scoringMode: "weighted", threshold: threshold / 100 } : { scoringMode: "binary" }),
-    conditions: rows.map(r => rowToCondition(r, advanced)),
-  };
-  onChange(group);
-  setOpen(false);
+   if (rows.length === 0) {
+      onChange(undefined);
+      setOpen(false);
+      return;
+   }
+   const group: ConditionGroup = {
+      id: "transaction-filters",
+      operator: groupOperator,
+      ...(advanced
+         ? { scoringMode: "weighted", threshold: threshold / 100 }
+         : { scoringMode: "binary" }),
+      conditions: rows.map((r) => rowToCondition(r, advanced)),
+   };
+   onChange(group);
+   setOpen(false);
 };
 ```
 
@@ -316,6 +354,7 @@ const activeCount = value?.conditions.length ?? 0;
 Write the complete file at `apps/web/src/features/transactions/ui/transaction-filter-popover.tsx` following the structure above.
 
 Important notes:
+
 - Import `Slider` from `@packages/ui/components/slider`
 - Import `Switch` from `@packages/ui/components/switch`
 - Import `ToggleGroup`, `ToggleGroupItem` from `@packages/ui/components/toggle-group`
@@ -339,6 +378,7 @@ Run: `bun run typecheck 2>&1 | grep transaction-filter-popover`
 ## Task 2: Update `listTransactions` repository
 
 **Files:**
+
 - Modify: `packages/database/src/repositories/transactions-repository.ts`
 
 ### Step 1: Add `conditionGroup` to `ListTransactionsFilter`
@@ -348,8 +388,8 @@ import type { ConditionGroup } from "@f-o-t/condition-evaluator";
 import { evaluateConditionGroup } from "@f-o-t/condition-evaluator";
 
 export interface ListTransactionsFilter {
-  // ... existing fields unchanged ...
-  conditionGroup?: ConditionGroup;
+   // ... existing fields unchanged ...
+   conditionGroup?: ConditionGroup;
 }
 ```
 
@@ -359,36 +399,62 @@ Add this function after the existing imports, before `createTransaction`:
 
 ```typescript
 import {
-  and, between, count, desc, eq, getTableColumns, gt, gte, ilike,
-  inArray, isNotNull, isNull, lte, lt, ne, or,
+   and,
+   between,
+   count,
+   desc,
+   eq,
+   getTableColumns,
+   gt,
+   gte,
+   ilike,
+   inArray,
+   isNotNull,
+   isNull,
+   lte,
+   lt,
+   ne,
+   or,
 } from "drizzle-orm";
 
 // Maps a single Condition to a Drizzle SQL expression.
 // Returns null if the condition cannot be translated (will be post-filtered).
 function conditionToSql(condition: Condition) {
-  const col = (transactions as Record<string, unknown>)[condition.field];
-  if (!col) return null; // unknown field — skip in SQL, handle in post-filter
+   const col = (transactions as Record<string, unknown>)[condition.field];
+   if (!col) return null; // unknown field — skip in SQL, handle in post-filter
 
-  const { operator } = condition;
-  const value = "value" in condition ? condition.value : undefined;
+   const { operator } = condition;
+   const value = "value" in condition ? condition.value : undefined;
 
-  switch (operator) {
-    case "eq":           return eq(col as AnyColumn, value as string);
-    case "neq":          return ne(col as AnyColumn, value as string);
-    case "gt":           return gt(col as AnyColumn, value as number);
-    case "gte":          return gte(col as AnyColumn, value as number);
-    case "lt":           return lt(col as AnyColumn, value as number);
-    case "lte":          return lte(col as AnyColumn, value as number);
-    case "is_empty":     return isNull(col as AnyColumn);
-    case "is_not_empty": return isNotNull(col as AnyColumn);
-    case "contains":     return ilike(col as AnyColumn, `%${value}%`);
-    case "not_contains":
-      // negate ilike — drizzle has no built-in, use not(ilike(...))
-      return sql`${col} NOT ILIKE ${`%${value}%`}`;
-    case "starts_with":  return ilike(col as AnyColumn, `${value}%`);
-    case "ends_with":    return ilike(col as AnyColumn, `%${value}`);
-    default: return null;
-  }
+   switch (operator) {
+      case "eq":
+         return eq(col as AnyColumn, value as string);
+      case "neq":
+         return ne(col as AnyColumn, value as string);
+      case "gt":
+         return gt(col as AnyColumn, value as number);
+      case "gte":
+         return gte(col as AnyColumn, value as number);
+      case "lt":
+         return lt(col as AnyColumn, value as number);
+      case "lte":
+         return lte(col as AnyColumn, value as number);
+      case "is_empty":
+         return isNull(col as AnyColumn);
+      case "is_not_empty":
+         return isNotNull(col as AnyColumn);
+      case "contains":
+         return ilike(col as AnyColumn, `%${value}%`);
+      case "not_contains":
+         // negate ilike — drizzle has no built-in, use not(ilike(...))
+         return sql`${col} NOT ILIKE ${`%${value}%`}`;
+      case "starts_with":
+         return ilike(col as AnyColumn, `${value}%`);
+      case "ends_with":
+         return ilike(col as AnyColumn, `%${value}`);
+      default:
+         return null;
+   }
 }
 ```
 
@@ -402,18 +468,17 @@ In `listTransactions`, after the existing filter conditions are built and before
 
 ```typescript
 if (filter.conditionGroup && filter.conditionGroup.scoringMode !== "weighted") {
-  const group = filter.conditionGroup;
-  const sqlExprs = group.conditions
-    .filter(c => !("conditions" in c)) // only Condition, not nested ConditionGroup
-    .map(c => conditionToSql(c as Condition))
-    .filter(Boolean);
+   const group = filter.conditionGroup;
+   const sqlExprs = group.conditions
+      .filter((c) => !("conditions" in c)) // only Condition, not nested ConditionGroup
+      .map((c) => conditionToSql(c as Condition))
+      .filter(Boolean);
 
-  if (sqlExprs.length > 0) {
-    const combined = group.operator === "AND"
-      ? and(...sqlExprs)
-      : or(...sqlExprs);
-    if (combined) conditions.push(combined);
-  }
+   if (sqlExprs.length > 0) {
+      const combined =
+         group.operator === "AND" ? and(...sqlExprs) : or(...sqlExprs);
+      if (combined) conditions.push(combined);
+   }
 }
 ```
 
@@ -425,31 +490,35 @@ const isWeighted = filter.conditionGroup?.scoringMode === "weighted";
 // ... build whereClause from conditions (without conditionGroup) ...
 
 if (isWeighted && filter.conditionGroup) {
-  // Fetch ALL matching rows (ignore pagination), post-filter, then paginate in memory
-  const allRows = await db
-    .select({ ...getTableColumns(transactions), categoryName: categories.name, cardName: creditCards.name })
-    .from(transactions)
-    .leftJoin(categories, eq(transactions.categoryId, categories.id))
-    .leftJoin(creditCards, eq(transactions.creditCardId, creditCards.id))
-    .where(whereClause)
-    .orderBy(desc(transactions.date));
+   // Fetch ALL matching rows (ignore pagination), post-filter, then paginate in memory
+   const allRows = await db
+      .select({
+         ...getTableColumns(transactions),
+         categoryName: categories.name,
+         cardName: creditCards.name,
+      })
+      .from(transactions)
+      .leftJoin(categories, eq(transactions.categoryId, categories.id))
+      .leftJoin(creditCards, eq(transactions.creditCardId, creditCards.id))
+      .where(whereClause)
+      .orderBy(desc(transactions.date));
 
-  const filtered = allRows.filter(row => {
-    const result = evaluateConditionGroup(filter.conditionGroup!, {
-      data: {
-        categoryId: row.categoryId ?? null,
-        bankAccountId: row.bankAccountId,
-        creditCardId: row.creditCardId ?? null,
-        amount: Number(row.amount),
-        name: row.name ?? row.description ?? "",
-      },
-    });
-    return result.passed;
-  });
+   const filtered = allRows.filter((row) => {
+      const result = evaluateConditionGroup(filter.conditionGroup!, {
+         data: {
+            categoryId: row.categoryId ?? null,
+            bankAccountId: row.bankAccountId,
+            creditCardId: row.creditCardId ?? null,
+            amount: Number(row.amount),
+            name: row.name ?? row.description ?? "",
+         },
+      });
+      return result.passed;
+   });
 
-  const total = filtered.length;
-  const offset = (page - 1) * pageSize;
-  return { data: filtered.slice(offset, offset + pageSize), total };
+   const total = filtered.length;
+   const offset = (page - 1) * pageSize;
+   return { data: filtered.slice(offset, offset + pageSize), total };
 }
 ```
 
@@ -462,6 +531,7 @@ Run: `bun run typecheck 2>&1 | grep transactions-repository`
 ## Task 3: Update `getAll` router input schema
 
 **Files:**
+
 - Modify: `apps/web/src/integrations/orpc/router/transactions.ts`
 
 ### Step 1: Add conditionGroup to input schema
@@ -493,6 +563,7 @@ Run: `bun run typecheck 2>&1 | grep "router/transactions"`
 ## Task 4: Create `transaction-filter-bar.tsx`
 
 **Files:**
+
 - Create: `apps/web/src/features/transactions/ui/transaction-filter-bar.tsx`
 
 This component extracts the filter bar from `transactions.tsx` and replaces category/account/card comboboxes with `TransactionFilterPopover`.
@@ -505,28 +576,31 @@ import type { ConditionGroup } from "@f-o-t/condition-evaluator";
 type TransactionType = "income" | "expense" | "transfer";
 
 export interface TransactionFilters {
-  type?: TransactionType;
-  dateFrom?: string;
-  dateTo?: string;
-  datePreset?: string;
-  search: string;
-  conditionGroup?: ConditionGroup;
-  page: number;
-  pageSize: number;
+   type?: TransactionType;
+   dateFrom?: string;
+   dateTo?: string;
+   datePreset?: string;
+   search: string;
+   conditionGroup?: ConditionGroup;
+   page: number;
+   pageSize: number;
 }
 
 export const DEFAULT_FILTERS: TransactionFilters = {
-  search: "",
-  page: 1,
-  pageSize: 20,
+   search: "",
+   page: 1,
+   pageSize: 20,
 };
 
 export interface TransactionFilterBarProps {
-  filters: TransactionFilters;
-  onFiltersChange: (filters: TransactionFilters) => void;
+   filters: TransactionFilters;
+   onFiltersChange: (filters: TransactionFilters) => void;
 }
 
-export function TransactionFilterBar({ filters, onFiltersChange }: TransactionFilterBarProps)
+export function TransactionFilterBar({
+   filters,
+   onFiltersChange,
+}: TransactionFilterBarProps);
 ```
 
 ### Bar Layout
@@ -576,18 +650,18 @@ export function TransactionFilterBar({ filters, onFiltersChange }: TransactionFi
 
 ```typescript
 const hasActiveFilters =
-  filters.type ||
-  hasDateFilter ||
-  filters.search.length > 0 ||
-  (filters.conditionGroup?.conditions.length ?? 0) > 0;
+   filters.type ||
+   hasDateFilter ||
+   filters.search.length > 0 ||
+   (filters.conditionGroup?.conditions.length ?? 0) > 0;
 ```
 
 ### handleClear
 
 ```typescript
 const handleClear = () => {
-  setSearchInput("");
-  onFiltersChange(DEFAULT_FILTERS);
+   setSearchInput("");
+   onFiltersChange(DEFAULT_FILTERS);
 };
 ```
 
@@ -604,11 +678,13 @@ Run: `bun run typecheck 2>&1 | grep transaction-filter-bar`
 ## Task 5: Update `transactions.tsx` route
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/transactions.tsx`
 
 ### Step 1: Remove inline types and components that are now in separate files
 
 Delete from `transactions.tsx`:
+
 - `type TransactionType`
 - `interface TransactionFilters`
 - `const DEFAULT_FILTERS`
@@ -623,9 +699,9 @@ Delete from `transactions.tsx`:
 
 ```typescript
 import {
-  TransactionFilterBar,
-  type TransactionFilters,
-  DEFAULT_FILTERS,
+   TransactionFilterBar,
+   type TransactionFilters,
+   DEFAULT_FILTERS,
 } from "@/features/transactions/ui/transaction-filter-bar";
 ```
 
@@ -636,16 +712,16 @@ Remove `categoryId`, `uncategorized`, `bankAccountId`, `creditCardId` from the q
 ```typescript
 // In TransactionsList useSuspenseQuery:
 orpc.transactions.getAll.queryOptions({
-  input: {
-    type: filters.type,
-    dateFrom: filters.dateFrom,
-    dateTo: filters.dateTo,
-    search: filters.search || undefined,
-    conditionGroup: filters.conditionGroup,
-    page: filters.page,
-    pageSize: filters.pageSize,
-  },
-})
+   input: {
+      type: filters.type,
+      dateFrom: filters.dateFrom,
+      dateTo: filters.dateTo,
+      search: filters.search || undefined,
+      conditionGroup: filters.conditionGroup,
+      page: filters.page,
+      pageSize: filters.pageSize,
+   },
+});
 ```
 
 ### Step 4: Update empty state condition
@@ -653,10 +729,10 @@ orpc.transactions.getAll.queryOptions({
 ```typescript
 // The empty state "no filters applied" vs "filters applied" check:
 const hasFilters =
-  filters.search ||
-  filters.type ||
-  filters.dateFrom ||
-  (filters.conditionGroup?.conditions.length ?? 0) > 0;
+   filters.search ||
+   filters.type ||
+   filters.dateFrom ||
+   (filters.conditionGroup?.conditions.length ?? 0) > 0;
 ```
 
 ### Step 5: Replace `<FilterBar>` with `<TransactionFilterBar>`

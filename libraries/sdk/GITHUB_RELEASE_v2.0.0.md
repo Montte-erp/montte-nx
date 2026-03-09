@@ -5,20 +5,22 @@ We're thrilled to announce **Contentta SDK v2.0.0**, a complete rewrite built on
 ## 🚀 What's New
 
 ### Type-Safe oRPC Architecture
+
 - **Full TypeScript support** with end-to-end type inference
 - **Modular API** with organized namespaces (`content`, `events`, `forms`)
 - **Automatic validation** using Zod schemas
 - **Structured error handling** with detailed error types
 
 ### Unified Browser SDK
+
 New unified browser SDK consolidates event tracking and forms:
 
 ```typescript
 import { createBrowserSdk } from "@contentta/sdk/browser";
 
 const sdk = createBrowserSdk({
-  apiKey: "your-api-key",
-  organizationId: "org-uuid",
+   apiKey: "your-api-key",
+   organizationId: "org-uuid",
 });
 
 sdk.tracker.track("page_view", { page: "/blog" });
@@ -26,6 +28,7 @@ await sdk.forms.embedForm("form-id", "container-id");
 ```
 
 ### Server-Side Event Tracking
+
 Track events from your backend:
 
 ```typescript
@@ -38,12 +41,14 @@ await sdk.events.batch({ events: [...] }); // Batch for efficiency
 ```
 
 ### Enhanced Forms Integration
+
 ```typescript
 const form = await sdk.forms.get({ formId: "form-uuid" });
 await sdk.forms.submit({ formId: "form-uuid", data: {...} });
 ```
 
 ### Analytics Integration
+
 ```typescript
 const analytics = await sdk.content.getAnalytics({ contentId: "uuid" });
 ```
@@ -54,15 +59,16 @@ This is a **major version** with significant breaking changes. All users must mi
 
 ### Quick Migration
 
-| v1.x | v2.0 |
-|------|------|
-| `@contentagen/sdk` | `@contentta/sdk` |
-| `new ContentaGenSDK()` | `createSdk()` |
-| `listContentByAgent()` | `sdk.content.list()` |
-| `getContentBySlug()` | `sdk.content.get()` |
+| v1.x                      | v2.0                     |
+| ------------------------- | ------------------------ |
+| `@contentagen/sdk`        | `@contentta/sdk`         |
+| `new ContentaGenSDK()`    | `createSdk()`            |
+| `listContentByAgent()`    | `sdk.content.list()`     |
+| `getContentBySlug()`      | `sdk.content.get()`      |
 | `@contentagen/sdk/events` | `@contentta/sdk/browser` |
 
 **See comprehensive migration guides:**
+
 - [MIGRATION.md](./MIGRATION.md) - Step-by-step guide
 - [BREAKING_CHANGES.md](./BREAKING_CHANGES.md) - Complete list of changes
 
@@ -87,6 +93,7 @@ npm install @contentta/sdk
 ## 🎯 New Features Summary
 
 ### Content Methods
+
 - `sdk.content.list()` - List content with pagination
 - `sdk.content.get()` - Get content by slug
 - `sdk.content.getRelatedSlugs()` - Get related content
@@ -95,14 +102,17 @@ npm install @contentta/sdk
 - `sdk.content.getAnalytics()` - Get analytics (NEW)
 
 ### Event Methods (NEW)
+
 - `sdk.events.track()` - Track single event
 - `sdk.events.batch()` - Batch track events
 
 ### Forms Methods (NEW)
+
 - `sdk.forms.get()` - Get form definition
 - `sdk.forms.submit()` - Submit form data
 
 ### Browser SDK (NEW)
+
 - `createBrowserSdk()` - Unified browser SDK
 - `sdk.tracker.*` - Event tracking
 - `sdk.forms.*` - Forms integration
@@ -118,22 +128,22 @@ const sdk = createSdk({ apiKey: process.env.CONTENTTA_API_KEY! });
 
 // List content
 const { posts, total } = await sdk.content.list({
-  agentId: "agent-uuid",
-  status: "approved",
-  limit: "12",
-  page: "1",
+   agentId: "agent-uuid",
+   status: "approved",
+   limit: "12",
+   page: "1",
 });
 
 // Get content details
 const content = await sdk.content.get({
-  agentId: "agent-uuid",
-  slug: "my-post",
+   agentId: "agent-uuid",
+   slug: "my-post",
 });
 
 // Track events
 await sdk.events.track({
-  eventName: "content.published",
-  properties: { contentId: content.id },
+   eventName: "content.published",
+   properties: { contentId: content.id },
 });
 ```
 
@@ -143,8 +153,8 @@ await sdk.events.track({
 import { createBrowserSdk } from "@contentta/sdk/browser";
 
 const sdk = createBrowserSdk({
-  apiKey: "your-api-key",
-  organizationId: "org-uuid",
+   apiKey: "your-api-key",
+   organizationId: "org-uuid",
 });
 
 // Auto-track page views with scroll depth, time on page, CTA clicks
@@ -155,7 +165,7 @@ await sdk.forms.embedForm("form-uuid", "form-container-id");
 
 // Clean up
 window.addEventListener("beforeunload", () => {
-  sdk.tracker.destroy();
+   sdk.tracker.destroy();
 });
 ```
 
@@ -172,6 +182,7 @@ window.addEventListener("beforeunload", () => {
 - **v2.x support**: All new features and improvements
 
 **Need help?**
+
 1. Read the [MIGRATION.md](./MIGRATION.md) guide
 2. Check [examples](./README.md#complete-examples)
 3. Open an [issue](https://github.com/F-O-T/contentta-nx/issues)

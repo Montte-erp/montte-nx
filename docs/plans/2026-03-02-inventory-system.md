@@ -24,12 +24,14 @@
 ## Task 1: Install `@f-o-t/uom`
 
 **Files:**
+
 - Modify: `package.json` (root) — fot catalog
 - Modify: `apps/web/package.json` — dependencies
 
 **Step 1: Add to root catalog**
 
 In `package.json`, under `"catalog": { "fot": { ... } }`, add:
+
 ```json
 "@f-o-t/uom": "1.0.6"
 ```
@@ -37,11 +39,13 @@ In `package.json`, under `"catalog": { "fot": { ... } }`, add:
 **Step 2: Add to web app**
 
 In `apps/web/package.json`, under `"dependencies"`, add:
+
 ```json
 "@f-o-t/uom": "catalog:fot"
 ```
 
 **Step 3: Install**
+
 ```bash
 bun install
 ```
@@ -49,6 +53,7 @@ bun install
 Expected: no errors, `@f-o-t/uom` resolvable from `apps/web`.
 
 **Step 4: Commit**
+
 ```bash
 git add package.json apps/web/package.json bun.lock
 git commit -m "chore: add @f-o-t/uom to web app"
@@ -59,6 +64,7 @@ git commit -m "chore: add @f-o-t/uom to web app"
 ## Task 2: DB Schema
 
 **Files:**
+
 - Create: `packages/database/src/schemas/inventory.ts`
 - Modify: `packages/database/src/schema.ts`
 
@@ -92,16 +98,20 @@ export const inventoryMovementTypeEnum = pgEnum("inventory_movement_type", [
 export const inventoryProducts = pgTable(
    "inventory_products",
    {
-      id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
       teamId: uuid("team_id").notNull(),
       name: text("name").notNull(),
       description: text("description"),
-      baseUnit: text("base_unit").notNull(),       // "unit", "g", "mL"
+      baseUnit: text("base_unit").notNull(), // "unit", "g", "mL"
       purchaseUnit: text("purchase_unit").notNull(), // "box", "kg", "L"
       purchaseUnitFactor: numeric("purchase_unit_factor", {
          precision: 12,
          scale: 4,
-      }).notNull().default("1"),                   // base units per purchase unit
+      })
+         .notNull()
+         .default("1"), // base units per purchase unit
       sellingPrice: numeric("selling_price", { precision: 12, scale: 2 }),
       currentStock: numeric("current_stock", { precision: 12, scale: 4 })
          .notNull()
@@ -121,7 +131,9 @@ export const inventoryProducts = pgTable(
 export const inventoryMovements = pgTable(
    "inventory_movements",
    {
-      id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
       teamId: uuid("team_id").notNull(),
       productId: uuid("product_id")
          .notNull()
@@ -205,12 +217,14 @@ export type InventorySettings = typeof inventorySettings.$inferSelect;
 **Step 2: Export from schema barrel**
 
 In `packages/database/src/schema.ts`, add after the last `export *`:
+
 ```typescript
 // Inventory
 export * from "./schemas/inventory";
 ```
 
 **Step 3: Push schema to DB**
+
 ```bash
 bun run db:push
 ```
@@ -218,6 +232,7 @@ bun run db:push
 Expected: 3 new tables created, enum `inventory_movement_type` created.
 
 **Step 4: Commit**
+
 ```bash
 git add packages/database/src/schemas/inventory.ts packages/database/src/schema.ts
 git commit -m "feat(db): add inventory schema (products, movements, settings)"
@@ -228,6 +243,7 @@ git commit -m "feat(db): add inventory schema (products, movements, settings)"
 ## Task 3: Repository
 
 **Files:**
+
 - Create: `packages/database/src/repositories/inventory-repository.ts`
 
 **Step 1: Create repository**
@@ -270,10 +286,7 @@ export async function listInventoryProducts(
    }
 }
 
-export async function getInventoryProduct(
-   db: DatabaseInstance,
-   id: string,
-) {
+export async function getInventoryProduct(db: DatabaseInstance, id: string) {
    try {
       const [product] = await db
          .select()
@@ -427,7 +440,10 @@ export async function getInventorySettings(
 export async function upsertInventorySettings(
    db: DatabaseInstance,
    teamId: string,
-   data: Omit<typeof inventorySettings.$inferInsert, "teamId" | "createdAt" | "updatedAt">,
+   data: Omit<
+      typeof inventorySettings.$inferInsert,
+      "teamId" | "createdAt" | "updatedAt"
+   >,
 ) {
    try {
       const [settings] = await db
@@ -447,6 +463,7 @@ export async function upsertInventorySettings(
 ```
 
 **Step 2: Commit**
+
 ```bash
 git add packages/database/src/repositories/inventory-repository.ts
 git commit -m "feat(db): add inventory repository"
@@ -457,6 +474,7 @@ git commit -m "feat(db): add inventory repository"
 ## Task 4: oRPC Router
 
 **Files:**
+
 - Create: `apps/web/src/integrations/orpc/router/inventory.ts`
 - Modify: `apps/web/src/integrations/orpc/router/index.ts`
 
@@ -531,7 +549,7 @@ const movementSchema = z.discriminatedUnion("type", [
    z.object({
       type: z.literal("purchase"),
       productId: z.string().uuid(),
-      purchasedQty: z.number().positive(),       // in purchaseUnit
+      purchasedQty: z.number().positive(), // in purchaseUnit
       unitPrice: z.number().positive().optional(), // cost per baseUnit (auto-calc if totalAmount given)
       totalAmount: z.number().positive(),
       supplierId: z.string().uuid().optional(),
@@ -544,7 +562,7 @@ const movementSchema = z.discriminatedUnion("type", [
    z.object({
       type: z.literal("sale"),
       productId: z.string().uuid(),
-      qty: z.number().positive(),                // in baseUnit
+      qty: z.number().positive(), // in baseUnit
       unitPrice: z.number().positive().optional(),
       totalAmount: z.number().positive(),
       date: z.string().date(),
@@ -553,7 +571,7 @@ const movementSchema = z.discriminatedUnion("type", [
    z.object({
       type: z.literal("waste"),
       productId: z.string().uuid(),
-      qty: z.number().positive(),                // in baseUnit
+      qty: z.number().positive(), // in baseUnit
       date: z.string().date(),
       notes: z.string().optional(),
    }),
@@ -596,7 +614,9 @@ export const updateProduct = protectedProcedure
       const { id, ...data } = input;
       const product = await getInventoryProduct(db, id);
       if (!product || product.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", { message: "Produto não encontrado." });
+         throw new ORPCError("NOT_FOUND", {
+            message: "Produto não encontrado.",
+         });
       }
       return updateInventoryProduct(db, id, data);
    });
@@ -607,7 +627,9 @@ export const archiveProduct = protectedProcedure
       const { db, teamId } = context;
       const product = await getInventoryProduct(db, input.id);
       if (!product || product.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", { message: "Produto não encontrado." });
+         throw new ORPCError("NOT_FOUND", {
+            message: "Produto não encontrado.",
+         });
       }
       return archiveInventoryProduct(db, input.id);
    });
@@ -623,7 +645,9 @@ export const registerMovement = protectedProcedure
 
       const product = await getInventoryProduct(db, input.productId);
       if (!product || product.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", { message: "Produto não encontrado." });
+         throw new ORPCError("NOT_FOUND", {
+            message: "Produto não encontrado.",
+         });
       }
 
       const settings = await getInventorySettings(db, teamId);
@@ -656,8 +680,12 @@ export const registerMovement = protectedProcedure
                   amount: String(input.totalAmount),
                   date: input.date,
                   bankAccountId,
-                  creditCardId: input.creditCardId ?? settings?.purchaseCreditCardId ?? null,
-                  categoryId: input.categoryId ?? settings?.purchaseCategoryId ?? null,
+                  creditCardId:
+                     input.creditCardId ??
+                     settings?.purchaseCreditCardId ??
+                     null,
+                  categoryId:
+                     input.categoryId ?? settings?.purchaseCategoryId ?? null,
                   contactId: input.supplierId ?? null,
                   description: input.notes ?? null,
                });
@@ -779,16 +807,19 @@ export const upsertSettings = protectedProcedure
 In `apps/web/src/integrations/orpc/router/index.ts`, add the import and registration.
 
 After the last `import *` line, add:
+
 ```typescript
 import * as inventoryRouter from "./inventory";
 ```
 
 In the `export default { ... }` object, add:
+
 ```typescript
 inventory: inventoryRouter,
 ```
 
 **Step 3: Commit**
+
 ```bash
 git add apps/web/src/integrations/orpc/router/inventory.ts apps/web/src/integrations/orpc/router/index.ts
 git commit -m "feat(api): add inventory oRPC router"
@@ -799,6 +830,7 @@ git commit -m "feat(api): add inventory oRPC router"
 ## Task 5: Feature UI Files
 
 **Files to create:**
+
 - `apps/web/src/features/inventory/ui/inventory-product-columns.tsx`
 - `apps/web/src/features/inventory/ui/inventory-product-card.tsx`
 - `apps/web/src/features/inventory/ui/inventory-product-form.tsx`
@@ -1468,6 +1500,7 @@ export function InventoryHistorySheet({ product }: InventoryHistorySheetProps) {
 ```
 
 **Step 6: Commit**
+
 ```bash
 git add apps/web/src/features/inventory/
 git commit -m "feat(ui): add inventory feature components"
@@ -1478,6 +1511,7 @@ git commit -m "feat(ui): add inventory feature components"
 ## Task 6: Route Page + Sidebar Nav
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/inventory/index.tsx`
 - Modify: `apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts`
 
@@ -1728,6 +1762,7 @@ import { ..., Package } from "lucide-react";
 ```
 
 Add after the `finance` group in `navGroups`:
+
 ```typescript
 {
    id: "inventory",
@@ -1746,6 +1781,7 @@ Add after the `finance` group in `navGroups`:
 ```
 
 **Step 3: Commit**
+
 ```bash
 git add apps/web/src/routes/_authenticated/\$slug/\$teamSlug/_dashboard/inventory/ apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts
 git commit -m "feat(web): add inventory route and sidebar nav"
@@ -1756,6 +1792,7 @@ git commit -m "feat(web): add inventory route and sidebar nav"
 ## Task 7: Inventory Settings Page
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/inventory.tsx`
 
 **Step 1: Create settings page**
@@ -1978,6 +2015,7 @@ function InventorySettingsPage() {
 **Step 2: Add to project settings nav** (check `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general.tsx` or the settings layout for how sub-nav items are registered — follow the same pattern used for other project settings pages).
 
 **Step 3: Commit**
+
 ```bash
 git add apps/web/src/routes/_authenticated/\$slug/\$teamSlug/_dashboard/settings/project/inventory.tsx
 git commit -m "feat(settings): add inventory settings page"

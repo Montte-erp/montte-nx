@@ -20,17 +20,17 @@ O objetivo de GEO é tornar cada parágrafo citável, preciso e verificável.
 Os estudos de Princeton mostram que ajustes de linguagem e estrutura alteram a chance de citação.
 Tabela resumida dos ganhos observados:
 
-| Método | Efeito médio |
-|---|---|
-| Cite Sources | +40% |
-| Statistics | +37% |
-| Quotation | +30% |
-| Authoritative Tone | +25% |
-| Easy-to-Understand | +20% |
-| Technical Terms | +18% |
-| Unique Words | +15% |
-| Fluency | +15–30% |
-| Keyword Stuffing | -10% |
+| Método             | Efeito médio |
+| ------------------ | ------------ |
+| Cite Sources       | +40%         |
+| Statistics         | +37%         |
+| Quotation          | +30%         |
+| Authoritative Tone | +25%         |
+| Easy-to-Understand | +20%         |
+| Technical Terms    | +18%         |
+| Unique Words       | +15%         |
+| Fluency            | +15–30%      |
+| Keyword Stuffing   | -10%         |
 
 ### Melhor combinação
 

@@ -32,7 +32,7 @@ import {
 } from "@packages/ui/components/select";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
-import { getInitials } from "@packages/utils/text";
+import { getInitials } from "@core/utils/text";
 import {
    useMutation,
    useQuery,

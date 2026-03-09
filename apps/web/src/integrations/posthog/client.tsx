@@ -1,5 +1,5 @@
-import type { ClientEnv } from "@packages/environment/client";
-import { isClientProduction } from "@packages/environment/helpers";
+import type { ClientEnv } from "@core/environment/client";
+import { isClientProduction } from "@core/environment/helpers";
 import posthog from "posthog-js";
 import { PostHogProvider, usePostHog } from "posthog-js/react";
 import { useEffect, useState } from "react";

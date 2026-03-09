@@ -5,7 +5,7 @@ import {
    currentMonthUsageByEvent,
    dailyUsageByEvent,
    eventCatalog,
-} from "@packages/database/schema";
+} from "@core/database/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 

@@ -1,5 +1,5 @@
-import type { DatabaseInstance } from "@packages/database/client";
-import { team } from "@packages/database/schemas/auth";
+import type { DatabaseInstance } from "@core/database/client";
+import { team } from "@core/database/schemas/auth";
 import { captureSDKAuthFailed } from "@packages/posthog/sdk/server";
 import { eq } from "drizzle-orm";
 import { auth } from "../integrations/auth";

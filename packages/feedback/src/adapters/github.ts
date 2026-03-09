@@ -1,5 +1,5 @@
 import type { Octokit } from "@octokit/rest";
-import { getLogger } from "@packages/logging/root";
+import { getLogger } from "@core/logging/root";
 import type { FeedbackAdapter, FeedbackPayload } from "../schemas";
 
 const logger = getLogger().child({ module: "feedback:github" });

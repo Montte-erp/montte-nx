@@ -7,6 +7,7 @@
 ## Gatilhos emocionais detalhados
 
 ### Alegria (transformação)
+
 - Destaque o “de → para”.
 - Mostre ganho real, não promessa vaga.
 
@@ -14,6 +15,7 @@
 ✅ “Em 30 dias, você sai de ‘sem pauta’ para ‘12 ideias publicáveis’.”
 
 ### Medo / FOMO (urgência real)
+
 - Use quando houver prazo, limite ou risco real.
 - Explique o **porquê** da urgência.
 
@@ -21,6 +23,7 @@
 ✅ “O workshop gratuito encerra inscrições às 18h.”
 
 ### Nostalgia
+
 - Conecte com experiências comuns (sem excesso de romantização).
 - Traga memória afetiva que legitime o problema atual.
 
@@ -28,6 +31,7 @@
 ✅ “Lembra quando bastava publicar para ranquear? Hoje o jogo é outro.”
 
 ### Pertencimento
+
 - Mostre o leitor dentro de um grupo específico.
 - Use linguagem de comunidade.
 
@@ -35,6 +39,7 @@
 ✅ “Para times enxutos que precisam publicar com consistência.”
 
 ### Gratificação imediata
+
 - Entregue um resultado rápido no próprio post.
 - Ofereça uma próxima ação simples.
 
@@ -46,6 +51,7 @@
 ## Escassez + Prova Social (combinação segura)
 
 ### Como usar
+
 1. **Escassez real** (prazo, vagas, capacidade)
 2. **Prova social concreta** (números, casos, depoimentos verificados)
 
@@ -57,6 +63,7 @@
 ## Soft Sell vs Hard Sell (para blog)
 
 ### Soft Sell (sempre)
+
 - Convida, não pressiona
 - Ensina antes de vender
 - Tom consultivo
@@ -64,6 +71,7 @@
 ✅ “Se fizer sentido, veja como aplicamos isso com você.”
 
 ### Hard Sell (evitar)
+
 - Pressão agressiva
 - Medo artificial
 - Discurso vendedor
@@ -75,14 +83,17 @@
 ## Matadores de conversão
 
 ### 1) Hook fraco
+
 ❌ “Neste artigo falaremos sobre…”
 ✅ “Você publica há meses e o tráfego não reage?”
 
 ### 2) Pressão cedo demais
+
 ❌ “Assine agora antes de entender o problema.”
 ✅ “Veja o diagnóstico e só depois considere a solução.”
 
 ### 3) Despejo de funcionalidades
+
 ❌ “Temos 23 recursos, 18 integrações…”
 ✅ “Você reduz seu tempo de revisão em 40%.”
 
@@ -120,13 +131,16 @@
 ## Exemplos rápidos (❌/✅)
 
 ### Prova social
+
 ❌ “Muitos clientes amam.”
 ✅ “96 equipes aplicaram este framework no último trimestre.”
 
 ### Urgência
+
 ❌ “Só hoje!”
 ✅ “O acesso gratuito termina na sexta às 18h.”
 
 ### Pertencimento
+
 ❌ “Para qualquer pessoa.”
 ✅ “Para gestores de conteúdo que publicam sem editor.”

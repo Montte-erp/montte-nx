@@ -1,6 +1,6 @@
-import { createAuth } from "@packages/authentication/server";
-import { createDb } from "@packages/database/client";
-import { env } from "@packages/environment/server";
+import { createAuth } from "@core/authentication/server";
+import { createDb } from "@core/database/client";
+import { env } from "@core/environment/server";
 import { getElysiaPosthogConfig } from "@packages/posthog/server";
 import { getStripeClient } from "@packages/stripe";
 

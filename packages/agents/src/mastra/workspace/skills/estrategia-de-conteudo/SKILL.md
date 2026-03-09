@@ -21,6 +21,7 @@ Ele tende a ranquear no Google e atrair tráfego orgânico.
 Foca em intenção e clareza.
 
 Pergunte-se:
+
 - O usuário digitou exatamente isso no Google?
 - Existe volume de busca ou demanda recorrente?
 - Esse conteúdo tem uma resposta objetiva e atualizada?
@@ -31,6 +32,7 @@ Pergunte-se:
 Ele costuma ser opinativo, surpreendente ou útil para um grupo específico.
 
 Pergunte-se:
+
 - Isso é memorável o suficiente para alguém compartilhar?
 - Tem uma opinião ou ângulo original?
 - Ajuda alguém a parecer inteligente ao compartilhar?
@@ -46,11 +48,13 @@ Pilares são os 3 a 5 temas que a marca domina.
 Eles representam o núcleo da autoridade do blog.
 
 Como definir:
+
 - O que seu produto resolve de forma única?
 - Em quais tópicos sua audiência confia na sua marca?
 - Onde você consegue ensinar com profundidade?
 
 Exemplo de pilares para um CMS de conteúdo:
+
 - Estratégia de conteúdo
 - SEO e performance orgânica
 - Operações editoriais e fluxo de produção
@@ -70,6 +74,7 @@ Séries criam retenção e aprofundamento.
 O leitor percebe evolução e volta para continuar.
 
 Sequência recomendada:
+
 1. Tema central da série.
 2. Subtópicos que destrincham o tema.
 3. Ordem lógica (do básico ao avançado).
@@ -80,12 +85,14 @@ Sequência recomendada:
 
 Tema: “SEO para equipes pequenas”.
 Subtópicos:
+
 - Pesquisa de palavras‑chave com pouco orçamento.
 - Arquitetura de conteúdo para ganhar velocidade.
 - Templates e checklists para execução semanal.
 - Medição de resultados e evolução do tráfego.
 
 Cadência:
+
 - 1 post por semana.
 - Atualização mensal de links internos.
 
@@ -95,6 +102,7 @@ Auditar é revisar, reorganizar e melhorar.
 O foco é alinhar voz, intenção e SEO.
 
 O que revisar:
+
 - Clareza do título e da promessa.
 - Alinhamento com o funil e o pilar.
 - Qualidade dos exemplos e dados.
@@ -137,6 +145,7 @@ Se a resposta for “sim”, avance.
 ## 7) Interlinkagem estratégica
 
 Cada post deve apontar para:
+
 - Um conteúdo pilar.
 - Dois conteúdos de subtema.
 - Um conteúdo de estágio adjacente no funil.
@@ -150,6 +159,7 @@ Cadência é compromisso, não urgência.
 Melhor publicar menos com consistência.
 
 Sugestão prática:
+
 - 2 posts por semana.
 - 1 auditoria mensal.
 - 1 atualização trimestral dos pilares.

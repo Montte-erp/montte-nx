@@ -1,21 +1,17 @@
 import { ORPCError } from "@orpc/server";
 import { computeInsightData } from "@packages/analytics/compute-insight";
-import type { DatabaseInstance } from "@packages/database/client";
-import { DEFAULT_INSIGHTS } from "@packages/database/default-insights";
-import { createDefaultInsights } from "@packages/database/repositories/dashboard-repository";
-import { getInsightById } from "@packages/database/repositories/insight-repository";
-import {
-   organization,
-   team,
-   teamMember,
-} from "@packages/database/schemas/auth";
-import { bankAccounts } from "@packages/database/schemas/bank-accounts";
-import { categories } from "@packages/database/schemas/categories";
-import { dashboards } from "@packages/database/schemas/dashboards";
-import { insights } from "@packages/database/schemas/insights";
-import { transactions } from "@packages/database/schemas/transactions";
-import { getLogger } from "@packages/logging/root";
-import { createSlug } from "@packages/utils/text";
+import type { DatabaseInstance } from "@core/database/client";
+import { DEFAULT_INSIGHTS } from "@core/database/default-insights";
+import { createDefaultInsights } from "@core/database/repositories/dashboard-repository";
+import { getInsightById } from "@core/database/repositories/insight-repository";
+import { organization, team, teamMember } from "@core/database/schemas/auth";
+import { bankAccounts } from "@core/database/schemas/bank-accounts";
+import { categories } from "@core/database/schemas/categories";
+import { dashboards } from "@core/database/schemas/dashboards";
+import { insights } from "@core/database/schemas/insights";
+import { transactions } from "@core/database/schemas/transactions";
+import { getLogger } from "@core/logging/root";
+import { createSlug } from "@core/utils/text";
 import { eq, sql } from "drizzle-orm";
 
 const logger = getLogger().child({ module: "router:onboarding" });

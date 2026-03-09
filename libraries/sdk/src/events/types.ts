@@ -1,20 +1,20 @@
 export interface MontteSdkConfig {
-	apiKey: string;
-	apiUrl?: string;
-	organizationId: string;
-	enableAnalytics?: boolean;
-	batchSize?: number;
-	flushInterval?: number;
-	timeout?: number;
-	debug?: boolean;
+   apiKey: string;
+   apiUrl?: string;
+   organizationId: string;
+   enableAnalytics?: boolean;
+   batchSize?: number;
+   flushInterval?: number;
+   timeout?: number;
+   debug?: boolean;
 }
 
 export interface TrackedEvent {
-	eventName: string;
-	properties: Record<string, unknown>;
-	timestamp: number;
+   eventName: string;
+   properties: Record<string, unknown>;
+   timestamp: number;
 }
 
 export interface EventBatch {
-	events: TrackedEvent[];
+   events: TrackedEvent[];
 }

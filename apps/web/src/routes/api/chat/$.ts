@@ -7,7 +7,7 @@ import {
 } from "@packages/agents";
 import { emitAiChatMessage } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
-import { getLogger } from "@packages/logging/root";
+import { getLogger } from "@core/logging/root";
 import { createFileRoute } from "@tanstack/react-router";
 import type { ModelMessage } from "ai";
 import { createUIMessageStreamResponse } from "ai";

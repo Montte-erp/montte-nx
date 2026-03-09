@@ -13,15 +13,19 @@
 ## Task 1: Add `"net"` aggregation to analytics types
 
 **Files:**
+
 - Modify: `packages/analytics/src/types.ts`
 
 **Step 1: Add `"net"` to the aggregation enum**
 
 In `measureSchema`, change:
+
 ```typescript
 aggregation: z.enum(["sum", "count", "avg"]),
 ```
+
 to:
+
 ```typescript
 aggregation: z.enum(["sum", "count", "avg", "net"]),
 ```
@@ -31,6 +35,7 @@ aggregation: z.enum(["sum", "count", "avg", "net"]),
 ```bash
 bun run typecheck
 ```
+
 Expected: errors in `compute-kpi.ts` and `compute-time-series.ts` because they don't handle `"net"` yet — that's fine, fix next.
 
 **Step 3: Commit**
@@ -45,11 +50,13 @@ git commit -m "feat(analytics): add 'net' aggregation type (income - expenses)"
 ## Task 2: Implement `"net"` in KPI compute
 
 **Files:**
+
 - Modify: `packages/analytics/src/compute-kpi.ts`
 
 **Step 1: Add the net case in `computeValue`**
 
 After the `avg` branch (line ~86), add before the closing `return`:
+
 ```typescript
 if (aggregation === "net") {
    const result = await db
@@ -63,6 +70,7 @@ if (aggregation === "net") {
 ```
 
 Full updated `computeValue` body should look like:
+
 ```typescript
 async function computeValue(
    db: DatabaseInstance,
@@ -118,6 +126,7 @@ async function computeValue(
 ```bash
 bun run typecheck
 ```
+
 Expected: PASS (no errors in compute-kpi.ts).
 
 **Step 3: Commit**
@@ -132,11 +141,13 @@ git commit -m "feat(analytics): implement 'net' aggregation in KPI compute (inco
 ## Task 3: Implement `"net"` in time series compute
 
 **Files:**
+
 - Modify: `packages/analytics/src/compute-time-series.ts`
 
 **Step 1: Add the net case in `computeSeries`**
 
 In `computeSeries`, the `valueExpr` block currently has `sum` and `avg`. Add `net` (replace the existing if/else with):
+
 ```typescript
 let valueExpr = sql<number>`count(*)::int`;
 if (config.measure.aggregation === "count") {
@@ -155,6 +166,7 @@ if (config.measure.aggregation === "count") {
 ```bash
 bun run typecheck
 ```
+
 Expected: PASS.
 
 **Step 3: Commit**
@@ -169,6 +181,7 @@ git commit -m "feat(analytics): implement 'net' aggregation in time series compu
 ## Task 4: Fix "Saldo Líquido" default insight config
 
 **Files:**
+
 - Modify: `packages/database/src/default-insights.ts`
 
 **Step 1: Update the third default insight**
@@ -210,6 +223,7 @@ const AGGREGATION_OPTIONS = [
 ```bash
 bun run typecheck
 ```
+
 Expected: PASS.
 
 **Step 4: Commit**
@@ -224,6 +238,7 @@ git commit -m "fix(analytics): saldo liquido uses net aggregation (income - expe
 ## Task 5: Add `formatAsCurrency` to `TrendsNumberCard`
 
 **Files:**
+
 - Modify: `apps/web/src/features/analytics/charts/trends-number-card.tsx`
 
 **Step 1: Add the prop and format with `@f-o-t/money`**
@@ -233,6 +248,7 @@ Add `import { format, of } from "@f-o-t/money";` at the top.
 Add `formatAsCurrency?: boolean` to `TrendsNumberCardProps`.
 
 Replace the `formattedValue` computation:
+
 ```typescript
 const formattedValue =
    formatAsCurrency && typeof value === "number"
@@ -247,6 +263,7 @@ const formattedValue =
 ```bash
 bun run typecheck
 ```
+
 Expected: PASS.
 
 **Step 3: Commit**
@@ -261,6 +278,7 @@ git commit -m "feat(analytics): add formatAsCurrency prop to TrendsNumberCard us
 ## Task 6: Add value formatter props to `TrendsBarChart` and `TrendsLineChart`
 
 **Files:**
+
 - Modify: `apps/web/src/features/analytics/charts/trends-bar-chart.tsx`
 - Modify: `apps/web/src/features/analytics/charts/trends-line-chart.tsx`
 
@@ -271,6 +289,7 @@ git commit -m "feat(analytics): add formatAsCurrency prop to TrendsNumberCard us
 Add `import { format, of } from "@f-o-t/money";` at top (only if needed; it's actually used in the caller — just wire the prop).
 
 Add to the interface:
+
 ```typescript
 valueFormatter?: (value: number) => string;
 ```
@@ -280,6 +299,7 @@ Add to destructured props in the function signature.
 **Step 2: Wire into YAxis and ChartTooltipContent**
 
 In `<YAxis>`, replace:
+
 ```tsx
 <YAxis
    axisLine={false}
@@ -289,7 +309,9 @@ In `<YAxis>`, replace:
    width={40}
 />
 ```
+
 with:
+
 ```tsx
 <YAxis
    axisLine={false}
@@ -302,10 +324,13 @@ with:
 ```
 
 In `<ChartTooltip>`, replace:
+
 ```tsx
 <ChartTooltip content={<ChartTooltipContent />} />
 ```
+
 with:
+
 ```tsx
 <ChartTooltip
    content={
@@ -323,6 +348,7 @@ with:
 ### TrendsLineChart
 
 Apply the exact same changes as `TrendsBarChart`:
+
 - Add `valueFormatter?: (value: number) => string` to interface and destructured props
 - Wire `tickFormatter` + `width` on `<YAxis yAxisId="left">` (same pattern)
 - Wire `formatter` on `<ChartTooltipContent />`
@@ -332,6 +358,7 @@ Apply the exact same changes as `TrendsBarChart`:
 ```bash
 bun run typecheck
 ```
+
 Expected: PASS.
 
 **Step 4: Commit**
@@ -346,16 +373,19 @@ git commit -m "feat(analytics): add valueFormatter prop to bar/line charts for Y
 ## Task 7: Wire currency formatting through `InsightPreview`
 
 **Files:**
+
 - Modify: `apps/web/src/features/analytics/ui/insight-preview.tsx`
 
 **Step 1: Add `@f-o-t/money` import and currency helpers**
 
 Add at top:
+
 ```typescript
 import { format, of } from "@f-o-t/money";
 ```
 
 Add a helper (module-level, not inside component):
+
 ```typescript
 function formatBRL(value: number): string {
    return format(of(value.toFixed(2), "BRL"), "pt-BR");
@@ -369,6 +399,7 @@ function isCurrencyAggregation(config: InsightConfig): boolean {
 **Step 2: Pass `formatAsCurrency` to `KpiPreview` → `TrendsNumberCard`**
 
 Update `KpiPreview` signature to accept the flag and forward it:
+
 ```typescript
 function KpiPreview({ data, formatAsCurrency }: { data: KpiResult; formatAsCurrency: boolean }) {
    ...
@@ -379,6 +410,7 @@ function KpiPreview({ data, formatAsCurrency }: { data: KpiResult; formatAsCurre
 **Step 3: Pass `valueFormatter` to `TimeSeriesPreview`**
 
 Update `TimeSeriesPreview` signature:
+
 ```typescript
 function TimeSeriesPreview({
    config,
@@ -388,7 +420,7 @@ function TimeSeriesPreview({
    config: TimeSeriesConfig;
    data: TimeSeriesResult;
    valueFormatter?: (value: number) => string;
-})
+});
 ```
 
 Pass `valueFormatter` to both `<TrendsBarChart>` and `<TrendsLineChart>` inside.
@@ -435,6 +467,7 @@ export function InsightPreview({ config }: InsightPreviewProps) {
 ```bash
 bun run typecheck
 ```
+
 Expected: PASS.
 
 **Step 7: Commit**
@@ -449,6 +482,7 @@ git commit -m "feat(analytics): wire BRL currency formatting through InsightPrev
 ## Task 8: Create `InsightEditCredenza` component
 
 **Files:**
+
 - Create: `apps/web/src/features/analytics/ui/insight-edit-credenza.tsx`
 
 **Step 1: Create the file with full implementation**
@@ -656,6 +690,7 @@ export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
 ```bash
 bun run typecheck
 ```
+
 Expected: PASS.
 
 **Step 3: Commit**
@@ -670,11 +705,13 @@ git commit -m "feat(analytics): add InsightEditCredenza component for in-dashboa
 ## Task 9: Wire "Configurar" into `DashboardTile` dropdown
 
 **Files:**
+
 - Modify: `apps/web/src/features/analytics/ui/dashboard-tile.tsx`
 
 **Step 1: Add imports**
 
 Add to the import block:
+
 ```typescript
 import { Settings2 } from "lucide-react";
 import { useCredenza } from "@/hooks/use-credenza";
@@ -684,6 +721,7 @@ import { InsightEditCredenza } from "./insight-edit-credenza";
 **Step 2: Destructure `openCredenza` in `DashboardTile`**
 
 Inside the `DashboardTile` function body, add:
+
 ```typescript
 const { openCredenza } = useCredenza();
 ```
@@ -693,19 +731,21 @@ const { openCredenza } = useCredenza();
 Inside `<DropdownMenuContent align="end">`, add the new item directly after the existing "Editar" `DropdownMenuItem` block (keep "Editar" as-is, add "Configurar" below it):
 
 ```tsx
-{insightId && (
-   <DropdownMenuItem
-      onClick={() =>
-         openCredenza({
-            children: <InsightEditCredenza insightId={insightId} />,
-            className: "sm:max-w-2xl",
-         })
-      }
-   >
-      <Settings2 className="mr-2 size-4" />
-      Configurar
-   </DropdownMenuItem>
-)}
+{
+   insightId && (
+      <DropdownMenuItem
+         onClick={() =>
+            openCredenza({
+               children: <InsightEditCredenza insightId={insightId} />,
+               className: "sm:max-w-2xl",
+            })
+         }
+      >
+         <Settings2 className="mr-2 size-4" />
+         Configurar
+      </DropdownMenuItem>
+   );
+}
 ```
 
 **Step 4: Run typecheck**
@@ -713,6 +753,7 @@ Inside `<DropdownMenuContent align="end">`, add the new item directly after the 
 ```bash
 bun run typecheck
 ```
+
 Expected: PASS.
 
 **Step 5: Commit**
@@ -733,6 +774,7 @@ bun run typecheck && bun run check
 ```
 
 Then start the dev server and verify:
+
 1. KPI tiles with `sum`/`avg`/`net` aggregation show `R$ X.XXX,XX`
 2. KPI tiles with `count` aggregation show plain numbers
 3. Chart Y-axis labels and tooltip values show `R$ X.XXX,XX` for monetary insights

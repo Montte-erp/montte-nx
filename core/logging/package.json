@@ -1,0 +1,67 @@
+{
+   "name": "@core/logging",
+   "version": "0.1.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "files": [
+      "dist"
+   ],
+   "type": "module",
+   "exports": {
+      ".": {
+         "types": "./dist/src/logger.d.ts",
+         "default": "./src/logger.ts"
+      },
+      "./server": {
+         "types": "./dist/src/server.d.ts",
+         "default": "./src/server.ts"
+      },
+      "./worker": {
+         "types": "./dist/src/worker.d.ts",
+         "default": "./src/worker.ts"
+      },
+      "./types": {
+         "types": "./dist/src/types.d.ts",
+         "default": "./src/types.ts"
+      },
+      "./otel": {
+         "types": "./dist/src/otel.d.ts",
+         "default": "./src/otel.ts"
+      },
+      "./health": {
+         "types": "./dist/src/health.d.ts",
+         "default": "./src/health.ts"
+      },
+      "./orpc-plugin": {
+         "types": "./dist/src/orpc-plugin.d.ts",
+         "default": "./src/orpc-plugin.ts"
+      },
+      "./root": {
+         "types": "./dist/src/root.d.ts",
+         "default": "./src/root.ts"
+      }
+   },
+   "scripts": {
+      "build": "tsc --build",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@opentelemetry/api-logs": "^0.213.0",
+      "@opentelemetry/exporter-logs-otlp-http": "^0.213.0",
+      "@opentelemetry/resources": "^2.6.0",
+      "@opentelemetry/sdk-logs": "^0.213.0",
+      "@opentelemetry/sdk-node": "^0.213.0",
+      "@orpc/experimental-pino": "catalog:orpc",
+      "@orpc/otel": "catalog:orpc",
+      "@orpc/server": "catalog:orpc",
+      "pino": "catalog:logging",
+      "pino-opentelemetry-transport": "^3.0.0",
+      "posthog-node": "catalog:analytics-client"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "@types/node": "^20",
+      "pino-pretty": "catalog:logging",
+      "typescript": "catalog:development"
+   }
+}

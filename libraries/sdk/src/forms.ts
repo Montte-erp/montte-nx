@@ -6,66 +6,66 @@ import { createSdk } from "./index.ts";
 
 /** Minimal typed interface for the forms-related SDK calls used internally. */
 interface FormsSubmitResult {
-	success: boolean;
-	submissionId: string;
-	settings: { successMessage?: string; redirectUrl?: string };
+   success: boolean;
+   submissionId: string;
+   settings: { successMessage?: string; redirectUrl?: string };
 }
 
 interface FormsApiClient {
-	forms: {
-		get: (input: { formId: string }) => Promise<FormDefinition>;
-		submit: (input: {
-			formId: string;
-			data: Record<string, unknown>;
-			experimentId?: string;
-			variantId?: string;
-		}) => Promise<FormsSubmitResult>;
-	};
+   forms: {
+      get: (input: { formId: string }) => Promise<FormDefinition>;
+      submit: (input: {
+         formId: string;
+         data: Record<string, unknown>;
+         experimentId?: string;
+         variantId?: string;
+      }) => Promise<FormsSubmitResult>;
+   };
 }
 
 interface FormField {
-	id: string;
-	type:
-		| "text"
-		| "email"
-		| "textarea"
-		| "checkbox"
-		| "select"
-		| "number"
-		| "date"
-		| "rating"
-		| "file";
-	label: string;
-	placeholder?: string;
-	required: boolean;
-	options?: string[];
+   id: string;
+   type:
+      | "text"
+      | "email"
+      | "textarea"
+      | "checkbox"
+      | "select"
+      | "number"
+      | "date"
+      | "rating"
+      | "file";
+   label: string;
+   placeholder?: string;
+   required: boolean;
+   options?: string[];
 }
 
 interface FormDefinition {
-	id: string;
-	name: string;
-	description?: string;
-	fields: FormField[];
-	settings?: {
-		successMessage?: string;
-		redirectUrl?: string;
-	};
-	title?: string;
-	subtitle?: string;
-	icon?: string;
-	buttonText?: string;
-	layout?: "card" | "inline" | "banner";
+   id: string;
+   name: string;
+   description?: string;
+   fields: FormField[];
+   settings?: {
+      successMessage?: string;
+      redirectUrl?: string;
+   };
+   title?: string;
+   subtitle?: string;
+   icon?: string;
+   buttonText?: string;
+   layout?: "card" | "inline" | "banner";
 }
 
 // ── Helpers ─────────────────────────────────────────────────────
 
 function escapeHtml(str: string): string {
-	return str
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;")
-		.replace(/'/g, "&#39;");
+   return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
 }
 
 // ── CSS ─────────────────────────────────────────────────────────
@@ -235,152 +235,152 @@ const DEFAULT_API_URL = "https://api.contentagen.com";
  * Blocks javascript:, data:, and other dangerous protocols.
  */
 function isSafeRedirectUrl(url: string): boolean {
-	try {
-		const parsed = new URL(url, window.location.href);
-		return parsed.protocol === "https:" || parsed.protocol === "http:";
-	} catch {
-		return false;
-	}
+   try {
+      const parsed = new URL(url, window.location.href);
+      return parsed.protocol === "https:" || parsed.protocol === "http:";
+   } catch {
+      return false;
+   }
 }
 
 /**
  * Lightweight validation that an API response looks like a FormDefinition.
  */
 function isFormDefinition(value: unknown): value is FormDefinition {
-	if (!value || typeof value !== "object") return false;
-	const obj = value as Record<string, unknown>;
-	return (
-		typeof obj.id === "string" &&
-		typeof obj.name === "string" &&
-		Array.isArray(obj.fields)
-	);
+   if (!value || typeof value !== "object") return false;
+   const obj = value as Record<string, unknown>;
+   return (
+      typeof obj.id === "string" &&
+      typeof obj.name === "string" &&
+      Array.isArray(obj.fields)
+   );
 }
 
 let stylesInjected = false;
 
 function injectFormStyles(): void {
-	if (stylesInjected) return;
-	if (typeof document === "undefined") return;
+   if (stylesInjected) return;
+   if (typeof document === "undefined") return;
 
-	const style = document.createElement("style");
-	style.setAttribute("data-montte-forms", "");
-	style.textContent = FORM_STYLES;
-	document.head.appendChild(style);
-	stylesInjected = true;
+   const style = document.createElement("style");
+   style.setAttribute("data-montte-forms", "");
+   style.textContent = FORM_STYLES;
+   document.head.appendChild(style);
+   stylesInjected = true;
 }
 
 export class MontteFormsClient {
-	private config: MontteSdkConfig;
-	private tracker: MontteEventTracker;
-	private apiUrl: string;
-	private readonly sdk: FormsApiClient;
+   private config: MontteSdkConfig;
+   private tracker: MontteEventTracker;
+   private apiUrl: string;
+   private readonly sdk: FormsApiClient;
 
-	constructor(config: MontteSdkConfig, tracker: MontteEventTracker) {
-		this.config = config;
-		this.tracker = tracker;
-		this.apiUrl = (config.apiUrl ?? DEFAULT_API_URL).replace(/\/+$/, "");
+   constructor(config: MontteSdkConfig, tracker: MontteEventTracker) {
+      this.config = config;
+      this.tracker = tracker;
+      this.apiUrl = (config.apiUrl ?? DEFAULT_API_URL).replace(/\/+$/, "");
 
-		// Initialize SDK client for oRPC calls
-		this.sdk = createSdk({
-			apiKey: this.config.apiKey,
-			host: this.apiUrl,
-		}) as unknown as FormsApiClient;
-	}
+      // Initialize SDK client for oRPC calls
+      this.sdk = createSdk({
+         apiKey: this.config.apiKey,
+         host: this.apiUrl,
+      }) as unknown as FormsApiClient;
+   }
 
-	// ── Public API ──────────────────────────────────────────────
+   // ── Public API ──────────────────────────────────────────────
 
-	async embedForm(
-		formId: string,
-		containerId: string,
-		options?: {
-			experimentId?: string;
-			variantId?: string;
-		},
-	): Promise<void> {
-		const container = document.getElementById(containerId);
-		if (!container) {
-			console.error(
-				`[MontteForms] Container element with id "${containerId}" not found.`,
-			);
-			return;
-		}
+   async embedForm(
+      formId: string,
+      containerId: string,
+      options?: {
+         experimentId?: string;
+         variantId?: string;
+      },
+   ): Promise<void> {
+      const container = document.getElementById(containerId);
+      if (!container) {
+         console.error(
+            `[MontteForms] Container element with id "${containerId}" not found.`,
+         );
+         return;
+      }
 
-		let form: FormDefinition;
+      let form: FormDefinition;
 
-		try {
-			// Use oRPC client to fetch form definition
-			const result = await this.sdk.forms.get({ formId });
+      try {
+         // Use oRPC client to fetch form definition
+         const result = await this.sdk.forms.get({ formId });
 
-			if (!isFormDefinition(result)) {
-				console.error(
-					"[MontteForms] Invalid form definition received from API.",
-				);
-				return;
-			}
+         if (!isFormDefinition(result)) {
+            console.error(
+               "[MontteForms] Invalid form definition received from API.",
+            );
+            return;
+         }
 
-			form = result;
-		} catch (error) {
-			// Handle ORPCError and other errors
-			const errorMessage =
-				error instanceof Error ? error.message : "Unknown error";
-			console.error(
-				`[MontteForms] Failed to fetch form: ${errorMessage}`,
-				error,
-			);
-			return;
-		}
+         form = result;
+      } catch (error) {
+         // Handle ORPCError and other errors
+         const errorMessage =
+            error instanceof Error ? error.message : "Unknown error";
+         console.error(
+            `[MontteForms] Failed to fetch form: ${errorMessage}`,
+            error,
+         );
+         return;
+      }
 
-		// Inject styles once into <head>
-		injectFormStyles();
+      // Inject styles once into <head>
+      injectFormStyles();
 
-		container.innerHTML = this.renderForm(form);
+      container.innerHTML = this.renderForm(form);
 
-		this.tracker.track("form.impression", {
-			formId: form.id,
-			formName: form.name,
-			pageUrl: typeof window !== "undefined" ? window.location.href : "",
-			referrer: typeof document !== "undefined" ? document.referrer : "",
-		});
+      this.tracker.track("form.impression", {
+         formId: form.id,
+         formName: form.name,
+         pageUrl: typeof window !== "undefined" ? window.location.href : "",
+         referrer: typeof document !== "undefined" ? document.referrer : "",
+      });
 
-		// Track experiment impression if this form is part of an A/B test
-		if (options?.experimentId && options?.variantId) {
-			this.tracker.track("experiment.started", {
-				targetType: "form",
-				targetId: formId,
-				experimentId: options.experimentId,
-				variantId: options.variantId,
-				visitorId: this.tracker.getVisitorId(),
-				sessionId: this.tracker.getSessionId(),
-			});
-		}
+      // Track experiment impression if this form is part of an A/B test
+      if (options?.experimentId && options?.variantId) {
+         this.tracker.track("experiment.started", {
+            targetType: "form",
+            targetId: formId,
+            experimentId: options.experimentId,
+            variantId: options.variantId,
+            visitorId: this.tracker.getVisitorId(),
+            sessionId: this.tracker.getSessionId(),
+         });
+      }
 
-		this.setupFormHandler(formId, container, options);
-	}
+      this.setupFormHandler(formId, container, options);
+   }
 
-	// ── Rendering ───────────────────────────────────────────────
+   // ── Rendering ───────────────────────────────────────────────
 
-	private renderForm(form: FormDefinition): string {
-		// Prefer CTA title/subtitle over name/description for display
-		const displayTitle = form.title || form.name;
-		const displaySubtitle = form.subtitle || form.description;
+   private renderForm(form: FormDefinition): string {
+      // Prefer CTA title/subtitle over name/description for display
+      const displayTitle = form.title || form.name;
+      const displaySubtitle = form.subtitle || form.description;
 
-		const ctaHtml =
-			form.icon || displayTitle || displaySubtitle
-				? `
+      const ctaHtml =
+         form.icon || displayTitle || displaySubtitle
+            ? `
 <div class="montte-form__cta">
 	${form.icon ? `<div class="montte-form__cta-icon">${escapeHtml(form.icon)}</div>` : ""}
 	${displayTitle ? `<h3 class="montte-form__cta-title">${escapeHtml(displayTitle)}</h3>` : ""}
 	${displaySubtitle ? `<p class="montte-form__cta-subtitle">${escapeHtml(displaySubtitle)}</p>` : ""}
 </div>`
-				: "";
+            : "";
 
-		const fieldsHtml = form.fields
-			.map((field) => this.renderField(field))
-			.join("\n");
+      const fieldsHtml = form.fields
+         .map((field) => this.renderField(field))
+         .join("\n");
 
-		const buttonText = form.buttonText || "Enviar";
+      const buttonText = form.buttonText || "Enviar";
 
-		return `
+      return `
 <div class="montte-form">
 	${ctaHtml}
 	<form class="montte-form__form" novalidate>
@@ -388,25 +388,25 @@ export class MontteFormsClient {
 		<button type="submit" class="montte-form__submit">${escapeHtml(buttonText)}</button>
 	</form>
 </div>`;
-	}
+   }
 
-	private renderField(field: FormField): string {
-		const escapedId = escapeHtml(field.id);
-		const escapedLabel = escapeHtml(field.label);
-		const escapedPlaceholder = field.placeholder
-			? escapeHtml(field.placeholder)
-			: "";
-		const requiredAttr = field.required ? "required" : "";
-		const requiredMarker = field.required
-			? '<span class="montte-form__required">*</span>'
-			: "";
+   private renderField(field: FormField): string {
+      const escapedId = escapeHtml(field.id);
+      const escapedLabel = escapeHtml(field.label);
+      const escapedPlaceholder = field.placeholder
+         ? escapeHtml(field.placeholder)
+         : "";
+      const requiredAttr = field.required ? "required" : "";
+      const requiredMarker = field.required
+         ? '<span class="montte-form__required">*</span>'
+         : "";
 
-		let inputHtml: string;
+      let inputHtml: string;
 
-		switch (field.type) {
-			case "text":
-			case "email":
-				inputHtml = `<input
+      switch (field.type) {
+         case "text":
+         case "email":
+            inputHtml = `<input
 					type="${field.type}"
 					id="montte-field-${escapedId}"
 					name="${escapedId}"
@@ -414,20 +414,20 @@ export class MontteFormsClient {
 					placeholder="${escapedPlaceholder}"
 					${requiredAttr}
 				/>`;
-				break;
+            break;
 
-			case "textarea":
-				inputHtml = `<textarea
+         case "textarea":
+            inputHtml = `<textarea
 					id="montte-field-${escapedId}"
 					name="${escapedId}"
 					class="montte-form__textarea"
 					placeholder="${escapedPlaceholder}"
 					${requiredAttr}
 				></textarea>`;
-				break;
+            break;
 
-			case "checkbox":
-				inputHtml = `<div class="montte-form__checkbox-wrapper">
+         case "checkbox":
+            inputHtml = `<div class="montte-form__checkbox-wrapper">
 					<input
 						type="checkbox"
 						id="montte-field-${escapedId}"
@@ -437,17 +437,17 @@ export class MontteFormsClient {
 					/>
 					<label for="montte-field-${escapedId}">${escapedLabel}</label>
 				</div>`;
-				break;
+            break;
 
-			case "select": {
-				const optionsHtml = (field.options ?? [])
-					.map(
-						(opt) =>
-							`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`,
-					)
-					.join("\n");
+         case "select": {
+            const optionsHtml = (field.options ?? [])
+               .map(
+                  (opt) =>
+                     `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`,
+               )
+               .join("\n");
 
-				inputHtml = `<select
+            inputHtml = `<select
 					id="montte-field-${escapedId}"
 					name="${escapedId}"
 					class="montte-form__select"
@@ -456,11 +456,11 @@ export class MontteFormsClient {
 					<option value="">${escapedPlaceholder || "Selecione uma opção"}</option>
 					${optionsHtml}
 				</select>`;
-				break;
-			}
+            break;
+         }
 
-			case "number":
-				inputHtml = `<input
+         case "number":
+            inputHtml = `<input
 					type="number"
 					id="montte-field-${escapedId}"
 					name="${escapedId}"
@@ -468,46 +468,46 @@ export class MontteFormsClient {
 					placeholder="${escapedPlaceholder}"
 					${requiredAttr}
 				/>`;
-				break;
+            break;
 
-			case "date":
-				inputHtml = `<input
+         case "date":
+            inputHtml = `<input
 					type="date"
 					id="montte-field-${escapedId}"
 					name="${escapedId}"
 					class="montte-form__input"
 					${requiredAttr}
 				/>`;
-				break;
+            break;
 
-			case "rating": {
-				const stars = [1, 2, 3, 4, 5]
-					.map(
-						(n) =>
-							`<button type="button" class="montte-form__star" data-rating="${n}" aria-label="${n} estrela${n > 1 ? "s" : ""}">★</button>`,
-					)
-					.join("");
-				inputHtml = `<div class="montte-form__rating" id="montte-field-${escapedId}" data-field-id="${escapedId}">
+         case "rating": {
+            const stars = [1, 2, 3, 4, 5]
+               .map(
+                  (n) =>
+                     `<button type="button" class="montte-form__star" data-rating="${n}" aria-label="${n} estrela${n > 1 ? "s" : ""}">★</button>`,
+               )
+               .join("");
+            inputHtml = `<div class="montte-form__rating" id="montte-field-${escapedId}" data-field-id="${escapedId}">
 					<input type="hidden" name="${escapedId}" id="montte-rating-input-${escapedId}" />
 					${stars}
 				</div>`;
-				break;
-			}
+            break;
+         }
 
-			case "file":
-				inputHtml = `<input
+         case "file":
+            inputHtml = `<input
 					type="file"
 					id="montte-field-${escapedId}"
 					name="${escapedId}"
 					class="montte-form__input"
 					${requiredAttr}
 				/>`;
-				break;
+            break;
 
-			default: {
-				// Fallback for unknown field types — render as text input
-				const _type: string = field.type;
-				inputHtml = `<input
+         default: {
+            // Fallback for unknown field types — render as text input
+            const _type: string = field.type;
+            inputHtml = `<input
 					type="text"
 					id="montte-field-${escapedId}"
 					name="${escapedId}"
@@ -516,206 +516,211 @@ export class MontteFormsClient {
 					placeholder="${escapedPlaceholder}"
 					${requiredAttr}
 				/>`;
-			}
-		}
+         }
+      }
 
-		// Checkbox renders its own label inside the wrapper
-		const labelHtml =
-			field.type === "checkbox"
-				? ""
-				: `<label class="montte-form__label" for="montte-field-${escapedId}">${escapedLabel}${requiredMarker}</label>`;
+      // Checkbox renders its own label inside the wrapper
+      const labelHtml =
+         field.type === "checkbox"
+            ? ""
+            : `<label class="montte-form__label" for="montte-field-${escapedId}">${escapedLabel}${requiredMarker}</label>`;
 
-		return `
+      return `
 <div class="montte-form__field">
 	${labelHtml}
 	${inputHtml}
 	<div class="montte-form__error" data-field-error="${escapedId}"></div>
 </div>`;
-	}
+   }
 
-	// ── Form Submission ─────────────────────────────────────────
+   // ── Form Submission ─────────────────────────────────────────
 
-	private setupFormHandler(
-		formId: string,
-		container: HTMLElement,
-		options?: { experimentId?: string; variantId?: string },
-	): void {
-		const formElement =
-			container.querySelector<HTMLFormElement>(".montte-form__form");
-		if (!formElement) {
-			return;
-		}
+   private setupFormHandler(
+      formId: string,
+      container: HTMLElement,
+      options?: { experimentId?: string; variantId?: string },
+   ): void {
+      const formElement =
+         container.querySelector<HTMLFormElement>(".montte-form__form");
+      if (!formElement) {
+         return;
+      }
 
-		// Setup star rating fields
-		const ratingContainers = container.querySelectorAll<HTMLDivElement>(
-			".montte-form__rating",
-		);
-		for (const ratingContainer of ratingContainers) {
-			const fieldId = ratingContainer.getAttribute("data-field-id");
-			if (!fieldId) continue;
-			const stars =
-				ratingContainer.querySelectorAll<HTMLButtonElement>(
-					".montte-form__star",
-				);
-			const hiddenInput = container.querySelector<HTMLInputElement>(
-				`#montte-rating-input-${CSS.escape(fieldId)}`,
-			);
+      // Setup star rating fields
+      const ratingContainers = container.querySelectorAll<HTMLDivElement>(
+         ".montte-form__rating",
+      );
+      for (const ratingContainer of ratingContainers) {
+         const fieldId = ratingContainer.getAttribute("data-field-id");
+         if (!fieldId) continue;
+         const stars =
+            ratingContainer.querySelectorAll<HTMLButtonElement>(
+               ".montte-form__star",
+            );
+         const hiddenInput = container.querySelector<HTMLInputElement>(
+            `#montte-rating-input-${CSS.escape(fieldId)}`,
+         );
 
-			for (const [i, star] of stars.entries()) {
-				star.addEventListener("click", () => {
-					const value = i + 1;
-					if (hiddenInput) hiddenInput.value = String(value);
-					// Update star visual state
-					for (const [j, s] of stars.entries()) {
-						s.classList.toggle("montte-form__star--active", j <= i);
-					}
-				});
-			}
-		}
+         for (const [i, star] of stars.entries()) {
+            star.addEventListener("click", () => {
+               const value = i + 1;
+               if (hiddenInput) hiddenInput.value = String(value);
+               // Update star visual state
+               for (const [j, s] of stars.entries()) {
+                  s.classList.toggle("montte-form__star--active", j <= i);
+               }
+            });
+         }
+      }
 
-		formElement.addEventListener("submit", (event: Event) => {
-			event.preventDefault();
+      formElement.addEventListener("submit", (event: Event) => {
+         event.preventDefault();
 
-			const submitButton = formElement.querySelector<HTMLButtonElement>(
-				".montte-form__submit",
-			);
-			if (submitButton) {
-				submitButton.disabled = true;
-			}
+         const submitButton = formElement.querySelector<HTMLButtonElement>(
+            ".montte-form__submit",
+         );
+         if (submitButton) {
+            submitButton.disabled = true;
+         }
 
-			const formData = new FormData(formElement);
-			const data: Record<string, unknown> = {};
-			for (const [key, value] of formData.entries()) {
-				data[key] = value;
-			}
+         const formData = new FormData(formElement);
+         const data: Record<string, unknown> = {};
+         for (const [key, value] of formData.entries()) {
+            data[key] = value;
+         }
 
-			// Handle unchecked checkboxes (FormData omits them)
-			const checkboxes = formElement.querySelectorAll<HTMLInputElement>(
-				'input[type="checkbox"]',
-			);
-			for (const checkbox of checkboxes) {
-				if (!data[checkbox.name]) {
-					data[checkbox.name] = false;
-				} else {
-					data[checkbox.name] = true;
-				}
-			}
+         // Handle unchecked checkboxes (FormData omits them)
+         const checkboxes = formElement.querySelectorAll<HTMLInputElement>(
+            'input[type="checkbox"]',
+         );
+         for (const checkbox of checkboxes) {
+            if (!data[checkbox.name]) {
+               data[checkbox.name] = false;
+            } else {
+               data[checkbox.name] = true;
+            }
+         }
 
-			const submissionData = {
-				formId,
-				data,
-				metadata: {
-					visitorId: this.tracker.getVisitorId(),
-					sessionId: this.tracker.getSessionId(),
-					referrer: typeof document !== "undefined" ? document.referrer : "",
-					url: typeof window !== "undefined" ? window.location.href : "",
-				},
-				...(options?.experimentId &&
-					options?.variantId && {
-						experimentId: options.experimentId,
-						variantId: options.variantId,
-					}),
-			};
+         const submissionData = {
+            formId,
+            data,
+            metadata: {
+               visitorId: this.tracker.getVisitorId(),
+               sessionId: this.tracker.getSessionId(),
+               referrer:
+                  typeof document !== "undefined" ? document.referrer : "",
+               url: typeof window !== "undefined" ? window.location.href : "",
+            },
+            ...(options?.experimentId &&
+               options?.variantId && {
+                  experimentId: options.experimentId,
+                  variantId: options.variantId,
+               }),
+         };
 
-			// Use oRPC client to submit form
-			this.sdk.forms
-				.submit(submissionData)
-				.then((result: FormsSubmitResult) => {
-					this.tracker.track("form.submitted", {
-						formId,
-						pageUrl: typeof window !== "undefined" ? window.location.href : "",
-						referrer: typeof document !== "undefined" ? document.referrer : "",
-					});
+         // Use oRPC client to submit form
+         this.sdk.forms
+            .submit(submissionData)
+            .then((result: FormsSubmitResult) => {
+               this.tracker.track("form.submitted", {
+                  formId,
+                  pageUrl:
+                     typeof window !== "undefined" ? window.location.href : "",
+                  referrer:
+                     typeof document !== "undefined" ? document.referrer : "",
+               });
 
-					if (options?.experimentId && options?.variantId) {
-						this.tracker.track("experiment.conversion", {
-							targetType: "form",
-							targetId: formId,
-							experimentId: options.experimentId,
-							variantId: options.variantId,
-							visitorId: this.tracker.getVisitorId(),
-							sessionId: this.tracker.getSessionId(),
-						});
-					}
+               if (options?.experimentId && options?.variantId) {
+                  this.tracker.track("experiment.conversion", {
+                     targetType: "form",
+                     targetId: formId,
+                     experimentId: options.experimentId,
+                     variantId: options.variantId,
+                     visitorId: this.tracker.getVisitorId(),
+                     sessionId: this.tracker.getSessionId(),
+                  });
+               }
 
-					const successMessage =
-						result.settings?.successMessage ??
-						"Obrigado! Sua resposta foi recebida.";
-					const redirectUrl = result.settings?.redirectUrl;
+               const successMessage =
+                  result.settings?.successMessage ??
+                  "Obrigado! Sua resposta foi recebida.";
+               const redirectUrl = result.settings?.redirectUrl;
 
-					if (redirectUrl) {
-						if (isSafeRedirectUrl(redirectUrl)) {
-							window.location.href = redirectUrl;
-						} else {
-							console.error(
-								`[MontteForms] Unsafe redirect URL: ${redirectUrl}`,
-							);
-						}
-					} else {
-						this.showSuccess(container, successMessage);
-					}
-				})
-				.catch((error: unknown) => {
-					// Handle validation errors (ORPCError with UNPROCESSABLE_CONTENT)
-					const err = error as { cause?: { errors?: Record<string, string> } };
-					if (err?.cause?.errors && typeof err.cause.errors === "object") {
-						this.showErrors(formElement, err.cause.errors);
-					} else {
-						const errorMessage =
-							error instanceof Error ? error.message : "Unknown error";
-						console.error(
-							`[MontteForms] Submission failed: ${errorMessage}`,
-							error,
-						);
-					}
+               if (redirectUrl) {
+                  if (isSafeRedirectUrl(redirectUrl)) {
+                     window.location.href = redirectUrl;
+                  } else {
+                     console.error(
+                        `[MontteForms] Unsafe redirect URL: ${redirectUrl}`,
+                     );
+                  }
+               } else {
+                  this.showSuccess(container, successMessage);
+               }
+            })
+            .catch((error: unknown) => {
+               // Handle validation errors (ORPCError with UNPROCESSABLE_CONTENT)
+               const err = error as {
+                  cause?: { errors?: Record<string, string> };
+               };
+               if (err?.cause?.errors && typeof err.cause.errors === "object") {
+                  this.showErrors(formElement, err.cause.errors);
+               } else {
+                  const errorMessage =
+                     error instanceof Error ? error.message : "Unknown error";
+                  console.error(
+                     `[MontteForms] Submission failed: ${errorMessage}`,
+                     error,
+                  );
+               }
 
-					if (submitButton) {
-						submitButton.disabled = false;
-					}
-				});
-		});
-	}
+               if (submitButton) {
+                  submitButton.disabled = false;
+               }
+            });
+      });
+   }
 
-	// ── Error & Success Display ─────────────────────────────────
+   // ── Error & Success Display ─────────────────────────────────
 
-	private showErrors(
-		form: HTMLFormElement,
-		errors: Record<string, string>,
-	): void {
-		// Clear all previous errors
-		const errorContainers = form.querySelectorAll<HTMLDivElement>(
-			".montte-form__error",
-		);
-		for (const el of errorContainers) {
-			el.textContent = "";
-		}
+   private showErrors(
+      form: HTMLFormElement,
+      errors: Record<string, string>,
+   ): void {
+      // Clear all previous errors
+      const errorContainers = form.querySelectorAll<HTMLDivElement>(
+         ".montte-form__error",
+      );
+      for (const el of errorContainers) {
+         el.textContent = "";
+      }
 
-		// Show new errors
-		for (const [fieldId, message] of Object.entries(errors)) {
-			const errorContainer = form.querySelector<HTMLDivElement>(
-				`[data-field-error="${CSS.escape(fieldId)}"]`,
-			);
-			if (errorContainer) {
-				errorContainer.textContent = message;
-			}
-		}
-	}
+      // Show new errors
+      for (const [fieldId, message] of Object.entries(errors)) {
+         const errorContainer = form.querySelector<HTMLDivElement>(
+            `[data-field-error="${CSS.escape(fieldId)}"]`,
+         );
+         if (errorContainer) {
+            errorContainer.textContent = message;
+         }
+      }
+   }
 
-	private showSuccess(container: HTMLElement, message: string): void {
-		container.innerHTML = `
+   private showSuccess(container: HTMLElement, message: string): void {
+      container.innerHTML = `
 <div class="montte-form">
 	<div class="montte-form__success">${escapeHtml(message)}</div>
 </div>`;
-	}
+   }
 }
 
 // ── Factory ─────────────────────────────────────────────────────
 
 export function createFormsClient(
-	config: MontteSdkConfig,
-	tracker: MontteEventTracker,
+   config: MontteSdkConfig,
+   tracker: MontteEventTracker,
 ): MontteFormsClient {
-	return new MontteFormsClient(config, tracker);
+   return new MontteFormsClient(config, tracker);
 }
 
 export type { FormField, FormDefinition };

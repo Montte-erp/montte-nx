@@ -31,41 +31,55 @@ Add a "Metas" feature to the Finance section. Users define spending limits per c
 ```typescript
 import { sql } from "drizzle-orm";
 import {
-  index,
-  integer,
-  numeric,
-  pgTable,
-  timestamp,
-  uniqueIndex,
-  uuid,
+   index,
+   integer,
+   numeric,
+   pgTable,
+   timestamp,
+   uniqueIndex,
+   uuid,
 } from "drizzle-orm/pg-core";
 import { categories } from "./categories";
 import { subcategories } from "./subcategories";
 
 export const budgetGoals = pgTable(
-  "budget_goals",
-  {
-    id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-    teamId: uuid("team_id").notNull(),
-    categoryId: uuid("category_id").references(() => categories.id, { onDelete: "cascade" }),
-    subcategoryId: uuid("subcategory_id").references(() => subcategories.id, { onDelete: "cascade" }),
-    month: integer("month").notNull(),       // 1–12
-    year: integer("year").notNull(),
-    limitAmount: numeric("limit_amount", { precision: 12, scale: 2 }).notNull(),
-    alertThreshold: integer("alert_threshold"), // 0–100, nullable = no alert
-    alertSentAt: timestamp("alert_sent_at", { withTimezone: true }), // null = not sent yet
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-  },
-  (table) => [
-    index("budget_goals_team_id_idx").on(table.teamId),
-    uniqueIndex("budget_goals_team_category_month_unique")
-      .on(table.teamId, table.categoryId, table.month, table.year)
-      .where(sql`${table.categoryId} IS NOT NULL`),
-    uniqueIndex("budget_goals_team_subcategory_month_unique")
-      .on(table.teamId, table.subcategoryId, table.month, table.year)
-      .where(sql`${table.subcategoryId} IS NOT NULL`),
-  ],
+   "budget_goals",
+   {
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
+      teamId: uuid("team_id").notNull(),
+      categoryId: uuid("category_id").references(() => categories.id, {
+         onDelete: "cascade",
+      }),
+      subcategoryId: uuid("subcategory_id").references(() => subcategories.id, {
+         onDelete: "cascade",
+      }),
+      month: integer("month").notNull(), // 1–12
+      year: integer("year").notNull(),
+      limitAmount: numeric("limit_amount", {
+         precision: 12,
+         scale: 2,
+      }).notNull(),
+      alertThreshold: integer("alert_threshold"), // 0–100, nullable = no alert
+      alertSentAt: timestamp("alert_sent_at", { withTimezone: true }), // null = not sent yet
+      createdAt: timestamp("created_at", { withTimezone: true })
+         .notNull()
+         .defaultNow(),
+      updatedAt: timestamp("updated_at", { withTimezone: true })
+         .notNull()
+         .defaultNow()
+         .$onUpdate(() => new Date()),
+   },
+   (table) => [
+      index("budget_goals_team_id_idx").on(table.teamId),
+      uniqueIndex("budget_goals_team_category_month_unique")
+         .on(table.teamId, table.categoryId, table.month, table.year)
+         .where(sql`${table.categoryId} IS NOT NULL`),
+      uniqueIndex("budget_goals_team_subcategory_month_unique")
+         .on(table.teamId, table.subcategoryId, table.month, table.year)
+         .where(sql`${table.subcategoryId} IS NOT NULL`),
+   ],
 );
 
 export type BudgetGoal = typeof budgetGoals.$inferSelect;
@@ -85,9 +99,9 @@ Functions:
 ```typescript
 // List goals for a month, with spentAmount computed via SQL SUM
 export async function listBudgetGoals(
-  db: DatabaseInstance,
-  { teamId, month, year }: { teamId: string; month: number; year: number }
-): Promise<BudgetGoalWithProgress[]>
+   db: DatabaseInstance,
+   { teamId, month, year }: { teamId: string; month: number; year: number },
+): Promise<BudgetGoalWithProgress[]>;
 // Returns each goal enriched with:
 //   category: { id, name, icon, color } | null
 //   subcategory: { id, name, categoryId } | null
@@ -98,26 +112,36 @@ export async function listBudgetGoals(
 // - For category goal: SUM of transactions WHERE type='expense' AND (categoryId = goal.categoryId OR subcategoryId IN subcategories of that category) AND month/year match
 // - For subcategory goal: SUM of transactions WHERE type='expense' AND subcategoryId = goal.subcategoryId AND month/year match
 
-export async function getBudgetGoal(db, { id, teamId }): Promise<BudgetGoal | null>
+export async function getBudgetGoal(
+   db,
+   { id, teamId },
+): Promise<BudgetGoal | null>;
 
-export async function createBudgetGoal(db, data: NewBudgetGoal): Promise<BudgetGoal>
+export async function createBudgetGoal(
+   db,
+   data: NewBudgetGoal,
+): Promise<BudgetGoal>;
 
-export async function updateBudgetGoal(db, { id, teamId }, data: Partial<NewBudgetGoal>): Promise<BudgetGoal>
+export async function updateBudgetGoal(
+   db,
+   { id, teamId },
+   data: Partial<NewBudgetGoal>,
+): Promise<BudgetGoal>;
 
-export async function deleteBudgetGoal(db, { id, teamId }): Promise<void>
+export async function deleteBudgetGoal(db, { id, teamId }): Promise<void>;
 
 export async function copyPreviousMonth(
-  db: DatabaseInstance,
-  { teamId, fromMonth, fromYear, toMonth, toYear }: CopyMonthInput
-): Promise<number> // returns count of copied goals
+   db: DatabaseInstance,
+   { teamId, fromMonth, fromYear, toMonth, toYear }: CopyMonthInput,
+): Promise<number>; // returns count of copied goals
 // Copies all goals from source month, skipping any where a goal already exists in the target month
 // Copies: categoryId, subcategoryId, limitAmount, alertThreshold
 // Sets alertSentAt = null on all copied goals
 
 export async function getGoalsNeedingAlertCheck(
-  db: DatabaseInstance,
-  { month, year }: { month: number; year: number }
-): Promise<BudgetGoalWithProgress[]>
+   db: DatabaseInstance,
+   { month, year }: { month: number; year: number },
+): Promise<BudgetGoalWithProgress[]>;
 // Returns goals where alertThreshold IS NOT NULL AND alertSentAt IS NULL AND percentUsed >= alertThreshold
 ```
 
@@ -134,6 +158,7 @@ Add event: `budget.alert_triggered` — tracks when a budget alert is fired.
 Job payload: `{ teamId: string; month: number; year: number }`
 
 Logic:
+
 1. Call `getGoalsNeedingAlertCheck()`
 2. For each goal over threshold:
    a. Send email via Resend (import from `@packages/transactional`)
@@ -151,63 +176,97 @@ Logic:
 
 ```typescript
 export const getAll = protectedProcedure
-  .input(z.object({ month: z.number().int().min(1).max(12), year: z.number().int() }))
-  .handler(async ({ context, input }) => {
-    return listBudgetGoals(context.db, { teamId: context.teamId, ...input });
-  });
+   .input(
+      z.object({
+         month: z.number().int().min(1).max(12),
+         year: z.number().int(),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      return listBudgetGoals(context.db, { teamId: context.teamId, ...input });
+   });
 
 export const create = protectedProcedure
-  .input(z.object({
-    categoryId: z.string().uuid().optional(),
-    subcategoryId: z.string().uuid().optional(),
-    month: z.number().int().min(1).max(12),
-    year: z.number().int(),
-    limitAmount: z.string(), // numeric string for NUMERIC column
-    alertThreshold: z.number().int().min(0).max(100).optional(),
-  }).refine(d => !!(d.categoryId ?? d.subcategoryId), {
-    message: "Either categoryId or subcategoryId is required",
-  }))
-  .handler(async ({ context, input }) => {
-    // Validate category/subcategory belongs to team
-    return createBudgetGoal(context.db, { teamId: context.teamId, ...input });
-  });
+   .input(
+      z
+         .object({
+            categoryId: z.string().uuid().optional(),
+            subcategoryId: z.string().uuid().optional(),
+            month: z.number().int().min(1).max(12),
+            year: z.number().int(),
+            limitAmount: z.string(), // numeric string for NUMERIC column
+            alertThreshold: z.number().int().min(0).max(100).optional(),
+         })
+         .refine((d) => !!(d.categoryId ?? d.subcategoryId), {
+            message: "Either categoryId or subcategoryId is required",
+         }),
+   )
+   .handler(async ({ context, input }) => {
+      // Validate category/subcategory belongs to team
+      return createBudgetGoal(context.db, { teamId: context.teamId, ...input });
+   });
 
 export const update = protectedProcedure
-  .input(z.object({
-    id: z.string().uuid(),
-    limitAmount: z.string().optional(),
-    alertThreshold: z.number().int().min(0).max(100).nullable().optional(),
-  }))
-  .handler(async ({ context, input }) => {
-    const existing = await getBudgetGoal(context.db, { id: input.id, teamId: context.teamId });
-    if (!existing) throw new ORPCError("NOT_FOUND", { message: "Meta não encontrada" });
-    return updateBudgetGoal(context.db, { id: input.id, teamId: context.teamId }, input);
-  });
+   .input(
+      z.object({
+         id: z.string().uuid(),
+         limitAmount: z.string().optional(),
+         alertThreshold: z.number().int().min(0).max(100).nullable().optional(),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      const existing = await getBudgetGoal(context.db, {
+         id: input.id,
+         teamId: context.teamId,
+      });
+      if (!existing)
+         throw new ORPCError("NOT_FOUND", { message: "Meta não encontrada" });
+      return updateBudgetGoal(
+         context.db,
+         { id: input.id, teamId: context.teamId },
+         input,
+      );
+   });
 
 export const remove = protectedProcedure
-  .input(z.object({ id: z.string().uuid() }))
-  .handler(async ({ context, input }) => {
-    const existing = await getBudgetGoal(context.db, { id: input.id, teamId: context.teamId });
-    if (!existing) throw new ORPCError("NOT_FOUND", { message: "Meta não encontrada" });
-    await deleteBudgetGoal(context.db, { id: input.id, teamId: context.teamId });
-  });
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      const existing = await getBudgetGoal(context.db, {
+         id: input.id,
+         teamId: context.teamId,
+      });
+      if (!existing)
+         throw new ORPCError("NOT_FOUND", { message: "Meta não encontrada" });
+      await deleteBudgetGoal(context.db, {
+         id: input.id,
+         teamId: context.teamId,
+      });
+   });
 
 export const copyFromPreviousMonth = protectedProcedure
-  .input(z.object({ month: z.number().int().min(1).max(12), year: z.number().int() }))
-  .handler(async ({ context, input }) => {
-    // Compute previous month
-    const prevMonth = input.month === 1 ? 12 : input.month - 1;
-    const prevYear = input.month === 1 ? input.year - 1 : input.year;
-    const count = await copyPreviousMonth(context.db, {
-      teamId: context.teamId,
-      fromMonth: prevMonth, fromYear: prevYear,
-      toMonth: input.month, toYear: input.year,
-    });
-    return { count };
-  });
+   .input(
+      z.object({
+         month: z.number().int().min(1).max(12),
+         year: z.number().int(),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      // Compute previous month
+      const prevMonth = input.month === 1 ? 12 : input.month - 1;
+      const prevYear = input.month === 1 ? input.year - 1 : input.year;
+      const count = await copyPreviousMonth(context.db, {
+         teamId: context.teamId,
+         fromMonth: prevMonth,
+         fromYear: prevYear,
+         toMonth: input.month,
+         toYear: input.year,
+      });
+      return { count };
+   });
 ```
 
 Register in `apps/web/src/integrations/orpc/router/index.ts`:
+
 ```typescript
 import * as budgetGoals from "./budget-goals";
 export const router = { ..., budgetGoals };
@@ -218,9 +277,11 @@ export const router = { ..., budgetGoals };
 ## Step 5 — UI Components
 
 ### 5a. Sheet Form
+
 **File:** `apps/web/src/features/budget-goals/ui/budget-goal-sheet.tsx`
 
 Fields:
+
 - **Tipo de meta** — ToggleGroup: "Categoria" | "Subcategoria"
 - **Categoria** — Combobox (filtered to expense categories only, shows icon + color)
 - **Subcategoria** — Combobox (shown only when type = "Subcategoria", loads from selected category)
@@ -230,6 +291,7 @@ Fields:
 Uses `useSheet` / `useCredenza` global hook — never import Sheet/Credenza manually.
 
 ### 5b. Goal Card
+
 **File:** `apps/web/src/features/budget-goals/ui/budget-goal-card.tsx`
 
 ```
@@ -242,6 +304,7 @@ Uses `useSheet` / `useCredenza` global hook — never import Sheet/Credenza manu
 ```
 
 Progress bar color logic:
+
 - `percentUsed < alertThreshold` → `bg-emerald-500`
 - `percentUsed >= alertThreshold && percentUsed < 100` → `bg-amber-500`
 - `percentUsed >= 100` → `bg-destructive`
@@ -249,9 +312,11 @@ Progress bar color logic:
 Dropdown menu: Editar / Excluir
 
 ### 5c. Table Columns
+
 **File:** `apps/web/src/features/budget-goals/ui/budget-goals-columns.tsx`
 
 Columns:
+
 - Categoria/Subcategoria (icon + color dot + name)
 - Limite (formatted BRL)
 - Gasto (formatted BRL)
@@ -271,11 +336,12 @@ When no goals for the month: show `Empty` component with `Target` icon, title "N
 
 ```typescript
 export const Route = createFileRoute(
-  "/_authenticated/$slug/$teamSlug/_dashboard/finance/goals",
+   "/_authenticated/$slug/$teamSlug/_dashboard/finance/goals",
 )({ loader, component: GoalsPage });
 ```
 
 Page structure:
+
 ```
 <DefaultHeader
   title="Metas"
@@ -315,6 +381,7 @@ Page structure:
 **File:** `apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts`
 
 Add to `finance` group after `tags`:
+
 ```typescript
 {
   id: "goals",
@@ -333,6 +400,7 @@ Import `Target` from `lucide-react`.
 **File:** `packages/transactional/src/emails/budget-alert.tsx`
 
 Simple React Email template:
+
 - Subject: `Alerta de meta: [Categoria] atingiu [X]% do limite`
 - Body: category name, amount spent, limit, percentage, link to goals page
 
@@ -346,21 +414,21 @@ In `packages/database/src/schemas/` — ensure `budget-goals.ts` is included in 
 
 ## File Checklist
 
-| File | Action |
-|------|--------|
-| `packages/database/src/schemas/budget-goals.ts` | Create |
-| `packages/database/src/repositories/budget-goals-repository.ts` | Create |
-| `apps/web/src/integrations/orpc/router/budget-goals.ts` | Create |
-| `apps/web/src/integrations/orpc/router/index.ts` | Edit — register router |
-| `apps/web/src/features/budget-goals/ui/budget-goal-sheet.tsx` | Create |
-| `apps/web/src/features/budget-goals/ui/budget-goal-card.tsx` | Create |
-| `apps/web/src/features/budget-goals/ui/budget-goals-columns.tsx` | Create |
-| `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/finance/goals.tsx` | Create |
-| `apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts` | Edit — add Goals nav item |
-| `packages/transactional/src/emails/budget-alert.tsx` | Create |
-| `apps/worker/src/jobs/check-budget-alerts.ts` | Create |
-| `apps/web/src/integrations/orpc/router/transactions.ts` | Edit — enqueue alert check job |
-| `packages/events/src/finance.ts` | Edit — add budget.alert_triggered |
+| File                                                                              | Action                            |
+| --------------------------------------------------------------------------------- | --------------------------------- |
+| `packages/database/src/schemas/budget-goals.ts`                                   | Create                            |
+| `packages/database/src/repositories/budget-goals-repository.ts`                   | Create                            |
+| `apps/web/src/integrations/orpc/router/budget-goals.ts`                           | Create                            |
+| `apps/web/src/integrations/orpc/router/index.ts`                                  | Edit — register router            |
+| `apps/web/src/features/budget-goals/ui/budget-goal-sheet.tsx`                     | Create                            |
+| `apps/web/src/features/budget-goals/ui/budget-goal-card.tsx`                      | Create                            |
+| `apps/web/src/features/budget-goals/ui/budget-goals-columns.tsx`                  | Create                            |
+| `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/finance/goals.tsx` | Create                            |
+| `apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts`                           | Edit — add Goals nav item         |
+| `packages/transactional/src/emails/budget-alert.tsx`                              | Create                            |
+| `apps/worker/src/jobs/check-budget-alerts.ts`                                     | Create                            |
+| `apps/web/src/integrations/orpc/router/transactions.ts`                           | Edit — enqueue alert check job    |
+| `packages/events/src/finance.ts`                                                  | Edit — add budget.alert_triggered |
 
 ---
 

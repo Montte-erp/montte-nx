@@ -1,0 +1,44 @@
+{
+   "name": "@core/environment",
+   "version": "0.8.1",
+   "private": true,
+   "license": "Apache-2.0",
+   "files": [
+      "dist"
+   ],
+   "type": "module",
+   "exports": {
+      "./client": {
+         "types": "./dist/src/client.d.ts",
+         "default": "./src/client.ts"
+      },
+      "./helpers": {
+         "types": "./dist/src/helpers.d.ts",
+         "default": "./src/helpers.ts"
+      },
+      "./server": {
+         "types": "./dist/src/server.d.ts",
+         "default": "./src/server.ts"
+      },
+      "./worker": {
+         "types": "./dist/src/worker.d.ts",
+         "default": "./src/worker.ts"
+      }
+   },
+   "scripts": {
+      "build": "tsc --build",
+      "check": "oxlint ./src",
+      "test": "bun test --pass-with-no-tests",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@core/utils": "workspace:*",
+      "@t3-oss/env-core": "catalog:enviroment",
+      "zod": "catalog:validation"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development",
+      "vite": "catalog:vite"
+   }
+}

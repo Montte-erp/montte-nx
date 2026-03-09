@@ -1,4 +1,4 @@
-import { getRedisConnection } from "@packages/redis/connection";
+import { getRedisConnection } from "@core/redis/connection";
 import { FREE_TIER_LIMITS } from "@packages/stripe/constants";
 
 // ---------------------------------------------------------------------------

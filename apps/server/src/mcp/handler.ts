@@ -1,5 +1,5 @@
-import { env } from "@packages/environment/server";
-import { getLogger } from "@packages/logging/root";
+import { env } from "@core/environment/server";
+import { getLogger } from "@core/logging/root";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import {
    createMcpHandler,

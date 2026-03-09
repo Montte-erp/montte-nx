@@ -13,6 +13,7 @@
 ## Pre-Implementation Notes
 
 ### PM Spec Clarifications (from issue #632 "Observações")
+
 - "Cliente/Fornecedor (Contato)" appears twice in spec (fields 11 and 15) — treat as **same field** (`contactId`)
 - "Transferência" type — **keep it** (existing data depends on it), spec just doesn't list it
 - `bankAccountId` is currently NOT NULL — spec says optional → **make nullable** (requires migration care)
@@ -20,6 +21,7 @@
 - Categoria currently nullable, spec says obrigatório → **make required in form validation only**
 
 ### What Already Exists ✅
+
 - Nome, Tipo, Valor, Data, Conta Bancária, Categoria (+Subcategoria), Tags, Contato, Cartão, Descrição
 - Import/Export CSV and OFX
 - Filtros: Busca, Período, Tipo, Condition Builder
@@ -30,6 +32,7 @@
 ## Task 1: Add `paymentMethodEnum` and new schema fields
 
 **Files:**
+
 - Modify: `packages/database/src/schemas/transactions.ts`
 
 **Step 1: Add the enum and fields to schema**
@@ -71,28 +74,30 @@ git commit -m "feat(transactions): add paymentMethod, installment fields to sche
 ## Task 2: Create `transaction_items` junction table
 
 **Files:**
+
 - Modify: `packages/database/src/schemas/transactions.ts`
 
 **Step 1: Add the junction table**
 
 ```typescript
 export const transactionItems = pgTable("transaction_items", {
-  id: uuid().primaryKey().defaultRandom(),
-  transactionId: uuid()
-    .notNull()
-    .references(() => transactions.id, { onDelete: "cascade" }),
-  serviceId: uuid().references(() => services.id, { onDelete: "set null" }),
-  teamId: uuid()
-    .notNull()
-    .references(() => team.id, { onDelete: "cascade" }),
-  description: text(),
-  quantity: numeric({ precision: 12, scale: 4 }).notNull().default("1"),
-  unitPrice: numeric({ precision: 12, scale: 2 }).notNull().default("0"),
-  createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+   id: uuid().primaryKey().defaultRandom(),
+   transactionId: uuid()
+      .notNull()
+      .references(() => transactions.id, { onDelete: "cascade" }),
+   serviceId: uuid().references(() => services.id, { onDelete: "set null" }),
+   teamId: uuid()
+      .notNull()
+      .references(() => team.id, { onDelete: "cascade" }),
+   description: text(),
+   quantity: numeric({ precision: 12, scale: 4 }).notNull().default("1"),
+   unitPrice: numeric({ precision: 12, scale: 2 }).notNull().default("0"),
+   createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
 });
 ```
 
 Add relations:
+
 ```typescript
 export const transactionItemsRelations = relations(transactionItems, ({ one }) => ({
   transaction: one(transactions, {
@@ -126,6 +131,7 @@ git commit -m "feat(transactions): add transaction_items junction table for prod
 ## Task 3: Make `bankAccountId` nullable
 
 **Files:**
+
 - Modify: `packages/database/src/schemas/transactions.ts`
 - Modify: `packages/database/src/repositories/transactions-repository.ts`
 - Modify: `apps/web/src/integrations/orpc/router/transactions.ts`
@@ -160,23 +166,25 @@ git commit -m "feat(transactions): make bankAccountId nullable per PM spec"
 ## Task 4: Update repository — add new filters and JOINs
 
 **Files:**
+
 - Modify: `packages/database/src/repositories/transactions-repository.ts`
 
 **Step 1: Add paymentMethod to ListTransactionsFilter**
 
 ```typescript
 interface ListTransactionsFilter {
-  // ...existing fields
-  paymentMethod?: string;
+   // ...existing fields
+   paymentMethod?: string;
 }
 ```
 
 **Step 2: Add paymentMethod filter condition**
 
 In `listTransactions`, add:
+
 ```typescript
 if (filter.paymentMethod) {
-  conditions.push(eq(transactions.paymentMethod, filter.paymentMethod));
+   conditions.push(eq(transactions.paymentMethod, filter.paymentMethod));
 }
 ```
 
@@ -187,14 +195,15 @@ Add LEFT JOINs for `bankAccounts` and `contacts` tables, return `bankAccountName
 **Step 4: Add totalizadores query**
 
 Create new function `getTransactionsSummary(db, filter)`:
+
 ```typescript
 export async function getTransactionsSummary(
-  db: DatabaseInstance,
-  filter: ListTransactionsFilter,
+   db: DatabaseInstance,
+   filter: ListTransactionsFilter,
 ) {
-  // Uses same WHERE conditions as listTransactions
-  // Returns: { totalCount, incomeTotal, expenseTotal, balance }
-  // Use SQL aggregation: COUNT(*), SUM(CASE WHEN type='income' THEN amount ELSE 0 END), etc.
+   // Uses same WHERE conditions as listTransactions
+   // Returns: { totalCount, incomeTotal, expenseTotal, balance }
+   // Use SQL aggregation: COUNT(*), SUM(CASE WHEN type='income' THEN amount ELSE 0 END), etc.
 }
 ```
 
@@ -233,11 +242,13 @@ git commit -m "feat(transactions): add paymentMethod filter, JOINs for names, to
 ## Task 5: Update oRPC router — new fields, items, summary endpoint
 
 **Files:**
+
 - Modify: `apps/web/src/integrations/orpc/router/transactions.ts`
 
 **Step 1: Update transaction input schema**
 
 Add to the Zod schema:
+
 ```typescript
 paymentMethod: z.enum(["pix", "credit_card", "debit_card", "boleto", "cash", "transfer", "other"]).nullable().optional(),
 isInstallment: z.boolean().default(false),
@@ -258,10 +269,19 @@ After creating/updating the transaction, call `createTransactionItems` / `replac
 
 ```typescript
 export const getSummary = protectedProcedure
-  .input(z.object({ /* same filters as getAll */ }).optional())
-  .handler(async ({ context, input }) => {
-    return getTransactionsSummary(context.db, { teamId: context.session.activeTeamId, ...input });
-  });
+   .input(
+      z
+         .object({
+            /* same filters as getAll */
+         })
+         .optional(),
+   )
+   .handler(async ({ context, input }) => {
+      return getTransactionsSummary(context.db, {
+         teamId: context.session.activeTeamId,
+         ...input,
+      });
+   });
 ```
 
 **Step 4: Add paymentMethod to getAll filter input**
@@ -285,22 +305,26 @@ git commit -m "feat(transactions): add paymentMethod, items, installments, summa
 ## Task 6: Update form (transactions-sheet.tsx) — new fields
 
 **Files:**
+
 - Modify: `apps/web/src/features/transactions/ui/transactions-sheet.tsx`
 
 **Step 1: Add paymentMethod field**
 
 Add a Select dropdown after Categoria with options:
+
 - Pix, Cartão de Crédito, Cartão de Débito, Boleto, Dinheiro, Transferência, Outro
 
 **Step 2: Add installment toggle and count**
 
 After payment method:
+
 - Toggle "Parcelado" (boolean)
 - Conditional field "Número de parcelas" (number input, min 2, max 72) — only visible when parcelado=true
 
 **Step 3: Add items (products/services) section**
 
 After contato field, add a repeatable items section:
+
 - Button "Adicionar Produto/Serviço"
 - Each item row: Service combobox (optional) + Description + Quantity + Unit Price + Remove button
 - Query services via `orpc.services.getAll`
@@ -308,6 +332,7 @@ After contato field, add a repeatable items section:
 **Step 4: Add file attachment upload**
 
 After description field:
+
 - File input with drag-and-drop
 - Use `usePresignedUpload` hook for MinIO upload
 - Store URL in `attachmentUrl`
@@ -333,11 +358,13 @@ git commit -m "feat(transactions): add paymentMethod, installments, items, attac
 ## Task 7: Update columns (transactions-columns.tsx)
 
 **Files:**
+
 - Modify: `apps/web/src/features/transactions/ui/transactions-columns.tsx`
 
 **Step 1: Add missing columns**
 
 Add columns for:
+
 - **Conta** (bankAccountName from JOIN)
 - **Fornecedor/Cliente** (contactName from JOIN)
 
@@ -366,6 +393,7 @@ git commit -m "feat(transactions): add Conta, Contato columns, reorder per spec"
 ## Task 8: Add totalizadores to list (transactions-list.tsx)
 
 **Files:**
+
 - Modify: `apps/web/src/features/transactions/ui/transactions-list.tsx`
 
 **Step 1: Query summary data**
@@ -375,6 +403,7 @@ Add `useSuspenseQuery` for `orpc.transactions.getSummary` with same filters.
 **Step 2: Render totalizadores bar**
 
 Above the DataTable, add a summary bar with 4 cards:
+
 - Total de lançamentos (count)
 - Entradas (R$ green)
 - Saídas (R$ red)
@@ -399,11 +428,13 @@ git commit -m "feat(transactions): add totalizadores summary bar above table"
 ## Task 9: Update filters (transaction-filter-bar.tsx)
 
 **Files:**
+
 - Modify: `apps/web/src/features/transactions/ui/transaction-filter-bar.tsx`
 
 **Step 1: Add direct filters**
 
 Promote from condition builder to top-level Select filters:
+
 - **Conta** (bankAccountId) — dropdown of bank accounts
 - **Cartão** (creditCardId) — dropdown of credit cards
 - **Forma de pagamento** (paymentMethod) — dropdown of payment methods
@@ -412,6 +443,7 @@ Promote from condition builder to top-level Select filters:
 **Step 2: Update TransactionFilters interface**
 
 Add:
+
 ```typescript
 bankAccountId?: string;
 creditCardId?: string;
@@ -440,11 +472,13 @@ git commit -m "feat(transactions): promote filters to top-level, add paymentMeth
 ## Task 10: Update import (transaction-import-credenza.tsx)
 
 **Files:**
+
 - Modify: `apps/web/src/features/transactions/ui/transaction-import-credenza.tsx`
 
 **Step 1: Add column mappings for new fields**
 
 Add auto-detection patterns for:
+
 - `forma_pagamento` / `payment_method` / `metodo` → paymentMethod
 - `parcelado` / `installment` → isInstallment
 - `num_parcelas` / `parcelas` / `installments` → installmentCount
@@ -472,11 +506,13 @@ git commit -m "feat(transactions): add new field mappings to CSV import"
 ## Task 11: Update export (transaction-export-credenza.tsx)
 
 **Files:**
+
 - Modify: `apps/web/src/features/transactions/ui/transaction-export-credenza.tsx`
 
 **Step 1: Add new columns to CSV export**
 
 Add to CSV header and row generation:
+
 - `forma_pagamento` (paymentMethod)
 - `parcelado` (isInstallment)
 - `num_parcelas` (installmentCount)

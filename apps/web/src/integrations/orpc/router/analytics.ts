@@ -3,9 +3,9 @@ import { executeBreakdownQuery } from "@packages/analytics/compute-breakdown";
 import { executeKpiQuery } from "@packages/analytics/compute-kpi";
 import { executeTimeSeriesQuery } from "@packages/analytics/compute-time-series";
 import { insightConfigSchema } from "@packages/analytics/types";
-import { getDefaultDashboard as fetchDefaultDashboard } from "@packages/database/repositories/dashboard-repository";
-import { getInsightsByIds } from "@packages/database/repositories/insight-repository";
-import { getLogger } from "@packages/logging/root";
+import { getDefaultDashboard as fetchDefaultDashboard } from "@core/database/repositories/dashboard-repository";
+import { getInsightsByIds } from "@core/database/repositories/insight-repository";
+import { getLogger } from "@core/logging/root";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

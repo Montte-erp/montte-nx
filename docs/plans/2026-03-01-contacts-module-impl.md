@@ -9,6 +9,7 @@
 **Tech Stack:** Drizzle ORM, oRPC + TanStack Query, TanStack Form, Radix UI, Sonner toasts, PostHog early access.
 
 **Parallelism notes:**
+
 - Tasks 1→2→3 are sequential (schema → repo → router)
 - Tasks 4, 6, 7 can run in parallel after Task 3
 - Task 5 runs after Task 4
@@ -19,6 +20,7 @@
 ## Task 1: Database Schema
 
 **Files:**
+
 - Create: `packages/database/src/schemas/contacts.ts`
 - Modify: `packages/database/src/schemas/transactions.ts`
 - Modify: `packages/database/src/schema.ts`
@@ -53,7 +55,9 @@ export const contactDocumentTypeEnum = pgEnum("contact_document_type", [
 export const contacts = pgTable(
    "contacts",
    {
-      id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
       teamId: uuid("team_id").notNull(),
       name: text("name").notNull(),
       type: contactTypeEnum("type").notNull(),
@@ -92,11 +96,13 @@ export type ContactDocumentType =
 In `packages/database/src/schemas/transactions.ts`:
 
 1. Add import at the top (after existing imports):
+
 ```typescript
 import { contacts } from "./contacts";
 ```
 
 2. Add `contactId` field inside the `transactions` pgTable columns object (after `attachmentUrl`):
+
 ```typescript
 contactId: uuid("contact_id").references(() => contacts.id, {
    onDelete: "set null",
@@ -104,6 +110,7 @@ contactId: uuid("contact_id").references(() => contacts.id, {
 ```
 
 3. Add contact relation inside `transactionsRelations` (after `transactionTags: many(transactionTags)`):
+
 ```typescript
 contact: one(contacts, {
    fields: [transactions.contactId],
@@ -116,6 +123,7 @@ contact: one(contacts, {
 **Step 3: Export from schema.ts**
 
 Add to `packages/database/src/schema.ts` under the `// Finance` comment block:
+
 ```typescript
 export * from "./schemas/contacts";
 ```
@@ -129,6 +137,7 @@ export * from "./schemas/contacts";
 ## Task 2: Database Repository
 
 **Files:**
+
 - Create: `packages/database/src/repositories/contacts-repository.ts`
 
 **Step 1: Write the repository**
@@ -138,11 +147,7 @@ export * from "./schemas/contacts";
 import { AppError, propagateError } from "@packages/utils/errors";
 import { and, count, eq } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
-import {
-   type ContactType,
-   type NewContact,
-   contacts,
-} from "../schema";
+import { type ContactType, type NewContact, contacts } from "../schema";
 import { transactions } from "../schema";
 
 export async function createContact(db: DatabaseInstance, data: NewContact) {
@@ -243,6 +248,7 @@ git commit -m "feat(contacts): add contacts schema and repository"
 ## Task 3: oRPC Router
 
 **Files:**
+
 - Create: `apps/web/src/integrations/orpc/router/contacts.ts`
 - Modify: `apps/web/src/integrations/orpc/router/index.ts`
 - Modify: `apps/web/src/integrations/orpc/router/transactions.ts`
@@ -294,9 +300,7 @@ export const getAll = protectedProcedure
    .input(
       z
          .object({
-            type: z
-               .enum(["cliente", "fornecedor", "ambos"])
-               .optional(),
+            type: z.enum(["cliente", "fornecedor", "ambos"]).optional(),
          })
          .optional(),
    )
@@ -306,11 +310,7 @@ export const getAll = protectedProcedure
    });
 
 export const update = protectedProcedure
-   .input(
-      z
-         .object({ id: z.string().uuid() })
-         .merge(contactSchema.partial()),
-   )
+   .input(z.object({ id: z.string().uuid() }).merge(contactSchema.partial()))
    .handler(async ({ context, input }) => {
       const { db, teamId } = context;
       const contact = await getContact(db, input.id);
@@ -350,11 +350,13 @@ export const remove = protectedProcedure
 In `apps/web/src/integrations/orpc/router/index.ts`:
 
 Add import (alphabetically after `categoriesRouter`):
+
 ```typescript
 import * as contactsRouter from "./contacts";
 ```
 
 Add to the export object (alphabetically after `categories`):
+
 ```typescript
 contacts: contactsRouter,
 ```
@@ -364,24 +366,25 @@ contacts: contactsRouter,
 In `apps/web/src/integrations/orpc/router/transactions.ts`:
 
 1. Add `contactId` to the `transactionSchema` `.pick()` call:
+
 ```typescript
-const transactionSchema = createInsertSchema(transactions)
-   .pick({
-      type: true,
-      amount: true,
-      description: true,
-      date: true,
-      bankAccountId: true,
-      destinationBankAccountId: true,
-      categoryId: true,
-      subcategoryId: true,
-      attachmentUrl: true,
-      contactId: true,  // ADD THIS
-   })
-   // ...rest unchanged
+const transactionSchema = createInsertSchema(transactions).pick({
+   type: true,
+   amount: true,
+   description: true,
+   date: true,
+   bankAccountId: true,
+   destinationBankAccountId: true,
+   categoryId: true,
+   subcategoryId: true,
+   attachmentUrl: true,
+   contactId: true, // ADD THIS
+});
+// ...rest unchanged
 ```
 
 2. Add `contactId` to the `getAll` filter input schema:
+
 ```typescript
 contactId: z.string().uuid().optional(),
 ```
@@ -391,11 +394,13 @@ contactId: z.string().uuid().optional(),
 4. In `packages/database/src/repositories/transactions-repository.ts`, add `contactId` support to `ListTransactionsFilter` and `listTransactions`:
 
 Add to `ListTransactionsFilter` interface:
+
 ```typescript
 contactId?: string;
 ```
 
 Add condition inside `listTransactions` (after the `categoryId` filter):
+
 ```typescript
 if (filter.contactId)
    conditions.push(eq(transactions.contactId, filter.contactId));
@@ -413,6 +418,7 @@ git commit -m "feat(contacts): add contacts oRPC router and contactId filter on 
 ## Task 4: Contacts Feature UI
 
 **Files:**
+
 - Create: `apps/web/src/features/contacts/ui/contacts-columns.tsx`
 - Create: `apps/web/src/features/contacts/ui/contacts-form.tsx`
 
@@ -838,6 +844,7 @@ git commit -m "feat(contacts): add contacts-columns and contacts-form UI compone
 ## Task 5: Contacts Route Page
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/finance/contacts.tsx`
 
 **Step 1: Create the route**
@@ -1217,11 +1224,13 @@ git commit -m "feat(contacts): add contacts route page"
 ## Task 6: Update Transactions Sheet (Contact Picker)
 
 **Files:**
+
 - Modify: `apps/web/src/features/transactions/ui/transactions-sheet.tsx`
 
 **Step 1: Add contact combobox to the transactions form**
 
 At the top of the file, add the Combobox import from UI:
+
 ```typescript
 import {
    Combobox,
@@ -1234,6 +1243,7 @@ import {
 ```
 
 Add `contactId` to the form's `defaultValues`:
+
 ```typescript
 contactId: transaction?.contactId ?? null,
 ```
@@ -1305,6 +1315,7 @@ Add a `form.Field` for `contactId` in the form body, wrapped in `<Suspense>`:
 ```
 
 Also add `contactId` to the `TransactionRow` type in `transactions-columns.tsx`:
+
 ```typescript
 contactId: string | null;
 contactName?: string | null;
@@ -1322,11 +1333,13 @@ git commit -m "feat(contacts): add contact picker to transactions form"
 ## Task 7: Sidebar Navigation + Early Access Config
 
 **Files:**
+
 - Modify: `apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts`
 
 **Step 1: Add Contatos to sidebar nav**
 
 1. Add `Users` to the lucide-react import:
+
 ```typescript
 import {
    ArrowLeftRight,
@@ -1340,11 +1353,12 @@ import {
    Tag,
    Tags,
    Target,
-   Users,   // ADD THIS
+   Users, // ADD THIS
 } from "lucide-react";
 ```
 
 2. Add the contacts nav item to the `finance` group items array (after `goals`):
+
 ```typescript
 {
    id: "contacts",

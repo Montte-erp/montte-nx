@@ -58,6 +58,7 @@ This prevents the model from making compromises that work "okay" on both but gre
 ### 3. Sets High Standards
 
 References:
+
 - "world class"
 - "best practices like those used by Stripe"
 - "makes people gasp at how stunning and perfect it is"
@@ -67,6 +68,7 @@ These anchors push the model toward higher quality than generic "make it better"
 ### 4. Uses Ultrathink
 
 Extended thinking allows the model to:
+
 - Analyze the current state thoroughly
 - Consider multiple improvement options
 - Choose the highest-impact changes
@@ -76,17 +78,18 @@ Extended thinking allows the model to:
 
 ## Best Models for This Task
 
-| Model | Effectiveness |
-|-------|---------------|
-| **Claude Code + Opus 4.5** | Excellent |
-| **Codex + GPT 5.2** (High/Extra-High reasoning) | Excellent |
-| **Gemini CLI** | Good |
+| Model                                           | Effectiveness |
+| ----------------------------------------------- | ------------- |
+| **Claude Code + Opus 4.5**                      | Excellent     |
+| **Codex + GPT 5.2** (High/Extra-High reasoning) | Excellent     |
+| **Gemini CLI**                                  | Good          |
 
 ---
 
 ## Tech Stack Compatibility
 
 This prompt works with:
+
 - Next.js 16 + React 19 + Tailwind 4
 - Any modern web framework
 - Applications using Framer Motion or similar animation libraries
@@ -114,6 +117,7 @@ This prompt works with:
 ### Multiple Agents
 
 You can have more than one agent working on UI/UX polish simultaneously:
+
 - They'll focus on different areas
 - Use file reservations to avoid conflicts
 - Compound improvements faster
@@ -144,6 +148,7 @@ For complete overhauls, use a different approach focused on establishing a desig
 ## What the Model Typically Improves
 
 ### Visual Polish
+
 - Spacing and padding consistency
 - Typography hierarchy
 - Color contrast and accessibility
@@ -152,6 +157,7 @@ For complete overhauls, use a different approach focused on establishing a desig
 - Hover/focus states
 
 ### Interaction Design
+
 - Button feedback
 - Loading states
 - Transitions and animations
@@ -159,6 +165,7 @@ For complete overhauls, use a different approach focused on establishing a desig
 - Empty state design
 
 ### Mobile Optimization
+
 - Touch target sizes
 - Responsive breakpoints
 - Mobile-specific navigation
@@ -166,6 +173,7 @@ For complete overhauls, use a different approach focused on establishing a desig
 - Performance on mobile devices
 
 ### Desktop Optimization
+
 - Keyboard navigation
 - Hover states
 - Multi-column layouts
@@ -177,6 +185,7 @@ For complete overhauls, use a different approach focused on establishing a desig
 ## Tracking Progress
 
 After each iteration, you might notice:
+
 - Subtle shadow improvements
 - Better spacing rhythm
 - More consistent typography
@@ -205,11 +214,13 @@ This lets agents work on UI/UX polish as part of the normal bead workflow.
 ## Complete Prompt Reference
 
 ### Main Polish Prompt
+
 ```
 I still think there are strong opportunities to enhance the UI/UX look and feel and to make everything work better and be more intuitive, user-friendly, visually appealing, polished, slick, and world class in terms of following UI/UX best practices like those used by Stripe, don't you agree? And I want you to carefully consider desktop UI/UX and mobile UI/UX separately while doing this and hyper-optimize for both separately to play to the specifics of each modality. I'm looking for true world-class visual appeal, polish, slickness, etc. that makes people gasp at how stunning and perfect it is in every way.  Use ultrathink.
 ```
 
 ### Alternative: General Scrutiny (from agent-swarm-workflow)
+
 ```
 Great, now I want you to super carefully scrutinize every aspect of the application workflow and implementation and look for things that just seem sub-optimal or even wrong/mistaken to you, things that could very obviously be improved from a user-friendliness and intuitiveness standpoint, places where our UI/UX could be improved and polished to be slicker, more visually appealing, and more premium feeling and just ultra high quality, like Stripe-level apps.
 ```

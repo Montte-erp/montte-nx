@@ -22,11 +22,11 @@ All tables use `DataTable` from `@packages/ui/components/data-table` with this r
 
 ## Action Classification
 
-| Category | Where | Examples |
-|----------|-------|---------|
-| **Primary** | Icon button on row | Edit, View, Enable/Disable toggle |
-| **Secondary** | Expandable section | Duplicate, Export, History, Settings |
-| **Destructive** | Expandable section only | Delete, Revoke, Archive |
+| Category        | Where                   | Examples                             |
+| --------------- | ----------------------- | ------------------------------------ |
+| **Primary**     | Icon button on row      | Edit, View, Enable/Disable toggle    |
+| **Secondary**   | Expandable section      | Duplicate, Export, History, Settings |
+| **Destructive** | Expandable section only | Delete, Revoke, Archive              |
 
 ## Full Pattern
 
@@ -100,38 +100,48 @@ function RowExpandedContent({ row }: { row: Row<T> }) {
 
 ```tsx
 function ItemMobileCard({
-  row,
-  isExpanded,
-  toggleExpanded,
-  canExpand,
+   row,
+   isExpanded,
+   toggleExpanded,
+   canExpand,
 }: MobileCardRenderProps<T>) {
-  const item = row.original;
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
-          {/* Identity info */}
-          <div className="flex-1 min-w-0">
-            <p className="font-medium truncate">{item.name}</p>
-            <p className="text-xs text-muted-foreground">{item.subtitle}</p>
-          </div>
-          {/* Primary icon actions inline, then expand toggle */}
-          <div className="flex items-center gap-1">
-            <Button size="icon" variant="ghost" onClick={() => onEdit(item)}>
-              <Pencil className="size-4" />
-            </Button>
-            {canExpand && (
-              <Button size="icon" variant="ghost" onClick={toggleExpanded}>
-                <ChevronDown
-                  className={`size-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                />
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+   const item = row.original;
+   return (
+      <Card>
+         <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+               {/* Identity info */}
+               <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{item.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                     {item.subtitle}
+                  </p>
+               </div>
+               {/* Primary icon actions inline, then expand toggle */}
+               <div className="flex items-center gap-1">
+                  <Button
+                     size="icon"
+                     variant="ghost"
+                     onClick={() => onEdit(item)}
+                  >
+                     <Pencil className="size-4" />
+                  </Button>
+                  {canExpand && (
+                     <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={toggleExpanded}
+                     >
+                        <ChevronDown
+                           className={`size-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                        />
+                     </Button>
+                  )}
+               </div>
+            </div>
+         </CardContent>
+      </Card>
+   );
 }
 ```
 
@@ -145,16 +155,16 @@ onClick={(e) => { e.stopPropagation(); onEdit(row.original); }}
 
 ## Common Mistakes
 
-| Mistake | Fix |
-|---------|-----|
-| `DropdownMenu` in action column | Remove dropdown; expose top 1–2 as icon buttons, rest in expandable |
-| Delete button on main row | Move to expandable — destructive actions are always secondary |
-| Forgetting `e.stopPropagation()` | All icon button `onClick` handlers must stop propagation |
-| No `renderMobileCard` | Always provide mobile card renderer — DataTable doesn't auto-collapse on mobile |
-| Too many icon buttons (>3) | Move anything beyond top 2 to expandable |
-| No `sr-only` span on icon button | Always add `<span className="sr-only">Action label</span>` for accessibility |
-| No tooltip on icon button | Wrap in `<Tooltip>` + `<TooltipTrigger asChild>` + `<TooltipContent>Label</TooltipContent>` |
-| Icon-only in expandable | Use normal buttons with icon + text (e.g. `<Trash2 className="size-3 mr-2" /> Excluir`) |
+| Mistake                          | Fix                                                                                         |
+| -------------------------------- | ------------------------------------------------------------------------------------------- |
+| `DropdownMenu` in action column  | Remove dropdown; expose top 1–2 as icon buttons, rest in expandable                         |
+| Delete button on main row        | Move to expandable — destructive actions are always secondary                               |
+| Forgetting `e.stopPropagation()` | All icon button `onClick` handlers must stop propagation                                    |
+| No `renderMobileCard`            | Always provide mobile card renderer — DataTable doesn't auto-collapse on mobile             |
+| Too many icon buttons (>3)       | Move anything beyond top 2 to expandable                                                    |
+| No `sr-only` span on icon button | Always add `<span className="sr-only">Action label</span>` for accessibility                |
+| No tooltip on icon button        | Wrap in `<Tooltip>` + `<TooltipTrigger asChild>` + `<TooltipContent>Label</TooltipContent>` |
+| Icon-only in expandable          | Use normal buttons with icon + text (e.g. `<Trash2 className="size-3 mr-2" /> Excluir`)     |
 
 ## Reference Files
 

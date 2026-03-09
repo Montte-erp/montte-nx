@@ -1,12 +1,12 @@
 import type { Money } from "@f-o-t/money";
 import { toMajorUnitsString } from "@f-o-t/money";
-import type { DatabaseInstance } from "@packages/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import {
    createWebhookDelivery,
    findMatchingWebhooks,
-} from "@packages/database/repositories/webhook-repository";
-import { events } from "@packages/database/schemas/events";
-import { getLogger } from "@packages/logging/root";
+} from "@core/database/repositories/webhook-repository";
+import { events } from "@core/database/schemas/events";
+import { getLogger } from "@core/logging/root";
 import type { PostHog } from "@packages/posthog/server";
 import { createQueueConnection } from "@packages/queue/connection";
 import {

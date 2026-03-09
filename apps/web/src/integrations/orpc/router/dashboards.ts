@@ -7,12 +7,12 @@ import {
    setDashboardAsHome,
    updateDashboard,
    updateDashboardTiles,
-} from "@packages/database/repositories/dashboard-repository";
+} from "@core/database/repositories/dashboard-repository";
 import {
    DashboardDateRangeSchema,
    DashboardFilterSchema,
    type NewDashboard,
-} from "@packages/database/schemas/dashboards";
+} from "@core/database/schemas/dashboards";
 import {
    emitDashboardCreated,
    emitDashboardDeleted,

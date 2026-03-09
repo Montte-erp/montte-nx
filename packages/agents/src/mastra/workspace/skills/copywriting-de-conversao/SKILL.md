@@ -27,12 +27,14 @@ Primeiro vem a **emoção**, depois a **lógica**.
 ## Gatilhos emocionais (para blog)
 
 ### 1) Alegria (transformação real)
+
 Mostre a evolução: antes ➜ depois.
 
 ❌ “Nossa ferramenta é moderna.”
 ✅ “Em 2 semanas, você sai de ‘sem pauta’ para ‘3 posts publicados’.”
 
 ### 2) Medo / FOMO (urgência real)
+
 Crie urgência **verdadeira**, com motivo claro.
 
 ❌ “Compre agora antes que acabe!”
@@ -56,6 +58,7 @@ Crie urgência **verdadeira**, com motivo claro.
 Esses CTAs **não dizem o que a pessoa ganha**.
 
 ### Fórmula de CTA
+
 **[Verbo de Ação] + [O que Recebem] + [Qualificador]**
 
 ✅ “Baixe o checklist de revisão SEO em 10 minutos”
@@ -81,11 +84,13 @@ Esses CTAs **não dizem o que a pessoa ganha**.
 ## Linha ética: genuíno vs manipulativo
 
 **Genuíno**:
+
 - Urgência baseada em fatos
 - Benefícios reais, verificáveis
 - Provas sociais verdadeiras
 
 **Manipulativo**:
+
 - Escassez falsa
 - Promessa impossível
 - Medo exagerado
@@ -100,11 +105,13 @@ Esses CTAs **não dizem o que a pessoa ganha**.
 **Para blog, sempre Soft Sell.**
 
 ### Soft Sell
+
 - Ajuda primeiro
 - Convida depois
 - Tom consultivo
 
 ### Hard Sell
+
 - Pressiona
 - Força decisão
 - Tom vendedor agressivo
@@ -127,14 +134,17 @@ Esses CTAs **não dizem o que a pessoa ganha**.
 ## Exemplos rápidos (❌/✅)
 
 ### Hook
+
 ❌ “Neste artigo, vamos falar sobre SEO.”
 ✅ “Você publica, mas o tráfego não cresce? Vamos destravar isso.”
 
 ### Benefício
+
 ❌ “Ferramenta completa.”
 ✅ “Crie títulos melhores em menos de 5 minutos.”
 
 ### CTA
+
 ❌ “Clique aqui para saber mais.”
 ✅ “Faça o diagnóstico gratuito do seu blog hoje.”
 

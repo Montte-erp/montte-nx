@@ -1,9 +1,9 @@
-import type { DatabaseInstance } from "@packages/database/client";
-import { getLogger } from "@packages/logging/root";
+import type { DatabaseInstance } from "@core/database/client";
+import { getLogger } from "@core/logging/root";
 
 const logger = getLogger().child({ module: "events:reconcile" });
 
-import { currentMonthUsageByEvent } from "@packages/database/schema";
+import { currentMonthUsageByEvent } from "@core/database/schema";
 import { FREE_TIER_LIMITS } from "@packages/stripe/constants";
 import type { Redis } from "ioredis";
 

@@ -7,6 +7,7 @@
 ## Palavras de poder por categoria
 
 ### Urgência
+
 - agora
 - hoje
 - rápido
@@ -14,6 +15,7 @@
 - em minutos
 
 ### Curiosidade
+
 - por que
 - o que ninguém te contou
 - segredo
@@ -21,6 +23,7 @@
 - verdade
 
 ### Especificidade
+
 - passo a passo
 - checklist
 - guia prático
@@ -28,6 +31,7 @@
 - template
 
 ### Emoção
+
 - travado
 - frustrado
 - alívio
@@ -35,6 +39,7 @@
 - clareza
 
 ### Valor
+
 - gratuito
 - simples
 - comprovado
@@ -54,6 +59,7 @@ Critérios (0–2 pontos cada):
 5. **Intenção alinhada** (busca informacional)
 
 ### Interpretação
+
 - **8–10**: ótimo
 - **6–7**: bom, ajustar 1 ponto
 - **≤5**: reescrever
@@ -71,6 +77,7 @@ Título base:
 “Checklist de SEO para blog”
 
 Variações:
+
 1. “Checklist de SEO para blog em 15 minutos”
 2. “Guia prático: checklist de SEO para blog”
 3. “Checklist de SEO para blog: o que revisar hoje”
@@ -112,14 +119,17 @@ Variações:
 ## Exemplos rápidos (❌/✅)
 
 ### Genérico
+
 ❌ “Dicas de marketing”
 ✅ “7 dicas de marketing para blogs com pouco tempo”
 
 ### Sem benefício
+
 ❌ “O que é SEO”
 ✅ “O que é SEO e como aplicar em 30 minutos”
 
 ### Sem intenção clara
+
 ❌ “SEO avançado”
 ✅ “SEO avançado para blogs: checklist de revisão”
 

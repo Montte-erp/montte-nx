@@ -37,6 +37,7 @@ packages/
 | Railway lambdas | Cron-triggered jobs (scheduled tasks) | — |
 
 **Asaas webhook flow:**
+
 ```
 Asaas → POST /webhooks/asaas → server (validate signature + enqueue job)
                                           ↓
@@ -108,11 +109,12 @@ Contract/booking per client. Links a contact to a service variant.
 ```
 
 **Derived discount** (never stored):
+
 ```
 discount% = ((basePrice - negotiatedPrice) / basePrice) * 100
 ```
 
-### `resources` *(schema only, not used in v1)*
+### `resources` _(schema only, not used in v1)_
 
 Reserved for future booking/overbooking prevention.
 
@@ -132,6 +134,7 @@ Reserved for future booking/overbooking prevention.
 ### Schema additions on existing tables
 
 **`contacts`:**
+
 ```ts
 source:     enum('manual', 'asaas') default 'manual'
 externalId: text  -- Asaas customer ID, nullable
@@ -153,14 +156,15 @@ All monetary values stored as **integers (cents)** — consistent with `transact
 
 When a subscription is saved, bills (receivable) are auto-created in the existing `bills` table.
 
-| `billingCycle` | Behavior |
-|---|---|
-| `monthly` | One bill per month between `startDate` and `endDate`, `dueDate` = same day of month as `startDate` |
-| `annual` | One bill |
-| `one_time` | One bill |
-| `hourly` | **No auto-generation** — too granular, created manually per session |
+| `billingCycle` | Behavior                                                                                           |
+| -------------- | -------------------------------------------------------------------------------------------------- |
+| `monthly`      | One bill per month between `startDate` and `endDate`, `dueDate` = same day of month as `startDate` |
+| `annual`       | One bill                                                                                           |
+| `one_time`     | One bill                                                                                           |
+| `hourly`       | **No auto-generation** — too granular, created manually per session                                |
 
 Each bill gets:
+
 - `type: 'receivable'`
 - `contactId` — the subscribed contact
 - `description` — `"[Service Name] – [Variant Name] ([Month/Year])"` e.g. `"Espaço Compartilhado – Pacote Mensal (Mar/2026)"`
@@ -228,11 +232,13 @@ PostHog is the source of truth for stage. `"alpha"` is the fallback only.
 ### Webhook receiver — `apps/server/`
 
 New public endpoint:
+
 ```
 POST /webhooks/asaas
 ```
 
 Responsibilities:
+
 1. Verify Asaas signature (token from env `ASAAS_WEBHOOK_TOKEN`)
 2. Respond `200 OK` immediately
 3. Enqueue BullMQ job `asaas.webhook` with raw payload
@@ -241,16 +247,17 @@ Responsibilities:
 
 Handles sync logic per event type:
 
-| Asaas event | Action |
-|---|---|
-| `CUSTOMER_CREATED` | Upsert contact (`externalId` = Asaas customer ID, `source: 'asaas'`) |
-| `CUSTOMER_UPDATED` | Update contact name/email/phone/document |
-| `SUBSCRIPTION_CREATED` | Upsert service variant + create `contact_subscription` (`source: 'asaas'`) |
-| `SUBSCRIPTION_UPDATED` | Update subscription status, price, dates |
-| `SUBSCRIPTION_CANCELLED` | Set subscription `status: 'cancelled'`, cancel pending bills |
-| `PAYMENT_RECEIVED` | Create `transaction` (income) linked to `contactId`, tagged with service name |
+| Asaas event              | Action                                                                        |
+| ------------------------ | ----------------------------------------------------------------------------- |
+| `CUSTOMER_CREATED`       | Upsert contact (`externalId` = Asaas customer ID, `source: 'asaas'`)          |
+| `CUSTOMER_UPDATED`       | Update contact name/email/phone/document                                      |
+| `SUBSCRIPTION_CREATED`   | Upsert service variant + create `contact_subscription` (`source: 'asaas'`)    |
+| `SUBSCRIPTION_UPDATED`   | Update subscription status, price, dates                                      |
+| `SUBSCRIPTION_CANCELLED` | Set subscription `status: 'cancelled'`, cancel pending bills                  |
+| `PAYMENT_RECEIVED`       | Create `transaction` (income) linked to `contactId`, tagged with service name |
 
 Matching strategy:
+
 - Contacts matched by `externalId` (Asaas customer ID)
 - Subscriptions matched by `externalId` (Asaas subscription ID)
 - Service + variant auto-created from Asaas plan name if not found

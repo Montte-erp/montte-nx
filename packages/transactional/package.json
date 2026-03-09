@@ -23,7 +23,7 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "@packages/utils": "workspace:*",
+      "@core/utils": "workspace:*",
       "@react-email/components": "catalog:transactional",
       "react": "catalog:react",
       "react-dom": "catalog:react",

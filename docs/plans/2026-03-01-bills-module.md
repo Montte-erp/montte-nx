@@ -13,16 +13,16 @@ A separate bills module for managing accounts payable (contas a pagar) and accou
 
 ## Decisions
 
-| Question | Decision |
-|----------|----------|
-| Relationship to transactions | Separate entities — paying a bill auto-creates a transaction |
-| Fields | Extended: amount, due date, type, status, account, category, recurrence OR installment |
-| Installments | Flexible: fixed count + auto-divide total OR custom per-installment amounts |
-| Recurrence | Rolling window, user-configured horizon (e.g. 3 months ahead) |
-| Recurring vs installments | Mutually exclusive |
-| Pay action | Auto-creates pre-filled transaction, user confirms |
-| Transaction actions | Convert to bill series (original transaction kept) |
-| Navigation | Separate `/finance/bills` page with Contas a Pagar / Contas a Receber tabs |
+| Question                     | Decision                                                                               |
+| ---------------------------- | -------------------------------------------------------------------------------------- |
+| Relationship to transactions | Separate entities — paying a bill auto-creates a transaction                           |
+| Fields                       | Extended: amount, due date, type, status, account, category, recurrence OR installment |
+| Installments                 | Flexible: fixed count + auto-divide total OR custom per-installment amounts            |
+| Recurrence                   | Rolling window, user-configured horizon (e.g. 3 months ahead)                          |
+| Recurring vs installments    | Mutually exclusive                                                                     |
+| Pay action                   | Auto-creates pre-filled transaction, user confirms                                     |
+| Transaction actions          | Convert to bill series (original transaction kept)                                     |
+| Navigation                   | Separate `/finance/bills` page with Contas a Pagar / Contas a Receber tabs             |
 
 ---
 
@@ -30,44 +30,43 @@ A separate bills module for managing accounts payable (contas a pagar) and accou
 
 ### `bills` table (`packages/database/src/schemas/bills.ts`)
 
-| Field | Type | Notes |
-|-------|------|-------|
-| `id` | UUID PK | auto-generated |
-| `teamId` | UUID FK | required |
-| `name` | TEXT | required |
-| `description` | TEXT | nullable |
-| `type` | enum | `"payable"` \| `"receivable"` |
-| `status` | enum | `"pending"` \| `"paid"` \| `"overdue"` \| `"cancelled"` — computed on read for overdue |
-| `amount` | numeric(12,2) | required |
-| `dueDate` | date | required |
-| `paidAt` | timestamp | nullable — set when paid |
-| `bankAccountId` | UUID FK → bankAccounts | nullable |
-| `categoryId` | UUID FK → categories | nullable |
-| `attachmentUrl` | TEXT | nullable |
-| `installmentGroupId` | UUID | nullable — groups all installments |
-| `installmentIndex` | integer | nullable — 1-based (e.g. 1 of 12) |
-| `installmentTotal` | integer | nullable — total installments in group |
-| `recurrenceGroupId` | UUID FK → recurrenceSettings | nullable |
-| `transactionId` | UUID FK → transactions | nullable — set when paid |
-| `createdAt` | timestamp | |
-| `updatedAt` | timestamp | |
+| Field                | Type                         | Notes                                                                                  |
+| -------------------- | ---------------------------- | -------------------------------------------------------------------------------------- |
+| `id`                 | UUID PK                      | auto-generated                                                                         |
+| `teamId`             | UUID FK                      | required                                                                               |
+| `name`               | TEXT                         | required                                                                               |
+| `description`        | TEXT                         | nullable                                                                               |
+| `type`               | enum                         | `"payable"` \| `"receivable"`                                                          |
+| `status`             | enum                         | `"pending"` \| `"paid"` \| `"overdue"` \| `"cancelled"` — computed on read for overdue |
+| `amount`             | numeric(12,2)                | required                                                                               |
+| `dueDate`            | date                         | required                                                                               |
+| `paidAt`             | timestamp                    | nullable — set when paid                                                               |
+| `bankAccountId`      | UUID FK → bankAccounts       | nullable                                                                               |
+| `categoryId`         | UUID FK → categories         | nullable                                                                               |
+| `attachmentUrl`      | TEXT                         | nullable                                                                               |
+| `installmentGroupId` | UUID                         | nullable — groups all installments                                                     |
+| `installmentIndex`   | integer                      | nullable — 1-based (e.g. 1 of 12)                                                      |
+| `installmentTotal`   | integer                      | nullable — total installments in group                                                 |
+| `recurrenceGroupId`  | UUID FK → recurrenceSettings | nullable                                                                               |
+| `transactionId`      | UUID FK → transactions       | nullable — set when paid                                                               |
+| `createdAt`          | timestamp                    |                                                                                        |
+| `updatedAt`          | timestamp                    |                                                                                        |
 
 ### `recurrenceSettings` table
 
-| Field | Type | Notes |
-|-------|------|-------|
-| `id` | UUID PK | = `recurrenceGroupId` in bills |
-| `teamId` | UUID FK | required |
-| `frequency` | enum | `"weekly"` \| `"biweekly"` \| `"monthly"` \| `"quarterly"` \| `"yearly"` |
-| `windowMonths` | integer | how far ahead to generate bills (user-configured) |
-| `endsAt` | date | nullable — null = forever |
-| `createdAt` | timestamp | |
+| Field          | Type      | Notes                                                                    |
+| -------------- | --------- | ------------------------------------------------------------------------ |
+| `id`           | UUID PK   | = `recurrenceGroupId` in bills                                           |
+| `teamId`       | UUID FK   | required                                                                 |
+| `frequency`    | enum      | `"weekly"` \| `"biweekly"` \| `"monthly"` \| `"quarterly"` \| `"yearly"` |
+| `windowMonths` | integer   | how far ahead to generate bills (user-configured)                        |
+| `endsAt`       | date      | nullable — null = forever                                                |
+| `createdAt`    | timestamp |                                                                          |
 
 **Overdue status** is computed on read (no stored enum for overdue):
+
 ```typescript
-status = bill.paidAt ? "paid"
-       : bill.dueDate < today ? "overdue"
-       : "pending"
+status = bill.paidAt ? "paid" : bill.dueDate < today ? "overdue" : "pending";
 ```
 
 ---
@@ -98,9 +97,9 @@ DataTable:
 
 - Toggle: `[ ] Parcelar` — reveals installment section
 - Input: "Número de parcelas" + choice of:
-  - "Valor total" → auto-divides equally
-  - "Valor por parcela" → applies same value to all
-  - "Valores irregulares" → individual inputs per installment
+   - "Valor total" → auto-divides equally
+   - "Valor por parcela" → applies same value to all
+   - "Valores irregulares" → individual inputs per installment
 - Preview: scrollable mini-list showing all installments with amounts + due dates
 
 ### Bill Form — Recurrence UX
@@ -113,6 +112,7 @@ DataTable:
 ### Pay / Receive Action
 
 Clicking "Pagar" / "Receber" opens a small confirmation credenza pre-filled with:
+
 - Amount (editable — actual payment may differ)
 - Date (defaults to today)
 - Bank account (pre-filled from bill)
@@ -125,7 +125,9 @@ One click to confirm → creates transaction, links `transactionId`, sets `paidA
 ## Transaction Actions (new items in `⋯` row menu)
 
 ### 1. Parcelar Transação
+
 Opens credenza pre-filled with transaction's amount, category, account. User configures:
+
 - Number of installments
 - Total amount OR per-installment amount OR irregular
 - First due date (defaults to transaction date + 1 month)
@@ -134,7 +136,9 @@ Opens credenza pre-filled with transaction's amount, category, account. User con
 Creates N bill records with shared `installmentGroupId`. Original transaction untouched.
 
 ### 2. Criar Transação Recorrente
+
 Opens credenza pre-filled with transaction data. User configures:
+
 - Frequency
 - Start date (defaults to transaction date + 1 period)
 - End date (optional)
@@ -143,7 +147,9 @@ Opens credenza pre-filled with transaction data. User configures:
 Creates a `recurrenceSettings` record + initial bill occurrences. Original transaction untouched.
 
 ### 3. Marcar como Não Pago / Não Recebido
+
 Only visible on transactions linked to a bill (`transactionId` present on a bill record).
+
 - Deletes the transaction
 - Resets `bill.status = "pending"`, clears `bill.paidAt` and `bill.transactionId`
 
@@ -151,15 +157,15 @@ Only visible on transactions linked to a bill (`transactionId` present on a bill
 
 ## oRPC Router (`apps/web/src/integrations/orpc/router/bills.ts`)
 
-| Procedure | Description |
-|-----------|-------------|
-| `getAll` | Filtered by type, status, month, category; paginated |
-| `create` | Single bill, installment group, or recurrence bootstrap |
-| `update` | Edit bill; option to update all future in recurring group |
-| `pay` | Creates transaction, links `transactionId`, sets `paidAt` |
-| `unpay` | Deletes linked transaction, resets bill to pending |
-| `cancel` | Soft cancel (keeps record) |
-| `remove` | Hard delete (only if pending) |
+| Procedure               | Description                                                  |
+| ----------------------- | ------------------------------------------------------------ |
+| `getAll`                | Filtered by type, status, month, category; paginated         |
+| `create`                | Single bill, installment group, or recurrence bootstrap      |
+| `update`                | Edit bill; option to update all future in recurring group    |
+| `pay`                   | Creates transaction, links `transactionId`, sets `paidAt`    |
+| `unpay`                 | Deletes linked transaction, resets bill to pending           |
+| `cancel`                | Soft cancel (keeps record)                                   |
+| `remove`                | Hard delete (only if pending)                                |
 | `createFromTransaction` | Powers "parcelar" and "criar recorrente" transaction actions |
 
 ---

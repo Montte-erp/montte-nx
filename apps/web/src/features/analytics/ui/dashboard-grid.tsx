@@ -4,7 +4,7 @@ import {
    rectSortingStrategy,
    SortableContext,
 } from "@dnd-kit/sortable";
-import type { DashboardTile as DashboardTileType } from "@packages/database/schemas/dashboards";
+import type { DashboardTile as DashboardTileType } from "@core/database/schemas/dashboards";
 import { useCallback, useRef, useState } from "react";
 import type { TileSize } from "./dashboard-tile";
 

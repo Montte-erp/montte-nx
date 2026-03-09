@@ -1,5 +1,5 @@
 import { ORPCError } from "@orpc/server";
-import { getBankAccount } from "@packages/database/repositories/bank-accounts-repository";
+import { getBankAccount } from "@core/database/repositories/bank-accounts-repository";
 import {
    createBill,
    createBillsBatch,
@@ -8,12 +8,12 @@ import {
    getBill,
    listBills,
    updateBill,
-} from "@packages/database/repositories/bills-repository";
-import { getCategory } from "@packages/database/repositories/categories-repository";
+} from "@core/database/repositories/bills-repository";
+import { getCategory } from "@core/database/repositories/categories-repository";
 import {
    createTransaction,
    deleteTransaction,
-} from "@packages/database/repositories/transactions-repository";
+} from "@core/database/repositories/transactions-repository";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

@@ -10,15 +10,18 @@
 ## How to Contribute
 
 ### 🐛 Testing & Bugs
+
 - Test your changes thoroughly before submitting
 - Report issues with steps to reproduce
 - Test edge cases and performance
 
 ### 🌍 Translations
+
 - Add languages in `packages/localization/src/locales/`
 - Translate UI text, error messages, help docs
 
 ### ✨ Features & Docs
+
 - Suggest content creation features and workflow improvements
 - Improve documentation and examples
 

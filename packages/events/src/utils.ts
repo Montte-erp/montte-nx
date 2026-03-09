@@ -3,9 +3,9 @@ import {
    type Money,
    parseDecimalToMinorUnits,
 } from "@f-o-t/money";
-import type { DatabaseInstance } from "@packages/database/client";
-import { eventCatalog } from "@packages/database/schemas/event-catalog";
-import { getLogger } from "@packages/logging/root";
+import type { DatabaseInstance } from "@core/database/client";
+import { eventCatalog } from "@core/database/schemas/event-catalog";
+import { getLogger } from "@core/logging/root";
 import { eq } from "drizzle-orm";
 
 const logger = getLogger().child({ module: "events:utils" });

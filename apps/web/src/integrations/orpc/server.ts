@@ -1,11 +1,11 @@
 import { logs } from "@opentelemetry/api-logs";
 import { ORPCError, os } from "@orpc/server";
-import type { AuthInstance } from "@packages/authentication/server";
-import type { DatabaseInstance } from "@packages/database/client";
+import type { AuthInstance } from "@core/authentication/server";
+import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog } from "@packages/posthog/server";
 import { captureError, identifyUser, setGroup } from "@packages/posthog/server";
 import type { StripeClient } from "@packages/stripe";
-import { sanitizeData } from "@packages/utils/sanitization";
+import { sanitizeData } from "@core/utils/sanitization";
 
 // =============================================================================
 // Context Types

@@ -75,6 +75,7 @@ Routers live in `apps/web/src/integrations/orpc/router/`. Uses `@orpc/server`, N
 **Available routers:** account, actions, agent, analytics, annotations, api-keys, billing, chat, content, content-analytics, dashboards, data-sources, event-catalog, forms, insights, onboarding, organization, personal-api-key, property-definitions, sdk-usage, session, team, usage, webhooks
 
 **Router pattern:**
+
 ```typescript
 import { ORPCError } from "@orpc/server";
 import { protectedProcedure } from "../server";
@@ -87,6 +88,7 @@ export const getAll = protectedProcedure
 ```
 
 **Errors in routers:** Use `ORPCError` — NOT native `Error`, NOT `APIError`/`AppError`:
+
 ```typescript
 throw new ORPCError("NOT_FOUND", { message: "Content not found" });
 throw new ORPCError("FORBIDDEN", { message: "Insufficient credits" });
@@ -113,6 +115,7 @@ const mutation = useMutation(
 ```
 
 **Rules:**
+
 - `input` goes INSIDE `queryOptions()`, not as a separate argument
 - Only use `useQuery` for optional/polling/conditional queries
 - Wrap suspense components in `<Suspense fallback={...}>` at route/layout level
@@ -129,6 +132,7 @@ const mutation = useMutation(
 **Hooks:** `use[Feature][Action]` (`useContent`, `useCreateContent`)
 
 **No barrel files.** Never create `index.ts` re-exports. Import directly from source files using package.json exports:
+
 ```typescript
 // Good
 import { Button } from "@packages/ui/components/button";
@@ -141,7 +145,7 @@ import { emitEvent } from "@packages/events";
 
 **Biome lint suppression:** Place `// biome-ignore lint/[category]/[rule]: [reason]` directly above the triggering line. For JSX props, place above the prop, not the element.
 
-**Array index keys:** Prefer `key={\`step-${index + 1}\`}` over suppressing `noArrayIndexKey`.
+**Array index keys:** Prefer `key={\`step-${index + 1}\`}`over suppressing`noArrayIndexKey`.
 
 **No dynamic imports.** Never use `await import(...)` for project modules. Always use static `import` at the top of the file. Dynamic imports break tree-shaking and are unnecessary in this codebase.
 
@@ -152,6 +156,7 @@ import { emitEvent } from "@packages/events";
 Use `DataTable` from `@packages/ui/components/data-table` for all tabular lists.
 
 **Rules:**
+
 - Prefer `DataTable` over manual `Table` primitives for list views.
 - Tables should be expandable via row click using `renderSubComponent`.
 - Do not wrap `DataTable` in `Card`/`CardContent` containers.
@@ -180,6 +185,7 @@ Common patterns: `.` (root), `./client`, `./server`, `./schemas/*`, `./repositor
 Single agent combining planning, research, writing, SEO auditing, and review workflows. Replaces the old orchestrator + sub-agent pattern.
 
 **Usage in routers:**
+
 ```typescript
 import { mastra, createRequestContext } from "@packages/agents";
 
@@ -193,12 +199,13 @@ const context = createRequestContext({
    writerInstructions: [...],
 });
 
-const result = await agent.generate("Write a post about TypeScript", { 
-   requestContext: context 
+const result = await agent.generate("Write a post about TypeScript", {
+   requestContext: context
 });
 ```
 
 **Frontend usage:**
+
 ```typescript
 import { useUnifiedAgent } from "@/features/content/hooks/use-unified-agent";
 
@@ -214,6 +221,7 @@ unifiedAgent.mutate({
 ```
 
 **Workflows:**
+
 1. **Planning** - Structure, outlines, metadata
 2. **Research** - SERPs, competitors, facts
 3. **Writing** - Complete articles with YAML frontmatter (800+ words default, flexible on request)
@@ -221,6 +229,7 @@ unifiedAgent.mutate({
 5. **Review** - Quality checks and feedback
 
 **Tools:** 40+ tools organized by category:
+
 - Memory & RAG (3): getInstructionMemories, searchPreviousContent, graphSearch
 - Research (8): webSearch, serpAnalysis, competitorContent, factFinder, contentGap, relatedKeywords, semanticAnalysis, searchIntent
 - Analysis (13): seoScore, readability, keywordDensity, contentStructure, badPatterns, titleMeta, quickAnswerAnalysis, imageSeo, linkDensity, duplicateContent, toneAnalysis, citation, originality
@@ -268,6 +277,7 @@ Conventions: kebab-case files, `$` for dynamic segments, `_` for layout routes.
 **Schemas** at `packages/database/src/schemas/`: content, writer, chat, forms, dashboards, insights, events, webhooks, auth, etc.
 
 **Repository pattern** at `packages/database/src/repositories/`:
+
 ```typescript
 export async function createContent(db: DatabaseInstance, data: NewContent) {
    try {
@@ -289,19 +299,21 @@ Config at `packages/authentication/src/server.ts`. Plugins: Google OAuth, Magic 
 **⚠️ CRITICAL: Auth Tables Are Read-Only**
 
 Better Auth fully manages these tables in `packages/database/src/schemas/auth.ts`:
+
 - `user`, `session`, `account`, `verification`
 - `organization`, `team`, `member`, `teamMember`
 - `invitation`, `twoFactor`
 
 **Rules:**
+
 - **NEVER** edit these Drizzle schema definitions directly (fields, defaults, constraints)
 - **NEVER** add/remove/modify columns in these tables manually
 - To add custom fields to `user`, `session`, `organization`, or `team`:
-  - **ALWAYS** use `additionalFields` in `packages/authentication/src/server.ts`
-  - Schema changes must go through Better Auth's config
+   - **ALWAYS** use `additionalFields` in `packages/authentication/src/server.ts`
+   - Schema changes must go through Better Auth's config
 - Other tables (`member`, `invitation`, `twoFactor`, etc.) have NO `additionalFields` support
-  - These are entirely managed by Better Auth core
-  - Cannot be customized — use separate related tables if needed
+   - These are entirely managed by Better Auth core
+   - Cannot be customized — use separate related tables if needed
 
 ```typescript
 // packages/authentication/src/server.ts
@@ -312,47 +324,54 @@ organization({
             onboardingProducts: {
                type: "json",
                defaultValue: null,
-               validator: { input: z.array(z.enum(["content", "forms", "analytics"])).nullable() },
+               validator: {
+                  input: z
+                     .array(z.enum(["content", "forms", "analytics"]))
+                     .nullable(),
+               },
             },
          },
       },
    },
-})
+});
 ```
 
 Field types: `"string"` (TEXT), `"boolean"` (BOOLEAN), `"number"` (INTEGER), `"string[]"` (TEXT[]), `"json"` (JSONB + Zod validator)
 
 **Query/Mutation split for Better Auth**
+
 - **Queries** (read operations) → always use oRPC (`orpc.organization.*`), even for Better Auth-owned data like members, teams, and invitations. oRPC procedures enrich the raw Better Auth data with DB fields (plans, credits, slugs, etc.) that the raw client cannot provide.
 - **Mutations** (write operations) → use `authClient` directly. Never wrap these in oRPC.
 
 ```typescript
 // ✅ Mutations — authClient only
-authClient.organization.create({ name, slug })
-authClient.organization.update({ data: { name }, organizationId })
-authClient.organization.delete({ organizationId })
-authClient.organization.inviteMember({ email, role, organizationId })
-authClient.organization.removeMember({ memberIdOrEmail, organizationId })
-authClient.organization.updateMemberRole({ memberId, role, organizationId })
-authClient.organization.cancelInvitation({ invitationId })
-authClient.organization.setActive({ organizationId })
-authClient.organization.createTeam({ name, organizationId })
-authClient.organization.setActiveTeam({ teamId })
+authClient.organization.create({ name, slug });
+authClient.organization.update({ data: { name }, organizationId });
+authClient.organization.delete({ organizationId });
+authClient.organization.inviteMember({ email, role, organizationId });
+authClient.organization.removeMember({ memberIdOrEmail, organizationId });
+authClient.organization.updateMemberRole({ memberId, role, organizationId });
+authClient.organization.cancelInvitation({ invitationId });
+authClient.organization.setActive({ organizationId });
+authClient.organization.createTeam({ name, organizationId });
+authClient.organization.setActiveTeam({ teamId });
 
 // ✅ Queries — always oRPC (even for Better Auth data)
-orpc.organization.getMembers.queryOptions({})
-orpc.organization.getOrganizationTeams.queryOptions({})
-orpc.organization.getActiveOrganization.queryOptions({})
-orpc.organization.getMemberTeams.queryOptions({ input: { userId } })
+orpc.organization.getMembers.queryOptions({});
+orpc.organization.getOrganizationTeams.queryOptions({});
+orpc.organization.getActiveOrganization.queryOptions({});
+orpc.organization.getMemberTeams.queryOptions({ input: { userId } });
 ```
 
 **member.id vs user.id**
 `member.id` (member record ID, PK of the member table) and `user.id` (user UUID) are different values and must never be used interchangeably.
+
 - Use `member.id` for Better Auth mutation APIs (`removeMember`, `updateMemberRole`).
 - Use `member.userId` for queries against user-keyed tables (`teamMember.userId`, isSelf checks).
 - `getMembers` must expose both: `id` (member record ID) and `userId` (user ID).
 
 **Client-side authClient usage rules:**
+
 - **NEVER** wrap `authClient` calls inside `useMutation` — call them directly
 - Most authClient calls live inside TanStack Form's `onSubmit` handler
 - For loading state use `useTransition` — NOT `useState<boolean>`
@@ -399,11 +418,11 @@ For simple button actions (no form): `startTransition(async () => { await authCl
 
 ## Global UI Hooks (TanStack Store)
 
-| Hook | Purpose | Use For |
-|------|---------|---------|
-| `useSheet` | Side panel forms | Creating/editing content, agents, brands, invites |
-| `useCredenza` | Modal (desktop) / Drawer (mobile) | Selecting agents, export formats |
-| `useAlertDialog` | Destructive confirmations | Deleting content, revoking access |
+| Hook             | Purpose                           | Use For                                           |
+| ---------------- | --------------------------------- | ------------------------------------------------- |
+| `useSheet`       | Side panel forms                  | Creating/editing content, agents, brands, invites |
+| `useCredenza`    | Modal (desktop) / Drawer (mobile) | Selecting agents, export formats                  |
+| `useAlertDialog` | Destructive confirmations         | Deleting content, revoking access                 |
 
 **⚠️ ALWAYS use these hooks — NEVER import Credenza, Dialog, Sheet, Drawer, or AlertDialog components manually.**
 
@@ -472,11 +491,11 @@ Procedures in `apps/web/src/integrations/orpc/router/onboarding.ts`.
 
 ## Subscription Plans
 
-| Plan | Credits |
-|------|---------|
+| Plan | Credits                   |
+| ---- | ------------------------- |
 | FREE | R$5 (AI + Platform pools) |
-| LITE | R$50 |
-| PRO | R$100 |
+| LITE | R$50                      |
+| PRO  | R$100                     |
 
 Credit tracking: Redis real-time, materialized views reconcile hourly (worker cron).
 
@@ -519,8 +538,8 @@ Stage is resolved from PostHog's early access feature config at runtime (`featur
 
 ### Flag keys (from sidebar-nav-items.ts)
 
-| Feature | Flag key | Stage |
-|---------|----------|-------|
-| Banco de Imagens | `asset-bank` | alpha |
-| Experimentos | `experiments` | alpha |
-| Formulários | `forms-beta` | beta |
+| Feature          | Flag key      | Stage |
+| ---------------- | ------------- | ----- |
+| Banco de Imagens | `asset-bank`  | alpha |
+| Experimentos     | `experiments` | alpha |
+| Formulários      | `forms-beta`  | beta  |

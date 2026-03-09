@@ -1,7 +1,7 @@
 import {
    listEventCatalog,
    updateEventCatalogEntry,
-} from "@packages/database/repositories/event-catalog-repository";
+} from "@core/database/repositories/event-catalog-repository";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

@@ -2,11 +2,11 @@ import type { Condition } from "@f-o-t/condition-evaluator";
 import type {
    Dashboard,
    DashboardDateRange,
-} from "@packages/database/schemas/dashboards";
+} from "@core/database/schemas/dashboards";
 import { Button } from "@packages/ui/components/button";
 import { DateRangePicker } from "@packages/ui/components/date-range-picker";
 import { cn } from "@packages/ui/lib/utils";
-import { formatRelativeTime } from "@packages/utils/date";
+import { formatRelativeTime } from "@core/utils/date";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
    Check,

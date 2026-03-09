@@ -1,9 +1,6 @@
 import { ORPCError } from "@orpc/server";
-import { isOrganizationOwner } from "@packages/database/repositories/auth-repository";
-import {
-   ssoConfigurations,
-   verifiedDomains,
-} from "@packages/database/schemas/sso";
+import { isOrganizationOwner } from "@core/database/repositories/auth-repository";
+import { ssoConfigurations, verifiedDomains } from "@core/database/schemas/sso";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../server";

@@ -1,6 +1,6 @@
 import { createTool } from "@mastra/core/tools";
 import { crawl, search } from "@packages/search";
-import { AppError } from "@packages/utils/errors";
+import { AppError } from "@core/utils/errors";
 import { z } from "zod";
 
 export const serpAnalysisTool = createTool({

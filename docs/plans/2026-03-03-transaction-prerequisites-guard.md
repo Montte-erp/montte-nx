@@ -13,6 +13,7 @@
 ### Task 1: Create the prerequisites hook
 
 **Files:**
+
 - Create: `apps/web/src/features/transactions/hooks/use-transaction-prerequisites.ts`
 
 **What it does:** Reads bank accounts count from TanStack Query cache (data is prefetched by the route loader, so no waterfall). Returns a boolean `hasBankAccounts`.
@@ -43,6 +44,7 @@ export function useTransactionPrerequisites() {
 ### Task 2: Create the blocker credenza content component
 
 **Files:**
+
 - Create: `apps/web/src/features/transactions/ui/transaction-prerequisites-blocker.tsx`
 
 **What it does:** Renders the credenza body explaining that a bank account is required, with a CTA button that calls `onAction` (which navigates to the bank accounts page and closes the credenza).
@@ -107,9 +109,11 @@ export function TransactionPrerequisitesBlocker({
 ### Task 3: Wire the guard into `TransactionsPage`
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/transactions.tsx`
 
 **What changes:**
+
 1. Import `useTransactionPrerequisites`, `TransactionPrerequisitesBlocker`, `useNavigate` from `@tanstack/react-router`
 2. Call the hook in `TransactionsPage`
 3. Update `handleCreate` to check `hasBankAccounts` before opening the form
@@ -182,11 +186,13 @@ So the TanStack Router path is `/$slug/$teamSlug/bank-accounts` — matching wha
 ### Task 4: Quick smoke test
 
 **Step 1: Start dev server**
+
 ```bash
 bun dev
 ```
 
 **Step 2: Manually test the guard**
+
 1. Log in with a fresh team that has no bank accounts
 2. Click "Nova Transação" — should open the blocker credenza with the Landmark icon
 3. Click "Cadastrar conta bancária" — should close credenza and navigate to `/bank-accounts`

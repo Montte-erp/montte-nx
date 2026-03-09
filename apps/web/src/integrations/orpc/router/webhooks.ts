@@ -1,5 +1,5 @@
 import { ORPCError } from "@orpc/server";
-import { listEventCatalog } from "@packages/database/repositories/event-catalog-repository";
+import { listEventCatalog } from "@core/database/repositories/event-catalog-repository";
 import {
    createWebhookEndpoint,
    deleteWebhookEndpoint,
@@ -7,7 +7,7 @@ import {
    getWebhookEndpoint,
    listWebhookEndpoints,
    updateWebhookEndpoint,
-} from "@packages/database/repositories/webhook-repository";
+} from "@core/database/repositories/webhook-repository";
 import { createEmitFn } from "@packages/events/emit";
 import {
    emitWebhookEndpointCreated,

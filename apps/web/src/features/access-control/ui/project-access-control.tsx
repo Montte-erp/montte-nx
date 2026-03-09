@@ -9,7 +9,7 @@ import { DataTable } from "@packages/ui/components/data-table";
 import { Input } from "@packages/ui/components/input";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Switch } from "@packages/ui/components/switch";
-import { getInitials } from "@packages/utils/text";
+import { getInitials } from "@core/utils/text";
 import {
    useMutation,
    useQueryClient,

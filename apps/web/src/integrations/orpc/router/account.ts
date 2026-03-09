@@ -1,10 +1,10 @@
 import { ORPCError } from "@orpc/server";
-import { env as serverEnv } from "@packages/environment/server";
+import { env as serverEnv } from "@core/environment/server";
 import {
    generatePresignedPutUrl,
    getMinioClient,
 } from "@packages/files/client";
-import { getLogger } from "@packages/logging/root";
+import { getLogger } from "@core/logging/root";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

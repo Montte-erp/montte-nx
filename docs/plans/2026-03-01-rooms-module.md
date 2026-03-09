@@ -33,67 +33,102 @@ A room/space booking module for coworking spaces and venue owners. Users create 
 ```typescript
 import { sql } from "drizzle-orm";
 import {
-  index, numeric, pgEnum, pgTable,
-  text, timestamp, uniqueIndex, uuid,
+   index,
+   numeric,
+   pgEnum,
+   pgTable,
+   text,
+   timestamp,
+   uniqueIndex,
+   uuid,
 } from "drizzle-orm/pg-core";
 import { contacts } from "./contacts";
 import { transactions } from "./transactions";
 
-export const roomPricingModeEnum = pgEnum("room_pricing_mode", ["por_hora", "por_dia"]);
+export const roomPricingModeEnum = pgEnum("room_pricing_mode", [
+   "por_hora",
+   "por_dia",
+]);
 
 export const bookingStatusEnum = pgEnum("booking_status", [
-  "pendente", "confirmada", "em_andamento", "concluida", "cancelada",
+   "pendente",
+   "confirmada",
+   "em_andamento",
+   "concluida",
+   "cancelada",
 ]);
 
 // ─── Rooms ────────────────────────────────────────────────────────────────────
 
 export const rooms = pgTable(
-  "rooms",
-  {
-    id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-    teamId: uuid("team_id").notNull(),
-    name: text("name").notNull(),
-    description: text("description"),
-    capacity: numeric("capacity", { precision: 5, scale: 0 }),   // max people
-    pricingMode: roomPricingModeEnum("pricing_mode").notNull().default("por_hora"),
-    price: numeric("price", { precision: 12, scale: 2 }).notNull(),
-    color: text("color").notNull().default("#6b7280"),
-    amenities: text("amenities"),   // free text: "Wi-Fi, Projetor, Ar-condicionado"
-    isActive: text("is_active").notNull().default("1"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-  },
-  (t) => [
-    index("rooms_team_idx").on(t.teamId),
-    uniqueIndex("rooms_team_name_unique").on(t.teamId, t.name),
-  ],
+   "rooms",
+   {
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
+      teamId: uuid("team_id").notNull(),
+      name: text("name").notNull(),
+      description: text("description"),
+      capacity: numeric("capacity", { precision: 5, scale: 0 }), // max people
+      pricingMode: roomPricingModeEnum("pricing_mode")
+         .notNull()
+         .default("por_hora"),
+      price: numeric("price", { precision: 12, scale: 2 }).notNull(),
+      color: text("color").notNull().default("#6b7280"),
+      amenities: text("amenities"), // free text: "Wi-Fi, Projetor, Ar-condicionado"
+      isActive: text("is_active").notNull().default("1"),
+      createdAt: timestamp("created_at", { withTimezone: true })
+         .notNull()
+         .defaultNow(),
+      updatedAt: timestamp("updated_at", { withTimezone: true })
+         .notNull()
+         .defaultNow()
+         .$onUpdate(() => new Date()),
+   },
+   (t) => [
+      index("rooms_team_idx").on(t.teamId),
+      uniqueIndex("rooms_team_name_unique").on(t.teamId, t.name),
+   ],
 );
 
 // ─── Bookings ─────────────────────────────────────────────────────────────────
 
 export const roomBookings = pgTable(
-  "room_bookings",
-  {
-    id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-    teamId: uuid("team_id").notNull(),
-    roomId: uuid("room_id").notNull().references(() => rooms.id, { onDelete: "cascade" }),
-    contactId: uuid("contact_id").references(() => contacts.id, { onDelete: "set null" }),
-    clientName: text("client_name"),   // fallback if no contact linked
-    status: bookingStatusEnum("status").notNull().default("pendente"),
-    startTime: timestamp("start_time", { withTimezone: true }).notNull(),
-    endTime: timestamp("end_time", { withTimezone: true }).notNull(),
-    totalAmount: numeric("total_amount", { precision: 12, scale: 2 }), // computed or overridden
-    paidAt: timestamp("paid_at", { withTimezone: true }),
-    transactionId: uuid("transaction_id").references(() => transactions.id, { onDelete: "set null" }),
-    notes: text("notes"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-  },
-  (t) => [
-    index("room_bookings_team_idx").on(t.teamId),
-    index("room_bookings_room_idx").on(t.roomId),
-    index("room_bookings_start_idx").on(t.startTime),
-  ],
+   "room_bookings",
+   {
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
+      teamId: uuid("team_id").notNull(),
+      roomId: uuid("room_id")
+         .notNull()
+         .references(() => rooms.id, { onDelete: "cascade" }),
+      contactId: uuid("contact_id").references(() => contacts.id, {
+         onDelete: "set null",
+      }),
+      clientName: text("client_name"), // fallback if no contact linked
+      status: bookingStatusEnum("status").notNull().default("pendente"),
+      startTime: timestamp("start_time", { withTimezone: true }).notNull(),
+      endTime: timestamp("end_time", { withTimezone: true }).notNull(),
+      totalAmount: numeric("total_amount", { precision: 12, scale: 2 }), // computed or overridden
+      paidAt: timestamp("paid_at", { withTimezone: true }),
+      transactionId: uuid("transaction_id").references(() => transactions.id, {
+         onDelete: "set null",
+      }),
+      notes: text("notes"),
+      createdAt: timestamp("created_at", { withTimezone: true })
+         .notNull()
+         .defaultNow(),
+      updatedAt: timestamp("updated_at", { withTimezone: true })
+         .notNull()
+         .defaultNow()
+         .$onUpdate(() => new Date()),
+   },
+   (t) => [
+      index("room_bookings_team_idx").on(t.teamId),
+      index("room_bookings_room_idx").on(t.roomId),
+      index("room_bookings_start_idx").on(t.startTime),
+   ],
 );
 
 export type Room = typeof rooms.$inferSelect;
@@ -238,6 +273,7 @@ export const getTopRooms = protectedProcedure.input(...).handler(...)
 ```
 
 **Register in `apps/web/src/integrations/orpc/router/index.ts`:**
+
 ```typescript
 import * as rooms from "./rooms";
 export const router = { ...existing, rooms };
@@ -258,9 +294,11 @@ apps/web/src/features/rooms/
 ```
 
 ### `rooms-columns.tsx`
+
 Columns: Name, Capacity, Pricing (R$ X/hora or R$ X/dia), Amenities (truncated), Today's bookings count, Status, Actions.
 
 Row actions:
+
 - **Nova Reserva** → `BookingCredenza`
 - **Editar** → `RoomForm` sheet
 - **Excluir** → `useAlertDialog`
@@ -268,7 +306,9 @@ Row actions:
 Expandable row: `<RoomBookingsList roomId={row.id} />` — shows next 5 upcoming bookings with status badges, times, client name, and amount. Each booking has "Registrar Pagamento" and "Cancelar" actions.
 
 ### `booking-credenza.tsx`
+
 Fields:
+
 - **Sala** — pre-filled from row (read-only when opened from row action)
 - **Cliente** — Combobox from contacts (type `cliente | ambos`) OR free text `clientName`
 - **Data e horário** — DatePicker + start time + end time inputs
@@ -278,6 +318,7 @@ Fields:
 - Footer shows: "Duração: 2h • Valor estimado: R$ 100,00" (live computed from times + price)
 
 ### `room-form.tsx`
+
 Fields: Name, Description, Capacity, Pricing mode (ToggleGroup: por hora / por dia), Price, Amenities (textarea), Color.
 
 ---
@@ -305,6 +346,7 @@ Loader prefetches `orpc.rooms.getAll`.
 ## Step 6 — Dashboard Integration
 
 Seed a "Salas" dashboard when `rooms` flag is active. Default tiles:
+
 - **Reservas hoje** — count of today's bookings
 - **Receita este mês** — total revenue from concluded bookings
 - **Taxa de ocupação** — % of available hours booked this month
@@ -316,6 +358,7 @@ Seed a "Salas" dashboard when `rooms` flag is active. Default tiles:
 ## Step 7 — Sidebar + Early Access
 
 ### Sidebar
+
 ```typescript
 {
   id: "rooms",
@@ -333,6 +376,7 @@ Seed a "Salas" dashboard when `rooms` flag is active. Default tiles:
 ```
 
 ### Billing overview
+
 ```typescript
 rooms: {
   label: "Salas",
@@ -345,29 +389,30 @@ rooms: {
 ```
 
 ### PostHog
+
 Create early access feature flag `rooms` with stage `alpha`.
 
 ---
 
 ## File Checklist
 
-| File | Action |
-|------|--------|
-| `packages/database/src/schemas/rooms.ts` | Create |
-| `packages/database/src/schema.ts` | Edit |
+| File                                                     | Action |
+| -------------------------------------------------------- | ------ |
+| `packages/database/src/schemas/rooms.ts`                 | Create |
+| `packages/database/src/schema.ts`                        | Edit   |
 | `packages/database/src/repositories/rooms-repository.ts` | Create |
-| `apps/web/src/integrations/orpc/router/rooms.ts` | Create |
-| `apps/web/src/integrations/orpc/router/index.ts` | Edit |
-| `apps/web/src/features/rooms/ui/room-form.tsx` | Create |
-| `apps/web/src/features/rooms/ui/room-card.tsx` | Create |
-| `apps/web/src/features/rooms/ui/rooms-columns.tsx` | Create |
-| `apps/web/src/features/rooms/ui/booking-credenza.tsx` | Create |
-| `apps/web/src/features/rooms/ui/room-bookings-list.tsx` | Create |
-| `apps/web/src/routes/.../rooms/index.tsx` | Create |
-| `apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts` | Edit |
-| `apps/web/src/features/billing/ui/billing-overview.tsx` | Edit |
-| `packages/database/src/default-insights.ts` | Edit |
-| `scripts/seed-default-dashboard.ts` | Edit |
+| `apps/web/src/integrations/orpc/router/rooms.ts`         | Create |
+| `apps/web/src/integrations/orpc/router/index.ts`         | Edit   |
+| `apps/web/src/features/rooms/ui/room-form.tsx`           | Create |
+| `apps/web/src/features/rooms/ui/room-card.tsx`           | Create |
+| `apps/web/src/features/rooms/ui/rooms-columns.tsx`       | Create |
+| `apps/web/src/features/rooms/ui/booking-credenza.tsx`    | Create |
+| `apps/web/src/features/rooms/ui/room-bookings-list.tsx`  | Create |
+| `apps/web/src/routes/.../rooms/index.tsx`                | Create |
+| `apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts`  | Edit   |
+| `apps/web/src/features/billing/ui/billing-overview.tsx`  | Edit   |
+| `packages/database/src/default-insights.ts`              | Edit   |
+| `scripts/seed-default-dashboard.ts`                      | Edit   |
 
 ---
 

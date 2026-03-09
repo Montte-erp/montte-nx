@@ -79,7 +79,11 @@ vi.mock("@/integrations/orpc/client", () => ({
             queryOptions: () => ({
                queryKey: ["session.getSession"],
                queryFn: async () => ({
-                  user: { id: "user-1", email: "test@example.com", name: "Test" },
+                  user: {
+                     id: "user-1",
+                     email: "test@example.com",
+                     name: "Test",
+                  },
                   session: { activeOrganizationId: "org-1" },
                }),
             }),

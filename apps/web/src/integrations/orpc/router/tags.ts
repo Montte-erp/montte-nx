@@ -6,8 +6,8 @@ import {
    listTags,
    tagHasTransactions,
    updateTag,
-} from "@packages/database/repositories/tags-repository";
-import { tags } from "@packages/database/schemas/tags";
+} from "@core/database/repositories/tags-repository";
+import { tags } from "@core/database/schemas/tags";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";

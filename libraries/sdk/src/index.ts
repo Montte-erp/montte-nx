@@ -4,8 +4,8 @@ import { RPCLink } from "@orpc/client/fetch";
 const PRODUCTION_API_URL = "https://api.contentagen.com";
 
 export interface SdkConfig {
-	apiKey: string;
-	host?: string;
+   apiKey: string;
+   host?: string;
 }
 
 /**
@@ -47,21 +47,21 @@ export interface SdkConfig {
  * Returns an oRPC client with methods for content, events, and forms.
  */
 export function createSdk(config: SdkConfig) {
-	if (!config.apiKey) {
-		throw new Error("apiKey is required to initialize the SDK");
-	}
+   if (!config.apiKey) {
+      throw new Error("apiKey is required to initialize the SDK");
+   }
 
-	const host = config.host || PRODUCTION_API_URL;
-	const baseUrl = `${host.replace(/\/+$/, "")}/sdk`;
+   const host = config.host || PRODUCTION_API_URL;
+   const baseUrl = `${host.replace(/\/+$/, "")}/sdk`;
 
-	const link = new RPCLink({
-		url: baseUrl,
-		headers: {
-			"sdk-api-key": config.apiKey,
-		},
-	});
+   const link = new RPCLink({
+      url: baseUrl,
+      headers: {
+         "sdk-api-key": config.apiKey,
+      },
+   });
 
-	return createORPCClient(link);
+   return createORPCClient(link);
 }
 
 export { MontteChangelogClient } from "./changelog.ts";

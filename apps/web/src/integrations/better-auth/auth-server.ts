@@ -1,6 +1,6 @@
-import { createAuth } from "@packages/authentication/server";
-import { createDb } from "@packages/database/client";
-import { env } from "@packages/environment/server";
+import { createAuth } from "@core/authentication/server";
+import { createDb } from "@core/database/client";
+import { env } from "@core/environment/server";
 
 // Create singleton instances at module level (created once when imported)
 const db = createDb({ databaseUrl: env.DATABASE_URL });

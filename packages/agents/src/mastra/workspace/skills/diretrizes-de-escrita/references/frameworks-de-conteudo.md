@@ -8,9 +8,11 @@ Guia prático de estruturas editoriais para posts de blog. Escolha o framework c
 ---
 
 ## 1) PASTOR (How-To / Persuasivo)
+
 **Quando usar:** tutoriais com transformação clara ou mudança de comportamento.
 
 **Fluxo:**
+
 1. **Problema** → Qual dor o leitor enfrenta.
 2. **Amplificar** → Consequências de não resolver.
 3. **Story** → Contexto breve ou exemplo real.
@@ -22,6 +24,7 @@ Guia prático de estruturas editoriais para posts de blog. Escolha o framework c
 ❌ “Vamos explorar conceitos gerais sobre títulos.”
 
 **Exemplo de esqueleto:**
+
 - **Problema:** “Seu post não aparece no topo.”
 - **Amplificar:** “Isso reduz cliques e autoridade.”
 - **Story:** “Aplicamos um teste A/B…”
@@ -32,9 +35,11 @@ Guia prático de estruturas editoriais para posts de blog. Escolha o framework c
 ---
 
 ## 2) Pirâmide Invertida (Informativo)
+
 **Quando usar:** conteúdos explicativos, notícias, guias objetivos.
 
 **Fluxo:**
+
 1. **Resposta principal** (lead)
 2. **Detalhes de suporte**
 3. **Contexto / histórico**
@@ -44,6 +49,7 @@ Guia prático de estruturas editoriais para posts de blog. Escolha o framework c
 ❌ “Antes de falar da resposta, vamos contextualizar a história do tema.”
 
 **Checklist:**
+
 - Resposta nos 100 primeiros words.
 - Um H2 a cada 200–300 palavras.
 - Parágrafos curtos (3–4 frases).
@@ -51,9 +57,11 @@ Guia prático de estruturas editoriais para posts de blog. Escolha o framework c
 ---
 
 ## 3) Power List (Listicle)
+
 **Quando usar:** listas de dicas, ferramentas, passos, erros.
 
 **Regras-chave:**
+
 - Subtítulos com benefício claro.
 - Cada item = **O quê → Por quê → Como**.
 - Melhores itens em **1, 3 e último**.
@@ -62,6 +70,7 @@ Guia prático de estruturas editoriais para posts de blog. Escolha o framework c
 ❌ “1) Parágrafos.”
 
 **Esqueleto de item:**
+
 - **O quê:** “Use subtítulos informativos.”
 - **Por quê:** “Aumenta o escaneio.”
 - **Como:** “Inclua verbo + resultado.”
@@ -69,9 +78,11 @@ Guia prático de estruturas editoriais para posts de blog. Escolha o framework c
 ---
 
 ## 4) Hub & Spoke (Conteúdo em Série)
+
 **Quando usar:** estratégia editorial com pilar e satélites.
 
 **Fluxo:**
+
 - **Hub (pilar):** visão completa do tema.
 - **Spokes (satélites):** subtemas específicos com links internos.
 
@@ -79,6 +90,7 @@ Guia prático de estruturas editoriais para posts de blog. Escolha o framework c
 ❌ “Posts isolados sem conexão.”
 
 **Aplicação prática:**
+
 - Post pilar: “Guia definitivo de SEO on-page.”
 - Spokes: “Como otimizar títulos”, “Meta descrição”, “H1/H2”.
 
@@ -86,12 +98,12 @@ Guia prático de estruturas editoriais para posts de blog. Escolha o framework c
 
 ## Como escolher o framework certo
 
-| Objetivo do post | Melhor framework | Por quê |
-| --- | --- | --- |
-| Ensinar passo a passo | PASTOR | Foco em transformação |
-| Explicar rápido | Pirâmide invertida | Resposta imediata |
-| Listar opções/dicas | Power List | Escaneável e direto |
-| Criar série editorial | Hub & Spoke | Autoridade e links internos |
+| Objetivo do post      | Melhor framework   | Por quê                     |
+| --------------------- | ------------------ | --------------------------- |
+| Ensinar passo a passo | PASTOR             | Foco em transformação       |
+| Explicar rápido       | Pirâmide invertida | Resposta imediata           |
+| Listar opções/dicas   | Power List         | Escaneável e direto         |
+| Criar série editorial | Hub & Spoke        | Autoridade e links internos |
 
 ✅ “Para uma comparação rápida, use pirâmide invertida e tabela no topo.”
 ❌ “Use qualquer estrutura, todas funcionam igual.”
@@ -99,6 +111,7 @@ Guia prático de estruturas editoriais para posts de blog. Escolha o framework c
 ---
 
 ## Erros comuns
+
 - Introdução longa antes da resposta.
 - Subtítulos genéricos sem benefício.
 - Lista sem lógica (itens fracos no topo).

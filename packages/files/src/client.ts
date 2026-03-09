@@ -1,5 +1,5 @@
-import type { ServerEnv } from "@packages/environment/server";
-import { getLogger } from "@packages/logging/root";
+import type { ServerEnv } from "@core/environment/server";
+import { getLogger } from "@core/logging/root";
 import { Client } from "minio";
 
 const logger = getLogger().child({ module: "files" });

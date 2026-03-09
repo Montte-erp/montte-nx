@@ -13,6 +13,7 @@
 ### Task 1: Create credit_cards schema
 
 **Files:**
+
 - Create: `packages/database/src/schemas/credit-cards.ts`
 - Modify: `packages/database/src/schema.ts`
 
@@ -34,7 +35,9 @@ import {
 export const creditCards = pgTable(
    "credit_cards",
    {
-      id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
       teamId: uuid("team_id").notNull(),
       name: text("name").notNull(),
       color: text("color").notNull().default("#6366f1"),
@@ -79,16 +82,19 @@ git commit -m "feat(database): add credit_cards schema"
 ### Task 2: Update transactions schema — add creditCardId, make bankAccountId nullable
 
 **Files:**
+
 - Modify: `packages/database/src/schemas/transactions.ts`
 
 **Step 1: Update the transactions table**
 
 Add the import for `creditCards` at the top:
+
 ```typescript
 import { creditCards } from "./credit-cards";
 ```
 
 Change `bankAccountId` from `.notNull()` to nullable:
+
 ```typescript
 bankAccountId: uuid("bank_account_id").references(() => bankAccounts.id, {
    onDelete: "restrict",
@@ -96,6 +102,7 @@ bankAccountId: uuid("bank_account_id").references(() => bankAccounts.id, {
 ```
 
 Add `creditCardId` after `destinationBankAccountId`:
+
 ```typescript
 creditCardId: uuid("credit_card_id").references(() => creditCards.id, {
    onDelete: "restrict",
@@ -103,6 +110,7 @@ creditCardId: uuid("credit_card_id").references(() => creditCards.id, {
 ```
 
 Add index after existing indexes:
+
 ```typescript
 index("transactions_credit_card_id_idx").on(table.creditCardId),
 ```
@@ -110,6 +118,7 @@ index("transactions_credit_card_id_idx").on(table.creditCardId),
 **Step 2: Update the relations**
 
 In `transactionsRelations`, add:
+
 ```typescript
 creditCard: one(creditCards, {
    fields: [transactions.creditCardId],
@@ -141,6 +150,7 @@ Expected: Drizzle applies migration — creates `credit_cards` table, adds `cred
 ### Task 4: Create credit cards repository
 
 **Files:**
+
 - Create: `packages/database/src/repositories/credit-cards-repository.ts`
 
 **Step 1: Create the repository**
@@ -234,6 +244,7 @@ git commit -m "feat(database): add credit cards repository"
 ### Task 5: Create oRPC credit-cards router
 
 **Files:**
+
 - Create: `apps/web/src/integrations/orpc/router/credit-cards.ts`
 - Modify: `apps/web/src/integrations/orpc/router/index.ts`
 
@@ -281,11 +292,7 @@ const creditCardSchema = createInsertSchema(creditCards)
          .int()
          .min(1, "Dia inválido.")
          .max(31, "Dia inválido."),
-      dueDay: z
-         .number()
-         .int()
-         .min(1, "Dia inválido.")
-         .max(31, "Dia inválido."),
+      dueDay: z.number().int().min(1, "Dia inválido.").max(31, "Dia inválido."),
    });
 
 export const create = protectedProcedure
@@ -345,11 +352,13 @@ export const remove = protectedProcedure
 **Step 2: Register in router index**
 
 In `apps/web/src/integrations/orpc/router/index.ts`, add import after bankAccountsRouter:
+
 ```typescript
 import * as creditCardsRouter from "./credit-cards";
 ```
 
 Add to the export object after `bankAccounts`:
+
 ```typescript
 creditCards: creditCardsRouter,
 ```
@@ -366,6 +375,7 @@ git commit -m "feat(orpc): add credit cards router"
 ### Task 6: Create credit-cards-columns UI component
 
 **Files:**
+
 - Create: `apps/web/src/features/credit-cards/ui/credit-cards-columns.tsx`
 
 **Step 1: Create the columns file**
@@ -484,6 +494,7 @@ git commit -m "feat(ui): add credit cards columns"
 ### Task 7: Create credit-cards-form UI component
 
 **Files:**
+
 - Create: `apps/web/src/features/credit-cards/ui/credit-cards-form.tsx`
 
 **Step 1: Create the form**
@@ -823,6 +834,7 @@ git commit -m "feat(ui): add credit cards form"
 ### Task 8: Create credit-cards route page
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/finance/credit-cards.tsx`
 
 **Step 1: Create the route file**
@@ -1124,11 +1136,13 @@ git commit -m "feat(routes): add credit cards page"
 ### Task 9: Add credit cards to sidebar navigation
 
 **Files:**
+
 - Modify: `apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts`
 
 **Step 1: Add CreditCard icon import and nav item**
 
 Add `CreditCard` to the lucide-react import:
+
 ```typescript
 import {
    ArrowLeftRight,
@@ -1145,6 +1159,7 @@ import {
 ```
 
 Add after the `bank-accounts` item in the `finance` group:
+
 ```typescript
 {
    id: "credit-cards",
@@ -1172,6 +1187,7 @@ bun run typecheck
 ```
 
 Fix any TypeScript errors before proceeding. Common issues:
+
 - `bankAccountId` references that assumed non-null (add null checks or `??`)
 - Missing `creditCardId` handling in transaction-related queries/forms
 

@@ -1,23 +1,23 @@
 import { call } from "@orpc/server";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@packages/environment/server", () => ({
-	env: {
-		MINIO_ENDPOINT: "http://localhost:9000",
-		MINIO_ACCESS_KEY: "test",
-		MINIO_SECRET_KEY: "test",
-	},
+vi.mock("@core/environment/server", () => ({
+   env: {
+      MINIO_ENDPOINT: "http://localhost:9000",
+      MINIO_ACCESS_KEY: "test",
+      MINIO_SECRET_KEY: "test",
+   },
 }));
 vi.mock("@packages/files/client", () => ({
-	getMinioClient: vi.fn(),
-	generatePresignedPutUrl: vi.fn(),
+   getMinioClient: vi.fn(),
+   generatePresignedPutUrl: vi.fn(),
 }));
-vi.mock("@packages/database/repositories/auth-repository");
+vi.mock("@core/database/repositories/auth-repository");
 
 import { getOrganizationTeams } from "@/integrations/orpc/router/organization";
 import {
-	TEST_ORG_ID,
-	createTestContext,
+   TEST_ORG_ID,
+   createTestContext,
 } from "../../../helpers/create-test-context";
 
 describe("getOrganizationTeams", () => {

@@ -14,12 +14,14 @@ Investigates the codebase to understand the current state, then creates detailed
 ## When to Use
 
 Use when:
+
 - User feedback or suggestion needs to be tracked
 - Feature request from customer support (Licitei BOT messages)
 - Product improvement idea needs documentation
 - Converting conversation into a trackable feature issue
 
 Don't use when:
+
 - It's a bug (use debug-and-report instead)
 - Fix is immediate and simple (just do it)
 - Issue is already well-defined (use `gh` directly)
@@ -29,12 +31,14 @@ Don't use when:
 ### Phase 0: Understand the Request
 
 **Parse the user feedback to extract:**
+
 1. **Who** - User info, plan, company (for priority context)
 2. **What** - The feature or improvement they want
 3. **Why** - The pain point or use case driving the request
 4. **Where** - Which area/flow of the product is affected
 
 **For Licitei BOT messages**, extract structured data:
+
 - Area tag (e.g., "melhoria do lance automatico")
 - User info (email, company, plan, tenure)
 - The actual suggestion text
@@ -51,6 +55,7 @@ gh issue list --label "feedback" --limit 10
 ```
 
 Check for:
+
 - **Duplicate issues** - Same feature already requested? Link to it instead of creating a new one
 - **Related issues** - Similar requests that could be grouped or referenced
 - **Closed issues** - Was this already implemented, rejected, or deferred? Check why
@@ -76,6 +81,7 @@ The Explore agent MUST search:
 **Use a Task/Explore agent** to search broadly across the entire codebase. Do not rely on guessing file paths — let the agent search with multiple keyword variations (Portuguese + English, camelCase + kebab-case + snake_case).
 
 Document:
+
 - File paths and line numbers
 - Current behavior vs requested behavior
 - Existing patterns that could be extended
@@ -147,11 +153,13 @@ EOF
 ```
 
 **Title format:** `[Área] Descrição concisa da feature`
+
 - `[Disputa] Adicionar botão para pausar lance automático`
 - `[Dashboard] Filtro por status na lista de licitações`
 - `[Notificações] Alerta quando valor mínimo é atingido`
 
 **Labels (ALWAYS include all three):**
+
 - `feedback` - **MANDATORY** on every feature request issue (identifies user-originated suggestions)
 - `Triage` - Needs complexity and priority review
 - `Claude` - Issue investigated by Claude
@@ -177,6 +185,7 @@ Before creating, verify:
 ## Red Flags - STOP and Investigate More
 
 If your issue has:
+
 - No file paths or line numbers
 - "Somewhere in the codebase"
 - No current behavior description
@@ -199,17 +208,17 @@ When the input is a Licitei BOT customer feedback message:
 
 ## Common Mistakes
 
-| Mistake | Fix |
-|---------|-----|
-| Creating issue without codebase search | Always run Phase 1 with Task/Explore agent for full codebase search |
-| Searching only obvious directories | Use Explore agent to search codebase-wide with multiple keyword variations |
-| Missing file paths | Include exact locations for every claim |
-| Vague implementation steps | Be specific: file, line, change |
-| Forgetting user context | Include plan/tenure for prioritization |
-| Not searching GitHub first | Always run `gh issue list --search` in Phase 0.5 before investigating |
-| Missing `feedback` label | **ALWAYS** include `feedback`, `Triage`, and `Claude` labels |
-| Writing in English when team uses Portuguese | Match the team's language conventions |
-| Skipping complexity estimate | Always include Baixa/Média/Alta |
+| Mistake                                      | Fix                                                                        |
+| -------------------------------------------- | -------------------------------------------------------------------------- |
+| Creating issue without codebase search       | Always run Phase 1 with Task/Explore agent for full codebase search        |
+| Searching only obvious directories           | Use Explore agent to search codebase-wide with multiple keyword variations |
+| Missing file paths                           | Include exact locations for every claim                                    |
+| Vague implementation steps                   | Be specific: file, line, change                                            |
+| Forgetting user context                      | Include plan/tenure for prioritization                                     |
+| Not searching GitHub first                   | Always run `gh issue list --search` in Phase 0.5 before investigating      |
+| Missing `feedback` label                     | **ALWAYS** include `feedback`, `Triage`, and `Claude` labels               |
+| Writing in English when team uses Portuguese | Match the team's language conventions                                      |
+| Skipping complexity estimate                 | Always include Baixa/Média/Alta                                            |
 
 ## Example Output
 

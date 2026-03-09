@@ -32,87 +32,130 @@ A subscription management module for SaaS owners. Users define plans (e.g. Basic
 ```typescript
 import { sql } from "drizzle-orm";
 import {
-  index, numeric, pgEnum, pgTable,
-  text, timestamp, uniqueIndex, uuid,
+   index,
+   numeric,
+   pgEnum,
+   pgTable,
+   text,
+   timestamp,
+   uniqueIndex,
+   uuid,
 } from "drizzle-orm/pg-core";
 import { contacts } from "./contacts";
 import { transactions } from "./transactions";
 
 export const serviceBillingPeriodEnum = pgEnum("service_billing_period", [
-  "mensal", "trimestral", "semestral", "anual", "unico",
+   "mensal",
+   "trimestral",
+   "semestral",
+   "anual",
+   "unico",
 ]);
 
 export const subscriptionStatusEnum = pgEnum("subscription_status", [
-  "ativa", "pausada", "cancelada", "trial",
+   "ativa",
+   "pausada",
+   "cancelada",
+   "trial",
 ]);
 
 // ─── Plans ────────────────────────────────────────────────────────────────────
 
 export const servicePlans = pgTable(
-  "service_plans",
-  {
-    id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-    teamId: uuid("team_id").notNull(),
-    name: text("name").notNull(),
-    description: text("description"),
-    billingPeriod: serviceBillingPeriodEnum("billing_period").notNull().default("mensal"),
-    price: numeric("price", { precision: 12, scale: 2 }).notNull(),
-    color: text("color").notNull().default("#6b7280"),
-    isActive: text("is_active").notNull().default("1"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-  },
-  (t) => [
-    index("service_plans_team_idx").on(t.teamId),
-    uniqueIndex("service_plans_team_name_unique").on(t.teamId, t.name),
-  ],
+   "service_plans",
+   {
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
+      teamId: uuid("team_id").notNull(),
+      name: text("name").notNull(),
+      description: text("description"),
+      billingPeriod: serviceBillingPeriodEnum("billing_period")
+         .notNull()
+         .default("mensal"),
+      price: numeric("price", { precision: 12, scale: 2 }).notNull(),
+      color: text("color").notNull().default("#6b7280"),
+      isActive: text("is_active").notNull().default("1"),
+      createdAt: timestamp("created_at", { withTimezone: true })
+         .notNull()
+         .defaultNow(),
+      updatedAt: timestamp("updated_at", { withTimezone: true })
+         .notNull()
+         .defaultNow()
+         .$onUpdate(() => new Date()),
+   },
+   (t) => [
+      index("service_plans_team_idx").on(t.teamId),
+      uniqueIndex("service_plans_team_name_unique").on(t.teamId, t.name),
+   ],
 );
 
 // ─── Subscriptions ────────────────────────────────────────────────────────────
 
 export const subscriptions = pgTable(
-  "subscriptions",
-  {
-    id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-    teamId: uuid("team_id").notNull(),
-    planId: uuid("plan_id").notNull().references(() => servicePlans.id, { onDelete: "restrict" }),
-    contactId: uuid("contact_id").notNull().references(() => contacts.id, { onDelete: "restrict" }),
-    status: subscriptionStatusEnum("status").notNull().default("ativa"),
-    startDate: timestamp("start_date", { withTimezone: true }).notNull().defaultNow(),
-    endDate: timestamp("end_date", { withTimezone: true }),          // null = ongoing
-    trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
-    lastPaymentAt: timestamp("last_payment_at", { withTimezone: true }),
-    nextBillingAt: timestamp("next_billing_at", { withTimezone: true }),
-    customPrice: numeric("custom_price", { precision: 12, scale: 2 }), // override plan price per client
-    notes: text("notes"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-  },
-  (t) => [
-    index("subscriptions_team_idx").on(t.teamId),
-    index("subscriptions_plan_idx").on(t.planId),
-    index("subscriptions_contact_idx").on(t.contactId),
-  ],
+   "subscriptions",
+   {
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
+      teamId: uuid("team_id").notNull(),
+      planId: uuid("plan_id")
+         .notNull()
+         .references(() => servicePlans.id, { onDelete: "restrict" }),
+      contactId: uuid("contact_id")
+         .notNull()
+         .references(() => contacts.id, { onDelete: "restrict" }),
+      status: subscriptionStatusEnum("status").notNull().default("ativa"),
+      startDate: timestamp("start_date", { withTimezone: true })
+         .notNull()
+         .defaultNow(),
+      endDate: timestamp("end_date", { withTimezone: true }), // null = ongoing
+      trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+      lastPaymentAt: timestamp("last_payment_at", { withTimezone: true }),
+      nextBillingAt: timestamp("next_billing_at", { withTimezone: true }),
+      customPrice: numeric("custom_price", { precision: 12, scale: 2 }), // override plan price per client
+      notes: text("notes"),
+      createdAt: timestamp("created_at", { withTimezone: true })
+         .notNull()
+         .defaultNow(),
+      updatedAt: timestamp("updated_at", { withTimezone: true })
+         .notNull()
+         .defaultNow()
+         .$onUpdate(() => new Date()),
+   },
+   (t) => [
+      index("subscriptions_team_idx").on(t.teamId),
+      index("subscriptions_plan_idx").on(t.planId),
+      index("subscriptions_contact_idx").on(t.contactId),
+   ],
 );
 
 // ─── Payments ─────────────────────────────────────────────────────────────────
 
 export const subscriptionPayments = pgTable(
-  "subscription_payments",
-  {
-    id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-    teamId: uuid("team_id").notNull(),
-    subscriptionId: uuid("subscription_id").notNull().references(() => subscriptions.id, { onDelete: "cascade" }),
-    amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
-    transactionId: uuid("transaction_id").references(() => transactions.id, { onDelete: "set null" }),
-    date: timestamp("date", { withTimezone: true }).notNull().defaultNow(),
-    notes: text("notes"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [
-    index("subscription_payments_team_idx").on(t.teamId),
-    index("subscription_payments_sub_idx").on(t.subscriptionId),
-  ],
+   "subscription_payments",
+   {
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
+      teamId: uuid("team_id").notNull(),
+      subscriptionId: uuid("subscription_id")
+         .notNull()
+         .references(() => subscriptions.id, { onDelete: "cascade" }),
+      amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+      transactionId: uuid("transaction_id").references(() => transactions.id, {
+         onDelete: "set null",
+      }),
+      date: timestamp("date", { withTimezone: true }).notNull().defaultNow(),
+      notes: text("notes"),
+      createdAt: timestamp("created_at", { withTimezone: true })
+         .notNull()
+         .defaultNow(),
+   },
+   (t) => [
+      index("subscription_payments_team_idx").on(t.teamId),
+      index("subscription_payments_sub_idx").on(t.subscriptionId),
+   ],
 );
 
 export type ServicePlan = typeof servicePlans.$inferSelect;
@@ -257,6 +300,7 @@ export const getTopPlans = protectedProcedure.input(...).handler(...)
 ```
 
 **Register in `apps/web/src/integrations/orpc/router/index.ts`:**
+
 ```typescript
 import * as services from "./services";
 export const router = { ...existing, services };
@@ -278,9 +322,11 @@ apps/web/src/features/services/
 ```
 
 ### `subscriptions-columns.tsx`
+
 Columns: Client (contact name + type badge), Plan (name + billing period badge), Status badge, Effective price, Next billing date, Last payment, Actions.
 
 Row actions:
+
 - **Registrar Pagamento** → `SubscriptionPaymentCredenza`
 - **Editar** → `SubscriptionForm` sheet
 - **Cancelar** → `useAlertDialog` → calls `services.cancel`
@@ -288,13 +334,16 @@ Row actions:
 Expandable row: `<SubscriptionPaymentsList subscriptionId={row.id} />`
 
 ### `subscription-payment-credenza.tsx`
+
 Fields:
+
 - **Valor** — MoneyInput (pre-filled with plan price or custom price)
 - **Data** — DatePicker
 - **Notas** — Textarea
 - **Transação** — Toggle: "Nenhuma" | "Vincular existente" | "Criar automático" (creates income transaction)
 
 ### `service-plan-form.tsx`
+
 Opened via "Gerenciar Planos" button in page header. Credenza with plan list + inline create/edit.
 
 ---
@@ -341,6 +390,7 @@ Loader prefetches `orpc.services.getAll` and `orpc.services.getPlans`.
 ## Step 6 — Dashboard Integration
 
 Seed a "Assinaturas" dashboard when the `services` flag is active. Default tiles:
+
 - **MRR** — total monthly recurring revenue
 - **Assinaturas ativas** — count of active subscriptions
 - **Novas este mês** — new subscriptions started this month
@@ -353,6 +403,7 @@ Seed a "Assinaturas" dashboard when the `services` flag is active. Default tiles
 ## Step 7 — Sidebar + Early Access
 
 ### Sidebar
+
 ```typescript
 {
   id: "services",
@@ -370,6 +421,7 @@ Seed a "Assinaturas" dashboard when the `services` flag is active. Default tiles
 ```
 
 ### Billing overview
+
 ```typescript
 services: {
   label: "Assinaturas",
@@ -382,30 +434,31 @@ services: {
 ```
 
 ### PostHog
+
 Create early access feature flag `services` with stage `alpha`.
 
 ---
 
 ## File Checklist
 
-| File | Action |
-|------|--------|
-| `packages/database/src/schemas/services.ts` | Create |
-| `packages/database/src/schema.ts` | Edit |
-| `packages/database/src/repositories/services-repository.ts` | Create |
-| `apps/web/src/integrations/orpc/router/services.ts` | Create |
-| `apps/web/src/integrations/orpc/router/index.ts` | Edit |
-| `apps/web/src/features/services/ui/service-plan-form.tsx` | Create |
-| `apps/web/src/features/services/ui/subscription-form.tsx` | Create |
-| `apps/web/src/features/services/ui/subscription-card.tsx` | Create |
-| `apps/web/src/features/services/ui/subscriptions-columns.tsx` | Create |
+| File                                                                  | Action |
+| --------------------------------------------------------------------- | ------ |
+| `packages/database/src/schemas/services.ts`                           | Create |
+| `packages/database/src/schema.ts`                                     | Edit   |
+| `packages/database/src/repositories/services-repository.ts`           | Create |
+| `apps/web/src/integrations/orpc/router/services.ts`                   | Create |
+| `apps/web/src/integrations/orpc/router/index.ts`                      | Edit   |
+| `apps/web/src/features/services/ui/service-plan-form.tsx`             | Create |
+| `apps/web/src/features/services/ui/subscription-form.tsx`             | Create |
+| `apps/web/src/features/services/ui/subscription-card.tsx`             | Create |
+| `apps/web/src/features/services/ui/subscriptions-columns.tsx`         | Create |
 | `apps/web/src/features/services/ui/subscription-payment-credenza.tsx` | Create |
-| `apps/web/src/features/services/ui/subscription-payments-list.tsx` | Create |
-| `apps/web/src/routes/.../services/index.tsx` | Create |
-| `apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts` | Edit |
-| `apps/web/src/features/billing/ui/billing-overview.tsx` | Edit |
-| `packages/database/src/default-insights.ts` | Edit |
-| `scripts/seed-default-dashboard.ts` | Edit |
+| `apps/web/src/features/services/ui/subscription-payments-list.tsx`    | Create |
+| `apps/web/src/routes/.../services/index.tsx`                          | Create |
+| `apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts`               | Edit   |
+| `apps/web/src/features/billing/ui/billing-overview.tsx`               | Edit   |
+| `packages/database/src/default-insights.ts`                           | Edit   |
+| `scripts/seed-default-dashboard.ts`                                   | Edit   |
 
 ---
 

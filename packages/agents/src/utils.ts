@@ -1,7 +1,7 @@
 import { ModelRouterEmbeddingModel } from "@mastra/core/llm";
 import { PgVector } from "@mastra/pg";
-import type { InstructionMemoryItem } from "@packages/database/schemas/instruction-memory";
-import { env as serverEnv } from "@packages/environment/server";
+import type { InstructionMemoryItem } from "@core/database/schemas/instruction-memory";
+import { env as serverEnv } from "@core/environment/server";
 
 export const pgVectorStore = new PgVector({
    id: "mastra-rag",

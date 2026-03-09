@@ -1,4 +1,4 @@
-import { getDevMagicLink } from "@packages/authentication/server";
+import { getDevMagicLink } from "@core/authentication/server";
 import { createFileRoute } from "@tanstack/react-router";
 import { getAuth } from "@/integrations/better-auth/auth-server";
 

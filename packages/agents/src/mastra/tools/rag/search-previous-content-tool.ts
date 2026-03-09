@@ -1,6 +1,6 @@
 import { createTool } from "@mastra/core/tools";
-import { getLogger } from "@packages/logging/root";
-import { AppError, propagateError } from "@packages/utils/errors";
+import { getLogger } from "@core/logging/root";
+import { AppError, propagateError } from "@core/utils/errors";
 
 const logger = getLogger().child({ module: "agents:rag" });
 

@@ -1,17 +1,16 @@
 name: "Setup Bun & Nx"
 description: "Setup Bun, install dependencies, and configure Nx"
 runs:
-  using: "composite"
-  steps:
-    - name: Setup Bun
-      uses: oven-sh/setup-bun@v2
+   using: "composite"
+   steps:
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
 
-    - name: Install dependencies
-      run: bun install --frozen-lockfile
-      shell: bash
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+        shell: bash
 
-    - name: Set Nx SHAs
-      uses: nrwl/nx-set-shas@v4
-      with:
-        main-branch-name: master
-
+      - name: Set Nx SHAs
+        uses: nrwl/nx-set-shas@v4
+        with:
+           main-branch-name: master

@@ -68,7 +68,7 @@
          "commit": true,
          "tag": true
       },
-      "projects": ["apps/*", "packages/*"],
+      "projects": ["core/*", "apps/*", "packages/*"],
       "projectsRelationship": "independent",
       "releaseTagPattern": "{projectName}@{version}",
       "releaseTagPatternRequireSemver": true,

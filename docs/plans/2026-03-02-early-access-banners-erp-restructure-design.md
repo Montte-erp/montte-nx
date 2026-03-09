@@ -5,6 +5,7 @@
 ## Overview
 
 Three related changes:
+
 1. Move finance routes up one level (remove `finance/` prefix)
 2. Replace `insights/new.tsx` with inline empty-insight creation
 3. Add `EarlyAccessBanner` to all early access screens
@@ -14,7 +15,9 @@ Three related changes:
 ## 1. Finance Route Restructure
 
 ### What changes
+
 Move all files from `_dashboard/finance/` → `_dashboard/`:
+
 - `finance/contacts.tsx` → `contacts.tsx`
 - `finance/bank-accounts.tsx` → `bank-accounts.tsx`
 - `finance/tags.tsx` → `tags.tsx`
@@ -25,6 +28,7 @@ Move all files from `_dashboard/finance/` → `_dashboard/`:
 - `finance/goals.tsx` → `goals.tsx`
 
 ### Also required
+
 - Remove `finance.tsx` layout file if it exists
 - Update `createFileRoute(...)` path string in each moved file
 - Update all `Link to=` and `navigate({ to: ... })` references across codebase
@@ -35,17 +39,21 @@ Move all files from `_dashboard/finance/` → `_dashboard/`:
 ## 2. New Insight Flow
 
 ### What changes
+
 - Delete `insights/new.tsx`
 - In `insights/index.tsx`: "New Insight" button and context panel action call `orpc.insights.create` directly with default values, then redirect to `$insightId`
 
 ### Default values
+
 ```ts
-name: "Novo insight"
-type: "trends"
-config: {} // default empty config
+name: "Novo insight";
+type: "trends";
+config: {
+} // default empty config
 ```
 
 ### Button state
+
 - Shows `Loader2` spinner while mutation is pending
 - Disabled during pending
 
@@ -54,11 +62,13 @@ config: {} // default empty config
 ## 3. Feature Feedback Banner
 
 ### Component change — `early-access-banner.tsx`
+
 No change needed. The component already accepts a `template` prop and is ready to use.
 
 ### Banner templates
 
 **Analytics (Dashboards + Insights)**
+
 ```ts
 {
   badgeLabel: "Analytics Avançado",
@@ -73,6 +83,7 @@ No change needed. The component already accepts a `template` prop and is ready t
 ```
 
 **Contacts**
+
 ```ts
 {
   badgeLabel: "Contatos",
@@ -88,10 +99,10 @@ No change needed. The component already accepts a `template` prop and is ready t
 
 ### Placement
 
-| File | Position |
-|------|----------|
-| `dashboards/index.tsx` | Below `<PageHeader />` |
+| File                          | Position                                               |
+| ----------------------------- | ------------------------------------------------------ |
+| `dashboards/index.tsx`        | Below `<PageHeader />`                                 |
 | `dashboards/$dashboardId.tsx` | New `<main>` wrapper, banner at top above `<Suspense>` |
-| `insights/index.tsx` | Below `<PageHeader />` |
-| `insights/$insightId.tsx` | Above `<InsightBuilder />` in final return |
-| `contacts.tsx` (new path) | Below `<DefaultHeader />` |
+| `insights/index.tsx`          | Below `<PageHeader />`                                 |
+| `insights/$insightId.tsx`     | Above `<InsightBuilder />` in final return             |
+| `contacts.tsx` (new path)     | Below `<DefaultHeader />`                              |

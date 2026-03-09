@@ -1,0 +1,89 @@
+import { AppError, propagateError } from "@core/utils/errors";
+import type { SQL } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
+import type { DatabaseInstance } from "../client";
+import { type NewTag, tags, transactionTags } from "../schema";
+
+export async function createTag(db: DatabaseInstance, data: NewTag) {
+   try {
+      const [tag] = await db.insert(tags).values(data).returning();
+      return tag;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to create tag");
+   }
+}
+
+export async function listTags(
+   db: DatabaseInstance,
+   teamId: string,
+   opts?: { includeArchived?: boolean },
+) {
+   try {
+      const conditions: SQL[] = [eq(tags.teamId, teamId)];
+      if (!opts?.includeArchived) {
+         conditions.push(eq(tags.isArchived, false));
+      }
+      return await db
+         .select()
+         .from(tags)
+         .where(and(...conditions))
+         .orderBy(tags.name);
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to list tags");
+   }
+}
+
+export async function getTag(db: DatabaseInstance, id: string) {
+   try {
+      const [tag] = await db.select().from(tags).where(eq(tags.id, id));
+      return tag ?? null;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to get tag");
+   }
+}
+
+export async function updateTag(
+   db: DatabaseInstance,
+   id: string,
+   data: Partial<NewTag>,
+) {
+   try {
+      const [updated] = await db
+         .update(tags)
+         .set(data)
+         .where(eq(tags.id, id))
+         .returning();
+      return updated;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to update tag");
+   }
+}
+
+export async function deleteTag(db: DatabaseInstance, id: string) {
+   try {
+      await db.delete(tags).where(eq(tags.id, id));
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to delete tag");
+   }
+}
+
+export async function tagHasTransactions(
+   db: DatabaseInstance,
+   tagId: string,
+): Promise<boolean> {
+   try {
+      const [row] = await db
+         .select({ count: sql<number>`count(*)::int` })
+         .from(transactionTags)
+         .where(eq(transactionTags.tagId, tagId));
+      return (row?.count ?? 0) > 0;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to check tag transactions");
+   }
+}

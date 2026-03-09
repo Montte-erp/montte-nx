@@ -80,12 +80,12 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
+      "@core/database": "workspace:*",
+      "@core/redis": "workspace:*",
       "@f-o-t/money": "catalog:fot",
       "@orpc/server": "catalog:orpc",
-      "@packages/database": "workspace:*",
       "@packages/posthog": "workspace:*",
       "@packages/queue": "workspace:*",
-      "@packages/redis": "workspace:*",
       "@packages/stripe": "workspace:*",
       "bullmq": "catalog:workers",
       "drizzle-orm": "catalog:database",

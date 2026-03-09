@@ -6,7 +6,7 @@ import {
    type InsightConfig,
    insightConfigSchema,
 } from "@packages/analytics/types";
-import type { DashboardDateRange } from "@packages/database/schemas/dashboards";
+import type { DashboardDateRange } from "@core/database/schemas/dashboards";
 import { Button } from "@packages/ui/components/button";
 import {
    DropdownMenu,

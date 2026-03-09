@@ -5,8 +5,8 @@ import {
    getCreditCard,
    listCreditCards,
    updateCreditCard,
-} from "@packages/database/repositories/credit-cards-repository";
-import { creditCards } from "@packages/database/schemas/credit-cards";
+} from "@core/database/repositories/credit-cards-repository";
+import { creditCards } from "@core/database/schemas/credit-cards";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";

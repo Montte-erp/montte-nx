@@ -1,10 +1,10 @@
-import type { DatabaseInstance } from "@packages/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import {
    createBillsBatch,
    getActiveRecurrenceSettings,
    getLastBillForRecurrenceGroup,
-} from "@packages/database/repositories/bills-repository";
-import { getLogger } from "@packages/logging/root";
+} from "@core/database/repositories/bills-repository";
+import { getLogger } from "@core/logging/root";
 
 const logger = getLogger().child({ module: "job:bills" });
 
@@ -70,7 +70,10 @@ export async function generateBillOccurrences(
 
       if (toCreate.length > 0) {
          await createBillsBatch(db, toCreate);
-         logger.info({ count: toCreate.length, recurrenceGroupId: setting.id }, "Created bill occurrences");
+         logger.info(
+            { count: toCreate.length, recurrenceGroupId: setting.id },
+            "Created bill occurrences",
+         );
       }
    }
 }

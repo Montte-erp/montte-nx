@@ -13,6 +13,7 @@
 ## Task 1: DB Schema — Add Fields to Categories and Transactions
 
 **Files:**
+
 - Modify: `packages/database/src/schemas/categories.ts`
 - Modify: `packages/database/src/schemas/transactions.ts`
 
@@ -35,7 +36,9 @@ import {
 export const categories = pgTable(
    "categories",
    {
-      id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
       teamId: uuid("team_id").notNull(),
       name: text("name").notNull(),
       isDefault: boolean("is_default").notNull().default(false),
@@ -95,6 +98,7 @@ git commit -m "feat(db): add color/icon/type to categories, name to transactions
 ## Task 2: Update Repositories
 
 **Files:**
+
 - Modify: `packages/database/src/repositories/categories-repository.ts`
 - Modify: `packages/database/src/repositories/transactions-repository.ts`
 
@@ -123,6 +127,7 @@ git commit -m "chore: verify repositories pass through new fields (no changes ne
 ## Task 3: Update oRPC Routers
 
 **Files:**
+
 - Modify: `apps/web/src/integrations/orpc/router/categories.ts`
 - Modify: `apps/web/src/integrations/orpc/router/transactions.ts`
 
@@ -148,7 +153,11 @@ import { protectedProcedure } from "../server";
 const categorySchema = createInsertSchema(categories)
    .pick({ name: true })
    .extend({
-      color: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
+      color: z
+         .string()
+         .regex(/^#[0-9a-fA-F]{6}$/)
+         .nullable()
+         .optional(),
       icon: z.string().max(50).nullable().optional(),
       type: z.enum(["income", "expense"]).nullable().optional(),
    });
@@ -178,10 +187,14 @@ export const update = protectedProcedure
       const { db, teamId } = context;
       const category = await getCategory(db, input.id);
       if (!category || category.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", { message: "Categoria não encontrada." });
+         throw new ORPCError("NOT_FOUND", {
+            message: "Categoria não encontrada.",
+         });
       }
       if (category.isDefault) {
-         throw new ORPCError("BAD_REQUEST", { message: "Categorias padrão não podem ser editadas." });
+         throw new ORPCError("BAD_REQUEST", {
+            message: "Categorias padrão não podem ser editadas.",
+         });
       }
       return updateCategory(db, input.id, {
          name: input.name,
@@ -212,7 +225,7 @@ const transactionSchema = createInsertSchema(transactions)
       attachmentUrl: true,
    })
    .extend({
-      name: z.string().max(200).nullable().optional(),  // ← ADD THIS
+      name: z.string().max(200).nullable().optional(), // ← ADD THIS
       amount: z
          .string()
          .refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0, {
@@ -244,6 +257,7 @@ git commit -m "feat(api): add color/icon/type to categories router, name to tran
 ## Task 4: Create SwatchColorPicker Component
 
 **Files:**
+
 - Create: `apps/web/src/components/swatch-color-picker.tsx`
 
 **Step 1: Create the component**
@@ -255,10 +269,22 @@ import { cn } from "@packages/ui/lib/utils";
 import { useCallback, useState } from "react";
 
 const PRESET_COLORS = [
-   "#ef4444", "#f97316", "#f59e0b", "#eab308",
-   "#84cc16", "#22c55e", "#10b981", "#14b8a6",
-   "#06b6d4", "#3b82f6", "#6366f1", "#8b5cf6",
-   "#a855f7", "#ec4899", "#f43f5e", "#64748b",
+   "#ef4444",
+   "#f97316",
+   "#f59e0b",
+   "#eab308",
+   "#84cc16",
+   "#22c55e",
+   "#10b981",
+   "#14b8a6",
+   "#06b6d4",
+   "#3b82f6",
+   "#6366f1",
+   "#8b5cf6",
+   "#a855f7",
+   "#ec4899",
+   "#f43f5e",
+   "#64748b",
 ];
 
 interface SwatchColorPickerProps {
@@ -336,6 +362,7 @@ git commit -m "feat(ui): add SwatchColorPicker component"
 ## Task 5: Create MoneyInput Component
 
 **Files:**
+
 - Create: `apps/web/src/components/money-input.tsx`
 
 **Step 1: Create the component**
@@ -411,11 +438,12 @@ export function MoneyInput({
       }
    }, [value]);
 
-   const displayValue = document.activeElement === inputRef.current
-      ? value
-      : value
-      ? formatBRL(value)
-      : "";
+   const displayValue =
+      document.activeElement === inputRef.current
+         ? value
+         : value
+           ? formatBRL(value)
+           : "";
 
    return (
       <div className="relative">
@@ -453,6 +481,7 @@ git commit -m "feat(ui): add MoneyInput BRL currency component"
 ## Task 6: Update TransactionSheet → Credenza Form
 
 **Files:**
+
 - Modify: `apps/web/src/features/transactions/ui/transactions-sheet.tsx`
 
 **Step 1: Rewrite the file**
@@ -505,7 +534,11 @@ function TagCheckboxList({ selectedTagIds, onToggle }: TagCheckboxListProps) {
    const { data: tags } = useSuspenseQuery(orpc.tags.getAll.queryOptions({}));
 
    if (tags.length === 0) {
-      return <p className="text-sm text-muted-foreground">Nenhuma tag cadastrada.</p>;
+      return (
+         <p className="text-sm text-muted-foreground">
+            Nenhuma tag cadastrada.
+         </p>
+      );
    }
 
    return (
@@ -513,10 +546,19 @@ function TagCheckboxList({ selectedTagIds, onToggle }: TagCheckboxListProps) {
          {tags.map((tag) => {
             const checked = selectedTagIds.includes(tag.id);
             return (
-               <label key={tag.id} className="flex items-center gap-2 cursor-pointer select-none">
-                  <Checkbox checked={checked} onCheckedChange={() => onToggle(tag.id)} />
+               <label
+                  key={tag.id}
+                  className="flex items-center gap-2 cursor-pointer select-none"
+               >
+                  <Checkbox
+                     checked={checked}
+                     onCheckedChange={() => onToggle(tag.id)}
+                  />
                   {tag.color ? (
-                     <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
+                     <span
+                        className="size-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: tag.color }}
+                     />
                   ) : null}
                   <span className="text-sm">{tag.name}</span>
                </label>
@@ -526,26 +568,42 @@ function TagCheckboxList({ selectedTagIds, onToggle }: TagCheckboxListProps) {
    );
 }
 
-function TransactionFormContent({ mode, transaction, onSuccess }: TransactionFormProps) {
+function TransactionFormContent({
+   mode,
+   transaction,
+   onSuccess,
+}: TransactionFormProps) {
    const isCreate = mode === "create";
 
-   const { data: bankAccounts } = useSuspenseQuery(orpc.bankAccounts.getAll.queryOptions({}));
-   const { data: categories } = useSuspenseQuery(orpc.categories.getAll.queryOptions({}));
+   const { data: bankAccounts } = useSuspenseQuery(
+      orpc.bankAccounts.getAll.queryOptions({}),
+   );
+   const { data: categories } = useSuspenseQuery(
+      orpc.categories.getAll.queryOptions({}),
+   );
 
-   const [type, setType] = useState<TransactionType>(transaction?.type ?? "income");
+   const [type, setType] = useState<TransactionType>(
+      transaction?.type ?? "income",
+   );
    const [name, setName] = useState(transaction?.name ?? "");
    const [amount, setAmount] = useState(transaction?.amount ?? "");
    const [date, setDate] = useState<Date | undefined>(
       transaction?.date ? new Date(`${transaction.date}T12:00:00`) : undefined,
    );
-   const [bankAccountId, setBankAccountId] = useState(transaction?.bankAccountId ?? "");
+   const [bankAccountId, setBankAccountId] = useState(
+      transaction?.bankAccountId ?? "",
+   );
    const [destinationBankAccountId, setDestinationBankAccountId] = useState(
       transaction?.destinationBankAccountId ?? "",
    );
    const [categoryId, setCategoryId] = useState(transaction?.categoryId ?? "");
-   const [subcategoryId, setSubcategoryId] = useState(transaction?.subcategoryId ?? "");
+   const [subcategoryId, setSubcategoryId] = useState(
+      transaction?.subcategoryId ?? "",
+   );
    const [tagIds, setTagIds] = useState<string[]>(transaction?.tagIds ?? []);
-   const [description, setDescription] = useState(transaction?.description ?? "");
+   const [description, setDescription] = useState(
+      transaction?.description ?? "",
+   );
 
    const selectedCategory = categories.find((c) => c.id === categoryId);
    const subcategoryOptions = selectedCategory?.subcategories ?? [];
@@ -557,21 +615,33 @@ function TransactionFormContent({ mode, transaction, onSuccess }: TransactionFor
 
    const handleTagToggle = useCallback((tagId: string) => {
       setTagIds((prev) =>
-         prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId],
+         prev.includes(tagId)
+            ? prev.filter((id) => id !== tagId)
+            : [...prev, tagId],
       );
    }, []);
 
    const createMutation = useMutation(
       orpc.transactions.create.mutationOptions({
-         onSuccess: () => { toast.success("Transação criada com sucesso."); onSuccess(); },
-         onError: (error) => { toast.error(error.message || "Erro ao criar transação."); },
+         onSuccess: () => {
+            toast.success("Transação criada com sucesso.");
+            onSuccess();
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao criar transação.");
+         },
       }),
    );
 
    const updateMutation = useMutation(
       orpc.transactions.update.mutationOptions({
-         onSuccess: () => { toast.success("Transação atualizada com sucesso."); onSuccess(); },
-         onError: (error) => { toast.error(error.message || "Erro ao atualizar transação."); },
+         onSuccess: () => {
+            toast.success("Transação atualizada com sucesso.");
+            onSuccess();
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao atualizar transação.");
+         },
       }),
    );
 
@@ -596,7 +666,8 @@ function TransactionFormContent({ mode, transaction, onSuccess }: TransactionFor
          amount,
          date: dateStr,
          bankAccountId,
-         destinationBankAccountId: type === "transfer" ? destinationBankAccountId : null,
+         destinationBankAccountId:
+            type === "transfer" ? destinationBankAccountId : null,
          categoryId: categoryId || null,
          subcategoryId: subcategoryId || null,
          attachmentUrl: null as string | null,
@@ -609,16 +680,36 @@ function TransactionFormContent({ mode, transaction, onSuccess }: TransactionFor
       } else if (transaction) {
          updateMutation.mutate({ id: transaction.id, ...payload });
       }
-   }, [isValid, isCreate, type, name, amount, dateStr, bankAccountId, destinationBankAccountId, categoryId, subcategoryId, tagIds, description, createMutation, updateMutation, transaction]);
+   }, [
+      isValid,
+      isCreate,
+      type,
+      name,
+      amount,
+      dateStr,
+      bankAccountId,
+      destinationBankAccountId,
+      categoryId,
+      subcategoryId,
+      tagIds,
+      description,
+      createMutation,
+      updateMutation,
+      transaction,
+   ]);
 
    const accountLabel = type === "transfer" ? "Conta de Origem" : "Conta";
 
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>{isCreate ? "Nova Transação" : "Editar Transação"}</CredenzaTitle>
+            <CredenzaTitle>
+               {isCreate ? "Nova Transação" : "Editar Transação"}
+            </CredenzaTitle>
             <CredenzaDescription>
-               {isCreate ? "Registre uma nova transação financeira." : "Atualize os dados da transação."}
+               {isCreate
+                  ? "Registre uma nova transação financeira."
+                  : "Atualize os dados da transação."}
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -637,7 +728,10 @@ function TransactionFormContent({ mode, transaction, onSuccess }: TransactionFor
             {/* Tipo */}
             <div className="space-y-2">
                <Label htmlFor="transaction-type">Tipo</Label>
-               <Select onValueChange={(v) => setType(v as TransactionType)} value={type}>
+               <Select
+                  onValueChange={(v) => setType(v as TransactionType)}
+                  value={type}
+               >
                   <SelectTrigger id="transaction-type">
                      <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
@@ -680,7 +774,9 @@ function TransactionFormContent({ mode, transaction, onSuccess }: TransactionFor
                   </SelectTrigger>
                   <SelectContent>
                      {bankAccounts.map((account) => (
-                        <SelectItem key={account.id} value={account.id}>{account.name}</SelectItem>
+                        <SelectItem key={account.id} value={account.id}>
+                           {account.name}
+                        </SelectItem>
                      ))}
                   </SelectContent>
                </Select>
@@ -689,14 +785,21 @@ function TransactionFormContent({ mode, transaction, onSuccess }: TransactionFor
             {/* Conta de Destino (transfer only) */}
             {type === "transfer" && (
                <div className="space-y-2">
-                  <Label htmlFor="transaction-dest-account">Conta de Destino</Label>
-                  <Select onValueChange={setDestinationBankAccountId} value={destinationBankAccountId}>
+                  <Label htmlFor="transaction-dest-account">
+                     Conta de Destino
+                  </Label>
+                  <Select
+                     onValueChange={setDestinationBankAccountId}
+                     value={destinationBankAccountId}
+                  >
                      <SelectTrigger id="transaction-dest-account">
                         <SelectValue placeholder="Selecione a conta de destino" />
                      </SelectTrigger>
                      <SelectContent>
                         {bankAccounts.map((account) => (
-                           <SelectItem key={account.id} value={account.id}>{account.name}</SelectItem>
+                           <SelectItem key={account.id} value={account.id}>
+                              {account.name}
+                           </SelectItem>
                         ))}
                      </SelectContent>
                   </Select>
@@ -712,7 +815,9 @@ function TransactionFormContent({ mode, transaction, onSuccess }: TransactionFor
                   </SelectTrigger>
                   <SelectContent>
                      {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                        <SelectItem key={cat.id} value={cat.id}>
+                           {cat.name}
+                        </SelectItem>
                      ))}
                   </SelectContent>
                </Select>
@@ -722,13 +827,18 @@ function TransactionFormContent({ mode, transaction, onSuccess }: TransactionFor
             {categoryId && subcategoryOptions.length > 0 && (
                <div className="space-y-2">
                   <Label htmlFor="transaction-subcategory">Subcategoria</Label>
-                  <Select onValueChange={setSubcategoryId} value={subcategoryId}>
+                  <Select
+                     onValueChange={setSubcategoryId}
+                     value={subcategoryId}
+                  >
                      <SelectTrigger id="transaction-subcategory">
                         <SelectValue placeholder="Selecione a subcategoria" />
                      </SelectTrigger>
                      <SelectContent>
                         {subcategoryOptions.map((sub) => (
-                           <SelectItem key={sub.id} value={sub.id}>{sub.name}</SelectItem>
+                           <SelectItem key={sub.id} value={sub.id}>
+                              {sub.name}
+                           </SelectItem>
                         ))}
                      </SelectContent>
                   </Select>
@@ -738,8 +848,17 @@ function TransactionFormContent({ mode, transaction, onSuccess }: TransactionFor
             {/* Tags */}
             <div className="space-y-2">
                <Label>Tags</Label>
-               <Suspense fallback={<p className="text-sm text-muted-foreground">Carregando tags...</p>}>
-                  <TagCheckboxList selectedTagIds={tagIds} onToggle={handleTagToggle} />
+               <Suspense
+                  fallback={
+                     <p className="text-sm text-muted-foreground">
+                        Carregando tags...
+                     </p>
+                  }
+               >
+                  <TagCheckboxList
+                     selectedTagIds={tagIds}
+                     onToggle={handleTagToggle}
+                  />
                </Suspense>
             </div>
 
@@ -757,7 +876,11 @@ function TransactionFormContent({ mode, transaction, onSuccess }: TransactionFor
          </CredenzaBody>
 
          <CredenzaFooter>
-            <Button className="w-full" disabled={!isValid || isPending} onClick={handleSubmit}>
+            <Button
+               className="w-full"
+               disabled={!isValid || isPending}
+               onClick={handleSubmit}
+            >
                {isPending ? <Spinner className="size-4 mr-2" /> : null}
                {isCreate ? "Criar transação" : "Salvar alterações"}
             </Button>
@@ -766,13 +889,19 @@ function TransactionFormContent({ mode, transaction, onSuccess }: TransactionFor
    );
 }
 
-export function TransactionSheet({ mode, transaction, onSuccess }: TransactionFormProps) {
+export function TransactionSheet({
+   mode,
+   transaction,
+   onSuccess,
+}: TransactionFormProps) {
    return (
       <Suspense
          fallback={
             <>
                <CredenzaHeader>
-                  <CredenzaTitle>{mode === "create" ? "Nova Transação" : "Editar Transação"}</CredenzaTitle>
+                  <CredenzaTitle>
+                     {mode === "create" ? "Nova Transação" : "Editar Transação"}
+                  </CredenzaTitle>
                </CredenzaHeader>
                <CredenzaBody className="flex items-center justify-center py-8">
                   <Spinner className="size-6" />
@@ -780,7 +909,11 @@ export function TransactionSheet({ mode, transaction, onSuccess }: TransactionFo
             </>
          }
       >
-         <TransactionFormContent mode={mode} transaction={transaction} onSuccess={onSuccess} />
+         <TransactionFormContent
+            mode={mode}
+            transaction={transaction}
+            onSuccess={onSuccess}
+         />
       </Suspense>
    );
 }
@@ -806,6 +939,7 @@ git commit -m "feat(transactions): use credenza, date picker, money input, name 
 ## Task 7: Update TransactionColumns
 
 **Files:**
+
 - Modify: `apps/web/src/features/transactions/ui/transactions-columns.tsx`
 
 **Step 1: Add `name` to TransactionRow type and update columns**
@@ -838,7 +972,10 @@ export type TransactionRow = {
 
 function formatBRL(value: string | number): string {
    const num = typeof value === "string" ? Number(value) : value;
-   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(num);
+   return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+   }).format(num);
 }
 
 function formatDate(dateStr: string): string {
@@ -855,7 +992,9 @@ export function buildTransactionColumns(
          accessorKey: "date",
          header: "Data",
          cell: ({ row }) => (
-            <span className="text-sm tabular-nums">{formatDate(row.original.date)}</span>
+            <span className="text-sm tabular-nums">
+               {formatDate(row.original.date)}
+            </span>
          ),
       },
       {
@@ -864,8 +1003,13 @@ export function buildTransactionColumns(
          cell: ({ row }) => {
             const { name, description } = row.original;
             const label = name || description;
-            if (!label) return <span className="text-sm text-muted-foreground">—</span>;
-            return <span className="text-sm font-medium truncate max-w-[200px] block">{label}</span>;
+            if (!label)
+               return <span className="text-sm text-muted-foreground">—</span>;
+            return (
+               <span className="text-sm font-medium truncate max-w-[200px] block">
+                  {label}
+               </span>
+            );
          },
       },
       {
@@ -873,8 +1017,17 @@ export function buildTransactionColumns(
          header: "Tipo",
          cell: ({ row }) => {
             const { type } = row.original;
-            if (type === "income") return <Badge variant="outline" className="border-green-600 text-green-600 dark:border-green-500 dark:text-green-500">Receita</Badge>;
-            if (type === "expense") return <Badge variant="destructive">Despesa</Badge>;
+            if (type === "income")
+               return (
+                  <Badge
+                     variant="outline"
+                     className="border-green-600 text-green-600 dark:border-green-500 dark:text-green-500"
+                  >
+                     Receita
+                  </Badge>
+               );
+            if (type === "expense")
+               return <Badge variant="destructive">Despesa</Badge>;
             return <Badge variant="secondary">Transferência</Badge>;
          },
       },
@@ -883,9 +1036,23 @@ export function buildTransactionColumns(
          header: "Valor",
          cell: ({ row }) => {
             const { type, amount } = row.original;
-            if (type === "income") return <span className="text-sm font-medium text-green-600 dark:text-green-500">{formatBRL(amount)}</span>;
-            if (type === "expense") return <span className="text-sm font-medium text-destructive">- {formatBRL(amount)}</span>;
-            return <span className="text-sm font-medium text-muted-foreground">{formatBRL(amount)}</span>;
+            if (type === "income")
+               return (
+                  <span className="text-sm font-medium text-green-600 dark:text-green-500">
+                     {formatBRL(amount)}
+                  </span>
+               );
+            if (type === "expense")
+               return (
+                  <span className="text-sm font-medium text-destructive">
+                     - {formatBRL(amount)}
+                  </span>
+               );
+            return (
+               <span className="text-sm font-medium text-muted-foreground">
+                  {formatBRL(amount)}
+               </span>
+            );
          },
       },
       {
@@ -898,7 +1065,11 @@ export function buildTransactionColumns(
                onClick={(e) => e.stopPropagation()}
                onKeyDown={(e) => e.stopPropagation()}
             >
-               <Button onClick={() => onEdit(row.original)} size="icon" variant="ghost">
+               <Button
+                  onClick={() => onEdit(row.original)}
+                  size="icon"
+                  variant="ghost"
+               >
                   <Pencil className="size-4" />
                   <span className="sr-only">Editar</span>
                </Button>
@@ -930,11 +1101,13 @@ git commit -m "feat(transactions): add name column, move delete to actions colum
 ## Task 8: Update Transactions Page (Credenza + DatePicker Filters + Remove Sub-rows)
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/finance/transactions.tsx`
 
 **Step 1: Update the page**
 
 Key changes:
+
 1. Use `openCredenza` instead of `openSheet`
 2. Import `DatePicker` for filter bar
 3. Remove `renderSubComponent` from DataTable
@@ -946,12 +1119,20 @@ Replace the imports section and update affected sections:
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
-   Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle,
+   Empty,
+   EmptyDescription,
+   EmptyHeader,
+   EmptyMedia,
+   EmptyTitle,
 } from "@packages/ui/components/empty";
 import { DatePicker } from "@packages/ui/components/date-picker";
 import { Label } from "@packages/ui/components/label";
 import {
-   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+   Select,
+   SelectContent,
+   SelectItem,
+   SelectTrigger,
+   SelectValue,
 } from "@packages/ui/components/select";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
@@ -974,8 +1155,12 @@ FilterBar — replace both date inputs with DatePicker:
 
 ```tsx
 function FilterBar({ filters, onFiltersChange }: FilterBarProps) {
-   const dateFrom = filters.dateFrom ? new Date(`${filters.dateFrom}T12:00:00`) : undefined;
-   const dateTo = filters.dateTo ? new Date(`${filters.dateTo}T12:00:00`) : undefined;
+   const dateFrom = filters.dateFrom
+      ? new Date(`${filters.dateFrom}T12:00:00`)
+      : undefined;
+   const dateTo = filters.dateTo
+      ? new Date(`${filters.dateTo}T12:00:00`)
+      : undefined;
 
    return (
       <div className="flex flex-wrap items-end gap-3">
@@ -985,7 +1170,10 @@ function FilterBar({ filters, onFiltersChange }: FilterBarProps) {
                onValueChange={(v) =>
                   onFiltersChange({
                      ...filters,
-                     type: v === "all" ? undefined : (v as TransactionFilters["type"]),
+                     type:
+                        v === "all"
+                           ? undefined
+                           : (v as TransactionFilters["type"]),
                   })
                }
                value={filters.type ?? "all"}
@@ -1033,7 +1221,12 @@ function FilterBar({ filters, onFiltersChange }: FilterBarProps) {
          </div>
 
          {(filters.type || filters.dateFrom || filters.dateTo) && (
-            <Button className="h-8 text-sm" onClick={() => onFiltersChange({})} size="sm" variant="ghost">
+            <Button
+               className="h-8 text-sm"
+               onClick={() => onFiltersChange({})}
+               size="sm"
+               variant="ghost"
+            >
                Limpar filtros
             </Button>
          )}
@@ -1055,8 +1248,12 @@ function TransactionsList({ filters }: TransactionsListProps) {
 
    const deleteMutation = useMutation(
       orpc.transactions.remove.mutationOptions({
-         onSuccess: () => { toast.success("Transação excluída com sucesso."); },
-         onError: (error) => { toast.error(error.message || "Erro ao excluir transação."); },
+         onSuccess: () => {
+            toast.success("Transação excluída com sucesso.");
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao excluir transação.");
+         },
       }),
    );
 
@@ -1079,7 +1276,8 @@ function TransactionsList({ filters }: TransactionsListProps) {
       (transaction: TransactionRow) => {
          openAlertDialog({
             title: "Excluir transação",
-            description: "Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.",
+            description:
+               "Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.",
             actionLabel: "Excluir",
             cancelLabel: "Cancelar",
             variant: "destructive",
@@ -1100,9 +1298,14 @@ function TransactionsList({ filters }: TransactionsListProps) {
       return (
          <Empty>
             <EmptyHeader>
-               <EmptyMedia variant="icon"><ArrowLeftRight className="size-6" /></EmptyMedia>
+               <EmptyMedia variant="icon">
+                  <ArrowLeftRight className="size-6" />
+               </EmptyMedia>
                <EmptyTitle>Nenhuma transação</EmptyTitle>
-               <EmptyDescription>Registre uma nova transação para começar a controlar suas finanças.</EmptyDescription>
+               <EmptyDescription>
+                  Registre uma nova transação para começar a controlar suas
+                  finanças.
+               </EmptyDescription>
             </EmptyHeader>
          </Empty>
       );
@@ -1128,7 +1331,13 @@ function TransactionsList({ filters }: TransactionsListProps) {
                   </div>
                </div>
                <div className="flex items-center gap-2">
-                  <Button onClick={() => handleEdit(row.original)} size="sm" variant="outline">Editar</Button>
+                  <Button
+                     onClick={() => handleEdit(row.original)}
+                     size="sm"
+                     variant="outline"
+                  >
+                     Editar
+                  </Button>
                   <Button
                      className="text-destructive"
                      onClick={() => handleDelete(row.original)}
@@ -1191,6 +1400,7 @@ git commit -m "feat(transactions): use credenza, date picker filters, remove exp
 ## Task 9: Update CategorySheet → Credenza Form with Color/Icon/Type
 
 **Files:**
+
 - Modify: `apps/web/src/features/categories/ui/categories-sheet.tsx`
 
 **Step 1: Define preset icons**
@@ -1199,9 +1409,25 @@ At the top of the file, define a preset icon set:
 
 ```tsx
 import {
-   Baby, BookOpen, Briefcase, Car, Coffee, CreditCard,
-   Dumbbell, Fuel, Gift, Heart, Home, Music,
-   Package, Plane, ShoppingCart, Smartphone, Utensils, Wallet, Zap,
+   Baby,
+   BookOpen,
+   Briefcase,
+   Car,
+   Coffee,
+   CreditCard,
+   Dumbbell,
+   Fuel,
+   Gift,
+   Heart,
+   Home,
+   Music,
+   Package,
+   Plane,
+   ShoppingCart,
+   Smartphone,
+   Utensils,
+   Wallet,
+   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -1243,7 +1469,11 @@ import { Button } from "@packages/ui/components/button";
 import { Input } from "@packages/ui/components/input";
 import { Label } from "@packages/ui/components/label";
 import {
-   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+   Select,
+   SelectContent,
+   SelectItem,
+   SelectTrigger,
+   SelectValue,
 } from "@packages/ui/components/select";
 import { Spinner } from "@packages/ui/components/spinner";
 import { cn } from "@packages/ui/lib/utils";
@@ -1265,7 +1495,11 @@ interface CategoryFormProps {
    onSuccess: () => void;
 }
 
-export function CategorySheet({ mode, category, onSuccess }: CategoryFormProps) {
+export function CategorySheet({
+   mode,
+   category,
+   onSuccess,
+}: CategoryFormProps) {
    const [name, setName] = useState(category?.name ?? "");
    const [color, setColor] = useState(category?.color ?? "#6366f1");
    const [icon, setIcon] = useState(category?.icon ?? "");
@@ -1275,15 +1509,25 @@ export function CategorySheet({ mode, category, onSuccess }: CategoryFormProps) 
 
    const createMutation = useMutation(
       orpc.categories.create.mutationOptions({
-         onSuccess: () => { toast.success("Categoria criada com sucesso."); onSuccess(); },
-         onError: (error) => { toast.error(error.message || "Erro ao criar categoria."); },
+         onSuccess: () => {
+            toast.success("Categoria criada com sucesso.");
+            onSuccess();
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao criar categoria.");
+         },
       }),
    );
 
    const updateMutation = useMutation(
       orpc.categories.update.mutationOptions({
-         onSuccess: () => { toast.success("Categoria atualizada com sucesso."); onSuccess(); },
-         onError: (error) => { toast.error(error.message || "Erro ao atualizar categoria."); },
+         onSuccess: () => {
+            toast.success("Categoria atualizada com sucesso.");
+            onSuccess();
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao atualizar categoria.");
+         },
       }),
    );
 
@@ -1298,7 +1542,11 @@ export function CategorySheet({ mode, category, onSuccess }: CategoryFormProps) 
          name: name.trim(),
          color: color || null,
          icon: icon || null,
-         type: (categoryType || null) as "income" | "expense" | null | undefined,
+         type: (categoryType || null) as
+            | "income"
+            | "expense"
+            | null
+            | undefined,
       };
 
       if (mode === "create") {
@@ -1306,12 +1554,24 @@ export function CategorySheet({ mode, category, onSuccess }: CategoryFormProps) 
       } else if (category) {
          updateMutation.mutate({ id: category.id, ...payload });
       }
-   }, [isValid, mode, name, color, icon, categoryType, category, createMutation, updateMutation]);
+   }, [
+      isValid,
+      mode,
+      name,
+      color,
+      icon,
+      categoryType,
+      category,
+      createMutation,
+      updateMutation,
+   ]);
 
    return (
       <>
          <CredenzaHeader>
-            <CredenzaTitle>{isCreate ? "Nova Categoria" : "Editar Categoria"}</CredenzaTitle>
+            <CredenzaTitle>
+               {isCreate ? "Nova Categoria" : "Editar Categoria"}
+            </CredenzaTitle>
             <CredenzaDescription>
                {isCreate
                   ? "Adicione uma nova categoria para organizar suas transações."
@@ -1335,7 +1595,9 @@ export function CategorySheet({ mode, category, onSuccess }: CategoryFormProps) 
             <div className="space-y-2">
                <Label htmlFor="category-type">Tipo</Label>
                <Select
-                  onValueChange={(v) => setCategoryType(v as "income" | "expense" | "")}
+                  onValueChange={(v) =>
+                     setCategoryType(v as "income" | "expense" | "")
+                  }
                   value={categoryType}
                >
                   <SelectTrigger id="category-type">
@@ -1360,7 +1622,9 @@ export function CategorySheet({ mode, category, onSuccess }: CategoryFormProps) 
                            icon === iconName && "border-primary bg-accent",
                         )}
                         key={iconName}
-                        onClick={() => setIcon(icon === iconName ? "" : iconName)}
+                        onClick={() =>
+                           setIcon(icon === iconName ? "" : iconName)
+                        }
                         title={iconName}
                         type="button"
                      >
@@ -1378,7 +1642,11 @@ export function CategorySheet({ mode, category, onSuccess }: CategoryFormProps) 
          </CredenzaBody>
 
          <CredenzaFooter>
-            <Button className="w-full" disabled={!isValid || isPending} onClick={handleSubmit}>
+            <Button
+               className="w-full"
+               disabled={!isValid || isPending}
+               onClick={handleSubmit}
+            >
                {isPending ? <Spinner className="size-4 mr-2" /> : null}
                {isCreate ? "Criar categoria" : "Salvar alterações"}
             </Button>
@@ -1400,6 +1668,7 @@ git commit -m "feat(categories): add color/icon/type fields, use credenza, icon 
 ## Task 10: Update CategoryColumns
 
 **Files:**
+
 - Modify: `apps/web/src/features/categories/ui/categories-columns.tsx`
 
 **Step 1: Update CategoryRow type and add icon/color/type display**
@@ -1411,19 +1680,49 @@ import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
-   Baby, BookOpen, Briefcase, Car, Coffee, CreditCard,
-   Dumbbell, Fuel, Gift, Heart, Home, Music,
-   Package, Plane, ShoppingCart, Smartphone, Utensils, Wallet, Zap,
+   Baby,
+   BookOpen,
+   Briefcase,
+   Car,
+   Coffee,
+   CreditCard,
+   Dumbbell,
+   Fuel,
+   Gift,
+   Heart,
+   Home,
+   Music,
+   Package,
+   Plane,
+   ShoppingCart,
+   Smartphone,
+   Utensils,
+   Wallet,
+   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Pencil, Trash2 } from "lucide-react";
 
 const ICON_MAP: Record<string, LucideIcon> = {
-   wallet: Wallet, "credit-card": CreditCard, home: Home, car: Car,
-   "shopping-cart": ShoppingCart, utensils: Utensils, plane: Plane,
-   heart: Heart, "book-open": BookOpen, briefcase: Briefcase,
-   package: Package, music: Music, coffee: Coffee, smartphone: Smartphone,
-   dumbbell: Dumbbell, baby: Baby, gift: Gift, zap: Zap, fuel: Fuel,
+   wallet: Wallet,
+   "credit-card": CreditCard,
+   home: Home,
+   car: Car,
+   "shopping-cart": ShoppingCart,
+   utensils: Utensils,
+   plane: Plane,
+   heart: Heart,
+   "book-open": BookOpen,
+   briefcase: Briefcase,
+   package: Package,
+   music: Music,
+   coffee: Coffee,
+   smartphone: Smartphone,
+   dumbbell: Dumbbell,
+   baby: Baby,
+   gift: Gift,
+   zap: Zap,
+   fuel: Fuel,
 };
 
 export type CategoryRow = {
@@ -1454,7 +1753,9 @@ export function buildCategoryColumns(
                         className="size-7 rounded-md flex items-center justify-center shrink-0"
                         style={{ backgroundColor: color ?? "#6366f1" }}
                      >
-                        {IconComponent && <IconComponent className="size-3.5 text-white" />}
+                        {IconComponent && (
+                           <IconComponent className="size-3.5 text-white" />
+                        )}
                      </span>
                   ) : null}
                   <span className="font-medium truncate">{name}</span>
@@ -1468,8 +1769,17 @@ export function buildCategoryColumns(
          header: "Tipo",
          cell: ({ row }) => {
             const { type } = row.original;
-            if (type === "income") return <Badge variant="outline" className="border-green-600 text-green-600">Receita</Badge>;
-            if (type === "expense") return <Badge variant="destructive">Despesa</Badge>;
+            if (type === "income")
+               return (
+                  <Badge
+                     variant="outline"
+                     className="border-green-600 text-green-600"
+                  >
+                     Receita
+                  </Badge>
+               );
+            if (type === "expense")
+               return <Badge variant="destructive">Despesa</Badge>;
             return <span className="text-sm text-muted-foreground">—</span>;
          },
       },
@@ -1478,8 +1788,15 @@ export function buildCategoryColumns(
          header: "Subcategorias",
          cell: ({ row }) => {
             const subs = row.original.subcategories;
-            if (subs.length === 0) return <span className="text-sm text-muted-foreground">Nenhuma</span>;
-            return <span className="text-sm text-muted-foreground">{subs.map((s) => s.name).join(", ")}</span>;
+            if (subs.length === 0)
+               return (
+                  <span className="text-sm text-muted-foreground">Nenhuma</span>
+               );
+            return (
+               <span className="text-sm text-muted-foreground">
+                  {subs.map((s) => s.name).join(", ")}
+               </span>
+            );
          },
       },
       {
@@ -1494,7 +1811,11 @@ export function buildCategoryColumns(
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => e.stopPropagation()}
                >
-                  <Button onClick={() => onEdit(row.original)} size="icon" variant="ghost">
+                  <Button
+                     onClick={() => onEdit(row.original)}
+                     size="icon"
+                     variant="ghost"
+                  >
                      <Pencil className="size-4" />
                      <span className="sr-only">Editar</span>
                   </Button>
@@ -1527,6 +1848,7 @@ git commit -m "feat(categories): show icon/color/type in columns, delete in acti
 ## Task 11: Update Categories Page (Credenza + Remove Sub-rows)
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/finance/categories.tsx`
 
 **Step 1: Update the page**
@@ -1537,7 +1859,11 @@ Key changes: use `openCredenza`, pass `color`/`icon`/`type` to `CategorySheet`, 
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
-   Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle,
+   Empty,
+   EmptyDescription,
+   EmptyHeader,
+   EmptyMedia,
+   EmptyTitle,
 } from "@packages/ui/components/empty";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
@@ -1573,12 +1899,18 @@ function CategoriesList() {
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
-   const { data: categories } = useSuspenseQuery(orpc.categories.getAll.queryOptions({}));
+   const { data: categories } = useSuspenseQuery(
+      orpc.categories.getAll.queryOptions({}),
+   );
 
    const deleteMutation = useMutation(
       orpc.categories.remove.mutationOptions({
-         onSuccess: () => { toast.success("Categoria excluída com sucesso."); },
-         onError: (error) => { toast.error(error.message || "Erro ao excluir categoria."); },
+         onSuccess: () => {
+            toast.success("Categoria excluída com sucesso.");
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao excluir categoria.");
+         },
       }),
    );
 
@@ -1625,9 +1957,13 @@ function CategoriesList() {
       return (
          <Empty>
             <EmptyHeader>
-               <EmptyMedia variant="icon"><FolderOpen className="size-6" /></EmptyMedia>
+               <EmptyMedia variant="icon">
+                  <FolderOpen className="size-6" />
+               </EmptyMedia>
                <EmptyTitle>Nenhuma categoria</EmptyTitle>
-               <EmptyDescription>Adicione uma categoria para organizar suas transações.</EmptyDescription>
+               <EmptyDescription>
+                  Adicione uma categoria para organizar suas transações.
+               </EmptyDescription>
             </EmptyHeader>
          </Empty>
       );
@@ -1653,7 +1989,13 @@ function CategoriesList() {
                </div>
                {!row.original.isDefault && (
                   <div className="flex items-center gap-2">
-                     <Button onClick={() => handleEdit(row.original)} size="sm" variant="outline">Editar</Button>
+                     <Button
+                        onClick={() => handleEdit(row.original)}
+                        size="sm"
+                        variant="outline"
+                     >
+                        Editar
+                     </Button>
                      <Button
                         className="text-destructive"
                         onClick={() => handleDelete(row.original)}
@@ -1711,6 +2053,7 @@ git commit -m "feat(categories): use credenza, remove expandable rows"
 ## Task 12: Update Tags Sheet with SwatchColorPicker
 
 **Files:**
+
 - Modify: `apps/web/src/features/tags/ui/tags-sheet.tsx`
 
 **Step 1: Replace native color input with SwatchColorPicker**
@@ -1731,7 +2074,7 @@ const [color, setColor] = useState(tag?.color ?? "#6366f1");
 <div className="space-y-2 px-1">
    <Label>Cor</Label>
    <SwatchColorPicker onChange={setColor} value={color} />
-</div>
+</div>;
 ```
 
 **Step 2: Commit**
@@ -1746,6 +2089,7 @@ git commit -m "feat(tags): use SwatchColorPicker"
 ## Task 13: Update BankAccount Sheet with SwatchColorPicker
 
 **Files:**
+
 - Modify: `apps/web/src/features/bank-accounts/ui/bank-accounts-sheet.tsx`
 
 **Step 1: Replace native color input with SwatchColorPicker**
@@ -1762,7 +2106,7 @@ const [color, setColor] = useState(account?.color ?? "#6366f1");
 <div className="space-y-2 px-1">
    <Label>Cor</Label>
    <SwatchColorPicker onChange={setColor} value={color} />
-</div>
+</div>;
 ```
 
 **Step 2: Commit**
@@ -1777,6 +2121,7 @@ git commit -m "feat(bank-accounts): use SwatchColorPicker"
 ## Task 14: Update QuickStartTask — Open Modals Instead of Navigating
 
 **Files:**
+
 - Modify: `apps/web/src/features/onboarding/ui/quick-start-task.tsx`
 
 **Step 1: Update the component**
@@ -1830,11 +2175,21 @@ export function QuickStartTask({
          });
       } else if (task.id === "add_transaction") {
          openCredenza({
-            children: <TransactionSheet mode="create" onSuccess={closeCredenza} />,
+            children: (
+               <TransactionSheet mode="create" onSuccess={closeCredenza} />
+            ),
          });
       }
       // explore tasks don't have an action (they're auto-detected)
-   }, [isLocked, isCompleted, task.id, openSheet, closeSheet, openCredenza, closeCredenza]);
+   }, [
+      isLocked,
+      isCompleted,
+      task.id,
+      openSheet,
+      closeSheet,
+      openCredenza,
+      closeCredenza,
+   ]);
 
    const handleKeyDown = useCallback(
       (e: React.KeyboardEvent) => {
@@ -1887,10 +2242,17 @@ export function QuickStartTask({
          </div>
 
          <div className="min-w-0 flex-1">
-            <p className={cn("text-sm font-medium leading-tight", isCompleted && "line-through text-muted-foreground")}>
+            <p
+               className={cn(
+                  "text-sm font-medium leading-tight",
+                  isCompleted && "line-through text-muted-foreground",
+               )}
+            >
                {task.title}
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{task.description}</p>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
+               {task.description}
+            </p>
          </div>
       </div>
    );
@@ -1911,6 +2273,7 @@ git commit -m "feat(onboarding): open modals from quick-start tasks instead of n
 ## Task 15: Hide Project/Org Switcher for Free Users
 
 **Files:**
+
 - Modify: `apps/web/src/layout/dashboard/ui/sidebar-scope-switcher.tsx`
 
 **Step 1: Hide project and org sub-menus when projectLimit === 1**
@@ -1920,7 +2283,8 @@ In `SidebarScopeSwitcherContent`, `projectLimit` is already available from `useA
 Add `const isFree = projectLimit === 1;` after the destructuring, then wrap the relevant sections:
 
 ```tsx
-const { activeOrganization, projectLimit, projectCount } = useActiveOrganization();
+const { activeOrganization, projectLimit, projectCount } =
+   useActiveOrganization();
 // ...
 const isFree = projectLimit === 1;
 ```
@@ -2054,6 +2418,7 @@ bun dev
 ```
 
 Check:
+
 1. `/finance/transactions` — "Nova Transação" opens credenza, has name field, date picker, money input, "Conta de Origem" label for transfer
 2. `/finance/categories` — "Nova Categoria" opens credenza, has icon grid, color swatches, type select
 3. Tags sheet — SwatchColorPicker working

@@ -23,6 +23,7 @@ description: Diretrizes completas de SEO on-page para posts de blog, com priorid
 ## Checklist de SEO on-page (posts de blog)
 
 ### Título
+
 - [ ] 50–60 caracteres (ideal 55)
 - [ ] Palavra-chave principal no início
 - [ ] Único e específico (sem duplicidade)
@@ -30,66 +31,82 @@ description: Diretrizes completas de SEO on-page para posts de blog, com priorid
 - [ ] Evitar clickbait vazio
 
 ✅ **Exemplo bom:**
+
 > “Guia de SEO para Blogs: Checklist Completo em 2026”
 
 ❌ **Exemplo ruim:**
+
 > “Tudo Sobre SEO”
 
 ### Meta description
+
 - [ ] 150–160 caracteres
 - [ ] Palavra-chave principal + proposta de valor
 - [ ] Texto natural e persuasivo
 - [ ] Evitar repetição do título
 
 ✅ **Exemplo bom:**
+
 > “Aprenda a otimizar posts de blog com um checklist de SEO atualizado, incluindo título, headings, links e imagens.”
 
 ❌ **Exemplo ruim:**
+
 > “SEO para blog. SEO para blog. SEO para blog.”
 
 ### Headings
+
 - [ ] Não usar H1 no corpo (somente no frontmatter)
 - [ ] H2 a cada 200–300 palavras
 - [ ] H3 para detalhamento lógico
 - [ ] Palavra-chave ou variações em alguns H2
 
 ✅ **Exemplo bom:**
+
 > H2: “Como definir palavras‑chave para posts de blog”
 
 ❌ **Exemplo ruim:**
+
 > H1: “Introdução” (dentro do corpo)
 
 ### Keywords
+
 - [ ] Densidade de 1–2% para a palavra‑chave principal
 - [ ] Sem keyword stuffing
 - [ ] Palavra‑chave no primeiro parágrafo
 - [ ] Distribuição natural ao longo do texto
 
 ✅ **Exemplo bom:**
+
 > “Este guia de SEO para blogs mostra…”
 
 ❌ **Exemplo ruim:**
+
 > “SEO para blogs é SEO para blogs porque SEO para blogs…”
 
 ### Comprimento
+
 - [ ] Mínimo recomendado: 1000+ palavras
 - [ ] Conteúdo aprofundado e útil
 - [ ] Evitar parágrafos inflados
 
 ### Resposta rápida (Quick Answer)
+
 - [ ] TL;DR, definição ou resposta direta nos primeiros 100 palavras
 - [ ] Frase curta e objetiva
 
 ✅ **Exemplo bom:**
+
 > “SEO para blogs é o conjunto de práticas on-page que melhora o ranqueamento e a experiência do leitor.”
 
 ### Links
+
 - [ ] 2–4 links internos por 1000 palavras
 - [ ] 1–2 links externos por 1000 palavras
 - [ ] Âncoras descritivas
 - [ ] Fontes confiáveis
 
 ### Imagens
+
 - [ ] 1 imagem a cada 300–500 palavras
 - [ ] Alt text descritivo e relevante
 - [ ] Evitar imagens genéricas repetidas
@@ -143,25 +160,29 @@ Peso total: **100 pontos**
 7. `quickAnswerAnalysis`
 8. `imageSeo`
 9. `linkDensity`
-10. `duplicateContent`
-11. `toneAnalysis`
-12. `citation`
-13. `originality`
+10.   `duplicateContent`
+11.   `toneAnalysis`
+12.   `citation`
+13.   `originality`
 
 ✅ **Use os resultados para priorizar correções conforme a ordem de auditoria.**
 
 ## Exemplos rápidos de boas práticas
 
 ✅ **Boa estrutura de introdução**
+
 > “SEO para blogs é o conjunto de práticas on‑page que melhora o ranqueamento e a experiência do leitor. Neste guia, você verá um checklist completo e exemplos práticos.”
 
 ❌ **Introdução fraca**
+
 > “Neste texto vamos falar sobre vários assuntos interessantes.”
 
 ✅ **Boa âncora de link interno**
+
 > “Veja o **guia de pesquisa de palavras‑chave** para aprofundar.”
 
 ❌ **Âncora genérica**
+
 > “Clique aqui.”
 
 ## Referências

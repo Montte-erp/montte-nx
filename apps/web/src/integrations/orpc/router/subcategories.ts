@@ -1,5 +1,5 @@
 import { ORPCError } from "@orpc/server";
-import { getCategory } from "@packages/database/repositories/categories-repository";
+import { getCategory } from "@core/database/repositories/categories-repository";
 import {
    createSubcategory,
    deleteSubcategory,
@@ -7,8 +7,8 @@ import {
    listSubcategoriesByCategoryId,
    subcategoryHasTransactions,
    updateSubcategory,
-} from "@packages/database/repositories/subcategories-repository";
-import { subcategories } from "@packages/database/schemas/subcategories";
+} from "@core/database/repositories/subcategories-repository";
+import { subcategories } from "@core/database/schemas/subcategories";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";

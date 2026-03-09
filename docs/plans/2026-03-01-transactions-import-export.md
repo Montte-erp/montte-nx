@@ -12,6 +12,7 @@
 3. Categories table with expandable subcategory rows
 
 **Out of scope (future — "contas a pagar/receber"):**
+
 - Mark as paid / unpaid
 - Installment transactions
 - Recurring transactions
@@ -71,35 +72,35 @@ Add to `apps/web/package.json`:
 
 - File picker (`.csv`, `.ofx`) with drag & drop
 - Parses file immediately in the browser on selection:
-  - `.csv` → `parseToArray()` from `@f-o-t/csv`
-  - `.ofx` → `parse()` + `getTransactions()` from `@f-o-t/ofx`
+   - `.csv` → `parseToArray()` from `@f-o-t/csv`
+   - `.ofx` → `parse()` + `getTransactions()` from `@f-o-t/ofx`
 - Global defaults (applied to empty cells in imported rows):
-  - Conta (required if not present in file)
-  - Categoria + Subcategoria
-  - Tags
-  - Observação (maps to `description`)
+   - Conta (required if not present in file)
+   - Categoria + Subcategoria
+   - Tags
+   - Observação (maps to `description`)
 - "Baixar modelo CSV" button → generates and downloads template with `@f-o-t/csv`
-  - Template includes all columns: `data`, `nome`, `tipo`, `valor`, `descricao`, `conta`, `conta_destino`, `categoria`, `subcategoria`, `tags`
-  - XLS template deferred — tracked at F-O-T/libraries issue
+   - Template includes all columns: `data`, `nome`, `tipo`, `valor`, `descricao`, `conta`, `conta_destino`, `categoria`, `subcategoria`, `tags`
+   - XLS template deferred — tracked at F-O-T/libraries issue
 
 **Step 2: Preview + Duplicates**
 
 - Table showing parsed rows: `data`, `nome`, `tipo`, `valor`, `conta`, `categoria`
 - "Verificar duplicados" button:
-  1. Fetches existing transactions for the imported period via `orpc.transactions.getAll`
-  2. Runs `@f-o-t/condition-evaluator` in the browser:
-     ```ts
-     {
-       scoringMode: "weighted",
-       threshold: 0.8,
-       conditions: [
-         { type: "number", field: "amount",        operator: "eq", options: { weight: 0.45 } },
-         { type: "date",   field: "date",           operator: "eq", options: { weight: 0.35 } },
-         { type: "string", field: "bankAccountId",  operator: "eq", options: { weight: 0.20 } },
-       ]
-     }
-     ```
-  3. Rows with `scorePercentage >= 0.8` get ⚠️ icon
+   1. Fetches existing transactions for the imported period via `orpc.transactions.getAll`
+   2. Runs `@f-o-t/condition-evaluator` in the browser:
+      ```ts
+      {
+        scoringMode: "weighted",
+        threshold: 0.8,
+        conditions: [
+          { type: "number", field: "amount",        operator: "eq", options: { weight: 0.45 } },
+          { type: "date",   field: "date",           operator: "eq", options: { weight: 0.35 } },
+          { type: "string", field: "bankAccountId",  operator: "eq", options: { weight: 0.20 } },
+        ]
+      }
+      ```
+   3. Rows with `scorePercentage >= 0.8` get ⚠️ icon
 - Checkbox "Ignorar duplicados" → removes flagged rows from selection before import
 - "Importar X transações" button → sends JSON to `transactions.import`
 
@@ -164,13 +165,13 @@ Inserts in bulk. Uses existing `createTransaction` repository function per row (
 
 ## Files to Create / Modify
 
-| File | Change |
-|------|--------|
-| `apps/web/src/features/transactions/ui/transaction-export-credenza.tsx` | New |
-| `apps/web/src/features/transactions/ui/transaction-import-credenza.tsx` | New |
-| `apps/web/src/integrations/orpc/router/transactions.ts` | Add `import` procedure |
-| `apps/web/src/routes/.../finance/transactions.tsx` | Add export/import buttons |
-| `apps/web/src/features/categories/ui/categories-columns.tsx` | Expandable rows |
-| `apps/web/src/routes/.../finance/categories.tsx` | Pass subcategories, initial expanded state |
-| `package.json` (root) | Add `@f-o-t/csv`, `@f-o-t/ofx` to fot catalog |
-| `apps/web/package.json` | Add `@f-o-t/csv`, `@f-o-t/ofx` deps |
+| File                                                                    | Change                                        |
+| ----------------------------------------------------------------------- | --------------------------------------------- |
+| `apps/web/src/features/transactions/ui/transaction-export-credenza.tsx` | New                                           |
+| `apps/web/src/features/transactions/ui/transaction-import-credenza.tsx` | New                                           |
+| `apps/web/src/integrations/orpc/router/transactions.ts`                 | Add `import` procedure                        |
+| `apps/web/src/routes/.../finance/transactions.tsx`                      | Add export/import buttons                     |
+| `apps/web/src/features/categories/ui/categories-columns.tsx`            | Expandable rows                               |
+| `apps/web/src/routes/.../finance/categories.tsx`                        | Pass subcategories, initial expanded state    |
+| `package.json` (root)                                                   | Add `@f-o-t/csv`, `@f-o-t/ofx` to fot catalog |
+| `apps/web/package.json`                                                 | Add `@f-o-t/csv`, `@f-o-t/ofx` deps           |

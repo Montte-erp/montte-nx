@@ -7,32 +7,32 @@
  */
 
 export interface AnalyticsConfig {
-	contentSlug: string;
-	contentTitle: string;
-	agentId: string;
-	organizationId: string;
-	wordCount: number;
-	estimatedReadTime: number; // in seconds
-	posthogHost: string;
-	posthogApiKey: string; // Public project key for client-side
+   contentSlug: string;
+   contentTitle: string;
+   agentId: string;
+   organizationId: string;
+   wordCount: number;
+   estimatedReadTime: number; // in seconds
+   posthogHost: string;
+   posthogApiKey: string; // Public project key for client-side
 }
 
 export type TrafficSource =
-	| "organic"
-	| "direct"
-	| "referral"
-	| "social"
-	| "paid"
-	| "email";
+   | "organic"
+   | "direct"
+   | "referral"
+   | "social"
+   | "paid"
+   | "email";
 
 export type DeviceType = "desktop" | "tablet" | "mobile";
 
 export class BlogAnalyticsTracker {
-	/**
-	 * Generate a self-contained tracking script for embedding in blog posts
-	 */
-	generateTrackingScript(config: AnalyticsConfig): string {
-		const script = `
+   /**
+    * Generate a self-contained tracking script for embedding in blog posts
+    */
+   generateTrackingScript(config: AnalyticsConfig): string {
+      const script = `
 <script>
 (function() {
   'use strict';
@@ -442,29 +442,29 @@ export class BlogAnalyticsTracker {
 })();
 </script>`.trim();
 
-		return script;
-	}
+      return script;
+   }
 
-	/**
-	 * Escape string for safe inclusion in JavaScript
-	 */
-	private escapeString(str: string): string {
-		return str
-			.replace(/\\/g, "\\\\")
-			.replace(/'/g, "\\'")
-			.replace(/"/g, '\\"')
-			.replace(/\n/g, "\\n")
-			.replace(/\r/g, "\\r")
-			.replace(/</g, "\\x3c")
-			.replace(/>/g, "\\x3e");
-	}
+   /**
+    * Escape string for safe inclusion in JavaScript
+    */
+   private escapeString(str: string): string {
+      return str
+         .replace(/\\/g, "\\\\")
+         .replace(/'/g, "\\'")
+         .replace(/"/g, '\\"')
+         .replace(/\n/g, "\\n")
+         .replace(/\r/g, "\\r")
+         .replace(/</g, "\\x3c")
+         .replace(/>/g, "\\x3e");
+   }
 
-	/**
-	 * Generate a minimal tracking script (no sections, no CTAs)
-	 * Useful for simpler blog layouts
-	 */
-	generateMinimalTrackingScript(config: AnalyticsConfig): string {
-		const script = `
+   /**
+    * Generate a minimal tracking script (no sections, no CTAs)
+    * Useful for simpler blog layouts
+    */
+   generateMinimalTrackingScript(config: AnalyticsConfig): string {
+      const script = `
 <script>
 (function() {
   'use strict';
@@ -503,13 +503,13 @@ export class BlogAnalyticsTracker {
 })();
 </script>`.trim();
 
-		return script;
-	}
+      return script;
+   }
 }
 
 /**
  * Factory function to create a BlogAnalyticsTracker instance
  */
 export function createAnalyticsTracker(): BlogAnalyticsTracker {
-	return new BlogAnalyticsTracker();
+   return new BlogAnalyticsTracker();
 }

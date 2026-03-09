@@ -1,5 +1,5 @@
-import { team } from "@packages/database/schemas/auth";
-import { env } from "@packages/environment/server";
+import { team } from "@core/database/schemas/auth";
+import { env } from "@core/environment/server";
 import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
 import { auth, db } from "@/integrations/orpc/server-instances";

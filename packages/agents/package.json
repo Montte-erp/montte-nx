@@ -32,6 +32,9 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
+      "@core/database": "workspace:*",
+      "@core/environment": "workspace:*",
+      "@core/utils": "workspace:*",
       "@f-o-t/markdown": "catalog:fot",
       "@mastra/ai-sdk": "catalog:mastra",
       "@mastra/core": "catalog:mastra",
@@ -40,11 +43,8 @@
       "@mastra/pg": "catalog:mastra",
       "@mastra/posthog": "catalog:mastra",
       "@mastra/rag": "catalog:mastra",
-      "@packages/database": "workspace:*",
-      "@packages/environment": "workspace:*",
       "@packages/files": "workspace:*",
       "@packages/search": "workspace:*",
-      "@packages/utils": "workspace:*",
       "ai": "catalog:mastra",
       "zod": "catalog:validation"
    },

@@ -14,7 +14,7 @@ import {
    ItemTitle,
 } from "@packages/ui/components/item";
 import { Separator } from "@packages/ui/components/separator";
-import { formatDate } from "@packages/utils/date";
+import { formatDate } from "@core/utils/date";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, Monitor, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";

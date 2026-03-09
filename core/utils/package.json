@@ -1,0 +1,66 @@
+{
+   "name": "@core/utils",
+   "version": "0.28.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "files": [
+      "dist"
+   ],
+   "type": "module",
+   "exports": {
+      "./array": {
+         "types": "./dist/src/array.d.ts",
+         "default": "./src/array.ts"
+      },
+      "./date": {
+         "types": "./dist/src/date.d.ts",
+         "default": "./src/date.ts"
+      },
+      "./diff": {
+         "types": "./dist/src/diff.d.ts",
+         "default": "./src/diff.ts"
+      },
+      "./errors": {
+         "types": "./dist/src/errors.d.ts",
+         "default": "./src/errors.ts"
+      },
+      "./file": {
+         "types": "./dist/src/file.d.ts",
+         "default": "./src/file.ts"
+      },
+      "./number": {
+         "types": "./dist/src/numbers.d.ts",
+         "default": "./src/numbers.ts"
+      },
+      "./object": {
+         "types": "./dist/src/object.d.ts",
+         "default": "./src/object.ts"
+      },
+      "./permissions": {
+         "types": "./dist/src/permissions.d.ts",
+         "default": "./src/permissions.ts"
+      },
+      "./sanitization": {
+         "types": "./dist/src/sanitization.d.ts",
+         "default": "./src/sanitization.ts"
+      },
+      "./text": {
+         "types": "./dist/src/text.d.ts",
+         "default": "./src/text.ts"
+      }
+   },
+   "scripts": {
+      "build": "tsc --build",
+      "check": "oxlint ./src",
+      "test": "bun test",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "slugify": "catalog:ui",
+      "zod": "catalog:validation"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development"
+   }
+}

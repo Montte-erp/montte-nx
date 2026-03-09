@@ -1,12 +1,12 @@
-import type { Action } from "@packages/database/schemas/actions";
-import type { Annotation } from "@packages/database/schemas/annotations";
-import type { Dashboard } from "@packages/database/schemas/dashboards";
-import type { DataSource } from "@packages/database/schemas/data-sources";
-import type { EventCatalogEntry } from "@packages/database/schemas/event-catalog";
-import type { Insight } from "@packages/database/schemas/insights";
-import type { PersonalApiKey } from "@packages/database/schemas/personal-api-key";
-import type { PropertyDefinition } from "@packages/database/schemas/property-definitions";
-import type { WebhookEndpoint } from "@packages/database/schemas/webhooks";
+import type { Action } from "@core/database/schemas/actions";
+import type { Annotation } from "@core/database/schemas/annotations";
+import type { Dashboard } from "@core/database/schemas/dashboards";
+import type { DataSource } from "@core/database/schemas/data-sources";
+import type { EventCatalogEntry } from "@core/database/schemas/event-catalog";
+import type { Insight } from "@core/database/schemas/insights";
+import type { PersonalApiKey } from "@core/database/schemas/personal-api-key";
+import type { PropertyDefinition } from "@core/database/schemas/property-definitions";
+import type { WebhookEndpoint } from "@core/database/schemas/webhooks";
 import { TEST_ORG_ID, TEST_TEAM_ID, TEST_USER_ID } from "./create-test-context";
 
 // =============================================================================
@@ -28,170 +28,168 @@ export const EVENT_CATALOG_ID = "e4e4e4e4-f5f5-4a6a-a7d7-b8b8b8b8b8b8";
 // =============================================================================
 
 export function makeWebhookEndpoint(
-	overrides: Partial<WebhookEndpoint> = {},
+   overrides: Partial<WebhookEndpoint> = {},
 ): WebhookEndpoint {
-	return {
-		id: ENDPOINT_ID,
-		organizationId: TEST_ORG_ID,
-		teamId: TEST_TEAM_ID,
-		url: "https://example.com/webhook",
-		signingSecret: "whsec_1234567890abcdef",
-		apiKeyId: null,
-		eventPatterns: ["content.page.published"],
-		description: "Test webhook",
-		isActive: true,
-		failureCount: 0,
-		lastSuccessAt: null,
-		lastFailureAt: null,
-		createdAt: new Date("2026-01-01"),
-		updatedAt: new Date("2026-01-01"),
-		...overrides,
-	};
+   return {
+      id: ENDPOINT_ID,
+      organizationId: TEST_ORG_ID,
+      teamId: TEST_TEAM_ID,
+      url: "https://example.com/webhook",
+      signingSecret: "whsec_1234567890abcdef",
+      apiKeyId: null,
+      eventPatterns: ["content.page.published"],
+      description: "Test webhook",
+      isActive: true,
+      failureCount: 0,
+      lastSuccessAt: null,
+      lastFailureAt: null,
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+      ...overrides,
+   };
 }
 
-export function makeDashboard(
-	overrides: Partial<Dashboard> = {},
-): Dashboard {
-	return {
-		id: DASHBOARD_ID,
-		organizationId: TEST_ORG_ID,
-		teamId: TEST_TEAM_ID,
-		createdBy: TEST_USER_ID,
-		name: "My Dashboard",
-		description: "Test dashboard",
-		isDefault: false,
-		tiles: [],
-		globalDateRange: null,
-		globalFilters: null,
-		createdAt: new Date("2026-01-01"),
-		updatedAt: new Date("2026-01-01"),
-		...overrides,
-	};
+export function makeDashboard(overrides: Partial<Dashboard> = {}): Dashboard {
+   return {
+      id: DASHBOARD_ID,
+      organizationId: TEST_ORG_ID,
+      teamId: TEST_TEAM_ID,
+      createdBy: TEST_USER_ID,
+      name: "My Dashboard",
+      description: "Test dashboard",
+      isDefault: false,
+      tiles: [],
+      globalDateRange: null,
+      globalFilters: null,
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+      ...overrides,
+   };
 }
 
 export function makeInsight(overrides: Partial<Insight> = {}): Insight {
-	return {
-		id: INSIGHT_ID,
-		organizationId: TEST_ORG_ID,
-		teamId: TEST_TEAM_ID,
-		createdBy: TEST_USER_ID,
-		name: "My Insight",
-		description: "Test insight",
-		type: "trends",
-		config: { metric: "pageViews" },
-		defaultSize: "md",
-		cachedResults: null,
-		lastComputedAt: null,
-		createdAt: new Date("2026-01-01"),
-		updatedAt: new Date("2026-01-01"),
-		...overrides,
-	};
+   return {
+      id: INSIGHT_ID,
+      organizationId: TEST_ORG_ID,
+      teamId: TEST_TEAM_ID,
+      createdBy: TEST_USER_ID,
+      name: "My Insight",
+      description: "Test insight",
+      type: "trends",
+      config: { metric: "pageViews" },
+      defaultSize: "md",
+      cachedResults: null,
+      lastComputedAt: null,
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+      ...overrides,
+   };
 }
 
 export function makePersonalApiKey(
-	overrides: Partial<PersonalApiKey> = {},
+   overrides: Partial<PersonalApiKey> = {},
 ): PersonalApiKey {
-	return {
-		id: KEY_ID,
-		userId: TEST_USER_ID,
-		label: "My API Key",
-		keyHash: "hashed_key_value",
-		keyPrefix: "AbCdEfGh",
-		scopes: { content: "write", agent: "read" },
-		organizationAccess: "all",
-		lastUsedAt: null,
-		createdAt: new Date("2026-01-15"),
-		expiresAt: null,
-		...overrides,
-	};
+   return {
+      id: KEY_ID,
+      userId: TEST_USER_ID,
+      label: "My API Key",
+      keyHash: "hashed_key_value",
+      keyPrefix: "AbCdEfGh",
+      scopes: { content: "write", agent: "read" },
+      organizationAccess: "all",
+      lastUsedAt: null,
+      createdAt: new Date("2026-01-15"),
+      expiresAt: null,
+      ...overrides,
+   };
 }
 
 export function makeAction(overrides: Partial<Action> = {}): Action {
-	return {
-		id: ACTION_ID,
-		organizationId: TEST_ORG_ID,
-		name: "Page View + Scroll",
-		description: "Compound action for engaged views",
-		eventPatterns: ["content.page.viewed", "content.page.scrolled"],
-		matchType: "all",
-		isActive: true,
-		createdBy: TEST_USER_ID,
-		createdAt: new Date("2026-01-01"),
-		updatedAt: new Date("2026-01-01"),
-		...overrides,
-	};
+   return {
+      id: ACTION_ID,
+      organizationId: TEST_ORG_ID,
+      name: "Page View + Scroll",
+      description: "Compound action for engaged views",
+      eventPatterns: ["content.page.viewed", "content.page.scrolled"],
+      matchType: "all",
+      isActive: true,
+      createdBy: TEST_USER_ID,
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+      ...overrides,
+   };
 }
 
 export function makePropertyDefinition(
-	overrides: Partial<PropertyDefinition> = {},
+   overrides: Partial<PropertyDefinition> = {},
 ): PropertyDefinition {
-	return {
-		id: PROP_DEF_ID,
-		organizationId: TEST_ORG_ID,
-		name: "page_url",
-		type: "string",
-		description: "URL of the page",
-		eventNames: ["content.page.viewed"],
-		isNumerical: false,
-		tags: ["web"],
-		createdAt: new Date("2026-01-01"),
-		updatedAt: new Date("2026-01-01"),
-		...overrides,
-	};
+   return {
+      id: PROP_DEF_ID,
+      organizationId: TEST_ORG_ID,
+      name: "page_url",
+      type: "string",
+      description: "URL of the page",
+      eventNames: ["content.page.viewed"],
+      isNumerical: false,
+      tags: ["web"],
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+      ...overrides,
+   };
 }
 
 export function makeDataSource(
-	overrides: Partial<DataSource> = {},
+   overrides: Partial<DataSource> = {},
 ): DataSource {
-	return {
-		id: DATA_SOURCE_ID,
-		organizationId: TEST_ORG_ID,
-		name: "Website SDK",
-		type: "sdk",
-		description: "JavaScript SDK integration",
-		config: { domain: "example.com" },
-		isActive: true,
-		lastEventAt: null,
-		eventCount: 0,
-		createdAt: new Date("2026-01-01"),
-		updatedAt: new Date("2026-01-01"),
-		...overrides,
-	};
+   return {
+      id: DATA_SOURCE_ID,
+      organizationId: TEST_ORG_ID,
+      name: "Website SDK",
+      type: "sdk",
+      description: "JavaScript SDK integration",
+      config: { domain: "example.com" },
+      isActive: true,
+      lastEventAt: null,
+      eventCount: 0,
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+      ...overrides,
+   };
 }
 
 export function makeAnnotation(
-	overrides: Partial<Annotation> = {},
+   overrides: Partial<Annotation> = {},
 ): Annotation {
-	return {
-		id: ANNOTATION_ID,
-		organizationId: TEST_ORG_ID,
-		createdBy: TEST_USER_ID,
-		type: "manual",
-		title: "Marketing campaign launched",
-		description: "Q1 campaign start",
-		date: new Date("2026-02-01"),
-		scope: "global",
-		metadata: null,
-		createdAt: new Date("2026-01-01"),
-		...overrides,
-	};
+   return {
+      id: ANNOTATION_ID,
+      organizationId: TEST_ORG_ID,
+      createdBy: TEST_USER_ID,
+      type: "manual",
+      title: "Marketing campaign launched",
+      description: "Q1 campaign start",
+      date: new Date("2026-02-01"),
+      scope: "global",
+      metadata: null,
+      createdAt: new Date("2026-01-01"),
+      ...overrides,
+   };
 }
 
 export function makeEventCatalogEntry(
-	overrides: Partial<EventCatalogEntry> = {},
+   overrides: Partial<EventCatalogEntry> = {},
 ): EventCatalogEntry {
-	return {
-		id: EVENT_CATALOG_ID,
-		eventName: "content.page.viewed",
-		category: "content",
-		pricePerEvent: "0.000100",
-		freeTierLimit: 1000,
-		displayName: "Page View",
-		description: "Fired when a page is viewed",
-		isBillable: true,
-		isActive: true,
-		createdAt: new Date("2026-01-01"),
-		updatedAt: new Date("2026-01-01"),
-		...overrides,
-	};
+   return {
+      id: EVENT_CATALOG_ID,
+      eventName: "content.page.viewed",
+      category: "content",
+      pricePerEvent: "0.000100",
+      freeTierLimit: 1000,
+      displayName: "Page View",
+      description: "Fired when a page is viewed",
+      isBillable: true,
+      isActive: true,
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+      ...overrides,
+   };
 }

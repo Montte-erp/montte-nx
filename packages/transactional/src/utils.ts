@@ -1,4 +1,4 @@
-import { AppError } from "@packages/utils/errors";
+import { AppError } from "@core/utils/errors";
 import { Resend } from "resend";
 
 export type ResendClient = Resend;

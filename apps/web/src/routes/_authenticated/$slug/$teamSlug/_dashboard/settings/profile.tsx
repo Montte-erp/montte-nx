@@ -24,7 +24,7 @@ import { Label } from "@packages/ui/components/label";
 import { PasswordInput } from "@packages/ui/components/password-input";
 import { Separator } from "@packages/ui/components/separator";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import { getInitials } from "@packages/utils/text";
+import { getInitials } from "@core/utils/text";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";

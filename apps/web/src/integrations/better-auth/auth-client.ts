@@ -1,7 +1,7 @@
 import {
    type AuthClientError,
    createAuthClient as createBetterAuthClient,
-} from "@packages/authentication/client";
+} from "@core/authentication/client";
 import { toast } from "sonner";
 import { invalidateAllQueries } from "./query-bridge";
 

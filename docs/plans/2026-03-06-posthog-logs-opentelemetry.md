@@ -5,6 +5,7 @@
 **Goal:** Full-stack observability: structured logs from all apps (web, server, worker) sent to PostHog via OpenTelemetry, **linked to users and session replays** via `posthogDistinctId` and `sessionId` attributes. Plus error tracking with exception autocapture and fixing existing telemetry gaps.
 
 **Architecture:**
+
 - OTel SDK initialized at each app entry point → exports logs to `https://us.i.posthog.com/i/v1/logs`
 - Pino stays as the logging interface, bridged to OTel via `pino-opentelemetry-transport`
 - **Identification flow:** Frontend sends `sessionId` (from `posthog.getSessionId()`) via `X-PostHog-Session-Id` header → oRPC middleware reads it + `userId` from auth → attaches both as Pino child logger bindings → flows through to OTel log records as attributes
@@ -15,19 +16,20 @@
 
 **PostHog identification attributes (on every OTel log record):**
 
-| Attribute | Value | Purpose |
-|-----------|-------|---------|
-| `posthogDistinctId` | `userId` from session | Links log to PostHog user profile |
-| `sessionId` | From `X-PostHog-Session-Id` header | Links log to session replay |
-| `organizationId` | From active session | Groups logs by organization |
-| `teamId` | From active session | Groups logs by team |
-| `service.name` | `contentta-web` / `contentta-server` / `contentta-worker` | OTel resource attribute |
+| Attribute           | Value                                                     | Purpose                           |
+| ------------------- | --------------------------------------------------------- | --------------------------------- |
+| `posthogDistinctId` | `userId` from session                                     | Links log to PostHog user profile |
+| `sessionId`         | From `X-PostHog-Session-Id` header                        | Links log to session replay       |
+| `organizationId`    | From active session                                       | Groups logs by organization       |
+| `teamId`            | From active session                                       | Groups logs by team               |
+| `service.name`      | `contentta-web` / `contentta-server` / `contentta-worker` | OTel resource attribute           |
 
 ---
 
 ### Task 1: Install OpenTelemetry & oRPC Packages
 
 **Files:**
+
 - Modify: `package.json` (root)
 
 **Step 1: Install all packages**
@@ -41,6 +43,7 @@ bun add @opentelemetry/sdk-node @opentelemetry/exporter-logs-otlp-http @opentele
 ```bash
 bun install
 ```
+
 Expected: lockfile updated, no resolution errors.
 
 **Step 3: Commit**
@@ -55,6 +58,7 @@ git commit -m "chore: add OpenTelemetry and oRPC logging packages"
 ### Task 2: Add `POSTHOG_KEY` to Worker Environment
 
 **Files:**
+
 - Modify: `packages/environment/src/worker.ts`
 
 The server env already has `POSTHOG_KEY`. The worker doesn't — add it so the worker can authenticate with PostHog's OTLP endpoint.
@@ -87,6 +91,7 @@ git commit -m "feat(environment): add optional POSTHOG_KEY to worker env"
 ### Task 3: Create OTel SDK Initializer in `packages/logging`
 
 **Files:**
+
 - Create: `packages/logging/src/otel.ts`
 - Modify: `packages/logging/package.json` (add export)
 
@@ -104,42 +109,42 @@ import { ORPCInstrumentation } from "@orpc/otel";
 const POSTHOG_OTEL_LOGS_URL = "https://us.i.posthog.com/i/v1/logs";
 
 export interface OtelConfig {
-	serviceName: string;
-	/** PostHog project token (phc_...) */
-	posthogKey: string;
+   serviceName: string;
+   /** PostHog project token (phc_...) */
+   posthogKey: string;
 }
 
 let sdk: NodeSDK | null = null;
 
 export function initOtel(config: OtelConfig): NodeSDK {
-	if (sdk) return sdk;
+   if (sdk) return sdk;
 
-	sdk = new NodeSDK({
-		resource: resourceFromAttributes({
-			"service.name": config.serviceName,
-		}),
-		instrumentations: [new ORPCInstrumentation()],
-		logRecordProcessors: [
-			new BatchLogRecordProcessor(
-				new OTLPLogExporter({
-					url: POSTHOG_OTEL_LOGS_URL,
-					headers: {
-						Authorization: `Bearer ${config.posthogKey}`,
-					},
-				}),
-			),
-		],
-	});
+   sdk = new NodeSDK({
+      resource: resourceFromAttributes({
+         "service.name": config.serviceName,
+      }),
+      instrumentations: [new ORPCInstrumentation()],
+      logRecordProcessors: [
+         new BatchLogRecordProcessor(
+            new OTLPLogExporter({
+               url: POSTHOG_OTEL_LOGS_URL,
+               headers: {
+                  Authorization: `Bearer ${config.posthogKey}`,
+               },
+            }),
+         ),
+      ],
+   });
 
-	sdk.start();
-	return sdk;
+   sdk.start();
+   return sdk;
 }
 
 export async function shutdownOtel(): Promise<void> {
-	if (sdk) {
-		await sdk.shutdown();
-		sdk = null;
-	}
+   if (sdk) {
+      await sdk.shutdown();
+      sdk = null;
+   }
 }
 ```
 
@@ -178,6 +183,7 @@ git commit -m "feat(logging): add OTel SDK initializer with oRPC instrumentation
 ### Task 4: Add Pino → OTel Transport Bridge
 
 **Files:**
+
 - Modify: `packages/logging/src/logger.ts`
 - Modify: `packages/logging/src/types.ts`
 
@@ -197,10 +203,10 @@ In `packages/logging/src/logger.ts`, inside `createLogger` where transport targe
 ```typescript
 // After existing transport targets (pino-pretty, logtail, etc.)
 if (config.enableOtel) {
-	targets.push({
-		target: "pino-opentelemetry-transport",
-		level: config.level ?? "info",
-	});
+   targets.push({
+      target: "pino-opentelemetry-transport",
+      level: config.level ?? "info",
+   });
 }
 ```
 
@@ -226,6 +232,7 @@ git commit -m "feat(logging): add Pino-to-OTel transport bridge"
 ### Task 5: Send Session ID from Frontend
 
 **Files:**
+
 - Modify: `apps/web/src/integrations/orpc/client.ts` (or wherever the oRPC client link is configured)
 
 The frontend needs to send `posthog.getSessionId()` with every oRPC request so the backend can attach it to logs.
@@ -266,6 +273,7 @@ git commit -m "feat(web): send PostHog session ID header with oRPC requests"
 ### Task 6: Add Identification Middleware to oRPC (the key task)
 
 **Files:**
+
 - Modify: `apps/web/src/integrations/orpc/server.ts`
 
 This is the core of "super telemetry" — every log emitted during an oRPC request gets `posthogDistinctId` and `sessionId` as attributes, linking it to the user and session replay in PostHog.
@@ -282,115 +290,123 @@ Inside the `withTelemetry` middleware (which already has access to `userId`, `or
 
 ```typescript
 const withTelemetry = withOrganization.use(
-	async ({ context, path, next }, input) => {
-		const startDate = new Date();
-		const { posthog } = context;
-		const userId = context.session?.user?.id;
-		const userEmail = context.session?.user?.email;
-		const userName = context.session?.user?.name;
-		const hasConsent = context.session?.user?.telemetryConsent;
-		const organizationId = context.organizationId;
-		const teamId = context.teamId;
+   async ({ context, path, next }, input) => {
+      const startDate = new Date();
+      const { posthog } = context;
+      const userId = context.session?.user?.id;
+      const userEmail = context.session?.user?.email;
+      const userName = context.session?.user?.name;
+      const hasConsent = context.session?.user?.telemetryConsent;
+      const organizationId = context.organizationId;
+      const teamId = context.teamId;
 
-		// === NEW: Read session ID from frontend header ===
-		const sessionId = context.headers.get("x-posthog-session-id");
+      // === NEW: Read session ID from frontend header ===
+      const sessionId = context.headers.get("x-posthog-session-id");
 
-		// === NEW: Enrich the per-request logger with PostHog identification ===
-		const requestLogger = getLogger(context);
-		if (requestLogger && userId) {
-			// These bindings become OTel log record attributes via pino-opentelemetry-transport
-			const enrichedLogger = requestLogger.child({
-				posthogDistinctId: userId,
-				...(sessionId ? { sessionId } : {}),
-				organizationId,
-				teamId,
-				path: path.join("."),
-			});
-			// Log request start (will appear in PostHog linked to user + session)
-			enrichedLogger.info({ input: sanitizeData(input) }, "oRPC request started");
-		}
+      // === NEW: Enrich the per-request logger with PostHog identification ===
+      const requestLogger = getLogger(context);
+      if (requestLogger && userId) {
+         // These bindings become OTel log record attributes via pino-opentelemetry-transport
+         const enrichedLogger = requestLogger.child({
+            posthogDistinctId: userId,
+            ...(sessionId ? { sessionId } : {}),
+            organizationId,
+            teamId,
+            path: path.join("."),
+         });
+         // Log request start (will appear in PostHog linked to user + session)
+         enrichedLogger.info(
+            { input: sanitizeData(input) },
+            "oRPC request started",
+         );
+      }
 
-		// ... existing identify/telemetry logic ...
+      // ... existing identify/telemetry logic ...
 
-		// Identify user if consented
-		if (userId && hasConsent && posthog) {
-			identifyUser(posthog, userId, {
-				email: userEmail,
-				name: userName,
-			});
+      // Identify user if consented
+      if (userId && hasConsent && posthog) {
+         identifyUser(posthog, userId, {
+            email: userEmail,
+            name: userName,
+         });
 
-			if (organizationId) {
-				setGroup(posthog, organizationId, {});
-			}
-		}
+         if (organizationId) {
+            setGroup(posthog, organizationId, {});
+         }
+      }
 
-		let isSuccess = true;
-		let error: Error | null = null;
+      let isSuccess = true;
+      let error: Error | null = null;
 
-		try {
-			const result = await next();
-			return result;
-		} catch (err) {
-			isSuccess = false;
-			error = err instanceof Error ? err : new Error(String(err));
-			throw err;
-		} finally {
-			if (userId && hasConsent && posthog) {
-				try {
-					const durationMs = Date.now() - startDate.getTime();
-					const rootPath = path[0];
+      try {
+         const result = await next();
+         return result;
+      } catch (err) {
+         isSuccess = false;
+         error = err instanceof Error ? err : new Error(String(err));
+         throw err;
+      } finally {
+         if (userId && hasConsent && posthog) {
+            try {
+               const durationMs = Date.now() - startDate.getTime();
+               const rootPath = path[0];
 
-					if (!isSuccess && error) {
-						const errorId = crypto.randomUUID();
-						captureError(posthog, {
-							code: "INTERNAL_SERVER_ERROR",
-							errorId,
-							input: sanitizeData(input),
-							message: error.message,
-							organizationId: organizationId || undefined,
-							path: path.join("."),
-							userId,
-						});
+               if (!isSuccess && error) {
+                  const errorId = crypto.randomUUID();
+                  captureError(posthog, {
+                     code: "INTERNAL_SERVER_ERROR",
+                     errorId,
+                     input: sanitizeData(input),
+                     message: error.message,
+                     organizationId: organizationId || undefined,
+                     path: path.join("."),
+                     userId,
+                  });
 
-						// === NEW: Log error with identification ===
-						if (requestLogger) {
-							requestLogger.child({
-								posthogDistinctId: userId,
-								...(sessionId ? { sessionId } : {}),
-								organizationId,
-								teamId,
-							}).error({ errorId, path: path.join("."), durationMs }, error.message);
-						}
-					}
+                  // === NEW: Log error with identification ===
+                  if (requestLogger) {
+                     requestLogger
+                        .child({
+                           posthogDistinctId: userId,
+                           ...(sessionId ? { sessionId } : {}),
+                           organizationId,
+                           teamId,
+                        })
+                        .error(
+                           { errorId, path: path.join("."), durationMs },
+                           error.message,
+                        );
+                  }
+               }
 
-					posthog.capture({
-						distinctId: userId,
-						event: "orpc_request",
-						properties: {
-							durationMs,
-							endAt: new Date().toISOString(),
-							input: sanitizeData(input),
-							path: path.join("."),
-							rootPath,
-							startAt: startDate.toISOString(),
-							success: isSuccess,
-							...(organizationId
-								? { $groups: { organization: organizationId } }
-								: {}),
-							...(isSuccess
-								? {}
-								: {
-										errorMessage: error?.message,
-										errorName: error?.name,
-								  }),
-						},
-					});
-				} catch {
-					// Silently fail telemetry
-				}
-			}
-		}
-	},
+               posthog.capture({
+                  distinctId: userId,
+                  event: "orpc_request",
+                  properties: {
+                     durationMs,
+                     endAt: new Date().toISOString(),
+                     input: sanitizeData(input),
+                     path: path.join("."),
+                     rootPath,
+                     startAt: startDate.toISOString(),
+                     success: isSuccess,
+                     ...(organizationId
+                        ? { $groups: { organization: organizationId } }
+                        : {}),
+                     ...(isSuccess
+                        ? {}
+                        : {
+                             errorMessage: error?.message,
+                             errorName: error?.name,
+                          }),
+                  },
+               });
+            } catch {
+               // Silently fail telemetry
+            }
+         }
+      }
+   },
 );
 ```
 
@@ -402,13 +418,13 @@ Add `LoggerContext` to `ORPCContextWithAuth`:
 import type { LoggerContext } from "@orpc/experimental-pino";
 
 export interface ORPCContextWithAuth extends LoggerContext {
-	headers: Headers;
-	request: Request;
-	auth: AuthInstance;
-	db: DatabaseInstance;
-	session: Awaited<ReturnType<AuthInstance["api"]["getSession"]>> | null;
-	posthog?: PostHog;
-	stripeClient?: StripeClient;
+   headers: Headers;
+   request: Request;
+   auth: AuthInstance;
+   db: DatabaseInstance;
+   session: Awaited<ReturnType<AuthInstance["api"]["getSession"]>> | null;
+   posthog?: PostHog;
+   stripeClient?: StripeClient;
 }
 ```
 
@@ -430,6 +446,7 @@ git commit -m "feat(orpc): add PostHog identification to logs (posthogDistinctId
 ### Task 7: Add `@orpc/experimental-pino` Plugin to oRPC Handlers
 
 **Files:**
+
 - Modify: `apps/web/src/routes/api/rpc/$.ts`
 - Modify: `apps/web/src/routes/api/$.ts`
 - Modify: `apps/server/src/index.ts`
@@ -444,24 +461,22 @@ import pino from "pino";
 
 // Create logger with OTel transport enabled
 const logger = pino({
-	name: "contentta-web-rpc",
-	transport: {
-		targets: [
-			{ target: "pino-opentelemetry-transport", level: "info" },
-		],
-	},
+   name: "contentta-web-rpc",
+   transport: {
+      targets: [{ target: "pino-opentelemetry-transport", level: "info" }],
+   },
 });
 
 const handler = new RPCHandler(router, {
-	plugins: [
-		new BatchHandlerPlugin(),
-		new LoggingHandlerPlugin({
-			logger,
-			generateId: () => crypto.randomUUID(),
-			logRequestResponse: true,
-			logRequestAbort: true,
-		}),
-	],
+   plugins: [
+      new BatchHandlerPlugin(),
+      new LoggingHandlerPlugin({
+         logger,
+         generateId: () => crypto.randomUUID(),
+         logRequestResponse: true,
+         logRequestAbort: true,
+      }),
+   ],
 });
 ```
 
@@ -491,6 +506,7 @@ git commit -m "feat(orpc): add LoggingHandlerPlugin for structured request loggi
 ### Task 8: Wire OTel into All App Entry Points
 
 **Files:**
+
 - Modify: `apps/server/src/index.ts`
 - Create: `apps/web/src/integrations/otel/init.ts`
 - Modify: `apps/web/src/routes/api/$.ts`
@@ -508,10 +524,10 @@ import { initOtel, shutdownOtel } from "@packages/logging/otel";
 import { env } from "@packages/environment/server";
 
 if (env.POSTHOG_KEY) {
-	initOtel({
-		serviceName: "contentta-server",
-		posthogKey: env.POSTHOG_KEY,
-	});
+   initOtel({
+      serviceName: "contentta-server",
+      posthogKey: env.POSTHOG_KEY,
+   });
 }
 ```
 
@@ -521,10 +537,10 @@ Add graceful shutdown:
 import { shutdownPosthog } from "@packages/posthog/server";
 
 const shutdown = async (signal: string) => {
-	console.log(`[Server] Received ${signal}, shutting down...`);
-	await shutdownPosthog(posthog);
-	await shutdownOtel();
-	process.exit(0);
+   console.log(`[Server] Received ${signal}, shutting down...`);
+   await shutdownPosthog(posthog);
+   await shutdownOtel();
+   process.exit(0);
 };
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("SIGINT", () => shutdown("SIGINT"));
@@ -540,10 +556,10 @@ import { initOtel } from "@packages/logging/otel";
 const posthogKey = process.env.POSTHOG_KEY;
 
 if (posthogKey && typeof window === "undefined") {
-	initOtel({
-		serviceName: "contentta-web",
-		posthogKey,
-	});
+   initOtel({
+      serviceName: "contentta-web",
+      posthogKey,
+   });
 }
 ```
 
@@ -562,10 +578,10 @@ import { initOtel, shutdownOtel } from "@packages/logging/otel";
 
 const posthogKey = process.env.POSTHOG_KEY;
 if (posthogKey) {
-	initOtel({
-		serviceName: "contentta-worker",
-		posthogKey,
-	});
+   initOtel({
+      serviceName: "contentta-worker",
+      posthogKey,
+   });
 }
 ```
 
@@ -582,16 +598,16 @@ In `packages/logging/src/server.ts` and `packages/logging/src/worker.ts`, add `e
 ```typescript
 // server.ts
 export function getServerLogger(env: ServerLoggerEnv): Logger {
-	if (!serverLogger) {
-		serverLogger = createSafeLogger({
-			name: "montte-server",
-			level: env.LOG_LEVEL,
-			logtailToken: env.LOGTAIL_SOURCE_TOKEN,
-			logtailEndpoint: env.LOGTAIL_ENDPOINT,
-			enableOtel: !!env.POSTHOG_KEY,
-		});
-	}
-	return serverLogger;
+   if (!serverLogger) {
+      serverLogger = createSafeLogger({
+         name: "montte-server",
+         level: env.LOG_LEVEL,
+         logtailToken: env.LOGTAIL_SOURCE_TOKEN,
+         logtailEndpoint: env.LOGTAIL_ENDPOINT,
+         enableOtel: !!env.POSTHOG_KEY,
+      });
+   }
+   return serverLogger;
 }
 ```
 
@@ -615,21 +631,22 @@ git commit -m "feat: wire OTel SDK into all app entry points with graceful shutd
 ### Task 9: Enable PostHog Exception Autocapture
 
 **Files:**
+
 - Modify: `packages/posthog/src/server.ts`
 
 **Step 1: Enable exception autocapture in `getElysiaPosthogConfig`**
 
 ```typescript
 export function getElysiaPosthogConfig(
-	env: Pick<ServerEnv, "POSTHOG_HOST" | "POSTHOG_KEY">,
+   env: Pick<ServerEnv, "POSTHOG_HOST" | "POSTHOG_KEY">,
 ) {
-	const internalPosthog = new PostHog(env.POSTHOG_KEY, {
-		flushAt: 20,
-		flushInterval: 10000,
-		host: env.POSTHOG_HOST,
-		enableExceptionAutocapture: true, // NEW: auto-capture unhandled exceptions
-	});
-	return internalPosthog;
+   const internalPosthog = new PostHog(env.POSTHOG_KEY, {
+      flushAt: 20,
+      flushInterval: 10000,
+      host: env.POSTHOG_HOST,
+      enableExceptionAutocapture: true, // NEW: auto-capture unhandled exceptions
+   });
+   return internalPosthog;
 }
 ```
 
@@ -701,20 +718,21 @@ git commit -m "feat: PostHog super telemetry — logs, identification, error tra
 
 ## Summary
 
-| Layer | What happens |
-|-------|-------------|
-| **Frontend** | Sends `X-PostHog-Session-Id` header with every oRPC request |
-| **oRPC middleware** | Reads header + userId from auth → creates child Pino logger with `posthogDistinctId` + `sessionId` bindings |
-| **Pino** (existing) | App code logs with `logger.info(...)` — now enriched with user context |
-| **pino-opentelemetry-transport** (new) | Bridges Pino log records (including bindings) → OTel LogRecordProcessor |
-| **OTel SDK** (new) | Batches log records, exports via OTLP HTTP to PostHog |
-| **PostHog OTLP endpoint** | Receives logs at `https://us.i.posthog.com/i/v1/logs` with `Bearer phc_...` auth |
-| **PostHog UI** | Logs linked to users → click to session replay. Errors auto-captured. |
-| **@orpc/experimental-pino** (new) | Per-request structured logging with request IDs in oRPC handlers |
-| **@orpc/otel** (new) | Span instrumentation for oRPC context propagation |
-| **posthog-node** (updated) | `enableExceptionAutocapture: true` for error tracking |
+| Layer                                  | What happens                                                                                                |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **Frontend**                           | Sends `X-PostHog-Session-Id` header with every oRPC request                                                 |
+| **oRPC middleware**                    | Reads header + userId from auth → creates child Pino logger with `posthogDistinctId` + `sessionId` bindings |
+| **Pino** (existing)                    | App code logs with `logger.info(...)` — now enriched with user context                                      |
+| **pino-opentelemetry-transport** (new) | Bridges Pino log records (including bindings) → OTel LogRecordProcessor                                     |
+| **OTel SDK** (new)                     | Batches log records, exports via OTLP HTTP to PostHog                                                       |
+| **PostHog OTLP endpoint**              | Receives logs at `https://us.i.posthog.com/i/v1/logs` with `Bearer phc_...` auth                            |
+| **PostHog UI**                         | Logs linked to users → click to session replay. Errors auto-captured.                                       |
+| **@orpc/experimental-pino** (new)      | Per-request structured logging with request IDs in oRPC handlers                                            |
+| **@orpc/otel** (new)                   | Span instrumentation for oRPC context propagation                                                           |
+| **posthog-node** (updated)             | `enableExceptionAutocapture: true` for error tracking                                                       |
 
 **What you get in PostHog:**
+
 - **Logs** → searchable, filterable by level, linked to users and sessions
 - **Session Replay** → click from a log to see exactly what the user was doing
 - **Error Tracking** → auto-captured exceptions with stack traces
@@ -724,16 +742,17 @@ git commit -m "feat: PostHog super telemetry — logs, identification, error tra
 
 ## Existing Gaps Fixed in This Plan
 
-| Gap | Fix | Task |
-|-----|-----|------|
-| `apps/server` no graceful PostHog shutdown | Added SIGTERM/SIGINT handlers | Task 8 |
-| `captureError` uses `trpc_error` event name | Changed to `orpc_error` | Task 9 |
-| `apps/worker` no PostHog/telemetry | OTel SDK + Pino transport added | Task 8 |
-| No user identification on logs | `posthogDistinctId` + `sessionId` attributes | Task 6 |
-| No session replay linking | Frontend sends session ID header | Task 5 |
-| No exception autocapture | `enableExceptionAutocapture: true` | Task 9 |
+| Gap                                         | Fix                                          | Task   |
+| ------------------------------------------- | -------------------------------------------- | ------ |
+| `apps/server` no graceful PostHog shutdown  | Added SIGTERM/SIGINT handlers                | Task 8 |
+| `captureError` uses `trpc_error` event name | Changed to `orpc_error`                      | Task 9 |
+| `apps/worker` no PostHog/telemetry          | OTel SDK + Pino transport added              | Task 8 |
+| No user identification on logs              | `posthogDistinctId` + `sessionId` attributes | Task 6 |
+| No session replay linking                   | Frontend sends session ID header             | Task 5 |
+| No exception autocapture                    | `enableExceptionAutocapture: true`           | Task 9 |
 
 Sources:
+
 - [PostHog Logs Documentation](https://posthog.com/docs/logs)
 - [PostHog Node.js Logs Installation](https://posthog.com/docs/logs/installation/nodejs)
 - [PostHog Link Session Replay](https://posthog.com/docs/logs/link-session-replay)

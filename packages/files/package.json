@@ -24,7 +24,7 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "@packages/environment": "workspace:*",
+      "@core/environment": "workspace:*",
       "fflate": "catalog:files",
       "minio": "catalog:files"
    },

@@ -522,9 +522,7 @@ export function BankAccountForm({
                         <FieldLabel>Outras informações</FieldLabel>
                         <Textarea
                            onBlur={field.handleBlur}
-                           onChange={(e) =>
-                              field.handleChange(e.target.value)
-                           }
+                           onChange={(e) => field.handleChange(e.target.value)}
                            placeholder="Informações adicionais sobre a conta..."
                            rows={3}
                            value={field.state.value}

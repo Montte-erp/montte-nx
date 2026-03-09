@@ -10,12 +10,24 @@ vi.mock("@packages/ui/hooks/use-mobile", () => ({
 }));
 
 vi.mock("@packages/ui/components/sidebar", () => ({
-   Sidebar: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-   SidebarContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-   SidebarHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-   SidebarInset: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-   SidebarManager: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-   SidebarProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+   Sidebar: ({ children }: { children: React.ReactNode }) => (
+      <div>{children}</div>
+   ),
+   SidebarContent: ({ children }: { children: React.ReactNode }) => (
+      <div>{children}</div>
+   ),
+   SidebarHeader: ({ children }: { children: React.ReactNode }) => (
+      <div>{children}</div>
+   ),
+   SidebarInset: ({ children }: { children: React.ReactNode }) => (
+      <div>{children}</div>
+   ),
+   SidebarManager: ({ children }: { children: React.ReactNode }) => (
+      <div>{children}</div>
+   ),
+   SidebarProvider: ({ children }: { children: React.ReactNode }) => (
+      <div>{children}</div>
+   ),
 }));
 
 vi.mock("@tanstack/react-router", () => ({

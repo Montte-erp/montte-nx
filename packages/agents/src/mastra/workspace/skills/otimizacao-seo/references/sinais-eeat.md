@@ -9,6 +9,7 @@ Este guia explica como demonstrar cada sinal em conteúdos de blog e quais exemp
 ## 1) Experience (Experiência)
 
 ### O que significa
+
 Demonstrar vivência prática, testes reais e aprendizados obtidos na prática.
 
 ### Como evidenciar em posts
@@ -19,9 +20,11 @@ Demonstrar vivência prática, testes reais e aprendizados obtidos na prática.
 - Comparar abordagens com base em uso real.
 
 ✅ **Exemplo bom**
+
 > “Eu testei esse checklist em 12 artigos e o CTR médio subiu de 2,1% para 3,4%.”
 
 ❌ **Exemplo ruim**
+
 > “Esse checklist provavelmente melhora o CTR.”
 
 ### Checklist rápido
@@ -34,6 +37,7 @@ Demonstrar vivência prática, testes reais e aprendizados obtidos na prática.
 ## 2) Expertise (Especialização)
 
 ### O que significa
+
 Demonstrar conhecimento técnico e domínio do assunto.
 
 ### Como evidenciar em posts
@@ -44,9 +48,11 @@ Demonstrar conhecimento técnico e domínio do assunto.
 - Citar fontes confiáveis e dados atualizados.
 
 ✅ **Exemplo bom**
+
 > “Segundo o estudo da Moz (2025), títulos com keyword no início tendem a ter melhor CTR.”
 
 ❌ **Exemplo ruim**
+
 > “Dizem que títulos com keyword no início funcionam melhor.”
 
 ### Checklist rápido
@@ -59,6 +65,7 @@ Demonstrar conhecimento técnico e domínio do assunto.
 ## 3) Authority (Autoridade)
 
 ### O que significa
+
 Ser reconhecido no setor ou apoiar-se em reconhecimento externo.
 
 ### Como evidenciar em posts
@@ -69,9 +76,11 @@ Ser reconhecido no setor ou apoiar-se em reconhecimento externo.
 - Mostrar que o conteúdo é **referenciável**.
 
 ✅ **Exemplo bom**
+
 > “Este framework foi citado no relatório X e aplicado por equipes de conteúdo B2B.”
 
 ❌ **Exemplo ruim**
+
 > “Somos líderes no mercado.” (sem evidências)
 
 ### Checklist rápido
@@ -84,6 +93,7 @@ Ser reconhecido no setor ou apoiar-se em reconhecimento externo.
 ## 4) Trustworthiness (Confiabilidade)
 
 ### O que significa
+
 Garantir precisão, transparência e atualização.
 
 ### Como evidenciar em posts
@@ -94,9 +104,11 @@ Garantir precisão, transparência e atualização.
 - Data de atualização visível quando aplicável.
 
 ✅ **Exemplo bom**
+
 > “Atualizado em fevereiro de 2026 com novas diretrizes de meta description.”
 
 ❌ **Exemplo ruim**
+
 > “Este conteúdo é atualizado regularmente.” (sem data)
 
 ### Checklist rápido
@@ -114,6 +126,7 @@ Garantir precisão, transparência e atualização.
 4. **Conclusão com transparência:** indique limites, próximos passos e data de atualização.
 
 ✅ **Exemplo combinado**
+
 > “Após testar este checklist em 20 artigos, percebi que a meta description tem maior impacto no CTR quando contém a keyword no início. Segundo a Ahrefs (2025), descrições de 150–160 caracteres têm melhor desempenho. Atualizado em fev/2026.”
 
 ---
@@ -121,21 +134,25 @@ Garantir precisão, transparência e atualização.
 ## Indicadores práticos por sinal
 
 ### Experiência
+
 - Estudos de caso reais
 - Métricas próprias
 - “Eu testei” + resultados
 
 ### Especialização
+
 - Explicações detalhadas
 - Terminologia correta
 - Comparação de abordagens
 
 ### Autoridade
+
 - Backlinks ou menções
 - Participação em eventos
 - Citações de especialistas
 
 ### Confiabilidade
+
 - Fontes verificáveis
 - Transparência e revisão
 - Atualizações registradas

@@ -5,7 +5,7 @@ import {
    getPropertyDefinition,
    listPropertyDefinitions,
    updatePropertyDefinition,
-} from "@packages/database/repositories/property-definition-repository";
+} from "@core/database/repositories/property-definition-repository";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

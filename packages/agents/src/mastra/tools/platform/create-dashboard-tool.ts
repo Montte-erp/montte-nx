@@ -1,6 +1,6 @@
 import { createTool } from "@mastra/core/tools";
-import type { DatabaseInstance } from "@packages/database/client";
-import { createDashboard } from "@packages/database/repositories/dashboard-repository";
+import type { DatabaseInstance } from "@core/database/client";
+import { createDashboard } from "@core/database/repositories/dashboard-repository";
 import { z } from "zod";
 
 export const createDashboardTool = createTool({

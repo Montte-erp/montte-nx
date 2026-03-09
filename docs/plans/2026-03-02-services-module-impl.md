@@ -15,6 +15,7 @@
 ## Task 1: Rename sdk-server → server
 
 **Files:**
+
 - Modify: `apps/sdk-server/project.json`
 - Rename dir: `apps/sdk-server/` → `apps/server/`
 
@@ -41,6 +42,7 @@ Update `SDK_SERVER_URL` references and any `nx.json` / `package.json` scripts th
 ```bash
 bun dev
 ```
+
 Expected: No errors about missing project.
 
 **Step 5: Commit**
@@ -55,6 +57,7 @@ git commit -m "chore: rename sdk-server to server"
 ## Task 2: DB Schema — services tables
 
 **Files:**
+
 - Create: `packages/database/src/schemas/services.ts`
 
 **Step 1: Write the schema**
@@ -62,15 +65,15 @@ git commit -m "chore: rename sdk-server to server"
 ```typescript
 import { relations, sql } from "drizzle-orm";
 import {
-  boolean,
-  date,
-  index,
-  integer,
-  pgEnum,
-  pgTable,
-  text,
-  timestamp,
-  uuid,
+   boolean,
+   date,
+   index,
+   integer,
+   pgEnum,
+   pgTable,
+   text,
+   timestamp,
+   uuid,
 } from "drizzle-orm/pg-core";
 import { contacts } from "./contacts";
 import { team } from "./auth";
@@ -80,45 +83,46 @@ import { team } from "./auth";
 // ---------------------------------------------------------------------------
 
 export const billingCycleEnum = pgEnum("billing_cycle", [
-  "hourly",
-  "monthly",
-  "annual",
-  "one_time",
+   "hourly",
+   "monthly",
+   "annual",
+   "one_time",
 ]);
 
 export const subscriptionStatusEnum = pgEnum("subscription_status", [
-  "active",
-  "completed",
-  "cancelled",
+   "active",
+   "completed",
+   "cancelled",
 ]);
 
-export const serviceSourceEnum = pgEnum("service_source", [
-  "manual",
-  "asaas",
-]);
+export const serviceSourceEnum = pgEnum("service_source", ["manual", "asaas"]);
 
 // ---------------------------------------------------------------------------
 // Services
 // ---------------------------------------------------------------------------
 
 export const services = pgTable(
-  "services",
-  {
-    id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-    teamId: uuid("team_id").notNull().references(() => team.id, { onDelete: "cascade" }),
-    name: text("name").notNull(),
-    description: text("description"),
-    category: text("category"),
-    isActive: boolean("is_active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow()
-      .$onUpdate(() => new Date()),
-  },
-  (table) => [
-    index("services_team_id_idx").on(table.teamId),
-  ],
+   "services",
+   {
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
+      teamId: uuid("team_id")
+         .notNull()
+         .references(() => team.id, { onDelete: "cascade" }),
+      name: text("name").notNull(),
+      description: text("description"),
+      category: text("category"),
+      isActive: boolean("is_active").notNull().default(true),
+      createdAt: timestamp("created_at", { withTimezone: true })
+         .notNull()
+         .defaultNow(),
+      updatedAt: timestamp("updated_at", { withTimezone: true })
+         .notNull()
+         .defaultNow()
+         .$onUpdate(() => new Date()),
+   },
+   (table) => [index("services_team_id_idx").on(table.teamId)],
 );
 
 // ---------------------------------------------------------------------------
@@ -126,25 +130,33 @@ export const services = pgTable(
 // ---------------------------------------------------------------------------
 
 export const serviceVariants = pgTable(
-  "service_variants",
-  {
-    id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-    serviceId: uuid("service_id").notNull().references(() => services.id, { onDelete: "cascade" }),
-    teamId: uuid("team_id").notNull().references(() => team.id, { onDelete: "cascade" }),
-    name: text("name").notNull(),
-    basePrice: integer("base_price").notNull(), // cents (@f-o-t/money)
-    billingCycle: billingCycleEnum("billing_cycle").notNull(),
-    isActive: boolean("is_active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow()
-      .$onUpdate(() => new Date()),
-  },
-  (table) => [
-    index("service_variants_service_id_idx").on(table.serviceId),
-    index("service_variants_team_id_idx").on(table.teamId),
-  ],
+   "service_variants",
+   {
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
+      serviceId: uuid("service_id")
+         .notNull()
+         .references(() => services.id, { onDelete: "cascade" }),
+      teamId: uuid("team_id")
+         .notNull()
+         .references(() => team.id, { onDelete: "cascade" }),
+      name: text("name").notNull(),
+      basePrice: integer("base_price").notNull(), // cents (@f-o-t/money)
+      billingCycle: billingCycleEnum("billing_cycle").notNull(),
+      isActive: boolean("is_active").notNull().default(true),
+      createdAt: timestamp("created_at", { withTimezone: true })
+         .notNull()
+         .defaultNow(),
+      updatedAt: timestamp("updated_at", { withTimezone: true })
+         .notNull()
+         .defaultNow()
+         .$onUpdate(() => new Date()),
+   },
+   (table) => [
+      index("service_variants_service_id_idx").on(table.serviceId),
+      index("service_variants_team_id_idx").on(table.teamId),
+   ],
 );
 
 // ---------------------------------------------------------------------------
@@ -152,33 +164,43 @@ export const serviceVariants = pgTable(
 // ---------------------------------------------------------------------------
 
 export const contactSubscriptions = pgTable(
-  "contact_subscriptions",
-  {
-    id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-    teamId: uuid("team_id").notNull().references(() => team.id, { onDelete: "cascade" }),
-    contactId: uuid("contact_id").notNull().references(() => contacts.id, { onDelete: "cascade" }),
-    variantId: uuid("variant_id").notNull().references(() => serviceVariants.id, { onDelete: "cascade" }),
-    startDate: date("start_date").notNull(),
-    endDate: date("end_date"),          // null = open-ended
-    negotiatedPrice: integer("negotiated_price").notNull(), // cents
-    notes: text("notes"),
-    status: subscriptionStatusEnum("status").notNull().default("active"),
-    source: serviceSourceEnum("source").notNull().default("manual"),
-    externalId: text("external_id"),   // Asaas subscription ID
-    resourceId: uuid("resource_id"),   // reserved for future booking
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow()
-      .$onUpdate(() => new Date()),
-  },
-  (table) => [
-    index("contact_subscriptions_team_id_idx").on(table.teamId),
-    index("contact_subscriptions_contact_id_idx").on(table.contactId),
-    index("contact_subscriptions_variant_id_idx").on(table.variantId),
-    index("contact_subscriptions_external_id_idx").on(table.externalId),
-    index("contact_subscriptions_status_idx").on(table.status),
-  ],
+   "contact_subscriptions",
+   {
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
+      teamId: uuid("team_id")
+         .notNull()
+         .references(() => team.id, { onDelete: "cascade" }),
+      contactId: uuid("contact_id")
+         .notNull()
+         .references(() => contacts.id, { onDelete: "cascade" }),
+      variantId: uuid("variant_id")
+         .notNull()
+         .references(() => serviceVariants.id, { onDelete: "cascade" }),
+      startDate: date("start_date").notNull(),
+      endDate: date("end_date"), // null = open-ended
+      negotiatedPrice: integer("negotiated_price").notNull(), // cents
+      notes: text("notes"),
+      status: subscriptionStatusEnum("status").notNull().default("active"),
+      source: serviceSourceEnum("source").notNull().default("manual"),
+      externalId: text("external_id"), // Asaas subscription ID
+      resourceId: uuid("resource_id"), // reserved for future booking
+      createdAt: timestamp("created_at", { withTimezone: true })
+         .notNull()
+         .defaultNow(),
+      updatedAt: timestamp("updated_at", { withTimezone: true })
+         .notNull()
+         .defaultNow()
+         .$onUpdate(() => new Date()),
+   },
+   (table) => [
+      index("contact_subscriptions_team_id_idx").on(table.teamId),
+      index("contact_subscriptions_contact_id_idx").on(table.contactId),
+      index("contact_subscriptions_variant_id_idx").on(table.variantId),
+      index("contact_subscriptions_external_id_idx").on(table.externalId),
+      index("contact_subscriptions_status_idx").on(table.status),
+   ],
 );
 
 // ---------------------------------------------------------------------------
@@ -186,24 +208,32 @@ export const contactSubscriptions = pgTable(
 // ---------------------------------------------------------------------------
 
 export const resources = pgTable(
-  "resources",
-  {
-    id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
-    teamId: uuid("team_id").notNull().references(() => team.id, { onDelete: "cascade" }),
-    serviceId: uuid("service_id").notNull().references(() => services.id, { onDelete: "cascade" }),
-    name: text("name").notNull(),
-    capacity: integer("capacity").notNull().default(1),
-    isActive: boolean("is_active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow()
-      .$onUpdate(() => new Date()),
-  },
-  (table) => [
-    index("resources_team_id_idx").on(table.teamId),
-    index("resources_service_id_idx").on(table.serviceId),
-  ],
+   "resources",
+   {
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
+      teamId: uuid("team_id")
+         .notNull()
+         .references(() => team.id, { onDelete: "cascade" }),
+      serviceId: uuid("service_id")
+         .notNull()
+         .references(() => services.id, { onDelete: "cascade" }),
+      name: text("name").notNull(),
+      capacity: integer("capacity").notNull().default(1),
+      isActive: boolean("is_active").notNull().default(true),
+      createdAt: timestamp("created_at", { withTimezone: true })
+         .notNull()
+         .defaultNow(),
+      updatedAt: timestamp("updated_at", { withTimezone: true })
+         .notNull()
+         .defaultNow()
+         .$onUpdate(() => new Date()),
+   },
+   (table) => [
+      index("resources_team_id_idx").on(table.teamId),
+      index("resources_service_id_idx").on(table.serviceId),
+   ],
 );
 
 // ---------------------------------------------------------------------------
@@ -211,23 +241,41 @@ export const resources = pgTable(
 // ---------------------------------------------------------------------------
 
 export const servicesRelations = relations(services, ({ one, many }) => ({
-  team: one(team, { fields: [services.teamId], references: [team.id] }),
-  variants: many(serviceVariants),
-  resources: many(resources),
+   team: one(team, { fields: [services.teamId], references: [team.id] }),
+   variants: many(serviceVariants),
+   resources: many(resources),
 }));
 
-export const serviceVariantsRelations = relations(serviceVariants, ({ one, many }) => ({
-  service: one(services, { fields: [serviceVariants.serviceId], references: [services.id] }),
-  subscriptions: many(contactSubscriptions),
-}));
+export const serviceVariantsRelations = relations(
+   serviceVariants,
+   ({ one, many }) => ({
+      service: one(services, {
+         fields: [serviceVariants.serviceId],
+         references: [services.id],
+      }),
+      subscriptions: many(contactSubscriptions),
+   }),
+);
 
-export const contactSubscriptionsRelations = relations(contactSubscriptions, ({ one }) => ({
-  contact: one(contacts, { fields: [contactSubscriptions.contactId], references: [contacts.id] }),
-  variant: one(serviceVariants, { fields: [contactSubscriptions.variantId], references: [serviceVariants.id] }),
-}));
+export const contactSubscriptionsRelations = relations(
+   contactSubscriptions,
+   ({ one }) => ({
+      contact: one(contacts, {
+         fields: [contactSubscriptions.contactId],
+         references: [contacts.id],
+      }),
+      variant: one(serviceVariants, {
+         fields: [contactSubscriptions.variantId],
+         references: [serviceVariants.id],
+      }),
+   }),
+);
 
 export const resourcesRelations = relations(resources, ({ one }) => ({
-  service: one(services, { fields: [resources.serviceId], references: [services.id] }),
+   service: one(services, {
+      fields: [resources.serviceId],
+      references: [services.id],
+   }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -242,7 +290,8 @@ export type ContactSubscription = typeof contactSubscriptions.$inferSelect;
 export type NewContactSubscription = typeof contactSubscriptions.$inferInsert;
 export type Resource = typeof resources.$inferSelect;
 export type BillingCycle = (typeof billingCycleEnum.enumValues)[number];
-export type SubscriptionStatus = (typeof subscriptionStatusEnum.enumValues)[number];
+export type SubscriptionStatus =
+   (typeof subscriptionStatusEnum.enumValues)[number];
 export type ServiceSource = (typeof serviceSourceEnum.enumValues)[number];
 ```
 
@@ -258,6 +307,7 @@ git commit -m "feat(db): add services, service_variants, contact_subscriptions, 
 ## Task 3: DB Schema — add source/externalId to contacts + contactId/subscriptionId to bills
 
 **Files:**
+
 - Modify: `packages/database/src/schemas/contacts.ts`
 - Modify: `packages/database/src/schemas/bills.ts`
 
@@ -275,6 +325,7 @@ externalId: text("external_id"),   // Asaas customer ID
 ```
 
 Also add to the exported types:
+
 ```typescript
 export type ContactSource = (typeof serviceSourceEnum.enumValues)[number];
 ```
@@ -290,6 +341,7 @@ subscriptionId: uuid("subscription_id"), // nullable — FK to contact_subscript
 ```
 
 Also add indexes:
+
 ```typescript
 index("bills_contact_id_idx").on(table.contactId),
 index("bills_subscription_id_idx").on(table.subscriptionId),
@@ -300,6 +352,7 @@ index("bills_subscription_id_idx").on(table.subscriptionId),
 **Step 3: Export new schema from schema.ts**
 
 In `packages/database/src/schema.ts`, add:
+
 ```typescript
 // Services
 export * from "./schemas/services";
@@ -337,6 +390,7 @@ Check that `services`, `service_variants`, `contact_subscriptions`, `resources` 
 ## Task 5: Repositories
 
 **Files:**
+
 - Create: `packages/database/src/repositories/services-repository.ts`
 
 **Step 1: Write the repository**
@@ -346,13 +400,13 @@ import { AppError, propagateError } from "@packages/utils/errors";
 import { and, count, eq, gte, lte, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import {
-  type NewContactSubscription,
-  type NewService,
-  type NewServiceVariant,
-  type SubscriptionStatus,
-  contactSubscriptions,
-  serviceVariants,
-  services,
+   type NewContactSubscription,
+   type NewService,
+   type NewServiceVariant,
+   type SubscriptionStatus,
+   contactSubscriptions,
+   serviceVariants,
+   services,
 } from "../schema";
 
 // ---------------------------------------------------------------------------
@@ -360,109 +414,129 @@ import {
 // ---------------------------------------------------------------------------
 
 export async function listServices(db: DatabaseInstance, teamId: string) {
-  try {
-    return await db
-      .select()
-      .from(services)
-      .where(eq(services.teamId, teamId))
-      .orderBy(services.name);
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to list services");
-  }
+   try {
+      return await db
+         .select()
+         .from(services)
+         .where(eq(services.teamId, teamId))
+         .orderBy(services.name);
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to list services");
+   }
 }
 
 export async function getService(db: DatabaseInstance, id: string) {
-  try {
-    const [service] = await db.select().from(services).where(eq(services.id, id));
-    return service ?? null;
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to get service");
-  }
+   try {
+      const [service] = await db
+         .select()
+         .from(services)
+         .where(eq(services.id, id));
+      return service ?? null;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to get service");
+   }
 }
 
 export async function createService(db: DatabaseInstance, data: NewService) {
-  try {
-    const [service] = await db.insert(services).values(data).returning();
-    return service;
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to create service");
-  }
+   try {
+      const [service] = await db.insert(services).values(data).returning();
+      return service;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to create service");
+   }
 }
 
 export async function updateService(
-  db: DatabaseInstance,
-  id: string,
-  data: Partial<NewService>,
+   db: DatabaseInstance,
+   id: string,
+   data: Partial<NewService>,
 ) {
-  try {
-    const [updated] = await db.update(services).set(data).where(eq(services.id, id)).returning();
-    return updated;
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to update service");
-  }
+   try {
+      const [updated] = await db
+         .update(services)
+         .set(data)
+         .where(eq(services.id, id))
+         .returning();
+      return updated;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to update service");
+   }
 }
 
 export async function deleteService(db: DatabaseInstance, id: string) {
-  try {
-    await db.delete(services).where(eq(services.id, id));
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to delete service");
-  }
+   try {
+      await db.delete(services).where(eq(services.id, id));
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to delete service");
+   }
 }
 
 // ---------------------------------------------------------------------------
 // Service Variants CRUD
 // ---------------------------------------------------------------------------
 
-export async function listVariantsByService(db: DatabaseInstance, serviceId: string) {
-  try {
-    return await db
-      .select()
-      .from(serviceVariants)
-      .where(eq(serviceVariants.serviceId, serviceId))
-      .orderBy(serviceVariants.name);
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to list variants");
-  }
+export async function listVariantsByService(
+   db: DatabaseInstance,
+   serviceId: string,
+) {
+   try {
+      return await db
+         .select()
+         .from(serviceVariants)
+         .where(eq(serviceVariants.serviceId, serviceId))
+         .orderBy(serviceVariants.name);
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to list variants");
+   }
 }
 
-export async function createVariant(db: DatabaseInstance, data: NewServiceVariant) {
-  try {
-    const [variant] = await db.insert(serviceVariants).values(data).returning();
-    return variant;
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to create variant");
-  }
+export async function createVariant(
+   db: DatabaseInstance,
+   data: NewServiceVariant,
+) {
+   try {
+      const [variant] = await db
+         .insert(serviceVariants)
+         .values(data)
+         .returning();
+      return variant;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to create variant");
+   }
 }
 
 export async function updateVariant(
-  db: DatabaseInstance,
-  id: string,
-  data: Partial<NewServiceVariant>,
+   db: DatabaseInstance,
+   id: string,
+   data: Partial<NewServiceVariant>,
 ) {
-  try {
-    const [updated] = await db.update(serviceVariants).set(data).where(eq(serviceVariants.id, id)).returning();
-    return updated;
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to update variant");
-  }
+   try {
+      const [updated] = await db
+         .update(serviceVariants)
+         .set(data)
+         .where(eq(serviceVariants.id, id))
+         .returning();
+      return updated;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to update variant");
+   }
 }
 
 export async function deleteVariant(db: DatabaseInstance, id: string) {
-  try {
-    await db.delete(serviceVariants).where(eq(serviceVariants.id, id));
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to delete variant");
-  }
+   try {
+      await db.delete(serviceVariants).where(eq(serviceVariants.id, id));
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to delete variant");
+   }
 }
 
 // ---------------------------------------------------------------------------
@@ -470,108 +544,111 @@ export async function deleteVariant(db: DatabaseInstance, id: string) {
 // ---------------------------------------------------------------------------
 
 export async function listSubscriptionsByTeam(
-  db: DatabaseInstance,
-  teamId: string,
-  status?: SubscriptionStatus,
+   db: DatabaseInstance,
+   teamId: string,
+   status?: SubscriptionStatus,
 ) {
-  try {
-    const conditions = [eq(contactSubscriptions.teamId, teamId)];
-    if (status) conditions.push(eq(contactSubscriptions.status, status));
-    return await db
-      .select()
-      .from(contactSubscriptions)
-      .where(and(...conditions))
-      .orderBy(contactSubscriptions.startDate);
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to list subscriptions");
-  }
+   try {
+      const conditions = [eq(contactSubscriptions.teamId, teamId)];
+      if (status) conditions.push(eq(contactSubscriptions.status, status));
+      return await db
+         .select()
+         .from(contactSubscriptions)
+         .where(and(...conditions))
+         .orderBy(contactSubscriptions.startDate);
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to list subscriptions");
+   }
 }
 
 export async function listSubscriptionsByContact(
-  db: DatabaseInstance,
-  contactId: string,
+   db: DatabaseInstance,
+   contactId: string,
 ) {
-  try {
-    return await db
-      .select()
-      .from(contactSubscriptions)
-      .where(eq(contactSubscriptions.contactId, contactId))
-      .orderBy(contactSubscriptions.startDate);
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to list contact subscriptions");
-  }
+   try {
+      return await db
+         .select()
+         .from(contactSubscriptions)
+         .where(eq(contactSubscriptions.contactId, contactId))
+         .orderBy(contactSubscriptions.startDate);
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to list contact subscriptions");
+   }
 }
 
 export async function getSubscription(db: DatabaseInstance, id: string) {
-  try {
-    const [sub] = await db
-      .select()
-      .from(contactSubscriptions)
-      .where(eq(contactSubscriptions.id, id));
-    return sub ?? null;
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to get subscription");
-  }
+   try {
+      const [sub] = await db
+         .select()
+         .from(contactSubscriptions)
+         .where(eq(contactSubscriptions.id, id));
+      return sub ?? null;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to get subscription");
+   }
 }
 
 export async function createSubscription(
-  db: DatabaseInstance,
-  data: NewContactSubscription,
+   db: DatabaseInstance,
+   data: NewContactSubscription,
 ) {
-  try {
-    const [sub] = await db.insert(contactSubscriptions).values(data).returning();
-    return sub;
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to create subscription");
-  }
+   try {
+      const [sub] = await db
+         .insert(contactSubscriptions)
+         .values(data)
+         .returning();
+      return sub;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to create subscription");
+   }
 }
 
 export async function updateSubscription(
-  db: DatabaseInstance,
-  id: string,
-  data: Partial<NewContactSubscription>,
+   db: DatabaseInstance,
+   id: string,
+   data: Partial<NewContactSubscription>,
 ) {
-  try {
-    const [updated] = await db
-      .update(contactSubscriptions)
-      .set(data)
-      .where(eq(contactSubscriptions.id, id))
-      .returning();
-    return updated;
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to update subscription");
-  }
+   try {
+      const [updated] = await db
+         .update(contactSubscriptions)
+         .set(data)
+         .where(eq(contactSubscriptions.id, id))
+         .returning();
+      return updated;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to update subscription");
+   }
 }
 
 export async function upsertSubscriptionByExternalId(
-  db: DatabaseInstance,
-  externalId: string,
-  data: NewContactSubscription,
+   db: DatabaseInstance,
+   externalId: string,
+   data: NewContactSubscription,
 ) {
-  try {
-    const [result] = await db
-      .insert(contactSubscriptions)
-      .values(data)
-      .onConflictDoUpdate({
-        target: contactSubscriptions.externalId,
-        set: {
-          status: data.status,
-          negotiatedPrice: data.negotiatedPrice,
-          endDate: data.endDate,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return result;
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to upsert subscription");
-  }
+   try {
+      const [result] = await db
+         .insert(contactSubscriptions)
+         .values(data)
+         .onConflictDoUpdate({
+            target: contactSubscriptions.externalId,
+            set: {
+               status: data.status,
+               negotiatedPrice: data.negotiatedPrice,
+               endDate: data.endDate,
+               updatedAt: new Date(),
+            },
+         })
+         .returning();
+      return result;
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to upsert subscription");
+   }
 }
 
 // ---------------------------------------------------------------------------
@@ -579,52 +656,58 @@ export async function upsertSubscriptionByExternalId(
 // ---------------------------------------------------------------------------
 
 export async function countActiveSubscriptionsByVariant(
-  db: DatabaseInstance,
-  teamId: string,
+   db: DatabaseInstance,
+   teamId: string,
 ) {
-  try {
-    return await db
-      .select({
-        variantId: contactSubscriptions.variantId,
-        count: count(),
-      })
-      .from(contactSubscriptions)
-      .where(
-        and(
-          eq(contactSubscriptions.teamId, teamId),
-          eq(contactSubscriptions.status, "active"),
-        ),
-      )
-      .groupBy(contactSubscriptions.variantId);
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to count subscriptions");
-  }
+   try {
+      return await db
+         .select({
+            variantId: contactSubscriptions.variantId,
+            count: count(),
+         })
+         .from(contactSubscriptions)
+         .where(
+            and(
+               eq(contactSubscriptions.teamId, teamId),
+               eq(contactSubscriptions.status, "active"),
+            ),
+         )
+         .groupBy(contactSubscriptions.variantId);
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to count subscriptions");
+   }
 }
 
 export async function listExpiringSoon(
-  db: DatabaseInstance,
-  teamId: string,
-  withinDays = 30,
+   db: DatabaseInstance,
+   teamId: string,
+   withinDays = 30,
 ) {
-  try {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() + withinDays);
-    return await db
-      .select()
-      .from(contactSubscriptions)
-      .where(
-        and(
-          eq(contactSubscriptions.teamId, teamId),
-          eq(contactSubscriptions.status, "active"),
-          lte(contactSubscriptions.endDate, cutoff.toISOString().slice(0, 10)),
-          gte(contactSubscriptions.endDate, new Date().toISOString().slice(0, 10)),
-        ),
-      );
-  } catch (err) {
-    propagateError(err);
-    throw AppError.database("Failed to list expiring subscriptions");
-  }
+   try {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() + withinDays);
+      return await db
+         .select()
+         .from(contactSubscriptions)
+         .where(
+            and(
+               eq(contactSubscriptions.teamId, teamId),
+               eq(contactSubscriptions.status, "active"),
+               lte(
+                  contactSubscriptions.endDate,
+                  cutoff.toISOString().slice(0, 10),
+               ),
+               gte(
+                  contactSubscriptions.endDate,
+                  new Date().toISOString().slice(0, 10),
+               ),
+            ),
+         );
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to list expiring subscriptions");
+   }
 }
 ```
 
@@ -640,6 +723,7 @@ git commit -m "feat(db): add services repository"
 ## Task 6: oRPC Router
 
 **Files:**
+
 - Create: `apps/web/src/integrations/orpc/router/services.ts`
 - Modify: `apps/web/src/integrations/orpc/router/index.ts`
 
@@ -648,23 +732,27 @@ git commit -m "feat(db): add services repository"
 ```typescript
 import { ORPCError } from "@orpc/server";
 import {
-  createService,
-  createSubscription,
-  createVariant,
-  deleteService,
-  deleteVariant,
-  getService,
-  getSubscription,
-  listExpiringSoon,
-  listServices,
-  listSubscriptionsByContact,
-  listSubscriptionsByTeam,
-  listVariantsByService,
-  updateService,
-  updateSubscription,
-  updateVariant,
+   createService,
+   createSubscription,
+   createVariant,
+   deleteService,
+   deleteVariant,
+   getService,
+   getSubscription,
+   listExpiringSoon,
+   listServices,
+   listSubscriptionsByContact,
+   listSubscriptionsByTeam,
+   listVariantsByService,
+   updateService,
+   updateSubscription,
+   updateVariant,
 } from "@packages/database/repositories/services-repository";
-import { contactSubscriptions, serviceVariants, services } from "@packages/database/schemas/services";
+import {
+   contactSubscriptions,
+   serviceVariants,
+   services,
+} from "@packages/database/schemas/services";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
@@ -674,26 +762,26 @@ import { protectedProcedure } from "../server";
 // ---------------------------------------------------------------------------
 
 const serviceSchema = createInsertSchema(services).pick({
-  name: true,
-  description: true,
-  category: true,
-  isActive: true,
+   name: true,
+   description: true,
+   category: true,
+   isActive: true,
 });
 
 const variantSchema = createInsertSchema(serviceVariants).pick({
-  name: true,
-  basePrice: true,
-  billingCycle: true,
-  isActive: true,
+   name: true,
+   basePrice: true,
+   billingCycle: true,
+   isActive: true,
 });
 
 const subscriptionSchema = createInsertSchema(contactSubscriptions).pick({
-  contactId: true,
-  variantId: true,
-  startDate: true,
-  endDate: true,
-  negotiatedPrice: true,
-  notes: true,
+   contactId: true,
+   variantId: true,
+   startDate: true,
+   endDate: true,
+   negotiatedPrice: true,
+   notes: true,
 });
 
 // ---------------------------------------------------------------------------
@@ -701,144 +789,168 @@ const subscriptionSchema = createInsertSchema(contactSubscriptions).pick({
 // ---------------------------------------------------------------------------
 
 export const getAll = protectedProcedure.handler(async ({ context }) => {
-  const { db, teamId } = context;
-  return listServices(db, teamId);
+   const { db, teamId } = context;
+   return listServices(db, teamId);
 });
 
 export const create = protectedProcedure
-  .input(serviceSchema)
-  .handler(async ({ context, input }) => {
-    const { db, teamId } = context;
-    return createService(db, { ...input, teamId });
-  });
+   .input(serviceSchema)
+   .handler(async ({ context, input }) => {
+      const { db, teamId } = context;
+      return createService(db, { ...input, teamId });
+   });
 
 export const update = protectedProcedure
-  .input(z.object({ id: z.string().uuid() }).merge(serviceSchema.partial()))
-  .handler(async ({ context, input }) => {
-    const { db, teamId } = context;
-    const service = await getService(db, input.id);
-    if (!service || service.teamId !== teamId) {
-      throw new ORPCError("NOT_FOUND", { message: "Serviço não encontrado." });
-    }
-    const { id, ...data } = input;
-    return updateService(db, id, data);
-  });
+   .input(z.object({ id: z.string().uuid() }).merge(serviceSchema.partial()))
+   .handler(async ({ context, input }) => {
+      const { db, teamId } = context;
+      const service = await getService(db, input.id);
+      if (!service || service.teamId !== teamId) {
+         throw new ORPCError("NOT_FOUND", {
+            message: "Serviço não encontrado.",
+         });
+      }
+      const { id, ...data } = input;
+      return updateService(db, id, data);
+   });
 
 export const remove = protectedProcedure
-  .input(z.object({ id: z.string().uuid() }))
-  .handler(async ({ context, input }) => {
-    const { db, teamId } = context;
-    const service = await getService(db, input.id);
-    if (!service || service.teamId !== teamId) {
-      throw new ORPCError("NOT_FOUND", { message: "Serviço não encontrado." });
-    }
-    await deleteService(db, input.id);
-    return { success: true };
-  });
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      const { db, teamId } = context;
+      const service = await getService(db, input.id);
+      if (!service || service.teamId !== teamId) {
+         throw new ORPCError("NOT_FOUND", {
+            message: "Serviço não encontrado.",
+         });
+      }
+      await deleteService(db, input.id);
+      return { success: true };
+   });
 
 // ---------------------------------------------------------------------------
 // Variants
 // ---------------------------------------------------------------------------
 
 export const getVariants = protectedProcedure
-  .input(z.object({ serviceId: z.string().uuid() }))
-  .handler(async ({ context, input }) => {
-    const { db, teamId } = context;
-    const service = await getService(db, input.serviceId);
-    if (!service || service.teamId !== teamId) {
-      throw new ORPCError("NOT_FOUND", { message: "Serviço não encontrado." });
-    }
-    return listVariantsByService(db, input.serviceId);
-  });
+   .input(z.object({ serviceId: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      const { db, teamId } = context;
+      const service = await getService(db, input.serviceId);
+      if (!service || service.teamId !== teamId) {
+         throw new ORPCError("NOT_FOUND", {
+            message: "Serviço não encontrado.",
+         });
+      }
+      return listVariantsByService(db, input.serviceId);
+   });
 
 export const createVariantProcedure = protectedProcedure
-  .input(z.object({ serviceId: z.string().uuid() }).merge(variantSchema))
-  .handler(async ({ context, input }) => {
-    const { db, teamId } = context;
-    const service = await getService(db, input.serviceId);
-    if (!service || service.teamId !== teamId) {
-      throw new ORPCError("NOT_FOUND", { message: "Serviço não encontrado." });
-    }
-    const { serviceId, ...variantData } = input;
-    return createVariant(db, { ...variantData, serviceId, teamId });
-  });
+   .input(z.object({ serviceId: z.string().uuid() }).merge(variantSchema))
+   .handler(async ({ context, input }) => {
+      const { db, teamId } = context;
+      const service = await getService(db, input.serviceId);
+      if (!service || service.teamId !== teamId) {
+         throw new ORPCError("NOT_FOUND", {
+            message: "Serviço não encontrado.",
+         });
+      }
+      const { serviceId, ...variantData } = input;
+      return createVariant(db, { ...variantData, serviceId, teamId });
+   });
 
 export const updateVariantProcedure = protectedProcedure
-  .input(z.object({ id: z.string().uuid() }).merge(variantSchema.partial()))
-  .handler(async ({ context, input }) => {
-    const { db, teamId } = context;
-    // Fetch variant to check ownership via teamId
-    const [variant] = await db
-      .select()
-      .from(serviceVariants)
-      .where(require("drizzle-orm").eq(serviceVariants.id, input.id));
-    if (!variant || variant.teamId !== teamId) {
-      throw new ORPCError("NOT_FOUND", { message: "Variante não encontrada." });
-    }
-    const { id, ...data } = input;
-    return updateVariant(db, id, data);
-  });
+   .input(z.object({ id: z.string().uuid() }).merge(variantSchema.partial()))
+   .handler(async ({ context, input }) => {
+      const { db, teamId } = context;
+      // Fetch variant to check ownership via teamId
+      const [variant] = await db
+         .select()
+         .from(serviceVariants)
+         .where(require("drizzle-orm").eq(serviceVariants.id, input.id));
+      if (!variant || variant.teamId !== teamId) {
+         throw new ORPCError("NOT_FOUND", {
+            message: "Variante não encontrada.",
+         });
+      }
+      const { id, ...data } = input;
+      return updateVariant(db, id, data);
+   });
 
 export const removeVariant = protectedProcedure
-  .input(z.object({ id: z.string().uuid() }))
-  .handler(async ({ context, input }) => {
-    const { db, teamId } = context;
-    const [variant] = await db
-      .select()
-      .from(serviceVariants)
-      .where(require("drizzle-orm").eq(serviceVariants.id, input.id));
-    if (!variant || variant.teamId !== teamId) {
-      throw new ORPCError("NOT_FOUND", { message: "Variante não encontrada." });
-    }
-    await deleteVariant(db, input.id);
-    return { success: true };
-  });
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      const { db, teamId } = context;
+      const [variant] = await db
+         .select()
+         .from(serviceVariants)
+         .where(require("drizzle-orm").eq(serviceVariants.id, input.id));
+      if (!variant || variant.teamId !== teamId) {
+         throw new ORPCError("NOT_FOUND", {
+            message: "Variante não encontrada.",
+         });
+      }
+      await deleteVariant(db, input.id);
+      return { success: true };
+   });
 
 // ---------------------------------------------------------------------------
 // Subscriptions
 // ---------------------------------------------------------------------------
 
 export const getAllSubscriptions = protectedProcedure
-  .input(z.object({ status: z.enum(["active", "completed", "cancelled"]).optional() }).optional())
-  .handler(async ({ context, input }) => {
-    const { db, teamId } = context;
-    return listSubscriptionsByTeam(db, teamId, input?.status);
-  });
+   .input(
+      z
+         .object({
+            status: z.enum(["active", "completed", "cancelled"]).optional(),
+         })
+         .optional(),
+   )
+   .handler(async ({ context, input }) => {
+      const { db, teamId } = context;
+      return listSubscriptionsByTeam(db, teamId, input?.status);
+   });
 
 export const getContactSubscriptions = protectedProcedure
-  .input(z.object({ contactId: z.string().uuid() }))
-  .handler(async ({ context, input }) => {
-    const { db } = context;
-    return listSubscriptionsByContact(db, input.contactId);
-  });
+   .input(z.object({ contactId: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      const { db } = context;
+      return listSubscriptionsByContact(db, input.contactId);
+   });
 
 export const createSubscriptionProcedure = protectedProcedure
-  .input(subscriptionSchema)
-  .handler(async ({ context, input }) => {
-    const { db, teamId } = context;
-    return createSubscription(db, { ...input, teamId, source: "manual" });
-    // NOTE: bill auto-generation is handled in Task 7 — add it here after implementing generateBillsForSubscription
-  });
+   .input(subscriptionSchema)
+   .handler(async ({ context, input }) => {
+      const { db, teamId } = context;
+      return createSubscription(db, { ...input, teamId, source: "manual" });
+      // NOTE: bill auto-generation is handled in Task 7 — add it here after implementing generateBillsForSubscription
+   });
 
 export const cancelSubscription = protectedProcedure
-  .input(z.object({ id: z.string().uuid() }))
-  .handler(async ({ context, input }) => {
-    const { db, teamId } = context;
-    const sub = await getSubscription(db, input.id);
-    if (!sub || sub.teamId !== teamId) {
-      throw new ORPCError("NOT_FOUND", { message: "Assinatura não encontrada." });
-    }
-    if (sub.source === "asaas") {
-      throw new ORPCError("FORBIDDEN", { message: "Assinaturas do Asaas não podem ser canceladas aqui." });
-    }
-    return updateSubscription(db, input.id, { status: "cancelled" });
-    // NOTE: cancel pending bills — handled in Task 7
-  });
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      const { db, teamId } = context;
+      const sub = await getSubscription(db, input.id);
+      if (!sub || sub.teamId !== teamId) {
+         throw new ORPCError("NOT_FOUND", {
+            message: "Assinatura não encontrada.",
+         });
+      }
+      if (sub.source === "asaas") {
+         throw new ORPCError("FORBIDDEN", {
+            message: "Assinaturas do Asaas não podem ser canceladas aqui.",
+         });
+      }
+      return updateSubscription(db, input.id, { status: "cancelled" });
+      // NOTE: cancel pending bills — handled in Task 7
+   });
 
-export const getExpiringSoon = protectedProcedure.handler(async ({ context }) => {
-  const { db, teamId } = context;
-  return listExpiringSoon(db, teamId, 30);
-});
+export const getExpiringSoon = protectedProcedure.handler(
+   async ({ context }) => {
+      const { db, teamId } = context;
+      return listExpiringSoon(db, teamId, 30);
+   },
+);
 ```
 
 **Step 2: Register in router index**
@@ -864,6 +976,7 @@ git commit -m "feat(orpc): add services router"
 ## Task 7: Auto-bill generation
 
 **Files:**
+
 - Create: `apps/web/src/integrations/orpc/router/services-bills.ts`
 - Modify: `apps/web/src/integrations/orpc/router/services.ts`
 
@@ -885,79 +998,87 @@ import type { ServiceVariant } from "@packages/database/schemas/services";
  * - hourly: no auto-generation (too granular)
  */
 export async function generateBillsForSubscription(
-  db: DatabaseInstance,
-  subscription: ContactSubscription,
-  variant: ServiceVariant,
-  serviceName: string,
+   db: DatabaseInstance,
+   subscription: ContactSubscription,
+   variant: ServiceVariant,
+   serviceName: string,
 ): Promise<void> {
-  const { billingCycle } = variant;
-  if (billingCycle === "hourly") return; // manual per session
+   const { billingCycle } = variant;
+   if (billingCycle === "hourly") return; // manual per session
 
-  const amount = (subscription.negotiatedPrice / 100).toFixed(2);
-  const start = new Date(subscription.startDate);
-  const end = subscription.endDate ? new Date(subscription.endDate) : null;
+   const amount = (subscription.negotiatedPrice / 100).toFixed(2);
+   const start = new Date(subscription.startDate);
+   const end = subscription.endDate ? new Date(subscription.endDate) : null;
 
-  const billsToCreate: {
-    teamId: string;
-    name: string;
-    description: string;
-    type: "receivable";
-    amount: string;
-    dueDate: string;
-    contactId: string;
-    subscriptionId: string;
-    status: "pending";
-  }[] = [];
+   const billsToCreate: {
+      teamId: string;
+      name: string;
+      description: string;
+      type: "receivable";
+      amount: string;
+      dueDate: string;
+      contactId: string;
+      subscriptionId: string;
+      status: "pending";
+   }[] = [];
 
-  const formatMonthYear = (d: Date) =>
-    d.toLocaleDateString("pt-BR", { month: "short", year: "numeric" });
+   const formatMonthYear = (d: Date) =>
+      d.toLocaleDateString("pt-BR", { month: "short", year: "numeric" });
 
-  const makeBill = (dueDate: Date, label: string) => ({
-    teamId: subscription.teamId,
-    name: `${serviceName} – ${variant.name}`,
-    description: `${serviceName} – ${variant.name} (${label})`,
-    type: "receivable" as const,
-    amount,
-    dueDate: dueDate.toISOString().slice(0, 10),
-    contactId: subscription.contactId,
-    subscriptionId: subscription.id,
-    status: "pending" as const,
-  });
+   const makeBill = (dueDate: Date, label: string) => ({
+      teamId: subscription.teamId,
+      name: `${serviceName} – ${variant.name}`,
+      description: `${serviceName} – ${variant.name} (${label})`,
+      type: "receivable" as const,
+      amount,
+      dueDate: dueDate.toISOString().slice(0, 10),
+      contactId: subscription.contactId,
+      subscriptionId: subscription.id,
+      status: "pending" as const,
+   });
 
-  if (billingCycle === "one_time") {
-    billsToCreate.push(makeBill(start, "Pagamento único"));
-  } else if (billingCycle === "annual") {
-    billsToCreate.push(makeBill(start, formatMonthYear(start)));
-  } else if (billingCycle === "monthly") {
-    const cursor = new Date(start);
-    const limit = end ?? (() => { const d = new Date(start); d.setFullYear(d.getFullYear() + 2); return d; })();
-    while (cursor <= limit) {
-      billsToCreate.push(makeBill(new Date(cursor), formatMonthYear(cursor)));
-      cursor.setMonth(cursor.getMonth() + 1);
-    }
-  }
+   if (billingCycle === "one_time") {
+      billsToCreate.push(makeBill(start, "Pagamento único"));
+   } else if (billingCycle === "annual") {
+      billsToCreate.push(makeBill(start, formatMonthYear(start)));
+   } else if (billingCycle === "monthly") {
+      const cursor = new Date(start);
+      const limit =
+         end ??
+         (() => {
+            const d = new Date(start);
+            d.setFullYear(d.getFullYear() + 2);
+            return d;
+         })();
+      while (cursor <= limit) {
+         billsToCreate.push(
+            makeBill(new Date(cursor), formatMonthYear(cursor)),
+         );
+         cursor.setMonth(cursor.getMonth() + 1);
+      }
+   }
 
-  if (billsToCreate.length === 0) return;
-  await db.insert(bills).values(billsToCreate);
+   if (billsToCreate.length === 0) return;
+   await db.insert(bills).values(billsToCreate);
 }
 
 /**
  * Cancel all pending bills for a subscription.
  */
 export async function cancelPendingBillsForSubscription(
-  db: DatabaseInstance,
-  subscriptionId: string,
+   db: DatabaseInstance,
+   subscriptionId: string,
 ): Promise<void> {
-  const { eq, and } = await import("drizzle-orm");
-  await db
-    .update(bills)
-    .set({ status: "cancelled" })
-    .where(
-      and(
-        eq(bills.subscriptionId as any, subscriptionId),
-        eq(bills.status, "pending"),
-      ),
-    );
+   const { eq, and } = await import("drizzle-orm");
+   await db
+      .update(bills)
+      .set({ status: "cancelled" })
+      .where(
+         and(
+            eq(bills.subscriptionId as any, subscriptionId),
+            eq(bills.status, "pending"),
+         ),
+      );
 }
 ```
 
@@ -974,29 +1095,44 @@ Then update the handler:
 
 ```typescript
 export const createSubscriptionProcedure = protectedProcedure
-  .input(subscriptionSchema)
-  .handler(async ({ context, input }) => {
-    const { db, teamId } = context;
+   .input(subscriptionSchema)
+   .handler(async ({ context, input }) => {
+      const { db, teamId } = context;
 
-    // Get the variant + service name for bill generation
-    const [variant] = await db.select().from(serviceVariants).where(eq(serviceVariants.id, input.variantId));
-    if (!variant || variant.teamId !== teamId) {
-      throw new ORPCError("NOT_FOUND", { message: "Variante não encontrada." });
-    }
-    const service = await getService(db, variant.serviceId);
-    if (!service) throw new ORPCError("NOT_FOUND", { message: "Serviço não encontrado." });
+      // Get the variant + service name for bill generation
+      const [variant] = await db
+         .select()
+         .from(serviceVariants)
+         .where(eq(serviceVariants.id, input.variantId));
+      if (!variant || variant.teamId !== teamId) {
+         throw new ORPCError("NOT_FOUND", {
+            message: "Variante não encontrada.",
+         });
+      }
+      const service = await getService(db, variant.serviceId);
+      if (!service)
+         throw new ORPCError("NOT_FOUND", {
+            message: "Serviço não encontrado.",
+         });
 
-    const sub = await createSubscription(db, { ...input, teamId, source: "manual" });
+      const sub = await createSubscription(db, {
+         ...input,
+         teamId,
+         source: "manual",
+      });
 
-    // Auto-generate bills (non-throwing — don't fail subscription creation if bills fail)
-    try {
-      await generateBillsForSubscription(db, sub, variant, service.name);
-    } catch (err) {
-      console.error("[services] Failed to generate bills for subscription:", err);
-    }
+      // Auto-generate bills (non-throwing — don't fail subscription creation if bills fail)
+      try {
+         await generateBillsForSubscription(db, sub, variant, service.name);
+      } catch (err) {
+         console.error(
+            "[services] Failed to generate bills for subscription:",
+            err,
+         );
+      }
 
-    return sub;
-  });
+      return sub;
+   });
 ```
 
 **Step 3: Wire into cancelSubscription**
@@ -1008,7 +1144,7 @@ import { cancelPendingBillsForSubscription } from "./services-bills";
 
 // inside cancelSubscription handler, after updateSubscription:
 await cancelPendingBillsForSubscription(db, input.id).catch((err) => {
-  console.error("[services] Failed to cancel bills for subscription:", err);
+   console.error("[services] Failed to cancel bills for subscription:", err);
 });
 ```
 
@@ -1024,6 +1160,7 @@ git commit -m "feat(services): auto-generate and cancel bills on subscription li
 ## Task 8: UI — Services route + catalog page
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/erp/services.tsx`
 - Create: `apps/web/src/features/services/ui/services-columns.tsx`
 
@@ -1246,6 +1383,7 @@ git commit -m "feat(services): add services catalog page and columns"
 ## Task 9: UI — Service form (create/edit with variants)
 
 **Files:**
+
 - Create: `apps/web/src/features/services/ui/services-form.tsx`
 
 **Step 1: Write the form**
@@ -1464,6 +1602,7 @@ git commit -m "feat(services): add service create/edit form with variants"
 ## Task 10: UI — Subscription form with live discount
 
 **Files:**
+
 - Create: `apps/web/src/features/services/ui/subscription-form.tsx`
 
 **Step 1: Write the subscription form**
@@ -1686,6 +1825,7 @@ git commit -m "feat(services): add subscription form with live discount calculat
 ## Task 11: UI — Revenue analytics header
 
 **Files:**
+
 - Create: `apps/web/src/features/services/ui/services-analytics-header.tsx`
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/erp/services.tsx`
 
@@ -1797,6 +1937,7 @@ git commit -m "feat(services): add revenue analytics header"
 ## Task 12: Feature gating — sidebar + billing overview
 
 **Files:**
+
 - Modify: `apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts`
 - Modify: `apps/web/src/features/billing/ui/billing-overview.tsx`
 
@@ -1843,9 +1984,10 @@ git commit -m "feat(services): add sidebar nav item and billing overview early a
 
 ---
 
-## ~~Task 13: Queue — Asaas webhook job definition~~ *(deferred)*
+## ~~Task 13: Queue — Asaas webhook job definition~~ _(deferred)_
 
 **Files:**
+
 - Create: `packages/queue/src/asaas-webhook.ts`
 
 **Step 1: Write the queue definition**
@@ -1858,24 +2000,24 @@ import { Queue } from "bullmq";
 export const ASAAS_WEBHOOK_QUEUE = "asaas-webhook";
 
 export interface AsaasWebhookJobData {
-  event: string;       // e.g. "PAYMENT_RECEIVED", "SUBSCRIPTION_CREATED"
-  payload: Record<string, unknown>;
-  teamId: string;      // resolved from the webhook token/secret
-  receivedAt: string;  // ISO timestamp
+   event: string; // e.g. "PAYMENT_RECEIVED", "SUBSCRIPTION_CREATED"
+   payload: Record<string, unknown>;
+   teamId: string; // resolved from the webhook token/secret
+   receivedAt: string; // ISO timestamp
 }
 
 export function createAsaasWebhookQueue(
-  connection: ConnectionOptions,
+   connection: ConnectionOptions,
 ): Queue<AsaasWebhookJobData> {
-  return new Queue<AsaasWebhookJobData>(ASAAS_WEBHOOK_QUEUE, {
-    connection,
-    defaultJobOptions: {
-      attempts: 5,
-      backoff: { type: "exponential", delay: 30_000 },
-      removeOnComplete: { count: 500 },
-      removeOnFail: { count: 1000 },
-    },
-  });
+   return new Queue<AsaasWebhookJobData>(ASAAS_WEBHOOK_QUEUE, {
+      connection,
+      defaultJobOptions: {
+         attempts: 5,
+         backoff: { type: "exponential", delay: 30_000 },
+         removeOnComplete: { count: 500 },
+         removeOnFail: { count: 1000 },
+      },
+   });
 }
 ```
 
@@ -1888,9 +2030,10 @@ git commit -m "feat(queue): add asaas-webhook queue definition"
 
 ---
 
-## ~~Task 14: Environment variable — ASAAS_WEBHOOK_TOKEN~~ *(deferred)*
+## ~~Task 14: Environment variable — ASAAS_WEBHOOK_TOKEN~~ _(deferred)_
 
 **Files:**
+
 - Modify: `packages/environment/src/server.ts`
 
 **Step 1: Add the env var**
@@ -1918,9 +2061,10 @@ git commit -m "feat(env): add ASAAS_WEBHOOK_TOKEN"
 
 ---
 
-## ~~Task 15: Server — Asaas webhook receiver~~ *(deferred)*
+## ~~Task 15: Server — Asaas webhook receiver~~ _(deferred)_
 
 **Files:**
+
 - Create: `apps/server/src/routes/webhooks/asaas.ts`
 - Modify: `apps/server/src/index.ts` (or main Elysia entry)
 
@@ -1938,38 +2082,42 @@ Locate the main Elysia app file (typically `index.ts` or `app.ts`).
 // apps/server/src/routes/webhooks/asaas.ts
 import { env } from "@packages/environment/server";
 import { createQueueConnection } from "@packages/queue/connection";
-import { ASAAS_WEBHOOK_QUEUE, createAsaasWebhookQueue } from "@packages/queue/asaas-webhook";
+import {
+   ASAAS_WEBHOOK_QUEUE,
+   createAsaasWebhookQueue,
+} from "@packages/queue/asaas-webhook";
 import Elysia from "elysia";
 
 const queueConnection = createQueueConnection(env.REDIS_URL);
 const asaasQueue = createAsaasWebhookQueue(queueConnection);
 
 export const asaasWebhookRoute = new Elysia().post(
-  "/webhooks/asaas",
-  async ({ body, headers, set }) => {
-    // Verify Asaas token (Asaas sends it as a header or query param)
-    // Asaas uses asaas-access-token header
-    const token = headers["asaas-access-token"];
-    if (!env.ASAAS_WEBHOOK_TOKEN || token !== env.ASAAS_WEBHOOK_TOKEN) {
-      set.status = 401;
-      return { error: "Unauthorized" };
-    }
+   "/webhooks/asaas",
+   async ({ body, headers, set }) => {
+      // Verify Asaas token (Asaas sends it as a header or query param)
+      // Asaas uses asaas-access-token header
+      const token = headers["asaas-access-token"];
+      if (!env.ASAAS_WEBHOOK_TOKEN || token !== env.ASAAS_WEBHOOK_TOKEN) {
+         set.status = 401;
+         return { error: "Unauthorized" };
+      }
 
-    const payload = body as Record<string, unknown>;
-    const event = typeof payload.event === "string" ? payload.event : "UNKNOWN";
+      const payload = body as Record<string, unknown>;
+      const event =
+         typeof payload.event === "string" ? payload.event : "UNKNOWN";
 
-    await asaasQueue.add(event, {
-      event,
-      payload,
-      teamId: "", // TODO: resolve teamId from token mapping once multi-tenant Asaas is needed
-      receivedAt: new Date().toISOString(),
-    });
+      await asaasQueue.add(event, {
+         event,
+         payload,
+         teamId: "", // TODO: resolve teamId from token mapping once multi-tenant Asaas is needed
+         receivedAt: new Date().toISOString(),
+      });
 
-    // Always return 200 immediately — Asaas will retry on non-2xx
-    set.status = 200;
-    return { received: true };
-  },
-  { type: "json" },
+      // Always return 200 immediately — Asaas will retry on non-2xx
+      set.status = 200;
+      return { received: true };
+   },
+   { type: "json" },
 );
 ```
 
@@ -1992,9 +2140,10 @@ git commit -m "feat(server): add POST /webhooks/asaas receiver"
 
 ---
 
-## ~~Task 16: Worker job — process-asaas-webhook~~ *(deferred)*
+## ~~Task 16: Worker job — process-asaas-webhook~~ _(deferred)_
 
 **Files:**
+
 - Create: `apps/worker/src/jobs/process-asaas-webhook.ts`
 
 **Step 1: Write the job**
@@ -2002,17 +2151,15 @@ git commit -m "feat(server): add POST /webhooks/asaas receiver"
 ```typescript
 // apps/worker/src/jobs/process-asaas-webhook.ts
 import type { DatabaseInstance } from "@packages/database/client";
+import { contacts } from "@packages/database/schema";
 import {
-  contacts,
-} from "@packages/database/schema";
-import {
-  createSubscription,
-  upsertSubscriptionByExternalId,
-  updateSubscription,
+   createSubscription,
+   upsertSubscriptionByExternalId,
+   updateSubscription,
 } from "@packages/database/repositories/services-repository";
 import {
-  createContact,
-  updateContact,
+   createContact,
+   updateContact,
 } from "@packages/database/repositories/contacts-repository";
 import type { AsaasWebhookJobData } from "@packages/queue/asaas-webhook";
 import { eq } from "drizzle-orm";
@@ -2022,126 +2169,179 @@ import { bills } from "@packages/database/schema";
 // Event handlers
 // ---------------------------------------------------------------------------
 
-async function handleCustomerCreated(db: DatabaseInstance, payload: Record<string, unknown>, teamId: string) {
-  const customer = payload.customer as Record<string, unknown>;
-  if (!customer) return;
-  // Upsert contact by externalId
-  const existing = await db.select().from(contacts).where(eq(contacts.externalId, String(customer.id))).limit(1);
-  if (existing.length > 0) {
-    await updateContact(db, existing[0].id, {
-      name: String(customer.name ?? ""),
-      email: customer.email ? String(customer.email) : undefined,
-      phone: customer.mobilePhone ? String(customer.mobilePhone) : undefined,
-    });
-  } else {
-    await createContact(db, {
+async function handleCustomerCreated(
+   db: DatabaseInstance,
+   payload: Record<string, unknown>,
+   teamId: string,
+) {
+   const customer = payload.customer as Record<string, unknown>;
+   if (!customer) return;
+   // Upsert contact by externalId
+   const existing = await db
+      .select()
+      .from(contacts)
+      .where(eq(contacts.externalId, String(customer.id)))
+      .limit(1);
+   if (existing.length > 0) {
+      await updateContact(db, existing[0].id, {
+         name: String(customer.name ?? ""),
+         email: customer.email ? String(customer.email) : undefined,
+         phone: customer.mobilePhone ? String(customer.mobilePhone) : undefined,
+      });
+   } else {
+      await createContact(db, {
+         teamId,
+         name: String(customer.name ?? "Sem nome"),
+         type: "cliente",
+         email: customer.email ? String(customer.email) : undefined,
+         phone: customer.mobilePhone ? String(customer.mobilePhone) : undefined,
+         source: "asaas",
+         externalId: String(customer.id),
+      });
+   }
+}
+
+async function handleCustomerUpdated(
+   db: DatabaseInstance,
+   payload: Record<string, unknown>,
+) {
+   const customer = payload.customer as Record<string, unknown>;
+   if (!customer) return;
+   const existing = await db
+      .select()
+      .from(contacts)
+      .where(eq(contacts.externalId, String(customer.id)))
+      .limit(1);
+   if (existing.length > 0) {
+      await updateContact(db, existing[0].id, {
+         name: customer.name ? String(customer.name) : undefined,
+         email: customer.email ? String(customer.email) : undefined,
+         phone: customer.mobilePhone ? String(customer.mobilePhone) : undefined,
+      });
+   }
+}
+
+async function handleSubscriptionCreated(
+   db: DatabaseInstance,
+   payload: Record<string, unknown>,
+   teamId: string,
+) {
+   const sub = payload.subscription as Record<string, unknown>;
+   if (!sub) return;
+   // Find contact by Asaas customer ID
+   const customer = payload.customer as Record<string, unknown>;
+   const contactRows = customer
+      ? await db
+           .select()
+           .from(contacts)
+           .where(eq(contacts.externalId, String(customer.id)))
+           .limit(1)
+      : [];
+   if (contactRows.length === 0) return; // contact not synced yet — will be created on CUSTOMER_CREATED
+
+   await upsertSubscriptionByExternalId(db, String(sub.id), {
       teamId,
-      name: String(customer.name ?? "Sem nome"),
-      type: "cliente",
-      email: customer.email ? String(customer.email) : undefined,
-      phone: customer.mobilePhone ? String(customer.mobilePhone) : undefined,
-      source: "asaas",
-      externalId: String(customer.id),
-    });
-  }
-}
-
-async function handleCustomerUpdated(db: DatabaseInstance, payload: Record<string, unknown>) {
-  const customer = payload.customer as Record<string, unknown>;
-  if (!customer) return;
-  const existing = await db.select().from(contacts).where(eq(contacts.externalId, String(customer.id))).limit(1);
-  if (existing.length > 0) {
-    await updateContact(db, existing[0].id, {
-      name: customer.name ? String(customer.name) : undefined,
-      email: customer.email ? String(customer.email) : undefined,
-      phone: customer.mobilePhone ? String(customer.mobilePhone) : undefined,
-    });
-  }
-}
-
-async function handleSubscriptionCreated(db: DatabaseInstance, payload: Record<string, unknown>, teamId: string) {
-  const sub = payload.subscription as Record<string, unknown>;
-  if (!sub) return;
-  // Find contact by Asaas customer ID
-  const customer = payload.customer as Record<string, unknown>;
-  const contactRows = customer
-    ? await db.select().from(contacts).where(eq(contacts.externalId, String(customer.id))).limit(1)
-    : [];
-  if (contactRows.length === 0) return; // contact not synced yet — will be created on CUSTOMER_CREATED
-
-  await upsertSubscriptionByExternalId(db, String(sub.id), {
-    teamId,
-    contactId: contactRows[0].id,
-    variantId: "", // TODO: map from Asaas plan to variant
-    startDate: String(sub.dateCreated ?? new Date().toISOString().slice(0, 10)),
-    endDate: sub.endDate ? String(sub.endDate) : undefined,
-    negotiatedPrice: sub.value ? Math.round(Number(sub.value) * 100) : 0,
-    source: "asaas",
-    externalId: String(sub.id),
-    status: "active",
-  });
-}
-
-async function handleSubscriptionUpdated(db: DatabaseInstance, payload: Record<string, unknown>) {
-  const sub = payload.subscription as Record<string, unknown>;
-  if (!sub) return;
-  const existing = await db
-    .select()
-    .from(require("@packages/database/schema").contactSubscriptions)
-    .where(eq(require("@packages/database/schema").contactSubscriptions.externalId, String(sub.id)))
-    .limit(1);
-  if (existing.length > 0) {
-    await updateSubscription(db, existing[0].id, {
-      negotiatedPrice: sub.value ? Math.round(Number(sub.value) * 100) : undefined,
+      contactId: contactRows[0].id,
+      variantId: "", // TODO: map from Asaas plan to variant
+      startDate: String(
+         sub.dateCreated ?? new Date().toISOString().slice(0, 10),
+      ),
       endDate: sub.endDate ? String(sub.endDate) : undefined,
-    });
-  }
+      negotiatedPrice: sub.value ? Math.round(Number(sub.value) * 100) : 0,
+      source: "asaas",
+      externalId: String(sub.id),
+      status: "active",
+   });
 }
 
-async function handleSubscriptionCancelled(db: DatabaseInstance, payload: Record<string, unknown>) {
-  const sub = payload.subscription as Record<string, unknown>;
-  if (!sub) return;
-  const { contactSubscriptions } = require("@packages/database/schema");
-  const existing = await db
-    .select()
-    .from(contactSubscriptions)
-    .where(eq(contactSubscriptions.externalId, String(sub.id)))
-    .limit(1);
-  if (existing.length > 0) {
-    await updateSubscription(db, existing[0].id, { status: "cancelled" });
-    // Cancel pending bills
-    const { and } = require("drizzle-orm");
-    await db
-      .update(bills)
-      .set({ status: "cancelled" })
-      .where(and(eq(bills.subscriptionId, existing[0].id), eq(bills.status, "pending")));
-  }
+async function handleSubscriptionUpdated(
+   db: DatabaseInstance,
+   payload: Record<string, unknown>,
+) {
+   const sub = payload.subscription as Record<string, unknown>;
+   if (!sub) return;
+   const existing = await db
+      .select()
+      .from(require("@packages/database/schema").contactSubscriptions)
+      .where(
+         eq(
+            require("@packages/database/schema").contactSubscriptions
+               .externalId,
+            String(sub.id),
+         ),
+      )
+      .limit(1);
+   if (existing.length > 0) {
+      await updateSubscription(db, existing[0].id, {
+         negotiatedPrice: sub.value
+            ? Math.round(Number(sub.value) * 100)
+            : undefined,
+         endDate: sub.endDate ? String(sub.endDate) : undefined,
+      });
+   }
 }
 
-async function handlePaymentReceived(db: DatabaseInstance, payload: Record<string, unknown>, teamId: string) {
-  const payment = payload.payment as Record<string, unknown>;
-  if (!payment) return;
-  // Find contact from customer
-  const customer = payload.customer as Record<string, unknown>;
-  if (!customer) return;
-  const contactRows = await db
-    .select()
-    .from(contacts)
-    .where(eq(contacts.externalId, String(customer.id)))
-    .limit(1);
-  if (contactRows.length === 0) return;
+async function handleSubscriptionCancelled(
+   db: DatabaseInstance,
+   payload: Record<string, unknown>,
+) {
+   const sub = payload.subscription as Record<string, unknown>;
+   if (!sub) return;
+   const { contactSubscriptions } = require("@packages/database/schema");
+   const existing = await db
+      .select()
+      .from(contactSubscriptions)
+      .where(eq(contactSubscriptions.externalId, String(sub.id)))
+      .limit(1);
+   if (existing.length > 0) {
+      await updateSubscription(db, existing[0].id, { status: "cancelled" });
+      // Cancel pending bills
+      const { and } = require("drizzle-orm");
+      await db
+         .update(bills)
+         .set({ status: "cancelled" })
+         .where(
+            and(
+               eq(bills.subscriptionId, existing[0].id),
+               eq(bills.status, "pending"),
+            ),
+         );
+   }
+}
 
-  // Create a transaction (income)
-  const { transactions } = require("@packages/database/schema");
-  const { sql } = require("drizzle-orm");
-  await db.insert(transactions).values({
-    teamId,
-    contactId: contactRows[0].id,
-    type: "income",
-    amount: String(Number(payment.value ?? 0).toFixed(2)),
-    date: String(payment.paymentDate ?? new Date().toISOString().slice(0, 10)),
-    description: `Pagamento Asaas — ${payment.description ?? payment.id}`,
-  }).onConflictDoNothing();
+async function handlePaymentReceived(
+   db: DatabaseInstance,
+   payload: Record<string, unknown>,
+   teamId: string,
+) {
+   const payment = payload.payment as Record<string, unknown>;
+   if (!payment) return;
+   // Find contact from customer
+   const customer = payload.customer as Record<string, unknown>;
+   if (!customer) return;
+   const contactRows = await db
+      .select()
+      .from(contacts)
+      .where(eq(contacts.externalId, String(customer.id)))
+      .limit(1);
+   if (contactRows.length === 0) return;
+
+   // Create a transaction (income)
+   const { transactions } = require("@packages/database/schema");
+   const { sql } = require("drizzle-orm");
+   await db
+      .insert(transactions)
+      .values({
+         teamId,
+         contactId: contactRows[0].id,
+         type: "income",
+         amount: String(Number(payment.value ?? 0).toFixed(2)),
+         date: String(
+            payment.paymentDate ?? new Date().toISOString().slice(0, 10),
+         ),
+         description: `Pagamento Asaas — ${payment.description ?? payment.id}`,
+      })
+      .onConflictDoNothing();
 }
 
 // ---------------------------------------------------------------------------
@@ -2149,37 +2349,37 @@ async function handlePaymentReceived(db: DatabaseInstance, payload: Record<strin
 // ---------------------------------------------------------------------------
 
 export async function processAsaasWebhook(
-  db: DatabaseInstance,
-  job: AsaasWebhookJobData,
+   db: DatabaseInstance,
+   job: AsaasWebhookJobData,
 ): Promise<void> {
-  const { event, payload, teamId } = job;
+   const { event, payload, teamId } = job;
 
-  console.log(`[Worker] Processing Asaas event: ${event}`);
+   console.log(`[Worker] Processing Asaas event: ${event}`);
 
-  switch (event) {
-    case "CUSTOMER_CREATED":
-      await handleCustomerCreated(db, payload, teamId);
-      break;
-    case "CUSTOMER_UPDATED":
-      await handleCustomerUpdated(db, payload);
-      break;
-    case "SUBSCRIPTION_CREATED":
-      await handleSubscriptionCreated(db, payload, teamId);
-      break;
-    case "SUBSCRIPTION_UPDATED":
-      await handleSubscriptionUpdated(db, payload);
-      break;
-    case "SUBSCRIPTION_CANCELLED":
-    case "SUBSCRIPTION_DELETED":
-      await handleSubscriptionCancelled(db, payload);
-      break;
-    case "PAYMENT_RECEIVED":
-    case "PAYMENT_CONFIRMED":
-      await handlePaymentReceived(db, payload, teamId);
-      break;
-    default:
-      console.log(`[Worker] Unhandled Asaas event: ${event}`);
-  }
+   switch (event) {
+      case "CUSTOMER_CREATED":
+         await handleCustomerCreated(db, payload, teamId);
+         break;
+      case "CUSTOMER_UPDATED":
+         await handleCustomerUpdated(db, payload);
+         break;
+      case "SUBSCRIPTION_CREATED":
+         await handleSubscriptionCreated(db, payload, teamId);
+         break;
+      case "SUBSCRIPTION_UPDATED":
+         await handleSubscriptionUpdated(db, payload);
+         break;
+      case "SUBSCRIPTION_CANCELLED":
+      case "SUBSCRIPTION_DELETED":
+         await handleSubscriptionCancelled(db, payload);
+         break;
+      case "PAYMENT_RECEIVED":
+      case "PAYMENT_CONFIRMED":
+         await handlePaymentReceived(db, payload, teamId);
+         break;
+      default:
+         console.log(`[Worker] Unhandled Asaas event: ${event}`);
+   }
 }
 ```
 
@@ -2192,9 +2392,10 @@ git commit -m "feat(worker): add Asaas webhook job processor"
 
 ---
 
-## ~~Task 17: Wire worker job into BullMQ worker~~ *(deferred)*
+## ~~Task 17: Wire worker job into BullMQ worker~~ _(deferred)_
 
 **Files:**
+
 - Create: `apps/worker/src/workers/asaas-webhook.ts`
 - Modify: `apps/worker/src/index.ts`
 
@@ -2205,29 +2406,35 @@ git commit -m "feat(worker): add Asaas webhook job processor"
 import type { DatabaseInstance } from "@packages/database/client";
 import type { ConnectionOptions } from "bullmq";
 import { Worker } from "bullmq";
-import { ASAAS_WEBHOOK_QUEUE, type AsaasWebhookJobData } from "@packages/queue/asaas-webhook";
+import {
+   ASAAS_WEBHOOK_QUEUE,
+   type AsaasWebhookJobData,
+} from "@packages/queue/asaas-webhook";
 import { processAsaasWebhook } from "../jobs/process-asaas-webhook";
 
 export function startAsaasWebhookWorker(
-  connection: ConnectionOptions,
-  db: DatabaseInstance,
+   connection: ConnectionOptions,
+   db: DatabaseInstance,
 ): Worker {
-  const worker = new Worker<AsaasWebhookJobData>(
-    ASAAS_WEBHOOK_QUEUE,
-    async (job) => {
-      await processAsaasWebhook(db, job.data);
-    },
-    {
-      connection,
-      concurrency: 5,
-    },
-  );
+   const worker = new Worker<AsaasWebhookJobData>(
+      ASAAS_WEBHOOK_QUEUE,
+      async (job) => {
+         await processAsaasWebhook(db, job.data);
+      },
+      {
+         connection,
+         concurrency: 5,
+      },
+   );
 
-  worker.on("failed", (job, err) => {
-    console.error(`[Worker] Asaas webhook job ${job?.id} failed:`, err.message);
-  });
+   worker.on("failed", (job, err) => {
+      console.error(
+         `[Worker] Asaas webhook job ${job?.id} failed:`,
+         err.message,
+      );
+   });
 
-  return worker;
+   return worker;
 }
 ```
 
@@ -2261,6 +2468,7 @@ git commit -m "feat(worker): register Asaas webhook BullMQ worker"
 ```bash
 bun run typecheck
 ```
+
 Expected: No errors.
 
 **Step 2: Run linter**
@@ -2268,6 +2476,7 @@ Expected: No errors.
 ```bash
 bun run check
 ```
+
 Expected: No errors.
 
 **Step 3: Start dev and smoke test**

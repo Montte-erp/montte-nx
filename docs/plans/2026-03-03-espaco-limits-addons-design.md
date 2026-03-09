@@ -3,6 +3,7 @@
 ## Summary
 
 Three changes:
+
 1. Rename all "team" UI references to "espaço" (pt-BR)
 2. Enforce espaço limits based on pay-as-you-go status
 3. Add platform add-on cards to the billing page (PAYG-gated)
@@ -14,6 +15,7 @@ Three changes:
 ### Files
 
 **`apps/web/src/layout/dashboard/ui/sidebar-scope-switcher.tsx`**
+
 - Section label "Teams" / "Projects" → "Espaços"
 - "New Project" button → "Novo Espaço"
 - Limit message "Project limit reached" → "Limite de espaços atingido"
@@ -21,6 +23,7 @@ Three changes:
 - New espaço creation only via the dedicated bottom button
 
 **`apps/web/src/features/organization/ui/create-team-form.tsx`**
+
 - Full pt-BR translation
 - Title: "Criar espaço"
 - Name field label: "Nome", placeholder: "Meu espaço"
@@ -34,9 +37,9 @@ Three changes:
 
 ### Logic
 
-| Status | Limit |
-|--------|-------|
-| Free (no card) | 1 espaço |
+| Status                   | Limit     |
+| ------------------------ | --------- |
+| Free (no card)           | 1 espaço  |
 | Pay-as-you-go (has card) | 6 espaços |
 
 ### Implementation
@@ -53,10 +56,10 @@ The scope switcher already reads `projectLimit` and `projectCount` to disable th
 
 ### Cards to display
 
-| Add-on | Price | Features |
-|--------|-------|----------|
-| Boost | R$199/mês | SSO, white label, 2FA enforcement, unlimited espaços |
-| Scale | R$599/mês | Boost + SAML, RBAC, audit logs, SLA 24h |
+| Add-on     | Price        | Features                                                    |
+| ---------- | ------------ | ----------------------------------------------------------- |
+| Boost      | R$199/mês    | SSO, white label, 2FA enforcement, unlimited espaços        |
+| Scale      | R$599/mês    | Boost + SAML, RBAC, audit logs, SLA 24h                     |
 | Enterprise | R$2.500+/mês | Scale + holdings, multiple CNPJs, SLA 4h, dedicated support |
 
 ### PAYG Gate

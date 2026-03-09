@@ -125,7 +125,10 @@ export function Combobox({
                   placeholder={searchPlaceholder}
                   value={search}
                />
-               <CommandList ref={refCallback} style={{ overflow: "auto", overscrollBehavior: "contain" }}>
+               <CommandList
+                  ref={refCallback}
+                  style={{ overflow: "auto", overscrollBehavior: "contain" }}
+               >
                   {filteredOptions.length === 0 && !showCreateOption && (
                      <CommandEmpty>{emptyMessage}</CommandEmpty>
                   )}

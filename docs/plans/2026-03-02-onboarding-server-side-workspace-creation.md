@@ -13,6 +13,7 @@
 ## Task 1: Add `createWorkspace` procedure to onboarding router
 
 **Files:**
+
 - Modify: `apps/web/src/integrations/orpc/router/onboarding.ts`
 
 **Step 1: Add `authenticatedProcedure` import**
@@ -112,6 +113,7 @@ Expected: No new type errors in `onboarding.ts`.
 ## Task 2: Update `use-create-workspace.ts` to call the oRPC procedure
 
 **Files:**
+
 - Modify: `apps/web/src/features/onboarding/hooks/use-create-workspace.ts`
 
 **Step 1: Rewrite `createWorkspace` async function**

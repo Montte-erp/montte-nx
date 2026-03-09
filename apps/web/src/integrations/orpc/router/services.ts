@@ -18,14 +18,14 @@ import {
    updateService,
    updateSubscription,
    updateVariant as updateVariantRepo,
-} from "@packages/database/repositories/services-repository";
-import { contacts } from "@packages/database/schemas/contacts";
+} from "@core/database/repositories/services-repository";
+import { contacts } from "@core/database/schemas/contacts";
 import {
    contactSubscriptions,
    services,
    serviceVariants,
-} from "@packages/database/schemas/services";
-import { getLogger } from "@packages/logging/root";
+} from "@core/database/schemas/services";
+import { getLogger } from "@core/logging/root";
 import { eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";

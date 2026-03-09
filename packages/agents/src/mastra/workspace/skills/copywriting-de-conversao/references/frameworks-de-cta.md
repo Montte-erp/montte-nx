@@ -21,24 +21,30 @@
 ## CTAs por contexto de blog
 
 ### 1) Fim do artigo
+
 Objetivo: converter após valor entregue.
 
 Exemplos:
+
 - “Baixe o checklist e revise seu post agora”
 - “Agende uma análise gratuita do seu blog”
 - “Veja o estudo de caso completo”
 
 ### 2) CTA inline (no meio do texto)
+
 Objetivo: acelerar ação em ponto-chave.
 
 Exemplos:
+
 - “Use este template e crie seu briefing em 5 minutos”
 - “Veja um exemplo real de headline aplicada”
 
 ### 3) CTA lateral (sidebar)
+
 Objetivo: reforço visual sem interromper leitura.
 
 Exemplos:
+
 - “Baixe o guia rápido de SEO para blogs”
 - “Receba o checklist semanal de conteúdo”
 
@@ -66,18 +72,22 @@ Exemplos:
 ## Exemplos prontos (pt-BR)
 
 ### Diagnóstico
+
 - “Agende um diagnóstico gratuito do seu blog”
 - “Faça a análise expressa do seu SEO”
 
 ### Checklist
+
 - “Baixe o checklist de revisão SEO em 10 minutos”
 - “Pegue a lista de verificação e aplique hoje”
 
 ### Template
+
 - “Use o template de briefing e publique hoje”
 - “Baixe o modelo de pauta e organize sua semana”
 
 ### Tutorial
+
 - “Assista ao tutorial e otimize seu título agora”
 - “Veja o passo a passo e ajuste em 5 minutos”
 
@@ -105,12 +115,15 @@ Exemplos:
 ## Ajustes por nível de consciência
 
 ### Leitor frio (descoberta)
+
 ✅ “Entenda o checklist básico de SEO”
 
 ### Leitor morno (consideração)
+
 ✅ “Faça a análise gratuita do seu conteúdo”
 
 ### Leitor quente (decisão)
+
 ✅ “Agende a consultoria e comece esta semana”
 
 ---

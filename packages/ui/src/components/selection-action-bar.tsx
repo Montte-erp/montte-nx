@@ -63,8 +63,7 @@ function SelectionActionBar({
    );
 }
 
-interface SelectionActionButtonProps
-   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface SelectionActionButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
    variant?: "default" | "destructive";
    icon?: React.ReactNode;
 }

@@ -14,11 +14,13 @@ The `F-O-T/libraries` monorepo is the **first place to check** before installing
 ## When to Use
 
 **Always use this skill before:**
+
 - Running `bun add <some-external-package>`
 - Importing from a library not already in the project
 - Needing utility functionality (QR codes, crypto, money, content, markdown, etc.)
 
 **Also use when:**
+
 - An `@f-o-t` library covers the domain but is missing a method → request the feature + open discussion issue
 - An `@f-o-t` library has a bug → report it
 - You find yourself writing a helper that logically belongs in `@f-o-t` → propose it
@@ -27,20 +29,21 @@ The `F-O-T/libraries` monorepo is the **first place to check** before installing
 
 Check the root `package.json` catalog under `"fot"` for currently installed versions.
 
-| Package | Domain |
-|---------|--------|
-| `@f-o-t/qrcode` | QR code generation as PNG `Uint8Array` |
-| `@f-o-t/money` | BRL currency with scale 6 (micro-precision) |
-| `@f-o-t/condition-evaluator` | Condition evaluation engine |
-| `@f-o-t/content-analysis` | Content analysis utilities |
-| `@f-o-t/markdown` | Markdown processing |
-| `@f-o-t/spelling` | Spelling utilities |
-| `@f-o-t/crypto` | PKCS#12, CMS/PKCS#7, hashing, PEM |
-| `@f-o-t/asn1` | ASN.1 DER encoding/decoding |
-| `@f-o-t/digital-certificate` | Brazilian A1 certificate handling |
-| `@f-o-t/e-signature` | PAdES PDF signing (ICP-Brasil) |
+| Package                      | Domain                                      |
+| ---------------------------- | ------------------------------------------- |
+| `@f-o-t/qrcode`              | QR code generation as PNG `Uint8Array`      |
+| `@f-o-t/money`               | BRL currency with scale 6 (micro-precision) |
+| `@f-o-t/condition-evaluator` | Condition evaluation engine                 |
+| `@f-o-t/content-analysis`    | Content analysis utilities                  |
+| `@f-o-t/markdown`            | Markdown processing                         |
+| `@f-o-t/spelling`            | Spelling utilities                          |
+| `@f-o-t/crypto`              | PKCS#12, CMS/PKCS#7, hashing, PEM           |
+| `@f-o-t/asn1`                | ASN.1 DER encoding/decoding                 |
+| `@f-o-t/digital-certificate` | Brazilian A1 certificate handling           |
+| `@f-o-t/e-signature`         | PAdES PDF signing (ICP-Brasil)              |
 
 Discover all published packages:
+
 ```bash
 npm search @f-o-t
 gh repo view F-O-T/libraries
@@ -83,12 +86,14 @@ gh issue create --repo F-O-T/libraries \
 ```
 
 **What to include:**
+
 - The exact API you need (method signature, input/output types)
 - Your use case — why it belongs in `@f-o-t`
 - Example usage showing what you want to call
 - The workaround you're using in the meantime (if any)
 
 **Example:**
+
 ```
 Title: [@f-o-t/qrcode] Add browser-compatible dataURL helper
 
@@ -115,6 +120,7 @@ gh issue create --repo F-O-T/libraries \
 ```
 
 Use this for:
+
 - Workarounds you wrote inline that should be a proper API
 - External packages you installed that could be replaced
 - Patterns repeated across projects that belong in a shared lib
@@ -131,12 +137,12 @@ gh issue create --repo F-O-T/libraries \
 
 ## Red Flags — STOP Before Installing
 
-| Thought | Action |
-|---------|--------|
-| "I need a QR code library" | Check `@f-o-t/qrcode` |
-| "I need a currency formatter" | Check `@f-o-t/money` |
-| "I'll just `bun add` this package" | Stop — check `@f-o-t` catalog first |
-| "This library is missing X method" | Request it + open discussion issue |
+| Thought                            | Action                                       |
+| ---------------------------------- | -------------------------------------------- |
+| "I need a QR code library"         | Check `@f-o-t/qrcode`                        |
+| "I need a currency formatter"      | Check `@f-o-t/money`                         |
+| "I'll just `bun add` this package" | Stop — check `@f-o-t` catalog first          |
+| "This library is missing X method" | Request it + open discussion issue           |
 | "I wrote a helper for this inline" | Open discussion issue to move it to `@f-o-t` |
 
 ## Installing an @f-o-t Package

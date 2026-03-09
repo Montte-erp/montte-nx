@@ -23,8 +23,8 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
+      "@core/environment": "workspace:*",
       "@octokit/rest": "^21.1.1",
-      "@packages/environment": "workspace:*",
       "zod": "catalog:validation"
    },
    "devDependencies": {

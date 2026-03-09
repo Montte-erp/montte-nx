@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/server";
-import type { DatabaseInstance } from "@packages/database/client";
-import { team, teamMember } from "@packages/database/schemas/auth";
+import type { DatabaseInstance } from "@core/database/client";
+import { team, teamMember } from "@core/database/schemas/auth";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../server";

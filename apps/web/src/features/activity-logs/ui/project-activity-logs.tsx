@@ -15,7 +15,7 @@ import {
    SelectValue,
 } from "@packages/ui/components/select";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import { getInitials } from "@packages/utils/text";
+import { getInitials } from "@core/utils/text";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Download, Filter, Search } from "lucide-react";

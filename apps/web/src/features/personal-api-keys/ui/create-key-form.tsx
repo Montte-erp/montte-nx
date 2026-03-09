@@ -1,4 +1,4 @@
-import type { ScopeAccess } from "@packages/database/schemas/personal-api-key";
+import type { ScopeAccess } from "@core/database/schemas/personal-api-key";
 import { Button } from "@packages/ui/components/button";
 import {
    CredenzaDescription,

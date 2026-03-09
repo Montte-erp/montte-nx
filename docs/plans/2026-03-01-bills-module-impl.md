@@ -13,6 +13,7 @@
 ## Task 1: Database Schema — bills + recurrenceSettings
 
 **Files:**
+
 - Create: `packages/database/src/schemas/bills.ts`
 - Modify: `packages/database/src/schema.ts`
 
@@ -53,7 +54,9 @@ export const recurrenceFrequencyEnum = pgEnum("recurrence_frequency", [
 ]);
 
 export const recurrenceSettings = pgTable("recurrence_settings", {
-   id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
+   id: uuid("id")
+      .default(sql`pg_catalog.gen_random_uuid()`)
+      .primaryKey(),
    teamId: uuid("team_id").notNull(),
    frequency: recurrenceFrequencyEnum("frequency").notNull(),
    windowMonths: integer("window_months").notNull().default(3),
@@ -66,7 +69,9 @@ export const recurrenceSettings = pgTable("recurrence_settings", {
 export const bills = pgTable(
    "bills",
    {
-      id: uuid("id").default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
       teamId: uuid("team_id").notNull(),
       name: text("name").notNull(),
       description: text("description"),
@@ -151,9 +156,11 @@ export type NewRecurrenceSetting = typeof recurrenceSettings.$inferInsert;
 **Step 2: Export from schema barrel**
 
 In `packages/database/src/schema.ts`, find the `// Finance` section and add:
+
 ```typescript
 export * from "./schemas/bills";
 ```
+
 Add it after `export * from "./schemas/bank-accounts";`.
 
 **Step 3: Verify TypeScript compiles**
@@ -161,6 +168,7 @@ Add it after `export * from "./schemas/bank-accounts";`.
 ```bash
 cd /home/yorizel/Documents/montte-nx && bun run typecheck 2>&1 | head -40
 ```
+
 Expected: no errors in the new file.
 
 **Step 4: Ask the user to push the schema**
@@ -179,6 +187,7 @@ git commit -m "feat(database): add bills and recurrence_settings schema"
 ## Task 2: Database Repository — bills
 
 **Files:**
+
 - Create: `packages/database/src/repositories/bills-repository.ts`
 
 **Step 1: Create the repository**
@@ -392,6 +401,7 @@ export async function getLastBillForRecurrenceGroup(
 ```bash
 bun run typecheck 2>&1 | head -40
 ```
+
 Expected: no errors.
 
 **Step 3: Commit**
@@ -406,6 +416,7 @@ git commit -m "feat(database): add bills repository with list/create/update/dele
 ## Task 3: oRPC Router — bills
 
 **Files:**
+
 - Create: `apps/web/src/integrations/orpc/router/bills.ts`
 - Modify: `apps/web/src/integrations/orpc/router/index.ts`
 
@@ -433,14 +444,28 @@ import { protectedProcedure } from "../server";
 // Helpers
 // =============================================================================
 
-function computeDueDate(startDate: string, frequency: string, offset: number): string {
+function computeDueDate(
+   startDate: string,
+   frequency: string,
+   offset: number,
+): string {
    const d = new Date(startDate);
    switch (frequency) {
-      case "weekly":    d.setDate(d.getDate() + 7 * offset); break;
-      case "biweekly":  d.setDate(d.getDate() + 14 * offset); break;
-      case "monthly":   d.setMonth(d.getMonth() + offset); break;
-      case "quarterly": d.setMonth(d.getMonth() + 3 * offset); break;
-      case "yearly":    d.setFullYear(d.getFullYear() + offset); break;
+      case "weekly":
+         d.setDate(d.getDate() + 7 * offset);
+         break;
+      case "biweekly":
+         d.setDate(d.getDate() + 14 * offset);
+         break;
+      case "monthly":
+         d.setMonth(d.getMonth() + offset);
+         break;
+      case "quarterly":
+         d.setMonth(d.getMonth() + 3 * offset);
+         break;
+      case "yearly":
+         d.setFullYear(d.getFullYear() + offset);
+         break;
    }
    return d.toISOString().split("T")[0];
 }
@@ -453,7 +478,9 @@ async function verifyBillRefs(
    if (input.bankAccountId) {
       const account = await getBankAccount(db, input.bankAccountId);
       if (!account || account.teamId !== teamId) {
-         throw new ORPCError("BAD_REQUEST", { message: "Conta bancária inválida." });
+         throw new ORPCError("BAD_REQUEST", {
+            message: "Conta bancária inválida.",
+         });
       }
    }
    if (input.categoryId) {
@@ -491,7 +518,11 @@ const installmentSchema = z.object({
 const recurrenceSchema = z.object({
    frequency: z.enum(["weekly", "biweekly", "monthly", "quarterly", "yearly"]),
    windowMonths: z.number().int().min(1).max(12).default(3),
-   endsAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+   endsAt: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable()
+      .optional(),
 });
 
 // =============================================================================
@@ -500,15 +531,19 @@ const recurrenceSchema = z.object({
 
 export const getAll = protectedProcedure
    .input(
-      z.object({
-         type: z.enum(["payable", "receivable"]).optional(),
-         status: z.enum(["pending", "paid", "cancelled", "overdue"]).optional(),
-         categoryId: z.string().uuid().optional(),
-         month: z.number().int().min(1).max(12).optional(),
-         year: z.number().int().optional(),
-         page: z.number().int().positive().default(1),
-         pageSize: z.number().int().positive().max(100).default(20),
-      }).optional(),
+      z
+         .object({
+            type: z.enum(["payable", "receivable"]).optional(),
+            status: z
+               .enum(["pending", "paid", "cancelled", "overdue"])
+               .optional(),
+            categoryId: z.string().uuid().optional(),
+            month: z.number().int().min(1).max(12).optional(),
+            year: z.number().int().optional(),
+            page: z.number().int().positive().default(1),
+            pageSize: z.number().int().positive().max(100).default(20),
+         })
+         .optional(),
    )
    .handler(async ({ context, input }) => {
       const { db, teamId } = context;
@@ -537,26 +572,32 @@ export const create = protectedProcedure
       // Installment group
       if (installment) {
          const groupId = crypto.randomUUID();
-         const billsToCreate = Array.from({ length: installment.count }, (_, i) => {
-            let amount = bill.amount;
-            if (installment.mode === "equal") {
-               amount = (Number(bill.amount) / installment.count).toFixed(2);
-            } else if (installment.mode === "irregular" && installment.amounts?.[i]) {
-               amount = installment.amounts[i];
-            }
-            // Due date shifts by 1 month per installment
-            const dueDate = computeDueDate(bill.dueDate, "monthly", i);
-            return {
-               ...bill,
-               teamId,
-               amount,
-               dueDate,
-               installmentGroupId: groupId,
-               installmentIndex: i + 1,
-               installmentTotal: installment.count,
-               name: `${bill.name} (${i + 1}/${installment.count})`,
-            };
-         });
+         const billsToCreate = Array.from(
+            { length: installment.count },
+            (_, i) => {
+               let amount = bill.amount;
+               if (installment.mode === "equal") {
+                  amount = (Number(bill.amount) / installment.count).toFixed(2);
+               } else if (
+                  installment.mode === "irregular" &&
+                  installment.amounts?.[i]
+               ) {
+                  amount = installment.amounts[i];
+               }
+               // Due date shifts by 1 month per installment
+               const dueDate = computeDueDate(bill.dueDate, "monthly", i);
+               return {
+                  ...bill,
+                  teamId,
+                  amount,
+                  dueDate,
+                  installmentGroupId: groupId,
+                  installmentIndex: i + 1,
+                  installmentTotal: installment.count,
+                  name: `${bill.name} (${i + 1}/${installment.count})`,
+               };
+            },
+         );
          return createBillsBatch(db, billsToCreate);
       }
 
@@ -577,7 +618,8 @@ export const create = protectedProcedure
          let i = 0;
          let nextDue = new Date(bill.dueDate);
          while (nextDue <= windowEnd) {
-            if (recurrence.endsAt && nextDue > new Date(recurrence.endsAt)) break;
+            if (recurrence.endsAt && nextDue > new Date(recurrence.endsAt))
+               break;
             billsToCreate.push({
                ...bill,
                teamId,
@@ -585,7 +627,9 @@ export const create = protectedProcedure
                recurrenceGroupId: setting.id,
             });
             i++;
-            nextDue = new Date(computeDueDate(bill.dueDate, recurrence.frequency, i));
+            nextDue = new Date(
+               computeDueDate(bill.dueDate, recurrence.frequency, i),
+            );
          }
 
          return createBillsBatch(db, billsToCreate);
@@ -603,7 +647,9 @@ export const update = protectedProcedure
          throw new ORPCError("NOT_FOUND", { message: "Conta não encontrada." });
       }
       if (existing.status === "paid") {
-         throw new ORPCError("BAD_REQUEST", { message: "Não é possível editar uma conta já paga." });
+         throw new ORPCError("BAD_REQUEST", {
+            message: "Não é possível editar uma conta já paga.",
+         });
       }
 
       await verifyBillRefs(db, teamId, data);
@@ -614,7 +660,9 @@ export const pay = protectedProcedure
    .input(
       z.object({
          id: z.string().uuid(),
-         amount: z.string().refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0),
+         amount: z
+            .string()
+            .refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0),
          date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
          bankAccountId: z.string().uuid().nullable().optional(),
       }),
@@ -665,14 +713,15 @@ export const unpay = protectedProcedure
          throw new ORPCError("NOT_FOUND", { message: "Conta não encontrada." });
       }
       if (bill.status !== "paid") {
-         throw new ORPCError("BAD_REQUEST", { message: "Conta não está paga." });
+         throw new ORPCError("BAD_REQUEST", {
+            message: "Conta não está paga.",
+         });
       }
 
       // Delete linked transaction if it exists
       if (bill.transactionId) {
-         const { deleteTransaction } = await import(
-            "@packages/database/repositories/transactions-repository"
-         );
+         const { deleteTransaction } =
+            await import("@packages/database/repositories/transactions-repository");
          await deleteTransaction(db, bill.transactionId);
       }
 
@@ -706,7 +755,10 @@ export const remove = protectedProcedure
          throw new ORPCError("NOT_FOUND", { message: "Conta não encontrada." });
       }
       if (bill.status === "paid") {
-         throw new ORPCError("BAD_REQUEST", { message: "Não é possível excluir uma conta já paga. Cancele primeiro." });
+         throw new ORPCError("BAD_REQUEST", {
+            message:
+               "Não é possível excluir uma conta já paga. Cancele primeiro.",
+         });
       }
 
       await deleteBill(db, input.id);
@@ -718,7 +770,9 @@ export const createFromTransaction = protectedProcedure
       z.object({
          transactionId: z.string().uuid(),
          bill: billBaseSchema.omit({ amount: true }).partial({ dueDate: true }),
-         amount: z.string().refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0),
+         amount: z
+            .string()
+            .refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0),
          installment: installmentSchema.optional(),
          recurrence: recurrenceSchema.optional(),
       }),
@@ -733,7 +787,8 @@ export const createFromTransaction = protectedProcedure
             bill: {
                ...input.bill,
                amount: input.amount,
-               dueDate: input.bill.dueDate ?? new Date().toISOString().split("T")[0],
+               dueDate:
+                  input.bill.dueDate ?? new Date().toISOString().split("T")[0],
                type: input.bill.type ?? "payable",
                name: input.bill.name ?? "",
             },
@@ -748,13 +803,17 @@ export const createFromTransaction = protectedProcedure
 **Step 2: Register in the router index**
 
 In `apps/web/src/integrations/orpc/router/index.ts`, add:
+
 ```typescript
 import * as billsRouter from "./bills";
 ```
+
 And in the export default object:
+
 ```typescript
 bills: billsRouter,
 ```
+
 Add both after the `bankAccounts` entries.
 
 **Step 3: Verify TypeScript compiles**
@@ -775,6 +834,7 @@ git commit -m "feat(api): add bills oRPC router with create/pay/unpay/installmen
 ## Task 4: Queue — bill recurrence
 
 **Files:**
+
 - Create: `packages/queue/src/bill-recurrence.ts`
 
 **Step 1: Create the queue definition**
@@ -818,6 +878,7 @@ git commit -m "feat(queue): add bill-recurrence queue definition"
 ## Task 5: Worker — bill recurrence cron
 
 **Files:**
+
 - Create: `apps/worker/src/jobs/generate-bill-occurrences.ts`
 - Create: `apps/worker/src/workers/bill-recurrence.ts`
 - Modify: `apps/worker/src/scheduler.ts`
@@ -837,16 +898,28 @@ import {
 function computeNextDueDate(from: string, frequency: string): string {
    const d = new Date(from);
    switch (frequency) {
-      case "weekly":    d.setDate(d.getDate() + 7); break;
-      case "biweekly":  d.setDate(d.getDate() + 14); break;
-      case "monthly":   d.setMonth(d.getMonth() + 1); break;
-      case "quarterly": d.setMonth(d.getMonth() + 3); break;
-      case "yearly":    d.setFullYear(d.getFullYear() + 1); break;
+      case "weekly":
+         d.setDate(d.getDate() + 7);
+         break;
+      case "biweekly":
+         d.setDate(d.getDate() + 14);
+         break;
+      case "monthly":
+         d.setMonth(d.getMonth() + 1);
+         break;
+      case "quarterly":
+         d.setMonth(d.getMonth() + 3);
+         break;
+      case "yearly":
+         d.setFullYear(d.getFullYear() + 1);
+         break;
    }
    return d.toISOString().split("T")[0];
 }
 
-export async function generateBillOccurrences(db: DatabaseInstance): Promise<void> {
+export async function generateBillOccurrences(
+   db: DatabaseInstance,
+): Promise<void> {
    const settings = await getActiveRecurrenceSettings(db);
 
    for (const setting of settings) {
@@ -861,7 +934,8 @@ export async function generateBillOccurrences(db: DatabaseInstance): Promise<voi
       let nextDue = computeNextDueDate(lastBill.dueDate, setting.frequency);
 
       while (new Date(nextDue) <= windowEnd) {
-         if (setting.endsAt && new Date(nextDue) > new Date(setting.endsAt)) break;
+         if (setting.endsAt && new Date(nextDue) > new Date(setting.endsAt))
+            break;
 
          toCreate.push({
             teamId: lastBill.teamId,
@@ -891,6 +965,7 @@ export async function generateBillOccurrences(db: DatabaseInstance): Promise<voi
 **Step 2: Register as a scheduler job**
 
 In `apps/worker/src/scheduler.ts`, import and add a daily cron:
+
 ```typescript
 import { generateBillOccurrences } from "./jobs/generate-bill-occurrences";
 
@@ -925,6 +1000,7 @@ git commit -m "feat(worker): add daily bill recurrence generation cron job"
 ## Task 6: Feature UI — bills columns
 
 **Files:**
+
 - Create: `apps/web/src/features/bills/ui/bills-columns.tsx`
 
 **Step 1: Create the columns file**
@@ -1156,6 +1232,7 @@ git commit -m "feat(bills): add bills table columns with status badge and pay/ed
 ## Task 7: Feature UI — installment preview
 
 **Files:**
+
 - Create: `apps/web/src/features/bills/ui/bill-installment-preview.tsx`
 
 **Step 1: Create the component**
@@ -1220,6 +1297,7 @@ git commit -m "feat(bills): add installment preview list component"
 ## Task 8: Feature UI — bill pay credenza
 
 **Files:**
+
 - Create: `apps/web/src/features/bills/ui/bill-pay-credenza.tsx`
 
 **Step 1: Create the component**
@@ -1400,6 +1478,7 @@ git commit -m "feat(bills): add bill pay/receive confirmation credenza"
 ## Task 9: Feature UI — bills form (create/edit)
 
 **Files:**
+
 - Create: `apps/web/src/features/bills/ui/bills-form.tsx`
 
 **Step 1: Create the form**
@@ -1876,6 +1955,7 @@ git commit -m "feat(bills): add bill create/edit form with installment and recur
 ## Task 10: Feature UI — bill from transaction credenza
 
 **Files:**
+
 - Create: `apps/web/src/features/bills/ui/bill-from-transaction-credenza.tsx`
 
 **Step 1: Create the component**
@@ -2128,6 +2208,7 @@ git commit -m "feat(bills): add bill-from-transaction credenza for parcelar/reco
 ## Task 11: Route — `/finance/bills`
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/finance/bills.tsx`
 
 **Step 1: Create the route**
@@ -2415,6 +2496,7 @@ git commit -m "feat(bills): add /finance/bills route with payable/receivable tab
 ## Task 12: Sidebar navigation + transaction actions
 
 **Files:**
+
 - Modify: `apps/web/src/layout/dashboard/ui/sidebar-nav-items.ts`
 - Modify: `apps/web/src/features/transactions/ui/transactions-columns.tsx` (add actions to `⋯` menu)
 
@@ -2475,6 +2557,7 @@ The `onInstallment` and `onRecurring` callbacks open `BillFromTransactionCredenz
 **Step 4: Wire callbacks in the transactions page**
 
 In the transactions page, pass the new callbacks to `buildTransactionColumns`:
+
 ```typescript
 const handleInstallment = useCallback((tx: TransactionRow) => {
    openCredenza({
@@ -2521,6 +2604,7 @@ git commit -m "feat(bills): add sidebar nav item and transaction actions (parcel
 ```bash
 bun run typecheck 2>&1 | head -60
 ```
+
 Expected: no errors in new files.
 
 **Step 2: Run lint**
@@ -2528,6 +2612,7 @@ Expected: no errors in new files.
 ```bash
 bun run check 2>&1 | head -60
 ```
+
 Fix any Biome errors reported.
 
 **Step 3: Run tests**
@@ -2535,6 +2620,7 @@ Fix any Biome errors reported.
 ```bash
 bun run test 2>&1 | tail -20
 ```
+
 Expected: existing tests still pass.
 
 **Step 4: Final commit**
@@ -2548,18 +2634,18 @@ git commit -m "chore: finalize bills module implementation"
 
 ## Summary
 
-| Task | What it does |
-|------|-------------|
-| 1 | Schema: `bills` + `recurrence_settings` tables |
-| 2 | Repository: CRUD + batch create + recurrence queries |
-| 3 | oRPC router: getAll/create/update/pay/unpay/cancel/remove/createFromTransaction |
-| 4 | BullMQ queue definition for bill recurrence |
-| 5 | Daily cron job to fill rolling window for recurring bills |
-| 6 | Table columns with status badge + pay/edit/cancel/delete actions |
-| 7 | Installment preview list component |
-| 8 | Pay/receive confirmation credenza |
-| 9 | Full create/edit form with installment + recurrence toggles |
-| 10 | "From transaction" credenza (parcelar / criar recorrente) |
-| 11 | `/finance/bills` route with tabs + summary bar |
-| 12 | Sidebar nav item + transaction row actions (parcelar, recorrente, não pago) |
-| 13 | Final typecheck + lint + test verification |
+| Task | What it does                                                                    |
+| ---- | ------------------------------------------------------------------------------- |
+| 1    | Schema: `bills` + `recurrence_settings` tables                                  |
+| 2    | Repository: CRUD + batch create + recurrence queries                            |
+| 3    | oRPC router: getAll/create/update/pay/unpay/cancel/remove/createFromTransaction |
+| 4    | BullMQ queue definition for bill recurrence                                     |
+| 5    | Daily cron job to fill rolling window for recurring bills                       |
+| 6    | Table columns with status badge + pay/edit/cancel/delete actions                |
+| 7    | Installment preview list component                                              |
+| 8    | Pay/receive confirmation credenza                                               |
+| 9    | Full create/edit form with installment + recurrence toggles                     |
+| 10   | "From transaction" credenza (parcelar / criar recorrente)                       |
+| 11   | `/finance/bills` route with tabs + summary bar                                  |
+| 12   | Sidebar nav item + transaction row actions (parcelar, recorrente, não pago)     |
+| 13   | Final typecheck + lint + test verification                                      |

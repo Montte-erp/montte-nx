@@ -1,6 +1,6 @@
-import { env } from "@packages/environment/server";
+import { env } from "@core/environment/server";
 import { getMinioClient } from "@packages/files/client";
-import { getLogger } from "@packages/logging/root";
+import { getLogger } from "@core/logging/root";
 import { createFileRoute } from "@tanstack/react-router";
 
 const logger = getLogger().child({ module: "api:files" });

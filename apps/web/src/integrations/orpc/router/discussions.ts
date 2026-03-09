@@ -9,8 +9,8 @@ import {
    getDiscussionsByContent,
    resolveDiscussion,
    updateDiscussionReply,
-} from "@packages/database/repositories/discussion-repository";
-import { user } from "@packages/database/schemas/auth";
+} from "@core/database/repositories/discussion-repository";
+import { user } from "@core/database/schemas/auth";
 import { inArray } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../server";

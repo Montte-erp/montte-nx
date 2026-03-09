@@ -1,12 +1,12 @@
 import { ORPCError } from "@orpc/server";
-import { getOrganizationMembers } from "@packages/database/repositories/auth-repository";
-import { member, organization } from "@packages/database/schemas/auth";
-import { env as serverEnv } from "@packages/environment/server";
+import { getOrganizationMembers } from "@core/database/repositories/auth-repository";
+import { member, organization } from "@core/database/schemas/auth";
+import { env as serverEnv } from "@core/environment/server";
 import {
    generatePresignedPutUrl,
    getMinioClient,
 } from "@packages/files/client";
-import { getLogger } from "@packages/logging/root";
+import { getLogger } from "@core/logging/root";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { authenticatedProcedure, protectedProcedure } from "../server";

@@ -13,6 +13,7 @@
 ## Task 1: Update settings navigation
 
 **Files:**
+
 - Modify: `apps/web/src/layout/dashboard/ui/settings-nav-items.ts`
 
 **Step 1: Replace the full Espaço > Produtos block**
@@ -20,6 +21,7 @@
 Replace the `project-products` item and all its children with the new `Módulos` structure. Also update icon imports — remove `FileText`, `Images`, `LayoutGrid` (no longer used) and add `DollarSign`, `Package`, `Contact2`.
 
 **New imports block** (replace the existing import list):
+
 ```typescript
 import type { LucideIcon } from "lucide-react";
 import {
@@ -47,6 +49,7 @@ import {
 ```
 
 **New `project-products` item** (replace lines 62–95 in the file):
+
 ```typescript
 {
    id: "project-modules",
@@ -102,6 +105,7 @@ git commit -m "feat(settings): restructure nav from CMS Produtos to ERP Módulos
 ## Task 2: Create Financeiro module placeholder page
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro.tsx`
 
 **Step 1: Create the file**
@@ -151,6 +155,7 @@ git commit -m "feat(settings): add Financeiro module settings placeholder"
 ## Task 3: Create Estoque module placeholder page
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/estoque.tsx`
 
 **Step 1: Create the file**
@@ -196,6 +201,7 @@ git commit -m "feat(settings): add Estoque module settings placeholder"
 ## Task 4: Create Contatos module placeholder page
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos.tsx`
 
 **Step 1: Create the file**
@@ -243,9 +249,11 @@ git commit -m "feat(settings): add Contatos module settings placeholder"
 The existing `ai-agents.tsx` has three model slots (content, autocomplete, edit) and a web search config tuned for journalism/academic research — all CMS-specific. Replace it with a single model + language config for ERP assistance.
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents.tsx`
 
 **Step 1: Read the full file first**, then replace it with a simplified version that keeps only:
+
 - Default language selection (pt-BR / en-US / es)
 - Single assistant model selection
 - Remove content/autocomplete/edit model split
@@ -275,6 +283,7 @@ git commit -m "feat(settings): simplify Assistente IA settings for ERP context"
 The settings index page redirects desktop users to `project/general`. Verify it still works and doesn't reference any removed routes.
 
 **Files:**
+
 - Read: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/index.tsx`
 
 Check the redirect target is still `project/general` (unchanged). No code change expected — just verification.
@@ -292,6 +301,7 @@ Expected: passes cleanly.
 ## Done
 
 After all tasks:
+
 - Settings nav shows ERP-appropriate structure
 - All 4 new module routes resolve without 404
 - Assistente IA page is ERP-focused

@@ -5,7 +5,7 @@ import {
    getAnnotation,
    listAnnotations,
    updateAnnotation,
-} from "@packages/database/repositories/annotation-repository";
+} from "@core/database/repositories/annotation-repository";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

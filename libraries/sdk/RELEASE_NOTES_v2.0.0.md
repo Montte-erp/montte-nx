@@ -21,8 +21,8 @@ New unified browser SDK consolidates event tracking and forms:
 import { createBrowserSdk } from "@contentta/sdk/browser";
 
 const sdk = createBrowserSdk({
-  apiKey: "your-api-key",
-  organizationId: "org-uuid",
+   apiKey: "your-api-key",
+   organizationId: "org-uuid",
 });
 
 // Event tracking
@@ -67,8 +67,8 @@ const form = await sdk.forms.get({ formId: "form-uuid" });
 
 // Submit form data
 const result = await sdk.forms.submit({
-  formId: "form-uuid",
-  data: { email: "user@example.com", name: "John Doe" },
+   formId: "form-uuid",
+   data: { email: "user@example.com", name: "John Doe" },
 });
 
 // Browser: Embed form with automatic rendering
@@ -81,7 +81,7 @@ New analytics endpoint combines content and metrics:
 
 ```typescript
 const analytics = await sdk.content.getAnalytics({
-  contentId: "content-uuid",
+   contentId: "content-uuid",
 });
 
 console.log(analytics.analytics); // View counts, engagement metrics
@@ -130,36 +130,36 @@ import { createEventTracker, createFormsClient } from "@contentta/sdk/browser";
 
 ### Content Methods
 
-| v1.x | v2.0 |
-|------|------|
-| `listContentByAgent()` | `sdk.content.list()` |
-| `getContentBySlug()` | `sdk.content.get()` |
-| `getRelatedSlugs()` | `sdk.content.getRelatedSlugs()` |
-| `getAuthorByAgentId()` | `sdk.content.getAuthor()` |
-| `getContentImage()` | `sdk.content.getImage()` |
-| N/A | `sdk.content.getAnalytics()` (NEW) |
+| v1.x                   | v2.0                               |
+| ---------------------- | ---------------------------------- |
+| `listContentByAgent()` | `sdk.content.list()`               |
+| `getContentBySlug()`   | `sdk.content.get()`                |
+| `getRelatedSlugs()`    | `sdk.content.getRelatedSlugs()`    |
+| `getAuthorByAgentId()` | `sdk.content.getAuthor()`          |
+| `getContentImage()`    | `sdk.content.getImage()`           |
+| N/A                    | `sdk.content.getAnalytics()` (NEW) |
 
 ### Event Methods (NEW in v2.0)
 
-| Method | Description |
-|--------|-------------|
-| `sdk.events.track()` | Track single event |
+| Method               | Description                       |
+| -------------------- | --------------------------------- |
+| `sdk.events.track()` | Track single event                |
 | `sdk.events.batch()` | Track multiple events efficiently |
 
 ### Forms Methods (NEW in v2.0)
 
-| Method | Description |
-|--------|-------------|
-| `sdk.forms.get()` | Get form definition |
-| `sdk.forms.submit()` | Submit form data |
+| Method               | Description         |
+| -------------------- | ------------------- |
+| `sdk.forms.get()`    | Get form definition |
+| `sdk.forms.submit()` | Submit form data    |
 
 ### Browser SDK (NEW in v2.0)
 
-| Feature | Description |
-|---------|-------------|
+| Feature              | Description                 |
+| -------------------- | --------------------------- |
 | `createBrowserSdk()` | Unified browser SDK factory |
-| `sdk.tracker.*` | Event tracking client |
-| `sdk.forms.*` | Forms client |
+| `sdk.tracker.*`      | Event tracking client       |
+| `sdk.forms.*`        | Forms client                |
 
 ## Installation
 
@@ -196,28 +196,28 @@ We've created comprehensive documentation to help you migrate:
 import { createSdk } from "@contentta/sdk";
 
 const sdk = createSdk({
-  apiKey: process.env.CONTENTTA_API_KEY!,
+   apiKey: process.env.CONTENTTA_API_KEY!,
 });
 
 async function getBlogPosts(page = 1, pageSize = 12) {
-  const { posts, total } = await sdk.content.list({
-    agentId: process.env.AGENT_ID!,
-    status: "approved",
-    limit: String(pageSize),
-    page: String(page),
-  });
+   const { posts, total } = await sdk.content.list({
+      agentId: process.env.AGENT_ID!,
+      status: "approved",
+      limit: String(pageSize),
+      page: String(page),
+   });
 
-  return {
-    posts,
-    pagination: {
-      page,
-      pageSize,
-      total,
-      totalPages: Math.ceil(total / pageSize),
-      hasNext: page < Math.ceil(total / pageSize),
-      hasPrev: page > 1,
-    },
-  };
+   return {
+      posts,
+      pagination: {
+         page,
+         pageSize,
+         total,
+         totalPages: Math.ceil(total / pageSize),
+         hasNext: page < Math.ceil(total / pageSize),
+         hasPrev: page > 1,
+      },
+   };
 }
 ```
 
@@ -225,16 +225,16 @@ async function getBlogPosts(page = 1, pageSize = 12) {
 
 ```typescript
 async function getBlogPostDetail(slug: string) {
-  const agentId = process.env.AGENT_ID!;
+   const agentId = process.env.AGENT_ID!;
 
-  // Fetch post, related content, and author in parallel
-  const [content, relatedSlugs, author] = await Promise.all([
-    sdk.content.get({ slug, agentId }),
-    sdk.content.getRelatedSlugs({ slug, agentId }),
-    sdk.content.getAuthor({ agentId }),
-  ]);
+   // Fetch post, related content, and author in parallel
+   const [content, relatedSlugs, author] = await Promise.all([
+      sdk.content.get({ slug, agentId }),
+      sdk.content.getRelatedSlugs({ slug, agentId }),
+      sdk.content.getAuthor({ agentId }),
+   ]);
 
-  return { content, relatedSlugs, author };
+   return { content, relatedSlugs, author };
 }
 ```
 
@@ -244,25 +244,29 @@ async function getBlogPostDetail(slug: string) {
 import { createBrowserSdk } from "@contentta/sdk/browser";
 
 const sdk = createBrowserSdk({
-  apiKey: import.meta.env.VITE_CONTENTTA_API_KEY,
-  organizationId: import.meta.env.VITE_CONTENTTA_ORG_ID,
-  debug: import.meta.env.DEV,
+   apiKey: import.meta.env.VITE_CONTENTTA_API_KEY,
+   organizationId: import.meta.env.VITE_CONTENTTA_ORG_ID,
+   debug: import.meta.env.DEV,
 });
 
 // Initialize analytics on page load
 document.addEventListener("DOMContentLoaded", () => {
-  const contentId = document.querySelector("[data-content-id]")?.getAttribute("data-content-id");
-  const contentSlug = document.querySelector("[data-content-slug]")?.getAttribute("data-content-slug");
+   const contentId = document
+      .querySelector("[data-content-id]")
+      ?.getAttribute("data-content-id");
+   const contentSlug = document
+      .querySelector("[data-content-slug]")
+      ?.getAttribute("data-content-slug");
 
-  if (contentId && contentSlug) {
-    // Auto-track page views, scroll depth, time on page, and CTA clicks
-    sdk.tracker.autoTrackPageViews(contentId, contentSlug);
-  }
+   if (contentId && contentSlug) {
+      // Auto-track page views, scroll depth, time on page, and CTA clicks
+      sdk.tracker.autoTrackPageViews(contentId, contentSlug);
+   }
 });
 
 // Clean up on page unload
 window.addEventListener("beforeunload", () => {
-  sdk.tracker.destroy();
+   sdk.tracker.destroy();
 });
 ```
 
@@ -271,24 +275,26 @@ window.addEventListener("beforeunload", () => {
 ```typescript
 // Track events from your backend
 async function trackContentPublication(contentId: string) {
-  await sdk.events.track({
-    eventName: "content.published",
-    properties: {
-      contentId,
-      publishedAt: Date.now(),
-      publishedBy: "system",
-    },
-  });
+   await sdk.events.track({
+      eventName: "content.published",
+      properties: {
+         contentId,
+         publishedAt: Date.now(),
+         publishedBy: "system",
+      },
+   });
 }
 
 // Batch track multiple events
-async function trackBatchEvents(events: Array<{ eventName: string; properties: Record<string, unknown> }>) {
-  await sdk.events.batch({
-    events: events.map((event) => ({
-      ...event,
-      timestamp: Date.now(),
-    })),
-  });
+async function trackBatchEvents(
+   events: Array<{ eventName: string; properties: Record<string, unknown> }>,
+) {
+   await sdk.events.batch({
+      events: events.map((event) => ({
+         ...event,
+         timestamp: Date.now(),
+      })),
+   });
 }
 ```
 
@@ -297,25 +303,25 @@ async function trackBatchEvents(events: Array<{ eventName: string; properties: R
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Contact Us</title>
-</head>
-<body>
-  <h1>Contact Us</h1>
-  <div id="contact-form"></div>
+   <head>
+      <title>Contact Us</title>
+   </head>
+   <body>
+      <h1>Contact Us</h1>
+      <div id="contact-form"></div>
 
-  <script type="module">
-    import { createBrowserSdk } from "@contentta/sdk/browser";
+      <script type="module">
+         import { createBrowserSdk } from "@contentta/sdk/browser";
 
-    const sdk = createBrowserSdk({
-      apiKey: "your-api-key",
-      organizationId: "your-org-id",
-    });
+         const sdk = createBrowserSdk({
+            apiKey: "your-api-key",
+            organizationId: "your-org-id",
+         });
 
-    // Embed form
-    await sdk.forms.embedForm("form-uuid", "contact-form");
-  </script>
-</body>
+         // Embed form
+         await sdk.forms.embedForm("form-uuid", "contact-form");
+      </script>
+   </body>
 </html>
 ```
 
@@ -325,28 +331,28 @@ The v2.0 SDK provides comprehensive TypeScript support:
 
 ```typescript
 import type {
-  // Content types
-  ContentList,
-  ContentSelect,
-  ContentMeta,
-  ContentRequest,
-  ContentStats,
-  ContentStatus,
-  ContentWithAnalytics,
-  ShareStatus,
-  Image,
+   // Content types
+   ContentList,
+   ContentSelect,
+   ContentMeta,
+   ContentRequest,
+   ContentStats,
+   ContentStatus,
+   ContentWithAnalytics,
+   ShareStatus,
+   Image,
 
-  // Event types
-  TrackedEvent,
-  EventBatch,
-  ContenttaSdkConfig,
+   // Event types
+   TrackedEvent,
+   EventBatch,
+   ContenttaSdkConfig,
 
-  // Form types
-  FormDefinition,
-  FormField,
+   // Form types
+   FormDefinition,
+   FormField,
 
-  // Analytics types
-  AnalyticsResponse,
+   // Analytics types
+   AnalyticsResponse,
 } from "@contentta/sdk";
 ```
 
@@ -354,14 +360,14 @@ All Zod schemas are also exported for runtime validation:
 
 ```typescript
 import {
-  ContentListResponseSchema,
-  ContentSelectSchema,
-  ContentMetaSchema,
-  ContentRequestSchema,
-  GetContentBySlugInputSchema,
-  ListContentByAgentInputSchema,
-  ImageSchema,
-  AnalyticsResponseSchema,
+   ContentListResponseSchema,
+   ContentSelectSchema,
+   ContentMetaSchema,
+   ContentRequestSchema,
+   GetContentBySlugInputSchema,
+   ListContentByAgentInputSchema,
+   ImageSchema,
+   AnalyticsResponseSchema,
 } from "@contentta/sdk";
 ```
 
