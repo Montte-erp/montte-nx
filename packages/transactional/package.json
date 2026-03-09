@@ -1,4 +1,27 @@
 {
+   "name": "@packages/transactional",
+   "version": "0.8.1",
+   "private": true,
+   "license": "Apache-2.0",
+   "files": [
+      "dist"
+   ],
+   "type": "module",
+   "exports": {
+      "./client": {
+         "types": "./dist/src/client.d.ts",
+         "default": "./src/client.tsx"
+      },
+      "./utils": {
+         "types": "./dist/src/utils.d.ts",
+         "default": "./src/utils.ts"
+      }
+   },
+   "scripts": {
+      "build": "tsc --build",
+      "check": "oxlint ./src",
+      "typecheck": "tsgo"
+   },
    "dependencies": {
       "@packages/utils": "workspace:*",
       "@react-email/components": "catalog:transactional",
@@ -12,28 +35,5 @@
       "@types/react-dom": "catalog:react",
       "react-email": "catalog:transactional",
       "typescript": "catalog:development"
-   },
-   "exports": {
-      "./client": {
-         "default": "./src/client.tsx",
-         "types": "./dist/src/client.d.ts"
-      },
-      "./utils": {
-         "default": "./src/utils.ts",
-         "types": "./dist/src/utils.d.ts"
-      }
-   },
-   "files": [
-      "dist"
-   ],
-   "license": "Apache-2.0",
-   "name": "@packages/transactional",
-   "private": true,
-   "scripts": {
-      "build": "tsc --build",
-      "check": "biome check --write ./src",
-      "typecheck": "tsgo"
-   },
-   "type": "module",
-   "version": "0.8.1"
+   }
 }

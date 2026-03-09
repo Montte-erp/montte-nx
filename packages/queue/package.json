@@ -1,33 +1,33 @@
 {
    "name": "@packages/queue",
    "version": "0.1.0",
-   "type": "module",
    "private": true,
    "license": "Apache-2.0",
-   "exports": {
-      "./connection": {
-         "default": "./src/connection.ts",
-         "types": "./dist/src/connection.d.ts"
-      },
-      "./webhook-delivery": {
-         "default": "./src/webhook-delivery.ts",
-         "types": "./dist/src/webhook-delivery.d.ts"
-      },
-      "./scheduled": {
-         "default": "./src/scheduled.ts",
-         "types": "./dist/src/scheduled.d.ts"
-      },
-      "./budget-alerts": {
-         "default": "./src/budget-alerts.ts",
-         "types": "./dist/src/budget-alerts.d.ts"
-      }
-   },
    "files": [
       "dist"
    ],
+   "type": "module",
+   "exports": {
+      "./connection": {
+         "types": "./dist/src/connection.d.ts",
+         "default": "./src/connection.ts"
+      },
+      "./webhook-delivery": {
+         "types": "./dist/src/webhook-delivery.d.ts",
+         "default": "./src/webhook-delivery.ts"
+      },
+      "./scheduled": {
+         "types": "./dist/src/scheduled.d.ts",
+         "default": "./src/scheduled.ts"
+      },
+      "./budget-alerts": {
+         "types": "./dist/src/budget-alerts.d.ts",
+         "default": "./src/budget-alerts.ts"
+      }
+   },
    "scripts": {
       "build": "tsc --build",
-      "check": "biome check --write ./src",
+      "check": "oxlint ./src",
       "typecheck": "tsgo"
    },
    "dependencies": {

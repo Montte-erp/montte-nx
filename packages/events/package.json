@@ -1,4 +1,84 @@
 {
+   "name": "@packages/events",
+   "version": "0.1.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "files": [
+      "dist"
+   ],
+   "type": "module",
+   "exports": {
+      "./catalog": {
+         "types": "./dist/src/catalog.d.ts",
+         "default": "./src/catalog.ts"
+      },
+      "./emit": {
+         "types": "./dist/src/emit.d.ts",
+         "default": "./src/emit.ts"
+      },
+      "./utils": {
+         "types": "./dist/src/utils.d.ts",
+         "default": "./src/utils.ts"
+      },
+      "./refresh-views": {
+         "types": "./dist/src/refresh-views.d.ts",
+         "default": "./src/refresh-views.ts"
+      },
+      "./ai": {
+         "types": "./dist/src/ai.d.ts",
+         "default": "./src/ai.ts"
+      },
+      "./finance": {
+         "types": "./dist/src/finance.d.ts",
+         "default": "./src/finance.ts"
+      },
+      "./webhook": {
+         "types": "./dist/src/webhook.d.ts",
+         "default": "./src/webhook.ts"
+      },
+      "./dashboard": {
+         "types": "./dist/src/dashboard.d.ts",
+         "default": "./src/dashboard.ts"
+      },
+      "./insight": {
+         "types": "./dist/src/insight.d.ts",
+         "default": "./src/insight.ts"
+      },
+      "./credits": {
+         "types": "./dist/src/credits.d.ts",
+         "default": "./src/credits.ts"
+      },
+      "./reconcile": {
+         "types": "./dist/src/reconcile.d.ts",
+         "default": "./src/reconcile.ts"
+      },
+      "./contact": {
+         "types": "./dist/src/contact.d.ts",
+         "default": "./src/contact.ts"
+      },
+      "./inventory": {
+         "types": "./dist/src/inventory.d.ts",
+         "default": "./src/inventory.ts"
+      },
+      "./service": {
+         "types": "./dist/src/service.d.ts",
+         "default": "./src/service.ts"
+      },
+      "./nfe": {
+         "types": "./dist/src/nfe.d.ts",
+         "default": "./src/nfe.ts"
+      },
+      "./document": {
+         "types": "./dist/src/document.d.ts",
+         "default": "./src/document.ts"
+      }
+   },
+   "scripts": {
+      "build": "tsc --build",
+      "check": "oxlint ./src",
+      "test": "bun test --pass-with-no-tests",
+      "typecheck": "tsgo"
+   },
    "dependencies": {
       "@f-o-t/money": "catalog:fot",
       "@orpc/server": "catalog:orpc",
@@ -15,85 +95,5 @@
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
       "typescript": "catalog:development"
-   },
-   "exports": {
-      "./catalog": {
-         "default": "./src/catalog.ts",
-         "types": "./dist/src/catalog.d.ts"
-      },
-      "./emit": {
-         "default": "./src/emit.ts",
-         "types": "./dist/src/emit.d.ts"
-      },
-      "./utils": {
-         "default": "./src/utils.ts",
-         "types": "./dist/src/utils.d.ts"
-      },
-      "./refresh-views": {
-         "default": "./src/refresh-views.ts",
-         "types": "./dist/src/refresh-views.d.ts"
-      },
-      "./ai": {
-         "default": "./src/ai.ts",
-         "types": "./dist/src/ai.d.ts"
-      },
-      "./finance": {
-         "default": "./src/finance.ts",
-         "types": "./dist/src/finance.d.ts"
-      },
-      "./webhook": {
-         "default": "./src/webhook.ts",
-         "types": "./dist/src/webhook.d.ts"
-      },
-      "./dashboard": {
-         "default": "./src/dashboard.ts",
-         "types": "./dist/src/dashboard.d.ts"
-      },
-      "./insight": {
-         "default": "./src/insight.ts",
-         "types": "./dist/src/insight.d.ts"
-      },
-      "./credits": {
-         "default": "./src/credits.ts",
-         "types": "./dist/src/credits.d.ts"
-      },
-      "./reconcile": {
-         "default": "./src/reconcile.ts",
-         "types": "./dist/src/reconcile.d.ts"
-      },
-      "./contact": {
-         "default": "./src/contact.ts",
-         "types": "./dist/src/contact.d.ts"
-      },
-      "./inventory": {
-         "default": "./src/inventory.ts",
-         "types": "./dist/src/inventory.d.ts"
-      },
-      "./service": {
-         "default": "./src/service.ts",
-         "types": "./dist/src/service.d.ts"
-      },
-      "./nfe": {
-         "default": "./src/nfe.ts",
-         "types": "./dist/src/nfe.d.ts"
-      },
-      "./document": {
-         "default": "./src/document.ts",
-         "types": "./dist/src/document.d.ts"
-      }
-   },
-   "files": [
-      "dist"
-   ],
-   "license": "Apache-2.0",
-   "name": "@packages/events",
-   "private": true,
-   "scripts": {
-      "build": "tsc --build",
-      "check": "biome check --write ./src",
-      "test": "bun test --pass-with-no-tests",
-      "typecheck": "tsgo"
-   },
-   "type": "module",
-   "version": "0.1.0"
+   }
 }

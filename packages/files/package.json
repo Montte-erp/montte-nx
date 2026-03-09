@@ -1,4 +1,28 @@
 {
+   "name": "@packages/files",
+   "version": "0.12.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "files": [
+      "dist"
+   ],
+   "type": "module",
+   "exports": {
+      "./client": {
+         "types": "./dist/src/client.d.ts",
+         "default": "./src/client.ts"
+      },
+      "./text-file-helper": {
+         "types": "./dist/src/text-file-helpers.d.ts",
+         "default": "./src/text-file-helpers.ts"
+      }
+   },
+   "scripts": {
+      "build": "tsc --build",
+      "check": "oxlint ./src",
+      "test": "bun test",
+      "typecheck": "tsgo"
+   },
    "dependencies": {
       "@packages/environment": "workspace:*",
       "fflate": "catalog:files",
@@ -7,29 +31,5 @@
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
       "typescript": "catalog:development"
-   },
-   "exports": {
-      "./client": {
-         "default": "./src/client.ts",
-         "types": "./dist/src/client.d.ts"
-      },
-      "./text-file-helper": {
-         "default": "./src/text-file-helpers.ts",
-         "types": "./dist/src/text-file-helpers.d.ts"
-      }
-   },
-   "files": [
-      "dist"
-   ],
-   "license": "Apache-2.0",
-   "name": "@packages/files",
-   "private": true,
-   "scripts": {
-      "build": "tsc --build",
-      "check": "biome check --write ./src",
-      "test": "bun test",
-      "typecheck": "tsgo"
-   },
-   "type": "module",
-   "version": "0.12.0"
+   }
 }

@@ -1,4 +1,43 @@
 {
+   "name": "@packages/analytics",
+   "version": "0.1.0",
+   "private": true,
+   "files": [
+      "dist"
+   ],
+   "type": "module",
+   "exports": {
+      "./types": {
+         "types": "./dist/src/types.d.ts",
+         "default": "./src/types.ts"
+      },
+      "./compute-kpi": {
+         "types": "./dist/src/compute-kpi.d.ts",
+         "default": "./src/compute-kpi.ts"
+      },
+      "./compute-time-series": {
+         "types": "./dist/src/compute-time-series.d.ts",
+         "default": "./src/compute-time-series.ts"
+      },
+      "./compute-breakdown": {
+         "types": "./dist/src/compute-breakdown.d.ts",
+         "default": "./src/compute-breakdown.ts"
+      },
+      "./compute-insight": {
+         "types": "./dist/src/compute-insight.d.ts",
+         "default": "./src/compute-insight.ts"
+      },
+      "./date-ranges": {
+         "types": "./dist/src/date-ranges.d.ts",
+         "default": "./src/date-ranges.ts"
+      }
+   },
+   "scripts": {
+      "build": "tsc --build",
+      "check": "oxlint ./src",
+      "test": "bun test --pass-with-no-tests",
+      "typecheck": "tsgo"
+   },
    "dependencies": {
       "@packages/database": "workspace:*",
       "@packages/utils": "workspace:*",
@@ -8,44 +47,5 @@
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
       "typescript": "catalog:development"
-   },
-   "exports": {
-      "./types": {
-         "default": "./src/types.ts",
-         "types": "./dist/src/types.d.ts"
-      },
-      "./compute-kpi": {
-         "default": "./src/compute-kpi.ts",
-         "types": "./dist/src/compute-kpi.d.ts"
-      },
-      "./compute-time-series": {
-         "default": "./src/compute-time-series.ts",
-         "types": "./dist/src/compute-time-series.d.ts"
-      },
-      "./compute-breakdown": {
-         "default": "./src/compute-breakdown.ts",
-         "types": "./dist/src/compute-breakdown.d.ts"
-      },
-      "./compute-insight": {
-         "default": "./src/compute-insight.ts",
-         "types": "./dist/src/compute-insight.d.ts"
-      },
-      "./date-ranges": {
-         "default": "./src/date-ranges.ts",
-         "types": "./dist/src/date-ranges.d.ts"
-      }
-   },
-   "files": [
-      "dist"
-   ],
-   "name": "@packages/analytics",
-   "private": true,
-   "scripts": {
-      "build": "tsc --build",
-      "check": "biome check --write ./src",
-      "test": "bun test --pass-with-no-tests",
-      "typecheck": "tsgo"
-   },
-   "type": "module",
-   "version": "0.1.0"
+   }
 }

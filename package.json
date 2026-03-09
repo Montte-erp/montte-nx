@@ -1,78 +1,11 @@
 {
-   "devDependencies": {
-      "@biomejs/biome": "catalog:development",
-      "@commitlint/cli": "20.4.1",
-      "@commitlint/config-conventional": "20.4.1",
-      "@nx/js": "22.5.1",
-      "@rolldown/plugin-babel": "^0.2.0",
-      "@swc-node/register": "1.11.1",
-      "@swc/core": "1.15.11",
-      "@swc/helpers": "0.5.18",
-      "@tooling/typescript": "workspace:*",
-      "@typescript/native-preview": "^7.0.0-dev.20260211.1",
-      "@vitejs/plugin-react": "6.0.0-beta.0",
-      "bun-types": "latest",
-      "dotenv": "catalog:enviroment",
-      "husky": "9.1.7",
-      "nx": "22.5.1",
-      "oxfmt": "^0.36.0",
-      "oxlint": "^1.51.0",
-      "typescript": "catalog:development"
-   },
-   "engines": {
-      "node": ">=20"
-   },
-   "license": "Apache-2.0",
    "name": "montte-nx",
+   "version": "0.2.0",
+   "license": "Apache-2.0",
    "repository": {
       "type": "git",
       "url": "https://github.com/F-O-T/contentta-nx.git"
    },
-   "scripts": {
-      "auth:generate": "nx run authentication:auth-schema-generate",
-      "build": "nx run-many -t build --parallel=3",
-      "check": "nx run-many -t check --parallel=3",
-      "clean": "bun run scripts/clean.ts clean",
-      "clean:cache": "bun run scripts/clean.ts cache",
-      "db:push": "nx run database:db-push-local",
-      "db:push:prod": "nx run database:db-push-prod",
-      "db:studio:local": "nx run database:db-studio-local",
-      "db:studio:prod": "nx run database:db-studio-prod",
-      "dev": "cd apps/web && bun run container-start && cd ../.. && bun run scripts/seed-event-catalog.ts run --env local && nx run-many -t dev --parallel=3 -p web",
-      "dev:all": "bun run scripts/seed-event-catalog.ts run --env local && nx run-many -t dev --parallel=6",
-      "dev:blog": "nx run-many -t dev --parallel=1 -p  blog ",
-      "dev:content-apps": "nx run-many -t dev --parallel=3 -p  landing-page blog docs",
-      "dev:docs": "nx run-many -t dev --parallel=1 -p  docs",
-      "dev:landing-page": "nx run-many -t dev --parallel=1 -p  landing-page ",
-      "dev:mastra": "nx run-many -t dev --parallel=1 -p agents",
-      "dev:sdk-blog": "nx run-many -t dev --parallel=2 -p blog server",
-      "dev:server": "nx run-many -t dev --parallel=1 -p server ",
-      "dev:worker": "bun run scripts/seed-event-catalog.ts run --env local && nx run worker:dev",
-      "doctor": "bun run scripts/doctor.ts",
-      "seed:events": "bun run scripts/seed-event-catalog.ts",
-      "format": "biome check --write .",
-      "prepare": "husky",
-      "rag:reindex": "bun run scripts/reindex-content.ts",
-      "release": "nx release",
-      "release:changelog": "nx release changelog",
-      "release:dry": "nx release --dry-run --first-release",
-      "release:libraries": "bun run scripts/release-library.ts",
-      "release:publish": "nx release publish",
-      "release:version": "nx release version",
-      "reset": "bun run scripts/clean.ts reset",
-      "start:dashboard": "nx run dashboard:start",
-      "test": "nx run-many -t test --parallel=3",
-      "typecheck": "nx run-many -t typecheck --parallel=8",
-      "web:build": "bun run --filter=web build",
-      "web:start": "bun run --filter=web start"
-   },
-   "trustedDependencies": [
-      "@parcel/watcher",
-      "@tailwindcss/oxide",
-      "protobufjs"
-   ],
-   "type": "module",
-   "version": "0.2.0",
    "workspaces": {
       "catalogs": {
          "astro": {
@@ -106,7 +39,6 @@
          },
          "development": {
             "typescript": "5.9.3",
-            "@biomejs/biome": "2.3.15",
             "babel-plugin-react-compiler": "^1.0.0",
             "web-vitals": "^5.1.0"
          },
@@ -301,6 +233,46 @@
          "apps/*"
       ]
    },
+   "type": "module",
+   "scripts": {
+      "auth:generate": "nx run authentication:auth-schema-generate",
+      "build": "nx run-many -t build --parallel=3",
+      "check": "oxlint .",
+      "clean": "bun run scripts/clean.ts clean",
+      "clean:cache": "bun run scripts/clean.ts cache",
+      "db:push": "nx run database:db-push-local",
+      "db:push:prod": "nx run database:db-push-prod",
+      "db:studio:local": "nx run database:db-studio-local",
+      "db:studio:prod": "nx run database:db-studio-prod",
+      "dev": "cd apps/web && bun run container-start && cd ../.. && bun run scripts/seed-event-catalog.ts run --env local && nx run-many -t dev --parallel=3 -p web",
+      "dev:all": "bun run scripts/seed-event-catalog.ts run --env local && nx run-many -t dev --parallel=6",
+      "dev:blog": "nx run-many -t dev --parallel=1 -p  blog ",
+      "dev:content-apps": "nx run-many -t dev --parallel=3 -p  landing-page blog docs",
+      "dev:docs": "nx run-many -t dev --parallel=1 -p  docs",
+      "dev:landing-page": "nx run-many -t dev --parallel=1 -p  landing-page ",
+      "dev:mastra": "nx run-many -t dev --parallel=1 -p agents",
+      "dev:sdk-blog": "nx run-many -t dev --parallel=2 -p blog server",
+      "dev:server": "nx run-many -t dev --parallel=1 -p server ",
+      "dev:worker": "bun run scripts/seed-event-catalog.ts run --env local && nx run worker:dev",
+      "doctor": "bun run scripts/doctor.ts",
+      "seed:events": "bun run scripts/seed-event-catalog.ts",
+      "format": "oxfmt --config tooling/oxc/oxfmt.json --write .",
+      "format:check": "oxfmt --config tooling/oxc/oxfmt.json --check .",
+      "prepare": "husky",
+      "rag:reindex": "bun run scripts/reindex-content.ts",
+      "release": "nx release",
+      "release:changelog": "nx release changelog",
+      "release:dry": "nx release --dry-run --first-release",
+      "release:libraries": "bun run scripts/release-library.ts",
+      "release:publish": "nx release publish",
+      "release:version": "nx release version",
+      "reset": "bun run scripts/clean.ts reset",
+      "start:dashboard": "nx run dashboard:start",
+      "test": "nx run-many -t test --parallel=3",
+      "typecheck": "nx run-many -t typecheck --parallel=8",
+      "web:build": "bun run --filter=web build",
+      "web:start": "bun run --filter=web start"
+   },
    "dependencies": {
       "@opentelemetry/api-logs": "^0.213.0",
       "@opentelemetry/exporter-logs-otlp-http": "^0.213.0",
@@ -310,5 +282,32 @@
       "@orpc/experimental-pino": "catalog:orpc",
       "@orpc/otel": "catalog:orpc",
       "pino-opentelemetry-transport": "^3.0.0"
-   }
+   },
+   "devDependencies": {
+      "@commitlint/cli": "20.4.1",
+      "@commitlint/config-conventional": "20.4.1",
+      "@nx/js": "22.5.1",
+      "@rolldown/plugin-babel": "^0.2.0",
+      "@swc-node/register": "1.11.1",
+      "@swc/core": "1.15.11",
+      "@swc/helpers": "0.5.18",
+      "@tooling/typescript": "workspace:*",
+      "@typescript/native-preview": "^7.0.0-dev.20260211.1",
+      "@vitejs/plugin-react": "6.0.0-beta.0",
+      "bun-types": "latest",
+      "dotenv": "catalog:enviroment",
+      "husky": "9.1.7",
+      "nx": "22.5.1",
+      "oxfmt": "^0.36.0",
+      "oxlint": "^1.51.0",
+      "typescript": "catalog:development"
+   },
+   "engines": {
+      "node": ">=20"
+   },
+   "trustedDependencies": [
+      "@parcel/watcher",
+      "@tailwindcss/oxide",
+      "protobufjs"
+   ]
 }

@@ -1,4 +1,15 @@
 {
+   "name": "server",
+   "version": "0.8.1",
+   "license": "Apache-2.0",
+   "scripts": {
+      "build": "bun build --compile --minify-whitespace --minify-syntax --target bun --outfile server ./src/index.ts",
+      "check": "oxlint .",
+      "container-start": "(command -v podman-compose > /dev/null 2>&1 && podman-compose -f ../web/docker-compose.yml down && podman-compose -f ../web/docker-compose.yml up -d) || (docker-compose -f ../web/docker-compose.yml down && docker-compose -f ../web/docker-compose.yml up -d)",
+      "dev": "bun run container-start && bun run --watch src/index.ts",
+      "start": "./server",
+      "typecheck": "tsgo"
+   },
    "dependencies": {
       "@contentta/sdk": "workspace:*",
       "@elysiajs/cors": "catalog:server",
@@ -21,17 +32,5 @@
       "@tooling/typescript": "workspace:*",
       "@types/bun": "latest",
       "typescript": "catalog:development"
-   },
-   "license": "Apache-2.0",
-   "name": "server",
-   "scripts": {
-      "build": "bun build --compile --minify-whitespace --minify-syntax --target bun --outfile server ./src/index.ts",
-      "check": "bunx --bun biome check --write .",
-      "container-start": "(command -v podman-compose > /dev/null 2>&1 && podman-compose -f ../web/docker-compose.yml down && podman-compose -f ../web/docker-compose.yml up -d) || (docker-compose -f ../web/docker-compose.yml down && docker-compose -f ../web/docker-compose.yml up -d)",
-      "dev": "bun run container-start && bun run --watch src/index.ts",
-      "format": "biome format",
-      "start": "./server",
-      "typecheck": "tsgo"
-   },
-   "version": "0.8.1"
+   }
 }

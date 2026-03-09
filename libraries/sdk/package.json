@@ -1,120 +1,119 @@
 {
-	"bugs": {
-		"url": "https://github.com/F-O-T/contentta-nx/issues"
-	},
-	"dependencies": {
-		"@orpc/client": "catalog:orpc",
-		"superjson": "2.2.2",
-		"zod": "4.3.6"
-	},
-	"description": "Official TypeScript SDK to interact with the Contentta API. Provides lightweight client methods for listing and retrieving content, automatic input validation, date parsing, and robust error handling.",
-	"devDependencies": {
-		"@biomejs/biome": "2.3.10",
-		"@types/bun": "1.3.5",
-		"bumpp": "10.3.2",
-		"bunup": "0.16.11",
-		"typescript": "5.9.3"
-	},
-	"exports": {
-		".": {
-			"bun": "./src/index.ts",
-			"import": {
-				"default": "./dist/index.js",
-				"types": "./dist/index.d.ts"
-			},
-			"types": "./src/index.ts"
-		},
-		"./posthog": {
-			"bun": "./src/posthog.ts",
-			"import": {
-				"default": "./dist/posthog.js",
-				"types": "./dist/posthog.d.ts"
-			},
-			"types": "./src/posthog.ts"
-		},
-		"./analytics": {
-			"bun": "./src/analytics.ts",
-			"import": {
-				"default": "./dist/analytics.js",
-				"types": "./dist/analytics.d.ts"
-			},
-			"types": "./src/analytics.ts"
-		},
-		"./events": {
-			"bun": "./src/events/client.ts",
-			"import": {
-				"default": "./dist/events/client.js",
-				"types": "./dist/events/client.d.ts"
-			},
-			"types": "./src/events/client.ts"
-		},
-		"./events/types": {
-			"bun": "./src/events/types.ts",
-			"import": {
-				"default": "./dist/events/types.js",
-				"types": "./dist/events/types.d.ts"
-			},
-			"types": "./src/events/types.ts"
-		},
-		"./events/server": {
-			"bun": "./src/events/server.ts",
-			"import": {
-				"default": "./dist/events/server.js",
-				"types": "./dist/events/server.d.ts"
-			},
-			"types": "./src/events/server.ts"
-		},
-		"./forms": {
-			"bun": "./src/forms.ts",
-			"import": {
-				"default": "./dist/forms.js",
-				"types": "./dist/forms.d.ts"
-			},
-			"types": "./src/forms.ts"
-		},
-		"./browser": {
-			"bun": "./src/browser.ts",
-			"import": {
-				"default": "./dist/browser.js",
-				"types": "./dist/browser.d.ts"
-			},
-			"types": "./src/browser.ts"
-		},
-		"./package.json": "./package.json"
-	},
-	"files": [
-		"dist"
-	],
-	"homepage": "https://github.com/F-O-T/contentta-nx/blob/master/libraries/sdk",
-	"license": "Apache-2.0",
-	"module": "./dist/index.js",
-	"name": "@contentta/sdk",
-	"peerDependencies": {
-		"typescript": ">=4.5.0"
-	},
-	"peerDependenciesMeta": {
-		"typescript": {
-			"optional": true
-		}
-	},
-	"private": false,
-	"publishConfig": {
-		"access": "public"
-	},
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/F-O-T/contentta-nx.git"
-	},
-	"scripts": {
-		"build": "bunup src/index.ts src/posthog.ts src/analytics.ts src/events/client.ts src/events/types.ts src/events/server.ts src/forms.ts src/browser.ts --out-dir dist",
-		"check": "biome check --write .",
-		"dev": "bunup --watch",
-		"release": "bumpp --commit --push --tag",
-		"test": "bun test",
-		"test:watch": "bun test --watch",
-		"typecheck": "tsgo"
-	},
-	"type": "module",
-	"types": "./dist/index.d.ts",
-	"version": "2.0.0"
+   "name": "@contentta/sdk",
+   "version": "2.0.0",
+   "private": false,
+   "description": "Official TypeScript SDK to interact with the Contentta API. Provides lightweight client methods for listing and retrieving content, automatic input validation, date parsing, and robust error handling.",
+   "homepage": "https://github.com/F-O-T/contentta-nx/blob/master/libraries/sdk",
+   "bugs": {
+      "url": "https://github.com/F-O-T/contentta-nx/issues"
+   },
+   "license": "Apache-2.0",
+   "repository": {
+      "type": "git",
+      "url": "https://github.com/F-O-T/contentta-nx.git"
+   },
+   "files": [
+      "dist"
+   ],
+   "type": "module",
+   "module": "./dist/index.js",
+   "types": "./dist/index.d.ts",
+   "exports": {
+      ".": {
+         "types": "./src/index.ts",
+         "bun": "./src/index.ts",
+         "import": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+         }
+      },
+      "./posthog": {
+         "types": "./src/posthog.ts",
+         "bun": "./src/posthog.ts",
+         "import": {
+            "types": "./dist/posthog.d.ts",
+            "default": "./dist/posthog.js"
+         }
+      },
+      "./analytics": {
+         "types": "./src/analytics.ts",
+         "bun": "./src/analytics.ts",
+         "import": {
+            "types": "./dist/analytics.d.ts",
+            "default": "./dist/analytics.js"
+         }
+      },
+      "./events": {
+         "types": "./src/events/client.ts",
+         "bun": "./src/events/client.ts",
+         "import": {
+            "types": "./dist/events/client.d.ts",
+            "default": "./dist/events/client.js"
+         }
+      },
+      "./events/types": {
+         "types": "./src/events/types.ts",
+         "bun": "./src/events/types.ts",
+         "import": {
+            "types": "./dist/events/types.d.ts",
+            "default": "./dist/events/types.js"
+         }
+      },
+      "./events/server": {
+         "types": "./src/events/server.ts",
+         "bun": "./src/events/server.ts",
+         "import": {
+            "types": "./dist/events/server.d.ts",
+            "default": "./dist/events/server.js"
+         }
+      },
+      "./forms": {
+         "types": "./src/forms.ts",
+         "bun": "./src/forms.ts",
+         "import": {
+            "types": "./dist/forms.d.ts",
+            "default": "./dist/forms.js"
+         }
+      },
+      "./browser": {
+         "types": "./src/browser.ts",
+         "bun": "./src/browser.ts",
+         "import": {
+            "types": "./dist/browser.d.ts",
+            "default": "./dist/browser.js"
+         }
+      },
+      "./package.json": "./package.json"
+   },
+   "publishConfig": {
+      "access": "public"
+   },
+   "scripts": {
+      "build": "bunup src/index.ts src/posthog.ts src/analytics.ts src/events/client.ts src/events/types.ts src/events/server.ts src/forms.ts src/browser.ts --out-dir dist",
+      "check": "oxlint .",
+      "dev": "bunup --watch",
+      "release": "bumpp --commit --push --tag",
+      "test": "bun test",
+      "test:watch": "bun test --watch",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@orpc/client": "catalog:orpc",
+      "superjson": "2.2.2",
+      "zod": "4.3.6"
+   },
+   "devDependencies": {
+      "@types/bun": "1.3.5",
+      "bumpp": "10.3.2",
+      "bunup": "0.16.11",
+      "typescript": "5.9.3"
+   },
+   "peerDependencies": {
+      "typescript": ">=4.5.0"
+   },
+   "peerDependenciesMeta": {
+      "typescript": {
+         "optional": true
+      }
+   }
 }

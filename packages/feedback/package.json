@@ -1,23 +1,25 @@
 {
    "name": "@packages/feedback",
    "version": "0.1.0",
-   "type": "module",
    "private": true,
    "license": "Apache-2.0",
+   "files": [
+      "dist"
+   ],
+   "type": "module",
    "exports": {
       "./sender": {
-         "default": "./src/sender.ts",
-         "types": "./dist/src/sender.d.ts"
+         "types": "./dist/src/sender.d.ts",
+         "default": "./src/sender.ts"
       },
       "./schemas": {
-         "default": "./src/schemas.ts",
-         "types": "./dist/src/schemas.d.ts"
+         "types": "./dist/src/schemas.d.ts",
+         "default": "./src/schemas.ts"
       }
    },
-   "files": ["dist"],
    "scripts": {
       "build": "tsc --build",
-      "check": "biome check --write ./src",
+      "check": "oxlint ./src",
       "typecheck": "tsgo"
    },
    "dependencies": {

@@ -2,22 +2,24 @@
    "name": "@packages/arcjet",
    "version": "0.1.0",
    "private": true,
-   "type": "module",
    "license": "Apache-2.0",
+   "files": [
+      "dist"
+   ],
+   "type": "module",
    "exports": {
       "./config": {
-         "default": "./src/config.ts",
-         "types": "./dist/src/config.d.ts"
+         "types": "./dist/src/config.d.ts",
+         "default": "./src/config.ts"
       },
       "./auth-wrapper": {
-         "default": "./src/auth-wrapper.ts",
-         "types": "./dist/src/auth-wrapper.d.ts"
+         "types": "./dist/src/auth-wrapper.d.ts",
+         "default": "./src/auth-wrapper.ts"
       }
    },
-   "files": ["dist"],
    "scripts": {
       "build": "tsc --build",
-      "check": "biome check --write ./src",
+      "check": "oxlint ./src",
       "typecheck": "tsgo"
    },
    "dependencies": {

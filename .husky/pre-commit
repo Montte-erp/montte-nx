@@ -9,7 +9,7 @@ if [ -n "$staged_files" ]; then
     fi
   done
   if [ -n "$files_to_format" ]; then
-    echo "$files_to_format" | xargs 
+    echo "$files_to_format" | xargs oxfmt --config tooling/oxc/oxfmt.json --write
     if [ -n "$(git diff --name-only $files_to_format)" ]; then
       echo "Files were formatted. Aborting commit."
       echo "Please stage the formatted files and commit again."

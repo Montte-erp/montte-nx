@@ -1,4 +1,27 @@
 {
+   "name": "@packages/stripe",
+   "version": "0.3.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "files": [
+      "dist"
+   ],
+   "type": "module",
+   "exports": {
+      ".": {
+         "types": "./dist/src/index.d.ts",
+         "default": "./src/index.ts"
+      },
+      "./constants": {
+         "types": "./dist/src/constants.d.ts",
+         "default": "./src/constants.ts"
+      }
+   },
+   "scripts": {
+      "build": "tsc --build",
+      "check": "oxlint ./src",
+      "typecheck": "tsgo"
+   },
    "dependencies": {
       "@packages/environment": "workspace:*",
       "stripe": "catalog:payments"
@@ -6,28 +29,5 @@
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
       "typescript": "catalog:development"
-   },
-   "exports": {
-      ".": {
-         "default": "./src/index.ts",
-         "types": "./dist/src/index.d.ts"
-      },
-      "./constants": {
-         "default": "./src/constants.ts",
-         "types": "./dist/src/constants.d.ts"
-      }
-   },
-   "files": [
-      "dist"
-   ],
-   "license": "Apache-2.0",
-   "name": "@packages/stripe",
-   "private": true,
-   "scripts": {
-      "build": "tsc --build",
-      "check": "biome check --write ./src",
-      "typecheck": "tsgo"
-   },
-   "type": "module",
-   "version": "0.3.0"
+   }
 }

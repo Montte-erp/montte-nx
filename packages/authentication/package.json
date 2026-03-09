@@ -1,60 +1,60 @@
 {
+   "name": "@packages/authentication",
+   "version": "0.8.1",
+   "private": true,
+   "license": "Apache-2.0",
+   "files": [
+      "dist"
+   ],
+   "type": "module",
+   "exports": {
+      "./client": {
+         "types": "./dist/src/client.d.ts",
+         "default": "./src/client.ts"
+      },
+      "./helpers": {
+         "types": "./dist/src/helpers/index.d.ts",
+         "default": "./src/helpers/index.ts"
+      },
+      "./server": {
+         "types": "./dist/src/server.d.ts",
+         "default": "./src/server.ts"
+      },
+      "./api-key-config": {
+         "types": "./dist/src/api-key-config.d.ts",
+         "default": "./src/api-key-config.ts"
+      },
+      "./cache": {
+         "types": "./dist/src/cache.d.ts",
+         "default": "./src/cache.ts"
+      },
+      "./redis-connection": {
+         "types": "./dist/src/redis-connection.d.ts",
+         "default": "./src/redis-connection.ts"
+      }
+   },
+   "scripts": {
+      "auth-schema-generate": "npx auth generate --config ./src/cli-config.ts --output ../database/src/schemas/auth.ts",
+      "build": "tsc --build",
+      "check": "oxlint ./src",
+      "typecheck": "tsgo"
+   },
    "dependencies": {
       "@better-auth/api-key": "catalog:auth",
       "@better-auth/oauth-provider": "catalog:auth",
       "@better-auth/stripe": "catalog:auth",
       "@packages/database": "workspace:*",
-      "react": "catalog:react",
-      "react-dom": "catalog:react",
       "@packages/environment": "workspace:*",
+      "@packages/redis": "workspace:*",
       "@packages/stripe": "workspace:*",
       "@packages/transactional": "workspace:*",
       "better-auth": "catalog:auth",
       "ioredis": "catalog:workers",
-      "@packages/redis": "workspace:*"
+      "react": "catalog:react",
+      "react-dom": "catalog:react"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
       "typescript": "catalog:development"
-   },
-   "exports": {
-      "./client": {
-         "default": "./src/client.ts",
-         "types": "./dist/src/client.d.ts"
-      },
-      "./helpers": {
-         "default": "./src/helpers/index.ts",
-         "types": "./dist/src/helpers/index.d.ts"
-      },
-      "./server": {
-         "default": "./src/server.ts",
-         "types": "./dist/src/server.d.ts"
-      },
-      "./api-key-config": {
-         "default": "./src/api-key-config.ts",
-         "types": "./dist/src/api-key-config.d.ts"
-      },
-      "./cache": {
-         "default": "./src/cache.ts",
-         "types": "./dist/src/cache.d.ts"
-      },
-      "./redis-connection": {
-         "default": "./src/redis-connection.ts",
-         "types": "./dist/src/redis-connection.d.ts"
-      }
-   },
-   "files": [
-      "dist"
-   ],
-   "license": "Apache-2.0",
-   "name": "@packages/authentication",
-   "private": true,
-   "scripts": {
-      "auth-schema-generate": "npx auth generate --config ./src/cli-config.ts --output ../database/src/schemas/auth.ts",
-      "build": "tsc --build",
-      "check": "biome check --write ./src",
-      "typecheck": "tsgo"
-   },
-   "type": "module",
-   "version": "0.8.1"
+   }
 }
