@@ -19,7 +19,9 @@ bun dev:worker       # Worker only
 # Build & Quality
 bun run build        # Build all (Nx cached)
 bun run typecheck    # TypeScript checks
-bun run check        # Biome lint/format
+bun run check        # oxlint
+bun run format       # oxfmt format
+bun run format:check # oxfmt check
 bun run test         # Tests with parallelization
 
 # ⚠️ NEVER use NODE_OPTIONS to increase memory for builds
@@ -42,6 +44,13 @@ bun run scripts/reindex-content.ts
 
 ```
 contentta-nx/
+├── core/
+│   ├── database/        # Drizzle ORM schemas & repositories
+│   ├── authentication/  # Better Auth setup
+│   ├── environment/     # Zod-validated env vars
+│   ├── redis/           # Redis singleton
+│   ├── logging/         # Pino logger
+│   └── utils/           # Shared utilities + error classes
 ├── apps/
 │   ├── web/             # React/Vite SPA — main dashboard + oRPC routers
 │   ├── server/          # Elysia API server for SDK consumers
@@ -50,23 +59,18 @@ contentta-nx/
 │   ├── agents/          # Mastra AI agents (planning, research, editing)
 │   ├── analytics/       # Analytics engine
 │   ├── arcjet/          # Rate limiting & DDoS protection
-│   ├── authentication/  # Better Auth setup
-│   ├── database/        # Drizzle ORM schemas & repositories
-│   ├── environment/     # Zod-validated env vars (server/worker/client)
 │   ├── events/          # Event catalog, schemas, emit, credits
 │   ├── files/           # MinIO & file utilities
-│   ├── logging/         # Pino logger
 │   ├── posthog/         # Analytics client
 │   ├── queue/           # BullMQ abstractions (producer side)
-│   ├── redis/           # Redis singleton (getRedisConnection())
 │   ├── search/          # Web search providers (Tavily/Exa/Firecrawl)
 │   ├── stripe/          # Stripe SDK wrapper
 │   ├── transactional/   # Email templates (React Email + Resend)
-│   ├── ui/              # Radix + Tailwind + CVA components
-│   └── utils/           # Shared utilities + error classes
+│   └── ui/              # Radix + Tailwind + CVA components
 ├── libraries/
 │   └── sdk/             # TypeScript SDK for Contentta API
 └── tooling/
+    ├── oxc/             # oxlint + oxfmt configs
     └── typescript/      # Shared TypeScript configs
 ```
 
@@ -98,7 +102,7 @@ throw new ORPCError("NOT_FOUND", { message: "Content not found" });
 throw new ORPCError("FORBIDDEN", { message: "Insufficient credits" });
 ```
 
-**Errors in repositories** (`packages/database/src/repositories/`): Use `AppError` + `propagateError()` from `@packages/utils/errors`.
+**Errors in repositories** (`core/database/src/repositories/`): Use `AppError` + `propagateError()` from `@core/utils/errors`.
 
 ---
 
@@ -147,7 +151,7 @@ import { Button } from "@packages/ui/src/components/button";
 import { emitEvent } from "@packages/events";
 ```
 
-**Biome lint suppression:** Place `// biome-ignore lint/[category]/[rule]: [reason]` directly above the triggering line. For JSX props, place above the prop, not the element.
+**oxlint suppression:** Place `// oxlint-ignore <rule-name>` or `// oxlint-ignore -- <reason>` directly above the triggering line. For JSX props, place above the prop, not the element.
 
 **Array index keys:** Prefer `key={\`step-${index + 1}\`}`over suppressing`noArrayIndexKey`.
 
@@ -209,9 +213,19 @@ const { currentView, setView, views } = useViewSwitch("feature:view", VIEWS);
 Packages use explicit `package.json` exports. Always match the export path exactly:
 
 ```typescript
-// Named: import { createDb } from "@packages/database/client"
-// Wildcard: import { content } from "@packages/database/schemas/content"
-// Wildcard: import { createContent } from "@packages/database/repositories/content-repository"
+// Core packages use @core/* prefix
+// Named: import { createDb } from "@core/database/client"
+// Wildcard: import { content } from "@core/database/schemas/content"
+// Wildcard: import { createContent } from "@core/database/repositories/content-repository"
+// Named: import { auth } from "@core/authentication/server"
+// Named: import { env } from "@core/environment/server"
+// Named: import { getRedisConnection } from "@core/redis"
+// Named: import { logger } from "@core/logging"
+// Named: import { AppError } from "@core/utils/errors"
+
+// Feature packages use @packages/* prefix
+// Named: import { emitEvent } from "@packages/events/emit"
+// Named: import { Button } from "@packages/ui/components/button"
 ```
 
 Common patterns: `.` (root), `./client`, `./server`, `./schemas/*`, `./repositories/*`, `./components/*`
@@ -302,9 +316,9 @@ Conventions: kebab-case files, `$` for dynamic segments, `_` for layout routes.
 
 ## Database (Drizzle ORM + PostgreSQL)
 
-**Schemas** at `packages/database/src/schemas/`: content, writer, chat, forms, dashboards, insights, events, webhooks, auth, etc.
+**Schemas** at `core/database/src/schemas/`: content, writer, chat, forms, dashboards, insights, events, webhooks, auth, etc.
 
-**Repository pattern** at `packages/database/src/repositories/`:
+**Repository pattern** at `core/database/src/repositories/`:
 
 ```typescript
 export async function createContent(db: DatabaseInstance, data: NewContent) {
@@ -322,11 +336,11 @@ export async function createContent(db: DatabaseInstance, data: NewContent) {
 
 ## Authentication (Better Auth)
 
-Config at `packages/authentication/src/server.ts`. Plugins: Google OAuth, Magic Link, Email OTP, 2FA, Anonymous sessions.
+Config at `core/authentication/src/server.ts`. Plugins: Google OAuth, Magic Link, Email OTP, 2FA, Anonymous sessions.
 
 **⚠️ CRITICAL: Auth Tables Are Read-Only**
 
-Better Auth fully manages these tables in `packages/database/src/schemas/auth.ts`:
+Better Auth fully manages these tables in `core/database/src/schemas/auth.ts`:
 
 - `user`, `session`, `account`, `verification`
 - `organization`, `team`, `member`, `teamMember`
@@ -337,14 +351,14 @@ Better Auth fully manages these tables in `packages/database/src/schemas/auth.ts
 - **NEVER** edit these Drizzle schema definitions directly (fields, defaults, constraints)
 - **NEVER** add/remove/modify columns in these tables manually
 - To add custom fields to `user`, `session`, `organization`, or `team`:
-   - **ALWAYS** use `additionalFields` in `packages/authentication/src/server.ts`
+   - **ALWAYS** use `additionalFields` in `core/authentication/src/server.ts`
    - Schema changes must go through Better Auth's config
 - Other tables (`member`, `invitation`, `twoFactor`, etc.) have NO `additionalFields` support
    - These are entirely managed by Better Auth core
    - Cannot be customized — use separate related tables if needed
 
 ```typescript
-// packages/authentication/src/server.ts
+// core/authentication/src/server.ts
 organization({
    schema: {
       team: {
@@ -557,7 +571,7 @@ Use the `orpc-testing` skill when writing new oRPC procedure tests.
 
 All scripts go in root `scripts/` directory. NEVER in `packages/*/` or `apps/*/`.
 
-Required patterns: `commander` CLI with `run` + `check` commands, `--env` flag, `--dry-run` flag, `chalk` for colored output, env loaded from `packages/database/.env*`.
+Required patterns: `commander` CLI with `run` + `check` commands, `--env` flag, `--dry-run` flag, `chalk` for colored output, env loaded from `core/database/.env*`.
 
 See existing scripts in `scripts/` for the standard template.
 
@@ -566,9 +580,9 @@ See existing scripts in `scripts/` for the standard template.
 ## Environment Variables
 
 - SCREAMING_SNAKE_CASE naming
-- Validated with Zod in `packages/environment/src/{server,worker}.ts`
+- Validated with Zod in `core/environment/src/{server,worker}.ts`
 - Client-side: `VITE_` prefix
-- Env files in `packages/database/` (`.env`, `.env.local`, `.env.production`)
+- Env files in `core/database/` (`.env`, `.env.local`, `.env.production`)
 
 ---
 
