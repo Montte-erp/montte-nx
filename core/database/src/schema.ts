@@ -12,12 +12,12 @@ export * from "./schemas/assets";
 export * from "./schemas/auth";
 // Finance
 export * from "./schemas/bank-accounts";
-export * from "./schemas/bank-accounts.validators";
 export * from "./schemas/bills";
 export * from "./schemas/budget-goals";
 export * from "./schemas/categories";
 export * from "./schemas/contacts";
 export * from "./schemas/credit-cards";
+export * from "./schemas/credit-card-statements";
 export * from "./schemas/dashboards";
 // Data sources
 export * from "./schemas/data-sources";
