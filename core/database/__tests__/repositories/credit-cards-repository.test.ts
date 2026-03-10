@@ -1,0 +1,498 @@
+import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
+import { and, eq } from "drizzle-orm";
+import { setupTestDb } from "../helpers/setup-test-db";
+import type { DatabaseInstance } from "@core/database/client";
+import { bankAccounts } from "@core/database/schemas/bank-accounts";
+import { creditCards } from "@core/database/schemas/credit-cards";
+import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
+
+// =============================================================================
+// Mock the singleton db
+// =============================================================================
+
+vi.mock("@core/database/client", async () => {
+   return { db: null as unknown as DatabaseInstance };
+});
+
+let testDb: Awaited<ReturnType<typeof setupTestDb>>;
+
+beforeAll(async () => {
+   testDb = await setupTestDb();
+   const clientModule = await import("@core/database/client");
+   (clientModule as any).db = testDb.db;
+
+   // Patch db.query for PGLite compatibility — the relational query API
+   // (db.query.*) is not populated by drizzle-orm/pglite in this Drizzle beta.
+   // We provide minimal findMany/findFirst implementations using db.select().
+   (clientModule as any).db.query = {
+      creditCards: {
+         findMany: async (opts: {
+            where?: Record<string, unknown>;
+            orderBy?: Record<string, string>;
+         }) => {
+            const conditions = [];
+            if (opts?.where) {
+               for (const [key, value] of Object.entries(opts.where)) {
+                  if (key in creditCards && value !== undefined) {
+                     conditions.push(
+                        eq((creditCards as any)[key], value as any),
+                     );
+                  }
+               }
+            }
+            const query = testDb.db.select().from(creditCards);
+            if (conditions.length > 0) {
+               return await query.where(and(...conditions));
+            }
+            return await query;
+         },
+         findFirst: async (opts: { where?: Record<string, unknown> }) => {
+            const conditions = [];
+            if (opts?.where) {
+               for (const [key, value] of Object.entries(opts.where)) {
+                  if (key in creditCards && value !== undefined) {
+                     conditions.push(
+                        eq((creditCards as any)[key], value as any),
+                     );
+                  }
+               }
+            }
+            const query = testDb.db.select().from(creditCards);
+            const rows =
+               conditions.length > 0
+                  ? await query.where(and(...conditions)).limit(1)
+                  : await query.limit(1);
+            return rows[0] ?? undefined;
+         },
+      },
+      creditCardStatements: {
+         findFirst: async (opts: { where?: Record<string, unknown> }) => {
+            const conditions = [];
+            if (opts?.where) {
+               for (const [key, value] of Object.entries(opts.where)) {
+                  if (key in creditCardStatements && value !== undefined) {
+                     conditions.push(
+                        eq((creditCardStatements as any)[key], value as any),
+                     );
+                  }
+               }
+            }
+            const query = testDb.db.select().from(creditCardStatements);
+            const rows =
+               conditions.length > 0
+                  ? await query.where(and(...conditions)).limit(1)
+                  : await query.limit(1);
+            return rows[0] ?? undefined;
+         },
+      },
+   };
+});
+
+afterAll(async () => {
+   await testDb.cleanup();
+});
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+function randomTeamId() {
+   return crypto.randomUUID();
+}
+
+async function createBankAccount(teamId: string) {
+   const [account] = await testDb.db
+      .insert(bankAccounts)
+      .values({
+         teamId,
+         name: "Test Bank Account",
+         type: "checking",
+         bankCode: "001",
+      })
+      .returning();
+   return account!;
+}
+
+function validInput(
+   bankAccountId: string,
+   overrides: Record<string, unknown> = {},
+) {
+   return {
+      name: "Nubank Platinum",
+      closingDay: 15,
+      dueDay: 22,
+      bankAccountId,
+      ...overrides,
+   };
+}
+
+// =============================================================================
+// Tests
+// =============================================================================
+
+describe("credit-cards-repository", () => {
+   let repo: typeof import("@core/database/repositories/credit-cards-repository");
+
+   beforeAll(async () => {
+      repo =
+         await import("@core/database/repositories/credit-cards-repository");
+   });
+
+   // -------------------------------------------------------------------------
+   // createCreditCard
+   // -------------------------------------------------------------------------
+
+   describe("createCreditCard", () => {
+      it("creates a credit card with valid data", async () => {
+         const teamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+
+         const card = await repo.createCreditCard(
+            teamId,
+            validInput(bankAccount.id, { brand: "mastercard" }),
+         );
+
+         expect(card).toMatchObject({
+            teamId,
+            name: "Nubank Platinum",
+            closingDay: 15,
+            dueDay: 22,
+            bankAccountId: bankAccount.id,
+            brand: "mastercard",
+            status: "active",
+            color: "#6366f1",
+            creditLimit: "0.00",
+         });
+         expect(card.id).toBeDefined();
+         expect(card.createdAt).toBeInstanceOf(Date);
+      });
+
+      it("creates a credit card with custom credit limit and color", async () => {
+         const teamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+
+         const card = await repo.createCreditCard(
+            teamId,
+            validInput(bankAccount.id, {
+               creditLimit: "10000.00",
+               color: "#ff0000",
+               brand: "visa",
+            }),
+         );
+
+         expect(card.creditLimit).toBe("10000.00");
+         expect(card.color).toBe("#ff0000");
+         expect(card.brand).toBe("visa");
+      });
+
+      it("rejects name shorter than 2 characters", async () => {
+         const teamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+
+         await expect(
+            repo.createCreditCard(
+               teamId,
+               validInput(bankAccount.id, { name: "A" }),
+            ),
+         ).rejects.toThrow();
+      });
+
+      it("rejects invalid closing day (0)", async () => {
+         const teamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+
+         await expect(
+            repo.createCreditCard(
+               teamId,
+               validInput(bankAccount.id, { closingDay: 0 }),
+            ),
+         ).rejects.toThrow();
+      });
+
+      it("rejects closing day above 31", async () => {
+         const teamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+
+         await expect(
+            repo.createCreditCard(
+               teamId,
+               validInput(bankAccount.id, { closingDay: 32 }),
+            ),
+         ).rejects.toThrow();
+      });
+
+      it("rejects invalid color format", async () => {
+         const teamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+
+         await expect(
+            repo.createCreditCard(
+               teamId,
+               validInput(bankAccount.id, { color: "red" }),
+            ),
+         ).rejects.toThrow();
+      });
+
+      it("rejects negative credit limit", async () => {
+         const teamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+
+         await expect(
+            repo.createCreditCard(
+               teamId,
+               validInput(bankAccount.id, { creditLimit: "-100" }),
+            ),
+         ).rejects.toThrow();
+      });
+   });
+
+   // -------------------------------------------------------------------------
+   // listCreditCards
+   // -------------------------------------------------------------------------
+
+   describe("listCreditCards", () => {
+      it("lists credit cards for a team", async () => {
+         const teamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+
+         await repo.createCreditCard(
+            teamId,
+            validInput(bankAccount.id, { name: "Card A" }),
+         );
+         await repo.createCreditCard(
+            teamId,
+            validInput(bankAccount.id, {
+               name: "Card B",
+               closingDay: 5,
+               dueDay: 10,
+            }),
+         );
+
+         const cards = await repo.listCreditCards(teamId);
+         expect(cards).toHaveLength(2);
+         for (const card of cards) {
+            expect(card.teamId).toBe(teamId);
+         }
+      });
+
+      it("does not return cards from other teams", async () => {
+         const teamA = randomTeamId();
+         const teamB = randomTeamId();
+         const bankA = await createBankAccount(teamA);
+         const bankB = await createBankAccount(teamB);
+
+         await repo.createCreditCard(
+            teamA,
+            validInput(bankA.id, { name: "Team A Card" }),
+         );
+         await repo.createCreditCard(
+            teamB,
+            validInput(bankB.id, { name: "Team B Card" }),
+         );
+
+         const cardsA = await repo.listCreditCards(teamA);
+         expect(cardsA).toHaveLength(1);
+         expect(cardsA[0]!.name).toBe("Team A Card");
+      });
+   });
+
+   // -------------------------------------------------------------------------
+   // getCreditCard
+   // -------------------------------------------------------------------------
+
+   describe("getCreditCard", () => {
+      it("gets a credit card by id", async () => {
+         const teamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+         const created = await repo.createCreditCard(
+            teamId,
+            validInput(bankAccount.id, { brand: "amex" }),
+         );
+
+         const found = await repo.getCreditCard(created.id);
+         expect(found).not.toBeNull();
+         expect(found!.id).toBe(created.id);
+         expect(found!.name).toBe("Nubank Platinum");
+         expect(found!.brand).toBe("amex");
+      });
+
+      it("returns null for non-existent id", async () => {
+         const result = await repo.getCreditCard(crypto.randomUUID());
+         expect(result).toBeNull();
+      });
+   });
+
+   // -------------------------------------------------------------------------
+   // updateCreditCard
+   // -------------------------------------------------------------------------
+
+   describe("updateCreditCard", () => {
+      it("updates name, brand, and credit limit", async () => {
+         const teamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+         const card = await repo.createCreditCard(
+            teamId,
+            validInput(bankAccount.id),
+         );
+
+         const updated = await repo.updateCreditCard(card.id, {
+            name: "Updated Name",
+            brand: "elo",
+            creditLimit: "5000.00",
+         });
+
+         expect(updated.name).toBe("Updated Name");
+         expect(updated.brand).toBe("elo");
+         expect(updated.creditLimit).toBe("5000.00");
+      });
+
+      it("throws for non-existent card", async () => {
+         await expect(
+            repo.updateCreditCard(crypto.randomUUID(), { name: "Ghost" }),
+         ).rejects.toThrow();
+      });
+   });
+
+   // -------------------------------------------------------------------------
+   // deleteCreditCard
+   // -------------------------------------------------------------------------
+
+   describe("deleteCreditCard", () => {
+      it("deletes a credit card without open statements", async () => {
+         const teamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+         const card = await repo.createCreditCard(
+            teamId,
+            validInput(bankAccount.id),
+         );
+
+         await repo.deleteCreditCard(card.id);
+
+         const rows = await testDb.db
+            .select()
+            .from(creditCards)
+            .where(eq(creditCards.id, card.id));
+         expect(rows).toHaveLength(0);
+      });
+
+      it("rejects deleting a credit card with open statements", async () => {
+         const teamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+         const card = await repo.createCreditCard(
+            teamId,
+            validInput(bankAccount.id),
+         );
+
+         await testDb.db.insert(creditCardStatements).values({
+            creditCardId: card.id,
+            statementPeriod: "2026-03",
+            closingDate: "2026-03-10",
+            dueDate: "2026-03-20",
+            status: "open",
+         });
+
+         await expect(repo.deleteCreditCard(card.id)).rejects.toThrow(
+            /faturas abertas/,
+         );
+
+         // Card still exists
+         const rows = await testDb.db
+            .select()
+            .from(creditCards)
+            .where(eq(creditCards.id, card.id));
+         expect(rows).toHaveLength(1);
+      });
+
+      it("allows deleting when paid statements are removed first", async () => {
+         const teamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+         const card = await repo.createCreditCard(
+            teamId,
+            validInput(bankAccount.id),
+         );
+
+         const [statement] = await testDb.db
+            .insert(creditCardStatements)
+            .values({
+               creditCardId: card.id,
+               statementPeriod: "2026-02",
+               closingDate: "2026-02-10",
+               dueDate: "2026-02-20",
+               status: "paid",
+            })
+            .returning();
+
+         // FK restrict prevents deleting card with any statements,
+         // so remove statements first
+         await testDb.db
+            .delete(creditCardStatements)
+            .where(eq(creditCardStatements.id, statement!.id));
+
+         await repo.deleteCreditCard(card.id);
+
+         const rows = await testDb.db
+            .select()
+            .from(creditCards)
+            .where(eq(creditCards.id, card.id));
+         expect(rows).toHaveLength(0);
+      });
+   });
+
+   // -------------------------------------------------------------------------
+   // creditCardHasOpenStatements
+   // -------------------------------------------------------------------------
+
+   describe("creditCardHasOpenStatements", () => {
+      it("returns false when no statements exist", async () => {
+         const teamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+         const card = await repo.createCreditCard(
+            teamId,
+            validInput(bankAccount.id),
+         );
+
+         const result = await repo.creditCardHasOpenStatements(card.id);
+         expect(result).toBe(false);
+      });
+
+      it("returns true when open statements exist", async () => {
+         const teamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+         const card = await repo.createCreditCard(
+            teamId,
+            validInput(bankAccount.id),
+         );
+
+         await testDb.db.insert(creditCardStatements).values({
+            creditCardId: card.id,
+            statementPeriod: "2026-04",
+            closingDate: "2026-04-10",
+            dueDate: "2026-04-20",
+            status: "open",
+         });
+
+         const result = await repo.creditCardHasOpenStatements(card.id);
+         expect(result).toBe(true);
+      });
+
+      it("returns false when only paid statements exist", async () => {
+         const teamId = randomTeamId();
+         const bankAccount = await createBankAccount(teamId);
+         const card = await repo.createCreditCard(
+            teamId,
+            validInput(bankAccount.id),
+         );
+
+         await testDb.db.insert(creditCardStatements).values({
+            creditCardId: card.id,
+            statementPeriod: "2026-05",
+            closingDate: "2026-05-10",
+            dueDate: "2026-05-20",
+            status: "paid",
+         });
+
+         const result = await repo.creditCardHasOpenStatements(card.id);
+         expect(result).toBe(false);
+      });
+   });
+});
