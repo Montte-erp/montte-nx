@@ -32,9 +32,8 @@
          },
          "database": {
             "@types/pg": "^8.16.0",
-            "drizzle-kit": "^0.31.9",
-            "drizzle-orm": "^0.45.1",
-            "drizzle-zod": "0.8.3",
+            "drizzle-kit": "1.0.0-beta.16-ea816b6",
+            "drizzle-orm": "1.0.0-beta.16-ea816b6",
             "pg": "^8.18.0"
          },
          "development": {

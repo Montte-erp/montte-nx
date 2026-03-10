@@ -54,7 +54,6 @@
       "@core/utils": "workspace:*",
       "@f-o-t/condition-evaluator": "catalog:fot",
       "drizzle-orm": "catalog:database",
-      "drizzle-zod": "catalog:database",
       "pg": "catalog:database",
       "zod": "catalog:validation"
    },
