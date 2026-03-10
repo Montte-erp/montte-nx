@@ -22,7 +22,9 @@ export const categories = pgTable(
          .default(sql`pg_catalog.gen_random_uuid()`)
          .primaryKey(),
       teamId: uuid("team_id").notNull(),
-      parentId: uuid("parent_id"),
+      parentId: uuid("parent_id").references((): any => categories.id, {
+         onDelete: "cascade",
+      }),
       name: text("name").notNull(),
       type: categoryTypeEnum("type").notNull(),
       level: integer("level").notNull().default(1),
@@ -111,26 +113,34 @@ export const createCategorySchema = baseCategorySchema
       description: z.string().max(255).nullable().optional(),
       color: colorSchema,
       icon: z.string().max(50).nullable().optional(),
-      keywords: z.array(z.string()).max(20).nullable().optional(),
+      keywords: z
+         .array(z.string().min(1).max(60))
+         .max(20)
+         .nullable()
+         .optional(),
       notes: z.string().max(500).nullable().optional(),
       participatesDre: z.boolean().default(false),
-      dreGroupId: z.string().nullable().optional(),
+      dreGroupId: z.string().max(60).nullable().optional(),
    })
    .superRefine(refineDreGroup);
 
 export const updateCategorySchema = baseCategorySchema
    .extend({
-      name: nameSchema.optional(),
+      name: nameSchema,
       description: z.string().max(255).nullable().optional(),
       color: colorSchema,
       icon: z.string().max(50).nullable().optional(),
-      keywords: z.array(z.string()).max(20).nullable().optional(),
+      keywords: z
+         .array(z.string().min(1).max(60))
+         .max(20)
+         .nullable()
+         .optional(),
       notes: z.string().max(500).nullable().optional(),
-      participatesDre: z.boolean().optional(),
-      dreGroupId: z.string().nullable().optional(),
+      participatesDre: z.boolean(),
+      dreGroupId: z.string().max(60).nullable().optional(),
    })
-   .partial()
    .omit({ type: true, parentId: true })
+   .partial()
    .superRefine(refineDreGroup);
 
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
