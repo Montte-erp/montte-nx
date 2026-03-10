@@ -6,7 +6,6 @@ import {
    budgetGoals,
    categories,
    type NewBudgetGoal,
-   subcategories,
    transactions,
 } from "../schema";
 
@@ -14,7 +13,6 @@ export type BudgetGoalWithProgress = BudgetGoal & {
    categoryName: string | null;
    categoryIcon: string | null;
    categoryColor: string | null;
-   subcategoryName: string | null;
    spentAmount: number;
    percentUsed: number;
 };
@@ -102,16 +100,13 @@ async function computeSpentAmount(
       categoryCondition = or(
          eq(transactions.categoryId, categoryId),
          inArray(
-            transactions.subcategoryId,
+            transactions.categoryId,
             db
-               .select({ id: subcategories.id })
-               .from(subcategories)
-               .where(eq(subcategories.categoryId, categoryId)),
+               .select({ id: categories.id })
+               .from(categories)
+               .where(eq(categories.parentId, categoryId)),
          ),
       );
-   } else if (goal.subcategoryId != null) {
-      const subcategoryId = goal.subcategoryId;
-      categoryCondition = eq(transactions.subcategoryId, subcategoryId);
    } else {
       return 0;
    }
@@ -143,14 +138,9 @@ export async function listBudgetGoals(
             categoryName: categories.name,
             categoryIcon: categories.icon,
             categoryColor: categories.color,
-            subcategoryName: subcategories.name,
          })
          .from(budgetGoals)
          .leftJoin(categories, eq(budgetGoals.categoryId, categories.id))
-         .leftJoin(
-            subcategories,
-            eq(budgetGoals.subcategoryId, subcategories.id),
-         )
          .where(
             and(
                eq(budgetGoals.teamId, teamId),
@@ -178,7 +168,6 @@ export async function listBudgetGoals(
             categoryName: row.categoryName ?? null,
             categoryIcon: row.categoryIcon ?? null,
             categoryColor: row.categoryColor ?? null,
-            subcategoryName: row.subcategoryName ?? null,
             spentAmount,
             percentUsed,
          });
@@ -224,7 +213,6 @@ export async function copyPreviousMonth(
       const newGoals: NewBudgetGoal[] = sourceGoals.map((goal) => ({
          teamId: goal.teamId,
          categoryId: goal.categoryId,
-         subcategoryId: goal.subcategoryId,
          month: toMonth,
          year: toYear,
          limitAmount: goal.limitAmount,
@@ -252,14 +240,9 @@ export async function getGoalsForAlertCheck(
             categoryName: categories.name,
             categoryIcon: categories.icon,
             categoryColor: categories.color,
-            subcategoryName: subcategories.name,
          })
          .from(budgetGoals)
          .leftJoin(categories, eq(budgetGoals.categoryId, categories.id))
-         .leftJoin(
-            subcategories,
-            eq(budgetGoals.subcategoryId, subcategories.id),
-         )
          .where(
             and(
                isNotNull(budgetGoals.alertThreshold),
@@ -289,7 +272,6 @@ export async function getGoalsForAlertCheck(
                categoryName: row.categoryName ?? null,
                categoryIcon: row.categoryIcon ?? null,
                categoryColor: row.categoryColor ?? null,
-               subcategoryName: row.subcategoryName ?? null,
                spentAmount,
                percentUsed,
             });

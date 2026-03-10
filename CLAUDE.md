@@ -157,6 +157,8 @@ import { emitEvent } from "@packages/events";
 
 **No dynamic imports.** Never use `await import(...)` for project modules. Always use static `import` at the top of the file. Dynamic imports break tree-shaking and are unnecessary in this codebase.
 
+**Dates:** Always use `dayjs` for all date manipulation (parsing, formatting, arithmetic). Never use raw `Date` math or manual string formatting for dates.
+
 ---
 
 ## Data Table Pattern

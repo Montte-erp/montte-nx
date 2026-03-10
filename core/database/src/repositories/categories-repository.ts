@@ -1,13 +1,8 @@
 import { AppError, propagateError } from "@core/utils/errors";
 import type { SQL } from "drizzle-orm";
-import { and, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, eq, ilike, or, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
-import {
-   categories,
-   type NewCategory,
-   subcategories,
-   transactions,
-} from "../schema";
+import { categories, type NewCategory, transactions } from "../schema";
 
 export const DEFAULT_CATEGORIES = [
    "Alimentação",
@@ -95,26 +90,8 @@ export async function listCategories(
          .limit(pageSize)
          .offset((page - 1) * pageSize);
 
-      const catIds = cats.map((c) => c.id);
-      const subs =
-         catIds.length > 0
-            ? await db
-                 .select()
-                 .from(subcategories)
-                 .where(
-                    and(
-                       eq(subcategories.teamId, teamId),
-                       inArray(subcategories.categoryId, catIds),
-                    ),
-                 )
-                 .orderBy(subcategories.name)
-            : [];
-
       return {
-         data: cats.map((cat) => ({
-            ...cat,
-            subcategories: subs.filter((s) => s.categoryId === cat.id),
-         })),
+         data: cats,
          totalCount,
          page,
          pageSize,

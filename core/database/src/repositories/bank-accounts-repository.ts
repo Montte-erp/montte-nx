@@ -1,48 +1,30 @@
 import { AppError, propagateError, validateInput } from "@core/utils/errors";
 import { add, of, subtract, toDecimal } from "@f-o-t/money";
 import { and, eq, or, sql } from "drizzle-orm";
-import type { DatabaseInstance } from "../client";
-import { type BankAccount, bankAccounts } from "../schemas/bank-accounts";
+import { db } from "@core/database/client";
 import {
    type CreateBankAccountInput,
    type UpdateBankAccountInput,
+   bankAccounts,
    createBankAccountSchema,
    updateBankAccountSchema,
-} from "../schemas/bank-accounts.validators";
-import { bills } from "../schemas/bills";
-import { transactions } from "../schemas/transactions";
-
-// =============================================================================
-// Helpers — date conversion
-// =============================================================================
-
-function toDateString(date: Date | null | undefined): string | null {
-   if (!date) return null;
-   return date.toISOString().substring(0, 10);
-}
+} from "@core/database/schemas/bank-accounts";
+import { bills } from "@core/database/schemas/bills";
+import { transactions } from "@core/database/schemas/transactions";
 
 // =============================================================================
 // Create
 // =============================================================================
 
-export interface CreateBankAccountParams {
-   teamId: string;
-   data: CreateBankAccountInput;
-}
-
 export async function createBankAccount(
-   db: DatabaseInstance,
-   params: CreateBankAccountParams,
-): Promise<BankAccount> {
-   const validated = validateInput(createBankAccountSchema, params.data);
+   teamId: string,
+   data: CreateBankAccountInput,
+) {
+   const validated = validateInput(createBankAccountSchema, data);
    try {
       const [account] = await db
          .insert(bankAccounts)
-         .values({
-            ...validated,
-            teamId: params.teamId,
-            initialBalanceDate: toDateString(validated.initialBalanceDate),
-         })
+         .values({ ...validated, teamId })
          .returning();
       if (!account) throw AppError.database("Failed to create bank account");
       return account;
@@ -56,40 +38,32 @@ export async function createBankAccount(
 // Read
 // =============================================================================
 
-export interface ListBankAccountsOptions {
-   teamId: string;
-   includeArchived?: boolean;
-}
-
 export async function listBankAccounts(
-   db: DatabaseInstance,
-   options: ListBankAccountsOptions,
-): Promise<BankAccount[]> {
+   teamId: string,
+   includeArchived = false,
+) {
    try {
-      const conditions = [eq(bankAccounts.teamId, options.teamId)];
-      if (!options.includeArchived) {
-         conditions.push(eq(bankAccounts.status, "active"));
+      if (includeArchived) {
+         return await db.query.bankAccounts.findMany({
+            where: { teamId },
+            orderBy: { name: "asc" },
+         });
       }
-      return await db
-         .select()
-         .from(bankAccounts)
-         .where(and(...conditions))
-         .orderBy(bankAccounts.name);
+      return await db.query.bankAccounts.findMany({
+         where: { teamId, status: "active" },
+         orderBy: { name: "asc" },
+      });
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to list bank accounts");
    }
 }
 
-export async function getBankAccount(
-   db: DatabaseInstance,
-   id: string,
-): Promise<BankAccount | null> {
+export async function getBankAccount(id: string) {
    try {
-      const [account] = await db
-         .select()
-         .from(bankAccounts)
-         .where(eq(bankAccounts.id, id));
+      const account = await db.query.bankAccounts.findFirst({
+         where: { id },
+      });
       return account ?? null;
    } catch (err) {
       propagateError(err);
@@ -101,25 +75,16 @@ export async function getBankAccount(
 // Update
 // =============================================================================
 
-export interface UpdateBankAccountParams {
-   id: string;
-   data: UpdateBankAccountInput;
-}
-
 export async function updateBankAccount(
-   db: DatabaseInstance,
-   params: UpdateBankAccountParams,
-): Promise<BankAccount> {
-   const validated = validateInput(updateBankAccountSchema, params.data);
+   id: string,
+   data: UpdateBankAccountInput,
+) {
+   const validated = validateInput(updateBankAccountSchema, data);
    try {
       const [updated] = await db
          .update(bankAccounts)
-         .set({
-            ...validated,
-            updatedAt: new Date(),
-            initialBalanceDate: toDateString(validated.initialBalanceDate),
-         })
-         .where(eq(bankAccounts.id, params.id))
+         .set({ ...validated, updatedAt: new Date() })
+         .where(eq(bankAccounts.id, id))
          .returning();
       if (!updated) throw AppError.notFound("Conta bancária não encontrada.");
       return updated;
@@ -133,10 +98,7 @@ export async function updateBankAccount(
 // Archive / Reactivate
 // =============================================================================
 
-export async function archiveBankAccount(
-   db: DatabaseInstance,
-   id: string,
-): Promise<BankAccount> {
+export async function archiveBankAccount(id: string) {
    try {
       const [updated] = await db
          .update(bankAccounts)
@@ -151,10 +113,7 @@ export async function archiveBankAccount(
    }
 }
 
-export async function reactivateBankAccount(
-   db: DatabaseInstance,
-   id: string,
-): Promise<BankAccount> {
+export async function reactivateBankAccount(id: string) {
    try {
       const [updated] = await db
          .update(bankAccounts)
@@ -173,12 +132,9 @@ export async function reactivateBankAccount(
 // Delete (only if no transactions)
 // =============================================================================
 
-export async function deleteBankAccount(
-   db: DatabaseInstance,
-   id: string,
-): Promise<void> {
+export async function deleteBankAccount(id: string) {
    try {
-      const hasTransactions = await bankAccountHasTransactions(db, id);
+      const hasTransactions = await bankAccountHasTransactions(id);
       if (hasTransactions) {
          throw AppError.conflict(
             "Conta com lançamentos não pode ser excluída. Use arquivamento.",
@@ -195,20 +151,13 @@ export async function deleteBankAccount(
 // Balance Computation (using @f-o-t/money)
 // =============================================================================
 
-export interface BankAccountWithBalance extends BankAccount {
-   currentBalance: string;
-   projectedBalance: string;
-}
-
 export async function computeBankAccountBalance(
-   db: DatabaseInstance,
    accountId: string,
    initialBalance: string,
-): Promise<{ currentBalance: string; projectedBalance: string }> {
+) {
    try {
       const currency = "BRL";
 
-      // Transaction aggregates
       const [row] = await db
          .select({
             income: sql<string>`COALESCE(SUM(CASE WHEN type = 'income' THEN amount::numeric ELSE 0 END), 0)`,
@@ -230,14 +179,12 @@ export async function computeBankAccountBalance(
             ),
          );
 
-      // Balance using @f-o-t/money — precise BigInt arithmetic
       let balance = of(initialBalance, currency);
       balance = add(balance, of(row?.income ?? "0", currency));
       balance = subtract(balance, of(row?.expense ?? "0", currency));
       balance = subtract(balance, of(row?.transferOut ?? "0", currency));
       balance = add(balance, of(transferInRow?.transferIn ?? "0", currency));
 
-      // Projected: current + pending receivables - pending payables
       const [billsRow] = await db
          .select({
             pendingReceivable: sql<string>`COALESCE(SUM(CASE WHEN type = 'receivable' AND status = 'pending' THEN amount::numeric ELSE 0 END), 0)`,
@@ -267,17 +214,16 @@ export async function computeBankAccountBalance(
 }
 
 export async function listBankAccountsWithBalance(
-   db: DatabaseInstance,
-   options: ListBankAccountsOptions,
-): Promise<BankAccountWithBalance[]> {
+   teamId: string,
+   includeArchived = false,
+) {
    try {
-      const accounts = await listBankAccounts(db, options);
+      const accounts = await listBankAccounts(teamId, includeArchived);
 
       return await Promise.all(
          accounts.map(async (account) => {
             const { currentBalance, projectedBalance } =
                await computeBankAccountBalance(
-                  db,
                   account.id,
                   account.initialBalance,
                );
@@ -294,10 +240,7 @@ export async function listBankAccountsWithBalance(
 // Helpers
 // =============================================================================
 
-export async function bankAccountHasTransactions(
-   db: DatabaseInstance,
-   accountId: string,
-): Promise<boolean> {
+export async function bankAccountHasTransactions(accountId: string) {
    try {
       const [row] = await db
          .select({ count: sql<number>`count(*)::int` })

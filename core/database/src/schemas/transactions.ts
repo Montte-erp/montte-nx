@@ -17,7 +17,6 @@ import { categories } from "./categories";
 import { contacts } from "./contacts";
 import { creditCards } from "./credit-cards";
 import { services } from "./services";
-import { subcategories } from "./subcategories";
 import { tags } from "./tags";
 
 export const paymentMethodEnum = pgEnum("payment_method", [
@@ -61,9 +60,6 @@ export const transactions = pgTable(
          onDelete: "restrict",
       }),
       categoryId: uuid("category_id").references(() => categories.id, {
-         onDelete: "set null",
-      }),
-      subcategoryId: uuid("subcategory_id").references(() => subcategories.id, {
          onDelete: "set null",
       }),
       attachmentUrl: text("attachment_url"),

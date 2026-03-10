@@ -9,7 +9,6 @@ import {
    uuid,
 } from "drizzle-orm/pg-core";
 import { categories } from "./categories";
-import { subcategories } from "./subcategories";
 
 export const budgetGoals = pgTable(
    "budget_goals",
@@ -19,9 +18,6 @@ export const budgetGoals = pgTable(
          .primaryKey(),
       teamId: uuid("team_id").notNull(),
       categoryId: uuid("category_id").references(() => categories.id, {
-         onDelete: "cascade",
-      }),
-      subcategoryId: uuid("subcategory_id").references(() => subcategories.id, {
          onDelete: "cascade",
       }),
       month: integer("month").notNull(), // 1–12
@@ -45,9 +41,6 @@ export const budgetGoals = pgTable(
       uniqueIndex("budget_goals_team_category_month_unique")
          .on(table.teamId, table.categoryId, table.month, table.year)
          .where(sql`${table.categoryId} IS NOT NULL`),
-      uniqueIndex("budget_goals_team_subcategory_month_unique")
-         .on(table.teamId, table.subcategoryId, table.month, table.year)
-         .where(sql`${table.subcategoryId} IS NOT NULL`),
    ],
 );
 

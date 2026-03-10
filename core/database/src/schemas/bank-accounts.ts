@@ -9,6 +9,8 @@ import {
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-orm/zod";
+import { z } from "zod";
 
 export const bankAccountTypeEnum = pgEnum("bank_account_type", [
    "checking",
@@ -63,3 +65,114 @@ export type NewBankAccount = typeof bankAccounts.$inferInsert;
 export type BankAccountType = (typeof bankAccountTypeEnum.enumValues)[number];
 export type BankAccountStatus =
    (typeof bankAccountStatusEnum.enumValues)[number];
+
+// =============================================================================
+// Validators
+// =============================================================================
+
+const BANK_TYPES = ["checking", "savings", "investment", "payment"] as const;
+
+const HEX_COLOR_REGEX = /^#[0-9a-fA-F]{6}$/;
+
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+const nameSchema = z
+   .string()
+   .min(2, "Nome deve ter no mínimo 2 caracteres.")
+   .max(80, "Nome deve ter no máximo 80 caracteres.");
+
+const colorSchema = z
+   .string()
+   .regex(HEX_COLOR_REGEX, "Cor inválida. Use formato hex (#RRGGBB).");
+
+const balanceSchema = z.string().refine((v) => !Number.isNaN(Number(v)), {
+   message: "Saldo inicial deve ser um número válido.",
+});
+
+const dateStringSchema = z
+   .string()
+   .regex(ISO_DATE_REGEX, "Data deve estar no formato YYYY-MM-DD.")
+   .nullable()
+   .optional();
+
+const bankDetailFields = {
+   bankCode: z.string().max(10).nullable().optional(),
+   bankName: z.string().max(120).nullable().optional(),
+   branch: z.string().max(20).nullable().optional(),
+   accountNumber: z.string().max(30).nullable().optional(),
+} as const;
+
+const baseBankAccountSchema = createInsertSchema(bankAccounts).pick({
+   name: true,
+   type: true,
+   color: true,
+   iconUrl: true,
+   bankCode: true,
+   bankName: true,
+   branch: true,
+   accountNumber: true,
+   initialBalance: true,
+   initialBalanceDate: true,
+   notes: true,
+});
+
+function refineBankAccountType(
+   data: {
+      type?: string;
+      bankCode?: string | null;
+      branch?: string | null;
+      accountNumber?: string | null;
+   },
+   ctx: z.RefinementCtx,
+) {
+   if (!data.type) return;
+   const isCash = data.type === "cash";
+   const isBankType = (BANK_TYPES as readonly string[]).includes(data.type);
+
+   if (isCash) {
+      for (const [field, msg] of [
+         ["bankCode", "código do banco"],
+         ["branch", "agência"],
+         ["accountNumber", "número da conta"],
+      ] as const) {
+         if (data[field]) {
+            ctx.addIssue({
+               code: z.ZodIssueCode.custom,
+               path: [field],
+               message: `Caixa físico não deve ter ${msg}.`,
+            });
+         }
+      }
+   }
+
+   if (isBankType && !data.bankCode) {
+      ctx.addIssue({
+         code: z.ZodIssueCode.custom,
+         path: ["bankCode"],
+         message: "Código do banco é obrigatório para contas bancárias.",
+      });
+   }
+}
+
+export const createBankAccountSchema = baseBankAccountSchema
+   .extend({
+      name: nameSchema,
+      color: colorSchema.default("#6366f1"),
+      initialBalance: balanceSchema.default("0"),
+      initialBalanceDate: dateStringSchema,
+      ...bankDetailFields,
+   })
+   .superRefine(refineBankAccountType);
+
+export const updateBankAccountSchema = baseBankAccountSchema
+   .extend({
+      name: nameSchema.optional(),
+      color: colorSchema.optional(),
+      initialBalance: balanceSchema.optional(),
+      initialBalanceDate: dateStringSchema,
+      ...bankDetailFields,
+   })
+   .partial();
+
+export type CreateBankAccountInput = z.infer<typeof createBankAccountSchema>;
+export type UpdateBankAccountInput = z.infer<typeof updateBankAccountSchema>;

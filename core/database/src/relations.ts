@@ -249,24 +249,17 @@ export const relations = defineRelations(schema, (r) => ({
          from: r.budgetGoals.categoryId,
          to: r.categories.id,
       }),
-      subcategory: r.one.subcategories({
-         from: r.budgetGoals.subcategoryId,
-         to: r.subcategories.id,
-      }),
    },
 
    // -------------------------------------------------------------------------
-   // Categories & Subcategories
+   // Categories
    // -------------------------------------------------------------------------
    categories: {
-      subcategories: r.many.subcategories(),
-   },
-
-   subcategories: {
-      category: r.one.categories({
-         from: r.subcategories.categoryId,
+      parent: r.one.categories({
+         from: r.categories.parentId,
          to: r.categories.id,
       }),
+      children: r.many.categories(),
    },
 
    // -------------------------------------------------------------------------
@@ -577,10 +570,6 @@ export const relations = defineRelations(schema, (r) => ({
       category: r.one.categories({
          from: r.transactions.categoryId,
          to: r.categories.id,
-      }),
-      subcategory: r.one.subcategories({
-         from: r.transactions.subcategoryId,
-         to: r.subcategories.id,
       }),
       transactionTags: r.many.transactionTags(),
       items: r.many.transactionItems(),

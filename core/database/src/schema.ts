@@ -47,7 +47,6 @@ export * from "./schemas/roles";
 export * from "./schemas/services";
 // SSO
 export * from "./schemas/sso";
-export * from "./schemas/subcategories";
 export * from "./schemas/tags";
 export * from "./schemas/transactions";
 // Webhooks

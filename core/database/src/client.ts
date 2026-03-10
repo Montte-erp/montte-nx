@@ -1,3 +1,4 @@
+import { env } from "@core/environment/server";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import * as schema from "./schema";
@@ -21,3 +22,5 @@ export const createDb = (opts?: DatabaseClientOptions): DatabaseInstance => {
       relations,
    });
 };
+
+export const db = createDb({ databaseUrl: env.DATABASE_URL });
