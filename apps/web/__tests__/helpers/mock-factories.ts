@@ -1,4 +1,5 @@
 import type { Action } from "@core/database/schemas/actions";
+import type { BankAccount } from "@core/database/schemas/bank-accounts";
 import type { Annotation } from "@core/database/schemas/annotations";
 import type { Dashboard } from "@core/database/schemas/dashboards";
 import type { DataSource } from "@core/database/schemas/data-sources";
@@ -22,6 +23,7 @@ export const PROP_DEF_ID = "b1b1b1b1-c2c2-4d3d-a4a4-e5e5e5e5e5e5";
 export const DATA_SOURCE_ID = "c2c2c2c2-d3d3-4e4e-b5b5-f6f6f6f6f6f6";
 export const ANNOTATION_ID = "d3d3d3d3-e4e4-4f5f-a6c6-a7a7a7a7a7a7";
 export const EVENT_CATALOG_ID = "e4e4e4e4-f5f5-4a6a-a7d7-b8b8b8b8b8b8";
+export const BANK_ACCOUNT_ID = "ba000000-0000-4000-a000-000000000001";
 
 // =============================================================================
 // Factory Functions
@@ -188,6 +190,30 @@ export function makeEventCatalogEntry(
       description: "Fired when a page is viewed",
       isBillable: true,
       isActive: true,
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+      ...overrides,
+   };
+}
+
+export function makeBankAccount(
+   overrides: Partial<BankAccount> = {},
+): BankAccount {
+   return {
+      id: BANK_ACCOUNT_ID,
+      teamId: TEST_TEAM_ID,
+      name: "Conta Corrente Principal",
+      type: "checking",
+      status: "active",
+      color: "#6366f1",
+      iconUrl: null,
+      bankCode: "001",
+      bankName: "Banco do Brasil",
+      branch: "1234",
+      accountNumber: "12345-6",
+      initialBalance: "1000.00",
+      initialBalanceDate: null,
+      notes: null,
       createdAt: new Date("2026-01-01"),
       updatedAt: new Date("2026-01-01"),
       ...overrides,
