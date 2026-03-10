@@ -3,12 +3,28 @@ import {
    index,
    integer,
    numeric,
+   pgEnum,
    pgTable,
    text,
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
 import { bankAccounts } from "./bank-accounts";
+
+export const creditCardStatusEnum = pgEnum("credit_card_status", [
+   "active",
+   "blocked",
+   "cancelled",
+]);
+
+export const creditCardBrandEnum = pgEnum("credit_card_brand", [
+   "visa",
+   "mastercard",
+   "elo",
+   "amex",
+   "hipercard",
+   "other",
+]);
 
 export const creditCards = pgTable(
    "credit_cards",
@@ -25,9 +41,11 @@ export const creditCards = pgTable(
          .default("0"),
       closingDay: integer("closing_day").notNull(),
       dueDay: integer("due_day").notNull(),
-      bankAccountId: uuid("bank_account_id").references(() => bankAccounts.id, {
-         onDelete: "set null",
-      }),
+      bankAccountId: uuid("bank_account_id")
+         .notNull()
+         .references(() => bankAccounts.id, { onDelete: "restrict" }),
+      status: creditCardStatusEnum("status").notNull().default("active"),
+      brand: creditCardBrandEnum("brand"),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
          .defaultNow(),
@@ -44,3 +62,5 @@ export const creditCards = pgTable(
 
 export type CreditCard = typeof creditCards.$inferSelect;
 export type NewCreditCard = typeof creditCards.$inferInsert;
+export type CreditCardStatus = (typeof creditCardStatusEnum.enumValues)[number];
+export type CreditCardBrand = (typeof creditCardBrandEnum.enumValues)[number];
