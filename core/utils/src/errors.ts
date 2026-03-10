@@ -1,4 +1,3 @@
-import type { ZodObject } from "zod";
 import { ZodError, type z } from "zod";
 
 export const ErrorCodes = {
@@ -103,7 +102,7 @@ export function propagateError(err: unknown) {
    return;
 }
 
-export function validateInput<T extends ZodObject>(
+export function validateInput<T extends z.ZodTypeAny>(
    schema: T,
    value: unknown,
 ): z.infer<T> {
