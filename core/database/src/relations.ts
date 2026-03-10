@@ -519,6 +519,41 @@ export const relations = defineRelations(schema, (r) => ({
    },
 
    // -------------------------------------------------------------------------
+   // Bank Accounts
+   // -------------------------------------------------------------------------
+   bankAccounts: {
+      bills: r.many.bills(),
+      transactions: r.many.transactions(),
+      creditCards: r.many.creditCards(),
+   },
+
+   // -------------------------------------------------------------------------
+   // Credit Cards
+   // -------------------------------------------------------------------------
+   creditCards: {
+      bankAccount: r.one.bankAccounts({
+         from: r.creditCards.bankAccountId,
+         to: r.bankAccounts.id,
+      }),
+      statements: r.many.creditCardStatements(),
+   },
+
+   creditCardStatements: {
+      creditCard: r.one.creditCards({
+         from: r.creditCardStatements.creditCardId,
+         to: r.creditCards.id,
+      }),
+      bill: r.one.bills({
+         from: r.creditCardStatements.billId,
+         to: r.bills.id,
+      }),
+      paymentTransaction: r.one.transactions({
+         from: r.creditCardStatements.paymentTransactionId,
+         to: r.transactions.id,
+      }),
+   },
+
+   // -------------------------------------------------------------------------
    // Transactions
    // -------------------------------------------------------------------------
    transactions: {
