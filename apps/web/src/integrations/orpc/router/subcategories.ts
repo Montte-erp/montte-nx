@@ -33,7 +33,7 @@ export const listByCategoryId = protectedProcedure
    .input(z.object({ categoryId: z.string().uuid() }))
    .handler(async ({ context, input }) => {
       const { db, teamId } = context;
-      const category = await getCategory(db, input.categoryId);
+      const category = await getCategory(input.categoryId);
       if (!category || category.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Categoria não encontrada.",
@@ -46,7 +46,7 @@ export const create = protectedProcedure
    .input(z.object({ categoryId: z.string().uuid() }).merge(subcategorySchema))
    .handler(async ({ context, input }) => {
       const { db, teamId } = context;
-      const category = await getCategory(db, input.categoryId);
+      const category = await getCategory(input.categoryId);
       if (!category || category.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Categoria não encontrada.",

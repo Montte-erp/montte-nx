@@ -1,6 +1,7 @@
 import { ORPCError } from "@orpc/server";
 import {
-   categoryHasTransactions,
+   archiveCategory,
+   categoryTreeHasTransactions,
    createCategory,
    deleteCategory,
    getCategory,
@@ -38,11 +39,9 @@ const categorySchema = createInsertSchema(categories)
 export const create = protectedProcedure
    .input(categorySchema)
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      return createCategory(db, {
-         teamId,
+      const { teamId } = context;
+      return createCategory(teamId, {
          name: input.name,
-         isDefault: false,
          color: input.color ?? null,
          icon: input.icon ?? null,
          keywords: input.keywords ?? null,
@@ -53,43 +52,32 @@ export const create = protectedProcedure
 
 const getAllInput = z
    .object({
-      search: z.string().optional(),
       type: z.enum(["income", "expense"]).optional(),
       includeArchived: z.boolean().optional(),
-      page: z.number().int().min(1).default(1),
-      pageSize: z.number().int().min(1).max(100).default(50),
    })
    .optional();
 
 export const getAll = protectedProcedure
    .input(getAllInput)
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      return listCategories(db, teamId, {
-         search: input?.search,
+      const { teamId } = context;
+      return listCategories(teamId, {
          type: input?.type,
          includeArchived: input?.includeArchived,
-         page: input?.page,
-         pageSize: input?.pageSize,
       });
    });
 
 export const update = protectedProcedure
    .input(z.object({ id: z.string().uuid() }).merge(categorySchema))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      const category = await getCategory(db, input.id);
+      const { teamId } = context;
+      const category = await getCategory(input.id);
       if (!category || category.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Categoria não encontrada.",
          });
       }
-      if (category.isDefault) {
-         throw new ORPCError("BAD_REQUEST", {
-            message: "Categorias padrão não podem ser editadas.",
-         });
-      }
-      return updateCategory(db, input.id, {
+      return updateCategory(input.id, {
          name: input.name,
          color: input.color ?? null,
          icon: input.icon ?? null,
@@ -102,35 +90,26 @@ export const update = protectedProcedure
 export const remove = protectedProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      const category = await getCategory(db, input.id);
+      const { teamId } = context;
+      const category = await getCategory(input.id);
       if (!category || category.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Categoria não encontrada.",
          });
       }
-      if (category.isDefault) {
-         throw new ORPCError("BAD_REQUEST", {
-            message: "Categorias padrão não podem ser excluídas.",
-         });
-      }
-      const hasTransactions = await categoryHasTransactions(db, input.id);
+      const hasTransactions = await categoryTreeHasTransactions(input.id);
       if (hasTransactions) {
          throw new ORPCError("BAD_REQUEST", {
             message: "Não é possível excluir uma categoria com transações.",
          });
       }
-      await deleteCategory(db, input.id);
+      await deleteCategory(input.id);
       return { success: true };
    });
 
 export const exportAll = protectedProcedure.handler(async ({ context }) => {
-   const { db, teamId } = context;
-   const result = await listCategories(db, teamId, {
-      includeArchived: true,
-      pageSize: 10000,
-   });
-   return result.data;
+   const { teamId } = context;
+   return listCategories(teamId, { includeArchived: true });
 });
 
 export const importBatch = protectedProcedure
@@ -154,10 +133,8 @@ export const importBatch = protectedProcedure
       const { db, teamId } = context;
       const results = [];
       for (const cat of input.categories) {
-         const created = await createCategory(db, {
-            teamId,
+         const created = await createCategory(teamId, {
             name: cat.name,
-            isDefault: false,
             color: cat.color ?? null,
             icon: cat.icon ?? null,
             keywords: cat.keywords ?? null,
@@ -181,17 +158,12 @@ export const importBatch = protectedProcedure
 export const archive = protectedProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      const category = await getCategory(db, input.id);
+      const { teamId } = context;
+      const category = await getCategory(input.id);
       if (!category || category.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Categoria não encontrada.",
          });
       }
-      if (category.isDefault) {
-         throw new ORPCError("BAD_REQUEST", {
-            message: "Categorias padrão não podem ser arquivadas.",
-         });
-      }
-      return updateCategory(db, input.id, { isArchived: true });
+      return archiveCategory(input.id);
    });

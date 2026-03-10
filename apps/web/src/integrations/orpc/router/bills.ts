@@ -105,7 +105,7 @@ async function verifyBillRefs(
    }
 
    if (input.categoryId) {
-      const cat = await getCategory(db, input.categoryId);
+      const cat = await getCategory(input.categoryId);
       if (!cat || cat.teamId !== teamId) {
          throw new ORPCError("BAD_REQUEST", { message: "Categoria inválida." });
       }
