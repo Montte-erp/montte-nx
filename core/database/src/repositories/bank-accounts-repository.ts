@@ -13,6 +13,15 @@ import { bills } from "../schemas/bills";
 import { transactions } from "../schemas/transactions";
 
 // =============================================================================
+// Helpers — date conversion
+// =============================================================================
+
+function toDateString(date: Date | null | undefined): string | null {
+   if (!date) return null;
+   return date.toISOString().substring(0, 10);
+}
+
+// =============================================================================
 // Create
 // =============================================================================
 
@@ -29,7 +38,11 @@ export async function createBankAccount(
    try {
       const [account] = await db
          .insert(bankAccounts)
-         .values({ ...validated, teamId: params.teamId })
+         .values({
+            ...validated,
+            teamId: params.teamId,
+            initialBalanceDate: toDateString(validated.initialBalanceDate),
+         })
          .returning();
       if (!account) throw AppError.database("Failed to create bank account");
       return account;
@@ -101,7 +114,11 @@ export async function updateBankAccount(
    try {
       const [updated] = await db
          .update(bankAccounts)
-         .set({ ...validated, updatedAt: new Date() })
+         .set({
+            ...validated,
+            updatedAt: new Date(),
+            initialBalanceDate: toDateString(validated.initialBalanceDate),
+         })
          .where(eq(bankAccounts.id, params.id))
          .returning();
       if (!updated) throw AppError.notFound("Conta bancária não encontrada.");
