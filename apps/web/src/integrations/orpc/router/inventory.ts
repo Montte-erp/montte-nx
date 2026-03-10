@@ -17,7 +17,7 @@ import {
    inventoryProducts,
    inventorySettings,
 } from "@core/database/schemas/inventory";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

@@ -8,7 +8,7 @@ import {
    updateTag,
 } from "@core/database/repositories/tags-repository";
 import { tags } from "@core/database/schemas/tags";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

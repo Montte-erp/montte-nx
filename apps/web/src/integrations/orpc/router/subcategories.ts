@@ -9,7 +9,7 @@ import {
    updateSubcategory,
 } from "@core/database/repositories/subcategories-repository";
 import { subcategories } from "@core/database/schemas/subcategories";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

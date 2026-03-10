@@ -9,7 +9,7 @@ import {
    updateBankAccount,
 } from "@core/database/repositories/bank-accounts-repository";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

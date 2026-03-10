@@ -16,7 +16,7 @@ import {
    updateTransaction,
 } from "@core/database/repositories/transactions-repository";
 import { transactions } from "@core/database/schemas/transactions";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

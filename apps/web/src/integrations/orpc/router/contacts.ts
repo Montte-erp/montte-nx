@@ -8,7 +8,7 @@ import {
    updateContact,
 } from "@core/database/repositories/contacts-repository";
 import { contacts } from "@core/database/schemas/contacts";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 

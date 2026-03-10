@@ -7,7 +7,7 @@ import {
    updateCreditCard,
 } from "@core/database/repositories/credit-cards-repository";
 import { creditCards } from "@core/database/schemas/credit-cards";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
