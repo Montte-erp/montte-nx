@@ -523,7 +523,10 @@ export const relations = defineRelations(schema, (r) => ({
    // -------------------------------------------------------------------------
    bankAccounts: {
       bills: r.many.bills(),
-      transactions: r.many.transactions(),
+      transactions: r.many.transactions({
+         from: r.bankAccounts.id,
+         to: r.transactions.bankAccountId,
+      }),
       creditCards: r.many.creditCards(),
    },
 
