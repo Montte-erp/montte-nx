@@ -1,13 +1,14 @@
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import * as schema from "./schema";
+import { relations } from "./relations";
 
 export interface DatabaseClientOptions {
    databaseUrl?: string;
    max?: number;
 }
 
-export type DatabaseInstance = NodePgDatabase<typeof schema>;
+export type DatabaseInstance = NodePgDatabase<typeof schema, typeof relations>;
 
 export const createDb = (opts?: DatabaseClientOptions): DatabaseInstance => {
    return drizzle({
@@ -17,5 +18,6 @@ export const createDb = (opts?: DatabaseClientOptions): DatabaseInstance => {
          max: opts?.max,
       },
       schema,
+      relations,
    });
 };

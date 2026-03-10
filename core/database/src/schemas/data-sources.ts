@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    boolean,
    integer,
@@ -30,13 +30,6 @@ export const dataSources = pgTable("data_sources", {
       .$onUpdate(() => new Date())
       .notNull(),
 });
-
-export const dataSourcesRelations = relations(dataSources, ({ one }) => ({
-   organization: one(organization, {
-      fields: [dataSources.organizationId],
-      references: [organization.id],
-   }),
-}));
 
 export type DataSource = typeof dataSources.$inferSelect;
 export type NewDataSource = typeof dataSources.$inferInsert;

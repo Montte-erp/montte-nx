@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    boolean,
    index,
@@ -50,22 +50,3 @@ export const memberRoles = pgTable(
       index("member_roles_role_idx").on(table.roleId),
    ],
 );
-
-export const customRolesRelations = relations(customRoles, ({ one, many }) => ({
-   organization: one(organization, {
-      fields: [customRoles.organizationId],
-      references: [organization.id],
-   }),
-   memberRoles: many(memberRoles),
-}));
-
-export const memberRolesRelations = relations(memberRoles, ({ one }) => ({
-   member: one(member, {
-      fields: [memberRoles.memberId],
-      references: [member.id],
-   }),
-   role: one(customRoles, {
-      fields: [memberRoles.roleId],
-      references: [customRoles.id],
-   }),
-}));

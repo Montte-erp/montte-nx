@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    boolean,
    index,
@@ -56,20 +56,6 @@ export const discussionReplies = pgTable(
       index("discussion_replies_discussion_id_idx").on(table.discussionId),
       index("discussion_replies_user_id_idx").on(table.userId),
    ],
-);
-
-export const discussionsRelations = relations(discussions, ({ many }) => ({
-   replies: many(discussionReplies),
-}));
-
-export const discussionRepliesRelations = relations(
-   discussionReplies,
-   ({ one }) => ({
-      discussion: one(discussions, {
-         fields: [discussionReplies.discussionId],
-         references: [discussions.id],
-      }),
-   }),
 );
 
 export type Discussion = typeof discussions.$inferSelect;

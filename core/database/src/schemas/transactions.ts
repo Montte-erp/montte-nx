@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    boolean,
    date,
@@ -128,68 +128,6 @@ export const transactionItems = pgTable("transaction_items", {
       .notNull()
       .defaultNow(),
 });
-
-export const transactionsRelations = relations(
-   transactions,
-   ({ one, many }) => ({
-      bankAccount: one(bankAccounts, {
-         fields: [transactions.bankAccountId],
-         references: [bankAccounts.id],
-         relationName: "sourceAccount",
-      }),
-      destinationBankAccount: one(bankAccounts, {
-         fields: [transactions.destinationBankAccountId],
-         references: [bankAccounts.id],
-         relationName: "destinationAccount",
-      }),
-      creditCard: one(creditCards, {
-         fields: [transactions.creditCardId],
-         references: [creditCards.id],
-      }),
-      category: one(categories, {
-         fields: [transactions.categoryId],
-         references: [categories.id],
-      }),
-      subcategory: one(subcategories, {
-         fields: [transactions.subcategoryId],
-         references: [subcategories.id],
-      }),
-      transactionTags: many(transactionTags),
-      items: many(transactionItems),
-      contact: one(contacts, {
-         fields: [transactions.contactId],
-         references: [contacts.id],
-      }),
-   }),
-);
-
-export const transactionTagsRelations = relations(
-   transactionTags,
-   ({ one }) => ({
-      transaction: one(transactions, {
-         fields: [transactionTags.transactionId],
-         references: [transactions.id],
-      }),
-      tag: one(tags, {
-         fields: [transactionTags.tagId],
-         references: [tags.id],
-      }),
-   }),
-);
-
-export const transactionItemsRelations = relations(
-   transactionItems,
-   ({ one }) => ({
-      transaction: one(transactions, {
-         fields: [transactionItems.transactionId],
-         references: [transactions.id],
-      }),
-      service: one(services, {
-         fields: [transactionItems.serviceId],
-         references: [services.id],
-      }),
-   }),
-);
 
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;

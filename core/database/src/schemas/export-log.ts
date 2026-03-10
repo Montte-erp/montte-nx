@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    index,
    integer,
@@ -60,13 +60,6 @@ export const exportLog = pgTable(
       index("export_log_destination_idx").on(table.destination),
    ],
 );
-
-export const exportLogRelations = relations(exportLog, ({ one }) => ({
-   member: one(member, {
-      fields: [exportLog.memberId],
-      references: [member.id],
-   }),
-}));
 
 export type ExportLog = typeof exportLog.$inferSelect;
 export type ExportLogInsert = typeof exportLog.$inferInsert;

@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    bigint,
    index,
@@ -34,17 +34,6 @@ export const assets = pgTable(
       index("assets_team_id_idx").on(table.teamId),
    ],
 );
-
-export const assetsRelations = relations(assets, ({ one }) => ({
-   organization: one(organization, {
-      fields: [assets.organizationId],
-      references: [organization.id],
-   }),
-   team: one(team, {
-      fields: [assets.teamId],
-      references: [team.id],
-   }),
-}));
 
 export type Asset = typeof assets.$inferSelect;
 export type AssetInsert = typeof assets.$inferInsert;

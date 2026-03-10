@@ -1,5 +1,5 @@
 import { Condition } from "@f-o-t/condition-evaluator";
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    boolean,
    index,
@@ -69,21 +69,6 @@ export const dashboards = pgTable(
          .where(sql`${table.isDefault} = true`),
    ],
 );
-
-export const dashboardsRelations = relations(dashboards, ({ one }) => ({
-   organization: one(organization, {
-      fields: [dashboards.organizationId],
-      references: [organization.id],
-   }),
-   team: one(team, {
-      fields: [dashboards.teamId],
-      references: [team.id],
-   }),
-   createdByUser: one(user, {
-      fields: [dashboards.createdBy],
-      references: [user.id],
-   }),
-}));
 
 export type Dashboard = typeof dashboards.$inferSelect;
 export type NewDashboard = typeof dashboards.$inferInsert;

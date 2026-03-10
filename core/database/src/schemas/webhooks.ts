@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    boolean,
    index,
@@ -84,35 +84,6 @@ export const webhookDeliveries = pgTable(
       index("webhook_deliveries_status_idx").on(table.status),
       index("webhook_deliveries_event_idx").on(table.eventId),
    ],
-);
-
-export const webhookEndpointsRelations = relations(
-   webhookEndpoints,
-   ({ one, many }) => ({
-      organization: one(organization, {
-         fields: [webhookEndpoints.organizationId],
-         references: [organization.id],
-      }),
-      team: one(team, {
-         fields: [webhookEndpoints.teamId],
-         references: [team.id],
-      }),
-      deliveries: many(webhookDeliveries),
-   }),
-);
-
-export const webhookDeliveriesRelations = relations(
-   webhookDeliveries,
-   ({ one }) => ({
-      webhookEndpoint: one(webhookEndpoints, {
-         fields: [webhookDeliveries.webhookEndpointId],
-         references: [webhookEndpoints.id],
-      }),
-      event: one(events, {
-         fields: [webhookDeliveries.eventId],
-         references: [events.id],
-      }),
-   }),
 );
 
 export type WebhookEndpoint = typeof webhookEndpoints.$inferSelect;

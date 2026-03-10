@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
    boolean,
    index,
@@ -26,14 +25,4 @@ export const organizationAddons = pgTable(
       index("organization_addons_org_idx").on(table.organizationId),
       index("organization_addons_addon_idx").on(table.addonId),
    ],
-);
-
-export const organizationAddonsRelations = relations(
-   organizationAddons,
-   ({ one }) => ({
-      organization: one(organization, {
-         fields: [organizationAddons.organizationId],
-         references: [organization.id],
-      }),
-   }),
 );

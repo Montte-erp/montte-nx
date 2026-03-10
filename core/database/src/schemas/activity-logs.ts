@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
    index,
    jsonb,
@@ -41,18 +40,3 @@ export const activityLogs = pgTable(
       ),
    ],
 );
-
-export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
-   organization: one(organization, {
-      fields: [activityLogs.organizationId],
-      references: [organization.id],
-   }),
-   team: one(team, {
-      fields: [activityLogs.teamId],
-      references: [team.id],
-   }),
-   user: one(user, {
-      fields: [activityLogs.userId],
-      references: [user.id],
-   }),
-}));

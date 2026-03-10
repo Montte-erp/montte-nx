@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { organization, user } from "./auth";
 
@@ -20,17 +20,6 @@ export const annotations = pgTable("annotations", {
    metadata: jsonb("metadata").$type<Record<string, unknown>>(),
    createdAt: timestamp("created_at").defaultNow().notNull(),
 });
-
-export const annotationsRelations = relations(annotations, ({ one }) => ({
-   organization: one(organization, {
-      fields: [annotations.organizationId],
-      references: [organization.id],
-   }),
-   createdByUser: one(user, {
-      fields: [annotations.createdBy],
-      references: [user.id],
-   }),
-}));
 
 export type Annotation = typeof annotations.$inferSelect;
 export type NewAnnotation = typeof annotations.$inferInsert;

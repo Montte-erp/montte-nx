@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { jsonb, pgTable, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-orm/zod";
 import { z } from "zod";
@@ -117,16 +117,6 @@ export const productSettings = pgTable("product_settings", {
       .$onUpdate(() => new Date())
       .notNull(),
 });
-
-export const productSettingsRelations = relations(
-   productSettings,
-   ({ one }) => ({
-      team: one(team, {
-         fields: [productSettings.teamId],
-         references: [team.id],
-      }),
-   }),
-);
 
 export type ProductSettings = typeof productSettings.$inferSelect;
 export type ProductSettingsInsert = typeof productSettings.$inferInsert;

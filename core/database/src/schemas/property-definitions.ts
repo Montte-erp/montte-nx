@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    boolean,
    pgTable,
@@ -33,16 +33,6 @@ export const propertyDefinitions = pgTable(
    (table) => [
       unique("uq_prop_def_org_name").on(table.organizationId, table.name),
    ],
-);
-
-export const propertyDefinitionsRelations = relations(
-   propertyDefinitions,
-   ({ one }) => ({
-      organization: one(organization, {
-         fields: [propertyDefinitions.organizationId],
-         references: [organization.id],
-      }),
-   }),
 );
 
 export type PropertyDefinition = typeof propertyDefinitions.$inferSelect;

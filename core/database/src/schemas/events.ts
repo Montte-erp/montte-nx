@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    boolean,
    decimal,
@@ -51,21 +51,6 @@ export const events = pgTable(
       index("events_team_time_idx").on(table.teamId, table.timestamp),
    ],
 );
-
-export const eventsRelations = relations(events, ({ one }) => ({
-   organization: one(organization, {
-      fields: [events.organizationId],
-      references: [organization.id],
-   }),
-   user: one(user, {
-      fields: [events.userId],
-      references: [user.id],
-   }),
-   team: one(team, {
-      fields: [events.teamId],
-      references: [team.id],
-   }),
-}));
 
 export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;

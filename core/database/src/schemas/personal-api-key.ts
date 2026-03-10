@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    index,
    jsonb,
@@ -52,10 +52,3 @@ export const personalApiKey = pgTable(
 
 export type PersonalApiKey = typeof personalApiKey.$inferSelect;
 export type NewPersonalApiKey = typeof personalApiKey.$inferInsert;
-
-export const personalApiKeyRelations = relations(personalApiKey, ({ one }) => ({
-   user: one(user, {
-      fields: [personalApiKey.userId],
-      references: [user.id],
-   }),
-}));

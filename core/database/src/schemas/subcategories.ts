@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    boolean,
    index,
@@ -37,18 +37,7 @@ export const subcategories = pgTable(
    ],
 );
 
-export const subcategoriesRelations = relations(subcategories, ({ one }) => ({
-   category: one(categories, {
-      fields: [subcategories.categoryId],
-      references: [categories.id],
-   }),
-}));
-
-// categoriesRelations is defined here (not in categories.ts) to avoid a circular import.
 // subcategories.ts → categories.ts is already a one-way dependency.
-export const categoriesRelations = relations(categories, ({ many }) => ({
-   subcategories: many(subcategories),
-}));
 
 export type Subcategory = typeof subcategories.$inferSelect;
 export type NewSubcategory = typeof subcategories.$inferInsert;

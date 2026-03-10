@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    index,
    pgEnum,
@@ -74,28 +74,6 @@ export const resourcePermission = pgTable(
 );
 
 // Relations
-export const resourcePermissionRelations = relations(
-   resourcePermission,
-   ({ one }) => ({
-      organization: one(organization, {
-         fields: [resourcePermission.organizationId],
-         references: [organization.id],
-      }),
-      grantedByUser: one(user, {
-         fields: [resourcePermission.grantedBy],
-         references: [user.id],
-      }),
-      // Conditional relations for grantee (either user or team)
-      granteeUser: one(user, {
-         fields: [resourcePermission.granteeId],
-         references: [user.id],
-      }),
-      granteeTeam: one(team, {
-         fields: [resourcePermission.granteeId],
-         references: [team.id],
-      }),
-   }),
-);
 
 // Type exports
 export type ResourcePermission = typeof resourcePermission.$inferSelect;

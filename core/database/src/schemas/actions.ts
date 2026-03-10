@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { organization, user } from "./auth";
 
@@ -23,17 +23,6 @@ export const actions = pgTable("actions", {
       .$onUpdate(() => new Date())
       .notNull(),
 });
-
-export const actionsRelations = relations(actions, ({ one }) => ({
-   organization: one(organization, {
-      fields: [actions.organizationId],
-      references: [organization.id],
-   }),
-   createdByUser: one(user, {
-      fields: [actions.createdBy],
-      references: [user.id],
-   }),
-}));
 
 export type Action = typeof actions.$inferSelect;
 export type NewAction = typeof actions.$inferInsert;

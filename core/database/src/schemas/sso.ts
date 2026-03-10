@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
    boolean,
    index,
@@ -47,24 +46,4 @@ export const ssoConfigurations = pgTable(
          .notNull(),
    },
    (table) => [index("sso_configurations_org_idx").on(table.organizationId)],
-);
-
-export const verifiedDomainsRelations = relations(
-   verifiedDomains,
-   ({ one }) => ({
-      organization: one(organization, {
-         fields: [verifiedDomains.organizationId],
-         references: [organization.id],
-      }),
-   }),
-);
-
-export const ssoConfigurationsRelations = relations(
-   ssoConfigurations,
-   ({ one }) => ({
-      organization: one(organization, {
-         fields: [ssoConfigurations.organizationId],
-         references: [organization.id],
-      }),
-   }),
 );

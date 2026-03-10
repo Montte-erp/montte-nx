@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    date,
    index,
@@ -106,32 +106,6 @@ export const bills = pgTable(
       index("bills_contact_id_idx").on(table.contactId),
       index("bills_subscription_id_idx").on(table.subscriptionId),
    ],
-);
-
-export const billsRelations = relations(bills, ({ one }) => ({
-   bankAccount: one(bankAccounts, {
-      fields: [bills.bankAccountId],
-      references: [bankAccounts.id],
-   }),
-   category: one(categories, {
-      fields: [bills.categoryId],
-      references: [categories.id],
-   }),
-   transaction: one(transactions, {
-      fields: [bills.transactionId],
-      references: [transactions.id],
-   }),
-   recurrenceSetting: one(recurrenceSettings, {
-      fields: [bills.recurrenceGroupId],
-      references: [recurrenceSettings.id],
-   }),
-}));
-
-export const recurrenceSettingsRelations = relations(
-   recurrenceSettings,
-   ({ many }) => ({
-      bills: many(bills),
-   }),
 );
 
 export type Bill = typeof bills.$inferSelect;

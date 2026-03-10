@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    index,
    integer,
@@ -50,17 +50,6 @@ export const budgetGoals = pgTable(
          .where(sql`${table.subcategoryId} IS NOT NULL`),
    ],
 );
-
-export const budgetGoalsRelations = relations(budgetGoals, ({ one }) => ({
-   category: one(categories, {
-      fields: [budgetGoals.categoryId],
-      references: [categories.id],
-   }),
-   subcategory: one(subcategories, {
-      fields: [budgetGoals.subcategoryId],
-      references: [subcategories.id],
-   }),
-}));
 
 export type BudgetGoal = typeof budgetGoals.$inferSelect;
 export type NewBudgetGoal = typeof budgetGoals.$inferInsert;

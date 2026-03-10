@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    date,
    index,
@@ -114,23 +114,6 @@ export const inventorySettings = pgTable("inventory_settings", {
       .defaultNow()
       .$onUpdate(() => new Date()),
 });
-
-export const inventoryProductsRelations = relations(
-   inventoryProducts,
-   ({ many }) => ({
-      movements: many(inventoryMovements),
-   }),
-);
-
-export const inventoryMovementsRelations = relations(
-   inventoryMovements,
-   ({ one }) => ({
-      product: one(inventoryProducts, {
-         fields: [inventoryMovements.productId],
-         references: [inventoryProducts.id],
-      }),
-   }),
-);
 
 export type InventoryProduct = typeof inventoryProducts.$inferSelect;
 export type NewInventoryProduct = typeof inventoryProducts.$inferInsert;

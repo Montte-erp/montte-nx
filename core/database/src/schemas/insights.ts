@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    index,
    jsonb,
@@ -39,21 +39,6 @@ export const insights = pgTable(
    },
    (table) => [index("insights_team_idx").on(table.teamId)],
 );
-
-export const insightsRelations = relations(insights, ({ one }) => ({
-   organization: one(organization, {
-      fields: [insights.organizationId],
-      references: [organization.id],
-   }),
-   team: one(team, {
-      fields: [insights.teamId],
-      references: [team.id],
-   }),
-   createdByUser: one(user, {
-      fields: [insights.createdBy],
-      references: [user.id],
-   }),
-}));
 
 export type Insight = typeof insights.$inferSelect;
 export type NewInsight = typeof insights.$inferInsert;

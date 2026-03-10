@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    boolean,
    date,
@@ -160,56 +160,6 @@ export const resources = pgTable(
 // ---------------------------------------------------------------------------
 // Relations
 // ---------------------------------------------------------------------------
-
-export const servicesRelations = relations(services, ({ one, many }) => ({
-   category: one(categories, {
-      fields: [services.categoryId],
-      references: [categories.id],
-   }),
-   tag: one(tags, {
-      fields: [services.tagId],
-      references: [tags.id],
-   }),
-   variants: many(serviceVariants),
-   resources: many(resources),
-}));
-
-export const serviceVariantsRelations = relations(
-   serviceVariants,
-   ({ one, many }) => ({
-      service: one(services, {
-         fields: [serviceVariants.serviceId],
-         references: [services.id],
-      }),
-      subscriptions: many(contactSubscriptions),
-   }),
-);
-
-export const contactSubscriptionsRelations = relations(
-   contactSubscriptions,
-   ({ one }) => ({
-      contact: one(contacts, {
-         fields: [contactSubscriptions.contactId],
-         references: [contacts.id],
-      }),
-      variant: one(serviceVariants, {
-         fields: [contactSubscriptions.variantId],
-         references: [serviceVariants.id],
-      }),
-      resource: one(resources, {
-         fields: [contactSubscriptions.resourceId],
-         references: [resources.id],
-      }),
-   }),
-);
-
-export const resourcesRelations = relations(resources, ({ one, many }) => ({
-   service: one(services, {
-      fields: [resources.serviceId],
-      references: [services.id],
-   }),
-   subscriptions: many(contactSubscriptions),
-}));
 
 // ---------------------------------------------------------------------------
 // Types

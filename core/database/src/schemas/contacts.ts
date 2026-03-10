@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
    index,
    pgEnum,
@@ -52,10 +52,6 @@ export const contacts = pgTable(
       index("contacts_external_id_idx").on(table.externalId),
    ],
 );
-
-export const contactsRelations = relations(contacts, ({ many }) => ({
-   transactions: many(transactions),
-}));
 
 export type Contact = typeof contacts.$inferSelect;
 export type NewContact = typeof contacts.$inferInsert;
