@@ -1,0 +1,21 @@
+import { sql } from "drizzle-orm";
+import { pgMaterializedView } from "drizzle-orm/pg-core";
+import { transactions } from "./transactions";
+
+export const creditCardStatementTotals = pgMaterializedView(
+   "credit_card_statement_totals",
+).as((qb) =>
+   qb
+      .select({
+         creditCardId: transactions.creditCardId,
+         statementPeriod: transactions.statementPeriod,
+         totalPurchases:
+            sql<string>`COALESCE(SUM(${transactions.amount}::numeric), 0)`.as(
+               "total_purchases",
+            ),
+         transactionCount: sql<number>`COUNT(*)::int`.as("transaction_count"),
+      })
+      .from(transactions)
+      .where(sql`${transactions.creditCardId} IS NOT NULL`)
+      .groupBy(transactions.creditCardId, transactions.statementPeriod),
+);

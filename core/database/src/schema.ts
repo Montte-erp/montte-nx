@@ -18,6 +18,7 @@ export * from "./schemas/categories";
 export * from "./schemas/contacts";
 export * from "./schemas/credit-cards";
 export * from "./schemas/credit-card-statements";
+export * from "./schemas/credit-card-statement-totals";
 export * from "./schemas/dashboards";
 // Data sources
 export * from "./schemas/data-sources";
