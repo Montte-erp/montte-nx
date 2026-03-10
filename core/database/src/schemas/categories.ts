@@ -25,7 +25,7 @@ export const categories = pgTable(
       parentId: uuid("parent_id"),
       name: text("name").notNull(),
       type: categoryTypeEnum("type").notNull(),
-      level: integer("level").notNull(),
+      level: integer("level").notNull().default(1),
       description: text("description"),
       isDefault: boolean("is_default").notNull().default(false),
       color: text("color"),
