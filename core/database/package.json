@@ -57,6 +57,7 @@
    "dependencies": {
       "@core/utils": "workspace:*",
       "@f-o-t/condition-evaluator": "catalog:fot",
+      "@f-o-t/money": "catalog:fot",
       "drizzle-orm": "catalog:database",
       "pg": "catalog:database",
       "zod": "catalog:validation"
