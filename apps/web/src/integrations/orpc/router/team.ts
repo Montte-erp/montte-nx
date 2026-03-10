@@ -125,7 +125,7 @@ export const getMembers = protectedProcedure
 
       // Get team member IDs
       const teamMemberRecords = await db.query.teamMember.findMany({
-         where: (teamMember, { eq }) => eq(teamMember.teamId, input.teamId),
+         where: { teamId: input.teamId },
       });
 
       const teamMemberIds = new Set(teamMemberRecords.map((tm) => tm.userId));
@@ -164,11 +164,7 @@ export const addMember = protectedProcedure
 
       // Check if user is a member of the organization
       const orgMember = await db.query.member.findFirst({
-         where: (member, { eq, and }) =>
-            and(
-               eq(member.organizationId, organizationId),
-               eq(member.userId, input.userId),
-            ),
+         where: { organizationId, userId: input.userId },
       });
 
       if (!orgMember) {
@@ -179,11 +175,7 @@ export const addMember = protectedProcedure
 
       // Check if already a team member
       const existingTeamMember = await db.query.teamMember.findFirst({
-         where: (teamMember, { eq, and }) =>
-            and(
-               eq(teamMember.teamId, input.teamId),
-               eq(teamMember.userId, input.userId),
-            ),
+         where: { teamId: input.teamId, userId: input.userId },
       });
 
       if (existingTeamMember) {

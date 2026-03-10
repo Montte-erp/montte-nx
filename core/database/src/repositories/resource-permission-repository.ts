@@ -20,7 +20,7 @@ export async function getUserTeamIds(
 ): Promise<string[]> {
    try {
       const teamMemberships = await dbClient.query.teamMember.findMany({
-         where: (tm, { eq }) => eq(tm.userId, userId),
+         where: { userId },
          with: {
             team: true,
          },
@@ -28,7 +28,7 @@ export async function getUserTeamIds(
 
       // Filter to only teams in this organization
       return teamMemberships
-         .filter((tm) => tm.team.organizationId === organizationId)
+         .filter((tm) => tm.team?.organizationId === organizationId)
          .map((tm) => tm.teamId);
    } catch (err) {
       propagateError(err);
@@ -335,11 +335,7 @@ export async function getResourcePermissionsWithGrantees(
 > {
    try {
       const permissions = await dbClient.query.resourcePermission.findMany({
-         where: (rp, { eq, and }) =>
-            and(
-               eq(rp.resourceType, resourceType),
-               eq(rp.resourceId, resourceId),
-            ),
+         where: { resourceType, resourceId },
          with: {
             granteeUser: true,
             granteeTeam: true,

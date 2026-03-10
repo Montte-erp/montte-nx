@@ -90,7 +90,7 @@ export const getActiveOrganization = protectedProcedure.handler(
          try {
             if (stripeClient) {
                const userRecord = await db.query.user.findFirst({
-                  where: (users, { eq }) => eq(users.id, userId),
+                  where: { id: userId },
                });
                if (userRecord?.stripeCustomerId) {
                   const paymentMethods = await stripeClient.paymentMethods.list(
@@ -240,12 +240,12 @@ export const getMemberTeams = protectedProcedure
 
       // Get all teams for this organization
       const teams = await db.query.team.findMany({
-         where: (team, { eq }) => eq(team.organizationId, organizationId),
+         where: { organizationId },
       });
 
       // Get team memberships for this user
       const teamMemberships = await db.query.teamMember.findMany({
-         where: (teamMember, { eq }) => eq(teamMember.userId, input.userId),
+         where: { userId: input.userId },
       });
 
       const memberTeamIds = new Set(teamMemberships.map((tm) => tm.teamId));
@@ -268,12 +268,14 @@ export const hasAddon = protectedProcedure
       const { db, organizationId } = context;
 
       const addon = await db.query.organizationAddons.findFirst({
-         where: (addons, { eq, and, or, isNull, gt }) =>
-            and(
-               eq(addons.organizationId, organizationId),
-               eq(addons.addonId, input.addonId),
-               or(isNull(addons.expiresAt), gt(addons.expiresAt, new Date())),
-            ),
+         where: {
+            organizationId,
+            addonId: input.addonId,
+            OR: [
+               { expiresAt: { isNull: true } },
+               { expiresAt: { gt: new Date() } },
+            ],
+         },
       });
 
       return { hasAddon: !!addon };
@@ -286,11 +288,13 @@ export const getAddons = protectedProcedure.handler(async ({ context }) => {
    const { db, organizationId } = context;
 
    const addons = await db.query.organizationAddons.findMany({
-      where: (addons, { eq, and, or, isNull, gt }) =>
-         and(
-            eq(addons.organizationId, organizationId),
-            or(isNull(addons.expiresAt), gt(addons.expiresAt, new Date())),
-         ),
+      where: {
+         organizationId,
+         OR: [
+            { expiresAt: { isNull: true } },
+            { expiresAt: { gt: new Date() } },
+         ],
+      },
    });
 
    return addons.map((a) => ({

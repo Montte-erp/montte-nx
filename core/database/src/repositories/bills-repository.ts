@@ -109,9 +109,9 @@ export async function listBills(
       const offset = (page - 1) * pageSize;
 
       const rows = await db.query.bills.findMany({
-         where: whereClause,
+         where: { RAW: whereClause },
          with: { bankAccount: true, category: true },
-         orderBy: [desc(bills.dueDate)],
+         orderBy: { dueDate: "desc" },
          limit: pageSize,
          offset,
       });
@@ -134,7 +134,7 @@ export async function getBill(
 ): Promise<Bill | undefined> {
    try {
       const result = await db.query.bills.findFirst({
-         where: eq(bills.id, id),
+         where: { id },
          with: { bankAccount: true, category: true, transaction: true },
       });
       return result ?? undefined;
@@ -181,7 +181,9 @@ export async function getActiveRecurrenceSettings(
    try {
       const today = new Date().toISOString().substring(0, 10);
       return await db.query.recurrenceSettings.findMany({
-         where: sql`(${recurrenceSettings.endsAt} IS NULL OR ${recurrenceSettings.endsAt} >= ${today})`,
+         where: {
+            RAW: sql`(${recurrenceSettings.endsAt} IS NULL OR ${recurrenceSettings.endsAt} >= ${today})`,
+         },
       });
    } catch (err) {
       propagateError(err);
@@ -195,8 +197,8 @@ export async function getLastBillForRecurrenceGroup(
 ): Promise<Bill | undefined> {
    try {
       const result = await db.query.bills.findFirst({
-         where: eq(bills.recurrenceGroupId, recurrenceGroupId),
-         orderBy: [desc(bills.dueDate)],
+         where: { recurrenceGroupId },
+         orderBy: { dueDate: "desc" },
       });
       return result ?? undefined;
    } catch (err) {

@@ -250,7 +250,7 @@ export const getOnboardingStatus = protectedProcedure.handler(
       const { db, organizationId, teamId } = context;
 
       const org = await db.query.organization.findFirst({
-         where: (o, { eq }) => eq(o.id, organizationId),
+         where: { id: organizationId },
       });
 
       if (!org) {
@@ -260,7 +260,7 @@ export const getOnboardingStatus = protectedProcedure.handler(
       }
 
       const currentTeam = await db.query.team.findFirst({
-         where: (t, { eq }) => eq(t.id, teamId),
+         where: { id: teamId },
       });
 
       if (!currentTeam) {
@@ -336,7 +336,7 @@ export const fixOnboarding = authenticatedProcedure
       const orgId = input.organizationId;
 
       const org = await db.query.organization.findFirst({
-         where: (o, { eq }) => eq(o.id, orgId),
+         where: { id: orgId },
          columns: { id: true, slug: true, onboardingCompleted: true },
       });
 
@@ -350,14 +350,14 @@ export const fixOnboarding = authenticatedProcedure
 
       let targetTeam = activeTeamId
          ? await db.query.team.findFirst({
-              where: (t, { eq }) => eq(t.id, activeTeamId),
+              where: { id: activeTeamId },
               columns: { id: true, slug: true, onboardingCompleted: true },
            })
          : null;
 
       if (!targetTeam) {
          targetTeam = await db.query.team.findFirst({
-            where: (t, { eq }) => eq(t.organizationId, orgId),
+            where: { organizationId: orgId },
             columns: { id: true, slug: true, onboardingCompleted: true },
          });
       }
@@ -436,7 +436,7 @@ export const completeOnboarding = protectedProcedure
       const { db, organizationId, teamId, userId } = context;
 
       const teamRecord = await db.query.team.findFirst({
-         where: (t, { eq }) => eq(t.id, teamId),
+         where: { id: teamId },
          columns: { name: true, slug: true },
       });
 
@@ -452,7 +452,7 @@ export const completeOnboarding = protectedProcedure
       });
 
       const org = await db.query.organization.findFirst({
-         where: (o, { eq }) => eq(o.id, organizationId),
+         where: { id: organizationId },
          columns: { slug: true },
       });
 

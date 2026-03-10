@@ -30,7 +30,7 @@ export const getDomains = protectedProcedure.handler(async ({ context }) => {
    const { db, organizationId } = context;
 
    const domains = await db.query.verifiedDomains.findMany({
-      where: eq(verifiedDomains.organizationId, organizationId),
+      where: { organizationId },
    });
 
    return domains.map((d) => ({
@@ -61,10 +61,7 @@ export const addDomain = protectedProcedure
 
       // Check if domain already exists
       const existing = await db.query.verifiedDomains.findFirst({
-         where: and(
-            eq(verifiedDomains.organizationId, organizationId),
-            eq(verifiedDomains.domain, input.domain),
-         ),
+         where: { organizationId, domain: input.domain },
       });
 
       if (existing) {
@@ -102,10 +99,7 @@ export const verifyDomain = protectedProcedure
       const { db, organizationId } = context;
 
       const domain = await db.query.verifiedDomains.findFirst({
-         where: and(
-            eq(verifiedDomains.id, input.domainId),
-            eq(verifiedDomains.organizationId, organizationId),
-         ),
+         where: { id: input.domainId, organizationId },
       });
 
       if (!domain) {
@@ -222,7 +216,7 @@ export const getConfigurations = protectedProcedure.handler(
       const { db, organizationId } = context;
 
       const configs = await db.query.ssoConfigurations.findMany({
-         where: eq(ssoConfigurations.organizationId, organizationId),
+         where: { organizationId },
       });
 
       // Redact sensitive fields
@@ -260,10 +254,7 @@ export const configureSAML = protectedProcedure
 
       // Check if SAML config already exists
       const existing = await db.query.ssoConfigurations.findFirst({
-         where: and(
-            eq(ssoConfigurations.organizationId, organizationId),
-            eq(ssoConfigurations.provider, "saml"),
-         ),
+         where: { organizationId, provider: "saml" },
       });
 
       if (existing) {
@@ -320,10 +311,7 @@ export const configureOIDC = protectedProcedure
 
       // Check if OIDC config already exists
       const existing = await db.query.ssoConfigurations.findFirst({
-         where: and(
-            eq(ssoConfigurations.organizationId, organizationId),
-            eq(ssoConfigurations.provider, "oidc"),
-         ),
+         where: { organizationId, provider: "oidc" },
       });
 
       if (existing) {

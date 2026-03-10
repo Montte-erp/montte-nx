@@ -30,7 +30,7 @@ export const getAll = protectedProcedure.handler(async ({ context }) => {
    const { db, organizationId } = context;
 
    const roles = await db.query.customRoles.findMany({
-      where: eq(customRoles.organizationId, organizationId),
+      where: { organizationId },
       with: {
          memberRoles: {
             with: {
@@ -109,10 +109,7 @@ export const update = protectedProcedure
 
       // Verify role belongs to organization
       const existing = await db.query.customRoles.findFirst({
-         where: and(
-            eq(customRoles.id, input.roleId),
-            eq(customRoles.organizationId, organizationId),
-         ),
+         where: { id: input.roleId, organizationId },
       });
 
       if (!existing) {
@@ -160,10 +157,7 @@ export const deleteRole = protectedProcedure
 
       // Verify role belongs to organization
       const existing = await db.query.customRoles.findFirst({
-         where: and(
-            eq(customRoles.id, input.roleId),
-            eq(customRoles.organizationId, organizationId),
-         ),
+         where: { id: input.roleId, organizationId },
       });
 
       if (!existing) {
@@ -193,10 +187,7 @@ export const assignRole = protectedProcedure
 
       // Verify role belongs to organization
       const role = await db.query.customRoles.findFirst({
-         where: and(
-            eq(customRoles.id, input.roleId),
-            eq(customRoles.organizationId, organizationId),
-         ),
+         where: { id: input.roleId, organizationId },
       });
 
       if (!role) {
@@ -207,10 +198,7 @@ export const assignRole = protectedProcedure
 
       // Check if already assigned
       const existing = await db.query.memberRoles.findFirst({
-         where: and(
-            eq(memberRoles.memberId, input.memberId),
-            eq(memberRoles.roleId, input.roleId),
-         ),
+         where: { memberId: input.memberId, roleId: input.roleId },
       });
 
       if (existing) {

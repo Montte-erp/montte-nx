@@ -102,8 +102,7 @@ export function createAuth(config: SimplifiedAuthConfig) {
 
                      if (member?.organizationId) {
                         const existingTeam = await db.query.team.findFirst({
-                           where: (team, { eq }) =>
-                              eq(team.organizationId, member.organizationId),
+                           where: { organizationId: member.organizationId },
                         });
 
                         return {
@@ -371,11 +370,7 @@ export function createAuth(config: SimplifiedAuthConfig) {
             subscription: {
                authorizeReference: async ({ user, referenceId }) => {
                   const membership = await db.query.member.findFirst({
-                     where: (member, { eq, and }) =>
-                        and(
-                           eq(member.organizationId, referenceId),
-                           eq(member.userId, user.id),
-                        ),
+                     where: { organizationId: referenceId, userId: user.id },
                   });
                   if (!membership) return false;
                   return (

@@ -22,7 +22,7 @@ export async function getProductSettings(
 ): Promise<ProductSettings | null> {
    try {
       const result = await db.query.productSettings.findFirst({
-         where: (ps, { eq }) => eq(ps.teamId, teamId),
+         where: { teamId },
       });
 
       return result ?? null;
