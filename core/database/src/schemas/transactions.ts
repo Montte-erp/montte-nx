@@ -72,6 +72,7 @@ export const transactions = pgTable(
       installmentCount: integer("installment_count"),
       installmentNumber: integer("installment_number"),
       installmentGroupId: uuid("installment_group_id"),
+      statementPeriod: text("statement_period"),
       contactId: uuid("contact_id").references(() => contacts.id, {
          onDelete: "set null",
       }),
@@ -90,6 +91,10 @@ export const transactions = pgTable(
       index("transactions_category_id_idx").on(table.categoryId),
       index("transactions_credit_card_id_idx").on(table.creditCardId),
       index("transactions_contact_id_idx").on(table.contactId),
+      index("transactions_statement_period_idx").on(
+         table.creditCardId,
+         table.statementPeriod,
+      ),
    ],
 );
 
