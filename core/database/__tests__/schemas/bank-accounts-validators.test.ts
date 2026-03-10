@@ -38,7 +38,9 @@ describe("createBankAccountSchema", () => {
       expect(result.success).toBe(false);
       if (!result.success) {
          expect(
-            result.error.issues.some((i) => i.path.includes("bankCode")),
+            result.error.issues.some((i: { path: (string | number)[] }) =>
+               i.path.includes("bankCode"),
+            ),
          ).toBe(true);
       }
    });
@@ -69,7 +71,9 @@ describe("createBankAccountSchema", () => {
       expect(result.success).toBe(false);
       if (!result.success) {
          expect(
-            result.error.issues.some((i) => i.path.includes("bankCode")),
+            result.error.issues.some((i: { path: (string | number)[] }) =>
+               i.path.includes("bankCode"),
+            ),
          ).toBe(true);
       }
    });
