@@ -7,7 +7,7 @@ import {
    unique,
    uuid,
 } from "drizzle-orm/pg-core";
-import { organization, team, user } from "./auth";
+import { organization, user } from "./auth";
 
 // Extensible enum for CMS resource types
 export const resourceTypeEnum = pgEnum("resource_type", [

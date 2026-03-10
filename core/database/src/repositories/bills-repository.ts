@@ -1,5 +1,5 @@
 import { AppError, propagateError } from "@core/utils/errors";
-import { and, count, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, count, eq, gte, lte, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "../client";
 import type {
    Bill,

@@ -9,7 +9,6 @@ import {
    uuid,
 } from "drizzle-orm/pg-core";
 import { serviceSourceEnum } from "./enums";
-import { transactions } from "./transactions";
 
 export const contactTypeEnum = pgEnum("contact_type", [
    "cliente",
