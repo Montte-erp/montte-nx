@@ -1,3 +1,4 @@
+export * from "./schemas/assets";
 export * from "./schemas/auth";
 export * from "./schemas/bank-accounts";
 export * from "./schemas/bills";
