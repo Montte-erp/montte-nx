@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { createInsertSchema } from "drizzle-orm/zod";
 import {
    boolean,
    date,
@@ -18,6 +19,7 @@ import { contacts } from "./contacts";
 import { creditCards } from "./credit-cards";
 import { services } from "./services";
 import { tags } from "./tags";
+import { z } from "zod";
 
 export const paymentMethodEnum = pgEnum("payment_method", [
    "pix",
@@ -70,7 +72,7 @@ export const transactions = pgTable(
       installmentGroupId: uuid("installment_group_id"),
       statementPeriod: text("statement_period"),
       contactId: uuid("contact_id").references(() => contacts.id, {
-         onDelete: "set null",
+         onDelete: "restrict",
       }),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
@@ -137,3 +139,139 @@ export type TransactionTag = typeof transactionTags.$inferSelect;
 export type NewTransactionTag = typeof transactionTags.$inferInsert;
 export type TransactionItem = typeof transactionItems.$inferSelect;
 export type NewTransactionItem = typeof transactionItems.$inferInsert;
+
+const numericPositive = (msg: string) =>
+   z.string().refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0, {
+      message: msg,
+   });
+
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+const dateSchema = z
+   .string()
+   .regex(ISO_DATE_REGEX, "Data deve estar no formato YYYY-MM-DD.");
+
+const baseTransactionSchema = createInsertSchema(transactions).pick({
+   type: true,
+   amount: true,
+   description: true,
+   date: true,
+   bankAccountId: true,
+   destinationBankAccountId: true,
+   categoryId: true,
+   creditCardId: true,
+   contactId: true,
+   paymentMethod: true,
+   attachmentUrl: true,
+   isInstallment: true,
+   installmentCount: true,
+   installmentNumber: true,
+   installmentGroupId: true,
+   statementPeriod: true,
+});
+
+export const createTransactionSchema = baseTransactionSchema
+   .extend({
+      name: z
+         .string()
+         .min(2, "Nome deve ter no mínimo 2 caracteres.")
+         .max(200, "Nome deve ter no máximo 200 caracteres.")
+         .nullable()
+         .optional(),
+      type: z.enum(["income", "expense", "transfer"], {
+         message: "Tipo de lançamento é obrigatório.",
+      }),
+      amount: numericPositive(
+         "Valor deve ser um número válido maior que zero.",
+      ),
+      date: dateSchema,
+      description: z
+         .string()
+         .max(500, "Descrição deve ter no máximo 500 caracteres.")
+         .nullable()
+         .optional(),
+      bankAccountId: z.string().uuid().nullable().optional(),
+      destinationBankAccountId: z.string().uuid().nullable().optional(),
+      creditCardId: z.string().uuid().nullable().optional(),
+      categoryId: z.string().uuid().nullable().optional(),
+      contactId: z.string().uuid().nullable().optional(),
+      attachmentUrl: z.string().nullable().optional(),
+   })
+   .superRefine((data, ctx) => {
+      if (data.type === "transfer") {
+         if (!data.bankAccountId) {
+            ctx.addIssue({
+               code: z.ZodIssueCode.custom,
+               message: "Transferências exigem uma conta de origem.",
+               path: ["bankAccountId"],
+            });
+         }
+         if (!data.destinationBankAccountId) {
+            ctx.addIssue({
+               code: z.ZodIssueCode.custom,
+               message: "Transferências exigem uma conta de destino.",
+               path: ["destinationBankAccountId"],
+            });
+         }
+         if (
+            data.bankAccountId &&
+            data.destinationBankAccountId &&
+            data.bankAccountId === data.destinationBankAccountId
+         ) {
+            ctx.addIssue({
+               code: z.ZodIssueCode.custom,
+               message: "Conta de origem e destino devem ser diferentes.",
+               path: ["destinationBankAccountId"],
+            });
+         }
+      }
+      if (data.type === "expense") {
+         if (!data.bankAccountId && !data.creditCardId) {
+            ctx.addIssue({
+               code: z.ZodIssueCode.custom,
+               message:
+                  "Despesas exigem uma conta bancária ou cartão de crédito.",
+               path: ["bankAccountId"],
+            });
+         }
+      }
+      if (data.type === "income") {
+         if (!data.bankAccountId) {
+            ctx.addIssue({
+               code: z.ZodIssueCode.custom,
+               message: "Receitas exigem uma conta bancária.",
+               path: ["bankAccountId"],
+            });
+         }
+      }
+   });
+
+export const updateTransactionSchema = baseTransactionSchema
+   .omit({ type: true })
+   .extend({
+      name: z
+         .string()
+         .min(2, "Nome deve ter no mínimo 2 caracteres.")
+         .max(200, "Nome deve ter no máximo 200 caracteres.")
+         .nullable()
+         .optional(),
+      amount: numericPositive(
+         "Valor deve ser um número válido maior que zero.",
+      ).optional(),
+      date: dateSchema.optional(),
+      description: z
+         .string()
+         .max(500, "Descrição deve ter no máximo 500 caracteres.")
+         .nullable()
+         .optional(),
+      bankAccountId: z.string().uuid().nullable().optional(),
+      destinationBankAccountId: z.string().uuid().nullable().optional(),
+      creditCardId: z.string().uuid().nullable().optional(),
+      categoryId: z.string().uuid().nullable().optional(),
+      contactId: z.string().uuid().nullable().optional(),
+      attachmentUrl: z.string().nullable().optional(),
+   })
+   .partial();
+
+export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
+export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
