@@ -146,48 +146,6 @@ export const relations = defineRelations(schema, (r) => ({
    },
 
    // -------------------------------------------------------------------------
-   // Activity Logs
-   // -------------------------------------------------------------------------
-   activityLogs: {
-      organization: r.one.organization({
-         from: r.activityLogs.organizationId,
-         to: r.organization.id,
-      }),
-      team: r.one.team({
-         from: r.activityLogs.teamId,
-         to: r.team.id,
-      }),
-      user: r.one.user({
-         from: r.activityLogs.userId,
-         to: r.user.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // Addons
-   // -------------------------------------------------------------------------
-   organizationAddons: {
-      organization: r.one.organization({
-         from: r.organizationAddons.organizationId,
-         to: r.organization.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // Assets
-   // -------------------------------------------------------------------------
-   assets: {
-      organization: r.one.organization({
-         from: r.assets.organizationId,
-         to: r.organization.id,
-      }),
-      team: r.one.team({
-         from: r.assets.teamId,
-         to: r.team.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
    // Bills
    // -------------------------------------------------------------------------
    bills: {
@@ -329,72 +287,6 @@ export const relations = defineRelations(schema, (r) => ({
    },
 
    // -------------------------------------------------------------------------
-   // Personal API Key
-   // -------------------------------------------------------------------------
-   personalApiKey: {
-      user: r.one.user({
-         from: r.personalApiKey.userId,
-         to: r.user.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // Product Settings
-   // -------------------------------------------------------------------------
-   productSettings: {
-      team: r.one.team({
-         from: r.productSettings.teamId,
-         to: r.team.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // Resource Permissions
-   // -------------------------------------------------------------------------
-   resourcePermission: {
-      organization: r.one.organization({
-         from: r.resourcePermission.organizationId,
-         to: r.organization.id,
-      }),
-      grantedByUser: r.one.user({
-         from: r.resourcePermission.grantedBy,
-         to: r.user.id,
-         alias: "grantedByUser",
-      }),
-      granteeUser: r.one.user({
-         from: r.resourcePermission.granteeId,
-         to: r.user.id,
-         alias: "granteeUser",
-      }),
-      granteeTeam: r.one.team({
-         from: r.resourcePermission.granteeId,
-         to: r.team.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // Roles
-   // -------------------------------------------------------------------------
-   customRoles: {
-      organization: r.one.organization({
-         from: r.customRoles.organizationId,
-         to: r.organization.id,
-      }),
-      memberRoles: r.many.memberRoles(),
-   },
-
-   memberRoles: {
-      member: r.one.member({
-         from: r.memberRoles.memberId,
-         to: r.member.id,
-      }),
-      role: r.one.customRoles({
-         from: r.memberRoles.roleId,
-         to: r.customRoles.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
    // Services
    // -------------------------------------------------------------------------
    services: {
@@ -433,23 +325,6 @@ export const relations = defineRelations(schema, (r) => ({
       service: r.one.services({
          from: r.resources.serviceId,
          to: r.services.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // SSO
-   // -------------------------------------------------------------------------
-   verifiedDomains: {
-      organization: r.one.organization({
-         from: r.verifiedDomains.organizationId,
-         to: r.organization.id,
-      }),
-   },
-
-   ssoConfigurations: {
-      organization: r.one.organization({
-         from: r.ssoConfigurations.organizationId,
-         to: r.organization.id,
       }),
    },
 
