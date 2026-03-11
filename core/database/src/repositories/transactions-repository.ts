@@ -1,6 +1,7 @@
 import type { Condition, ConditionGroup } from "@f-o-t/condition-evaluator";
 import { evaluateConditionGroup } from "@f-o-t/condition-evaluator";
-import { AppError, propagateError } from "@core/utils/errors";
+import { AppError, propagateError, validateInput } from "@core/utils/errors";
+import { of, toDecimal } from "@f-o-t/money";
 import {
    and,
    count,
@@ -19,17 +20,20 @@ import {
    or,
    sql,
 } from "drizzle-orm";
-import type { DatabaseInstance } from "../client";
+import { db } from "@core/database/client";
 import {
-   bankAccounts,
-   categories,
-   contacts,
-   creditCards,
-   type NewTransaction,
+   type CreateTransactionInput,
+   type UpdateTransactionInput,
+   createTransactionSchema,
+   updateTransactionSchema,
    transactionItems,
    transactions,
    transactionTags,
-} from "../schema";
+} from "@core/database/schemas/transactions";
+import { bankAccounts } from "@core/database/schemas/bank-accounts";
+import { categories } from "@core/database/schemas/categories";
+import { contacts } from "@core/database/schemas/contacts";
+import { creditCards } from "@core/database/schemas/credit-cards";
 
 export interface ListTransactionsFilter {
    teamId: string;
@@ -49,8 +53,6 @@ export interface ListTransactionsFilter {
    conditionGroup?: ConditionGroup;
 }
 
-// Maps a single Condition to a Drizzle SQL expression.
-// Returns null if the condition cannot be translated (will be post-filtered in weighted mode).
 function conditionToSql(condition: Condition) {
    const colMap: Record<string, unknown> = {
       categoryId: transactions.categoryId,
@@ -62,7 +64,7 @@ function conditionToSql(condition: Condition) {
    };
 
    const col = colMap[condition.field];
-   if (!col) return null; // unknown field — skip
+   if (!col) return null;
 
    const { operator } = condition;
    const value = "value" in condition ? condition.value : undefined;
@@ -98,14 +100,15 @@ function conditionToSql(condition: Condition) {
 }
 
 export async function createTransaction(
-   db: DatabaseInstance,
-   data: NewTransaction,
+   teamId: string,
+   data: CreateTransactionInput,
    tagIds?: string[],
 ) {
    try {
+      const validated = validateInput(createTransactionSchema, data);
       const [transaction] = await db
          .insert(transactions)
-         .values(data)
+         .values({ ...validated, teamId })
          .returning();
 
       if (tagIds && tagIds.length > 0 && transaction) {
@@ -124,10 +127,7 @@ export async function createTransaction(
    }
 }
 
-export async function listTransactions(
-   db: DatabaseInstance,
-   filter: ListTransactionsFilter,
-) {
+export async function listTransactions(filter: ListTransactionsFilter) {
    try {
       const page = filter.page ?? 1;
       const pageSize = filter.pageSize ?? 50;
@@ -183,7 +183,6 @@ export async function listTransactions(
 
       const isWeighted = filter.conditionGroup?.scoringMode === "weighted";
 
-      // Standard mode: translate conditions to SQL WHERE clauses
       if (filter.conditionGroup && !isWeighted) {
          const group = filter.conditionGroup;
          const sqlExprs = group.conditions
@@ -203,7 +202,6 @@ export async function listTransactions(
 
       const whereClause = and(...conditions);
 
-      // Weighted mode: fetch all matching rows, post-filter in memory, then paginate
       if (isWeighted && filter.conditionGroup) {
          const condGroup = filter.conditionGroup;
          const allRows = await db
@@ -286,10 +284,7 @@ export async function listTransactions(
    }
 }
 
-export async function getTransactionsSummary(
-   db: DatabaseInstance,
-   filter: ListTransactionsFilter,
-) {
+export async function getTransactionsSummary(filter: ListTransactionsFilter) {
    try {
       const conditions = [eq(transactions.teamId, filter.teamId)];
 
@@ -355,11 +350,12 @@ export async function getTransactionsSummary(
          .from(transactions)
          .where(whereClause);
 
+      const currency = "BRL";
       return {
          totalCount: result?.totalCount ?? 0,
-         incomeTotal: result?.incomeTotal ?? "0",
-         expenseTotal: result?.expenseTotal ?? "0",
-         balance: result?.balance ?? "0",
+         incomeTotal: toDecimal(of(result?.incomeTotal ?? "0", currency)),
+         expenseTotal: toDecimal(of(result?.expenseTotal ?? "0", currency)),
+         balance: toDecimal(of(result?.balance ?? "0", currency)),
       };
    } catch (err) {
       propagateError(err);
@@ -367,7 +363,7 @@ export async function getTransactionsSummary(
    }
 }
 
-export async function getTransactionWithTags(db: DatabaseInstance, id: string) {
+export async function getTransactionWithTags(id: string) {
    try {
       const [transaction] = await db
          .select()
@@ -388,15 +384,15 @@ export async function getTransactionWithTags(db: DatabaseInstance, id: string) {
 }
 
 export async function updateTransaction(
-   db: DatabaseInstance,
    id: string,
-   data: Partial<NewTransaction>,
+   data: UpdateTransactionInput,
    tagIds?: string[],
 ) {
    try {
+      const validated = validateInput(updateTransactionSchema, data);
       const [updated] = await db
          .update(transactions)
-         .set(data)
+         .set(validated)
          .where(eq(transactions.id, id))
          .returning();
 
@@ -422,7 +418,7 @@ export async function updateTransaction(
    }
 }
 
-export async function deleteTransaction(db: DatabaseInstance, id: string) {
+export async function deleteTransaction(id: string) {
    try {
       await db.delete(transactions).where(eq(transactions.id, id));
    } catch (err) {
@@ -432,7 +428,6 @@ export async function deleteTransaction(db: DatabaseInstance, id: string) {
 }
 
 export async function createTransactionItems(
-   db: DatabaseInstance,
    transactionId: string,
    teamId: string,
    items: {
@@ -460,10 +455,7 @@ export async function createTransactionItems(
    }
 }
 
-export async function getTransactionItems(
-   db: DatabaseInstance,
-   transactionId: string,
-) {
+export async function getTransactionItems(transactionId: string) {
    try {
       return db
          .select()
@@ -476,7 +468,6 @@ export async function getTransactionItems(
 }
 
 export async function replaceTransactionItems(
-   db: DatabaseInstance,
    transactionId: string,
    teamId: string,
    items: {
@@ -491,7 +482,7 @@ export async function replaceTransactionItems(
          .delete(transactionItems)
          .where(eq(transactionItems.transactionId, transactionId));
       if (items.length > 0) {
-         await createTransactionItems(db, transactionId, teamId, items);
+         await createTransactionItems(transactionId, teamId, items);
       }
    } catch (err) {
       propagateError(err);
