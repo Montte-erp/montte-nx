@@ -1,20 +1,30 @@
-import { AppError, propagateError } from "@core/utils/errors";
+import { AppError, propagateError, validateInput } from "@core/utils/errors";
 import { and, count, eq, gte, lte, sql } from "drizzle-orm";
-import type { DatabaseInstance } from "../client";
-import type {
-   Bill,
-   NewBill,
-   NewRecurrenceSetting,
-   RecurrenceSetting,
-} from "../schemas/bills";
-import { bills, recurrenceSettings } from "../schemas/bills";
+import { db } from "@core/database/client";
+import {
+   type CreateBillInput,
+   type UpdateBillInput,
+   type CreateRecurrenceSettingInput,
+   type Bill,
+   type NewBill,
+   type RecurrenceSetting,
+   bills,
+   recurrenceSettings,
+   createBillSchema,
+   updateBillSchema,
+   createRecurrenceSettingSchema,
+} from "@core/database/schemas/bills";
 
 export async function createBill(
-   db: DatabaseInstance,
-   data: NewBill,
+   teamId: string,
+   data: CreateBillInput,
 ): Promise<Bill> {
    try {
-      const [bill] = await db.insert(bills).values(data).returning();
+      const validated = validateInput(createBillSchema, data);
+      const [bill] = await db
+         .insert(bills)
+         .values({ ...validated, teamId })
+         .returning();
       if (!bill) throw AppError.database("Failed to create bill");
       return bill;
    } catch (err) {
@@ -23,10 +33,7 @@ export async function createBill(
    }
 }
 
-export async function createBillsBatch(
-   db: DatabaseInstance,
-   data: NewBill[],
-): Promise<Bill[]> {
+export async function createBillsBatch(data: NewBill[]): Promise<Bill[]> {
    try {
       return await db.insert(bills).values(data).returning();
    } catch (err) {
@@ -36,13 +43,14 @@ export async function createBillsBatch(
 }
 
 export async function createRecurrenceSetting(
-   db: DatabaseInstance,
-   data: NewRecurrenceSetting,
+   teamId: string,
+   data: CreateRecurrenceSettingInput,
 ): Promise<RecurrenceSetting> {
    try {
+      const validated = validateInput(createRecurrenceSettingSchema, data);
       const [setting] = await db
          .insert(recurrenceSettings)
-         .values(data)
+         .values({ ...validated, teamId })
          .returning();
       if (!setting)
          throw AppError.database("Failed to create recurrence setting");
@@ -64,11 +72,7 @@ export interface ListBillsOptions {
    pageSize?: number;
 }
 
-// "overdue" is not stored — computed: pending + dueDate < today
-export async function listBills(
-   db: DatabaseInstance,
-   options: ListBillsOptions,
-) {
+export async function listBills(options: ListBillsOptions) {
    try {
       const {
          teamId,
@@ -128,10 +132,7 @@ export async function listBills(
    }
 }
 
-export async function getBill(
-   db: DatabaseInstance,
-   id: string,
-): Promise<Bill | undefined> {
+export async function getBill(id: string): Promise<Bill | undefined> {
    try {
       const result = await db.query.bills.findFirst({
          where: { id },
@@ -145,14 +146,14 @@ export async function getBill(
 }
 
 export async function updateBill(
-   db: DatabaseInstance,
    id: string,
-   data: Partial<NewBill>,
+   data: UpdateBillInput,
 ): Promise<Bill> {
    try {
+      const validated = validateInput(updateBillSchema, data);
       const [updated] = await db
          .update(bills)
-         .set({ ...data, updatedAt: new Date() })
+         .set({ ...validated, updatedAt: new Date() })
          .where(eq(bills.id, id))
          .returning();
       if (!updated) throw AppError.database("Bill not found");
@@ -163,10 +164,7 @@ export async function updateBill(
    }
 }
 
-export async function deleteBill(
-   db: DatabaseInstance,
-   id: string,
-): Promise<void> {
+export async function deleteBill(id: string): Promise<void> {
    try {
       await db.delete(bills).where(eq(bills.id, id));
    } catch (err) {
@@ -175,9 +173,9 @@ export async function deleteBill(
    }
 }
 
-export async function getActiveRecurrenceSettings(
-   db: DatabaseInstance,
-): Promise<RecurrenceSetting[]> {
+export async function getActiveRecurrenceSettings(): Promise<
+   RecurrenceSetting[]
+> {
    try {
       const today = new Date().toISOString().substring(0, 10);
       return await db.query.recurrenceSettings.findMany({
@@ -192,7 +190,6 @@ export async function getActiveRecurrenceSettings(
 }
 
 export async function getLastBillForRecurrenceGroup(
-   db: DatabaseInstance,
    recurrenceGroupId: string,
 ): Promise<Bill | undefined> {
    try {
