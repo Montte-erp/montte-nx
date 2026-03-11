@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
+import { describe, expect, it } from "vitest";
+import { createMockPostHog } from "./helpers/create-mock-posthog";
 import {
    captureError,
    captureServerEvent,
    getAllFeatureFlags,
    getAllFeatureFlagsAndPayloads,
-   getElysiaPosthogConfig,
    getFeatureFlag,
    getFeatureFlagPayload,
    identifyUser,
@@ -13,492 +13,279 @@ import {
    shutdownPosthog,
 } from "../src/server";
 
-describe("posthog server", () => {
-   describe("getElysiaPosthogConfig", () => {
-      const mockEnv = {
-         POSTHOG_HOST: "https://us.i.posthog.com",
-         POSTHOG_KEY: "phc_test_key_123",
-      };
+function createClient() {
+   return createMockPostHog();
+}
 
-      it("should create a PostHog client instance", () => {
-         const client = getElysiaPosthogConfig(mockEnv);
+describe("identifyUser", () => {
+   it("calls identify with userId and properties", () => {
+      const client = createClient();
+      identifyUser(client, "user-1", { email: "a@b.com", name: "A" });
 
-         expect(client).toBeDefined();
-         expect(typeof client.capture).toBe("function");
-         expect(typeof client.identify).toBe("function");
-         expect(typeof client.shutdown).toBe("function");
-      });
-
-      it("should accept different host configurations", () => {
-         const euEnv = {
-            POSTHOG_HOST: "https://eu.i.posthog.com",
-            POSTHOG_KEY: "phc_eu_key_456",
-         };
-
-         const client = getElysiaPosthogConfig(euEnv);
-
-         expect(client).toBeDefined();
-         expect(typeof client.capture).toBe("function");
-      });
-
-      it("should accept custom self-hosted configurations", () => {
-         const selfHostedEnv = {
-            POSTHOG_HOST: "https://posthog.mycompany.com",
-            POSTHOG_KEY: "phc_self_hosted_key",
-         };
-
-         const client = getElysiaPosthogConfig(selfHostedEnv);
-
-         expect(client).toBeDefined();
-         expect(typeof client.capture).toBe("function");
+      expect(client.identify).toHaveBeenCalledWith({
+         distinctId: "user-1",
+         properties: { email: "a@b.com", name: "A" },
       });
    });
 
-   describe("identifyUser", () => {
-      const mockEnv = {
-         POSTHOG_HOST: "https://us.i.posthog.com",
-         POSTHOG_KEY: "phc_test_key_123",
-      };
+   it("defaults to empty properties", () => {
+      const client = createClient();
+      identifyUser(client, "user-2");
 
-      it("should call posthog.identify with userId and properties", () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         const identifySpy = spyOn(client, "identify");
-
-         identifyUser(client, "user-123", {
-            email: "test@example.com",
-            name: "Test User",
-         });
-
-         expect(identifySpy).toHaveBeenCalledWith({
-            distinctId: "user-123",
-            properties: { email: "test@example.com", name: "Test User" },
-         });
+      expect(client.identify).toHaveBeenCalledWith({
+         distinctId: "user-2",
+         properties: {},
       });
+   });
+});
 
-      it("should work with empty properties", () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         const identifySpy = spyOn(client, "identify");
+describe("setGroup", () => {
+   it("calls groupIdentify with organization type", () => {
+      const client = createClient();
+      setGroup(client, "org-1", { name: "Acme", slug: "acme" });
 
-         identifyUser(client, "user-456");
-
-         expect(identifySpy).toHaveBeenCalledWith({
-            distinctId: "user-456",
-            properties: {},
-         });
-      });
-
-      it("should accept additional custom properties", () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         const identifySpy = spyOn(client, "identify");
-
-         identifyUser(client, "user-789", {
-            email: "user@test.com",
-            plan: "premium",
-            signupDate: "2024-01-01",
-         });
-
-         expect(identifySpy).toHaveBeenCalledWith({
-            distinctId: "user-789",
-            properties: {
-               email: "user@test.com",
-               plan: "premium",
-               signupDate: "2024-01-01",
-            },
-         });
+      expect(client.groupIdentify).toHaveBeenCalledWith({
+         groupKey: "org-1",
+         groupType: "organization",
+         properties: { name: "Acme", slug: "acme" },
       });
    });
 
-   describe("setGroup", () => {
-      const mockEnv = {
-         POSTHOG_HOST: "https://us.i.posthog.com",
-         POSTHOG_KEY: "phc_test_key_123",
-      };
+   it("defaults to empty properties", () => {
+      const client = createClient();
+      setGroup(client, "org-2");
 
-      it("should call posthog.groupIdentify with organization type", () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         const groupIdentifySpy = spyOn(client, "groupIdentify");
-
-         setGroup(client, "org-123", { name: "Acme Corp", slug: "acme" });
-
-         expect(groupIdentifySpy).toHaveBeenCalledWith({
-            groupKey: "org-123",
-            groupType: "organization",
-            properties: { name: "Acme Corp", slug: "acme" },
-         });
-      });
-
-      it("should work with empty properties", () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         const groupIdentifySpy = spyOn(client, "groupIdentify");
-
-         setGroup(client, "org-456");
-
-         expect(groupIdentifySpy).toHaveBeenCalledWith({
-            groupKey: "org-456",
-            groupType: "organization",
-            properties: {},
-         });
+      expect(client.groupIdentify).toHaveBeenCalledWith({
+         groupKey: "org-2",
+         groupType: "organization",
+         properties: {},
       });
    });
+});
 
-   describe("captureError", () => {
-      const mockEnv = {
-         POSTHOG_HOST: "https://us.i.posthog.com",
-         POSTHOG_KEY: "phc_test_key_123",
-      };
+describe("captureError", () => {
+   it("captures orpc_error with organization group", () => {
+      const client = createClient();
+      captureError(client, {
+         userId: "user-1",
+         organizationId: "org-1",
+         errorId: "err-1",
+         path: "content.create",
+         code: "BAD_REQUEST",
+         message: "Invalid",
+         input: { x: 1 },
+      });
 
-      it("should capture trpc_error event with all properties", () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         const captureSpy = spyOn(client, "capture");
-
-         captureError(client, {
+      expect(client.capture).toHaveBeenCalledWith({
+         distinctId: "user-1",
+         event: "orpc_error",
+         properties: {
             code: "BAD_REQUEST",
-            errorId: "error-789",
-            input: { amount: -100 },
-            message: "Invalid input",
-            organizationId: "org-456",
-            path: "bills.create",
-            userId: "user-123",
-         });
+            errorId: "err-1",
+            input: { x: 1 },
+            message: "Invalid",
+            path: "content.create",
+         },
+         groups: { organization: "org-1" },
+      });
+   });
 
-         expect(captureSpy).toHaveBeenCalledWith({
-            distinctId: "user-123",
-            event: "trpc_error",
-            properties: {
-               code: "BAD_REQUEST",
-               errorId: "error-789",
-               input: { amount: -100 },
-               message: "Invalid input",
-               path: "bills.create",
-            },
-            groups: { organization: "org-456" },
-         });
+   it("omits groups when no organizationId", () => {
+      const client = createClient();
+      captureError(client, {
+         userId: "user-1",
+         errorId: "err-2",
+         path: "auth.login",
+         code: "UNAUTHORIZED",
+         message: "Denied",
       });
 
-      it("should work without organizationId", () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         const captureSpy = spyOn(client, "capture");
-
-         captureError(client, {
+      expect(client.capture).toHaveBeenCalledWith({
+         distinctId: "user-1",
+         event: "orpc_error",
+         properties: {
             code: "UNAUTHORIZED",
-            errorId: "error-abc",
-            message: "Invalid credentials",
+            errorId: "err-2",
+            input: undefined,
+            message: "Denied",
             path: "auth.login",
-            userId: "user-123",
-         });
+         },
+         groups: undefined,
+      });
+   });
+});
 
-         expect(captureSpy).toHaveBeenCalledWith({
-            distinctId: "user-123",
-            event: "trpc_error",
-            properties: {
-               code: "UNAUTHORIZED",
-               errorId: "error-abc",
-               input: undefined,
-               message: "Invalid credentials",
-               path: "auth.login",
-            },
-         });
+describe("captureServerEvent", () => {
+   it("captures event with all properties", () => {
+      const client = createClient();
+      const ts = new Date("2026-01-01");
+      captureServerEvent(client, {
+         userId: "user-1",
+         event: "purchase",
+         properties: { amount: 99 },
+         groups: { organization: "org-1" },
+         timestamp: ts,
       });
 
-      it("should include input when provided", () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         const captureSpy = spyOn(client, "capture");
-
-         captureError(client, {
-            code: "NOT_FOUND",
-            errorId: "error-def",
-            input: { userId: "nonexistent" },
-            message: "User not found",
-            path: "users.update",
-            userId: "user-123",
-         });
-
-         expect(captureSpy).toHaveBeenCalledWith(
-            expect.objectContaining({
-               properties: expect.objectContaining({
-                  input: { userId: "nonexistent" },
-               }),
-            }),
-         );
+      expect(client.capture).toHaveBeenCalledWith({
+         distinctId: "user-1",
+         event: "purchase",
+         properties: { amount: 99 },
+         groups: { organization: "org-1" },
+         timestamp: ts,
       });
    });
 
-   describe("isFeatureEnabled", () => {
-      const mockEnv = {
-         POSTHOG_HOST: "https://us.i.posthog.com",
-         POSTHOG_KEY: "phc_test_key_123",
-      };
+   it("defaults properties to empty object", () => {
+      const client = createClient();
+      captureServerEvent(client, { userId: "user-1", event: "ping" });
 
-      it("should call posthog.isFeatureEnabled with correct parameters", async () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         const isFeatureEnabledSpy = spyOn(
-            client,
-            "isFeatureEnabled",
-         ).mockResolvedValue(true);
-
-         const result = await isFeatureEnabled(client, "new-dashboard", {
-            userId: "user-123",
-         });
-
-         expect(isFeatureEnabledSpy).toHaveBeenCalledWith(
-            "new-dashboard",
-            "user-123",
-            {
-               groupProperties: undefined,
-               groups: undefined,
-               personProperties: undefined,
-            },
-         );
-         expect(result).toBe(true);
-      });
-
-      it("should return false when feature is not enabled", async () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         spyOn(client, "isFeatureEnabled").mockResolvedValue(false);
-
-         const result = await isFeatureEnabled(client, "disabled-feature", {
-            userId: "user-123",
-         });
-
-         expect(result).toBe(false);
-      });
-
-      it("should return false when result is undefined", async () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         spyOn(client, "isFeatureEnabled").mockResolvedValue(undefined);
-
-         const result = await isFeatureEnabled(client, "unknown-feature", {
-            userId: "user-123",
-         });
-
-         expect(result).toBe(false);
-      });
-
-      it("should pass user and group properties", async () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         const isFeatureEnabledSpy = spyOn(
-            client,
-            "isFeatureEnabled",
-         ).mockResolvedValue(true);
-
-         await isFeatureEnabled(client, "org-feature", {
-            groupProperties: { organization: { tier: "enterprise" } },
-            groups: { organization: "org-456" },
-            userId: "user-123",
-            userProperties: { plan: "premium" },
-         });
-
-         expect(isFeatureEnabledSpy).toHaveBeenCalledWith(
-            "org-feature",
-            "user-123",
-            {
-               groupProperties: { organization: { tier: "enterprise" } },
-               groups: { organization: "org-456" },
-               personProperties: { plan: "premium" },
-            },
-         );
+      expect(client.capture).toHaveBeenCalledWith({
+         distinctId: "user-1",
+         event: "ping",
+         properties: {},
+         groups: undefined,
+         timestamp: undefined,
       });
    });
+});
 
-   describe("getFeatureFlag", () => {
-      const mockEnv = {
-         POSTHOG_HOST: "https://us.i.posthog.com",
-         POSTHOG_KEY: "phc_test_key_123",
-      };
+describe("isFeatureEnabled", () => {
+   it("returns true when enabled", async () => {
+      const client = createClient();
+      client.isFeatureEnabled.mockResolvedValue(true);
 
-      it("should return feature flag variant", async () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         spyOn(client, "getFeatureFlag").mockResolvedValue("variant-a");
-
-         const result = await getFeatureFlag(client, "ab-test", {
-            userId: "user-123",
-         });
-
-         expect(result).toBe("variant-a");
+      const result = await isFeatureEnabled(client, "flag-1", {
+         userId: "u-1",
       });
-
-      it("should return boolean for boolean flags", async () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         spyOn(client, "getFeatureFlag").mockResolvedValue(true);
-
-         const result = await getFeatureFlag(client, "bool-flag", {
-            userId: "user-123",
-         });
-
-         expect(result).toBe(true);
-      });
+      expect(result).toBe(true);
    });
 
-   describe("getFeatureFlagPayload", () => {
-      const mockEnv = {
-         POSTHOG_HOST: "https://us.i.posthog.com",
-         POSTHOG_KEY: "phc_test_key_123",
-      };
+   it("returns false when disabled", async () => {
+      const client = createClient();
+      client.isFeatureEnabled.mockResolvedValue(false);
 
-      it("should return feature flag payload", async () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         const payload = { buttonColor: "blue", maxItems: 10 };
-         spyOn(client, "getFeatureFlagPayload").mockResolvedValue(payload);
-
-         const result = await getFeatureFlagPayload(
-            client,
-            "config-flag",
-            "user-123",
-         );
-
-         expect(result).toEqual(payload);
+      const result = await isFeatureEnabled(client, "flag-2", {
+         userId: "u-1",
       });
-
-      it("should accept matchValue parameter", async () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         const getPayloadSpy = spyOn(
-            client,
-            "getFeatureFlagPayload",
-         ).mockResolvedValue({ config: "test" });
-
-         await getFeatureFlagPayload(
-            client,
-            "ab-test",
-            "user-123",
-            "variant-b",
-         );
-
-         expect(getPayloadSpy).toHaveBeenCalledWith(
-            "ab-test",
-            "user-123",
-            "variant-b",
-         );
-      });
+      expect(result).toBe(false);
    });
 
-   describe("getAllFeatureFlags", () => {
-      const mockEnv = {
-         POSTHOG_HOST: "https://us.i.posthog.com",
-         POSTHOG_KEY: "phc_test_key_123",
-      };
+   it("returns false when undefined", async () => {
+      const client = createClient();
+      client.isFeatureEnabled.mockResolvedValue(undefined);
 
-      it("should return all feature flags", async () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         const flags = {
-            "feature-a": true,
-            "feature-b": "variant-1",
-            "feature-c": false,
-         };
-         spyOn(client, "getAllFlags").mockResolvedValue(flags);
-
-         const result = await getAllFeatureFlags(client, {
-            userId: "user-123",
-         });
-
-         expect(result).toEqual(flags);
+      const result = await isFeatureEnabled(client, "flag-3", {
+         userId: "u-1",
       });
+      expect(result).toBe(false);
    });
 
-   describe("getAllFeatureFlagsAndPayloads", () => {
-      const mockEnv = {
-         POSTHOG_HOST: "https://us.i.posthog.com",
-         POSTHOG_KEY: "phc_test_key_123",
-      };
+   it("passes user and group properties", async () => {
+      const client = createClient();
+      client.isFeatureEnabled.mockResolvedValue(true);
 
-      it("should return all flags and payloads", async () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         const response = {
-            featureFlagPayloads: {
-               "feature-a": { config: "value" },
-               "feature-b": { items: [1, 2, 3] },
-            },
-            featureFlags: { "feature-a": true, "feature-b": "variant-1" },
-         };
-         spyOn(client, "getAllFlagsAndPayloads").mockResolvedValue(response);
-
-         const result = await getAllFeatureFlagsAndPayloads(client, {
-            userId: "user-123",
-         });
-
-         expect(result.featureFlags).toEqual(response.featureFlags);
-         expect(result.featureFlagPayloads).toEqual(
-            response.featureFlagPayloads,
-         );
+      await isFeatureEnabled(client, "flag-4", {
+         userId: "u-1",
+         userProperties: { plan: "pro" },
+         groups: { organization: "org-1" },
+         groupProperties: { organization: { tier: "enterprise" } },
       });
 
-      it("should return empty objects when response is empty", async () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         spyOn(client, "getAllFlagsAndPayloads").mockResolvedValue({});
-
-         const result = await getAllFeatureFlagsAndPayloads(client, {
-            userId: "user-123",
-         });
-
-         expect(result.featureFlags).toEqual({});
-         expect(result.featureFlagPayloads).toEqual({});
+      expect(client.isFeatureEnabled).toHaveBeenCalledWith("flag-4", "u-1", {
+         personProperties: { plan: "pro" },
+         groups: { organization: "org-1" },
+         groupProperties: { organization: { tier: "enterprise" } },
       });
    });
+});
 
-   describe("captureServerEvent", () => {
-      const mockEnv = {
-         POSTHOG_HOST: "https://us.i.posthog.com",
-         POSTHOG_KEY: "phc_test_key_123",
-      };
+describe("getFeatureFlag", () => {
+   it("returns string variant", async () => {
+      const client = createClient();
+      client.getFeatureFlag.mockResolvedValue("variant-a");
 
-      it("should capture event with all properties", () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         const captureSpy = spyOn(client, "capture");
-         const timestamp = new Date();
-
-         captureServerEvent(client, {
-            event: "purchase_completed",
-            groups: { organization: "org-456" },
-            properties: { amount: 99.99, currency: "USD" },
-            timestamp,
-            userId: "user-123",
-         });
-
-         expect(captureSpy).toHaveBeenCalledWith({
-            distinctId: "user-123",
-            event: "purchase_completed",
-            properties: {
-               amount: 99.99,
-               currency: "USD",
-            },
-            groups: { organization: "org-456" },
-            timestamp,
-         });
-      });
-
-      it("should work without optional parameters", () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         const captureSpy = spyOn(client, "capture");
-
-         captureServerEvent(client, {
-            event: "page_viewed",
-            userId: "user-123",
-         });
-
-         expect(captureSpy).toHaveBeenCalledWith({
-            distinctId: "user-123",
-            event: "page_viewed",
-            properties: {},
-            groups: undefined,
-            timestamp: undefined,
-         });
-      });
+      const result = await getFeatureFlag(client, "ab-test", { userId: "u-1" });
+      expect(result).toBe("variant-a");
    });
 
-   describe("shutdownPosthog", () => {
-      const mockEnv = {
-         POSTHOG_HOST: "https://us.i.posthog.com",
-         POSTHOG_KEY: "phc_test_key_123",
-      };
+   it("returns boolean flag", async () => {
+      const client = createClient();
+      client.getFeatureFlag.mockResolvedValue(true);
 
-      it("should call posthog.shutdown", async () => {
-         const client = getElysiaPosthogConfig(mockEnv);
-         const shutdownSpy = spyOn(client, "shutdown").mockResolvedValue(
-            undefined,
-         );
-
-         await shutdownPosthog(client);
-
-         expect(shutdownSpy).toHaveBeenCalled();
+      const result = await getFeatureFlag(client, "bool-flag", {
+         userId: "u-1",
       });
+      expect(result).toBe(true);
+   });
+});
+
+describe("getFeatureFlagPayload", () => {
+   it("returns payload", async () => {
+      const client = createClient();
+      const payload = { color: "blue" };
+      client.getFeatureFlagPayload.mockResolvedValue(payload);
+
+      const result = await getFeatureFlagPayload(client, "config", "u-1");
+      expect(result).toEqual(payload);
+   });
+
+   it("passes matchValue", async () => {
+      const client = createClient();
+      client.getFeatureFlagPayload.mockResolvedValue({});
+
+      await getFeatureFlagPayload(client, "ab", "u-1", "variant-b");
+
+      expect(client.getFeatureFlagPayload).toHaveBeenCalledWith(
+         "ab",
+         "u-1",
+         "variant-b",
+      );
+   });
+});
+
+describe("getAllFeatureFlags", () => {
+   it("returns all flags", async () => {
+      const client = createClient();
+      const flags = { a: true, b: "v1" };
+      client.getAllFlags.mockResolvedValue(flags);
+
+      const result = await getAllFeatureFlags(client, { userId: "u-1" });
+      expect(result).toEqual(flags);
+   });
+});
+
+describe("getAllFeatureFlagsAndPayloads", () => {
+   it("returns flags and payloads", async () => {
+      const client = createClient();
+      client.getAllFlagsAndPayloads.mockResolvedValue({
+         featureFlags: { a: true },
+         featureFlagPayloads: { a: { x: 1 } },
+      });
+
+      const result = await getAllFeatureFlagsAndPayloads(client, {
+         userId: "u-1",
+      });
+      expect(result.featureFlags).toEqual({ a: true });
+      expect(result.featureFlagPayloads).toEqual({ a: { x: 1 } });
+   });
+
+   it("defaults to empty objects when response is empty", async () => {
+      const client = createClient();
+      client.getAllFlagsAndPayloads.mockResolvedValue({});
+
+      const result = await getAllFeatureFlagsAndPayloads(client, {
+         userId: "u-1",
+      });
+      expect(result.featureFlags).toEqual({});
+      expect(result.featureFlagPayloads).toEqual({});
+   });
+});
+
+describe("shutdownPosthog", () => {
+   it("calls shutdown", async () => {
+      const client = createClient();
+      await shutdownPosthog(client);
+      expect(client.shutdown).toHaveBeenCalled();
    });
 });
