@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { createInsertSchema } from "drizzle-orm/zod";
 import {
    date,
    index,
@@ -12,7 +13,9 @@ import {
 } from "drizzle-orm/pg-core";
 import { bankAccounts } from "./bank-accounts";
 import { categories } from "./categories";
+import { contacts } from "./contacts";
 import { transactions } from "./transactions";
+import { z } from "zod";
 
 export const billTypeEnum = pgEnum("bill_type", ["payable", "receivable"]);
 
@@ -85,7 +88,9 @@ export const bills = pgTable(
       transactionId: uuid("transaction_id").references(() => transactions.id, {
          onDelete: "set null",
       }),
-      contactId: uuid("contact_id"), // nullable — set when bill is auto-generated from a subscription
+      contactId: uuid("contact_id").references(() => contacts.id, {
+         onDelete: "restrict",
+      }),
       subscriptionId: uuid("subscription_id"), // nullable — set when bill is auto-generated from a subscription
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
@@ -116,3 +121,74 @@ export type RecurrenceFrequency =
    (typeof recurrenceFrequencyEnum.enumValues)[number];
 export type RecurrenceSetting = typeof recurrenceSettings.$inferSelect;
 export type NewRecurrenceSetting = typeof recurrenceSettings.$inferInsert;
+
+const numericPositive = (msg: string) =>
+   z.string().refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0, {
+      message: msg,
+   });
+
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+const dateSchema = z
+   .string()
+   .regex(ISO_DATE_REGEX, "Data deve estar no formato YYYY-MM-DD.");
+
+const baseBillSchema = createInsertSchema(bills).pick({
+   name: true,
+   description: true,
+   type: true,
+   amount: true,
+   dueDate: true,
+   bankAccountId: true,
+   categoryId: true,
+   contactId: true,
+   attachmentUrl: true,
+});
+
+export const createBillSchema = baseBillSchema.extend({
+   name: z
+      .string()
+      .min(2, "Nome deve ter no mínimo 2 caracteres.")
+      .max(200, "Nome deve ter no máximo 200 caracteres."),
+   description: z
+      .string()
+      .max(500, "Descrição deve ter no máximo 500 caracteres.")
+      .nullable()
+      .optional(),
+   type: z.enum(["payable", "receivable"], {
+      message: "Tipo é obrigatório.",
+   }),
+   amount: numericPositive("Valor deve ser um número válido maior que zero."),
+   dueDate: dateSchema,
+   bankAccountId: z.string().uuid().nullable().optional(),
+   categoryId: z.string().uuid().nullable().optional(),
+   contactId: z.string().uuid().nullable().optional(),
+   attachmentUrl: z.string().nullable().optional(),
+});
+
+export const updateBillSchema = createBillSchema.partial();
+
+const baseRecurrenceSchema = createInsertSchema(recurrenceSettings).pick({
+   frequency: true,
+   windowMonths: true,
+   endsAt: true,
+});
+
+export const createRecurrenceSettingSchema = baseRecurrenceSchema.extend({
+   frequency: z.enum(
+      ["daily", "weekly", "biweekly", "monthly", "quarterly", "yearly"],
+      { message: "Frequência é obrigatória." },
+   ),
+   windowMonths: z
+      .number()
+      .int()
+      .min(1, "Janela deve ser de no mínimo 1 mês.")
+      .default(3),
+   endsAt: dateSchema.nullable().optional(),
+});
+
+export type CreateBillInput = z.infer<typeof createBillSchema>;
+export type UpdateBillInput = z.infer<typeof updateBillSchema>;
+export type CreateRecurrenceSettingInput = z.infer<
+   typeof createRecurrenceSettingSchema
+>;
