@@ -29,7 +29,7 @@ export function startBudgetAlertsWorker(
             jobId: job.id,
             event: "started",
          });
-         await checkBudgetAlerts(db, job.data);
+         await checkBudgetAlerts(job.data);
       },
       {
          connection,

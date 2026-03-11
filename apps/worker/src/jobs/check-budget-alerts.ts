@@ -1,7 +1,7 @@
-import type { DatabaseInstance } from "@core/database/client";
+import { db } from "@core/database/client";
 import {
    getGoalsForAlertCheck,
-   updateBudgetGoal,
+   markAlertSent,
 } from "@core/database/repositories/budget-goals-repository";
 import { teamMember, user, team } from "@core/database/schema";
 import { env } from "@core/environment/worker";
@@ -17,20 +17,19 @@ import { eq } from "drizzle-orm";
 
 const logger = getLogger().child({ module: "job:budget-alerts" });
 
-const fmt = (n: number) =>
+const fmt = (v: string | number) =>
    new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
-   }).format(n);
+   }).format(Number(v));
 
 export async function checkBudgetAlerts(
-   db: DatabaseInstance,
    job: BudgetAlertJobData,
 ): Promise<void> {
    try {
       const { month, year } = job;
 
-      const goals = await getGoalsForAlertCheck(db, { month, year });
+      const goals = await getGoalsForAlertCheck(month, year);
 
       if (goals.length === 0) {
          logger.info({ month, year }, "No budget goals to alert");
@@ -98,12 +97,7 @@ export async function checkBudgetAlerts(
                });
             }
 
-            // Mark alert as sent
-            await updateBudgetGoal(
-               db,
-               { id: goal.id, teamId: goal.teamId },
-               { alertSentAt: new Date() },
-            );
+            await markAlertSent(goal.id, goal.teamId);
 
             // Emit finance event
             if (teamRow) {
