@@ -258,7 +258,7 @@
       "seed:events": "bun run scripts/seed-event-catalog.ts",
       "format": "oxfmt --config tooling/oxc/oxfmt.json --write .",
       "format:check": "oxfmt --config tooling/oxc/oxfmt.json --check .",
-      "prepare": "husky",
+      "prepare": "lefthook install",
       "rag:reindex": "bun run scripts/reindex-content.ts",
       "release": "nx release",
       "release:changelog": "nx release changelog",
