@@ -298,6 +298,25 @@ export const relations = defineRelations(schema, (r) => ({
    // -------------------------------------------------------------------------
    // Inventory
    // -------------------------------------------------------------------------
+   financialGoals: {
+      category: r.one.categories({
+         from: r.financialGoals.categoryId,
+         to: r.categories.id,
+      }),
+      movements: r.many.financialGoalMovements(),
+   },
+
+   financialGoalMovements: {
+      goal: r.one.financialGoals({
+         from: r.financialGoalMovements.goalId,
+         to: r.financialGoals.id,
+      }),
+      transaction: r.one.transactions({
+         from: r.financialGoalMovements.transactionId,
+         to: r.transactions.id,
+      }),
+   },
+
    inventoryProducts: {
       movements: r.many.inventoryMovements(),
    },

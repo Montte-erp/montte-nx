@@ -19,3 +19,10 @@ export type BillingCycle = (typeof billingCycleEnum.enumValues)[number];
 export type SubscriptionStatus =
    (typeof subscriptionStatusEnum.enumValues)[number];
 export type ServiceSource = (typeof serviceSourceEnum.enumValues)[number];
+
+export const goalMovementTypeEnum = pgEnum("goal_movement_type", [
+   "deposit",
+   "withdrawal",
+]);
+
+export type GoalMovementType = (typeof goalMovementTypeEnum.enumValues)[number];

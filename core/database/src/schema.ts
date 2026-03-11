@@ -18,6 +18,7 @@ export * from "./schemas/dashboards";
 export * from "./schemas/enums";
 export * from "./schemas/event-catalog";
 export * from "./schemas/event-views";
+export * from "./schemas/financial-goals";
 // Events
 export * from "./schemas/events";
 export * from "./schemas/insights";
