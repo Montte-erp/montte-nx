@@ -12,7 +12,7 @@ import {
 import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
 import { categories } from "./categories";
-import { billingCycleEnum } from "./enums";
+import { billingCycleEnum } from "./subscriptions";
 import { tags } from "./tags";
 
 export const services = pgTable(

@@ -5,6 +5,7 @@ import {
    index,
    integer,
    numeric,
+   pgEnum,
    pgTable,
    text,
    timestamp,
@@ -13,8 +14,13 @@ import {
 import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
 import { categories } from "./categories";
-import { goalMovementTypeEnum } from "./enums";
 import { transactions } from "./transactions";
+
+export const goalMovementTypeEnum = pgEnum("goal_movement_type", [
+   "deposit",
+   "withdrawal",
+]);
+export type GoalMovementType = (typeof goalMovementTypeEnum.enumValues)[number];
 
 export const financialGoals = pgTable(
    "financial_goals",

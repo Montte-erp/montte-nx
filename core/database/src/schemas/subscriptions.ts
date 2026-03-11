@@ -4,6 +4,7 @@ import {
    date,
    index,
    numeric,
+   pgEnum,
    pgTable,
    text,
    timestamp,
@@ -11,9 +12,23 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
-import { contacts } from "./contacts";
-import { serviceSourceEnum, subscriptionStatusEnum } from "./enums";
+import { contacts, serviceSourceEnum } from "./contacts";
 import { serviceVariants } from "./services";
+
+export const billingCycleEnum = pgEnum("billing_cycle", [
+   "hourly",
+   "monthly",
+   "annual",
+   "one_time",
+]);
+export const subscriptionStatusEnum = pgEnum("subscription_status", [
+   "active",
+   "completed",
+   "cancelled",
+]);
+export type BillingCycle = (typeof billingCycleEnum.enumValues)[number];
+export type SubscriptionStatus =
+   (typeof subscriptionStatusEnum.enumValues)[number];
 
 export const contactSubscriptions = pgTable(
    "contact_subscriptions",

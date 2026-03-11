@@ -8,7 +8,6 @@ export * from "./schemas/credit-cards";
 export * from "./schemas/credit-card-statements";
 export * from "./schemas/credit-card-statement-totals";
 export * from "./schemas/dashboards";
-export * from "./schemas/enums";
 export * from "./schemas/event-catalog";
 export * from "./schemas/event-views";
 export * from "./schemas/financial-goals";

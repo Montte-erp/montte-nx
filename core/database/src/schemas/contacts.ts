@@ -11,7 +11,8 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
-import { serviceSourceEnum } from "./enums";
+export const serviceSourceEnum = pgEnum("service_source", ["manual", "asaas"]);
+export type ServiceSource = (typeof serviceSourceEnum.enumValues)[number];
 
 export const contactTypeEnum = pgEnum("contact_type", [
    "cliente",
