@@ -3,7 +3,6 @@ import { ORPCError } from "@orpc/server";
 import { getBankAccount } from "@core/database/repositories/bank-accounts-repository";
 import { getCategory } from "@core/database/repositories/categories-repository";
 import { getContact } from "@core/database/repositories/contacts-repository";
-import { getSubcategory } from "@core/database/repositories/subcategories-repository";
 import { getTag } from "@core/database/repositories/tags-repository";
 import {
    createTransaction,
@@ -20,10 +19,6 @@ import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
-// =============================================================================
-// Validation Schemas
-// =============================================================================
-
 const transactionBaseSchema = createInsertSchema(transactions)
    .pick({
       type: true,
@@ -33,7 +28,6 @@ const transactionBaseSchema = createInsertSchema(transactions)
       bankAccountId: true,
       destinationBankAccountId: true,
       categoryId: true,
-      subcategoryId: true,
       attachmentUrl: true,
       contactId: true,
       creditCardId: true,
@@ -79,25 +73,19 @@ const transactionSchema = transactionBaseSchema.superRefine((data, ctx) => {
    }
 });
 
-// =============================================================================
-// Helpers
-// =============================================================================
-
 async function verifyTransactionRefs(
-   db: Parameters<typeof getBankAccount>[0],
    teamId: string,
    input: {
       bankAccountId?: string | null;
       destinationBankAccountId?: string | null;
       categoryId?: string | null;
-      subcategoryId?: string | null;
       tagIds?: string[];
       contactId?: string | null;
       date?: Date | string | null;
    },
 ) {
    if (input.bankAccountId) {
-      const account = await getBankAccount(db, input.bankAccountId);
+      const account = await getBankAccount(input.bankAccountId);
       if (!account || account.teamId !== teamId) {
          throw new ORPCError("BAD_REQUEST", {
             message: "Conta bancária inválida.",
@@ -115,7 +103,7 @@ async function verifyTransactionRefs(
    }
 
    if (input.destinationBankAccountId) {
-      const dest = await getBankAccount(db, input.destinationBankAccountId);
+      const dest = await getBankAccount(input.destinationBankAccountId);
       if (!dest || dest.teamId !== teamId) {
          throw new ORPCError("BAD_REQUEST", {
             message: "Conta de destino inválida.",
@@ -139,18 +127,9 @@ async function verifyTransactionRefs(
       }
    }
 
-   if (input.subcategoryId) {
-      const sub = await getSubcategory(db, input.subcategoryId);
-      if (!sub || sub.teamId !== teamId) {
-         throw new ORPCError("BAD_REQUEST", {
-            message: "Subcategoria inválida.",
-         });
-      }
-   }
-
    if (input.tagIds && input.tagIds.length > 0) {
       for (const tagId of input.tagIds) {
-         const tag = await getTag(db, tagId);
+         const tag = await getTag(tagId);
          if (!tag || tag.teamId !== teamId) {
             throw new ORPCError("BAD_REQUEST", { message: "Tag inválida." });
          }
@@ -158,7 +137,7 @@ async function verifyTransactionRefs(
    }
 
    if (input.contactId) {
-      const contact = await getContact(db, input.contactId);
+      const contact = await getContact(input.contactId);
       if (!contact || contact.teamId !== teamId) {
          throw new ORPCError("BAD_REQUEST", {
             message: "Contato inválido.",
@@ -167,14 +146,10 @@ async function verifyTransactionRefs(
    }
 }
 
-// =============================================================================
-// Transaction Procedures
-// =============================================================================
-
 export const create = protectedProcedure
    .input(transactionSchema)
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
       if (input.type === "transfer") {
          if (!input.destinationBankAccountId) {
             throw new ORPCError("BAD_REQUEST", {
@@ -192,11 +167,10 @@ export const create = protectedProcedure
             });
          }
       }
-      await verifyTransactionRefs(db, teamId, {
+      await verifyTransactionRefs(teamId, {
          bankAccountId: input.bankAccountId,
          destinationBankAccountId: input.destinationBankAccountId,
          categoryId: input.type === "transfer" ? null : input.categoryId,
-         subcategoryId: input.type === "transfer" ? null : input.subcategoryId,
          tagIds: input.tagIds,
          contactId: input.contactId,
          date: input.date,
@@ -204,14 +178,11 @@ export const create = protectedProcedure
       const { tagIds, items, ...data } = input;
 
       if (input.type === "transfer") {
-         // Single record: bankAccountId = origin (negative effect), destinationBankAccountId = destination (positive effect)
          const transaction = await createTransaction(
-            db,
+            teamId,
             {
                ...data,
-               teamId,
                categoryId: null,
-               subcategoryId: null,
                type: "transfer",
                bankAccountId: input.bankAccountId,
                destinationBankAccountId: input.destinationBankAccountId,
@@ -220,18 +191,14 @@ export const create = protectedProcedure
          );
 
          if (items && items.length > 0 && transaction) {
-            await createTransactionItems(db, transaction.id, teamId, items);
+            await createTransactionItems(transaction.id, teamId, items);
          }
          return transaction;
       }
 
-      const transaction = await createTransaction(
-         db,
-         { ...data, teamId },
-         tagIds,
-      );
+      const transaction = await createTransaction(teamId, data, tagIds);
       if (items && items.length > 0 && transaction) {
-         await createTransactionItems(db, transaction.id, teamId, items);
+         await createTransactionItems(transaction.id, teamId, items);
       }
       return transaction;
    });
@@ -264,8 +231,8 @@ export const getAll = protectedProcedure
          .optional(),
    )
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      return listTransactions(db, { teamId, ...input });
+      const { teamId } = context;
+      return listTransactions({ teamId, ...input });
    });
 
 export const getSummary = protectedProcedure
@@ -294,15 +261,15 @@ export const getSummary = protectedProcedure
          .optional(),
    )
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      return getTransactionsSummary(db, { teamId, ...input });
+      const { teamId } = context;
+      return getTransactionsSummary({ teamId, ...input });
    });
 
 export const getById = protectedProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      const transaction = await getTransactionWithTags(db, input.id);
+      const { teamId } = context;
+      const transaction = await getTransactionWithTags(input.id);
       if (!transaction || transaction.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Transação não encontrada.",
@@ -318,8 +285,8 @@ export const update = protectedProcedure
          .merge(transactionBaseSchema.partial()),
    )
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      const existing = await getTransactionWithTags(db, input.id);
+      const { teamId } = context;
+      const existing = await getTransactionWithTags(input.id);
       if (!existing || existing.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Transação não encontrada.",
@@ -329,24 +296,22 @@ export const update = protectedProcedure
          input.bankAccountId ||
          input.destinationBankAccountId ||
          input.categoryId ||
-         input.subcategoryId ||
          input.tagIds ||
          input.contactId
       ) {
-         await verifyTransactionRefs(db, teamId, {
+         await verifyTransactionRefs(teamId, {
             bankAccountId: input.bankAccountId ?? existing.bankAccountId,
             destinationBankAccountId: input.destinationBankAccountId,
             categoryId: input.categoryId,
-            subcategoryId: input.subcategoryId,
             tagIds: input.tagIds,
             contactId: input.contactId,
             date: input.date ?? existing.date,
          });
       }
       const { id, tagIds, items, ...data } = input;
-      const result = await updateTransaction(db, id, data, tagIds);
+      const result = await updateTransaction(id, data, tagIds);
       if (items !== undefined) {
-         await replaceTransactionItems(db, id, teamId, items);
+         await replaceTransactionItems(id, teamId, items);
       }
       return result;
    });
@@ -354,14 +319,14 @@ export const update = protectedProcedure
 export const remove = protectedProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      const transaction = await getTransactionWithTags(db, input.id);
+      const { teamId } = context;
+      const transaction = await getTransactionWithTags(input.id);
       if (!transaction || transaction.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Transação não encontrada.",
          });
       }
-      await deleteTransaction(db, input.id);
+      await deleteTransaction(input.id);
       return { success: true };
    });
 
@@ -379,19 +344,18 @@ export const importBulk = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
       let imported = 0;
       for (const t of input.transactions) {
          const { tagIds, items, ...data } = t;
-         await verifyTransactionRefs(db, teamId, {
+         await verifyTransactionRefs(teamId, {
             bankAccountId: data.bankAccountId,
             destinationBankAccountId: data.destinationBankAccountId,
             categoryId: data.categoryId,
-            subcategoryId: data.subcategoryId,
             tagIds,
             date: data.date,
          });
-         await createTransaction(db, { ...data, teamId }, tagIds);
+         await createTransaction(teamId, data, tagIds);
          imported++;
       }
       return { imported, skipped: 0 };

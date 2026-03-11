@@ -1,4 +1,3 @@
-import type { DatabaseInstance } from "@core/database/client";
 import {
    createBillsBatch,
    getActiveRecurrenceSettings,
@@ -33,13 +32,11 @@ function computeNextDueDate(from: string, frequency: string): string {
    return d.toISOString().substring(0, 10);
 }
 
-export async function generateBillOccurrences(
-   db: DatabaseInstance,
-): Promise<void> {
-   const settings = await getActiveRecurrenceSettings(db);
+export async function generateBillOccurrences(): Promise<void> {
+   const settings = await getActiveRecurrenceSettings();
 
    for (const setting of settings) {
-      const lastBill = await getLastBillForRecurrenceGroup(db, setting.id);
+      const lastBill = await getLastBillForRecurrenceGroup(setting.id);
       if (!lastBill) continue;
 
       const today = new Date();
@@ -69,7 +66,7 @@ export async function generateBillOccurrences(
       }
 
       if (toCreate.length > 0) {
-         await createBillsBatch(db, toCreate);
+         await createBillsBatch(toCreate);
          logger.info(
             { count: toCreate.length, recurrenceGroupId: setting.id },
             "Created bill occurrences",

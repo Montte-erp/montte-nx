@@ -17,10 +17,6 @@ import {
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
-// =============================================================================
-// Validation Schemas
-// =============================================================================
-
 const billBaseSchema = z.object({
    name: z.string().min(1).max(200),
    description: z.string().nullable().optional(),
@@ -37,7 +33,7 @@ const billBaseSchema = z.object({
 const installmentSchema = z.object({
    mode: z.enum(["equal", "fixed", "irregular"]),
    count: z.number().int().min(2).max(360),
-   amounts: z.array(z.string()).optional(), // for irregular mode
+   amounts: z.array(z.string()).optional(),
 });
 
 const recurrenceSchema = z.object({
@@ -56,10 +52,6 @@ const recurrenceSchema = z.object({
       .nullable()
       .optional(),
 });
-
-// =============================================================================
-// Helpers
-// =============================================================================
 
 function computeDueDate(
    startDate: string,
@@ -88,7 +80,6 @@ function computeDueDate(
 }
 
 async function verifyBillRefs(
-   db: Parameters<typeof getBankAccount>[0],
    teamId: string,
    input: {
       bankAccountId?: string | null;
@@ -96,7 +87,7 @@ async function verifyBillRefs(
    },
 ) {
    if (input.bankAccountId) {
-      const account = await getBankAccount(db, input.bankAccountId);
+      const account = await getBankAccount(input.bankAccountId);
       if (!account || account.teamId !== teamId) {
          throw new ORPCError("BAD_REQUEST", {
             message: "Conta bancária inválida.",
@@ -111,10 +102,6 @@ async function verifyBillRefs(
       }
    }
 }
-
-// =============================================================================
-// Bill Procedures
-// =============================================================================
 
 export const getAll = protectedProcedure
    .input(
@@ -133,8 +120,8 @@ export const getAll = protectedProcedure
          .optional(),
    )
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      return listBills(db, { teamId, ...input });
+      const { teamId } = context;
+      return listBills({ teamId, ...input });
    });
 
 export const create = protectedProcedure
@@ -146,20 +133,18 @@ export const create = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
       const { bill, installment, recurrence } = input;
 
-      await verifyBillRefs(db, teamId, {
+      await verifyBillRefs(teamId, {
          bankAccountId: bill.bankAccountId,
          categoryId: bill.categoryId,
       });
 
-      // Single bill — no installment, no recurrence
       if (!installment && !recurrence) {
-         return createBill(db, { ...bill, teamId });
+         return createBill(teamId, bill);
       }
 
-      // Installment batch
       if (installment) {
          const { mode, count, amounts } = installment;
          const groupId = crypto.randomUUID();
@@ -168,10 +153,8 @@ export const create = protectedProcedure
             if (mode === "irregular" && amounts && amounts[i]) {
                installmentAmount = amounts[i] as string;
             } else if (mode === "equal") {
-               // Split equally — divide total by count, round to 2 decimal places
                installmentAmount = (Number(bill.amount) / count).toFixed(2);
             } else {
-               // "fixed" mode: each installment is the full amount
                installmentAmount = bill.amount;
             }
 
@@ -189,15 +172,13 @@ export const create = protectedProcedure
             };
          });
 
-         return createBillsBatch(db, batchData);
+         return createBillsBatch(batchData);
       }
 
-      // Recurrence batch — generate bills within window
       if (recurrence) {
          const { frequency, windowMonths, endsAt } = recurrence;
 
-         const setting = await createRecurrenceSetting(db, {
-            teamId,
+         const setting = await createRecurrenceSetting(teamId, {
             frequency,
             windowMonths,
             endsAt: endsAt ?? null,
@@ -231,17 +212,17 @@ export const create = protectedProcedure
             });
          }
 
-         return createBillsBatch(db, batchData);
+         return createBillsBatch(batchData);
       }
    });
 
 export const update = protectedProcedure
    .input(z.object({ id: z.string().uuid() }).merge(billBaseSchema.partial()))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
       const { id, ...data } = input;
 
-      const existing = await getBill(db, id);
+      const existing = await getBill(id);
       if (!existing || existing.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Conta a pagar/receber não encontrada.",
@@ -255,13 +236,13 @@ export const update = protectedProcedure
       }
 
       if (data.bankAccountId !== undefined || data.categoryId !== undefined) {
-         await verifyBillRefs(db, teamId, {
+         await verifyBillRefs(teamId, {
             bankAccountId: data.bankAccountId,
             categoryId: data.categoryId,
          });
       }
 
-      return updateBill(db, id, data);
+      return updateBill(id, data);
    });
 
 export const pay = protectedProcedure
@@ -279,10 +260,10 @@ export const pay = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
       const { id, amount, date, bankAccountId, paymentType } = input;
 
-      const bill = await getBill(db, id);
+      const bill = await getBill(id);
       if (!bill || bill.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Conta a pagar/receber não encontrada.",
@@ -315,7 +296,7 @@ export const pay = protectedProcedure
          });
       }
 
-      const account = await getBankAccount(db, resolvedBankAccountId);
+      const account = await getBankAccount(resolvedBankAccountId);
       if (!account || account.teamId !== teamId) {
          throw new ORPCError("BAD_REQUEST", {
             message: "Conta bancária inválida.",
@@ -325,9 +306,8 @@ export const pay = protectedProcedure
       const transactionType = bill.type === "payable" ? "expense" : "income";
 
       const transaction = await createTransaction(
-         db,
+         teamId,
          {
-            teamId,
             name: bill.name,
             type: transactionType,
             amount,
@@ -348,10 +328,10 @@ export const pay = protectedProcedure
 
       if (paymentType === "partial") {
          const remaining = (Number(bill.amount) - Number(amount)).toFixed(2);
-         return updateBill(db, id, { amount: remaining });
+         return updateBill(id, { amount: remaining });
       }
 
-      return updateBill(db, id, {
+      return updateBill(id, {
          status: "paid",
          paidAt: new Date(),
          transactionId: transaction.id,
@@ -361,9 +341,9 @@ export const pay = protectedProcedure
 export const unpay = protectedProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
 
-      const bill = await getBill(db, input.id);
+      const bill = await getBill(input.id);
       if (!bill || bill.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Conta a pagar/receber não encontrada.",
@@ -377,10 +357,10 @@ export const unpay = protectedProcedure
       }
 
       if (bill.transactionId) {
-         await deleteTransaction(db, bill.transactionId);
+         await deleteTransaction(bill.transactionId);
       }
 
-      return updateBill(db, input.id, {
+      return updateBill(input.id, {
          status: "pending",
          paidAt: null,
          transactionId: null,
@@ -390,24 +370,24 @@ export const unpay = protectedProcedure
 export const cancel = protectedProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
 
-      const bill = await getBill(db, input.id);
+      const bill = await getBill(input.id);
       if (!bill || bill.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Conta a pagar/receber não encontrada.",
          });
       }
 
-      return updateBill(db, input.id, { status: "cancelled" });
+      return updateBill(input.id, { status: "cancelled" });
    });
 
 export const remove = protectedProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
 
-      const bill = await getBill(db, input.id);
+      const bill = await getBill(input.id);
       if (!bill || bill.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Conta a pagar/receber não encontrada.",
@@ -420,7 +400,7 @@ export const remove = protectedProcedure
          });
       }
 
-      await deleteBill(db, input.id);
+      await deleteBill(input.id);
       return { success: true };
    });
 
@@ -434,20 +414,18 @@ export const createFromTransaction = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
       const { bill, installment, recurrence } = input;
 
-      await verifyBillRefs(db, teamId, {
+      await verifyBillRefs(teamId, {
          bankAccountId: bill.bankAccountId,
          categoryId: bill.categoryId,
       });
 
-      // Single bill — no installment, no recurrence
       if (!installment && !recurrence) {
-         return createBill(db, { ...bill, teamId });
+         return createBill(teamId, bill);
       }
 
-      // Installment batch
       if (installment) {
          const { mode, count, amounts } = installment;
          const groupId = crypto.randomUUID();
@@ -475,15 +453,13 @@ export const createFromTransaction = protectedProcedure
             };
          });
 
-         return createBillsBatch(db, batchData);
+         return createBillsBatch(batchData);
       }
 
-      // Recurrence batch
       if (recurrence) {
          const { frequency, windowMonths, endsAt } = recurrence;
 
-         const setting = await createRecurrenceSetting(db, {
-            teamId,
+         const setting = await createRecurrenceSetting(teamId, {
             frequency,
             windowMonths,
             endsAt: endsAt ?? null,
@@ -517,6 +493,6 @@ export const createFromTransaction = protectedProcedure
             });
          }
 
-         return createBillsBatch(db, batchData);
+         return createBillsBatch(batchData);
       }
    });

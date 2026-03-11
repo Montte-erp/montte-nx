@@ -66,7 +66,7 @@ export function startScheduler(
    // Daily at 6am: generate upcoming bill occurrences for active recurrence groups
    const billRecurrenceTask = cron.schedule("0 6 * * *", async () => {
       await runWithTelemetry("bill-recurrence-generation", async () => {
-         await generateBillOccurrences(db);
+         await generateBillOccurrences();
       });
    });
 

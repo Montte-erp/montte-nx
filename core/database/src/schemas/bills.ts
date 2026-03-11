@@ -166,7 +166,13 @@ export const createBillSchema = baseBillSchema.extend({
    attachmentUrl: z.string().nullable().optional(),
 });
 
-export const updateBillSchema = createBillSchema.partial();
+export const updateBillSchema = createBillSchema
+   .extend({
+      status: z.enum(["pending", "paid", "cancelled"]).optional(),
+      paidAt: z.date().nullable().optional(),
+      transactionId: z.string().uuid().nullable().optional(),
+   })
+   .partial();
 
 const baseRecurrenceSchema = createInsertSchema(recurrenceSettings).pick({
    frequency: true,

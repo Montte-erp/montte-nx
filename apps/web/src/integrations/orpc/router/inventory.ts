@@ -118,7 +118,7 @@ export const archiveProduct = protectedProcedure
 export const registerMovement = protectedProcedure
    .input(movementSchema)
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
 
       const product = await getInventoryProduct(input.productId);
       if (!product || product.teamId !== teamId) {
@@ -146,8 +146,7 @@ export const registerMovement = protectedProcedure
             const bankAccountId =
                input.bankAccountId ?? settings?.purchaseBankAccountId;
             if (bankAccountId) {
-               const tx = await createTransaction(db, {
-                  teamId,
+               const tx = await createTransaction(teamId, {
                   type: "expense",
                   name: `Compra: ${product.name} - ${input.purchasedQty} ${product.purchaseUnit}`,
                   amount: String(input.totalAmount),
@@ -178,8 +177,7 @@ export const registerMovement = protectedProcedure
          try {
             const bankAccountId = settings?.purchaseBankAccountId;
             if (bankAccountId) {
-               const tx = await createTransaction(db, {
-                  teamId,
+               const tx = await createTransaction(teamId, {
                   type: "income",
                   name: `Venda: ${product.name} - ${baseQty} ${product.baseUnit}`,
                   amount: String(input.totalAmount),
@@ -203,8 +201,7 @@ export const registerMovement = protectedProcedure
          const lossAmount = baseQty * Number(product.sellingPrice ?? 0);
          if (lossAmount > 0 && settings?.purchaseBankAccountId) {
             try {
-               const tx = await createTransaction(db, {
-                  teamId,
+               const tx = await createTransaction(teamId, {
                   type: "expense",
                   name: `Desperdício: ${product.name} - ${baseQty} ${product.baseUnit}`,
                   amount: String(lossAmount),
