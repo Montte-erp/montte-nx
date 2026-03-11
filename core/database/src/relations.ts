@@ -146,20 +146,6 @@ export const relations = defineRelations(schema, (r) => ({
    },
 
    // -------------------------------------------------------------------------
-   // Actions
-   // -------------------------------------------------------------------------
-   actions: {
-      organization: r.one.organization({
-         from: r.actions.organizationId,
-         to: r.organization.id,
-      }),
-      createdByUser: r.one.user({
-         from: r.actions.createdBy,
-         to: r.user.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
    // Activity Logs
    // -------------------------------------------------------------------------
    activityLogs: {
@@ -184,20 +170,6 @@ export const relations = defineRelations(schema, (r) => ({
       organization: r.one.organization({
          from: r.organizationAddons.organizationId,
          to: r.organization.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // Annotations
-   // -------------------------------------------------------------------------
-   annotations: {
-      organization: r.one.organization({
-         from: r.annotations.organizationId,
-         to: r.organization.id,
-      }),
-      createdByUser: r.one.user({
-         from: r.annotations.createdBy,
-         to: r.user.id,
       }),
    },
 
@@ -288,30 +260,6 @@ export const relations = defineRelations(schema, (r) => ({
    },
 
    // -------------------------------------------------------------------------
-   // Data Sources
-   // -------------------------------------------------------------------------
-   dataSources: {
-      organization: r.one.organization({
-         from: r.dataSources.organizationId,
-         to: r.organization.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // Discussions
-   // -------------------------------------------------------------------------
-   discussions: {
-      replies: r.many.discussionReplies(),
-   },
-
-   discussionReplies: {
-      discussion: r.one.discussions({
-         from: r.discussionReplies.discussionId,
-         to: r.discussions.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
    // Events
    // -------------------------------------------------------------------------
    events: {
@@ -326,16 +274,6 @@ export const relations = defineRelations(schema, (r) => ({
       team: r.one.team({
          from: r.events.teamId,
          to: r.team.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // Export Log
-   // -------------------------------------------------------------------------
-   exportLog: {
-      member: r.one.member({
-         from: r.exportLog.memberId,
-         to: r.member.id,
       }),
    },
 
@@ -388,16 +326,6 @@ export const relations = defineRelations(schema, (r) => ({
       team: r.one.team({
          from: r.productSettings.teamId,
          to: r.team.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // Property Definitions
-   // -------------------------------------------------------------------------
-   propertyDefinitions: {
-      organization: r.one.organization({
-         from: r.propertyDefinitions.organizationId,
-         to: r.organization.id,
       }),
    },
 
@@ -480,10 +408,6 @@ export const relations = defineRelations(schema, (r) => ({
          from: r.contactSubscriptions.variantId,
          to: r.serviceVariants.id,
       }),
-      resource: r.one.resources({
-         from: r.contactSubscriptions.resourceId,
-         to: r.resources.id,
-      }),
    },
 
    resources: {
@@ -491,7 +415,6 @@ export const relations = defineRelations(schema, (r) => ({
          from: r.resources.serviceId,
          to: r.services.id,
       }),
-      subscriptions: r.many.contactSubscriptions(),
    },
 
    // -------------------------------------------------------------------------

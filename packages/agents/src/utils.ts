@@ -1,6 +1,5 @@
 import { ModelRouterEmbeddingModel } from "@mastra/core/llm";
 import { PgVector } from "@mastra/pg";
-import type { InstructionMemoryItem } from "@core/database/schemas/instruction-memory";
 import { env as serverEnv } from "@core/environment/server";
 
 export const pgVectorStore = new PgVector({
@@ -46,19 +45,3 @@ export type MastraLLMUsage = {
    reasoningTokens?: number | null;
    cachedInputTokens?: number | null;
 };
-
-export function compileInstructionMemories(
-   writerInstructions: InstructionMemoryItem[],
-): string {
-   const enabledInstructions = writerInstructions
-      .filter((i) => i.enabled)
-      .sort((a, b) => a.order - b.order);
-
-   if (enabledInstructions.length === 0) return "";
-
-   const content = enabledInstructions
-      .map((i) => `### ${i.title}\n${i.content}`)
-      .join("\n\n");
-
-   return `\n# INSTRUCTION MEMORIES\n\n## WRITER INSTRUCTIONS\n${content}\n`;
-}

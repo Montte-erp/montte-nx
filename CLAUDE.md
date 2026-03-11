@@ -139,6 +139,8 @@ const mutation = useMutation(
 **Components:** PascalCase `[Feature][Action][Type]` (`ContentEditor`, `AgentSettingsSection`)
 **Hooks:** `use[Feature][Action]` (`useContent`, `useCreateContent`)
 
+**No comments in code.** Never add comments, JSDoc, section dividers, or inline explanations. Code should be self-documenting.
+
 **No barrel files.** Never create `index.ts` re-exports. Import directly from source files using package.json exports:
 
 ```typescript

@@ -10,10 +10,6 @@ import {
 } from "@core/database/schemas/credit-cards";
 import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
 
-// =============================================================================
-// Create
-// =============================================================================
-
 export async function createCreditCard(
    teamId: string,
    data: CreateCreditCardInput,
@@ -31,10 +27,6 @@ export async function createCreditCard(
       throw AppError.database("Failed to create credit card");
    }
 }
-
-// =============================================================================
-// Read
-// =============================================================================
 
 export async function listCreditCards(teamId: string) {
    try {
@@ -60,10 +52,6 @@ export async function getCreditCard(id: string) {
    }
 }
 
-// =============================================================================
-// Update
-// =============================================================================
-
 export async function updateCreditCard(
    id: string,
    data: UpdateCreditCardInput,
@@ -84,10 +72,6 @@ export async function updateCreditCard(
    }
 }
 
-// =============================================================================
-// Delete
-// =============================================================================
-
 export async function deleteCreditCard(id: string) {
    try {
       const hasOpenStatements = await creditCardHasOpenStatements(id);
@@ -102,10 +86,6 @@ export async function deleteCreditCard(id: string) {
       throw AppError.database("Failed to delete credit card");
    }
 }
-
-// =============================================================================
-// Helpers
-// =============================================================================
 
 export async function creditCardHasOpenStatements(creditCardId: string) {
    try {

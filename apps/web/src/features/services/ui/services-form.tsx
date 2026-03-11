@@ -31,14 +31,6 @@ import type { ServiceRow } from "./services-columns";
 // Constants
 // ---------------------------------------------------------------------------
 
-type ServiceType = "service" | "product" | "subscription";
-
-const TYPE_OPTIONS: { value: ServiceType; label: string }[] = [
-   { value: "service", label: "Prestação de serviço" },
-   { value: "product", label: "Produto" },
-   { value: "subscription", label: "Assinatura" },
-];
-
 type BillingCycle = "hourly" | "monthly" | "annual" | "one_time";
 
 const BILLING_CYCLE_LABELS: Record<BillingCycle, string> = {
@@ -61,7 +53,7 @@ const BILLING_CYCLE_OPTIONS: BillingCycle[] = [
 
 interface VariantFormValue {
    name: string;
-   basePrice: number;
+   basePrice: string;
    billingCycle: BillingCycle;
 }
 
@@ -79,10 +71,9 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
    const isCreate = mode === "create";
    const [isPending, startTransition] = useTransition();
 
-   const { data: categoriesResult } = useQuery(
+   const { data: categories } = useQuery(
       orpc.categories.getAll.queryOptions({}),
    );
-   const categories = categoriesResult?.data;
 
    const { data: tags } = useQuery(orpc.tags.getAll.queryOptions({}));
 
@@ -121,8 +112,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
       defaultValues: {
          name: service?.name ?? "",
          description: service?.description ?? "",
-         type: (service?.type ?? "service") as ServiceType,
-         basePrice: service?.basePrice ?? 0,
+         basePrice: service?.basePrice ?? "0",
          categoryId: service?.categoryId ?? "",
          tagId: service?.tagId ?? "",
          variants: [] as VariantFormValue[],
@@ -136,7 +126,6 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                name: value.name.trim(),
                description: value.description.trim() || undefined,
                basePrice: value.basePrice,
-               type: value.type,
                categoryId,
                tagId,
                isActive: true,
@@ -163,7 +152,6 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                name: value.name.trim(),
                description: value.description.trim() || undefined,
                basePrice: value.basePrice,
-               type: value.type,
                categoryId,
                tagId,
             });
@@ -231,42 +219,16 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                      <Field>
                         <FieldLabel>Preço padrão *</FieldLabel>
                         <MoneyInput
-                           onChange={(v) => field.handleChange(v ?? 0)}
-                           value={field.state.value}
-                           valueInCents={true}
+                           onChange={(v) => field.handleChange(String(v ?? 0))}
+                           value={Number(field.state.value)}
                         />
                      </Field>
                   )}
                </form.Field>
             </div>
 
-            {/* ── Row 2: Tipo + Categoria ── */}
+            {/* ── Row 2: Categoria + Tag ── */}
             <div className="grid grid-cols-2 gap-4">
-               <form.Field name="type">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel>Tipo *</FieldLabel>
-                        <Select
-                           onValueChange={(v) =>
-                              field.handleChange(v as ServiceType)
-                           }
-                           value={field.state.value}
-                        >
-                           <SelectTrigger>
-                              <SelectValue placeholder="Selecione o tipo" />
-                           </SelectTrigger>
-                           <SelectContent>
-                              {TYPE_OPTIONS.map((opt) => (
-                                 <SelectItem key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                 </SelectItem>
-                              ))}
-                           </SelectContent>
-                        </Select>
-                     </Field>
-                  )}
-               </form.Field>
-
                <form.Field name="categoryId">
                   {(field) => (
                      <Field>
@@ -289,10 +251,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                      </Field>
                   )}
                </form.Field>
-            </div>
 
-            {/* ── Row 3: Tag + Descrição ── */}
-            <div className="grid grid-cols-2 gap-4">
                <form.Field name="tagId">
                   {(field) => (
                      <Field>
@@ -315,22 +274,22 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                      </Field>
                   )}
                </form.Field>
-
-               <form.Field name="description">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel>Descrição</FieldLabel>
-                        <Textarea
-                           onBlur={field.handleBlur}
-                           onChange={(e) => field.handleChange(e.target.value)}
-                           placeholder="Opcional"
-                           rows={1}
-                           value={field.state.value}
-                        />
-                     </Field>
-                  )}
-               </form.Field>
             </div>
+
+            <form.Field name="description">
+               {(field) => (
+                  <Field>
+                     <FieldLabel>Descrição</FieldLabel>
+                     <Textarea
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder="Opcional"
+                        rows={1}
+                        value={field.state.value}
+                     />
+                  </Field>
+               )}
+            </form.Field>
 
             <Separator />
 
@@ -415,10 +374,11 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                                        <FieldLabel>Preço</FieldLabel>
                                        <MoneyInput
                                           onChange={(v) =>
-                                             field.handleChange(v ?? 0)
+                                             field.handleChange(String(v ?? 0))
                                           }
-                                          value={field.state.value as number}
-                                          valueInCents={true}
+                                          value={Number(
+                                             field.state.value as string,
+                                          )}
                                        />
                                     </Field>
                                  )}

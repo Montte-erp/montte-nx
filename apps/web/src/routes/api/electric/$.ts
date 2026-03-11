@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
 import { auth, db } from "@/integrations/orpc/server-instances";
 
-const ALLOWED_TABLES = new Set(["discussions"]);
+const ALLOWED_TABLES = new Set<string>([]);
 
 async function handle({
    request,
@@ -42,25 +42,6 @@ async function handle({
       }
    }
    electricParams.set("table", table);
-
-   if (table === "discussions") {
-      // Verify the team belongs to the user's active organization as a proxy
-      // to confirm the request is scoped to their org
-      const teamId = url.searchParams.get("teamId");
-      if (teamId) {
-         const [teamRecord] = await db
-            .select({ id: team.id })
-            .from(team)
-            .where(eq(team.id, teamId))
-            .limit(1);
-
-         if (!teamRecord) {
-            return new Response("Forbidden: team not found", {
-               status: 403,
-            });
-         }
-      }
-   }
 
    // Proxy the request to Electric Sync Engine
    // Pass through the streaming body (SSE / chunked transfer for live mode)

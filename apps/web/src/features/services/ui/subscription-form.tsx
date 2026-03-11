@@ -1,4 +1,4 @@
-import { formatAmount, fromMinorUnits } from "@f-o-t/money";
+import { format, of } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -26,23 +26,14 @@ import {
 import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { useStore } from "@tanstack/react-store";
-import { useMemo, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 interface SubscriptionFormProps {
    contactId: string;
    onSuccess: () => void;
 }
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
 
 export function SubscriptionForm({
    contactId,
@@ -70,7 +61,7 @@ export function SubscriptionForm({
          variantId: "",
          startDate: today,
          endDate: "",
-         negotiatedPrice: 0,
+         negotiatedPrice: "0",
          notes: "",
       },
       onSubmit: async ({ value }) => {
@@ -88,18 +79,9 @@ export function SubscriptionForm({
       },
    });
 
-   const selectedServiceId = useStore(
-      form.baseStore,
-      (s) => s.values.serviceId,
-   );
-   const selectedVariantId = useStore(
-      form.baseStore,
-      (s) => s.values.variantId,
-   );
-   const negotiatedPrice = useStore(
-      form.baseStore,
-      (s) => s.values.negotiatedPrice,
-   );
+   const [selectedServiceId, setSelectedServiceId] = useState("");
+   const [selectedVariantId, setSelectedVariantId] = useState("");
+   const [negotiatedPrice, setNegotiatedPrice] = useState("0");
 
    const { data: variants = [] } = useQuery({
       ...orpc.services.getVariants.queryOptions({
@@ -114,17 +96,10 @@ export function SubscriptionForm({
    );
 
    const discountPercent = useMemo(() => {
-      if (
-         !selectedVariant ||
-         negotiatedPrice <= 0 ||
-         negotiatedPrice >= selectedVariant.basePrice ||
-         selectedVariant.basePrice <= 0
-      )
-         return null;
-      const pct =
-         ((selectedVariant.basePrice - negotiatedPrice) /
-            selectedVariant.basePrice) *
-         100;
+      const neg = Number(negotiatedPrice);
+      const base = selectedVariant ? Number(selectedVariant.basePrice) : 0;
+      if (!selectedVariant || neg <= 0 || neg >= base || base <= 0) return null;
+      const pct = ((base - neg) / base) * 100;
       return pct > 0 ? pct.toFixed(1) : null;
    }, [selectedVariant, negotiatedPrice]);
 
@@ -147,7 +122,6 @@ export function SubscriptionForm({
 
          <CredenzaBody className="space-y-4">
             <FieldGroup>
-               {/* Service select */}
                <form.Field name="serviceId">
                   {(field) => {
                      const isInvalid =
@@ -158,7 +132,9 @@ export function SubscriptionForm({
                            <Select
                               onValueChange={(v) => {
                                  field.handleChange(v);
+                                 setSelectedServiceId(v);
                                  form.setFieldValue("variantId", "");
+                                 setSelectedVariantId("");
                               }}
                               value={field.state.value}
                            >
@@ -186,7 +162,6 @@ export function SubscriptionForm({
                   }}
                </form.Field>
 
-               {/* Variant select — only when service is selected */}
                {selectedServiceId && (
                   <form.Field name="variantId">
                      {(field) => {
@@ -197,7 +172,10 @@ export function SubscriptionForm({
                            <Field data-invalid={isInvalid}>
                               <FieldLabel>Variante *</FieldLabel>
                               <Select
-                                 onValueChange={(v) => field.handleChange(v)}
+                                 onValueChange={(v) => {
+                                    field.handleChange(v);
+                                    setSelectedVariantId(v);
+                                 }}
                                  value={field.state.value}
                               >
                                  <SelectTrigger>
@@ -210,11 +188,8 @@ export function SubscriptionForm({
                                           value={variant.id}
                                        >
                                           {variant.name} —{" "}
-                                          {formatAmount(
-                                             fromMinorUnits(
-                                                variant.basePrice,
-                                                "BRL",
-                                             ),
+                                          {format(
+                                             of(variant.basePrice, "BRL"),
                                              "pt-BR",
                                           )}
                                        </SelectItem>
@@ -230,7 +205,6 @@ export function SubscriptionForm({
                   </form.Field>
                )}
 
-               {/* Start date */}
                <form.Field name="startDate">
                   {(field) => {
                      const isInvalid =
@@ -254,7 +228,6 @@ export function SubscriptionForm({
                   }}
                </form.Field>
 
-               {/* End date */}
                <form.Field name="endDate">
                   {(field) => (
                      <Field>
@@ -269,7 +242,6 @@ export function SubscriptionForm({
                   )}
                </form.Field>
 
-               {/* Negotiated price */}
                <form.Field name="negotiatedPrice">
                   {(field) => {
                      const isInvalid =
@@ -286,18 +258,18 @@ export function SubscriptionForm({
                            </div>
                            <MoneyInput
                               onBlur={field.handleBlur}
-                              onChange={(v) => field.handleChange(v ?? 0)}
-                              value={field.state.value}
-                              valueInCents={true}
+                              onChange={(v) => {
+                                 const val = String(v ?? 0);
+                                 field.handleChange(val);
+                                 setNegotiatedPrice(val);
+                              }}
+                              value={Number(field.state.value)}
                            />
                            {selectedVariant && (
                               <p className="text-xs text-muted-foreground">
                                  Preço base:{" "}
-                                 {formatAmount(
-                                    fromMinorUnits(
-                                       selectedVariant.basePrice,
-                                       "BRL",
-                                    ),
+                                 {format(
+                                    of(selectedVariant.basePrice, "BRL"),
                                     "pt-BR",
                                  )}
                               </p>
@@ -310,7 +282,6 @@ export function SubscriptionForm({
                   }}
                </form.Field>
 
-               {/* Notes */}
                <form.Field name="notes">
                   {(field) => (
                      <Field>

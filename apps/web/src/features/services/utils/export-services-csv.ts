@@ -7,8 +7,7 @@ import { format, of } from "@f-o-t/money";
 type ExportableService = {
    name: string;
    description: string | null;
-   basePrice: number; // cents
-   type: string;
+   basePrice: string;
    categoryName: string | null;
    tagName: string | null;
 };
@@ -21,20 +20,12 @@ function escapeCsvField(value: string): string {
 }
 
 export function exportServicesCsv(services: ExportableService[]): void {
-   const headers = [
-      "Nome",
-      "Descrição",
-      "Preço padrão",
-      "Tipo",
-      "Categoria",
-      "Tag",
-   ];
+   const headers = ["Nome", "Descrição", "Preço padrão", "Categoria", "Tag"];
 
    const rows = services.map((s) => [
       s.name,
       s.description ?? "",
       format(of(String(s.basePrice), "BRL"), "pt-BR"),
-      s.type,
       s.categoryName ?? "",
       s.tagName ?? "",
    ]);

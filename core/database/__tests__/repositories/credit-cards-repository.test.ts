@@ -1,100 +1,26 @@
 import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { setupTestDb } from "../helpers/setup-test-db";
-import type { DatabaseInstance } from "@core/database/client";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
+import * as repo from "../../src/repositories/credit-cards-repository";
 
-// =============================================================================
-// Mock the singleton db
-// =============================================================================
-
-vi.mock("@core/database/client", async () => {
-   return { db: null as unknown as DatabaseInstance };
-});
+vi.mock("@core/database/client", () => ({
+   get db() {
+      return (globalThis as any).__TEST_DB__;
+   },
+}));
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
 beforeAll(async () => {
    testDb = await setupTestDb();
-   const clientModule = await import("@core/database/client");
-   (clientModule as any).db = testDb.db;
-
-   // Patch db.query for PGLite compatibility — the relational query API
-   // (db.query.*) is not populated by drizzle-orm/pglite in this Drizzle beta.
-   // We provide minimal findMany/findFirst implementations using db.select().
-   (clientModule as any).db.query = {
-      creditCards: {
-         findMany: async (opts: {
-            where?: Record<string, unknown>;
-            orderBy?: Record<string, string>;
-         }) => {
-            const conditions = [];
-            if (opts?.where) {
-               for (const [key, value] of Object.entries(opts.where)) {
-                  if (key in creditCards && value !== undefined) {
-                     conditions.push(
-                        eq((creditCards as any)[key], value as any),
-                     );
-                  }
-               }
-            }
-            const query = testDb.db.select().from(creditCards);
-            if (conditions.length > 0) {
-               return await query.where(and(...conditions));
-            }
-            return await query;
-         },
-         findFirst: async (opts: { where?: Record<string, unknown> }) => {
-            const conditions = [];
-            if (opts?.where) {
-               for (const [key, value] of Object.entries(opts.where)) {
-                  if (key in creditCards && value !== undefined) {
-                     conditions.push(
-                        eq((creditCards as any)[key], value as any),
-                     );
-                  }
-               }
-            }
-            const query = testDb.db.select().from(creditCards);
-            const rows =
-               conditions.length > 0
-                  ? await query.where(and(...conditions)).limit(1)
-                  : await query.limit(1);
-            return rows[0] ?? undefined;
-         },
-      },
-      creditCardStatements: {
-         findFirst: async (opts: { where?: Record<string, unknown> }) => {
-            const conditions = [];
-            if (opts?.where) {
-               for (const [key, value] of Object.entries(opts.where)) {
-                  if (key in creditCardStatements && value !== undefined) {
-                     conditions.push(
-                        eq((creditCardStatements as any)[key], value as any),
-                     );
-                  }
-               }
-            }
-            const query = testDb.db.select().from(creditCardStatements);
-            const rows =
-               conditions.length > 0
-                  ? await query.where(and(...conditions)).limit(1)
-                  : await query.limit(1);
-            return rows[0] ?? undefined;
-         },
-      },
-   };
 });
 
 afterAll(async () => {
    await testDb.cleanup();
 });
-
-// =============================================================================
-// Helpers
-// =============================================================================
 
 function randomTeamId() {
    return crypto.randomUUID();
@@ -126,22 +52,7 @@ function validInput(
    };
 }
 
-// =============================================================================
-// Tests
-// =============================================================================
-
 describe("credit-cards-repository", () => {
-   let repo: typeof import("@core/database/repositories/credit-cards-repository");
-
-   beforeAll(async () => {
-      repo =
-         await import("@core/database/repositories/credit-cards-repository");
-   });
-
-   // -------------------------------------------------------------------------
-   // createCreditCard
-   // -------------------------------------------------------------------------
-
    describe("createCreditCard", () => {
       it("creates a credit card with valid data", async () => {
          const teamId = randomTeamId();
@@ -246,10 +157,6 @@ describe("credit-cards-repository", () => {
       });
    });
 
-   // -------------------------------------------------------------------------
-   // listCreditCards
-   // -------------------------------------------------------------------------
-
    describe("listCreditCards", () => {
       it("lists credit cards for a team", async () => {
          const teamId = randomTeamId();
@@ -296,10 +203,6 @@ describe("credit-cards-repository", () => {
       });
    });
 
-   // -------------------------------------------------------------------------
-   // getCreditCard
-   // -------------------------------------------------------------------------
-
    describe("getCreditCard", () => {
       it("gets a credit card by id", async () => {
          const teamId = randomTeamId();
@@ -321,10 +224,6 @@ describe("credit-cards-repository", () => {
          expect(result).toBeNull();
       });
    });
-
-   // -------------------------------------------------------------------------
-   // updateCreditCard
-   // -------------------------------------------------------------------------
 
    describe("updateCreditCard", () => {
       it("updates name, brand, and credit limit", async () => {
@@ -352,10 +251,6 @@ describe("credit-cards-repository", () => {
          ).rejects.toThrow();
       });
    });
-
-   // -------------------------------------------------------------------------
-   // deleteCreditCard
-   // -------------------------------------------------------------------------
 
    describe("deleteCreditCard", () => {
       it("deletes a credit card without open statements", async () => {
@@ -395,7 +290,6 @@ describe("credit-cards-repository", () => {
             /faturas abertas/,
          );
 
-         // Card still exists
          const rows = await testDb.db
             .select()
             .from(creditCards)
@@ -422,8 +316,6 @@ describe("credit-cards-repository", () => {
             })
             .returning();
 
-         // FK restrict prevents deleting card with any statements,
-         // so remove statements first
          await testDb.db
             .delete(creditCardStatements)
             .where(eq(creditCardStatements.id, statement!.id));
@@ -437,10 +329,6 @@ describe("credit-cards-repository", () => {
          expect(rows).toHaveLength(0);
       });
    });
-
-   // -------------------------------------------------------------------------
-   // creditCardHasOpenStatements
-   // -------------------------------------------------------------------------
 
    describe("creditCardHasOpenStatements", () => {
       it("returns false when no statements exist", async () => {

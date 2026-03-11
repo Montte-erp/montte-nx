@@ -12,10 +12,6 @@ import {
 import { bills } from "@core/database/schemas/bills";
 import { transactions } from "@core/database/schemas/transactions";
 
-// =============================================================================
-// Create
-// =============================================================================
-
 export async function createBankAccount(
    teamId: string,
    data: CreateBankAccountInput,
@@ -33,10 +29,6 @@ export async function createBankAccount(
       throw AppError.database("Failed to create bank account");
    }
 }
-
-// =============================================================================
-// Read
-// =============================================================================
 
 export async function listBankAccounts(
    teamId: string,
@@ -71,10 +63,6 @@ export async function getBankAccount(id: string) {
    }
 }
 
-// =============================================================================
-// Update
-// =============================================================================
-
 export async function updateBankAccount(
    id: string,
    data: UpdateBankAccountInput,
@@ -93,10 +81,6 @@ export async function updateBankAccount(
       throw AppError.database("Failed to update bank account");
    }
 }
-
-// =============================================================================
-// Archive / Reactivate
-// =============================================================================
 
 export async function archiveBankAccount(id: string) {
    try {
@@ -128,10 +112,6 @@ export async function reactivateBankAccount(id: string) {
    }
 }
 
-// =============================================================================
-// Delete (only if no transactions)
-// =============================================================================
-
 export async function deleteBankAccount(id: string) {
    try {
       const hasTransactions = await bankAccountHasTransactions(id);
@@ -146,10 +126,6 @@ export async function deleteBankAccount(id: string) {
       throw AppError.database("Failed to delete bank account");
    }
 }
-
-// =============================================================================
-// Balance Computation (using @f-o-t/money)
-// =============================================================================
 
 export async function computeBankAccountBalance(
    accountId: string,
@@ -235,10 +211,6 @@ export async function listBankAccountsWithBalance(
       throw AppError.database("Failed to list bank accounts with balance");
    }
 }
-
-// =============================================================================
-// Helpers
-// =============================================================================
 
 export async function bankAccountHasTransactions(accountId: string) {
    try {

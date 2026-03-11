@@ -1,27 +1,19 @@
 import { sql } from "drizzle-orm";
 import {
    boolean,
-   date,
    index,
    integer,
+   numeric,
    pgTable,
    text,
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-orm/zod";
+import { z } from "zod";
 import { categories } from "./categories";
-import { contacts } from "./contacts";
-import {
-   billingCycleEnum,
-   serviceSourceEnum,
-   serviceTypeEnum,
-   subscriptionStatusEnum,
-} from "./enums";
+import { billingCycleEnum } from "./enums";
 import { tags } from "./tags";
-
-// ---------------------------------------------------------------------------
-// Services
-// ---------------------------------------------------------------------------
 
 export const services = pgTable(
    "services",
@@ -32,8 +24,9 @@ export const services = pgTable(
       teamId: uuid("team_id").notNull(),
       name: text("name").notNull(),
       description: text("description"),
-      basePrice: integer("base_price").notNull().default(0), // cents (@f-o-t/money)
-      type: serviceTypeEnum("type").notNull().default("service"),
+      basePrice: numeric("base_price", { precision: 12, scale: 2 })
+         .notNull()
+         .default("0"),
       categoryId: uuid("category_id").references(() => categories.id, {
          onDelete: "set null",
       }),
@@ -50,10 +43,6 @@ export const services = pgTable(
    (table) => [index("services_team_id_idx").on(table.teamId)],
 );
 
-// ---------------------------------------------------------------------------
-// Service Variants
-// ---------------------------------------------------------------------------
-
 export const serviceVariants = pgTable(
    "service_variants",
    {
@@ -65,7 +54,7 @@ export const serviceVariants = pgTable(
          .references(() => services.id, { onDelete: "cascade" }),
       teamId: uuid("team_id").notNull(),
       name: text("name").notNull(),
-      basePrice: integer("base_price").notNull(), // cents (@f-o-t/money)
+      basePrice: numeric("base_price", { precision: 12, scale: 2 }).notNull(),
       billingCycle: billingCycleEnum("billing_cycle").notNull(),
       isActive: boolean("is_active").notNull().default(true),
       createdAt: timestamp("created_at", { withTimezone: true })
@@ -81,54 +70,6 @@ export const serviceVariants = pgTable(
       index("service_variants_team_id_idx").on(table.teamId),
    ],
 );
-
-// ---------------------------------------------------------------------------
-// Contact Subscriptions
-// ---------------------------------------------------------------------------
-
-export const contactSubscriptions = pgTable(
-   "contact_subscriptions",
-   {
-      id: uuid("id")
-         .default(sql`pg_catalog.gen_random_uuid()`)
-         .primaryKey(),
-      teamId: uuid("team_id").notNull(),
-      contactId: uuid("contact_id")
-         .notNull()
-         .references(() => contacts.id, { onDelete: "cascade" }),
-      variantId: uuid("variant_id")
-         .notNull()
-         .references(() => serviceVariants.id, { onDelete: "cascade" }),
-      startDate: date("start_date").notNull(),
-      endDate: date("end_date"), // null = open-ended
-      negotiatedPrice: integer("negotiated_price").notNull(), // cents
-      notes: text("notes"),
-      status: subscriptionStatusEnum("status").notNull().default("active"),
-      source: serviceSourceEnum("source").notNull().default("manual"),
-      externalId: text("external_id"), // Asaas subscription ID
-      resourceId: uuid("resource_id").references(() => resources.id, {
-         onDelete: "set null",
-      }),
-      createdAt: timestamp("created_at", { withTimezone: true })
-         .notNull()
-         .defaultNow(),
-      updatedAt: timestamp("updated_at", { withTimezone: true })
-         .notNull()
-         .defaultNow()
-         .$onUpdate(() => new Date()),
-   },
-   (table) => [
-      index("contact_subscriptions_team_id_idx").on(table.teamId),
-      index("contact_subscriptions_contact_id_idx").on(table.contactId),
-      index("contact_subscriptions_variant_id_idx").on(table.variantId),
-      index("contact_subscriptions_external_id_idx").on(table.externalId),
-      index("contact_subscriptions_status_idx").on(table.status),
-   ],
-);
-
-// ---------------------------------------------------------------------------
-// Resources (schema only — not used in v1, reserved for booking)
-// ---------------------------------------------------------------------------
 
 export const resources = pgTable(
    "resources",
@@ -157,19 +98,75 @@ export const resources = pgTable(
    ],
 );
 
-// ---------------------------------------------------------------------------
-// Relations
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export type Service = typeof services.$inferSelect;
 export type NewService = typeof services.$inferInsert;
 export type ServiceVariant = typeof serviceVariants.$inferSelect;
 export type NewServiceVariant = typeof serviceVariants.$inferInsert;
-export type ContactSubscription = typeof contactSubscriptions.$inferSelect;
-export type NewContactSubscription = typeof contactSubscriptions.$inferInsert;
 export type Resource = typeof resources.$inferSelect;
 export type NewResource = typeof resources.$inferInsert;
+
+const nameSchema = z
+   .string()
+   .min(2, "Nome deve ter no mínimo 2 caracteres.")
+   .max(120, "Nome deve ter no máximo 120 caracteres.");
+
+const priceSchema = z
+   .string()
+   .refine((v) => !Number.isNaN(Number(v)) && Number(v) >= 0, {
+      message: "Preço deve ser um número válido maior ou igual a zero.",
+   });
+
+const baseServiceSchema = createInsertSchema(services).pick({
+   name: true,
+   description: true,
+   basePrice: true,
+   categoryId: true,
+   tagId: true,
+});
+
+export const createServiceSchema = baseServiceSchema.extend({
+   name: nameSchema,
+   description: z.string().max(500).nullable().optional(),
+   basePrice: priceSchema.default("0"),
+   categoryId: z.string().uuid().nullable().optional(),
+   tagId: z.string().uuid().nullable().optional(),
+});
+
+export const updateServiceSchema = baseServiceSchema
+   .extend({
+      name: nameSchema.optional(),
+      description: z.string().max(500).nullable().optional(),
+      basePrice: priceSchema.optional(),
+      categoryId: z.string().uuid().nullable().optional(),
+      tagId: z.string().uuid().nullable().optional(),
+      isActive: z.boolean().optional(),
+   })
+   .partial();
+
+const baseVariantSchema = createInsertSchema(serviceVariants).pick({
+   name: true,
+   basePrice: true,
+   billingCycle: true,
+});
+
+export const createVariantSchema = baseVariantSchema.extend({
+   name: nameSchema,
+   basePrice: priceSchema,
+   billingCycle: z.enum(["hourly", "monthly", "annual", "one_time"]),
+});
+
+export const updateVariantSchema = baseVariantSchema
+   .extend({
+      name: nameSchema.optional(),
+      basePrice: priceSchema.optional(),
+      billingCycle: z
+         .enum(["hourly", "monthly", "annual", "one_time"])
+         .optional(),
+      isActive: z.boolean().optional(),
+   })
+   .partial();
+
+export type CreateServiceInput = z.infer<typeof createServiceSchema>;
+export type UpdateServiceInput = z.infer<typeof updateServiceSchema>;
+export type CreateVariantInput = z.infer<typeof createVariantSchema>;
+export type UpdateVariantInput = z.infer<typeof updateVariantSchema>;

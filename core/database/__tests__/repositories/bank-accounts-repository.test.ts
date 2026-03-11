@@ -1,33 +1,24 @@
 import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
 import { setupTestDb } from "../helpers/setup-test-db";
-import type { DatabaseInstance } from "@core/database/client";
-import { bankAccounts } from "@core/database/schemas/bank-accounts";
-import { transactions } from "@core/database/schemas/transactions";
 import { bills } from "@core/database/schemas/bills";
+import { transactions } from "@core/database/schemas/transactions";
+import * as repo from "../../src/repositories/bank-accounts-repository";
 
-// =============================================================================
-// Mock the singleton db
-// =============================================================================
-
-vi.mock("@core/database/client", async () => {
-   return { db: null as unknown as DatabaseInstance };
-});
+vi.mock("@core/database/client", () => ({
+   get db() {
+      return (globalThis as any).__TEST_DB__;
+   },
+}));
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
 beforeAll(async () => {
    testDb = await setupTestDb();
-   const clientModule = await import("@core/database/client");
-   (clientModule as any).db = testDb.db;
 });
 
 afterAll(async () => {
    await testDb.cleanup();
 });
-
-// =============================================================================
-// Helpers
-// =============================================================================
 
 function randomTeamId() {
    return crypto.randomUUID();
@@ -44,23 +35,7 @@ function validCreateInput(overrides: Record<string, unknown> = {}) {
    };
 }
 
-// =============================================================================
-// Tests
-// =============================================================================
-
 describe("bank-accounts-repository", () => {
-   // Lazy import so the mock is in place
-   let repo: typeof import("@core/database/repositories/bank-accounts-repository");
-
-   beforeAll(async () => {
-      repo =
-         await import("@core/database/repositories/bank-accounts-repository");
-   });
-
-   // -------------------------------------------------------------------------
-   // createBankAccount
-   // -------------------------------------------------------------------------
-
    describe("createBankAccount", () => {
       it("creates a bank account and returns it with correct fields", async () => {
          const teamId = randomTeamId();
@@ -81,10 +56,6 @@ describe("bank-accounts-repository", () => {
          expect(account.createdAt).toBeInstanceOf(Date);
       });
    });
-
-   // -------------------------------------------------------------------------
-   // listBankAccounts
-   // -------------------------------------------------------------------------
 
    describe("listBankAccounts", () => {
       it("lists active bank accounts only by default", async () => {
@@ -121,10 +92,6 @@ describe("bank-accounts-repository", () => {
       });
    });
 
-   // -------------------------------------------------------------------------
-   // getBankAccount
-   // -------------------------------------------------------------------------
-
    describe("getBankAccount", () => {
       it("gets a bank account by id", async () => {
          const teamId = randomTeamId();
@@ -146,10 +113,6 @@ describe("bank-accounts-repository", () => {
       });
    });
 
-   // -------------------------------------------------------------------------
-   // updateBankAccount
-   // -------------------------------------------------------------------------
-
    describe("updateBankAccount", () => {
       it("updates a bank account", async () => {
          const teamId = randomTeamId();
@@ -166,10 +129,6 @@ describe("bank-accounts-repository", () => {
          expect(updated.id).toBe(created.id);
       });
    });
-
-   // -------------------------------------------------------------------------
-   // archiveBankAccount / reactivateBankAccount
-   // -------------------------------------------------------------------------
 
    describe("archiveBankAccount", () => {
       it("archives a bank account", async () => {
@@ -198,10 +157,6 @@ describe("bank-accounts-repository", () => {
       });
    });
 
-   // -------------------------------------------------------------------------
-   // deleteBankAccount
-   // -------------------------------------------------------------------------
-
    describe("deleteBankAccount", () => {
       it("deletes a bank account without transactions", async () => {
          const teamId = randomTeamId();
@@ -222,7 +177,6 @@ describe("bank-accounts-repository", () => {
             validCreateInput(),
          );
 
-         // Insert a transaction linked to this account
          await testDb.db.insert(transactions).values({
             teamId,
             type: "income",
@@ -237,10 +191,6 @@ describe("bank-accounts-repository", () => {
       });
    });
 
-   // -------------------------------------------------------------------------
-   // computeBankAccountBalance
-   // -------------------------------------------------------------------------
-
    describe("computeBankAccountBalance", () => {
       it("computes balance correctly (income - expense - transferOut + transferIn)", async () => {
          const teamId = randomTeamId();
@@ -253,7 +203,6 @@ describe("bank-accounts-repository", () => {
             validCreateInput({ name: "Outra Conta" }),
          );
 
-         // income +200
          await testDb.db.insert(transactions).values({
             teamId,
             type: "income",
@@ -262,7 +211,6 @@ describe("bank-accounts-repository", () => {
             bankAccountId: account.id,
          });
 
-         // expense -50
          await testDb.db.insert(transactions).values({
             teamId,
             type: "expense",
@@ -271,7 +219,6 @@ describe("bank-accounts-repository", () => {
             bankAccountId: account.id,
          });
 
-         // transfer out -100
          await testDb.db.insert(transactions).values({
             teamId,
             type: "transfer",
@@ -281,7 +228,6 @@ describe("bank-accounts-repository", () => {
             destinationBankAccountId: otherAccount.id,
          });
 
-         // transfer in +75
          await testDb.db.insert(transactions).values({
             teamId,
             type: "transfer",
@@ -294,9 +240,7 @@ describe("bank-accounts-repository", () => {
          const { currentBalance, projectedBalance } =
             await repo.computeBankAccountBalance(account.id, "500.00");
 
-         // 500 + 200 - 50 - 100 + 75 = 625
          expect(currentBalance).toBe("625.00");
-         // No pending bills, so projected = current
          expect(projectedBalance).toBe("625.00");
       });
 
@@ -307,7 +251,6 @@ describe("bank-accounts-repository", () => {
             validCreateInput({ initialBalance: "1000.00" }),
          );
 
-         // pending receivable +300
          await testDb.db.insert(bills).values({
             teamId,
             name: "Recebível",
@@ -318,7 +261,6 @@ describe("bank-accounts-repository", () => {
             bankAccountId: account.id,
          });
 
-         // pending payable -150
          await testDb.db.insert(bills).values({
             teamId,
             name: "Pagável",
@@ -333,14 +275,9 @@ describe("bank-accounts-repository", () => {
             await repo.computeBankAccountBalance(account.id, "1000.00");
 
          expect(currentBalance).toBe("1000.00");
-         // 1000 + 300 - 150 = 1150
          expect(projectedBalance).toBe("1150.00");
       });
    });
-
-   // -------------------------------------------------------------------------
-   // bankAccountHasTransactions
-   // -------------------------------------------------------------------------
 
    describe("bankAccountHasTransactions", () => {
       it("returns false when no transactions exist", async () => {

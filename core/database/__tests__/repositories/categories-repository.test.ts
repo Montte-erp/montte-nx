@@ -1,33 +1,24 @@
 import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
 import { setupTestDb } from "../helpers/setup-test-db";
-import type { DatabaseInstance } from "@core/database/client";
-import { categories } from "@core/database/schemas/categories";
-import { transactions } from "@core/database/schemas/transactions";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
+import { transactions } from "@core/database/schemas/transactions";
+import * as repo from "../../src/repositories/categories-repository";
 
-// =============================================================================
-// Mock the singleton db
-// =============================================================================
-
-vi.mock("@core/database/client", async () => {
-   return { db: null as unknown as DatabaseInstance };
-});
+vi.mock("@core/database/client", () => ({
+   get db() {
+      return (globalThis as any).__TEST_DB__;
+   },
+}));
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
 beforeAll(async () => {
    testDb = await setupTestDb();
-   const clientModule = await import("@core/database/client");
-   (clientModule as any).db = testDb.db;
 });
 
 afterAll(async () => {
    await testDb.cleanup();
 });
-
-// =============================================================================
-// Helpers
-// =============================================================================
 
 function randomTeamId() {
    return crypto.randomUUID();
@@ -41,21 +32,7 @@ function validCreateInput(overrides: Record<string, unknown> = {}) {
    };
 }
 
-// =============================================================================
-// Tests
-// =============================================================================
-
 describe("categories-repository", () => {
-   let repo: typeof import("@core/database/repositories/categories-repository");
-
-   beforeAll(async () => {
-      repo = await import("@core/database/repositories/categories-repository");
-   });
-
-   // -------------------------------------------------------------------------
-   // createCategory
-   // -------------------------------------------------------------------------
-
    describe("createCategory", () => {
       it("creates a level 1 category with correct fields", async () => {
          const teamId = randomTeamId();
@@ -145,10 +122,6 @@ describe("categories-repository", () => {
       });
    });
 
-   // -------------------------------------------------------------------------
-   // listCategories
-   // -------------------------------------------------------------------------
-
    describe("listCategories", () => {
       it("lists categories for a team", async () => {
          const teamId = randomTeamId();
@@ -213,10 +186,6 @@ describe("categories-repository", () => {
       });
    });
 
-   // -------------------------------------------------------------------------
-   // getCategory
-   // -------------------------------------------------------------------------
-
    describe("getCategory", () => {
       it("returns category by id", async () => {
          const teamId = randomTeamId();
@@ -231,10 +200,6 @@ describe("categories-repository", () => {
          expect(found).toBeNull();
       });
    });
-
-   // -------------------------------------------------------------------------
-   // updateCategory
-   // -------------------------------------------------------------------------
 
    describe("updateCategory", () => {
       it("updates category name", async () => {
@@ -259,10 +224,6 @@ describe("categories-repository", () => {
          ).rejects.toThrow(/padrão/);
       });
    });
-
-   // -------------------------------------------------------------------------
-   // archiveCategory
-   // -------------------------------------------------------------------------
 
    describe("archiveCategory", () => {
       it("archives category and all descendants", async () => {
@@ -296,10 +257,6 @@ describe("categories-repository", () => {
       });
    });
 
-   // -------------------------------------------------------------------------
-   // reactivateCategory
-   // -------------------------------------------------------------------------
-
    describe("reactivateCategory", () => {
       it("reactivates archived category", async () => {
          const teamId = randomTeamId();
@@ -310,10 +267,6 @@ describe("categories-repository", () => {
          expect(reactivated.isArchived).toBe(false);
       });
    });
-
-   // -------------------------------------------------------------------------
-   // deleteCategory
-   // -------------------------------------------------------------------------
 
    describe("deleteCategory", () => {
       it("deletes category without transactions", async () => {
@@ -420,10 +373,6 @@ describe("categories-repository", () => {
       });
    });
 
-   // -------------------------------------------------------------------------
-   // validateKeywordsUniqueness
-   // -------------------------------------------------------------------------
-
    describe("validateKeywordsUniqueness", () => {
       it("allows unique keywords", async () => {
          const teamId = randomTeamId();
@@ -455,10 +404,6 @@ describe("categories-repository", () => {
          ).rejects.toThrow(/Palavras-chave/);
       });
    });
-
-   // -------------------------------------------------------------------------
-   // seedDefaultCategories
-   // -------------------------------------------------------------------------
 
    describe("seedDefaultCategories", () => {
       it("seeds defaults with correct types", async () => {

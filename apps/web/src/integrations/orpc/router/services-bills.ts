@@ -1,9 +1,7 @@
 import type { DatabaseInstance } from "@core/database/client";
 import { bills } from "@core/database/schemas/bills";
-import type {
-   ContactSubscription,
-   ServiceVariant,
-} from "@core/database/schemas/services";
+import type { ContactSubscription } from "@core/database/schemas/subscriptions";
+import type { ServiceVariant } from "@core/database/schemas/services";
 import { and, eq } from "drizzle-orm";
 
 /**
@@ -22,7 +20,7 @@ export async function generateBillsForSubscription(
    const { billingCycle } = variant;
    if (billingCycle === "hourly") return;
 
-   const amount = (subscription.negotiatedPrice / 100).toFixed(2);
+   const amount = subscription.negotiatedPrice;
    const start = new Date(subscription.startDate);
    const end = subscription.endDate ? new Date(subscription.endDate) : null;
 

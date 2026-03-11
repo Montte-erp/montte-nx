@@ -1,12 +1,8 @@
 import { Agent } from "@mastra/core/agent";
 import { createWorkspaceTools } from "@mastra/core/workspace";
 import { Memory } from "@mastra/memory";
-import type { InstructionMemoryItem } from "@core/database/schemas/instruction-memory";
 import { DEFAULT_CONTENT_MODEL_ID } from "../../models";
-import {
-   buildLanguageInstruction,
-   compileInstructionMemories,
-} from "../../utils";
+import { buildLanguageInstruction } from "../../utils";
 import { addExternalLinksTool } from "../tools/editor/add-external-links-tool";
 import { addInternalLinksTool } from "../tools/editor/add-internal-links-tool";
 import { analyzeContentTool } from "../tools/editor/analyze-content-tool";
@@ -106,9 +102,6 @@ function buildInstructions(
 ): string {
    const mode = (requestContext?.get("mode") as string) ?? "platform";
    const language = (requestContext?.get("language") as string) ?? "pt-BR";
-   const writerInstructions = requestContext?.get("writerInstructions") as
-      | InstructionMemoryItem[]
-      | undefined;
    const contentTitle = requestContext?.get("contentTitle") as
       | string
       | undefined;
@@ -123,9 +116,6 @@ function buildInstructions(
       | undefined;
 
    const languageInstruction = buildLanguageInstruction(language);
-   const compiledMemories = compileInstructionMemories(
-      writerInstructions ?? [],
-   );
 
    const modeNames: Record<string, string> = {
       "content-list": "Gerenciador de Conteúdo",
@@ -157,8 +147,6 @@ Modo: ${friendlyName}
    const modeInstructions = getModeInstructions(mode);
 
    return `${languageInstruction}
-
-${compiledMemories}
 
 ${contextBlock}
 

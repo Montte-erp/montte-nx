@@ -4,32 +4,6 @@ import { createInsertSchema, createSelectSchema } from "drizzle-orm/zod";
 import { z } from "zod";
 import { team } from "./auth";
 
-/**
- * Zod schema for content defaults
- */
-export const ContentDefaultsSchema = z.object({
-   defaultWriterId: z.string().uuid().optional(),
-   autoGenerateSlug: z.boolean().optional(),
-   defaultShareStatus: z.enum(["private", "shared"]).optional(),
-});
-
-export type ContentDefaults = z.infer<typeof ContentDefaultsSchema>;
-
-/**
- * Zod schema for forms defaults
- */
-export const FormsDefaultsSchema = z.object({
-   successMessage: z.string().optional(),
-   redirectUrl: z.string().url().optional(),
-   sendEmailNotification: z.boolean().optional(),
-   emailRecipients: z.array(z.string().email()).optional(),
-});
-
-export type FormsDefaults = z.infer<typeof FormsDefaultsSchema>;
-
-/**
- * Zod schema for AI defaults
- */
 export const AIDefaultsSchema = z.object({
    defaultLanguage: z.enum(["pt-BR", "en-US", "es"]).optional(),
    contentModel: z
@@ -45,26 +19,8 @@ export const AIDefaultsSchema = z.object({
          "openrouter/liquid/lfm2-8b-a1b",
       ])
       .optional(),
-   autocompleteModel: z
-      .enum([
-         "openrouter/openai/gpt-oss-20b",
-         "openrouter/liquid/lfm2-8b-a1b",
-         "openrouter/liquid/lfm-2.2-6b",
-         "openrouter/google/gemini-2.5-flash-lite",
-         "openrouter/stepfun/step-3.5-flash",
-      ])
-      .optional(),
-   editModel: z
-      .enum([
-         "openrouter/openai/gpt-oss-20b",
-         "openrouter/z-ai/glm-4.7-flash",
-         "openrouter/x-ai/grok-4.1-fast",
-      ])
-      .optional(),
    contentTemperature: z.number().min(0).max(2).optional(),
    contentMaxTokens: z.number().int().positive().optional(),
-   autocompleteTemperature: z.number().min(0).max(2).optional(),
-   editTemperature: z.number().min(0).max(2).optional(),
    searchDepth: z.enum(["basic", "advanced"]).optional(),
    searchMaxResults: z.number().int().positive().optional(),
    includeSearchAnswer: z.boolean().optional(),
@@ -95,9 +51,6 @@ export const AIDefaultsSchema = z.object({
 
 export type AIDefaults = z.infer<typeof AIDefaultsSchema>;
 
-/**
- * Product Settings — per-team product configuration defaults.
- */
 export const productSettings = pgTable("product_settings", {
    id: uuid("id")
       .default(sql`pg_catalog.gen_random_uuid()`)
@@ -106,10 +59,6 @@ export const productSettings = pgTable("product_settings", {
       .notNull()
       .unique()
       .references(() => team.id, { onDelete: "cascade" }),
-   contentDefaults: jsonb("content_defaults")
-      .$type<ContentDefaults>()
-      .default({}),
-   formsDefaults: jsonb("forms_defaults").$type<FormsDefaults>().default({}),
    aiDefaults: jsonb("ai_defaults").$type<AIDefaults>().default({}),
    createdAt: timestamp("created_at").defaultNow().notNull(),
    updatedAt: timestamp("updated_at")

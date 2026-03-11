@@ -170,12 +170,6 @@ export function createAuth(config: SimplifiedAuthConfig) {
                required: true,
                type: "boolean",
             },
-            contentCreationMode: {
-               defaultValue: "plan",
-               input: true,
-               required: false,
-               type: "string",
-            },
          },
       },
 

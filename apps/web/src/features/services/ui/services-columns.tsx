@@ -1,4 +1,4 @@
-import { formatAmount, fromMinorUnits } from "@f-o-t/money";
+import { format, of } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -6,8 +6,7 @@ export type ServiceRow = {
    id: string;
    name: string;
    description: string | null;
-   basePrice: number;
-   type: "service" | "product" | "subscription";
+   basePrice: string;
    categoryId: string | null;
    categoryName: string | null;
    categoryColor: string | null;
@@ -15,12 +14,6 @@ export type ServiceRow = {
    tagName: string | null;
    tagColor: string | null;
    isActive: boolean;
-};
-
-const TYPE_LABELS: Record<string, string> = {
-   service: "Prestação de serviço",
-   product: "Produto",
-   subscription: "Assinatura",
 };
 
 export function buildServiceColumns(): ColumnDef<ServiceRow>[] {
@@ -35,18 +28,8 @@ export function buildServiceColumns(): ColumnDef<ServiceRow>[] {
       {
          accessorKey: "basePrice",
          header: "Preço padrão",
-         cell: ({ row }) => {
-            const money = fromMinorUnits(row.original.basePrice, "BRL");
-            return <span>{formatAmount(money, "pt-BR")}</span>;
-         },
-      },
-      {
-         accessorKey: "type",
-         header: "Tipo",
          cell: ({ row }) => (
-            <Badge variant="secondary">
-               {TYPE_LABELS[row.original.type] ?? row.original.type}
-            </Badge>
+            <span>{format(of(row.original.basePrice, "BRL"), "pt-BR")}</span>
          ),
       },
       {

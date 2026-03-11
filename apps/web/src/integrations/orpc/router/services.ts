@@ -1,30 +1,28 @@
 import { ORPCError } from "@orpc/server";
 import {
-   bulkCreateServices,
-   countActiveSubscriptionsByVariant,
    createService,
-   createSubscription as createSubscriptionRepo,
    createVariant as createVariantRepo,
    deleteService,
    deleteVariant,
    getService,
-   getSubscription,
    getVariant,
-   listExpiringSoon,
    listServices,
-   listSubscriptionsByContact,
-   listSubscriptionsByTeam,
    listVariantsByService,
    updateService,
-   updateSubscription,
    updateVariant as updateVariantRepo,
 } from "@core/database/repositories/services-repository";
-import { contacts } from "@core/database/schemas/contacts";
 import {
-   contactSubscriptions,
-   services,
-   serviceVariants,
-} from "@core/database/schemas/services";
+   countActiveSubscriptionsByVariant,
+   createSubscription as createSubscriptionRepo,
+   getSubscription,
+   listExpiringSoon,
+   listSubscriptionsByContact,
+   listSubscriptionsByTeam,
+   updateSubscription,
+} from "@core/database/repositories/subscriptions-repository";
+import { contacts } from "@core/database/schemas/contacts";
+import { services, serviceVariants } from "@core/database/schemas/services";
+import { contactSubscriptions } from "@core/database/schemas/subscriptions";
 import { getLogger } from "@core/logging/root";
 import { eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-orm/zod";
@@ -38,19 +36,18 @@ import {
    generateBillsForSubscription,
 } from "./services-bills";
 
-// =============================================================================
-// Validation Schemas
-// =============================================================================
-
-const serviceSchema = createInsertSchema(services).pick({
-   name: true,
-   description: true,
-   basePrice: true,
-   type: true,
-   categoryId: true,
-   tagId: true,
-   isActive: true,
-});
+const serviceSchema = createInsertSchema(services)
+   .pick({
+      name: true,
+      description: true,
+      basePrice: true,
+      categoryId: true,
+      tagId: true,
+      isActive: true,
+   })
+   .extend({
+      basePrice: z.string().default("0"),
+   });
 
 const variantSchema = createInsertSchema(serviceVariants).pick({
    name: true,
@@ -68,156 +65,126 @@ const subscriptionSchema = createInsertSchema(contactSubscriptions).pick({
    notes: true,
 });
 
-// =============================================================================
-// Service Procedures
-// =============================================================================
-
 export const getAll = protectedProcedure
    .input(
       z
          .object({
             search: z.string().optional(),
-            type: z.enum(["service", "product", "subscription"]).optional(),
             categoryId: z.string().uuid().optional(),
-            contactId: z.string().uuid().optional(),
          })
          .optional(),
    )
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      return listServices(db, teamId, input);
+      const { teamId } = context;
+      return listServices(teamId, input);
    });
 
 export const create = protectedProcedure
    .input(serviceSchema)
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      return createService(db, { ...input, teamId });
+      const { teamId } = context;
+      return createService(teamId, input);
    });
 
 export const update = protectedProcedure
    .input(z.object({ id: z.string().uuid() }).merge(serviceSchema.partial()))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
       const { id, ...data } = input;
 
-      const service = await getService(db, id);
+      const service = await getService(id);
       if (!service || service.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Serviço não encontrado.",
          });
       }
 
-      return updateService(db, id, data);
+      return updateService(id, data);
    });
 
 export const remove = protectedProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
 
-      const service = await getService(db, input.id);
+      const service = await getService(input.id);
       if (!service || service.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Serviço não encontrado.",
          });
       }
 
-      await deleteService(db, input.id);
+      await deleteService(input.id);
       return { success: true };
    });
 
-export const bulkCreate = protectedProcedure
-   .input(
-      z.object({
-         services: z.array(
-            serviceSchema.required({ name: true, basePrice: true }),
-         ),
-      }),
-   )
-   .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      return bulkCreateServices(
-         db,
-         input.services.map((s) => ({ ...s, teamId })),
-      );
-   });
-
 export const exportAll = protectedProcedure.handler(async ({ context }) => {
-   const { db, teamId } = context;
-   return listServices(db, teamId);
+   const { teamId } = context;
+   return listServices(teamId);
 });
-
-// =============================================================================
-// Variant Procedures
-// =============================================================================
 
 export const getVariants = protectedProcedure
    .input(z.object({ serviceId: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
 
-      const service = await getService(db, input.serviceId);
+      const service = await getService(input.serviceId);
       if (!service || service.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Serviço não encontrado.",
          });
       }
 
-      return listVariantsByService(db, input.serviceId);
+      return listVariantsByService(input.serviceId);
    });
 
 export const createVariant = protectedProcedure
    .input(z.object({ serviceId: z.string().uuid() }).merge(variantSchema))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
       const { serviceId, ...variantData } = input;
 
-      const service = await getService(db, serviceId);
+      const service = await getService(serviceId);
       if (!service || service.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Serviço não encontrado.",
          });
       }
 
-      return createVariantRepo(db, { ...variantData, serviceId, teamId });
+      return createVariantRepo(teamId, serviceId, variantData);
    });
 
 export const updateVariant = protectedProcedure
    .input(z.object({ id: z.string().uuid() }).merge(variantSchema.partial()))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
       const { id, ...data } = input;
 
-      const variant = await getVariant(db, id);
+      const variant = await getVariant(id);
       if (!variant || variant.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Variante não encontrada.",
          });
       }
 
-      return updateVariantRepo(db, id, data);
+      return updateVariantRepo(id, data);
    });
 
 export const removeVariant = protectedProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
 
-      const variant = await getVariant(db, input.id);
+      const variant = await getVariant(input.id);
       if (!variant || variant.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Variante não encontrada.",
          });
       }
 
-      await deleteVariant(db, input.id);
+      await deleteVariant(input.id);
       return { success: true };
    });
-
-// =============================================================================
-// Subscription Procedures
-// =============================================================================
 
 export const getAllSubscriptions = protectedProcedure
    .input(
@@ -228,8 +195,8 @@ export const getAllSubscriptions = protectedProcedure
          .optional(),
    )
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      return listSubscriptionsByTeam(db, teamId, input?.status);
+      const { teamId } = context;
+      return listSubscriptionsByTeam(teamId, input?.status);
    });
 
 export const getContactSubscriptions = protectedProcedure
@@ -247,7 +214,7 @@ export const getContactSubscriptions = protectedProcedure
          });
       }
 
-      return listSubscriptionsByContact(db, input.contactId);
+      return listSubscriptionsByContact(input.contactId);
    });
 
 export const createSubscription = protectedProcedure
@@ -255,7 +222,6 @@ export const createSubscription = protectedProcedure
    .handler(async ({ context, input }) => {
       const { db, teamId } = context;
 
-      // Verify contact belongs to team
       const contact = await db
          .select({ teamId: contacts.teamId })
          .from(contacts)
@@ -266,23 +232,21 @@ export const createSubscription = protectedProcedure
          });
       }
 
-      // Verify variant belongs to team
-      const variant = await getVariant(db, input.variantId);
+      const variant = await getVariant(input.variantId);
       if (!variant || variant.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Variante não encontrada.",
          });
       }
 
-      const sub = await createSubscriptionRepo(db, {
+      const sub = await createSubscriptionRepo(teamId, {
          ...input,
-         teamId,
          source: "manual",
+         cancelAtPeriodEnd: false,
       });
 
-      // Auto-generate bills (non-throwing — subscription is already created)
       try {
-         const service = await getService(db, variant.serviceId);
+         const service = await getService(variant.serviceId);
          if (service) {
             await generateBillsForSubscription(db, sub, variant, service.name);
          }
@@ -298,7 +262,7 @@ export const cancelSubscription = protectedProcedure
    .handler(async ({ context, input }) => {
       const { db, teamId } = context;
 
-      const subscription = await getSubscription(db, input.id);
+      const subscription = await getSubscription(input.id);
       if (!subscription || subscription.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Assinatura não encontrada.",
@@ -317,7 +281,7 @@ export const cancelSubscription = protectedProcedure
          });
       }
 
-      const cancelled = await updateSubscription(db, input.id, {
+      const cancelled = await updateSubscription(input.id, {
          status: "cancelled",
       });
 
@@ -328,20 +292,16 @@ export const cancelSubscription = protectedProcedure
       return cancelled;
    });
 
-// =============================================================================
-// Analytics Procedures
-// =============================================================================
-
 export const getExpiringSoon = protectedProcedure.handler(
    async ({ context }) => {
-      const { db, teamId } = context;
-      return listExpiringSoon(db, teamId);
+      const { teamId } = context;
+      return listExpiringSoon(teamId);
    },
 );
 
 export const getActiveCountByVariant = protectedProcedure.handler(
    async ({ context }) => {
-      const { db, teamId } = context;
-      return countActiveSubscriptionsByVariant(db, teamId);
+      const { teamId } = context;
+      return countActiveSubscriptionsByVariant(teamId);
    },
 );

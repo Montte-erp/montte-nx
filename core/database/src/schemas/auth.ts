@@ -31,7 +31,6 @@ export const user = pgTable("user", {
    twoFactorEnabled: boolean("two_factor_enabled").default(false),
    stripeCustomerId: text("stripe_customer_id"),
    telemetryConsent: boolean("telemetry_consent").default(false).notNull(),
-   contentCreationMode: text("content_creation_mode").default("plan"),
 });
 
 export const session = pgTable(

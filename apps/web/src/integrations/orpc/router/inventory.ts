@@ -1,7 +1,5 @@
-import { convert, of } from "@f-o-t/uom";
 import { ORPCError } from "@orpc/server";
 import {
-   adjustProductStock,
    archiveInventoryProduct,
    createInventoryMovement,
    createInventoryProduct,
@@ -9,6 +7,7 @@ import {
    getInventorySettings,
    listInventoryMovements,
    listInventoryProducts,
+   toBaseQty,
    updateInventoryProduct,
    upsertInventorySettings,
 } from "@core/database/repositories/inventory-repository";
@@ -21,36 +20,6 @@ import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
-// =============================================================================
-// Helpers
-// =============================================================================
-
-/**
- * Converts purchasedQty (in purchaseUnit) to base units.
- * Tries @f-o-t/uom first; falls back to purchaseUnitFactor for custom units.
- */
-function toBaseQty(
-   purchasedQty: number,
-   purchaseUnit: string,
-   baseUnit: string,
-   factor: number,
-): number {
-   if (purchaseUnit === baseUnit) return purchasedQty;
-   try {
-      // biome-ignore lint/suspicious/noExplicitAny: UOM unit symbols are dynamic
-      const m = of(purchasedQty, purchaseUnit as any);
-      // biome-ignore lint/suspicious/noExplicitAny: UOM unit symbols are dynamic
-      const converted = convert(m, baseUnit as any);
-      return Number(converted.value) / 10 ** converted.scale;
-   } catch {
-      return purchasedQty * factor;
-   }
-}
-
-// =============================================================================
-// Validation Schemas
-// =============================================================================
-
 const productSchema = createInsertSchema(inventoryProducts).pick({
    name: true,
    description: true,
@@ -58,6 +27,7 @@ const productSchema = createInsertSchema(inventoryProducts).pick({
    purchaseUnit: true,
    purchaseUnitFactor: true,
    sellingPrice: true,
+   initialStock: true,
 });
 
 const movementSchema = z.discriminatedUnion("type", [
@@ -98,74 +68,66 @@ const settingsSchema = createInsertSchema(inventorySettings).omit({
    updatedAt: true,
 });
 
-// =============================================================================
-// Products
-// =============================================================================
-
 export const getProducts = protectedProcedure.handler(async ({ context }) => {
-   const { db, teamId } = context;
-   return listInventoryProducts(db, teamId);
+   const { teamId } = context;
+   return listInventoryProducts(teamId);
 });
 
 export const createProduct = protectedProcedure
    .input(productSchema)
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      return createInventoryProduct(db, {
-         teamId,
+      const { teamId } = context;
+      return createInventoryProduct(teamId, {
          name: input.name,
          description: input.description ?? null,
          baseUnit: input.baseUnit,
          purchaseUnit: input.purchaseUnit,
          purchaseUnitFactor: input.purchaseUnitFactor ?? "1",
          sellingPrice: input.sellingPrice ?? null,
+         initialStock: input.initialStock ?? "0",
       });
    });
 
 export const updateProduct = protectedProcedure
    .input(z.object({ id: z.string().uuid() }).merge(productSchema.partial()))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
       const { id, ...data } = input;
-      const product = await getInventoryProduct(db, id);
+      const product = await getInventoryProduct(id);
       if (!product || product.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Produto não encontrado.",
          });
       }
-      return updateInventoryProduct(db, id, data);
+      return updateInventoryProduct(id, data);
    });
 
 export const archiveProduct = protectedProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      const product = await getInventoryProduct(db, input.id);
+      const { teamId } = context;
+      const product = await getInventoryProduct(input.id);
       if (!product || product.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Produto não encontrado.",
          });
       }
-      return archiveInventoryProduct(db, input.id);
+      return archiveInventoryProduct(input.id);
    });
-
-// =============================================================================
-// Movements
-// =============================================================================
 
 export const registerMovement = protectedProcedure
    .input(movementSchema)
    .handler(async ({ context, input }) => {
       const { db, teamId } = context;
 
-      const product = await getInventoryProduct(db, input.productId);
+      const product = await getInventoryProduct(input.productId);
       if (!product || product.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
             message: "Produto não encontrado.",
          });
       }
 
-      const settings = await getInventorySettings(db, teamId);
+      const settings = await getInventorySettings(teamId);
 
       let transactionId: string | null = null;
       let baseQty: number;
@@ -202,9 +164,7 @@ export const registerMovement = protectedProcedure
                });
                transactionId = tx?.id ?? null;
             }
-         } catch {
-            // Transaction creation is non-fatal — inventory is source of truth
-         }
+         } catch {}
       } else if (input.type === "sale") {
          baseQty = input.qty;
          unitPrice = input.unitPrice ?? input.totalAmount / baseQty;
@@ -230,11 +190,8 @@ export const registerMovement = protectedProcedure
                });
                transactionId = tx?.id ?? null;
             }
-         } catch {
-            // non-fatal
-         }
+         } catch {}
       } else {
-         // waste
          baseQty = input.qty;
 
          if (Number(product.currentStock) < baseQty) {
@@ -257,29 +214,30 @@ export const registerMovement = protectedProcedure
                   description: input.notes ?? null,
                });
                transactionId = tx?.id ?? null;
-            } catch {
-               // non-fatal
-            }
+            } catch {}
          }
       }
 
-      const [movement] = await Promise.all([
-         createInventoryMovement(db, {
-            teamId,
-            productId: product.id,
-            type: input.type,
-            qty: String(baseQty),
-            unitPrice: unitPrice != null ? String(unitPrice) : null,
-            totalAmount:
-               input.type !== "waste" ? String(input.totalAmount) : null,
-            supplierId:
-               input.type === "purchase" ? (input.supplierId ?? null) : null,
-            transactionId,
-            notes: input.notes ?? null,
-            date: input.date,
-         }),
-         adjustProductStock(db, product.id, input.type, baseQty),
-      ]);
+      const baseMovementData = {
+         productId: product.id,
+         qty: String(baseQty),
+         supplierId:
+            input.type === "purchase" ? (input.supplierId ?? null) : null,
+         transactionId,
+         notes: input.notes ?? null,
+         date: input.date,
+      };
+
+      const movementData =
+         input.type === "waste"
+            ? { ...baseMovementData, type: "waste" as const }
+            : {
+                 ...baseMovementData,
+                 type: input.type,
+                 unitPrice: String(unitPrice ?? 0),
+              };
+
+      const movement = await createInventoryMovement(teamId, movementData);
 
       return movement;
    });
@@ -287,22 +245,18 @@ export const registerMovement = protectedProcedure
 export const getMovements = protectedProcedure
    .input(z.object({ productId: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      return listInventoryMovements(db, input.productId, teamId);
+      const { teamId } = context;
+      return listInventoryMovements(input.productId, teamId);
    });
 
-// =============================================================================
-// Settings
-// =============================================================================
-
 export const getSettings = protectedProcedure.handler(async ({ context }) => {
-   const { db, teamId } = context;
-   return getInventorySettings(db, teamId);
+   const { teamId } = context;
+   return getInventorySettings(teamId);
 });
 
 export const upsertSettings = protectedProcedure
    .input(settingsSchema.partial())
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      return upsertInventorySettings(db, teamId, input);
+      const { teamId } = context;
+      return upsertInventorySettings(teamId, input);
    });

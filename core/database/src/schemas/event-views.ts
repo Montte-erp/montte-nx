@@ -100,95 +100,6 @@ export const currentMonthUsageByCategory = pgMaterializedView(
 `);
 
 // ---------------------------------------------------------------------------
-// daily_content_analytics
-// ---------------------------------------------------------------------------
-
-export const dailyContentAnalytics = pgMaterializedView(
-   "daily_content_analytics",
-   {
-      organizationId: uuid("organization_id").notNull(),
-      date: date("date").notNull(),
-      views: integer("views").notNull(),
-      uniqueVisitors: integer("unique_visitors").notNull(),
-      avgTimeSpentSeconds: decimal("avg_time_spent_seconds", {
-         precision: 10,
-         scale: 2,
-      }),
-      ctaClicks: integer("cta_clicks").notNull(),
-      scrollCompletions: integer("scroll_completions").notNull(),
-      ctaConversions: integer("cta_conversions").notNull(),
-   },
-).as(sql`
-	SELECT
-		organization_id,
-		DATE(timestamp) AS date,
-		COUNT(*) FILTER (WHERE event_name = 'content.page.view')::int AS views,
-		COUNT(DISTINCT CASE WHEN event_name = 'content.page.view' THEN properties->>'visitorId' END)::int AS unique_visitors,
-		AVG((properties->>'durationSeconds')::numeric) FILTER (WHERE event_name = 'content.time.spent') AS avg_time_spent_seconds,
-		COUNT(*) FILTER (WHERE event_name = 'content.cta.click')::int AS cta_clicks,
-		COUNT(*) FILTER (WHERE event_name = 'content.scroll.milestone' AND properties->>'depth' = '100')::int AS scroll_completions,
-		COUNT(*) FILTER (WHERE event_name = 'form.conversion')::int AS cta_conversions
-	FROM events
-	WHERE event_category IN ('content', 'form')
-		AND timestamp >= CURRENT_DATE - INTERVAL '90 days'
-	GROUP BY organization_id, DATE(timestamp)
-`);
-
-// ---------------------------------------------------------------------------
-// content_traffic_sources
-// ---------------------------------------------------------------------------
-
-export const contentTrafficSources = pgMaterializedView(
-   "content_traffic_sources",
-   {
-      organizationId: uuid("organization_id").notNull(),
-      source: text("source").notNull(),
-      medium: text("medium"),
-      views: integer("views").notNull(),
-      uniqueVisitors: integer("unique_visitors").notNull(),
-   },
-).as(sql`
-	SELECT
-		organization_id,
-		COALESCE(properties->>'referrerSource', 'direct') AS source,
-		properties->>'referrerMedium' AS medium,
-		COUNT(*)::int AS views,
-		COUNT(DISTINCT properties->>'visitorId')::int AS unique_visitors
-	FROM events
-	WHERE event_name = 'content.page.view'
-		AND timestamp >= CURRENT_DATE - INTERVAL '90 days'
-	GROUP BY organization_id, source, medium
-`);
-
-// ---------------------------------------------------------------------------
-// monthly_sdk_usage
-// ---------------------------------------------------------------------------
-
-export const monthlySdkUsage = pgMaterializedView("monthly_sdk_usage", {
-   organizationId: uuid("organization_id").notNull(),
-   month: date("month").notNull(),
-   authorRequests: integer("author_requests").notNull(),
-   listRequests: integer("list_requests").notNull(),
-   contentRequests: integer("content_requests").notNull(),
-   imageRequests: integer("image_requests").notNull(),
-   totalRequests: integer("total_requests").notNull(),
-   errors: integer("errors").notNull(),
-}).as(sql`
-	SELECT
-		organization_id,
-		DATE_TRUNC('month', timestamp)::date AS month,
-		COUNT(*) FILTER (WHERE event_name = 'sdk.author.fetched')::int AS author_requests,
-		COUNT(*) FILTER (WHERE event_name = 'sdk.content.listed')::int AS list_requests,
-		COUNT(*) FILTER (WHERE event_name = 'sdk.content.fetched')::int AS content_requests,
-		COUNT(*) FILTER (WHERE event_name = 'sdk.image.fetched')::int AS image_requests,
-		COUNT(*)::int AS total_requests,
-		COUNT(*) FILTER (WHERE event_name IN ('sdk.auth.failed', 'sdk.error'))::int AS errors
-	FROM events
-	WHERE event_category = 'sdk'
-	GROUP BY organization_id, DATE_TRUNC('month', timestamp)
-`);
-
-// ---------------------------------------------------------------------------
 // monthly_ai_usage
 // ---------------------------------------------------------------------------
 
@@ -240,40 +151,6 @@ export const dailyEventCounts = pgMaterializedView("daily_event_counts", {
 	FROM events
 	WHERE timestamp >= CURRENT_DATE - INTERVAL '90 days'
 	GROUP BY organization_id, event_name, event_category, DATE(timestamp)
-`);
-
-// ---------------------------------------------------------------------------
-// experiment_daily_stats
-// ---------------------------------------------------------------------------
-
-export const experimentDailyStats = pgMaterializedView(
-   "experiment_daily_stats",
-   {
-      organizationId: uuid("organization_id").notNull(),
-      experimentId: uuid("experiment_id").notNull(),
-      variantId: text("variant_id").notNull(),
-      targetType: text("target_type").notNull(),
-      targetId: uuid("target_id"),
-      date: date("date").notNull(),
-      impressions: integer("impressions").notNull(),
-      conversions: integer("conversions").notNull(),
-   },
-).as(sql`
-   SELECT
-      organization_id,
-      (properties->>'experimentId')::uuid AS experiment_id,
-      properties->>'variantId' AS variant_id,
-      COALESCE(properties->>'targetType', 'content') AS target_type,
-      (properties->>'targetId')::uuid AS target_id,
-      DATE(timestamp) AS date,
-      COUNT(*) FILTER (WHERE event_name = 'experiment.started')::int AS impressions,
-      COUNT(*) FILTER (WHERE event_name = 'experiment.conversion')::int AS conversions
-   FROM events
-   WHERE event_category = 'experiment'
-      AND timestamp >= CURRENT_DATE - INTERVAL '90 days'
-      AND properties->>'experimentId' IS NOT NULL
-      AND properties->>'variantId' IS NOT NULL
-   GROUP BY organization_id, experiment_id, variant_id, target_type, target_id, DATE(timestamp)
 `);
 
 // ---------------------------------------------------------------------------

@@ -4,7 +4,6 @@ import { Observability } from "@mastra/observability";
 import { PostgresStore } from "@mastra/pg";
 import { PosthogExporter } from "@mastra/posthog";
 import type { DatabaseInstance } from "@core/database/client";
-import type { InstructionMemoryItem } from "@core/database/schemas/instruction-memory";
 import { env as serverEnv } from "@core/environment/server";
 import type { ModelId } from "../models";
 import { pgVectorStore } from "../utils";
@@ -24,7 +23,6 @@ export type CustomRequestContext = {
    db?: DatabaseInstance;
    model?: ModelId;
    language?: string;
-   writerInstructions?: InstructionMemoryItem[];
    // Generation parameter overrides (from model preset or user setting)
    temperature?: number;
    topP?: number;
@@ -127,9 +125,6 @@ export function createRequestContext(context: CustomRequestContext) {
    }
    if (context.language) {
       requestContext.set("language", context.language);
-   }
-   if (context.writerInstructions) {
-      requestContext.set("writerInstructions", context.writerInstructions);
    }
    if (context.onBodyUpdate) {
       requestContext.set("onBodyUpdate", context.onBodyUpdate);

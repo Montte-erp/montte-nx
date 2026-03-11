@@ -4,15 +4,12 @@ import { getLogger } from "@core/logging/root";
 const logger = getLogger().child({ module: "events:views" });
 
 import {
-   contentTrafficSources,
    currentMonthStorageCost,
    currentMonthUsageByCategory,
    currentMonthUsageByEvent,
-   dailyContentAnalytics,
    dailyEventCounts,
    dailyUsageByEvent,
    monthlyAiUsage,
-   monthlySdkUsage,
 } from "@core/database/schema";
 
 /**
@@ -25,14 +22,9 @@ export async function refreshUsageViews(db: DatabaseInstance): Promise<void> {
 
    try {
       await Promise.all([
-         // Billing views
          db.refreshMaterializedView(dailyUsageByEvent).concurrently(),
          db.refreshMaterializedView(currentMonthUsageByEvent).concurrently(),
          db.refreshMaterializedView(currentMonthUsageByCategory).concurrently(),
-         // Analytics views
-         db.refreshMaterializedView(dailyContentAnalytics).concurrently(),
-         db.refreshMaterializedView(contentTrafficSources).concurrently(),
-         db.refreshMaterializedView(monthlySdkUsage).concurrently(),
          db.refreshMaterializedView(monthlyAiUsage).concurrently(),
          db.refreshMaterializedView(dailyEventCounts).concurrently(),
          db.refreshMaterializedView(currentMonthStorageCost).concurrently(),

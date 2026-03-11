@@ -26,10 +26,6 @@ export const DEFAULT_CATEGORIES: Array<{
    { name: "Investimento", type: "income" },
 ];
 
-// =============================================================================
-// Create
-// =============================================================================
-
 export async function createCategory(
    teamId: string,
    data: CreateCategoryInput,
@@ -88,10 +84,6 @@ export async function seedDefaultCategories(teamId: string) {
    }
 }
 
-// =============================================================================
-// Read
-// =============================================================================
-
 export async function listCategories(
    teamId: string,
    opts?: {
@@ -140,10 +132,6 @@ export async function getCategory(id: string) {
    }
 }
 
-// =============================================================================
-// Update
-// =============================================================================
-
 export async function updateCategory(id: string, data: UpdateCategoryInput) {
    const validated = validateInput(updateCategorySchema, data);
    try {
@@ -175,10 +163,6 @@ export async function updateCategory(id: string, data: UpdateCategoryInput) {
       throw AppError.database("Failed to update category");
    }
 }
-
-// =============================================================================
-// Archive / Reactivate
-// =============================================================================
 
 export async function archiveCategory(id: string) {
    try {
@@ -220,10 +204,6 @@ export async function reactivateCategory(id: string) {
    }
 }
 
-// =============================================================================
-// Delete
-// =============================================================================
-
 export async function deleteCategory(id: string) {
    try {
       const existing = await db.query.categories.findFirst({
@@ -247,10 +227,6 @@ export async function deleteCategory(id: string) {
       throw AppError.database("Failed to delete category");
    }
 }
-
-// =============================================================================
-// Helpers
-// =============================================================================
 
 export async function categoryTreeHasTransactions(
    categoryId: string,

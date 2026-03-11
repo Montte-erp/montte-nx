@@ -5,32 +5,6 @@ import * as schema from "@core/database/schema";
 import { relations } from "@core/database/relations";
 import type { DatabaseInstance } from "@core/database/client";
 
-// =============================================================================
-// PGLite Test Database
-// =============================================================================
-
-/**
- * Creates an in-memory PGLite database with the full schema applied.
- *
- * Each call spins up a fresh isolated Postgres instance — no shared state,
- * no Docker, safe for parallel test files in CI.
- *
- * @example
- * ```ts
- * import { setupTestDb } from "../helpers/setup-test-db";
- *
- * let db: Awaited<ReturnType<typeof setupTestDb>>["db"];
- * let cleanup: () => Promise<void>;
- *
- * beforeAll(async () => {
- *   ({ db, cleanup } = await setupTestDb());
- * });
- *
- * afterAll(async () => {
- *   await cleanup();
- * });
- * ```
- */
 export async function setupTestDb() {
    const client = new PGlite();
    const db = drizzle({
@@ -39,9 +13,10 @@ export async function setupTestDb() {
       relations,
    }) as unknown as DatabaseInstance;
 
-   // Apply all Drizzle tables to the in-memory database
    const { apply } = await pushSchema(schema, db as any, "snake_case");
    await apply();
+
+   (globalThis as any).__TEST_DB__ = db;
 
    return {
       db,
@@ -52,41 +27,6 @@ export async function setupTestDb() {
    };
 }
 
-// =============================================================================
-// Transaction-based test isolation
-// =============================================================================
-
-/**
- * Wraps each test in a transaction that rolls back after the test.
- * Keeps the schema intact between tests — only data is reset.
- *
- * @example
- * ```ts
- * import { setupTestDb } from "../helpers/setup-test-db";
- * import { withTestTransaction } from "../helpers/setup-test-db";
- *
- * let testDb: Awaited<ReturnType<typeof setupTestDb>>;
- *
- * beforeAll(async () => {
- *   testDb = await setupTestDb();
- * });
- *
- * afterAll(async () => {
- *   await testDb.cleanup();
- * });
- *
- * it("inserts data without polluting other tests", async () => {
- *   await withTestTransaction(testDb.db, async (tx) => {
- *     // tx is a DatabaseInstance scoped to a transaction
- *     // All changes are rolled back after the callback
- *     await tx.insert(users).values({ name: "Test" });
- *     const result = await tx.select().from(users);
- *     expect(result).toHaveLength(1);
- *   });
- *   // Data is gone here — rolled back
- * });
- * ```
- */
 export async function withTestTransaction<T>(
    db: DatabaseInstance,
    fn: (tx: DatabaseInstance) => Promise<T>,
@@ -95,7 +35,6 @@ export async function withTestTransaction<T>(
    try {
       await (db as any).transaction(async (tx: DatabaseInstance) => {
          result = await fn(tx);
-         // Force rollback by throwing after the test function completes
          throw new RollbackError();
       });
    } catch (err) {

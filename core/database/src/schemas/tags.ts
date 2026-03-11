@@ -8,7 +8,7 @@ import {
    uniqueIndex,
    uuid,
 } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
 
 export const tags = pgTable(

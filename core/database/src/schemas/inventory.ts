@@ -9,6 +9,8 @@ import {
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-orm/zod";
+import { z } from "zod";
 import { bankAccounts } from "./bank-accounts";
 import { categories } from "./categories";
 import { contacts } from "./contacts";
@@ -39,6 +41,9 @@ export const inventoryProducts = pgTable(
          .notNull()
          .default("1"),
       sellingPrice: numeric("selling_price", { precision: 12, scale: 2 }),
+      initialStock: numeric("initial_stock", { precision: 12, scale: 4 })
+         .notNull()
+         .default("0"),
       currentStock: numeric("current_stock", { precision: 12, scale: 4 })
          .notNull()
          .default("0"),
@@ -120,3 +125,146 @@ export type NewInventoryProduct = typeof inventoryProducts.$inferInsert;
 export type InventoryMovement = typeof inventoryMovements.$inferSelect;
 export type NewInventoryMovement = typeof inventoryMovements.$inferInsert;
 export type InventorySettings = typeof inventorySettings.$inferSelect;
+
+const numericNonNegative = (msg: string) =>
+   z.string().refine((v) => !Number.isNaN(Number(v)) && Number(v) >= 0, {
+      message: msg,
+   });
+
+const numericPositive = (msg: string) =>
+   z.string().refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0, {
+      message: msg,
+   });
+
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+const dateSchema = z
+   .string()
+   .regex(ISO_DATE_REGEX, "Data deve estar no formato YYYY-MM-DD.");
+
+const baseProductSchema = createInsertSchema(inventoryProducts).pick({
+   name: true,
+   description: true,
+   baseUnit: true,
+   purchaseUnit: true,
+   purchaseUnitFactor: true,
+   sellingPrice: true,
+   initialStock: true,
+});
+
+export const createInventoryProductSchema = baseProductSchema.extend({
+   name: z
+      .string()
+      .min(2, "Nome deve ter no mínimo 2 caracteres.")
+      .max(120, "Nome deve ter no máximo 120 caracteres."),
+   description: z
+      .string()
+      .max(500, "Descrição deve ter no máximo 500 caracteres.")
+      .nullable()
+      .optional(),
+   baseUnit: z
+      .string()
+      .min(1, "Unidade base é obrigatória.")
+      .max(10, "Unidade base deve ter no máximo 10 caracteres."),
+   purchaseUnit: z
+      .string()
+      .min(1, "Unidade de compra é obrigatória.")
+      .max(10, "Unidade de compra deve ter no máximo 10 caracteres."),
+   purchaseUnitFactor: numericNonNegative(
+      "Fator de conversão deve ser um número válido maior ou igual a zero.",
+   ).default("1"),
+   sellingPrice: numericNonNegative(
+      "Preço de venda deve ser um número válido maior ou igual a zero.",
+   )
+      .nullable()
+      .optional(),
+   initialStock: numericNonNegative(
+      "Estoque inicial deve ser um número válido maior ou igual a zero.",
+   ).default("0"),
+});
+
+export const updateInventoryProductSchema = baseProductSchema
+   .omit({ initialStock: true })
+   .extend({
+      name: z
+         .string()
+         .min(2, "Nome deve ter no mínimo 2 caracteres.")
+         .max(120, "Nome deve ter no máximo 120 caracteres.")
+         .optional(),
+      description: z
+         .string()
+         .max(500, "Descrição deve ter no máximo 500 caracteres.")
+         .nullable()
+         .optional(),
+      baseUnit: z
+         .string()
+         .min(1, "Unidade base é obrigatória.")
+         .max(10, "Unidade base deve ter no máximo 10 caracteres.")
+         .optional(),
+      purchaseUnit: z
+         .string()
+         .min(1, "Unidade de compra é obrigatória.")
+         .max(10, "Unidade de compra deve ter no máximo 10 caracteres.")
+         .optional(),
+      purchaseUnitFactor: numericNonNegative(
+         "Fator de conversão deve ser um número válido maior ou igual a zero.",
+      ).optional(),
+      sellingPrice: numericNonNegative(
+         "Preço de venda deve ser um número válido maior ou igual a zero.",
+      )
+         .nullable()
+         .optional(),
+   })
+   .partial();
+
+const movementBaseFields = {
+   productId: z.string().uuid("ID do produto inválido."),
+   qty: numericPositive("Quantidade deve ser um número válido maior que zero."),
+   supplierId: z
+      .string()
+      .uuid("ID do fornecedor inválido.")
+      .nullable()
+      .optional(),
+   transactionId: z
+      .string()
+      .uuid("ID da transação inválido.")
+      .nullable()
+      .optional(),
+   notes: z
+      .string()
+      .max(255, "Observações devem ter no máximo 255 caracteres.")
+      .nullable()
+      .optional(),
+   date: dateSchema,
+};
+
+export const createInventoryMovementSchema = z.discriminatedUnion("type", [
+   z.object({
+      type: z.literal("purchase"),
+      ...movementBaseFields,
+      unitPrice: numericPositive(
+         "Preço unitário deve ser um número válido maior que zero.",
+      ),
+   }),
+   z.object({
+      type: z.literal("sale"),
+      ...movementBaseFields,
+      unitPrice: numericPositive(
+         "Preço unitário deve ser um número válido maior que zero.",
+      ),
+   }),
+   z.object({
+      type: z.literal("waste"),
+      ...movementBaseFields,
+   }),
+]);
+
+export type CreateInventoryProductInput = z.infer<
+   typeof createInventoryProductSchema
+>;
+export type UpdateInventoryProductInput = z.infer<
+   typeof updateInventoryProductSchema
+>;
+export type CreateInventoryMovementInput = z.infer<
+   typeof createInventoryMovementSchema
+>;

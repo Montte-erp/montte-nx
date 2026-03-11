@@ -1,10 +1,7 @@
 import type { DatabaseInstance } from "@core/database/client";
-import { actions } from "@core/database/schemas/actions";
-import { annotations } from "@core/database/schemas/annotations";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
 import { dashboards } from "@core/database/schemas/dashboards";
-import { dataSources } from "@core/database/schemas/data-sources";
 import { insights } from "@core/database/schemas/insights";
 import { tags } from "@core/database/schemas/tags";
 import { transactions } from "@core/database/schemas/transactions";
@@ -12,8 +9,6 @@ import { AppError, propagateError } from "@core/utils/errors";
 import { and, desc, eq, ilike, or } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
-
-// ── Per-entity search helpers ────────────────────────────────────────────────
 
 const LIMIT = 5;
 
@@ -181,103 +176,6 @@ async function searchTags(
    }
 }
 
-async function searchDataSources(
-   db: DatabaseInstance,
-   organizationId: string,
-   pattern: string,
-) {
-   try {
-      return await db
-         .select({
-            id: dataSources.id,
-            name: dataSources.name,
-            description: dataSources.description,
-            type: dataSources.type,
-            isActive: dataSources.isActive,
-         })
-         .from(dataSources)
-         .where(
-            and(
-               eq(dataSources.organizationId, organizationId),
-               or(
-                  ilike(dataSources.name, pattern),
-                  ilike(dataSources.description, pattern),
-               ),
-            ),
-         )
-         .orderBy(desc(dataSources.createdAt))
-         .limit(LIMIT);
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to search data sources");
-   }
-}
-
-async function searchAnnotations(
-   db: DatabaseInstance,
-   organizationId: string,
-   pattern: string,
-) {
-   try {
-      return await db
-         .select({
-            id: annotations.id,
-            title: annotations.title,
-            description: annotations.description,
-            scope: annotations.scope,
-            date: annotations.date,
-         })
-         .from(annotations)
-         .where(
-            and(
-               eq(annotations.organizationId, organizationId),
-               or(
-                  ilike(annotations.title, pattern),
-                  ilike(annotations.description, pattern),
-               ),
-            ),
-         )
-         .orderBy(desc(annotations.date))
-         .limit(LIMIT);
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to search annotations");
-   }
-}
-
-async function searchActions(
-   db: DatabaseInstance,
-   organizationId: string,
-   pattern: string,
-) {
-   try {
-      return await db
-         .select({
-            id: actions.id,
-            name: actions.name,
-            description: actions.description,
-            isActive: actions.isActive,
-         })
-         .from(actions)
-         .where(
-            and(
-               eq(actions.organizationId, organizationId),
-               or(
-                  ilike(actions.name, pattern),
-                  ilike(actions.description, pattern),
-               ),
-            ),
-         )
-         .orderBy(desc(actions.createdAt))
-         .limit(LIMIT);
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to search actions");
-   }
-}
-
-// ── Procedure ────────────────────────────────────────────────────────────────
-
 export const globalSearch = protectedProcedure
    .input(
       z.object({
@@ -285,7 +183,7 @@ export const globalSearch = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const { db, teamId, organizationId } = context;
+      const { db, teamId } = context;
       const pattern = `%${input.query}%`;
 
       const [
@@ -295,9 +193,6 @@ export const globalSearch = protectedProcedure
          bankAccountResults,
          categoryResults,
          tagResults,
-         dataSourceResults,
-         annotationResults,
-         actionResults,
       ] = await Promise.all([
          searchDashboards(db, teamId, pattern),
          searchInsights(db, teamId, pattern),
@@ -305,9 +200,6 @@ export const globalSearch = protectedProcedure
          searchBankAccounts(db, teamId, pattern),
          searchCategories(db, teamId, pattern),
          searchTags(db, teamId, pattern),
-         searchDataSources(db, organizationId, pattern),
-         searchAnnotations(db, organizationId, pattern),
-         searchActions(db, organizationId, pattern),
       ]);
 
       return {
@@ -317,8 +209,5 @@ export const globalSearch = protectedProcedure
          bankAccounts: bankAccountResults,
          categories: categoryResults,
          tags: tagResults,
-         dataSources: dataSourceResults,
-         annotations: annotationResults,
-         actions: actionResults,
       };
    });
