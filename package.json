@@ -166,7 +166,7 @@
          "vite": {
             "@tailwindcss/vite": "^4.1.18",
             "@vitejs/plugin-react": "^5.1.4",
-            "vite": "^8.0.0-beta.15",
+            "vite": "^8.0.0-beta.18",
             "vite-tsconfig-paths": "^6.1.1"
          },
          "workers": {

@@ -1,6 +1,6 @@
 import type { DatabaseInstance } from "@core/database/client";
 import { transactions } from "@core/database/schemas/transactions";
-import { AppError, propagateError } from "@core/utils/errors";
+import { AppError, propagateError } from "@core/logging/errors";
 import { and, sql } from "drizzle-orm";
 import { buildConditions } from "./compute-kpi";
 import {

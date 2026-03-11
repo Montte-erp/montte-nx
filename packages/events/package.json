@@ -81,10 +81,10 @@
    },
    "dependencies": {
       "@core/database": "workspace:*",
+      "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",
       "@f-o-t/money": "catalog:fot",
       "@orpc/server": "catalog:orpc",
-      "@packages/posthog": "workspace:*",
       "@packages/queue": "workspace:*",
       "@packages/stripe": "workspace:*",
       "bullmq": "catalog:workers",

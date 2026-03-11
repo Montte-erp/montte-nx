@@ -20,10 +20,6 @@
          "types": "./dist/src/diff.d.ts",
          "default": "./src/diff.ts"
       },
-      "./errors": {
-         "types": "./dist/src/errors.d.ts",
-         "default": "./src/errors.ts"
-      },
       "./file": {
          "types": "./dist/src/file.d.ts",
          "default": "./src/file.ts"
@@ -56,8 +52,7 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "slugify": "catalog:ui",
-      "zod": "catalog:validation"
+      "slugify": "catalog:ui"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",

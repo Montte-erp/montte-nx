@@ -1,4 +1,4 @@
-import { AppError, propagateError, validateInput } from "@core/utils/errors";
+import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { db } from "@core/database/client";

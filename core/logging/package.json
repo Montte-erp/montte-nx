@@ -39,10 +39,15 @@
       "./root": {
          "types": "./dist/src/root.d.ts",
          "default": "./src/root.ts"
+      },
+      "./errors": {
+         "types": "./dist/src/errors.d.ts",
+         "default": "./src/errors.ts"
       }
    },
    "scripts": {
       "build": "tsc --build",
+      "test": "vitest run",
       "typecheck": "tsgo"
    },
    "dependencies": {
@@ -56,7 +61,8 @@
       "@orpc/server": "catalog:orpc",
       "pino": "catalog:logging",
       "pino-opentelemetry-transport": "^3.0.0",
-      "posthog-node": "catalog:analytics-client"
+      "posthog-node": "catalog:analytics-client",
+      "zod": "catalog:validation"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",

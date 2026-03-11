@@ -1,6 +1,6 @@
 import type { DatabaseInstance } from "@core/database/client";
 import type { Insight } from "@core/database/schemas/insights";
-import { AppError, propagateError } from "@core/utils/errors";
+import { AppError, propagateError } from "@core/logging/errors";
 import { executeBreakdownQuery } from "./compute-breakdown";
 import { executeKpiQuery } from "./compute-kpi";
 import { executeTimeSeriesQuery } from "./compute-time-series";

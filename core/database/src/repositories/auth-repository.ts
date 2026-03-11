@@ -1,5 +1,5 @@
 import { getLogger } from "@core/logging/root";
-import { AppError, propagateError } from "@core/utils/errors";
+import { AppError, propagateError } from "@core/logging/errors";
 
 const logger = getLogger().child({ module: "db:auth" });
 

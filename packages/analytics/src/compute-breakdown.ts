@@ -3,7 +3,7 @@ import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
 import { subcategories } from "@core/database/schemas/subcategories";
 import { transactions } from "@core/database/schemas/transactions";
-import { AppError, propagateError } from "@core/utils/errors";
+import { AppError, propagateError } from "@core/logging/errors";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { buildConditions } from "./compute-kpi";
 import { resolveDateRange } from "./date-ranges";

@@ -10,25 +10,27 @@ import {
    uniqueIndex,
    uuid,
 } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
 import { organization, team, user } from "./auth";
 
-export interface DashboardTile {
-   insightId: string;
-   size: "sm" | "md" | "lg" | "full";
-   order: number;
-}
+export const dashboardTileSchema = z.object({
+   insightId: z.string().uuid("ID do insight inválido."),
+   size: z.enum(["sm", "md", "lg", "full"], {
+      message: "Tamanho deve ser sm, md, lg ou full.",
+   }),
+   order: z.number().int().min(0, "Ordem deve ser maior ou igual a zero."),
+});
 
-// Dashboard date range schema for JSONB
+export type DashboardTile = z.infer<typeof dashboardTileSchema>;
+
 export const DashboardDateRangeSchema = z.object({
    type: z.enum(["relative", "absolute"]),
-   value: z.string(), // "7d" | "30d" | "2024-01-01,2024-01-31"
+   value: z.string(),
 });
 
 export type DashboardDateRange = z.infer<typeof DashboardDateRangeSchema>;
 
-// Dashboard filter schema for JSONB — uses @f-o-t/condition-evaluator Condition type
-// Supports string, number, boolean, date, and array conditions with full operator sets.
 export const DashboardFilterSchema = Condition;
 
 export type DashboardFilter = z.infer<typeof DashboardFilterSchema>;
@@ -72,3 +74,31 @@ export const dashboards = pgTable(
 
 export type Dashboard = typeof dashboards.$inferSelect;
 export type NewDashboard = typeof dashboards.$inferInsert;
+
+const baseDashboardSchema = createInsertSchema(dashboards).pick({
+   name: true,
+   description: true,
+   tiles: true,
+   globalDateRange: true,
+   globalFilters: true,
+});
+
+export const createDashboardSchema = baseDashboardSchema.extend({
+   name: z
+      .string()
+      .min(2, "Nome deve ter no mínimo 2 caracteres.")
+      .max(120, "Nome deve ter no máximo 120 caracteres."),
+   description: z
+      .string()
+      .max(500, "Descrição deve ter no máximo 500 caracteres.")
+      .nullable()
+      .optional(),
+   tiles: z.array(dashboardTileSchema).default([]),
+   globalDateRange: DashboardDateRangeSchema.nullable().optional(),
+   globalFilters: z.array(DashboardFilterSchema).default([]),
+});
+
+export const updateDashboardSchema = createDashboardSchema.partial();
+
+export type CreateDashboardInput = z.infer<typeof createDashboardSchema>;
+export type UpdateDashboardInput = z.infer<typeof updateDashboardSchema>;

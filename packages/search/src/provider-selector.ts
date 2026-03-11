@@ -1,5 +1,5 @@
 import { getLogger } from "@core/logging/root";
-import { AppError } from "@core/utils/errors";
+import { AppError } from "@core/logging/errors";
 
 const logger = getLogger().child({ module: "search" });
 import { exaProvider } from "./providers/exa-provider";

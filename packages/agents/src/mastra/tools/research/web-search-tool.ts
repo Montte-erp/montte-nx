@@ -1,6 +1,6 @@
 import { createTool } from "@mastra/core/tools";
 import { type ProviderId, search } from "@packages/search";
-import { AppError } from "@core/utils/errors";
+import { AppError } from "@core/logging/errors";
 import { z } from "zod";
 
 export const webSearchTool = createTool({

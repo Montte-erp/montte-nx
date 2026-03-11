@@ -1,5 +1,5 @@
 import type { ServerEnv } from "@core/environment/server";
-import { AppError } from "@core/utils/errors";
+import { AppError } from "@core/logging/errors";
 import Stripe from "stripe";
 
 export const getStripeClient = (

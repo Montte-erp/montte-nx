@@ -2,8 +2,8 @@ import { logs } from "@opentelemetry/api-logs";
 import { ORPCError, os } from "@orpc/server";
 import type { AuthInstance } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
-import type { PostHog } from "@packages/posthog/server";
-import { captureError, identifyUser, setGroup } from "@packages/posthog/server";
+import type { PostHog } from "@core/posthog/server";
+import { captureError, identifyUser, setGroup } from "@core/posthog/server";
 import type { StripeClient } from "@packages/stripe";
 import { sanitizeData } from "@core/utils/sanitization";
 

@@ -5,7 +5,7 @@ import { dashboards } from "@core/database/schemas/dashboards";
 import { insights } from "@core/database/schemas/insights";
 import { tags } from "@core/database/schemas/tags";
 import { transactions } from "@core/database/schemas/transactions";
-import { AppError, propagateError } from "@core/utils/errors";
+import { AppError, propagateError } from "@core/logging/errors";
 import { and, desc, eq, ilike, or } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../server";

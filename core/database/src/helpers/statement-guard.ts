@@ -1,4 +1,4 @@
-import { AppError } from "@core/utils/errors";
+import { AppError } from "@core/logging/errors";
 import { db } from "@core/database/client";
 
 /**

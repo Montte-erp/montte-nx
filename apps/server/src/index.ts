@@ -9,7 +9,7 @@ import {
 import { FetchLoggingPlugin } from "@core/logging/orpc-plugin";
 import { initOtel, shutdownOtel } from "@core/logging/otel";
 import { initLogger } from "@core/logging/root";
-import { shutdownPosthog } from "@packages/posthog/server";
+import { shutdownPosthog } from "@core/posthog/server";
 import { Elysia } from "elysia";
 import { auth } from "./integrations/auth";
 import { db } from "./integrations/database";

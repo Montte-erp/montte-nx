@@ -1,4 +1,4 @@
-import { AppError, propagateError } from "@core/utils/errors";
+import { AppError, propagateError } from "@core/logging/errors";
 import { and, eq, sql } from "drizzle-orm";
 import dayjs from "dayjs";
 import { db } from "@core/database/client";

@@ -1,11 +1,11 @@
 pre-commit:
-  commands:
-    format:
-      glob: "*.{js,jsx,ts,tsx,mjs,cjs,json,css}"
-      staged_files_command: git diff --cached --name-only
-      run: oxfmt --config tooling/oxc/oxfmt.json --write {staged_files} && git add {staged_files}
+   commands:
+      format:
+         glob: "*.{js,jsx,ts,tsx,mjs,cjs,json,css}"
+         staged_files_command: git diff --cached --name-only
+         run: oxfmt --config tooling/oxc/oxfmt.json --write {staged_files} && git add {staged_files}
 
 commit-msg:
-  commands:
-    commitlint:
-      run: bunx commitlint --edit {1}
+   commands:
+      commitlint:
+         run: bunx commitlint --edit {1}

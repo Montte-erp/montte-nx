@@ -6,7 +6,7 @@ import { findMemberByUserId } from "@core/database/repositories/auth-repository"
 import { getDomain, isProduction } from "@core/environment/helpers";
 import type { ServerEnv } from "@core/environment/server";
 import { getLogger } from "@core/logging/root";
-import { getElysiaPosthogConfig } from "@packages/posthog/server";
+import { getElysiaPosthogConfig } from "@core/posthog/server";
 import { createRedisConnection } from "@core/redis/connection";
 import { getStripeClient } from "@packages/stripe";
 import {

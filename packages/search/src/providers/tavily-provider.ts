@@ -1,5 +1,5 @@
 import { env } from "@core/environment/server";
-import { AppError, propagateError } from "@core/utils/errors";
+import { AppError, propagateError } from "@core/logging/errors";
 import { tavily } from "@tavily/core";
 import {
    getAvailableKeyCount,

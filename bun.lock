@@ -42,13 +42,13 @@
         "@core/authentication": "workspace:*",
         "@core/database": "workspace:*",
         "@core/environment": "workspace:*",
+        "@core/posthog": "workspace:*",
         "@elysiajs/cors": "catalog:server",
         "@modelcontextprotocol/sdk": "catalog:mcp",
         "@orpc/server": "catalog:orpc",
         "@packages/arcjet": "workspace:*",
         "@packages/events": "workspace:*",
         "@packages/files": "workspace:*",
-        "@packages/posthog": "workspace:*",
         "@packages/stripe": "workspace:*",
         "@packages/transactional": "workspace:*",
         "elysia": "catalog:server",
@@ -207,6 +207,7 @@
       "version": "0.12.1",
       "dependencies": {
         "@core/environment": "workspace:*",
+        "@core/logging": "workspace:*",
         "@core/utils": "workspace:*",
         "@f-o-t/condition-evaluator": "catalog:fot",
         "@f-o-t/money": "catalog:fot",
@@ -253,11 +254,25 @@
         "pino": "catalog:logging",
         "pino-opentelemetry-transport": "^3.0.0",
         "posthog-node": "catalog:analytics-client",
+        "zod": "catalog:validation",
       },
       "devDependencies": {
         "@tooling/typescript": "workspace:*",
         "@types/node": "^20",
         "pino-pretty": "catalog:logging",
+        "typescript": "catalog:development",
+      },
+    },
+    "core/posthog": {
+      "name": "@core/posthog",
+      "version": "0.8.1",
+      "dependencies": {
+        "@core/environment": "workspace:*",
+        "posthog-js": "catalog:analytics-client",
+        "posthog-node": "catalog:analytics-client",
+      },
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
         "typescript": "catalog:development",
       },
     },
@@ -277,7 +292,6 @@
       "version": "0.28.0",
       "dependencies": {
         "slugify": "catalog:ui",
-        "zod": "catalog:validation",
       },
       "devDependencies": {
         "@tooling/typescript": "workspace:*",
@@ -311,6 +325,7 @@
       "dependencies": {
         "@core/database": "workspace:*",
         "@core/environment": "workspace:*",
+        "@core/logging": "workspace:*",
         "@core/utils": "workspace:*",
         "@f-o-t/markdown": "catalog:fot",
         "@mastra/ai-sdk": "catalog:mastra",
@@ -337,6 +352,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@core/database": "workspace:*",
+        "@core/logging": "workspace:*",
         "@core/utils": "workspace:*",
         "drizzle-orm": "catalog:database",
         "zod": "catalog:validation",
@@ -363,10 +379,10 @@
       "version": "0.1.0",
       "dependencies": {
         "@core/database": "workspace:*",
+        "@core/posthog": "workspace:*",
         "@core/redis": "workspace:*",
         "@f-o-t/money": "catalog:fot",
         "@orpc/server": "catalog:orpc",
-        "@packages/posthog": "workspace:*",
         "@packages/queue": "workspace:*",
         "@packages/stripe": "workspace:*",
         "bullmq": "catalog:workers",
@@ -405,19 +421,6 @@
         "typescript": "catalog:development",
       },
     },
-    "packages/posthog": {
-      "name": "@packages/posthog",
-      "version": "0.8.1",
-      "dependencies": {
-        "@core/environment": "workspace:*",
-        "posthog-js": "catalog:analytics-client",
-        "posthog-node": "catalog:analytics-client",
-      },
-      "devDependencies": {
-        "@tooling/typescript": "workspace:*",
-        "typescript": "catalog:development",
-      },
-    },
     "packages/queue": {
       "name": "@packages/queue",
       "version": "0.1.0",
@@ -435,6 +438,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@core/environment": "workspace:*",
+        "@core/logging": "workspace:*",
         "@core/utils": "workspace:*",
         "@mendable/firecrawl-js": "catalog:search-providers",
         "@tavily/core": "catalog:search-providers",
@@ -451,6 +455,7 @@
       "version": "0.3.0",
       "dependencies": {
         "@core/environment": "workspace:*",
+        "@core/logging": "workspace:*",
         "stripe": "catalog:payments",
       },
       "devDependencies": {
@@ -462,6 +467,7 @@
       "name": "@packages/transactional",
       "version": "0.8.1",
       "dependencies": {
+        "@core/logging": "workspace:*",
         "@core/utils": "workspace:*",
         "@react-email/components": "catalog:transactional",
         "react": "catalog:react",
@@ -793,7 +799,7 @@
     "vite": {
       "@tailwindcss/vite": "^4.1.18",
       "@vitejs/plugin-react": "^5.1.4",
-      "vite": "^8.0.0-beta.15",
+      "vite": "^8.0.0-beta.18",
       "vite-tsconfig-paths": "^6.1.1",
     },
     "workers": {
@@ -1187,6 +1193,8 @@
     "@core/environment": ["@core/environment@workspace:core/environment"],
 
     "@core/logging": ["@core/logging@workspace:core/logging"],
+
+    "@core/posthog": ["@core/posthog@workspace:core/posthog"],
 
     "@core/redis": ["@core/redis@workspace:core/redis"],
 
@@ -1781,8 +1789,6 @@
     "@packages/feedback": ["@packages/feedback@workspace:packages/feedback"],
 
     "@packages/files": ["@packages/files@workspace:packages/files"],
-
-    "@packages/posthog": ["@packages/posthog@workspace:packages/posthog"],
 
     "@packages/queue": ["@packages/queue@workspace:packages/queue"],
 
@@ -3840,7 +3846,7 @@
 
     "nice-try": ["nice-try@1.0.5", "", {}, "sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ=="],
 
-    "nitro": ["nitro-nightly@3.0.1-20260311-162305-0f366e59", "", { "dependencies": { "consola": "^3.4.2", "crossws": "^0.4.4", "db0": "^0.3.4", "env-runner": "^0.1.6", "h3": "^2.0.1-rc.16", "hookable": "^6.0.1", "nf3": "^0.3.11", "ocache": "^0.1.2", "ofetch": "^2.0.0-alpha.3", "ohash": "^2.0.11", "rolldown": "^1.0.0-rc.8", "srvx": "^0.11.9", "unenv": "^2.0.0-rc.24", "unstorage": "^2.0.0-alpha.6" }, "peerDependencies": { "dotenv": "*", "giget": "*", "jiti": "^2.6.1", "rollup": "^4.59.0", "vite": "^7 || ^8 || >=8.0.0-0", "xml2js": "^0.6.2", "zephyr-agent": "^0.1.15" }, "optionalPeers": ["dotenv", "giget", "jiti", "rollup", "vite", "xml2js", "zephyr-agent"], "bin": { "nitro": "dist/cli/index.mjs" } }, "sha512-x0z3gTcHeazMG44rCPgxLlOozYHPRe+e1bL0evk9AdGiyCHJcUsD+moHUDdNaAiOaESDhA9UTHGzv/ugekaNEw=="],
+    "nitro": ["nitro-nightly@3.0.1-20260311-194443-0f366e59", "", { "dependencies": { "consola": "^3.4.2", "crossws": "^0.4.4", "db0": "^0.3.4", "env-runner": "^0.1.6", "h3": "^2.0.1-rc.16", "hookable": "^6.0.1", "nf3": "^0.3.11", "ocache": "^0.1.2", "ofetch": "^2.0.0-alpha.3", "ohash": "^2.0.11", "rolldown": "^1.0.0-rc.8", "srvx": "^0.11.9", "unenv": "^2.0.0-rc.24", "unstorage": "^2.0.0-alpha.6" }, "peerDependencies": { "dotenv": "*", "giget": "*", "jiti": "^2.6.1", "rollup": "^4.59.0", "vite": "^7 || ^8 || >=8.0.0-0", "xml2js": "^0.6.2", "zephyr-agent": "^0.1.15" }, "optionalPeers": ["dotenv", "giget", "jiti", "rollup", "vite", "xml2js", "zephyr-agent"], "bin": { "nitro": "dist/cli/index.mjs" } }, "sha512-nKzgUsSRL642VJWGkMvyJldGcwHKDsEXdyr6+dW+Fnm1eAiouZ6l9jIzCJyxg1bgKEHyhgRDX8bGN4Uj7LEv6Q=="],
 
     "node-abort-controller": ["node-abort-controller@3.1.1", "", {}, "sha512-AGK2yQKIjRuqnc6VkX2Xj5d+QW8xZ87pa1UK6yA6ouUyuxfHuMP6umE5QK7UmTeOAymo+Zx1Fxiuw9rVx8taHQ=="],
 

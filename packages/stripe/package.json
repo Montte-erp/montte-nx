@@ -24,6 +24,7 @@
    },
    "dependencies": {
       "@core/environment": "workspace:*",
+      "@core/logging": "workspace:*",
       "stripe": "catalog:payments"
    },
    "devDependencies": {
