@@ -1,33 +1,36 @@
-import { AppError, propagateError } from "@core/utils/errors";
+import { AppError, propagateError } from "@core/logging/errors";
 import { and, desc, eq, sql } from "drizzle-orm";
-import type { DatabaseInstance } from "../client";
+import { db } from "@core/database/client";
 import {
+   type CreateWebhookEndpointInput,
    type NewWebhookDelivery,
-   type NewWebhookEndpoint,
+   type UpdateWebhookEndpointInput,
+   createWebhookEndpointSchema,
+   updateWebhookEndpointSchema,
    webhookDeliveries,
    webhookEndpoints,
 } from "../schemas/webhooks";
 
-/**
- * Generate a 32-byte hex signing secret for webhook endpoints.
- */
 export function generateWebhookSecret(): string {
    const bytes = crypto.getRandomValues(new Uint8Array(32));
    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-// ---------------------------------------------------------------------------
-// Webhook Endpoints
-// ---------------------------------------------------------------------------
-
 export async function createWebhookEndpoint(
-   db: DatabaseInstance,
-   data: NewWebhookEndpoint,
+   organizationId: string,
+   teamId: string,
+   data: CreateWebhookEndpointInput,
 ) {
    try {
+      const validated = createWebhookEndpointSchema.parse(data);
       const [endpoint] = await db
          .insert(webhookEndpoints)
-         .values(data)
+         .values({
+            ...validated,
+            organizationId,
+            teamId,
+            signingSecret: generateWebhookSecret(),
+         })
          .returning();
 
       return endpoint;
@@ -37,10 +40,7 @@ export async function createWebhookEndpoint(
    }
 }
 
-export async function listWebhookEndpoints(
-   db: DatabaseInstance,
-   teamId: string,
-) {
+export async function listWebhookEndpoints(teamId: string) {
    try {
       return await db
          .select()
@@ -53,10 +53,7 @@ export async function listWebhookEndpoints(
    }
 }
 
-export async function getWebhookEndpoint(
-   db: DatabaseInstance,
-   webhookId: string,
-) {
+export async function getWebhookEndpoint(webhookId: string) {
    try {
       const [endpoint] = await db
          .select()
@@ -72,19 +69,14 @@ export async function getWebhookEndpoint(
 }
 
 export async function updateWebhookEndpoint(
-   db: DatabaseInstance,
    webhookId: string,
-   data: Partial<
-      Pick<
-         NewWebhookEndpoint,
-         "url" | "description" | "eventPatterns" | "isActive"
-      >
-   >,
+   data: UpdateWebhookEndpointInput,
 ) {
    try {
+      const validated = updateWebhookEndpointSchema.parse(data);
       const [updated] = await db
          .update(webhookEndpoints)
-         .set(data)
+         .set(validated)
          .where(eq(webhookEndpoints.id, webhookId))
          .returning();
 
@@ -95,10 +87,7 @@ export async function updateWebhookEndpoint(
    }
 }
 
-export async function deleteWebhookEndpoint(
-   db: DatabaseInstance,
-   webhookId: string,
-) {
+export async function deleteWebhookEndpoint(webhookId: string) {
    try {
       await db
          .delete(webhookEndpoints)
@@ -109,10 +98,7 @@ export async function deleteWebhookEndpoint(
    }
 }
 
-export async function updateWebhookLastSuccess(
-   db: DatabaseInstance,
-   webhookId: string,
-) {
+export async function updateWebhookLastSuccess(webhookId: string) {
    try {
       await db
          .update(webhookEndpoints)
@@ -127,10 +113,7 @@ export async function updateWebhookLastSuccess(
    }
 }
 
-export async function incrementWebhookFailureCount(
-   db: DatabaseInstance,
-   webhookId: string,
-) {
+export async function incrementWebhookFailureCount(webhookId: string) {
    try {
       await db
          .update(webhookEndpoints)
@@ -145,12 +128,7 @@ export async function incrementWebhookFailureCount(
    }
 }
 
-/**
- * Find all active webhook endpoints for an organization
- * whose event patterns match the given event name.
- */
 export async function findMatchingWebhooks(
-   db: DatabaseInstance,
    organizationId: string,
    eventName: string,
    teamId?: string,
@@ -178,11 +156,6 @@ export async function findMatchingWebhooks(
    }
 }
 
-/**
- * Check if an event name matches a subscription pattern.
- * Supports wildcard suffix: "content.*" matches "content.page.published"
- * Supports exact match: "form.submitted" matches "form.submitted"
- */
 function matchesPattern(eventName: string, pattern: string): boolean {
    if (pattern.endsWith(".*")) {
       const prefix = pattern.slice(0, -2);
@@ -191,14 +164,7 @@ function matchesPattern(eventName: string, pattern: string): boolean {
    return eventName === pattern;
 }
 
-// ---------------------------------------------------------------------------
-// Webhook Deliveries
-// ---------------------------------------------------------------------------
-
-export async function createWebhookDelivery(
-   db: DatabaseInstance,
-   data: NewWebhookDelivery,
-) {
+export async function createWebhookDelivery(data: NewWebhookDelivery) {
    try {
       const [delivery] = await db
          .insert(webhookDeliveries)
@@ -213,7 +179,6 @@ export async function createWebhookDelivery(
 }
 
 export async function updateWebhookDeliveryStatus(
-   db: DatabaseInstance,
    deliveryId: string,
    data: {
       status: string;
@@ -240,7 +205,6 @@ export async function updateWebhookDeliveryStatus(
 }
 
 export async function getWebhookDeliveries(
-   db: DatabaseInstance,
    webhookId: string,
    options: { offset?: number; limit?: number } = {},
 ) {

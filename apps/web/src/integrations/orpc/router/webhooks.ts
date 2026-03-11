@@ -86,14 +86,10 @@ export const create = protectedProcedure
             },
          });
 
-         const endpoint = await createWebhookEndpoint(db, {
-            organizationId,
-            teamId,
+         const endpoint = await createWebhookEndpoint(organizationId, teamId, {
             url: input.url,
             description: input.description,
             eventPatterns: input.eventPatterns,
-            apiKeyId: apiKey.id,
-            signingSecret: apiKey.key,
          });
 
          try {
@@ -157,7 +153,7 @@ export const create = protectedProcedure
 export const list = protectedProcedure.handler(async ({ context }) => {
    const { db, teamId } = context;
 
-   const endpoints = await listWebhookEndpoints(db, teamId);
+   const endpoints = await listWebhookEndpoints(teamId);
 
    // Mask signing secrets in responses
    return endpoints.map((e) => ({
@@ -174,7 +170,7 @@ export const getById = protectedProcedure
    .handler(async ({ context, input }) => {
       const { db, teamId } = context;
 
-      const endpoint = await getWebhookEndpoint(db, input.id);
+      const endpoint = await getWebhookEndpoint(input.id);
 
       if (!endpoint || endpoint.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
@@ -196,7 +192,7 @@ export const update = protectedProcedure
    .handler(async ({ context, input }) => {
       const { db, posthog, userId, teamId } = context;
 
-      const endpoint = await getWebhookEndpoint(db, input.id);
+      const endpoint = await getWebhookEndpoint(input.id);
 
       if (!endpoint || endpoint.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {
@@ -229,7 +225,7 @@ export const update = protectedProcedure
       }
 
       const { id: _id, ...updateData } = input;
-      const updated = await updateWebhookEndpoint(db, input.id, updateData);
+      const updated = await updateWebhookEndpoint(input.id, updateData);
 
       try {
          const changedFields = Object.keys(updateData).filter(
@@ -260,7 +256,7 @@ export const remove = protectedProcedure
       const { auth, headers, db, posthog, userId, teamId } = context;
 
       try {
-         const endpoint = await getWebhookEndpoint(db, input.id);
+         const endpoint = await getWebhookEndpoint(input.id);
 
          if (!endpoint || endpoint.teamId !== teamId) {
             throw new ORPCError("NOT_FOUND", {
@@ -275,7 +271,7 @@ export const remove = protectedProcedure
             });
          }
 
-         await deleteWebhookEndpoint(db, input.id);
+         await deleteWebhookEndpoint(input.id);
 
          try {
             await emitWebhookEndpointDeleted(
@@ -352,7 +348,7 @@ export const deliveries = protectedProcedure
          });
       }
 
-      const items = await getWebhookDeliveries(db, input.webhookId, {
+      const items = await getWebhookDeliveries(input.webhookId, {
          offset: (input.page - 1) * input.limit,
          limit: input.limit,
       });

@@ -9,13 +9,11 @@ import {
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-orm/zod";
+import { z } from "zod";
 import { organization, team } from "./auth";
 import { events } from "./events";
 
-/**
- * Webhook Endpoints — organization webhook configurations.
- * Each endpoint subscribes to event patterns (e.g. "content.*", "ai.*").
- */
 export const webhookEndpoints = pgTable(
    "webhook_endpoints",
    {
@@ -51,9 +49,6 @@ export const webhookEndpoints = pgTable(
    ],
 );
 
-/**
- * Webhook Deliveries — delivery attempts and logs.
- */
 export const webhookDeliveries = pgTable(
    "webhook_deliveries",
    {
@@ -90,3 +85,33 @@ export type WebhookEndpoint = typeof webhookEndpoints.$inferSelect;
 export type NewWebhookEndpoint = typeof webhookEndpoints.$inferInsert;
 export type WebhookDelivery = typeof webhookDeliveries.$inferSelect;
 export type NewWebhookDelivery = typeof webhookDeliveries.$inferInsert;
+
+const baseWebhookEndpointSchema = createInsertSchema(webhookEndpoints).pick({
+   url: true,
+   description: true,
+   eventPatterns: true,
+   isActive: true,
+});
+
+export const createWebhookEndpointSchema = baseWebhookEndpointSchema.extend({
+   url: z.string().url("URL inválida."),
+   description: z
+      .string()
+      .max(500, "Descrição deve ter no máximo 500 caracteres.")
+      .nullable()
+      .optional(),
+   eventPatterns: z
+      .array(z.string().min(1, "Padrão de evento não pode ser vazio."))
+      .min(1, "Pelo menos um padrão de evento é obrigatório."),
+   isActive: z.boolean().default(true),
+});
+
+export const updateWebhookEndpointSchema =
+   createWebhookEndpointSchema.partial();
+
+export type CreateWebhookEndpointInput = z.infer<
+   typeof createWebhookEndpointSchema
+>;
+export type UpdateWebhookEndpointInput = z.infer<
+   typeof updateWebhookEndpointSchema
+>;

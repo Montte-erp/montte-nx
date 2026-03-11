@@ -1,5 +1,4 @@
 import { createHmac } from "node:crypto";
-import type { DatabaseInstance } from "@core/database/client";
 import {
    incrementWebhookFailureCount,
    updateWebhookDeliveryStatus,
@@ -20,7 +19,6 @@ function generateSignature(
 }
 
 export async function deliverWebhook(
-   db: DatabaseInstance,
    job: WebhookDeliveryJobData,
 ): Promise<void> {
    const {
@@ -54,14 +52,14 @@ export async function deliverWebhook(
       const responseBody = await response.text().catch(() => "");
 
       if (response.ok) {
-         await updateWebhookDeliveryStatus(db, deliveryId, {
+         await updateWebhookDeliveryStatus(deliveryId, {
             status: "success",
             httpStatusCode: response.status,
             responseBody: responseBody.slice(0, 1000),
             deliveredAt: new Date(),
          });
 
-         await updateWebhookLastSuccess(db, webhookEndpointId);
+         await updateWebhookLastSuccess(webhookEndpointId);
          logger.info({ url, attemptNumber }, "Webhook delivered");
       } else {
          throw new Error(
@@ -73,7 +71,7 @@ export async function deliverWebhook(
          error instanceof Error ? error.message : "Unknown error";
 
       // Update delivery status — BullMQ handles retry scheduling
-      await updateWebhookDeliveryStatus(db, deliveryId, {
+      await updateWebhookDeliveryStatus(deliveryId, {
          status: "retrying",
          errorMessage,
          attemptNumber,
@@ -83,14 +81,14 @@ export async function deliverWebhook(
 
       // If this was the last attempt, mark as failed
       if (attemptNumber >= 5) {
-         await updateWebhookDeliveryStatus(db, deliveryId, {
+         await updateWebhookDeliveryStatus(deliveryId, {
             status: "failed",
             errorMessage: `Max attempts reached: ${errorMessage}`,
          }).catch((e) =>
             logger.error({ err: e }, "Failed to mark delivery as failed"),
          );
 
-         await incrementWebhookFailureCount(db, webhookEndpointId).catch((e) =>
+         await incrementWebhookFailureCount(webhookEndpointId).catch((e) =>
             logger.error({ err: e }, "Failed to increment failure count"),
          );
       }

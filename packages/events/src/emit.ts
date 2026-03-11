@@ -7,7 +7,7 @@ import {
 } from "@core/database/repositories/webhook-repository";
 import { events } from "@core/database/schemas/events";
 import { getLogger } from "@core/logging/root";
-import type { PostHog } from "@packages/posthog/server";
+import type { PostHog } from "@core/posthog/server";
 import { createQueueConnection } from "@packages/queue/connection";
 import {
    createWebhookDeliveryQueue,
@@ -188,7 +188,6 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
       if (webhookQueue && storedEvent) {
          try {
             const matchingWebhooks = await findMatchingWebhooks(
-               db,
                organizationId,
                eventName,
                teamId,
@@ -202,7 +201,7 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
                   properties,
                );
 
-               const delivery = await createWebhookDelivery(db, {
+               const delivery = await createWebhookDelivery({
                   webhookEndpointId: webhook.id,
                   eventId: storedEvent.id,
                   url: webhook.url,

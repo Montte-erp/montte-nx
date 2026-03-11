@@ -29,7 +29,7 @@ export function startWebhookDeliveryWorker(
             jobId: job.id,
             event: "started",
          });
-         await deliverWebhook(db, job.data);
+         await deliverWebhook(job.data);
       },
       {
          connection,
