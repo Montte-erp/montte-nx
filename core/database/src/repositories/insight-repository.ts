@@ -1,11 +1,26 @@
-import { AppError, propagateError } from "@core/utils/errors";
+import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import type { DatabaseInstance } from "../client";
-import { insights, type NewInsight } from "../schemas/insights";
+import { db } from "@core/database/client";
+import {
+   insights,
+   createInsightSchema,
+   updateInsightSchema,
+   type CreateInsightInput,
+   type UpdateInsightInput,
+} from "../schemas/insights";
 
-export async function createInsight(db: DatabaseInstance, data: NewInsight) {
+export async function createInsight(
+   organizationId: string,
+   teamId: string,
+   createdBy: string,
+   data: CreateInsightInput,
+) {
+   const validated = validateInput(createInsightSchema, data);
    try {
-      const [insight] = await db.insert(insights).values(data).returning();
+      const [insight] = await db
+         .insert(insights)
+         .values({ ...validated, organizationId, teamId, createdBy })
+         .returning();
       return insight;
    } catch (err) {
       propagateError(err);
@@ -13,11 +28,7 @@ export async function createInsight(db: DatabaseInstance, data: NewInsight) {
    }
 }
 
-export async function listInsights(
-   db: DatabaseInstance,
-   organizationId: string,
-   type?: string,
-) {
+export async function listInsights(organizationId: string, type?: string) {
    try {
       const conditions = [eq(insights.organizationId, organizationId)];
       if (type) {
@@ -35,11 +46,7 @@ export async function listInsights(
    }
 }
 
-export async function listInsightsByTeam(
-   db: DatabaseInstance,
-   teamId: string,
-   type?: string,
-) {
+export async function listInsightsByTeam(teamId: string, type?: string) {
    try {
       const conditions = [eq(insights.teamId, teamId)];
       if (type) {
@@ -57,7 +64,7 @@ export async function listInsightsByTeam(
    }
 }
 
-export async function getInsightById(db: DatabaseInstance, insightId: string) {
+export async function getInsightById(insightId: string) {
    try {
       const [insight] = await db
          .select()
@@ -70,10 +77,7 @@ export async function getInsightById(db: DatabaseInstance, insightId: string) {
    }
 }
 
-export async function getInsightsByIds(
-   db: DatabaseInstance,
-   insightIds: string[],
-) {
+export async function getInsightsByIds(insightIds: string[]) {
    if (insightIds.length === 0) {
       return [];
    }
@@ -90,16 +94,14 @@ export async function getInsightsByIds(
 }
 
 export async function updateInsight(
-   db: DatabaseInstance,
    insightId: string,
-   data: Partial<
-      Pick<NewInsight, "name" | "description" | "config" | "defaultSize">
-   >,
+   data: UpdateInsightInput,
 ) {
+   const validated = validateInput(updateInsightSchema, data);
    try {
       const [updated] = await db
          .update(insights)
-         .set(data)
+         .set(validated)
          .where(eq(insights.id, insightId))
          .returning();
       return updated;
@@ -109,7 +111,7 @@ export async function updateInsight(
    }
 }
 
-export async function deleteInsight(db: DatabaseInstance, insightId: string) {
+export async function deleteInsight(insightId: string) {
    try {
       await db.delete(insights).where(eq(insights.id, insightId));
    } catch (err) {
