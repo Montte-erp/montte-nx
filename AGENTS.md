@@ -8,14 +8,20 @@ AI-powered CMS built as an Nx monorepo with Bun. Provides AI-assisted content cr
 
 ```bash
 # Development
-bun dev              # Start web, server, worker in parallel
+bun dev              # Seed event catalog (local) then start web app
 bun dev:all          # Start all apps and packages
 bun dev:worker       # Worker only
+
+# ⚠️ bun dev seeds the event catalog on every start (--env local).
+# If seeding fails, the dev server won't launch. Run the seed manually to debug:
+# bun run scripts/seed-event-catalog.ts run --env local
 
 # Build & Quality
 bun run build        # Build all (Nx cached)
 bun run typecheck    # TypeScript checks
-bun run check        # Biome lint/format
+bun run check        # oxlint
+bun run format       # oxfmt format
+bun run format:check # oxfmt check
 bun run test         # Tests with parallelization
 
 # ⚠️ NEVER use NODE_OPTIONS to increase memory for builds
@@ -38,6 +44,15 @@ bun run scripts/reindex-content.ts
 
 ```
 contentta-nx/
+├── core/
+│   ├── database/        # Drizzle ORM schemas & repositories
+│   ├── authentication/  # Better Auth setup
+│   ├── environment/     # Zod-validated env vars
+│   ├── redis/           # Redis singleton
+│   ├── logging/         # Pino logger
+│   ├── files/           # MinIO file storage singleton
+│   ├── arcjet/          # Rate limiting & auth wrapper
+│   └── utils/           # Shared utilities + error classes
 ├── apps/
 │   ├── web/             # React/Vite SPA — main dashboard + oRPC routers
 │   ├── server/          # Elysia API server for SDK consumers
@@ -45,24 +60,16 @@ contentta-nx/
 ├── packages/
 │   ├── agents/          # Mastra AI agents (planning, research, editing)
 │   ├── analytics/       # Analytics engine
-│   ├── arcjet/          # Rate limiting & DDoS protection
-│   ├── authentication/  # Better Auth setup
-│   ├── database/        # Drizzle ORM schemas & repositories
-│   ├── environment/     # Zod-validated env vars (server/worker/client)
 │   ├── events/          # Event catalog, schemas, emit, credits
-│   ├── files/           # MinIO & file utilities
-│   ├── logging/         # Pino logger
-│   ├── posthog/         # Analytics client
 │   ├── queue/           # BullMQ abstractions (producer side)
-│   ├── redis/           # Redis singleton (getRedisConnection())
 │   ├── search/          # Web search providers (Tavily/Exa/Firecrawl)
 │   ├── stripe/          # Stripe SDK wrapper
 │   ├── transactional/   # Email templates (React Email + Resend)
-│   ├── ui/              # Radix + Tailwind + CVA components
-│   └── utils/           # Shared utilities + error classes
+│   └── ui/              # Radix + Tailwind + CVA components
 ├── libraries/
 │   └── sdk/             # TypeScript SDK for Contentta API
 └── tooling/
+    ├── oxc/             # oxlint + oxfmt configs
     └── typescript/      # Shared TypeScript configs
 ```
 
@@ -94,7 +101,7 @@ throw new ORPCError("NOT_FOUND", { message: "Content not found" });
 throw new ORPCError("FORBIDDEN", { message: "Insufficient credits" });
 ```
 
-**Errors in repositories** (`packages/database/src/repositories/`): Use `AppError` + `propagateError()` from `@packages/utils/errors`.
+**Errors in repositories** (`core/database/src/repositories/`): Use `AppError` + `propagateError()` from `@core/utils/errors`.
 
 ---
 
@@ -131,6 +138,8 @@ const mutation = useMutation(
 **Components:** PascalCase `[Feature][Action][Type]` (`ContentEditor`, `AgentSettingsSection`)
 **Hooks:** `use[Feature][Action]` (`useContent`, `useCreateContent`)
 
+**No comments in code.** Never add comments, JSDoc, section dividers, or inline explanations. Code should be self-documenting.
+
 **No barrel files.** Never create `index.ts` re-exports. Import directly from source files using package.json exports:
 
 ```typescript
@@ -143,11 +152,27 @@ import { Button } from "@packages/ui/src/components/button";
 import { emitEvent } from "@packages/events";
 ```
 
-**Biome lint suppression:** Place `// biome-ignore lint/[category]/[rule]: [reason]` directly above the triggering line. For JSX props, place above the prop, not the element.
+**No relative imports in core/.** Core packages must use `@core/<package>/*` path aliases for all internal imports. Relative imports (`./`, `../`) are banned by oxlint (`no-restricted-imports` in `tooling/oxc/core.json`). Each package has `"@core/<package>/*": ["./src/*"]` in its `tsconfig.json`.
+
+```typescript
+// ✅ Good — path alias
+import { createSafeLogger } from "@core/logging";
+import type { Logger } from "@core/logging/types";
+import { categories } from "@core/database/schemas/categories";
+
+// ❌ Bad — relative import (oxlint error)
+import { createSafeLogger } from "./logger";
+import type { Logger } from "../types";
+import { categories } from "./categories";
+```
+
+**oxlint suppression:** Place `// oxlint-ignore <rule-name>` or `// oxlint-ignore -- <reason>` directly above the triggering line. For JSX props, place above the prop, not the element.
 
 **Array index keys:** Prefer `key={\`step-${index + 1}\`}`over suppressing`noArrayIndexKey`.
 
 **No dynamic imports.** Never use `await import(...)` for project modules. Always use static `import` at the top of the file. Dynamic imports break tree-shaking and are unnecessary in this codebase.
+
+**Dates:** Always use `dayjs` for all date manipulation (parsing, formatting, arithmetic). Never use raw `Date` math or manual string formatting for dates.
 
 ---
 
@@ -160,7 +185,68 @@ Use `DataTable` from `@packages/ui/components/data-table` for all tabular lists.
 - Prefer `DataTable` over manual `Table` primitives for list views.
 - Tables should be expandable via row click using `renderSubComponent`.
 - Do not wrap `DataTable` in `Card`/`CardContent` containers.
-- Provide a mobile card renderer when the table is used on responsive pages.
+
+### Card View (`view` prop)
+
+DataTable supports a `view` prop (`"table" | "card"`). When `view="card"`, it dynamically renders visible columns as Card components — **no hand-crafted card templates**.
+
+- **Never** use `renderMobileCard` — it was removed. There is no mobile card prop.
+- **Never** write inline `if (view === "card") { return <grid>... }` blocks in page components. Always pass `view` to DataTable and let it handle the layout.
+- Card layout uses the same column definitions, column visibility, row selection, and `renderActions` as the table view.
+
+**Card structure:**
+
+- `CardHeader` — 1st column as `CardTitle`, 2nd column as `CardDescription`
+- `CardAction` — Row selection checkbox (when `enableRowSelection` is true)
+- `CardContent` — Remaining columns in a 2-column grid with uppercase labels
+- `CardFooter` — `renderActions` output, right-aligned
+
+**Do not override** Card component default styles (padding, gap, text sizes). Use the Card as-is — only add `gap-4` on the root Card.
+
+**Page integration pattern:**
+
+```typescript
+// 1. Define view config
+const VIEWS: [ViewConfig<"table" | "card">, ViewConfig<"table" | "card">] = [
+   { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
+   { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
+];
+
+// 2. Use hook
+const { currentView, setView, views } = useViewSwitch("feature:view", VIEWS);
+
+// 3. Pass to header
+<DefaultHeader viewSwitch={{ options: views, currentView, onViewChange: setView }} />
+// or <PageHeader panelViewSwitch={{ options: views, currentView, onViewChange: setView }} />
+
+// 4. Pass view to DataTable
+<DataTable columns={columns} data={data} view={currentView} renderActions={...} />
+```
+
+---
+
+## Core Singletons
+
+Core packages export ready-to-use singletons that read from `@core/environment` directly. Never create factory functions that receive env values as parameters — import the singleton instead.
+
+```typescript
+// ✅ Import singletons directly from core
+import { db } from "@core/database/client";
+import { auth } from "@core/authentication/server";
+import { redis } from "@core/redis/connection";
+import { posthog } from "@core/posthog/server";
+import { stripeClient } from "@core/stripe";
+import { resendClient } from "@core/transactional/utils";
+import { minioClient } from "@core/files/client";
+import { env } from "@core/environment/server";
+
+// ❌ Never create factory functions that receive env
+const db = createDb({ databaseUrl: env.DATABASE_URL });
+const redis = createRedisConnection(env.REDIS_URL);
+const posthog = getPosthogConfig(env);
+```
+
+**No re-export wrapper files.** Apps should import singletons directly from `@core/*`. Never create intermediate files like `integrations/database.ts` that just re-export a core singleton.
 
 ---
 
@@ -169,9 +255,23 @@ Use `DataTable` from `@packages/ui/components/data-table` for all tabular lists.
 Packages use explicit `package.json` exports. Always match the export path exactly:
 
 ```typescript
-// Named: import { createDb } from "@packages/database/client"
-// Wildcard: import { content } from "@packages/database/schemas/content"
-// Wildcard: import { createContent } from "@packages/database/repositories/content-repository"
+// Core packages use @core/* prefix
+import { db } from "@core/database/client";
+import { content } from "@core/database/schemas/content";
+import { createContent } from "@core/database/repositories/content-repository";
+import { auth } from "@core/authentication/server";
+import { env } from "@core/environment/server";
+import { redis } from "@core/redis/connection";
+import { posthog } from "@core/posthog/server";
+import { stripeClient } from "@core/stripe";
+import { resendClient } from "@core/transactional/utils";
+import { minioClient } from "@core/files/client";
+import { wrapAuthHandler } from "@core/arcjet/auth-wrapper";
+import { AppError } from "@core/logging/errors";
+
+// Feature packages use @packages/* prefix
+import { emitEvent } from "@packages/events/emit";
+import { Button } from "@packages/ui/components/button";
 ```
 
 Common patterns: `.` (root), `./client`, `./server`, `./schemas/*`, `./repositories/*`, `./components/*`
@@ -180,16 +280,25 @@ Common patterns: `.` (root), `./client`, `./server`, `./schemas/*`, `./repositor
 
 ## AI Agents (packages/agents/)
 
-### Unified Content Agent
+### Agent Network Hierarchy
 
-Single agent combining planning, research, writing, SEO auditing, and review workflows. Replaces the old orchestrator + sub-agent pattern.
+```
+platform-router-agent (top-level)
+└── content-agent (content domain)
+    ├── research-agent
+    ├── writer-agent
+    ├── seo-auditor-agent
+    └── reviewer-agent
+```
+
+`platform-router-agent` is the entry point for all chat interactions. It routes requests to the appropriate domain agent (`content-agent`), which in turn delegates to specialized sub-agents.
 
 **Usage in routers:**
 
 ```typescript
 import { mastra, createRequestContext } from "@packages/agents";
 
-const agent = mastra.getAgent("unifiedContent");
+const agent = mastra.getAgent("platformRouterAgent");
 const context = createRequestContext({
    userId: "user-id",
    brandId: "brand-id",
@@ -204,37 +313,16 @@ const result = await agent.generate("Write a post about TypeScript", {
 });
 ```
 
-**Frontend usage:**
+**Agent IDs (Mastra registration):**
 
-```typescript
-import { useUnifiedAgent } from "@/features/content/hooks/use-unified-agent";
-
-const unifiedAgent = useUnifiedAgent();
-
-unifiedAgent.mutate({
-   teamId: "...",
-   contentId: "...",
-   prompt: "Write an article about TypeScript generics",
-   writerId: "...",
-   model: "openrouter/moonshotai/kimi-k2.5",
-});
-```
-
-**Workflows:**
-
-1. **Planning** - Structure, outlines, metadata
-2. **Research** - SERPs, competitors, facts
-3. **Writing** - Complete articles with YAML frontmatter (800+ words default, flexible on request)
-4. **SEO Audit** - Analysis and optimization
-5. **Review** - Quality checks and feedback
-
-**Tools:** 40+ tools organized by category:
-
-- Memory & RAG (3): getInstructionMemories, searchPreviousContent, graphSearch
-- Research (8): webSearch, serpAnalysis, competitorContent, factFinder, contentGap, relatedKeywords, semanticAnalysis, searchIntent
-- Analysis (13): seoScore, readability, keywordDensity, contentStructure, badPatterns, titleMeta, quickAnswerAnalysis, imageSeo, linkDensity, duplicateContent, toneAnalysis, citation, originality
-- Frontmatter (4): editTitle, editDescription, editKeywords, editSlug
-- Editor (17): insertText, replaceText, deleteText, formatText, insertHeading, insertList, insertCodeBlock, insertTable, insertImage, optimizeTitle, optimizeMeta, injectKeywords, addInternalLinks, addExternalLinks, improveReadability, generateQuickAnswer, suggestImages
+- `platformRouterAgent` — top-level router
+- `contentAgent` — content domain coordinator
+- `researchAgent` — SERP, competitor, and fact research
+- `writerAgent` — article writing and editing
+- `seoAuditorAgent` — SEO analysis and optimization
+- `reviewerAgent` — quality checks and feedback
+- `fimAgent` — fill-in-the-middle autocomplete
+- `inlineEditAgent` — real-time inline editing
 
 ### Specialized Agents
 
@@ -274,9 +362,9 @@ Conventions: kebab-case files, `$` for dynamic segments, `_` for layout routes.
 
 ## Database (Drizzle ORM + PostgreSQL)
 
-**Schemas** at `packages/database/src/schemas/`: content, writer, chat, forms, dashboards, insights, events, webhooks, auth, etc.
+**Schemas** at `core/database/src/schemas/`: content, writer, chat, forms, dashboards, insights, events, webhooks, auth, etc.
 
-**Repository pattern** at `packages/database/src/repositories/`:
+**Repository pattern** at `core/database/src/repositories/`:
 
 ```typescript
 export async function createContent(db: DatabaseInstance, data: NewContent) {
@@ -294,11 +382,11 @@ export async function createContent(db: DatabaseInstance, data: NewContent) {
 
 ## Authentication (Better Auth)
 
-Config at `packages/authentication/src/server.ts`. Plugins: Google OAuth, Magic Link, Email OTP, 2FA, Anonymous sessions.
+Config at `core/authentication/src/server.ts`. Plugins: Google OAuth, Magic Link, Email OTP, 2FA, Anonymous sessions.
 
 **⚠️ CRITICAL: Auth Tables Are Read-Only**
 
-Better Auth fully manages these tables in `packages/database/src/schemas/auth.ts`:
+Better Auth fully manages these tables in `core/database/src/schemas/auth.ts`:
 
 - `user`, `session`, `account`, `verification`
 - `organization`, `team`, `member`, `teamMember`
@@ -309,14 +397,14 @@ Better Auth fully manages these tables in `packages/database/src/schemas/auth.ts
 - **NEVER** edit these Drizzle schema definitions directly (fields, defaults, constraints)
 - **NEVER** add/remove/modify columns in these tables manually
 - To add custom fields to `user`, `session`, `organization`, or `team`:
-   - **ALWAYS** use `additionalFields` in `packages/authentication/src/server.ts`
+   - **ALWAYS** use `additionalFields` in `core/authentication/src/server.ts`
    - Schema changes must go through Better Auth's config
 - Other tables (`member`, `invitation`, `twoFactor`, etc.) have NO `additionalFields` support
    - These are entirely managed by Better Auth core
    - Cannot be customized — use separate related tables if needed
 
 ```typescript
-// packages/authentication/src/server.ts
+// core/authentication/src/server.ts
 organization({
    schema: {
       team: {
@@ -440,7 +528,7 @@ const { openAlertDialog } = useAlertDialog();
 openAlertDialog({
    title: "Delete content?",
    description: "This action cannot be undone.",
-   onConfirm: () => deleteContent(id),
+   onAction: () => deleteContent(id),
 });
 
 // ❌ Wrong — never import and render these directly
@@ -448,6 +536,46 @@ import { Credenza, CredenzaContent } from "@packages/ui/components/credenza";
 import { Sheet, SheetContent } from "@packages/ui/components/sheet";
 import { AlertDialog } from "@packages/ui/components/alert-dialog";
 ```
+
+---
+
+## SSR-Safe Browser Hooks
+
+`@uidotdev/usehooks` hooks that access browser APIs (`useMediaQuery`, `useLocalStorage`) crash on the server. Use project-local SSR-safe wrappers instead.
+
+**Wrappers:**
+
+- `useSafeMediaQuery(query)` → `@packages/ui/hooks/use-media-query`
+- `useSafeLocalStorage<T>(key, initialValue)` → `@/hooks/use-local-storage` (apps/web only)
+
+Both use `useIsomorphicLayoutEffect` from `@dnd-kit/utilities` (runs as `useLayoutEffect` on client, `useEffect` on server — eliminates flash between SSR value and real value).
+
+**Pattern rules:**
+
+```typescript
+// ✅ Viewport breakpoint checks → use useIsMobile() (single source of truth)
+import { useIsMobile } from "@packages/ui/hooks/use-mobile";
+const isMobile = useIsMobile();
+const isDesktop = !isMobile; // inverse of (max-width: 767px)
+
+// ✅ Non-breakpoint media queries (PWA display-mode, prefers-color-scheme, etc.)
+import { useSafeMediaQuery } from "@packages/ui/hooks/use-media-query";
+const isStandalone = useSafeMediaQuery("(display-mode: standalone)");
+
+// ✅ localStorage persistence
+import { useSafeLocalStorage } from "@/hooks/use-local-storage";
+const [value, setValue] = useSafeLocalStorage("my-key", defaultValue);
+
+// ❌ Never use these directly — SSR-unsafe
+import { useMediaQuery, useLocalStorage } from "@uidotdev/usehooks";
+```
+
+**Safe to use directly from `@uidotdev/usehooks`** (no browser APIs during render):
+
+- `useDebounce` — pure JS timing
+- `useCopyToClipboard` — only called in event handlers
+
+**Navigator/window checks in hooks:** wrap in `useIsomorphicLayoutEffect` from `@dnd-kit/utilities`, never in render body.
 
 ---
 
@@ -461,11 +589,35 @@ File-per-category pattern: `content.ts`, `ai.ts`, `forms.ts`, `seo.ts`, `emit.ts
 
 ---
 
+## Testing
+
+Tests live at `apps/web/__tests__/integrations/orpc/router/`. Run with Vitest.
+
+```bash
+bun run test                          # Run all tests (Nx parallelized)
+npx vitest run apps/web/__tests__/integrations/orpc/router/content.test.ts  # Single file
+```
+
+**Gotcha — Better Auth tables need explicit `createdAt`:**
+`member` and `team` tables don't have `.defaultNow()` on `createdAt`. Tests that insert into these tables MUST provide `createdAt: new Date()` explicitly or the insert will fail.
+
+```typescript
+// ✅ Correct
+await db.insert(member).values({ ...memberData, createdAt: new Date() });
+
+// ❌ Will fail — createdAt has no DB default
+await db.insert(member).values(memberData);
+```
+
+Use the `orpc-testing` skill when writing new oRPC procedure tests.
+
+---
+
 ## Scripts
 
 All scripts go in root `scripts/` directory. NEVER in `packages/*/` or `apps/*/`.
 
-Required patterns: `commander` CLI with `run` + `check` commands, `--env` flag, `--dry-run` flag, `chalk` for colored output, env loaded from `packages/database/.env*`.
+Required patterns: `commander` CLI with `run` + `check` commands, `--env` flag, `--dry-run` flag, `chalk` for colored output, env loaded from `core/database/.env*`.
 
 See existing scripts in `scripts/` for the standard template.
 
@@ -474,9 +626,9 @@ See existing scripts in `scripts/` for the standard template.
 ## Environment Variables
 
 - SCREAMING_SNAKE_CASE naming
-- Validated with Zod in `packages/environment/src/{server,worker}.ts`
+- Validated with Zod in `core/environment/src/{server,worker}.ts`
 - Client-side: `VITE_` prefix
-- Env files in `packages/database/` (`.env`, `.env.local`, `.env.production`)
+- Env files in `core/database/` (`.env`, `.env.local`, `.env.production`)
 
 ---
 
@@ -538,8 +690,12 @@ Stage is resolved from PostHog's early access feature config at runtime (`featur
 
 ### Flag keys (from sidebar-nav-items.ts)
 
-| Feature          | Flag key      | Stage |
-| ---------------- | ------------- | ----- |
-| Banco de Imagens | `asset-bank`  | alpha |
-| Experimentos     | `experiments` | alpha |
-| Formulários      | `forms-beta`  | beta  |
+| Feature          | Flag key          | Stage |
+| ---------------- | ----------------- | ----- |
+| Banco de Imagens | `asset-bank`      | alpha |
+| Conteúdo         | `content`         | alpha |
+| Experimentos     | `experiments`     | alpha |
+| Formulários      | `forms-beta`      | beta  |
+| Dashboards       | `dashboards`      | beta  |
+| Insights         | `insights`        | beta  |
+| Dados            | `data-management` | beta  |

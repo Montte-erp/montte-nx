@@ -226,8 +226,8 @@
          }
       },
       "packages": [
-         "core/*",
          "tooling/*",
+         "core/*",
          "libraries/*",
          "packages/*",
          "apps/*"
