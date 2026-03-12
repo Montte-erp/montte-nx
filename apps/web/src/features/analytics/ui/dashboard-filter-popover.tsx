@@ -242,7 +242,7 @@ function CategoryComboboxInner({
          className="h-7 text-xs"
          emptyMessage="Nenhuma categoria."
          onValueChange={(v) => onChange(v ?? "")}
-         options={categoriesResult.data.map((c) => ({
+         options={categoriesResult.map((c) => ({
             value: c.id,
             label: c.name,
          }))}

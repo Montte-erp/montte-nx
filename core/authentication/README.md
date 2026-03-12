@@ -21,7 +21,6 @@ Full authentication and authorization layer built on Better Auth. Handles user m
 - Organization and team management (multi-tenant)
 - API key management for SDK access
 - Stripe subscription integration
-- JWT + OAuth 2.1 provider for MCP authentication
 - Session caching via Redis
 
 ## Usage

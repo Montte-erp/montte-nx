@@ -100,13 +100,8 @@ export function BudgetGoalCard({
                </div>
                <div className="min-w-0">
                   <p className="text-sm font-medium truncate">
-                     {goal.subcategoryName ?? goal.categoryName ?? "—"}
+                     {goal.categoryName ?? "—"}
                   </p>
-                  {goal.subcategoryName && goal.categoryName && (
-                     <p className="text-xs text-muted-foreground">
-                        {goal.categoryName}
-                     </p>
-                  )}
                </div>
             </div>
 
@@ -144,7 +139,7 @@ export function BudgetGoalCard({
                         : ""
                   }
                >
-                  {formatBRL(goal.spentAmount)} /{" "}
+                  {formatBRL(Number(goal.spentAmount))} /{" "}
                   {formatBRL(Number(goal.limitAmount))}
                </span>
             </div>

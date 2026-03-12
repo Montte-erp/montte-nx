@@ -20,9 +20,9 @@
          "types": "./dist/src/models.d.ts",
          "default": "./src/models.ts"
       },
-      "./rag/*": {
-         "types": "./dist/src/mastra/rag/*.d.ts",
-         "default": "./src/mastra/rag/*.ts"
+      "./utils": {
+         "types": "./dist/src/utils.d.ts",
+         "default": "./src/utils.ts"
       }
    },
    "scripts": {
@@ -36,14 +36,12 @@
       "@core/environment": "workspace:*",
       "@core/logging": "workspace:*",
       "@core/utils": "workspace:*",
-      "@f-o-t/markdown": "catalog:fot",
       "@mastra/ai-sdk": "catalog:mastra",
       "@mastra/core": "catalog:mastra",
       "@mastra/memory": "catalog:mastra",
       "@mastra/observability": "catalog:mastra",
       "@mastra/pg": "catalog:mastra",
       "@mastra/posthog": "catalog:mastra",
-      "@mastra/rag": "catalog:mastra",
       "ai": "catalog:mastra",
       "zod": "catalog:validation"
    },

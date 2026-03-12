@@ -1,6 +1,5 @@
 import { Worker } from "bullmq";
 import type { ConnectionOptions } from "bullmq";
-import type { DatabaseInstance } from "@core/database/client";
 import { emitJobLog } from "@core/logging/health";
 import { getLogger } from "@core/logging/root";
 
@@ -15,7 +14,6 @@ const SERVICE_NAME = "montte-worker";
 
 export function startWebhookDeliveryWorker(
    connection: ConnectionOptions,
-   db: DatabaseInstance,
 ): Worker<WebhookDeliveryJobData> {
    const jobStartTimes = new Map<string, number>();
 

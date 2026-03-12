@@ -6,6 +6,7 @@ import {
 } from "@core/arcjet/protect";
 import type { AuthInstance } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
+import { AppError, WebAppError } from "@core/logging/errors";
 import type { PostHog } from "@core/posthog/server";
 import {
    captureError,
@@ -150,12 +151,19 @@ const withOrganization = withAuth.use(async ({ context, next }) => {
    });
 });
 
-/**
- * Telemetry middleware - captures request metrics and identifies users
- */
+const withErrorHandling = withOrganization.use(async ({ next }) => {
+   try {
+      return await next();
+   } catch (err) {
+      if (err instanceof ORPCError) throw err;
+      if (err instanceof AppError) throw WebAppError.fromAppError(err);
+      throw WebAppError.internal("Erro interno do servidor.", { cause: err });
+   }
+});
+
 const otelLogger = logs.getLogger("montte-web-orpc");
 
-const withTelemetry = withOrganization.use(
+const withTelemetry = withErrorHandling.use(
    async ({ context, path, next }, input) => {
       const startDate = new Date();
       const userId = context.session?.user?.id;

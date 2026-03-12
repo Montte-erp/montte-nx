@@ -63,6 +63,14 @@ export async function getBankAccount(id: string) {
    }
 }
 
+export async function ensureBankAccountOwnership(id: string, teamId: string) {
+   const account = await getBankAccount(id);
+   if (!account || account.teamId !== teamId) {
+      throw AppError.notFound("Conta bancária não encontrada.");
+   }
+   return account;
+}
+
 export async function updateBankAccount(
    id: string,
    data: UpdateBankAccountInput,

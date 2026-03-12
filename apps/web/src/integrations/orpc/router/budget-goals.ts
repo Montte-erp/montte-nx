@@ -1,9 +1,8 @@
-import { ORPCError } from "@orpc/server";
 import {
    copyPreviousMonth,
    createBudgetGoal,
    deleteBudgetGoal,
-   getBudgetGoal,
+   ensureBudgetGoalOwnership,
    listBudgetGoals,
    updateBudgetGoal,
 } from "@core/database/repositories/budget-goals-repository";
@@ -14,66 +13,48 @@ import {
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
+const idSchema = z.object({ id: z.string().uuid() });
+
+const monthYearSchema = z.object({
+   month: z.number().int().min(1).max(12),
+   year: z.number().int().min(2000).max(2100),
+});
+
 export const getAll = protectedProcedure
-   .input(
-      z.object({
-         month: z.number().int().min(1).max(12),
-         year: z.number().int().min(2000).max(2100),
-      }),
-   )
+   .input(monthYearSchema)
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
-      return listBudgetGoals(teamId, input.month, input.year);
+      return listBudgetGoals(context.teamId, input.month, input.year);
    });
 
 export const create = protectedProcedure
    .input(createBudgetGoalSchema)
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
-      return createBudgetGoal(teamId, input);
+      return createBudgetGoal(context.teamId, input);
    });
 
 export const update = protectedProcedure
-   .input(
-      z.object({
-         id: z.string().uuid(),
-         data: updateBudgetGoalSchema,
-      }),
-   )
+   .input(idSchema.merge(updateBudgetGoalSchema))
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
-      const existing = await getBudgetGoal(input.id, teamId);
-      if (!existing) {
-         throw new ORPCError("NOT_FOUND", { message: "Meta não encontrada." });
-      }
-      return updateBudgetGoal(input.id, teamId, input.data);
+      await ensureBudgetGoalOwnership(input.id, context.teamId);
+      const { id, ...data } = input;
+      return updateBudgetGoal(id, context.teamId, data);
    });
 
 export const remove = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idSchema)
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
-      const existing = await getBudgetGoal(input.id, teamId);
-      if (!existing) {
-         throw new ORPCError("NOT_FOUND", { message: "Meta não encontrada." });
-      }
-      await deleteBudgetGoal(input.id, teamId);
+      await ensureBudgetGoalOwnership(input.id, context.teamId);
+      await deleteBudgetGoal(input.id, context.teamId);
       return { success: true };
    });
 
 export const copyFromPreviousMonth = protectedProcedure
-   .input(
-      z.object({
-         month: z.number().int().min(1).max(12),
-         year: z.number().int().min(2000).max(2100),
-      }),
-   )
+   .input(monthYearSchema)
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
       const prevMonth = input.month === 1 ? 12 : input.month - 1;
       const prevYear = input.month === 1 ? input.year - 1 : input.year;
       const count = await copyPreviousMonth(
-         teamId,
+         context.teamId,
          prevMonth,
          prevYear,
          input.month,

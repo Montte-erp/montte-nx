@@ -40,7 +40,7 @@ import {
    contextPanelStore,
    type PageViewSwitchConfig,
 } from "./context-panel-store";
-import { TecoChatTab } from "./ui/teco-chat-tab";
+import { RubiChatTab } from "./ui/rubi-chat-tab";
 import {
    closeContextPanel,
    openContextPanel,
@@ -138,7 +138,7 @@ function ChatContent() {
    return (
       <ContextPanel>
          <ContextPanelHeader>
-            <ContextPanelTitle>Teco AI</ContextPanelTitle>
+            <ContextPanelTitle>Rubi AI</ContextPanelTitle>
             <ContextPanelHeaderActions>
                <Button
                   className=""
@@ -157,7 +157,7 @@ function ChatContent() {
             </ContextPanelHeaderActions>
          </ContextPanelHeader>
          <ContextPanelContent>
-            <TecoChatTab />
+            <RubiChatTab />
          </ContextPanelContent>
       </ContextPanel>
    );

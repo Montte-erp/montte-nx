@@ -3,6 +3,10 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { orpc } from "@/integrations/orpc/client";
 
+type ActiveAddon = {
+   addonId: string;
+};
+
 export function useHasAddon(addonName: AddonName): boolean {
    const { data } = useSuspenseQuery(
       orpc.organization.hasAddon.queryOptions({
@@ -19,7 +23,7 @@ export function useAddons() {
    );
 
    const addonSet = useMemo(
-      () => new Set(addons.map((a) => a.addonId)),
+      () => new Set(addons.map((a: ActiveAddon) => a.addonId)),
       [addons],
    );
 

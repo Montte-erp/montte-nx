@@ -1,10 +1,14 @@
-import type { Resend } from "resend";
+import { Resend } from "resend";
 import BudgetAlertEmail from "@core/transactional/emails/budget-alert";
 import MagicLinkEmail from "@core/transactional/emails/magic-link";
 import OrganizationInvitationEmail from "@core/transactional/emails/organization-invitation";
 import OTPEmail from "@core/transactional/emails/otp";
 
 export { resendClient, type ResendClient } from "@core/transactional/utils";
+
+export function getResendClient(apiKey: string): Resend {
+   return new Resend(apiKey);
+}
 
 export interface SendEmailOTPOptions {
    email: string;

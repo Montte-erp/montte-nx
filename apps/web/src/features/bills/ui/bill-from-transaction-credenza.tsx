@@ -21,6 +21,7 @@ import {
    SelectValue,
 } from "@packages/ui/components/select";
 import { Spinner } from "@packages/ui/components/spinner";
+import type { BaseFormState } from "@tanstack/react-form";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
@@ -163,7 +164,17 @@ function BillFromTransactionCredenzaInner({
    });
 
    // Live installment preview items
-   const formValues = useStore(form.baseStore, (s) => s.values);
+   const formValues = useStore(
+      form.baseStore as never,
+      (
+         state: BaseFormState<{
+            name: string;
+            installmentCount: number;
+            frequency: Frequency;
+            windowMonths: number;
+         }>,
+      ) => state.values,
+   );
    const previewItems =
       mode === "installment"
          ? buildInstallmentItems(

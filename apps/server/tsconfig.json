@@ -2,7 +2,27 @@
    "extends": "@tooling/typescript/app.json",
    "compilerOptions": {
       "paths": {
-         "@api/*": ["./src/*"]
+         "@api/*": ["./src/*"],
+         "@core/arcjet/*": ["../../core/arcjet/src/*"],
+         "@core/authentication/*": ["../../core/authentication/src/*"],
+         "@core/database": ["../../core/database/src/index.ts"],
+         "@core/database/*": ["../../core/database/src/*"],
+         "@core/environment/*": ["../../core/environment/src/*"],
+         "@core/files/*": ["../../core/files/src/*"],
+         "@core/logging": ["../../core/logging/src/logger.ts"],
+         "@core/logging/*": ["../../core/logging/src/*"],
+         "@core/posthog/*": ["../../core/posthog/src/*"],
+         "@core/redis/*": ["../../core/redis/src/*"],
+         "@core/stripe": ["../../core/stripe/src/index.ts"],
+         "@core/stripe/*": ["../../core/stripe/src/*"],
+         "@core/transactional/*": ["../../core/transactional/src/*"],
+         "@core/utils/*": ["../../core/utils/src/*"],
+         "@packages/agents": ["../../packages/agents/src/mastra/index.ts"],
+         "@packages/agents/*": ["../../packages/agents/src/*"],
+         "@packages/analytics/*": ["../../packages/analytics/src/*"],
+         "@packages/events/*": ["../../packages/events/src/*"],
+         "@packages/feedback/*": ["../../packages/feedback/src/*"],
+         "@packages/ui/*": ["../../packages/ui/src/*"]
       }
    },
    "include": ["src"]

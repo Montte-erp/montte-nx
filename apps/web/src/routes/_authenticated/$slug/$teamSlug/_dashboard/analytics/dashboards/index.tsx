@@ -31,7 +31,6 @@ import {
 } from "@/features/billing/ui/early-access-banner";
 import { ContextPanelAction } from "@/features/context-panel/context-panel-info";
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
-import { setChatMode } from "@/features/teco-chat/stores/chat-context-store";
 import {
    useViewSwitch,
    type ViewConfig,
@@ -55,7 +54,6 @@ export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/",
 )({
    loader: ({ context }) => {
-      setChatMode("analytics");
       context.queryClient.prefetchQuery(orpc.dashboards.list.queryOptions({}));
    },
    component: DashboardsPage,

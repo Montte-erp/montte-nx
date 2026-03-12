@@ -131,7 +131,7 @@ export function TransactionFilterBar({
    const { data: categoriesResult } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
-   const categories = categoriesResult.data;
+   const categories = categoriesResult;
    const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
    );

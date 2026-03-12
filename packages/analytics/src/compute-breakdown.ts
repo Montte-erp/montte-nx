@@ -1,7 +1,6 @@
 import type { DatabaseInstance } from "@core/database/client";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
-import { subcategories } from "@core/database/schemas/subcategories";
 import { transactions } from "@core/database/schemas/transactions";
 import { AppError, propagateError } from "@core/logging/errors";
 import { and, desc, eq, sql } from "drizzle-orm";
@@ -57,7 +56,8 @@ export async function executeBreakdownQuery(
       let rows: BreakdownItem[] = [];
 
       switch (config.groupBy) {
-         case "category": {
+         case "category":
+         case "subcategory": {
             const results = await db
                .select({
                   label: sql<string>`coalesce(${categories.name}, 'Sem categoria')`,
@@ -116,28 +116,6 @@ export async function executeBreakdownQuery(
                   TRANSACTION_TYPE_LABELS[r.label ?? ""] ??
                   r.label ??
                   "Desconhecido",
-               value: Number(r.value),
-            }));
-            break;
-         }
-
-         case "subcategory": {
-            const results = await db
-               .select({
-                  label: sql<string>`coalesce(${subcategories.name}, 'Sem subcategoria')`,
-                  value: valueExpr,
-               })
-               .from(transactions)
-               .leftJoin(
-                  subcategories,
-                  eq(transactions.subcategoryId, subcategories.id),
-               )
-               .where(and(...conditions))
-               .groupBy(subcategories.id, subcategories.name)
-               .orderBy(desc(valueExpr))
-               .limit(limit);
-            rows = results.map((r) => ({
-               label: r.label,
                value: Number(r.value),
             }));
             break;

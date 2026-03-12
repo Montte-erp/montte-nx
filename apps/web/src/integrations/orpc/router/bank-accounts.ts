@@ -1,119 +1,56 @@
-import { ORPCError } from "@orpc/server";
 import {
-   bankAccountHasTransactions,
    computeBankAccountBalance,
    createBankAccount,
    deleteBankAccount,
-   getBankAccount,
+   ensureBankAccountOwnership,
    listBankAccountsWithBalance,
    updateBankAccount,
 } from "@core/database/repositories/bank-accounts-repository";
-import { bankAccounts } from "@core/database/schemas/bank-accounts";
-import { createInsertSchema } from "drizzle-orm/zod";
+import {
+   createBankAccountSchema,
+   updateBankAccountSchema,
+} from "@core/database/schemas/bank-accounts";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
-// =============================================================================
-// Validation Schemas
-// =============================================================================
-
-const bankAccountSchema = createInsertSchema(bankAccounts)
-   .pick({
-      name: true,
-      type: true,
-      color: true,
-      iconUrl: true,
-      initialBalance: true,
-      bankCode: true,
-      bankName: true,
-      nickname: true,
-      branch: true,
-      accountNumber: true,
-      initialBalanceDate: true,
-      notes: true,
-   })
-   .extend({
-      color: z
-         .string()
-         .refine((v) => /^#[0-9a-fA-F]{6}$/.test(v), {
-            message: "Cor inválida. Use formato hex (#RRGGBB).",
-         })
-         .optional(),
-      initialBalance: z
-         .string()
-         .refine((v) => !Number.isNaN(Number(v)) && Number(v) >= 0, {
-            message: "Saldo inicial inválido.",
-         })
-         .optional(),
-      initialBalanceDate: z.coerce.date().optional().nullable(),
-   });
-
-// =============================================================================
-// Bank Account Procedures
-// =============================================================================
+const idSchema = z.object({ id: z.string().uuid() });
 
 export const create = protectedProcedure
-   .input(bankAccountSchema)
+   .input(createBankAccountSchema)
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      return createBankAccount(db, { ...input, teamId });
+      return createBankAccount(context.teamId, input);
    });
 
 export const getAll = protectedProcedure.handler(async ({ context }) => {
-   const { db, teamId } = context;
-   return listBankAccountsWithBalance(db, teamId);
+   return listBankAccountsWithBalance(context.teamId);
 });
 
 export const getById = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idSchema)
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      const account = await getBankAccount(db, input.id);
-      if (!account || account.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Conta bancária não encontrada.",
-         });
-      }
-      const currentBalance = await computeBankAccountBalance(
-         db,
+      const account = await ensureBankAccountOwnership(
+         input.id,
+         context.teamId,
+      );
+      const balance = await computeBankAccountBalance(
          account.id,
          account.initialBalance,
       );
-      return { ...account, currentBalance };
+      return { ...account, ...balance };
    });
 
 export const update = protectedProcedure
-   .input(
-      z.object({ id: z.string().uuid() }).merge(bankAccountSchema.partial()),
-   )
+   .input(idSchema.merge(updateBankAccountSchema))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      const account = await getBankAccount(db, input.id);
-      if (!account || account.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Conta bancária não encontrada.",
-         });
-      }
+      await ensureBankAccountOwnership(input.id, context.teamId);
       const { id, ...data } = input;
-      return updateBankAccount(db, id, data);
+      return updateBankAccount(id, data);
    });
 
 export const remove = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idSchema)
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      const account = await getBankAccount(db, input.id);
-      if (!account || account.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Conta bancária não encontrada.",
-         });
-      }
-      const hasTransactions = await bankAccountHasTransactions(db, input.id);
-      if (hasTransactions) {
-         throw new ORPCError("BAD_REQUEST", {
-            message: "Não é possível excluir uma conta com transações.",
-         });
-      }
-      await deleteBankAccount(db, input.id);
+      await ensureBankAccountOwnership(input.id, context.teamId);
+      await deleteBankAccount(input.id);
       return { success: true };
    });

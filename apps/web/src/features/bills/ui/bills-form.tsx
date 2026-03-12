@@ -53,7 +53,7 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
    const { data: categoriesResult } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
-   const categories = categoriesResult.data;
+   const categories = categoriesResult;
 
    const updateMutation = useMutation(
       orpc.bills.update.mutationOptions({
@@ -248,7 +248,7 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                      const categoryType =
                         billType === "receivable" ? "income" : "expense";
                      const filtered = categories.filter(
-                        (cat) => !cat.type || cat.type === categoryType,
+                        (cat) => cat.type === categoryType,
                      );
                      if (filtered.length === 0) return null;
                      return (

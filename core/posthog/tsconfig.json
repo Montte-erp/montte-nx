@@ -3,7 +3,20 @@
    "compilerOptions": {
       "jsx": "react-jsx",
       "paths": {
-         "@core/posthog/*": ["./src/*"]
+         "@core/arcjet/*": ["../../core/arcjet/src/*"],
+         "@core/authentication/*": ["../../core/authentication/src/*"],
+         "@core/database": ["../../core/database/src/index.ts"],
+         "@core/database/*": ["../../core/database/src/*"],
+         "@core/environment/*": ["../../core/environment/src/*"],
+         "@core/files/*": ["../../core/files/src/*"],
+         "@core/logging": ["../../core/logging/src/logger.ts"],
+         "@core/logging/*": ["../../core/logging/src/*"],
+         "@core/posthog/*": ["./src/*"],
+         "@core/redis/*": ["../../core/redis/src/*"],
+         "@core/stripe": ["../../core/stripe/src/index.ts"],
+         "@core/stripe/*": ["../../core/stripe/src/*"],
+         "@core/transactional/*": ["../../core/transactional/src/*"],
+         "@core/utils/*": ["../../core/utils/src/*"]
       }
    },
    "include": ["src"]

@@ -109,16 +109,13 @@ function CategoriesList({
    const { data: result } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({
          input: {
-            search: filters.search || undefined,
             type: filters.type,
             includeArchived: filters.includeArchived || undefined,
-            page: filters.page,
-            pageSize: 50,
          },
       }),
    );
 
-   const categories = result.data;
+   const categories = result;
 
    const deleteMutation = useMutation(
       orpc.categories.remove.mutationOptions({
@@ -265,36 +262,6 @@ function CategoriesList({
             rowSelection={rowSelection}
             view={view}
          />
-         {result.totalPages > 1 && (
-            <div className="flex items-center justify-between">
-               <p className="text-sm text-muted-foreground">
-                  Página {result.page} de {result.totalPages} (
-                  {result.totalCount} categorias)
-               </p>
-               <div className="flex gap-2">
-                  <Button
-                     disabled={result.page <= 1}
-                     onClick={() =>
-                        onFiltersChange({ ...filters, page: filters.page - 1 })
-                     }
-                     size="sm"
-                     variant="outline"
-                  >
-                     Anterior
-                  </Button>
-                  <Button
-                     disabled={result.page >= result.totalPages}
-                     onClick={() =>
-                        onFiltersChange({ ...filters, page: filters.page + 1 })
-                     }
-                     size="sm"
-                     variant="outline"
-                  >
-                     Próxima
-                  </Button>
-               </div>
-            </div>
-         )}
          <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
             <SelectionActionButton
                icon={<Trash2 className="size-3.5" />}

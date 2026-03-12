@@ -10,8 +10,8 @@ import {
    useParams,
 } from "@tanstack/react-router";
 import { useMemo, useRef } from "react";
-import { chatContextStore } from "@/features/teco-chat/stores/chat-context-store";
-import { Thread } from "@/features/teco-chat/ui/thread";
+import { chatContextStore } from "@/features/rubi-chat/stores/chat-context-store";
+import { Thread } from "@/features/rubi-chat/ui/thread";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { orpc } from "@/integrations/orpc/client";
 

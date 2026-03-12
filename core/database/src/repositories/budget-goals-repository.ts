@@ -1,6 +1,6 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { of, toDecimal } from "@f-o-t/money";
-import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { db } from "@core/database/client";
 import {
    type BudgetGoal,
@@ -59,6 +59,14 @@ export async function getBudgetGoal(id: string, teamId: string) {
       propagateError(err);
       throw AppError.database("Failed to get budget goal");
    }
+}
+
+export async function ensureBudgetGoalOwnership(id: string, teamId: string) {
+   const goal = await getBudgetGoal(id, teamId);
+   if (!goal) {
+      throw AppError.notFound("Meta de orçamento não encontrada.");
+   }
+   return goal;
 }
 
 export async function updateBudgetGoal(

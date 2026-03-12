@@ -121,6 +121,14 @@ export async function deleteContact(id: string) {
    }
 }
 
+export async function ensureContactOwnership(id: string, teamId: string) {
+   const contact = await getContact(id);
+   if (!contact || contact.teamId !== teamId) {
+      throw AppError.notFound("Contato não encontrado.");
+   }
+   return contact;
+}
+
 export async function contactHasLinks(id: string): Promise<boolean> {
    try {
       const [txResult] = await db

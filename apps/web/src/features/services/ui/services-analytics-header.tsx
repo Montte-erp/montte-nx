@@ -1,4 +1,4 @@
-import { formatAmount, fromMinorUnits } from "@f-o-t/money";
+import { formatAmount, of } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -49,11 +49,11 @@ function AnalyticsContent() {
    );
 
    const mrr = activeSubscriptions.reduce(
-      (sum, sub) => sum + sub.negotiatedPrice,
+      (sum, sub) => sum + Math.round(Number(sub.negotiatedPrice) * 100),
       0,
    );
 
-   const mrrFormatted = formatAmount(fromMinorUnits(mrr, "BRL"), "pt-BR");
+   const mrrFormatted = formatAmount(of(mrr, "BRL"), "pt-BR");
 
    const activeCount = activeSubscriptions.length;
    const expiringCount = expiringSoon.length;

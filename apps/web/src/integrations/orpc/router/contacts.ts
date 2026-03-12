@@ -1,31 +1,23 @@
-import { ORPCError } from "@orpc/server";
 import {
    createContact,
    deleteContact,
-   getContact,
+   ensureContactOwnership,
    listContacts,
    updateContact,
 } from "@core/database/repositories/contacts-repository";
-import { contacts } from "@core/database/schemas/contacts";
-import { createInsertSchema } from "drizzle-orm/zod";
+import {
+   createContactSchema,
+   updateContactSchema,
+} from "@core/database/schemas/contacts";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
-const contactSchema = createInsertSchema(contacts).pick({
-   name: true,
-   type: true,
-   email: true,
-   phone: true,
-   document: true,
-   documentType: true,
-   notes: true,
-});
+const idSchema = z.object({ id: z.string().uuid() });
 
 export const create = protectedProcedure
-   .input(contactSchema)
+   .input(createContactSchema)
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
-      return createContact(teamId, input);
+      return createContact(context.teamId, input);
    });
 
 export const getAll = protectedProcedure
@@ -37,34 +29,21 @@ export const getAll = protectedProcedure
          .optional(),
    )
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
-      return listContacts(teamId, input?.type);
+      return listContacts(context.teamId, input?.type);
    });
 
 export const update = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }).merge(contactSchema.partial()))
+   .input(idSchema.merge(updateContactSchema))
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
-      const contact = await getContact(input.id);
-      if (!contact || contact.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Contato não encontrado.",
-         });
-      }
+      await ensureContactOwnership(input.id, context.teamId);
       const { id, ...data } = input;
       return updateContact(id, data);
    });
 
 export const remove = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idSchema)
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
-      const contact = await getContact(input.id);
-      if (!contact || contact.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Contato não encontrado.",
-         });
-      }
+      await ensureContactOwnership(input.id, context.teamId);
       await deleteContact(input.id);
       return { success: true };
    });

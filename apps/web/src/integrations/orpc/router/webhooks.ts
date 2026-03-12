@@ -90,6 +90,7 @@ export const create = protectedProcedure
             url: input.url,
             description: input.description,
             eventPatterns: input.eventPatterns,
+            isActive: true,
          });
 
          try {
@@ -151,7 +152,7 @@ export const create = protectedProcedure
  * List all webhook endpoints for the organization
  */
 export const list = protectedProcedure.handler(async ({ context }) => {
-   const { db, teamId } = context;
+   const { teamId } = context;
 
    const endpoints = await listWebhookEndpoints(teamId);
 
@@ -168,7 +169,7 @@ export const list = protectedProcedure.handler(async ({ context }) => {
 export const getById = protectedProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
 
       const endpoint = await getWebhookEndpoint(input.id);
 
@@ -338,9 +339,9 @@ export const deliveries = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
+      const { teamId } = context;
 
-      const endpoint = await getWebhookEndpoint(db, input.webhookId);
+      const endpoint = await getWebhookEndpoint(input.webhookId);
 
       if (!endpoint || endpoint.teamId !== teamId) {
          throw new ORPCError("NOT_FOUND", {

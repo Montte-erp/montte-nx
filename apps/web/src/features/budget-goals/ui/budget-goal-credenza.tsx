@@ -18,13 +18,6 @@ import {
    FieldLabel,
 } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
-import {
-   Select,
-   SelectContent,
-   SelectItem,
-   SelectTrigger,
-   SelectValue,
-} from "@packages/ui/components/select";
 import { Spinner } from "@packages/ui/components/spinner";
 import { Switch } from "@packages/ui/components/switch";
 import { useForm } from "@tanstack/react-form";
@@ -81,9 +74,7 @@ const ICON_MAP = new Map(CATEGORY_ICONS.map(({ name, Icon }) => [name, Icon]));
 
 const schema = z
    .object({
-      targetType: z.enum(["category", "subcategory"]),
       categoryId: z.string(),
-      subcategoryId: z.string(),
       limitAmount: z.string(),
       alertEnabled: z.boolean(),
       alertThreshold: z.number(),
@@ -94,13 +85,6 @@ const schema = z
             code: z.ZodIssueCode.custom,
             message: "Selecione uma categoria",
             path: ["categoryId"],
-         });
-      }
-      if (data.targetType === "subcategory" && !data.subcategoryId) {
-         ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Selecione uma subcategoria",
-            path: ["subcategoryId"],
          });
       }
       if (!data.limitAmount || Number(data.limitAmount) <= 0) {
@@ -142,11 +126,9 @@ export function BudgetGoalCredenza({
    const { data: categoriesResult } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
-   const categories = categoriesResult.data;
+   const categories = categoriesResult;
 
-   const expenseCategories = categories.filter(
-      (c) => c.type === "expense" || c.type === null,
-   );
+   const expenseCategories = categories.filter((c) => c.type === "expense");
 
    const createMutation = useMutation(
       orpc.budgetGoals.create.mutationOptions({
@@ -172,15 +154,9 @@ export function BudgetGoalCredenza({
       }),
    );
 
-   const inferredTargetType = goal?.subcategoryId ? "subcategory" : "category";
-
    const form = useForm({
       defaultValues: {
-         targetType: isCreate
-            ? ("category" as "category" | "subcategory")
-            : inferredTargetType,
          categoryId: goal?.categoryId ?? "",
-         subcategoryId: goal?.subcategoryId ?? "",
          limitAmount: goal?.limitAmount ? String(goal.limitAmount) : "",
          alertEnabled: goal?.alertThreshold != null,
          alertThreshold: goal?.alertThreshold ?? 80,
@@ -191,14 +167,7 @@ export function BudgetGoalCredenza({
       onSubmit: async ({ value }) => {
          if (isCreate) {
             createMutation.mutate({
-               categoryId:
-                  value.targetType === "category"
-                     ? value.categoryId || undefined
-                     : undefined,
-               subcategoryId:
-                  value.targetType === "subcategory"
-                     ? value.subcategoryId || undefined
-                     : undefined,
+               categoryId: value.categoryId,
                month,
                year,
                limitAmount: value.limitAmount,
@@ -209,8 +178,12 @@ export function BudgetGoalCredenza({
          } else if (goal) {
             updateMutation.mutate({
                id: goal.id,
-               limitAmount: value.limitAmount,
-               alertThreshold: value.alertEnabled ? value.alertThreshold : null,
+               data: {
+                  limitAmount: value.limitAmount,
+                  alertThreshold: value.alertEnabled
+                     ? value.alertThreshold
+                     : null,
+               },
             });
          }
       },
@@ -239,34 +212,6 @@ export function BudgetGoalCredenza({
             <FieldGroup>
                {isCreate && (
                   <div className="grid grid-cols-2 gap-4">
-                     <form.Field name="targetType">
-                        {(field) => (
-                           <Field>
-                              <FieldLabel>Tipo</FieldLabel>
-                              <Select
-                                 onValueChange={(v) =>
-                                    field.handleChange(
-                                       v as "category" | "subcategory",
-                                    )
-                                 }
-                                 value={field.state.value}
-                              >
-                                 <SelectTrigger>
-                                    <SelectValue placeholder="Selecione o tipo" />
-                                 </SelectTrigger>
-                                 <SelectContent>
-                                    <SelectItem value="category">
-                                       Categoria
-                                    </SelectItem>
-                                    <SelectItem value="subcategory">
-                                       Subcategoria
-                                    </SelectItem>
-                                 </SelectContent>
-                              </Select>
-                           </Field>
-                        )}
-                     </form.Field>
-
                      <form.Field name="limitAmount">
                         {(field) => {
                            const isInvalid =
@@ -327,135 +272,58 @@ export function BudgetGoalCredenza({
                   </form.Field>
                )}
 
-               <form.Subscribe selector={(s) => s.values.targetType}>
-                  {(targetType) => (
-                     <div className="grid grid-cols-2 gap-4">
-                        <form.Field name="categoryId">
-                           {(field) => {
-                              const isInvalid =
-                                 field.state.meta.isTouched &&
-                                 !field.state.meta.isValid;
+               <div className="grid grid-cols-2 gap-4">
+                  <form.Field name="categoryId">
+                     {(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           !field.state.meta.isValid;
 
-                              const categoryOptions: ComboboxOption[] =
-                                 expenseCategories.map((c) => ({
-                                    value: c.id,
-                                    label: c.name,
-                                 }));
+                        const categoryOptions: ComboboxOption[] =
+                           expenseCategories.map((c) => ({
+                              value: c.id,
+                              label: c.name,
+                           }));
 
-                              return (
-                                 <Field
-                                    className={
-                                       targetType === "category"
-                                          ? "col-span-2"
-                                          : undefined
-                                    }
-                                    data-invalid={isInvalid}
-                                 >
-                                    <FieldLabel>Categoria</FieldLabel>
-                                    <Combobox
-                                       className="w-full justify-between"
-                                       disabled={!isCreate}
-                                       emptyMessage="Nenhuma categoria encontrada."
-                                       onBlur={field.handleBlur}
-                                       onValueChange={(v) => {
-                                          field.handleChange(v);
-                                          form.setFieldValue(
-                                             "subcategoryId",
-                                             "",
-                                          );
-                                       }}
-                                       options={categoryOptions}
-                                       placeholder="Selecione uma categoria"
-                                       renderOption={(option) => {
-                                          const cat = expenseCategories.find(
-                                             (c) => c.id === option.value,
-                                          );
-                                          const Icon = cat?.icon
-                                             ? ICON_MAP.get(cat.icon)
-                                             : undefined;
-                                          return (
-                                             <span className="flex items-center gap-2">
-                                                {Icon && (
-                                                   <Icon className="size-4" />
-                                                )}
-                                                {option.label}
-                                             </span>
-                                          );
-                                       }}
-                                       searchPlaceholder="Buscar categoria..."
-                                       value={field.state.value}
-                                    />
-                                    {isInvalid && (
-                                       <FieldError
-                                          errors={field.state.meta.errors}
-                                       />
-                                    )}
-                                 </Field>
-                              );
-                           }}
-                        </form.Field>
-
-                        {targetType === "subcategory" && (
-                           <form.Subscribe
-                              selector={(s) => s.values.categoryId}
+                        return (
+                           <Field
+                              className="col-span-2"
+                              data-invalid={isInvalid}
                            >
-                              {(categoryId) => {
-                                 const selectedCategory =
-                                    expenseCategories.find(
-                                       (c) => c.id === categoryId,
+                              <FieldLabel>Categoria</FieldLabel>
+                              <Combobox
+                                 className="w-full justify-between"
+                                 disabled={!isCreate}
+                                 emptyMessage="Nenhuma categoria encontrada."
+                                 onBlur={field.handleBlur}
+                                 onValueChange={field.handleChange}
+                                 options={categoryOptions}
+                                 placeholder="Selecione uma categoria"
+                                 renderOption={(option) => {
+                                    const cat = expenseCategories.find(
+                                       (c) => c.id === option.value,
                                     );
-                                 const subcategoryOptions: ComboboxOption[] =
-                                    selectedCategory?.subcategories.map(
-                                       (s) => ({
-                                          value: s.id,
-                                          label: s.name,
-                                       }),
-                                    ) ?? [];
-
-                                 return (
-                                    <form.Field name="subcategoryId">
-                                       {(field) => {
-                                          const isInvalid =
-                                             field.state.meta.isTouched &&
-                                             !field.state.meta.isValid;
-                                          return (
-                                             <Field data-invalid={isInvalid}>
-                                                <FieldLabel>
-                                                   Subcategoria
-                                                </FieldLabel>
-                                                <Combobox
-                                                   className="w-full justify-between"
-                                                   disabled={
-                                                      !categoryId || !isCreate
-                                                   }
-                                                   emptyMessage="Nenhuma subcategoria encontrada."
-                                                   onBlur={field.handleBlur}
-                                                   onValueChange={
-                                                      field.handleChange
-                                                   }
-                                                   options={subcategoryOptions}
-                                                   placeholder="Selecione uma subcategoria"
-                                                   searchPlaceholder="Buscar subcategoria..."
-                                                   value={field.state.value}
-                                                />
-                                                {isInvalid && (
-                                                   <FieldError
-                                                      errors={
-                                                         field.state.meta.errors
-                                                      }
-                                                   />
-                                                )}
-                                             </Field>
-                                          );
-                                       }}
-                                    </form.Field>
-                                 );
-                              }}
-                           </form.Subscribe>
-                        )}
-                     </div>
-                  )}
-               </form.Subscribe>
+                                    const Icon = cat?.icon
+                                       ? ICON_MAP.get(cat.icon)
+                                       : undefined;
+                                    return (
+                                       <span className="flex items-center gap-2">
+                                          {Icon && <Icon className="size-4" />}
+                                          {option.label}
+                                       </span>
+                                    );
+                                 }}
+                                 searchPlaceholder="Buscar categoria..."
+                                 value={field.state.value}
+                              />
+                              {isInvalid && (
+                                 <FieldError errors={field.state.meta.errors} />
+                              )}
+                           </Field>
+                        );
+                     }}
+                  </form.Field>
+               </div>
 
                <form.Field name="alertEnabled">
                   {(alertEnabledField) => (

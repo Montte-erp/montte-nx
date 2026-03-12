@@ -15,10 +15,6 @@ import { auth } from "@core/authentication/server";
 import { db } from "@core/database/client";
 import { minioClient } from "@core/files/client";
 import { posthog } from "@core/posthog/server";
-import {
-   mcpRequestHandler,
-   protectedResourceMetadataHandler,
-} from "./mcp/handler";
 import sdkRouter from "./orpc/router";
 
 // Initialize OTel SDK for PostHog logs
@@ -87,11 +83,6 @@ const app = new Elysia({
       }),
    )
    .post("/sdk/orpc", handleOrpcRequest)
-   .all("/mcp", ({ request }) => mcpRequestHandler(request))
-   .all("/mcp/*", ({ request }) => mcpRequestHandler(request))
-   .get("/.well-known/oauth-protected-resource", ({ request }) =>
-      protectedResourceMetadataHandler(request),
-   )
    .get("/health", () => ({
       status: "healthy",
       timestamp: new Date().toISOString(),

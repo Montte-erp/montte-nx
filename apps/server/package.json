@@ -21,12 +21,9 @@
       "@core/stripe": "workspace:*",
       "@core/transactional": "workspace:*",
       "@elysiajs/cors": "catalog:server",
-      "@modelcontextprotocol/sdk": "catalog:mcp",
       "@orpc/server": "catalog:orpc",
       "@packages/events": "workspace:*",
-      "elysia": "catalog:server",
-      "jose": "catalog:mcp",
-      "mcp-handler": "catalog:mcp"
+      "elysia": "catalog:server"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",

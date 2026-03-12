@@ -719,7 +719,7 @@ function PreviewStep({
    const { data: categoriesResult } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
-   const categories = categoriesResult.data;
+   const categories = categoriesResult;
 
    const bankAccountOptions = bankAccounts.map((acc) => ({
       value: acc.id,
@@ -730,13 +730,6 @@ function PreviewStep({
       value: cat.id,
       label: cat.name,
    }));
-
-   const selectedCategory = categories.find(
-      (c) => c.id === defaults.categoryId,
-   );
-   const subcategoryOptions = (selectedCategory?.subcategories ?? []).map(
-      (sub) => ({ value: sub.id, label: sub.name }),
-   );
 
    const duplicateCount = rows.filter((r) => r.isDuplicate).length;
    const visibleRows = ignoreDuplicates

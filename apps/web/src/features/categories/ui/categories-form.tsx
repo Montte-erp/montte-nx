@@ -155,19 +155,8 @@ export function CategoryForm({
 }: CategoryFormProps) {
    const isCreate = mode === "create";
    const [accountType, setAccountType] = useState<AccountType>(
-      initialAccountType ??
-         (category?.categoryId ? "subconta" : "totalizadora"),
+      initialAccountType ?? "totalizadora",
    );
-
-   const isSubconta = accountType === "subconta";
-
-   // Fetch parent categories for subconta selector
-   const { data: categoriesResult } = useSuspenseQuery(
-      orpc.categories.getAll.queryOptions({
-         input: { pageSize: 100 },
-      }),
-   );
-   const parentCategories = categoriesResult.data;
 
    const createCategoryMutation = useMutation(
       orpc.categories.create.mutationOptions({
@@ -193,84 +182,34 @@ export function CategoryForm({
       }),
    );
 
-   const createSubcategoryMutation = useMutation(
-      orpc.subcategories.create.mutationOptions({
-         onSuccess: () => {
-            toast.success("Subconta criada com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao criar subconta.");
-         },
-      }),
-   );
-
-   const updateSubcategoryMutation = useMutation(
-      orpc.subcategories.update.mutationOptions({
-         onSuccess: () => {
-            toast.success("Subconta atualizada com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao atualizar subconta.");
-         },
-      }),
-   );
-
    const form = useForm({
       defaultValues: {
-         categoryId: category?.categoryId ?? "",
          color: category?.color ?? "#6366f1",
          icon: category?.icon ?? "",
-         isReturn: category?.isReturn ?? false,
          keywords: (category?.keywords ?? []) as string[],
          name: category?.name ?? "",
          notes: category?.notes ?? "",
          type: (category?.type ?? "expense") as "income" | "expense",
       },
       onSubmit: async ({ value }) => {
-         if (isSubconta) {
-            const subPayload = {
-               categoryId: value.categoryId,
-               name: value.name.trim(),
-               keywords: value.keywords.length > 0 ? value.keywords : null,
-               isReturn: value.isReturn,
-               notes: value.notes || null,
-            };
-            if (isCreate) {
-               createSubcategoryMutation.mutate(subPayload);
-            } else if (category) {
-               updateSubcategoryMutation.mutate({
-                  id: category.id,
-                  name: subPayload.name,
-                  keywords: subPayload.keywords,
-                  isReturn: subPayload.isReturn,
-                  notes: subPayload.notes,
-               });
-            }
-         } else {
-            const payload = {
-               color: value.color || null,
-               icon: value.icon || null,
-               keywords: value.keywords.length > 0 ? value.keywords : null,
-               name: value.name.trim(),
-               notes: value.notes || null,
-               type: value.type,
-            };
-            if (isCreate) {
-               createCategoryMutation.mutate(payload);
-            } else if (category) {
-               updateCategoryMutation.mutate({ id: category.id, ...payload });
-            }
+         const payload = {
+            color: value.color || null,
+            icon: value.icon || null,
+            keywords: value.keywords.length > 0 ? value.keywords : null,
+            name: value.name.trim(),
+            notes: value.notes || null,
+            type: value.type,
+         };
+         if (isCreate) {
+            createCategoryMutation.mutate(payload);
+         } else if (category) {
+            updateCategoryMutation.mutate({ id: category.id, ...payload });
          }
       },
    });
 
    const isPending =
-      createCategoryMutation.isPending ||
-      updateCategoryMutation.isPending ||
-      createSubcategoryMutation.isPending ||
-      updateSubcategoryMutation.isPending;
+      createCategoryMutation.isPending || updateCategoryMutation.isPending;
 
    return (
       <form
@@ -311,24 +250,167 @@ export function CategoryForm({
                   </Select>
                </Field>
 
-               {isSubconta ? (
-                  <div className="grid grid-cols-2 gap-4">
-                     <form.Field name="name">
+               <form.Field name="name">
+                  {(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid;
+                     return (
+                        <Field data-invalid={isInvalid}>
+                           <FieldLabel>Nome *</FieldLabel>
+                           <Input
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                              placeholder="Ex: Alimentação, Transporte"
+                              value={field.state.value}
+                           />
+                           {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                           )}
+                        </Field>
+                     );
+                  }}
+               </form.Field>
+
+               <>
+                  <form.Field name="type">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel>Tipo</FieldLabel>
+                           <Select
+                              onValueChange={(v) =>
+                                 field.handleChange(v as "income" | "expense")
+                              }
+                              value={field.state.value}
+                           >
+                              <SelectTrigger>
+                                 <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 <SelectItem value="expense">
+                                    Despesa
+                                 </SelectItem>
+                                 <SelectItem value="income">Receita</SelectItem>
+                              </SelectContent>
+                           </Select>
+                        </Field>
+                     )}
+                  </form.Field>
+
+                  <div className="grid grid-cols-[1fr_auto] gap-4">
+                     <form.Field name="icon">
+                        {(field) => (
+                           <Field>
+                              <FieldLabel>Ícone</FieldLabel>
+                              <Combobox
+                                 className="w-full"
+                                 emptyMessage="Ícone não encontrado."
+                                 onValueChange={(v) =>
+                                    field.handleChange(v || "")
+                                 }
+                                 options={ICON_OPTIONS}
+                                 placeholder="Selecionar ícone..."
+                                 renderOption={(opt) => (
+                                    <IconOption
+                                       label={opt.label}
+                                       value={opt.value}
+                                    />
+                                 )}
+                                 renderSelected={(opt) => (
+                                    <IconOption
+                                       label={opt.label}
+                                       value={opt.value}
+                                    />
+                                 )}
+                                 searchPlaceholder="Buscar ícone..."
+                                 value={field.state.value}
+                              />
+                           </Field>
+                        )}
+                     </form.Field>
+
+                     <form.Field name="color">
                         {(field) => {
                            const isInvalid =
                               field.state.meta.isTouched &&
                               !field.state.meta.isValid;
                            return (
                               <Field data-invalid={isInvalid}>
-                                 <FieldLabel>Nome *</FieldLabel>
-                                 <Input
-                                    onBlur={field.handleBlur}
-                                    onChange={(e) =>
-                                       field.handleChange(e.target.value)
-                                    }
-                                    placeholder="Ex: Aluguel, Energia"
-                                    value={field.state.value}
-                                 />
+                                 <FieldLabel>Cor</FieldLabel>
+                                 <Popover>
+                                    <PopoverTrigger asChild>
+                                       <Button
+                                          aria-invalid={isInvalid || undefined}
+                                          className="w-full flex gap-2 justify-start"
+                                          type="button"
+                                          variant="outline"
+                                       >
+                                          <div
+                                             className="w-4 h-4 rounded border border-border shrink-0"
+                                             style={{
+                                                backgroundColor:
+                                                   field.state.value,
+                                             }}
+                                          />
+                                          {field.state.value}
+                                       </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                       align="start"
+                                       className="w-64 rounded-md border bg-background"
+                                    >
+                                       <div className="flex flex-col gap-4">
+                                          <div className="grid grid-cols-8 gap-1">
+                                             {PRESET_COLORS.map((color) => (
+                                                <button
+                                                   className="w-6 h-6 rounded-full border border-border transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                   key={color}
+                                                   onClick={() =>
+                                                      field.handleChange(color)
+                                                   }
+                                                   style={{
+                                                      backgroundColor: color,
+                                                   }}
+                                                   type="button"
+                                                />
+                                             ))}
+                                          </div>
+                                          <ColorPicker
+                                             className="flex flex-col gap-4"
+                                             onChange={(rgba) => {
+                                                if (Array.isArray(rgba)) {
+                                                   field.handleChange(
+                                                      Color.rgb(
+                                                         rgba[0],
+                                                         rgba[1],
+                                                         rgba[2],
+                                                      ).hex(),
+                                                   );
+                                                }
+                                             }}
+                                             value={
+                                                field.state.value || "#000000"
+                                             }
+                                          >
+                                             <div className="h-24">
+                                                <ColorPickerSelection />
+                                             </div>
+                                             <div className="flex items-center gap-4">
+                                                <ColorPickerEyeDropper />
+                                                <div className="grid w-full gap-1">
+                                                   <ColorPickerHue />
+                                                   <ColorPickerAlpha />
+                                                </div>
+                                             </div>
+                                             <div className="flex items-center gap-2">
+                                                <ColorPickerOutput />
+                                                <ColorPickerFormat />
+                                             </div>
+                                          </ColorPicker>
+                                       </div>
+                                    </PopoverContent>
+                                 </Popover>
                                  {isInvalid && (
                                     <FieldError
                                        errors={field.state.meta.errors}
@@ -338,240 +420,8 @@ export function CategoryForm({
                            );
                         }}
                      </form.Field>
-
-                     <form.Field name="categoryId">
-                        {(field) => (
-                           <Field>
-                              <FieldLabel>Totalizadora *</FieldLabel>
-                              <Select
-                                 onValueChange={(v) => field.handleChange(v)}
-                                 value={field.state.value}
-                              >
-                                 <SelectTrigger>
-                                    <SelectValue placeholder="Selecione..." />
-                                 </SelectTrigger>
-                                 <SelectContent>
-                                    {parentCategories.map((cat) => (
-                                       <SelectItem key={cat.id} value={cat.id}>
-                                          {cat.name}
-                                       </SelectItem>
-                                    ))}
-                                 </SelectContent>
-                              </Select>
-                           </Field>
-                        )}
-                     </form.Field>
                   </div>
-               ) : (
-                  <form.Field name="name">
-                     {(field) => {
-                        const isInvalid =
-                           field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
-                        return (
-                           <Field data-invalid={isInvalid}>
-                              <FieldLabel>Nome *</FieldLabel>
-                              <Input
-                                 onBlur={field.handleBlur}
-                                 onChange={(e) =>
-                                    field.handleChange(e.target.value)
-                                 }
-                                 placeholder="Ex: Alimentação, Transporte"
-                                 value={field.state.value}
-                              />
-                              {isInvalid && (
-                                 <FieldError errors={field.state.meta.errors} />
-                              )}
-                           </Field>
-                        );
-                     }}
-                  </form.Field>
-               )}
-
-               {isSubconta && (
-                  <form.Field name="isReturn">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>Devolução *</FieldLabel>
-                           <Select
-                              onValueChange={(v) =>
-                                 field.handleChange(v === "true")
-                              }
-                              value={field.state.value ? "true" : "false"}
-                           >
-                              <SelectTrigger>
-                                 <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                 <SelectItem value="false">Não</SelectItem>
-                                 <SelectItem value="true">Sim</SelectItem>
-                              </SelectContent>
-                           </Select>
-                        </Field>
-                     )}
-                  </form.Field>
-               )}
-
-               {!isSubconta && (
-                  <>
-                     <form.Field name="type">
-                        {(field) => (
-                           <Field>
-                              <FieldLabel>Tipo</FieldLabel>
-                              <Select
-                                 onValueChange={(v) =>
-                                    field.handleChange(
-                                       v as "income" | "expense",
-                                    )
-                                 }
-                                 value={field.state.value}
-                              >
-                                 <SelectTrigger>
-                                    <SelectValue />
-                                 </SelectTrigger>
-                                 <SelectContent>
-                                    <SelectItem value="expense">
-                                       Despesa
-                                    </SelectItem>
-                                    <SelectItem value="income">
-                                       Receita
-                                    </SelectItem>
-                                 </SelectContent>
-                              </Select>
-                           </Field>
-                        )}
-                     </form.Field>
-
-                     <div className="grid grid-cols-[1fr_auto] gap-4">
-                        <form.Field name="icon">
-                           {(field) => (
-                              <Field>
-                                 <FieldLabel>Ícone</FieldLabel>
-                                 <Combobox
-                                    className="w-full"
-                                    emptyMessage="Ícone não encontrado."
-                                    onValueChange={(v) =>
-                                       field.handleChange(v || "")
-                                    }
-                                    options={ICON_OPTIONS}
-                                    placeholder="Selecionar ícone..."
-                                    renderOption={(opt) => (
-                                       <IconOption
-                                          label={opt.label}
-                                          value={opt.value}
-                                       />
-                                    )}
-                                    renderSelected={(opt) => (
-                                       <IconOption
-                                          label={opt.label}
-                                          value={opt.value}
-                                       />
-                                    )}
-                                    searchPlaceholder="Buscar ícone..."
-                                    value={field.state.value}
-                                 />
-                              </Field>
-                           )}
-                        </form.Field>
-
-                        <form.Field name="color">
-                           {(field) => {
-                              const isInvalid =
-                                 field.state.meta.isTouched &&
-                                 !field.state.meta.isValid;
-                              return (
-                                 <Field data-invalid={isInvalid}>
-                                    <FieldLabel>Cor</FieldLabel>
-                                    <Popover>
-                                       <PopoverTrigger asChild>
-                                          <Button
-                                             aria-invalid={
-                                                isInvalid || undefined
-                                             }
-                                             className="w-full flex gap-2 justify-start"
-                                             type="button"
-                                             variant="outline"
-                                          >
-                                             <div
-                                                className="w-4 h-4 rounded border border-border shrink-0"
-                                                style={{
-                                                   backgroundColor:
-                                                      field.state.value,
-                                                }}
-                                             />
-                                             {field.state.value}
-                                          </Button>
-                                       </PopoverTrigger>
-                                       <PopoverContent
-                                          align="start"
-                                          className="w-64 rounded-md border bg-background"
-                                       >
-                                          <div className="flex flex-col gap-4">
-                                             <div className="grid grid-cols-8 gap-1">
-                                                {PRESET_COLORS.map((color) => (
-                                                   <button
-                                                      className="w-6 h-6 rounded-full border border-border transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                                      key={color}
-                                                      onClick={() =>
-                                                         field.handleChange(
-                                                            color,
-                                                         )
-                                                      }
-                                                      style={{
-                                                         backgroundColor: color,
-                                                      }}
-                                                      type="button"
-                                                   />
-                                                ))}
-                                             </div>
-                                             <ColorPicker
-                                                className="flex flex-col gap-4"
-                                                onChange={(rgba) => {
-                                                   if (Array.isArray(rgba)) {
-                                                      field.handleChange(
-                                                         Color.rgb(
-                                                            rgba[0],
-                                                            rgba[1],
-                                                            rgba[2],
-                                                         ).hex(),
-                                                      );
-                                                   }
-                                                }}
-                                                value={
-                                                   field.state.value ||
-                                                   "#000000"
-                                                }
-                                             >
-                                                <div className="h-24">
-                                                   <ColorPickerSelection />
-                                                </div>
-                                                <div className="flex items-center gap-4">
-                                                   <ColorPickerEyeDropper />
-                                                   <div className="grid w-full gap-1">
-                                                      <ColorPickerHue />
-                                                      <ColorPickerAlpha />
-                                                   </div>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                   <ColorPickerOutput />
-                                                   <ColorPickerFormat />
-                                                </div>
-                                             </ColorPicker>
-                                          </div>
-                                       </PopoverContent>
-                                    </Popover>
-                                    {isInvalid && (
-                                       <FieldError
-                                          errors={field.state.meta.errors}
-                                       />
-                                    )}
-                                 </Field>
-                              );
-                           }}
-                        </form.Field>
-                     </div>
-                  </>
-               )}
+               </>
 
                <form.Field name="notes">
                   {(field) => (

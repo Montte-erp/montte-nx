@@ -1,14 +1,12 @@
 import type { BankAccount } from "@core/database/schemas/bank-accounts";
 import type { Dashboard } from "@core/database/schemas/dashboards";
 import type { Insight } from "@core/database/schemas/insights";
-import type { PersonalApiKey } from "@core/database/schemas/personal-api-key";
 import type { WebhookEndpoint } from "@core/database/schemas/webhooks";
 import { TEST_ORG_ID, TEST_TEAM_ID, TEST_USER_ID } from "./create-test-context";
 
 export const ENDPOINT_ID = "a0a0a0a0-b1b1-4c2c-9d3d-e4e4e4e4e4e4";
 export const DASHBOARD_ID = "d0d0d0d0-e1e1-4f2f-a3a3-b4b4b4b4b4b4";
 export const INSIGHT_ID = "a0a0a0a0-b1b1-4c2c-a3a3-d4d4d4d4d4d4";
-export const KEY_ID = "a0a0a0a0-b1b1-4c2c-9d3d-e4e4e4e4e4e4";
 export const BANK_ACCOUNT_ID = "ba000000-0000-4000-a000-000000000001";
 
 export function makeWebhookEndpoint(
@@ -66,24 +64,6 @@ export function makeInsight(overrides: Partial<Insight> = {}): Insight {
       lastComputedAt: null,
       createdAt: new Date("2026-01-01"),
       updatedAt: new Date("2026-01-01"),
-      ...overrides,
-   };
-}
-
-export function makePersonalApiKey(
-   overrides: Partial<PersonalApiKey> = {},
-): PersonalApiKey {
-   return {
-      id: KEY_ID,
-      userId: TEST_USER_ID,
-      label: "My API Key",
-      keyHash: "hashed_key_value",
-      keyPrefix: "AbCdEfGh",
-      scopes: { content: "write", agent: "read" },
-      organizationAccess: "all",
-      lastUsedAt: null,
-      createdAt: new Date("2026-01-15"),
-      expiresAt: null,
       ...overrides,
    };
 }

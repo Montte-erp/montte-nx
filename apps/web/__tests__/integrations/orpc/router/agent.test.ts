@@ -7,11 +7,6 @@ import {
    createTestContext,
 } from "../../../helpers/create-test-context";
 
-// ---------------------------------------------------------------------------
-// Mocks — must be declared before any import that touches the modules
-// ---------------------------------------------------------------------------
-
-// Factory mock for @packages/agents to prevent environment validation
 vi.mock("@packages/agents", () => ({
    mastra: {
       getAgent: vi.fn(),
@@ -20,9 +15,7 @@ vi.mock("@packages/agents", () => ({
 }));
 
 vi.mock("@packages/agents/models", () => ({
-   AUTOCOMPLETE_MODELS: {},
-   CONTENT_MODELS: {},
-   DEFAULT_AUTOCOMPLETE_MODEL_ID: "test-autocomplete-model",
+   AVAILABLE_MODELS: {},
    DEFAULT_CONTENT_MODEL_ID: "test-content-model",
    getModelPreset: vi.fn().mockReturnValue({
       temperature: 0.7,
@@ -34,26 +27,10 @@ vi.mock("@packages/agents/models", () => ({
 }));
 
 vi.mock("@packages/events/ai");
-vi.mock("@core/database/repositories/product-settings-repository");
-
 import { mastra } from "@packages/agents";
 import { emitAiChatMessage } from "@packages/events/ai";
 
 import * as agentRouter from "@/integrations/orpc/router/agent";
-
-// ---------------------------------------------------------------------------
-// Mock Helpers
-// ---------------------------------------------------------------------------
-
-function createMockTextStream(chunks: string[]) {
-   return {
-      textStream: (async function* () {
-         for (const chunk of chunks) {
-            yield chunk;
-         }
-      })(),
-   };
-}
 
 function createMockFullStream(
    events: Array<{ type: string; textDelta?: string }>,
@@ -73,24 +50,11 @@ function setupAgentMock(streamResult: unknown) {
    } as unknown as ReturnType<typeof mastra.getAgent>);
 }
 
-// ---------------------------------------------------------------------------
-// Setup
-// ---------------------------------------------------------------------------
-
 beforeEach(() => {
    vi.clearAllMocks();
    vi.mocked(emitAiChatMessage).mockResolvedValue(undefined);
 });
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Collects all chunks from an async iterable.
- * For generator-based oRPC procedures, `call()` returns an async iterable
- * that only begins execution when you start iterating.
- */
 async function collectChunks<T>(iterable: AsyncIterable<T>): Promise<T[]> {
    const chunks: T[] = [];
    for await (const chunk of iterable) {
@@ -98,72 +62,6 @@ async function collectChunks<T>(iterable: AsyncIterable<T>): Promise<T[]> {
    }
    return chunks;
 }
-
-// =============================================================================
-// fimStream
-// =============================================================================
-
-describe("copilotStream", () => {
-   const input = { prefix: "Hello " };
-
-   it("yields text chunks from agent stream", async () => {
-      setupAgentMock(createMockTextStream(["world", "!"]));
-
-      const ctx = createTestContext();
-      const iterable = await call(agentRouter.copilotStream, input, {
-         context: ctx,
-      });
-      const chunks = await collectChunks(iterable);
-
-      const textChunks = chunks.filter((c: Record<string, unknown>) => !c.done);
-      expect(textChunks).toHaveLength(2);
-      expect(textChunks[0]).toMatchObject({ text: "world", done: false });
-      expect(textChunks[1]).toMatchObject({ text: "!", done: false });
-   });
-
-   it("yields final done chunk with metadata", async () => {
-      setupAgentMock(createMockTextStream(["world"]));
-
-      const ctx = createTestContext();
-      const iterable = await call(agentRouter.copilotStream, input, {
-         context: ctx,
-      });
-      const chunks = await collectChunks(iterable);
-
-      const lastChunk = chunks.at(-1) as Record<string, unknown>;
-      expect(lastChunk.done).toBe(true);
-      expect(lastChunk.metadata).toBeDefined();
-      expect((lastChunk.metadata as any).stopReason).toBe("natural");
-      expect((lastChunk.metadata as any).latencyMs).toBeTypeOf("number");
-   });
-
-   it("emits ai.chat_message event after streaming", async () => {
-      setupAgentMock(createMockTextStream(["world"]));
-
-      const ctx = createTestContext();
-      const iterable = await call(agentRouter.copilotStream, input, {
-         context: ctx,
-      });
-      await collectChunks(iterable);
-
-      expect(emitAiChatMessage).toHaveBeenCalledWith(
-         expect.any(Function),
-         expect.objectContaining({
-            organizationId: TEST_ORG_ID,
-            userId: TEST_USER_ID,
-            teamId: TEST_TEAM_ID,
-         }),
-         expect.objectContaining({
-            provider: "openrouter",
-            role: "assistant",
-         }),
-      );
-   });
-});
-
-// =============================================================================
-// aiCommandStream
-// =============================================================================
 
 describe("aiCommandStream", () => {
    it("yields text chunks from fullStream", async () => {
@@ -189,7 +87,6 @@ describe("aiCommandStream", () => {
       expect(textChunks[0]).toMatchObject({ type: "text", text: "Hi" });
       expect(textChunks[1]).toMatchObject({ type: "text", text: " there" });
 
-      // Last chunk should be done
       const lastChunk = chunks.at(-1) as Record<string, unknown>;
       expect(lastChunk.type).toBe("done");
    });

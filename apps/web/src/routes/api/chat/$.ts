@@ -2,7 +2,6 @@ import type { RequestContext } from "@packages/agents";
 import {
    createRequestContext,
    handleChatStream,
-   handleWorkflowStream,
    mastra,
 } from "@packages/agents";
 import { emitAiChatMessage } from "@packages/events/ai";
@@ -13,7 +12,6 @@ import {
 } from "@core/arcjet/protect";
 import { getLogger } from "@core/logging/root";
 import { createFileRoute } from "@tanstack/react-router";
-import type { ModelMessage } from "ai";
 import { createUIMessageStreamResponse } from "ai";
 import { auth } from "@core/authentication/server";
 import { db } from "@core/database/client";
@@ -51,25 +49,13 @@ export const Route = createFileRoute("/api/chat/$")({
             const organizationId =
                session.session.activeOrganizationId ?? undefined;
             const body = await request.json();
-            const {
-               messages,
-               threadId,
-               mode = "platform",
-               contextId,
-               workflow,
-               model,
-               thinkingBudget,
-            } = body;
+            const { messages, threadId, model, thinkingBudget } = body;
             const resourceId = `${teamId}:${userId}`;
 
             function filterDataStreamParts() {
                return new TransformStream({
                   transform(chunk, controller) {
                      const type = (chunk as { type?: string }).type;
-                     // Block all data-* parts — @assistant-ui/react v0.12.x does not
-                     // register the `dataRenderers` scope, so any data part crashes
-                     // the client regardless of its specific type.
-                     // Log them so we can eventually build proper UI renderers.
                      if (typeof type === "string" && type.startsWith("data-")) {
                         logger.debug(
                            { type, chunk },
@@ -83,7 +69,7 @@ export const Route = createFileRoute("/api/chat/$")({
             }
 
             if (threadId) {
-               const memory = await mastra.getAgent("tecoAgent").getMemory();
+               const memory = await mastra.getAgent("rubiAgent").getMemory();
                if (!memory)
                   return new Response("Memory not configured", { status: 500 });
                const thread = await memory.getThreadById({
@@ -96,66 +82,9 @@ export const Route = createFileRoute("/api/chat/$")({
                }
             }
 
-            // ── Workflow path ──────────────────────────────────────────────────────────
-            if (workflow === "content-creation" && contextId) {
-               const lastUserMessage = [...messages]
-                  .reverse()
-                  .find((m: ModelMessage) => m.role === "user");
-               const topic =
-                  typeof lastUserMessage?.content === "string"
-                     ? lastUserMessage.content
-                     : "Untitled article";
-
-               const workflowStream = await handleWorkflowStream({
-                  mastra,
-                  workflowId: "content-creation",
-                  params: {
-                     inputData: { topic },
-                     requestContext: createRequestContext({
-                        userId,
-                        teamId: teamId ?? undefined,
-                        organizationId,
-                        db,
-                        mode,
-                     }) as RequestContext,
-                  },
-               });
-
-               const filteredWorkflowStream = workflowStream.pipeThrough(
-                  filterDataStreamParts(),
-               );
-
-               // Fire-and-forget: emit ai.chat_message event and track credit usage
-               if (organizationId) {
-                  const chatId = threadId ?? crypto.randomUUID();
-                  void emitAiChatMessage(
-                     createEmitFn(db),
-                     { organizationId, userId, teamId: teamId ?? undefined },
-                     {
-                        chatId,
-                        model:
-                           typeof model === "string"
-                              ? model
-                              : "openrouter/default",
-                        provider: "openrouter",
-                        role: "assistant",
-                        promptTokens: 0,
-                        completionTokens: 0,
-                        totalTokens: 0,
-                        latencyMs: 0,
-                     },
-                  );
-               }
-
-               return createUIMessageStreamResponse({
-                  stream: filteredWorkflowStream,
-               });
-            }
-            // ── End workflow path ───────────────────────────────────────────────────────
-
             const stream = await handleChatStream({
                mastra,
-               agentId: "tecoAgent",
+               agentId: "rubiAgent",
                params: {
                   messages,
                   memory: { resource: resourceId, thread: threadId },
@@ -164,20 +93,14 @@ export const Route = createFileRoute("/api/chat/$")({
                      teamId: teamId ?? undefined,
                      organizationId,
                      db,
-                     mode,
                      ...(model ? { model } : {}),
                      ...(thinkingBudget ? { thinkingBudget } : {}),
                   }),
                },
             });
 
-            // Filter out Mastra-internal data-* stream parts (e.g. data-tripwire,
-            // data-tool-call-approval). @assistant-ui/react v0.12.x initialises the
-            // `tools` scope in RuntimeAdapter but NOT `dataRenderers`, so any data
-            // message part causes a "scope does not have dataRenderers" crash.
             const filteredStream = stream.pipeThrough(filterDataStreamParts());
 
-            // Fire-and-forget: emit ai.chat_message event and track credit usage
             if (organizationId) {
                const chatId = threadId ?? crypto.randomUUID();
                void emitAiChatMessage(

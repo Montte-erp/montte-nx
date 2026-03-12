@@ -27,7 +27,7 @@ async function main(): Promise<void> {
    const queueConnection = createQueueConnection(env.REDIS_URL);
 
    // 4. Start BullMQ workers
-   const webhookWorker = startWebhookDeliveryWorker(queueConnection, db);
+   const webhookWorker = startWebhookDeliveryWorker(queueConnection);
 
    // 5. Start scheduled jobs
    const scheduledTasks = startScheduler(db, redis);

@@ -1,53 +1,24 @@
-import { ORPCError } from "@orpc/server";
 import {
    archiveCategory,
-   categoryTreeHasTransactions,
    createCategory,
    deleteCategory,
-   getCategory,
+   ensureCategoryOwnership,
    listCategories,
    updateCategory,
 } from "@core/database/repositories/categories-repository";
-import { createSubcategory } from "@core/database/repositories/subcategories-repository";
-import { categories } from "@core/database/schemas/categories";
-import { createInsertSchema } from "drizzle-orm/zod";
+import {
+   createCategorySchema,
+   updateCategorySchema,
+} from "@core/database/schemas/categories";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
-// =============================================================================
-// Validation Schemas
-// =============================================================================
-
-const categorySchema = createInsertSchema(categories)
-   .pick({ name: true })
-   .extend({
-      color: z
-         .string()
-         .regex(/^#[0-9a-fA-F]{6}$/)
-         .nullable()
-         .optional(),
-      icon: z.string().max(50).nullable().optional(),
-      keywords: z.array(z.string()).nullable().optional(),
-      notes: z.string().nullable().optional(),
-      type: z.enum(["income", "expense"]).nullable().optional(),
-   });
-
-// =============================================================================
-// Category Procedures
-// =============================================================================
+const idSchema = z.object({ id: z.string().uuid() });
 
 export const create = protectedProcedure
-   .input(categorySchema)
+   .input(createCategorySchema)
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
-      return createCategory(teamId, {
-         name: input.name,
-         color: input.color ?? null,
-         icon: input.icon ?? null,
-         keywords: input.keywords ?? null,
-         notes: input.notes ?? null,
-         type: input.type ?? null,
-      });
+      return createCategory(context.teamId, input);
    });
 
 const getAllInput = z
@@ -60,110 +31,50 @@ const getAllInput = z
 export const getAll = protectedProcedure
    .input(getAllInput)
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
-      return listCategories(teamId, {
+      return listCategories(context.teamId, {
          type: input?.type,
          includeArchived: input?.includeArchived,
       });
    });
 
 export const update = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }).merge(categorySchema))
+   .input(idSchema.merge(updateCategorySchema))
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
-      const category = await getCategory(input.id);
-      if (!category || category.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Categoria não encontrada.",
-         });
-      }
-      return updateCategory(input.id, {
-         name: input.name,
-         color: input.color ?? null,
-         icon: input.icon ?? null,
-         keywords: input.keywords ?? null,
-         notes: input.notes ?? null,
-         type: input.type ?? null,
-      });
+      await ensureCategoryOwnership(input.id, context.teamId);
+      const { id, ...data } = input;
+      return updateCategory(id, data);
    });
 
 export const remove = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idSchema)
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
-      const category = await getCategory(input.id);
-      if (!category || category.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Categoria não encontrada.",
-         });
-      }
-      const hasTransactions = await categoryTreeHasTransactions(input.id);
-      if (hasTransactions) {
-         throw new ORPCError("BAD_REQUEST", {
-            message: "Não é possível excluir uma categoria com transações.",
-         });
-      }
+      await ensureCategoryOwnership(input.id, context.teamId);
       await deleteCategory(input.id);
       return { success: true };
    });
 
 export const exportAll = protectedProcedure.handler(async ({ context }) => {
-   const { teamId } = context;
-   return listCategories(teamId, { includeArchived: true });
+   return listCategories(context.teamId, { includeArchived: true });
 });
 
 export const importBatch = protectedProcedure
    .input(
       z.object({
-         categories: z.array(
-            categorySchema.extend({
-               subcategories: z
-                  .array(
-                     z.object({
-                        name: z.string(),
-                        keywords: z.array(z.string()).nullable().optional(),
-                     }),
-                  )
-                  .optional(),
-            }),
-         ),
+         categories: z.array(createCategorySchema),
       }),
    )
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
       const results = [];
       for (const cat of input.categories) {
-         const created = await createCategory(teamId, {
-            name: cat.name,
-            color: cat.color ?? null,
-            icon: cat.icon ?? null,
-            keywords: cat.keywords ?? null,
-            type: cat.type ?? null,
-         });
-         if (cat.subcategories) {
-            for (const sub of cat.subcategories) {
-               await createSubcategory(db, {
-                  teamId,
-                  categoryId: created.id,
-                  name: sub.name,
-                  keywords: sub.keywords ?? null,
-               });
-            }
-         }
+         const created = await createCategory(context.teamId, cat);
          results.push(created);
       }
       return results;
    });
 
 export const archive = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idSchema)
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
-      const category = await getCategory(input.id);
-      if (!category || category.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Categoria não encontrada.",
-         });
-      }
+      await ensureCategoryOwnership(input.id, context.teamId);
       return archiveCategory(input.id);
    });

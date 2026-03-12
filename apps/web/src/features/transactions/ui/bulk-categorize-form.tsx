@@ -26,7 +26,7 @@ export function BulkCategorizeForm({
    const { data: categoriesResult } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
-   const categories = categoriesResult.data;
+   const categories = categoriesResult;
 
    return (
       <>

@@ -1,97 +1,47 @@
-import { ORPCError } from "@orpc/server";
 import {
    createCreditCard,
    deleteCreditCard,
-   getCreditCard,
+   ensureCreditCardOwnership,
    listCreditCards,
    updateCreditCard,
 } from "@core/database/repositories/credit-cards-repository";
-import { creditCards } from "@core/database/schemas/credit-cards";
-import { createInsertSchema } from "drizzle-orm/zod";
+import {
+   createCreditCardSchema,
+   updateCreditCardSchema,
+} from "@core/database/schemas/credit-cards";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
-const creditCardSchema = createInsertSchema(creditCards)
-   .pick({
-      name: true,
-      color: true,
-      iconUrl: true,
-      creditLimit: true,
-      closingDay: true,
-      dueDay: true,
-      bankAccountId: true,
-   })
-   .extend({
-      color: z
-         .string()
-         .refine((v) => /^#[0-9a-fA-F]{6}$/.test(v), {
-            message: "Cor inválida. Use formato hex (#RRGGBB).",
-         })
-         .optional(),
-      creditLimit: z
-         .string()
-         .refine((v) => !Number.isNaN(Number(v)) && Number(v) >= 0, {
-            message: "Limite de crédito inválido.",
-         })
-         .optional(),
-      closingDay: z
-         .number()
-         .int()
-         .min(1, "Dia inválido.")
-         .max(31, "Dia inválido."),
-      dueDay: z.number().int().min(1, "Dia inválido.").max(31, "Dia inválido."),
-      bankAccountId: z.string().uuid().nullable().optional(),
-   });
+const idSchema = z.object({ id: z.string().uuid() });
 
 export const create = protectedProcedure
-   .input(creditCardSchema)
+   .input(createCreditCardSchema)
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      return createCreditCard(db, { ...input, teamId });
+      return createCreditCard(context.teamId, input);
    });
 
 export const getAll = protectedProcedure.handler(async ({ context }) => {
-   const { db, teamId } = context;
-   return listCreditCards(db, teamId);
+   return listCreditCards(context.teamId);
 });
 
 export const getById = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idSchema)
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      const card = await getCreditCard(db, input.id);
-      if (!card || card.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Cartão de crédito não encontrado.",
-         });
-      }
-      return card;
+      return ensureCreditCardOwnership(input.id, context.teamId);
    });
 
 export const update = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }).merge(creditCardSchema.partial()))
+   .input(idSchema.merge(updateCreditCardSchema))
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      const card = await getCreditCard(db, input.id);
-      if (!card || card.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Cartão de crédito não encontrado.",
-         });
-      }
+      await ensureCreditCardOwnership(input.id, context.teamId);
       const { id, ...data } = input;
-      return updateCreditCard(db, id, data);
+      return updateCreditCard(id, data);
    });
 
 export const remove = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idSchema)
    .handler(async ({ context, input }) => {
-      const { db, teamId } = context;
-      const card = await getCreditCard(db, input.id);
-      if (!card || card.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Cartão de crédito não encontrado.",
-         });
-      }
-      await deleteCreditCard(db, input.id);
+      await ensureCreditCardOwnership(input.id, context.teamId);
+      await deleteCreditCard(input.id);
       return { success: true };
    });

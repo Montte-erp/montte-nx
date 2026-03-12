@@ -25,7 +25,29 @@ export async function protectWithRateLimit(
       }),
    );
 
-   return client.protect(request, data);
+   const url = new URL(request.url);
+   const body = await request.clone().text();
+   const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      request.headers.get("x-real-ip") ??
+      "0.0.0.0";
+
+   return client.protect(
+      {
+         getBody: async () => body,
+      },
+      {
+         ...data,
+         ip,
+         method: request.method,
+         protocol: url.protocol.replace(":", ""),
+         host: url.host,
+         path: url.pathname,
+         headers: Object.fromEntries(request.headers.entries()),
+         cookies: request.headers.get("cookie") ?? "",
+         query: url.search,
+      },
+   );
 }
 
 export function isArcjetRateLimitDecision(decision: unknown): boolean {

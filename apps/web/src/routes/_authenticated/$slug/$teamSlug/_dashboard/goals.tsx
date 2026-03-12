@@ -72,7 +72,7 @@ const GOAL_VIEWS = [
 
 function GoalsSummary({ goals }: { goals: BudgetGoalWithProgress[] }) {
    const totalLimit = goals.reduce((sum, g) => sum + Number(g.limitAmount), 0);
-   const totalSpent = goals.reduce((sum, g) => sum + g.spentAmount, 0);
+   const totalSpent = goals.reduce((sum, g) => sum + Number(g.spentAmount), 0);
    const totalRemaining = totalLimit - totalSpent;
    const atAlertCount = goals.filter(
       (g) => g.alertThreshold != null && g.percentUsed >= g.alertThreshold,

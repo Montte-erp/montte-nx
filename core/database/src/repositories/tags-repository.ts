@@ -128,6 +128,14 @@ export async function deleteTag(id: string) {
    }
 }
 
+export async function ensureTagOwnership(id: string, teamId: string) {
+   const tag = await getTag(id);
+   if (!tag || tag.teamId !== teamId) {
+      throw AppError.notFound("Tag não encontrada.");
+   }
+   return tag;
+}
+
 export async function tagHasTransactions(tagId: string): Promise<boolean> {
    try {
       const [row] = await db

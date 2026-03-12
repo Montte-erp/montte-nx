@@ -120,6 +120,14 @@ export async function listCategories(
    }
 }
 
+export async function ensureCategoryOwnership(id: string, teamId: string) {
+   const category = await getCategory(id);
+   if (!category || category.teamId !== teamId) {
+      throw AppError.notFound("Categoria não encontrada.");
+   }
+   return category;
+}
+
 export async function getCategory(id: string) {
    try {
       const category = await db.query.categories.findFirst({

@@ -70,9 +70,7 @@ export function buildBudgetGoalColumns(): ColumnDef<BudgetGoalWithProgress>[] {
                (goal.categoryIcon ? ICON_MAP.get(goal.categoryIcon) : null) ??
                Target;
             const accentColor = goal.categoryColor ?? "#6366f1";
-            const displayName = goal.subcategoryName
-               ? `${goal.subcategoryName} (${goal.categoryName})`
-               : (goal.categoryName ?? "—");
+            const displayName = goal.categoryName ?? "—";
 
             return (
                <div className="flex items-center gap-2 min-w-0">
@@ -114,7 +112,7 @@ export function buildBudgetGoalColumns(): ColumnDef<BudgetGoalWithProgress>[] {
                         : ""
                   }`}
                >
-                  {formatBRL(goal.spentAmount)}
+                  {formatBRL(Number(goal.spentAmount))}
                </span>
             );
          },

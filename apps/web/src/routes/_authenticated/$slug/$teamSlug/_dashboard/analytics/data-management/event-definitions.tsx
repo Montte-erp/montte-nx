@@ -1,3 +1,4 @@
+import type { EventCatalogEntry } from "@core/database/schemas/event-catalog";
 import { Badge } from "@packages/ui/components/badge";
 import {
    Card,
@@ -104,9 +105,12 @@ function EventDefinitionsPage() {
    const [search, setSearch] = useState("");
    const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
 
-   const { data: events = [] } = useQuery(
-      orpc.eventCatalog.list.queryOptions(),
-   );
+   const { data: events = [] } = useQuery<EventCatalogEntry[]>({
+      // biome-ignore lint/suspicious/noExplicitAny: generated client is stale
+      ...((orpc.billing.getEventCatalogByCategory.queryOptions({
+         input: { category: "platform" },
+      }) as any) ?? {}),
+   });
 
    const categories = useMemo(
       () => [...new Set(events.map((e) => e.category))],

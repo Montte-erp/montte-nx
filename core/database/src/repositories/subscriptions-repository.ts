@@ -3,6 +3,7 @@ import { and, count, eq, gte, lte, sql } from "drizzle-orm";
 import { db } from "@core/database/client";
 import {
    type CreateSubscriptionInput,
+   type SubscriptionStatus,
    type UpdateSubscriptionInput,
    contactSubscriptions,
    createSubscriptionSchema,
@@ -63,12 +64,8 @@ export async function listSubscriptionsByTeam(teamId: string, status?: string) {
    try {
       const conditions = [eq(contactSubscriptions.teamId, teamId)];
       if (status) {
-         conditions.push(
-            eq(
-               contactSubscriptions.status,
-               status as "active" | "canceled" | "expired" | "paused",
-            ),
-         );
+         const normalizedStatus = status as SubscriptionStatus;
+         conditions.push(eq(contactSubscriptions.status, normalizedStatus));
       }
       return await db
          .select()

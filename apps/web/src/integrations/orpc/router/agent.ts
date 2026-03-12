@@ -5,15 +5,11 @@ import {
    type RequestContext,
 } from "@packages/agents";
 import {
-   AUTOCOMPLETE_MODELS,
-   type AutocompleteModelId,
-   CONTENT_MODELS,
-   type ContentModelId,
-   DEFAULT_AUTOCOMPLETE_MODEL_ID,
+   AVAILABLE_MODELS,
    DEFAULT_CONTENT_MODEL_ID,
+   type ModelId,
    getModelPreset,
 } from "@packages/agents/models";
-import { getProductSettings } from "@core/database/repositories/product-settings-repository";
 import { emitAiChatMessage } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
 import { getLogger } from "@core/logging/root";
@@ -21,18 +17,6 @@ import { z } from "zod";
 import { protectedProcedure } from "../server";
 
 const logger = getLogger().child({ module: "router:agent" });
-
-// ---------------------------------------------------------------------------
-// Streaming chunk types (previously in @/features/editor/schemas)
-// ---------------------------------------------------------------------------
-
-type FIMChunk =
-   | { text: string; done: false }
-   | {
-        text: string;
-        done: true;
-        metadata?: { stopReason: string; latencyMs: number };
-     };
 
 type ChatChunk =
    | { type: "text"; text: string }
@@ -51,149 +35,10 @@ type ChatChunk =
    | { type: "done" }
    | { type: "error"; error: string };
 
-// =============================================================================
-// Agent Streaming Procedures
-// =============================================================================
-//
-// NOTE: Product settings for language and model selection are now integrated.
-// RAG and search tool settings (ragEnabled, ragMaxResults, ragMinScore,
-// searchDepth, searchMaxResults, etc.) require tool-level changes to read
-// from requestContext. Currently, tools use hardcoded defaults defined in
-// their input schemas.
-//
-// TODO: Modify RAG tools (search-previous-content-tool, graph-search-tool) to:
-//   - Read ragEnabled, ragMaxResults, ragMinScore from requestContext
-//   - Use these as defaults when minScore/topK are not explicitly provided
-//
-// TODO: Modify search tools (web-search-tool, serp-analysis-tool, etc.) to:
-//   - Read searchDepth, searchMaxResults, includeSearchAnswer, searchTimeRange,
-//     preferredSearchProvider, requireAuthoritativeSources, minCredibility
-//   - Use these as defaults when parameters are not explicitly provided
-// =============================================================================
-
-/**
- * Copilot ghost text streaming completion
- * Lightweight completion for CopilotPlugin using fimAgent
- */
-export const copilotStream = protectedProcedure
-   .input(
-      z.object({
-         prefix: z.string(),
-         suffix: z.string().optional(),
-      }),
-   )
-   .handler(async function* ({ context, input }) {
-      const { userId, db, organizationId, posthog, teamId, headers } = context;
-
-      // Fetch product settings for AI configuration
-      const settings = await getProductSettings(db, teamId);
-      const aiDefaults = settings?.aiDefaults ?? {};
-
-      // Get the FIM agent from Mastra
-      const fimAgent = mastra.getAgent("fimAgent");
-
-      // Get autocomplete model and its preset
-      const autocompleteModelId = (aiDefaults.autocompleteModel ??
-         DEFAULT_AUTOCOMPLETE_MODEL_ID) as AutocompleteModelId;
-      const autocompletePreset = getModelPreset(
-         AUTOCOMPLETE_MODELS,
-         autocompleteModelId,
-         DEFAULT_AUTOCOMPLETE_MODEL_ID,
-      );
-
-      // Create request context for the agent with settings
-      const requestContext = createRequestContext({
-         userId,
-         language:
-            aiDefaults.defaultLanguage ??
-            getRequestLanguage(headers) ??
-            "pt-BR",
-         model: autocompleteModelId,
-         // Use user override if set, otherwise fall back to model preset
-         temperature:
-            aiDefaults.autocompleteTemperature ??
-            autocompletePreset.temperature,
-         topP: autocompletePreset.topP,
-         maxTokens: autocompletePreset.maxTokens,
-      } as CustomRequestContext);
-
-      // Build the copilot prompt
-      const prompt = buildCopilotPrompt(input.prefix, input.suffix);
-
-      const startTime = Date.now();
-
-      try {
-         // Stream the agent response
-         const result = await fimAgent.stream(
-            [{ role: "user", content: prompt }],
-            {
-               requestContext: requestContext as RequestContext<unknown>,
-            } as unknown as Parameters<typeof fimAgent.stream>[1],
-         );
-
-         // Yield chunks as FIMChunk format
-         let _fullText = "";
-         for await (const chunk of result.textStream) {
-            _fullText += chunk;
-            yield {
-               text: chunk,
-               done: false,
-            } satisfies FIMChunk;
-         }
-
-         const latencyMs = Date.now() - startTime;
-
-         // Emit ai.chat_message event (failure-tolerant)
-         try {
-            await emitAiChatMessage(
-               createEmitFn(db, posthog),
-               { organizationId, userId, teamId },
-               {
-                  chatId: crypto.randomUUID(),
-                  model: autocompleteModelId,
-                  provider: "openrouter",
-                  role: "assistant",
-                  promptTokens: 0,
-                  completionTokens: 0,
-                  totalTokens: 0,
-                  latencyMs,
-               },
-            );
-         } catch {
-            // Event tracking must not break the streaming flow
-         }
-
-         // Final chunk with metadata
-         yield {
-            text: "",
-            done: true,
-            metadata: {
-               stopReason: "natural",
-               latencyMs,
-            },
-         } satisfies FIMChunk;
-      } catch (error) {
-         logger.error({ err: error }, "FIM agent error");
-         yield {
-            text: "",
-            done: true,
-            metadata: {
-               stopReason: "error",
-               latencyMs: Date.now() - startTime,
-            },
-         } satisfies FIMChunk;
-      }
-   });
-
-/**
- * AI Command streaming
- * Executes AI commands using unifiedContent agent, yields ChatChunk events
- */
 export const aiCommandStream = protectedProcedure
    .input(
       z.object({
          prompt: z.string(),
-         writerId: z.string().optional(),
          model: z.string().optional(),
          language: z.string().optional(),
       }),
@@ -201,53 +46,37 @@ export const aiCommandStream = protectedProcedure
    .handler(async function* ({ context, input }) {
       const { userId, db, organizationId, posthog, teamId, headers } = context;
 
-      // Fetch product settings for AI configuration
-      const settings = await getProductSettings(db, teamId);
-      const aiDefaults = settings?.aiDefaults ?? {};
+      const agent = mastra.getAgent("rubiAgent");
 
-      // Get the unified content agent from Mastra
-      const unifiedAgent = mastra.getAgent("tecoAgent");
-
-      const contentModelId = (input.model ??
-         aiDefaults.contentModel ??
-         DEFAULT_CONTENT_MODEL_ID) as ContentModelId;
-      const contentPreset = getModelPreset(
-         CONTENT_MODELS,
-         contentModelId,
+      const modelId = (input.model ?? DEFAULT_CONTENT_MODEL_ID) as ModelId;
+      const preset = getModelPreset(
+         AVAILABLE_MODELS,
+         modelId,
          DEFAULT_CONTENT_MODEL_ID,
       );
 
-      // Create request context with settings, falling back to product defaults
       const requestContext = createRequestContext({
          userId,
-         writerId: input.writerId,
-         language:
-            input.language ??
-            aiDefaults.defaultLanguage ??
-            getRequestLanguage(headers) ??
-            "pt-BR",
-         model: contentModelId,
-         temperature:
-            aiDefaults.contentTemperature ?? contentPreset.temperature,
-         topP: contentPreset.topP,
-         maxTokens: aiDefaults.contentMaxTokens ?? contentPreset.maxTokens,
-         frequencyPenalty: contentPreset.frequencyPenalty,
-         presencePenalty: contentPreset.presencePenalty,
+         language: input.language ?? getRequestLanguage(headers) ?? "pt-BR",
+         model: modelId,
+         temperature: preset.temperature,
+         topP: preset.topP,
+         maxTokens: preset.maxTokens,
+         frequencyPenalty: preset.frequencyPenalty,
+         presencePenalty: preset.presencePenalty,
       } as CustomRequestContext);
 
       let stepIndex = 0;
       const startTime = Date.now();
 
       try {
-         // Stream the agent response
-         const result = await unifiedAgent.stream(
+         const result = await agent.stream(
             [{ role: "user", content: input.prompt }],
             {
                requestContext: requestContext as RequestContext<unknown>,
-            } as unknown as Parameters<typeof unifiedAgent.stream>[1],
+            } as unknown as Parameters<typeof agent.stream>[1],
          );
 
-         // Yield full stream events including tool calls
          for await (const event of result.fullStream) {
             const chunk = event as unknown as {
                type: string;
@@ -332,14 +161,13 @@ export const aiCommandStream = protectedProcedure
 
          const latencyMs = Date.now() - startTime;
 
-         // Emit ai.chat_message event (failure-tolerant)
          try {
             await emitAiChatMessage(
                createEmitFn(db, posthog),
                { organizationId, userId, teamId },
                {
                   chatId: crypto.randomUUID(),
-                  model: contentModelId,
+                  model: modelId,
                   provider: "openrouter",
                   role: "assistant",
                   promptTokens: 0,
@@ -348,16 +176,12 @@ export const aiCommandStream = protectedProcedure
                   latencyMs,
                },
             );
-         } catch {
-            // Event tracking must not break the streaming flow
-         }
+         } catch {}
 
-         // Final chunk
          yield {
             type: "done",
          } satisfies ChatChunk;
       } catch (error) {
-         // Yield error indication
          yield {
             type: "error",
             error: error instanceof Error ? error.message : "Unknown error",
@@ -365,26 +189,6 @@ export const aiCommandStream = protectedProcedure
       }
    });
 
-// =============================================================================
-// Helper Functions
-// =============================================================================
-
-/**
- * Build Copilot prompt from prefix and optional suffix
- */
-function buildCopilotPrompt(prefix: string, suffix?: string): string {
-   let prompt = `Complete the following text naturally and concisely:\n\n${prefix}`;
-
-   if (suffix) {
-      prompt += `\n\n[Text after cursor]:\n${suffix}`;
-   }
-
-   return prompt;
-}
-
-/**
- * Resolve language from request headers for agent context.
- */
 function getRequestLanguage(headers: Headers): string | undefined {
    const raw = headers.get("accept-language");
    if (!raw) return undefined;

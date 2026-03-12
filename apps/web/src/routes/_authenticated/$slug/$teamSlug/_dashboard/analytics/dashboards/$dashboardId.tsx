@@ -8,7 +8,6 @@ import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
-import { setChatMode } from "@/features/teco-chat/stores/chat-context-store";
 import { orpc } from "@/integrations/orpc/client";
 
 const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
@@ -28,7 +27,6 @@ export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/$dashboardId",
 )({
    loader: async ({ context, params }) => {
-      setChatMode("analytics");
       const dashboard = await context.queryClient.ensureQueryData(
          orpc.dashboards.getById.queryOptions({
             input: { id: params.dashboardId },

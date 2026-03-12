@@ -36,7 +36,6 @@
    },
    "dependencies": {
       "@better-auth/api-key": "catalog:auth",
-      "@better-auth/oauth-provider": "catalog:auth",
       "@better-auth/stripe": "catalog:auth",
       "@core/database": "workspace:*",
       "@core/environment": "workspace:*",

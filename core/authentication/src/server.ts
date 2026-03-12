@@ -1,5 +1,4 @@
 import { apiKey } from "@better-auth/api-key";
-import { oauthProvider } from "@better-auth/oauth-provider";
 import { stripe as stripePlugin } from "@better-auth/stripe";
 import { db } from "@core/database/client";
 import { findMemberByUserId } from "@core/database/repositories/auth-repository";
@@ -20,7 +19,6 @@ import { betterAuth } from "better-auth/minimal";
 import {
    admin,
    emailOTP,
-   jwt,
    lastLoginMethod,
    magicLink,
    organization,
@@ -426,37 +424,6 @@ export const auth = betterAuth({
                   "Failed to capture subscription_canceled event",
                );
             }
-         },
-      }),
-
-      // JWT + OAuth 2.1 Provider (enables MCP authentication)
-      jwt(),
-
-      oauthProvider({
-         loginPage: "/sign-in",
-         consentPage: "/oauth/consent",
-         enableMcp: true,
-         allowDynamicClientRegistration: true,
-         allowUnauthenticatedClientRegistration: true,
-         scopes: [
-            "openid",
-            "profile",
-            "email",
-            "offline_access",
-            "content:read",
-            "content:write",
-            "content:publish",
-            "writer:read",
-         ],
-         accessTokenExpiresIn: 3600, // 1 hour
-         refreshTokenExpiresIn: 2592000, // 30 days
-         postLogin: {
-            page: "/oauth/select-organization",
-            shouldRedirect: async () => false,
-            consentReferenceId: ({ session }) => {
-               const orgId = session?.activeOrganizationId;
-               return typeof orgId === "string" ? orgId : undefined;
-            },
          },
       }),
 

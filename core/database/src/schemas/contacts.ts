@@ -78,9 +78,7 @@ export const createContactSchema = baseContactSchema.extend({
       .string()
       .min(2, "Nome deve ter no mínimo 2 caracteres.")
       .max(120, "Nome deve ter no máximo 120 caracteres."),
-   type: z.enum(["cliente", "fornecedor", "ambos"], {
-      required_error: "Tipo de contato é obrigatório.",
-   }),
+   type: z.enum(["cliente", "fornecedor", "ambos"] as const),
    email: z.string().email("Email inválido.").nullable().optional(),
    phone: z
       .string()

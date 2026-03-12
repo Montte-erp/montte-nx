@@ -40,7 +40,7 @@ import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
 import { cn } from "@packages/ui/lib/utils";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import Color from "color";
 import {
    CheckIcon,

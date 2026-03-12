@@ -193,7 +193,7 @@ function CategoryValueSelectInner({
    const { data: categoriesResult } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
-   const categories = categoriesResult.data;
+   const categories = categoriesResult;
    const options = categories.map((c) => ({ value: c.id, label: c.name }));
    return (
       <Combobox

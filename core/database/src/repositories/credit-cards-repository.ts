@@ -87,6 +87,14 @@ export async function deleteCreditCard(id: string) {
    }
 }
 
+export async function ensureCreditCardOwnership(id: string, teamId: string) {
+   const card = await getCreditCard(id);
+   if (!card || card.teamId !== teamId) {
+      throw AppError.notFound("Cartão de crédito não encontrado.");
+   }
+   return card;
+}
+
 export async function creditCardHasOpenStatements(creditCardId: string) {
    try {
       const statement = await db.query.creditCardStatements.findFirst({

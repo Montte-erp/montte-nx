@@ -426,7 +426,9 @@ function AddonsSection({ hasPaymentMethod }: { hasPaymentMethod: boolean }) {
    const { data: activeAddons } = useSuspenseQuery(
       orpc.organization.getAddons.queryOptions({}),
    );
-   const activeAddonIds = new Set(activeAddons.map((a) => a.addonId));
+   const activeAddonIds = new Set(
+      activeAddons.map((a: ActiveAddon) => a.addonId),
+   );
    const [isPending, startTransition] = useTransition();
 
    const handleSubscribe = (_addonId: string) => {
@@ -915,3 +917,6 @@ export function BillingOverview() {
       </div>
    );
 }
+type ActiveAddon = {
+   addonId: string;
+};

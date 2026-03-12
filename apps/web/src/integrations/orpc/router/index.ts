@@ -1,5 +1,4 @@
 import * as accountRouter from "./account";
-import * as activityLogsRouter from "./activity-logs";
 import * as agentRouter from "./agent";
 import * as analyticsRouter from "./analytics";
 import * as bankAccountsRouter from "./bank-accounts";
@@ -17,14 +16,9 @@ import * as insightsRouter from "./insights";
 import * as inventoryRouter from "./inventory";
 import * as onboardingRouter from "./onboarding";
 import * as organizationRouter from "./organization";
-import * as personalApiKeyRouter from "./personal-api-key";
-import * as productSettingsRouter from "./product-settings";
-import * as rolesRouter from "./roles";
 import * as searchRouter from "./search";
 import * as servicesRouter from "./services";
 import * as sessionRouter from "./session";
-import * as ssoRouter from "./sso";
-import * as subcategoriesRouter from "./subcategories";
 import * as tagsRouter from "./tags";
 import * as teamRouter from "./team";
 import * as transactionsRouter from "./transactions";
@@ -32,7 +26,6 @@ import * as webhooksRouter from "./webhooks";
 
 export default {
    account: accountRouter,
-   activityLogs: activityLogsRouter,
    agent: agentRouter,
    analytics: analyticsRouter,
    bankAccounts: bankAccountsRouter,
@@ -49,14 +42,9 @@ export default {
    insights: insightsRouter,
    inventory: inventoryRouter,
    onboarding: onboardingRouter,
-   personalApiKey: personalApiKeyRouter,
-   productSettings: productSettingsRouter,
-   roles: rolesRouter,
    search: searchRouter,
    services: servicesRouter,
    session: sessionRouter,
-   sso: ssoRouter,
-   subcategories: subcategoriesRouter,
    tags: tagsRouter,
    team: teamRouter,
    transactions: transactionsRouter,

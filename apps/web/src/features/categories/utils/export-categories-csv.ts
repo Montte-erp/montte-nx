@@ -4,10 +4,6 @@ interface ExportableCategory {
    color: string | null;
    icon: string | null;
    keywords: string[] | null;
-   subcategories: {
-      name: string;
-      keywords: string[] | null;
-   }[];
 }
 
 function escapeCsvField(value: string): string {
@@ -27,50 +23,19 @@ function triggerDownload(blob: Blob, filename: string): void {
 }
 
 export function exportCategoriesCsv(categories: ExportableCategory[]): void {
-   const headers = [
-      "Nome",
-      "Tipo",
-      "Cor",
-      "Ícone",
-      "Palavras-chave",
-      "Subcategoria",
-      "Palavras-chave (Subcategoria)",
-   ];
+   const headers = ["Nome", "Tipo", "Cor", "Ícone", "Palavras-chave"];
 
-   const rows: string[][] = [];
-   for (const cat of categories) {
-      if (cat.subcategories.length === 0) {
-         rows.push([
-            cat.name,
-            cat.type === "income"
-               ? "Receita"
-               : cat.type === "expense"
-                 ? "Despesa"
-                 : "",
-            cat.color ?? "",
-            cat.icon ?? "",
-            cat.keywords?.join("; ") ?? "",
-            "",
-            "",
-         ]);
-      } else {
-         for (const sub of cat.subcategories) {
-            rows.push([
-               cat.name,
-               cat.type === "income"
-                  ? "Receita"
-                  : cat.type === "expense"
-                    ? "Despesa"
-                    : "",
-               cat.color ?? "",
-               cat.icon ?? "",
-               cat.keywords?.join("; ") ?? "",
-               sub.name,
-               sub.keywords?.join("; ") ?? "",
-            ]);
-         }
-      }
-   }
+   const rows = categories.map((cat) => [
+      cat.name,
+      cat.type === "income"
+         ? "Receita"
+         : cat.type === "expense"
+           ? "Despesa"
+           : "",
+      cat.color ?? "",
+      cat.icon ?? "",
+      cat.keywords?.join("; ") ?? "",
+   ]);
 
    const csv = [
       headers.map(escapeCsvField).join(","),

@@ -63,8 +63,7 @@ export async function checkBudgetAlerts(
                year: "numeric",
             });
 
-            const categoryName =
-               goal.subcategoryName ?? goal.categoryName ?? "Geral";
+            const categoryName = goal.categoryName ?? "Geral";
 
             // Fetch team members' emails
             const members = await db
@@ -110,7 +109,6 @@ export async function checkBudgetAlerts(
                   {
                      budgetGoalId: goal.id,
                      categoryId: goal.categoryId ?? undefined,
-                     subcategoryId: goal.subcategoryId ?? undefined,
                      percentUsed: goal.percentUsed,
                      teamId: goal.teamId,
                   },
