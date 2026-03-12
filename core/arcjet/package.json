@@ -26,8 +26,9 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
+      "@arcjet/bun": "^1.2.0",
       "@core/environment": "workspace:*",
-      "arcjet": "^1.2.0"
+      "@core/logging": "workspace:*"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",

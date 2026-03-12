@@ -2,60 +2,53 @@ import "./load-env";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
+declare const window: unknown;
+const isServer = typeof window === "undefined";
+
 export const env = createEnv({
    server: {
-      // Database (Required)
       DATABASE_URL: z.url(),
       PG_VECTOR_URL: z.url().optional(),
       REDIS_URL: z.url().optional().default("redis://localhost:6379"),
-      // Electric Sync Engine (optional — enables live queries feature)
+
       ELECTRIC_URL: z.url().optional().default("http://localhost:5133"),
-      // Required in production (set ELECTRIC_INSECURE=true locally via docker-compose instead)
       ELECTRIC_SECRET: z.string().optional(),
 
-      // Better Auth (Required core, optional providers)
       BETTER_AUTH_SECRET: z.string().min(32),
       BETTER_AUTH_URL: z.url().optional().default("http://localhost:3000"),
       BETTER_AUTH_TRUSTED_ORIGINS: z.string(),
       BETTER_AUTH_GOOGLE_CLIENT_ID: z.string(),
       BETTER_AUTH_GOOGLE_CLIENT_SECRET: z.string(),
 
-      // Stripe (Optional - only if using subscription features)
       STRIPE_SECRET_KEY: z.string(),
       STRIPE_WEBHOOK_SECRET: z.string(),
-      // Platform addons
       STRIPE_BOOST_PRICE_ID: z.string().optional(),
       STRIPE_SCALE_PRICE_ID: z.string().optional(),
       STRIPE_ENTERPRISE_PRICE_ID: z.string().optional(),
-      // PostHog (Required for analytics)
+
       POSTHOG_HOST: z.url(),
       POSTHOG_KEY: z.string(),
-      POSTHOG_PUBLIC_KEY: z.string().optional(), // Client-side project API key (safe to expose in tracking scripts)
+      POSTHOG_PUBLIC_KEY: z.string().optional(),
       POSTHOG_PROJECT_ID: z.string(),
 
-      // Email
       RESEND_API_KEY: z.string(),
 
-      // MinIO (Required for file storage)
       MINIO_ENDPOINT: z.string(),
       MINIO_ACCESS_KEY: z.string().optional(),
       MINIO_SECRET_KEY: z.string().optional(),
       MINIO_BUCKET: z.string().optional().default("montte"),
 
-      // AI Services (Optional)
       OPENROUTER_API_KEY: z.string().optional(),
-      TAVILY_API_KEYS: z.string().optional(), // Multiple keys: key1,key2,key3
+      TAVILY_API_KEYS: z.string().optional(),
       EXA_API_KEYS: z.string().optional(),
       FIRECRAWL_API_KEYS: z.string().optional(),
 
-      // Security (Required - Arcjet)
       ARCJET_KEY: z.string().min(1),
       ARCJET_ENV: z
          .enum(["development", "production"])
          .optional()
          .default("development"),
 
-      // General
       NODE_ENV: z
          .enum(["development", "production", "test"])
          .optional()
@@ -67,20 +60,25 @@ export const env = createEnv({
          .enum(["trace", "debug", "info", "warn", "error", "fatal"])
          .optional()
          .default("info"),
-      // Worker
+
       WORKER_CONCURRENCY: z.coerce.number().optional().default(5),
 
-      // Discord (Optional - feedback notifications)
       DISCORD_FEEDBACK_WEBHOOK_URL: z.url().optional(),
 
-      // GitHub (Optional - feedback issue creation)
       GITHUB_FEEDBACK_TOKEN: z.string().optional(),
       GITHUB_FEEDBACK_OWNER: z.string().optional(),
       GITHUB_FEEDBACK_REPO: z.string().optional(),
    },
 
-   runtimeEnv: process.env,
+   clientPrefix: "VITE_",
+   client: {
+      VITE_POSTHOG_HOST: z.string().url(),
+      VITE_POSTHOG_KEY: z.string(),
+   },
+
+   isServer,
+   runtimeEnv: isServer ? process.env : import.meta.env,
    emptyStringAsUndefined: true,
 });
 
-export type ServerEnv = typeof env;
+export type WebEnv = typeof env;

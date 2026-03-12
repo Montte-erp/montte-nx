@@ -1,4 +1,4 @@
-import type { ClientEnv } from "@core/environment/client";
+import type { WebEnv } from "@core/environment/web";
 import { isClientProduction } from "@core/environment/helpers";
 import posthog from "posthog-js";
 import { PostHogProvider, usePostHog } from "posthog-js/react";
@@ -37,7 +37,7 @@ export function normalizeEarlyAccessStage(
 
 // ── Provider ─────────────────────────────────────────────────────────────────
 
-type PosthogEnv = Pick<ClientEnv, "VITE_POSTHOG_HOST" | "VITE_POSTHOG_KEY">;
+type PosthogEnv = Pick<WebEnv, "VITE_POSTHOG_HOST" | "VITE_POSTHOG_KEY">;
 
 function getReactPosthogConfig(env: PosthogEnv) {
    return {

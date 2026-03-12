@@ -1,4 +1,4 @@
-import { env } from "@core/environment/server";
+import { env } from "@core/environment/web";
 import { startHealthHeartbeat } from "@core/logging/health";
 import { initOtel } from "@core/logging/otel";
 import { posthog } from "@core/posthog/server";

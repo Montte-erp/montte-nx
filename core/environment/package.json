@@ -8,9 +8,9 @@
    ],
    "type": "module",
    "exports": {
-      "./client": {
-         "types": "./dist/src/client.d.ts",
-         "default": "./src/client.ts"
+      "./web": {
+         "types": "./dist/src/web.d.ts",
+         "default": "./src/web.ts"
       },
       "./helpers": {
          "types": "./dist/src/helpers.d.ts",
@@ -36,6 +36,7 @@
    "dependencies": {
       "@core/utils": "workspace:*",
       "@t3-oss/env-core": "catalog:enviroment",
+      "dotenv": "catalog:enviroment",
       "zod": "catalog:validation"
    },
    "devDependencies": {
