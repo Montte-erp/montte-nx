@@ -1,5 +1,4 @@
-import { env } from "@core/environment/server";
-import { getMinioClient } from "@packages/files/client";
+import { minioClient } from "@core/files/client";
 import { getLogger } from "@core/logging/root";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -21,10 +20,6 @@ async function handle({
          return new Response("Invalid file path", { status: 400 });
       }
 
-      // Get MinIO client
-      const minioClient = getMinioClient(env);
-
-      // Stream file from MinIO
       const stream = await minioClient.getObject(bucketName, fileName);
 
       // Get file stats for content type

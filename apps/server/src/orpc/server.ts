@@ -1,6 +1,6 @@
 import { ORPCError, os } from "@orpc/server";
 import { auth } from "../integrations/auth";
-import { db } from "../integrations/database";
+import { db } from "@core/database/client";
 import type { PostHog } from "@core/posthog/server";
 import { checkDomainAllowed } from "../utils/sdk-auth";
 

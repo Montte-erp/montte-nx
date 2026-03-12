@@ -1,11 +1,10 @@
-// Default insights for new organizations
-// Moved here to avoid circular dependency (database -> analytics -> database)
+import type { InsightConfig } from "./types";
 
 interface DefaultInsightDef {
    name: string;
    description: string;
    type: "kpi" | "time_series" | "breakdown";
-   config: Record<string, unknown>;
+   config: InsightConfig;
    defaultSize: "sm" | "md" | "lg" | "full";
 }
 
@@ -88,3 +87,5 @@ export const DEFAULT_INSIGHTS: DefaultInsightDef[] = [
       defaultSize: "lg",
    },
 ];
+
+export type { DefaultInsightDef };

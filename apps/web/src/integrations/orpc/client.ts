@@ -13,7 +13,10 @@ import { getRequestHeaders } from "@tanstack/react-start/server";
 import posthogJs from "posthog-js";
 import router from "./router";
 import type { ORPCContextWithAuth } from "./server";
-import { auth, db, posthog, stripeClient } from "./server-instances";
+import { auth } from "@core/authentication/server";
+import { db } from "@core/database/client";
+import { posthog } from "@core/posthog/server";
+import { stripeClient } from "@core/stripe";
 
 const getORPCClient = createIsomorphicFn()
    .server(() =>

@@ -1,11 +1,7 @@
 import { ORPCError } from "@orpc/server";
 import { getOrganizationMembers } from "@core/database/repositories/auth-repository";
 import { member, organization } from "@core/database/schemas/auth";
-import { env as serverEnv } from "@core/environment/server";
-import {
-   generatePresignedPutUrl,
-   getMinioClient,
-} from "@packages/files/client";
+import { generatePresignedPutUrl } from "@core/files/client";
 import { getLogger } from "@core/logging/root";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -320,17 +316,14 @@ export const generateLogoUploadUrl = protectedProcedure
       const { organizationId } = context;
 
       try {
-         const minioClient = getMinioClient(serverEnv);
          const bucketName = "organization-logos";
 
-         // Generate unique filename: org-{orgId}-{uuid}.{ext}
          const fileName = `org-${organizationId}-${crypto.randomUUID()}.${input.fileExtension}`;
 
          const presignedUrl = await generatePresignedPutUrl(
             fileName,
             bucketName,
-            minioClient,
-            300, // 5 minutes
+            300,
          );
 
          return {

@@ -17,6 +17,7 @@
       "@assistant-ui/react-ai-sdk": "^1.3.9",
       "@core/authentication": "workspace:*",
       "@core/database": "workspace:*",
+      "@core/files": "workspace:*",
       "@core/redis": "workspace:*",
       "@core/stripe": "workspace:*",
       "@core/utils": "workspace:*",

@@ -27,6 +27,14 @@
          "types": "./dist/src/compute-insight.d.ts",
          "default": "./src/compute-insight.ts"
       },
+      "./defaults": {
+         "types": "./dist/src/defaults.d.ts",
+         "default": "./src/defaults.ts"
+      },
+      "./seed-defaults": {
+         "types": "./dist/src/seed-defaults.d.ts",
+         "default": "./src/seed-defaults.ts"
+      },
       "./date-ranges": {
          "types": "./dist/src/date-ranges.d.ts",
          "default": "./src/date-ranges.ts"

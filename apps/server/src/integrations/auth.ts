@@ -1,7 +1,7 @@
-import { wrapAuthHandler } from "@packages/arcjet/auth-wrapper";
+import { wrapAuthHandler } from "@core/arcjet/auth-wrapper";
 import { auth as authInstance } from "@core/authentication/server";
 
-const protectedHandler = await wrapAuthHandler(authInstance);
+const protectedHandler = await wrapAuthHandler();
 
 export const auth = {
    ...authInstance,

@@ -15,7 +15,7 @@ import * as path from "node:path";
 import { createDb } from "@core/database/client";
 import { dashboards } from "@core/database/schemas/dashboards";
 import { insights } from "@core/database/schemas/insights";
-import { DEFAULT_INSIGHTS } from "@packages/analytics/default-dashboard";
+import { DEFAULT_INSIGHTS } from "@packages/analytics/defaults";
 import chalk from "chalk";
 import { Command } from "commander";
 import { config } from "dotenv";
@@ -32,7 +32,7 @@ const colors = {
    gray: chalk.gray,
 };
 
-const DATABASE_PACKAGE_DIR = path.join(process.cwd(), "packages", "database");
+const DATABASE_PACKAGE_DIR = path.join(process.cwd(), "core", "database");
 
 function getEnvFilePath(env: string): string {
    const possibleFiles = [

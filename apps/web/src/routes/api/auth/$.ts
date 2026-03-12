@@ -1,6 +1,5 @@
-import { getDevMagicLink } from "@core/authentication/server";
+import { auth, getDevMagicLink } from "@core/authentication/server";
 import { createFileRoute } from "@tanstack/react-router";
-import { getAuth } from "@/integrations/better-auth/auth-server";
 
 function handleDevMagicLink(request: Request): Response | null {
    const url = new URL(request.url);
@@ -13,8 +12,8 @@ export const Route = createFileRoute("/api/auth/$")({
    server: {
       handlers: {
          GET: ({ request }) =>
-            handleDevMagicLink(request) ?? getAuth().handler(request),
-         POST: ({ request }) => getAuth().handler(request),
+            handleDevMagicLink(request) ?? auth.handler(request),
+         POST: ({ request }) => auth.handler(request),
       },
    },
 });

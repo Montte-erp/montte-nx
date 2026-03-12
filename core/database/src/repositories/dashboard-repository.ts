@@ -1,7 +1,6 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@core/database/client";
-import { DEFAULT_INSIGHTS } from "@core/database/default-insights";
 import {
    type CreateDashboardInput,
    type Dashboard,
@@ -11,7 +10,6 @@ import {
    dashboards,
    updateDashboardSchema,
 } from "@core/database/schemas/dashboards";
-import { insights } from "@core/database/schemas/insights";
 
 export async function createDashboard(
    organizationId: string,
@@ -159,35 +157,6 @@ export async function setDashboardAsHome(dashboardId: string, teamId: string) {
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to set dashboard as home");
-   }
-}
-
-export async function createDefaultInsights(
-   organizationId: string,
-   teamId: string,
-   userId: string,
-): Promise<string[]> {
-   try {
-      const insightRecords = DEFAULT_INSIGHTS.map((def) => ({
-         organizationId,
-         teamId,
-         createdBy: userId,
-         name: def.name,
-         description: def.description,
-         type: def.type,
-         config: def.config as Record<string, unknown>,
-         defaultSize: def.defaultSize,
-      }));
-
-      const created = await db
-         .insert(insights)
-         .values(insightRecords)
-         .returning({ id: insights.id });
-
-      return created.map((r) => r.id);
-   } catch (err) {
-      propagateError(err);
-      throw AppError.database("Failed to create default insights");
    }
 }
 

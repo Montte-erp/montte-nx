@@ -8,12 +8,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import pino from "pino";
 import router from "@/integrations/orpc/router";
 import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
-import {
-   auth,
-   db,
-   posthog,
-   stripeClient,
-} from "@/integrations/orpc/server-instances";
+import { auth } from "@core/authentication/server";
+import { db } from "@core/database/client";
+import { posthog } from "@core/posthog/server";
+import { stripeClient } from "@core/stripe";
 
 const logger = pino({ name: "montte-web-rpc" });
 

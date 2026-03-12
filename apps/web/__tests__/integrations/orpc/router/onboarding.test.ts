@@ -13,11 +13,9 @@ import {
 vi.mock("@packages/analytics/compute-insight", () => ({
    computeInsightData: vi.fn().mockResolvedValue({}),
 }));
-vi.mock("@core/database/default-insights", () => ({
-   DEFAULT_INSIGHTS: [{ defaultSize: "md" }, { defaultSize: "lg" }],
-}));
-vi.mock("@core/database/repositories/dashboard-repository", () => ({
+vi.mock("@packages/analytics/seed-defaults", () => ({
    createDefaultInsights: vi.fn().mockResolvedValue(["insight-1", "insight-2"]),
+   createDefaultDashboard: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@core/database/repositories/insight-repository", () => ({
    getInsightById: vi.fn().mockResolvedValue(null),
@@ -50,14 +48,6 @@ vi.mock("@core/database/schemas/insights", () => ({
       organizationId: "organizationId",
       cachedResults: "cachedResults",
       lastComputedAt: "lastComputedAt",
-   },
-}));
-vi.mock("@core/database/schemas/dashboards", () => ({
-   dashboards: {
-      id: "id",
-      organizationId: "organizationId",
-      teamId: "teamId",
-      isDefault: "isDefault",
    },
 }));
 

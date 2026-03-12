@@ -1,13 +1,14 @@
 import { ORPCError } from "@orpc/server";
 import { computeInsightData } from "@packages/analytics/compute-insight";
+import {
+   createDefaultDashboard,
+   createDefaultInsights,
+} from "@packages/analytics/seed-defaults";
 import type { DatabaseInstance } from "@core/database/client";
-import { DEFAULT_INSIGHTS } from "@core/database/default-insights";
-import { createDefaultInsights } from "@core/database/repositories/dashboard-repository";
 import { getInsightById } from "@core/database/repositories/insight-repository";
 import { organization, team, teamMember } from "@core/database/schemas/auth";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
-import { dashboards } from "@core/database/schemas/dashboards";
 import { insights } from "@core/database/schemas/insights";
 import { transactions } from "@core/database/schemas/transactions";
 import { getLogger } from "@core/logging/root";
@@ -18,7 +19,7 @@ const logger = getLogger().child({ module: "router:onboarding" });
 
 import { z } from "zod";
 import { authenticatedProcedure, protectedProcedure } from "../server";
-import { posthog } from "../server-instances";
+import { posthog } from "@core/posthog/server";
 
 const EARLY_ACCESS_FLAG_KEYS = [
    "contacts",
@@ -119,21 +120,14 @@ async function runOnboardingCompletion(
    }
 
    logger.info("Creating dashboard");
-   const tiles = insightIds.map((insightId, index) => ({
-      insightId,
-      size: DEFAULT_INSIGHTS[index].defaultSize,
-      order: index,
-   }));
-
-   await tx.insert(dashboards).values({
+   await createDefaultDashboard(
+      tx,
       organizationId,
       teamId,
-      createdBy: userId,
-      name: `Dashboard ${workspaceName}`,
-      description: null,
-      isDefault: true,
-      tiles,
-   });
+      userId,
+      `Dashboard ${workspaceName}`,
+      insightIds,
+   );
    logger.info("Onboarding completion done");
 }
 

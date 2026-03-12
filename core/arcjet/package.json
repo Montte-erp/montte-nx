@@ -1,0 +1,31 @@
+{
+   "name": "@core/arcjet",
+   "version": "0.1.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "files": [
+      "dist"
+   ],
+   "type": "module",
+   "exports": {
+      "./auth-wrapper": {
+         "types": "./dist/src/auth-wrapper.d.ts",
+         "default": "./src/auth-wrapper.ts"
+      }
+   },
+   "scripts": {
+      "build": "tsc --build",
+      "check": "oxlint ./src",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "test": "vitest run --passWithNoTests",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@core/authentication": "workspace:*"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development"
+   }
+}

@@ -12,10 +12,6 @@
          "types": "./dist/src/client.d.ts",
          "default": "./src/client.ts"
       },
-      "./default-insights": {
-         "types": "./dist/src/default-insights.d.ts",
-         "default": "./src/default-insights.ts"
-      },
       "./repositories/*": {
          "types": "./dist/src/repositories/*.d.ts",
          "default": "./src/repositories/*.ts"

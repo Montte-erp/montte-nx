@@ -1,9 +1,5 @@
 import { ORPCError } from "@orpc/server";
-import { env as serverEnv } from "@core/environment/server";
-import {
-   generatePresignedPutUrl,
-   getMinioClient,
-} from "@packages/files/client";
+import { generatePresignedPutUrl } from "@core/files/client";
 import { getLogger } from "@core/logging/root";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
@@ -158,15 +154,13 @@ export const generateAvatarUploadUrl = protectedProcedure
       const { userId } = context;
 
       try {
-         const minioClient = getMinioClient(serverEnv);
          const bucketName = "user-avatars";
          const fileName = `avatar-${userId}-${crypto.randomUUID()}.${input.fileExtension}`;
 
          const presignedUrl = await generatePresignedPutUrl(
             fileName,
             bucketName,
-            minioClient,
-            300, // 5 minutes
+            300,
          );
 
          return {

@@ -12,7 +12,9 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import router from "@/integrations/orpc/router";
 import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
-import { auth, db, posthog } from "@/integrations/orpc/server-instances";
+import { auth } from "@core/authentication/server";
+import { db } from "@core/database/client";
+import { posthog } from "@core/posthog/server";
 
 const logger = getLogger().child({ module: "api:rpc" });
 

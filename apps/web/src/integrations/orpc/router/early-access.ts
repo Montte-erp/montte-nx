@@ -1,5 +1,5 @@
 import { protectedProcedure } from "../server";
-import { posthog } from "../server-instances";
+import { posthog } from "@core/posthog/server";
 
 const FLAG_KEYS = new Set([
    "contacts",

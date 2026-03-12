@@ -50,6 +50,8 @@ contentta-nx/
 │   ├── environment/     # Zod-validated env vars
 │   ├── redis/           # Redis singleton
 │   ├── logging/         # Pino logger
+│   ├── files/           # MinIO file storage singleton
+│   ├── arcjet/          # Rate limiting & auth wrapper
 │   └── utils/           # Shared utilities + error classes
 ├── apps/
 │   ├── web/             # React/Vite SPA — main dashboard + oRPC routers
@@ -58,10 +60,7 @@ contentta-nx/
 ├── packages/
 │   ├── agents/          # Mastra AI agents (planning, research, editing)
 │   ├── analytics/       # Analytics engine
-│   ├── arcjet/          # Rate limiting & DDoS protection
 │   ├── events/          # Event catalog, schemas, emit, credits
-│   ├── files/           # MinIO & file utilities
-│   ├── posthog/         # Analytics client
 │   ├── queue/           # BullMQ abstractions (producer side)
 │   ├── search/          # Web search providers (Tavily/Exa/Firecrawl)
 │   ├── stripe/          # Stripe SDK wrapper
@@ -226,24 +225,53 @@ const { currentView, setView, views } = useViewSwitch("feature:view", VIEWS);
 
 ---
 
+## Core Singletons
+
+Core packages export ready-to-use singletons that read from `@core/environment` directly. Never create factory functions that receive env values as parameters — import the singleton instead.
+
+```typescript
+// ✅ Import singletons directly from core
+import { db } from "@core/database/client";
+import { auth } from "@core/authentication/server";
+import { redis } from "@core/redis/connection";
+import { posthog } from "@core/posthog/server";
+import { stripeClient } from "@core/stripe";
+import { resendClient } from "@core/transactional/utils";
+import { minioClient } from "@core/files/client";
+import { env } from "@core/environment/server";
+
+// ❌ Never create factory functions that receive env
+const db = createDb({ databaseUrl: env.DATABASE_URL });
+const redis = createRedisConnection(env.REDIS_URL);
+const posthog = getPosthogConfig(env);
+```
+
+**No re-export wrapper files.** Apps should import singletons directly from `@core/*`. Never create intermediate files like `integrations/database.ts` that just re-export a core singleton.
+
+---
+
 ## Package Exports
 
 Packages use explicit `package.json` exports. Always match the export path exactly:
 
 ```typescript
 // Core packages use @core/* prefix
-// Named: import { createDb } from "@core/database/client"
-// Wildcard: import { content } from "@core/database/schemas/content"
-// Wildcard: import { createContent } from "@core/database/repositories/content-repository"
-// Named: import { auth } from "@core/authentication/server"
-// Named: import { env } from "@core/environment/server"
-// Named: import { getRedisConnection } from "@core/redis"
-// Named: import { logger } from "@core/logging"
-// Named: import { AppError } from "@core/utils/errors"
+import { db } from "@core/database/client";
+import { content } from "@core/database/schemas/content";
+import { createContent } from "@core/database/repositories/content-repository";
+import { auth } from "@core/authentication/server";
+import { env } from "@core/environment/server";
+import { redis } from "@core/redis/connection";
+import { posthog } from "@core/posthog/server";
+import { stripeClient } from "@core/stripe";
+import { resendClient } from "@core/transactional/utils";
+import { minioClient } from "@core/files/client";
+import { wrapAuthHandler } from "@core/arcjet/auth-wrapper";
+import { AppError } from "@core/logging/errors";
 
 // Feature packages use @packages/* prefix
-// Named: import { emitEvent } from "@packages/events/emit"
-// Named: import { Button } from "@packages/ui/components/button"
+import { emitEvent } from "@packages/events/emit";
+import { Button } from "@packages/ui/components/button";
 ```
 
 Common patterns: `.` (root), `./client`, `./server`, `./schemas/*`, `./repositories/*`, `./components/*`

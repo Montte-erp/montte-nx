@@ -12,8 +12,8 @@ import { initLogger } from "@core/logging/root";
 import { shutdownPosthog } from "@core/posthog/server";
 import { Elysia } from "elysia";
 import { auth } from "./integrations/auth";
-import { db } from "./integrations/database";
-import { minioClient } from "./integrations/minio";
+import { db } from "@core/database/client";
+import { minioClient } from "@core/files/client";
 import { posthog } from "@core/posthog/server";
 import {
    mcpRequestHandler,

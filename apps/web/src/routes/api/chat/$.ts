@@ -11,7 +11,8 @@ import { getLogger } from "@core/logging/root";
 import { createFileRoute } from "@tanstack/react-router";
 import type { ModelMessage } from "ai";
 import { createUIMessageStreamResponse } from "ai";
-import { auth, db } from "@/integrations/orpc/server-instances";
+import { auth } from "@core/authentication/server";
+import { db } from "@core/database/client";
 
 const logger = getLogger().child({ module: "api:chat" });
 

@@ -2,7 +2,8 @@ import { team } from "@core/database/schemas/auth";
 import { env } from "@core/environment/server";
 import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
-import { auth, db } from "@/integrations/orpc/server-instances";
+import { auth } from "@core/authentication/server";
+import { db } from "@core/database/client";
 
 const ALLOWED_TABLES = new Set<string>([]);
 
