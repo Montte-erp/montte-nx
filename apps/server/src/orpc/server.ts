@@ -1,6 +1,10 @@
 import { ORPCError, os } from "@orpc/server";
-import { auth } from "../integrations/auth";
+import { auth } from "@core/authentication/server";
 import { db } from "@core/database/client";
+import {
+   isArcjetRateLimitDecision,
+   protectWithRateLimit,
+} from "@core/arcjet/protect";
 import type { PostHog } from "@core/posthog/server";
 import { checkDomainAllowed } from "../utils/sdk-auth";
 
@@ -24,6 +28,24 @@ const baseProcedure = os.$context<BaseContext>();
 
 export const sdkProcedure = baseProcedure.use(async ({ context, next }) => {
    const { request } = context;
+
+   const arcjetDecision = await protectWithRateLimit(request, {
+      max: 120,
+      interval: "1m",
+      characteristics: [
+         "ip.src",
+         "http.request.uri.path",
+         "http.request.headers['sdk-api-key']",
+         "http.request.headers['x-api-key']",
+      ],
+   });
+
+   if (arcjetDecision.isDenied()) {
+      const isRateLimit = isArcjetRateLimitDecision(arcjetDecision);
+      throw new ORPCError(isRateLimit ? "TOO_MANY_REQUESTS" : "FORBIDDEN", {
+         message: isRateLimit ? "Rate limit exceeded" : "Request denied",
+      });
+   }
 
    const apiKeyHeader = request.headers.get("sdk-api-key");
    if (!apiKeyHeader) {

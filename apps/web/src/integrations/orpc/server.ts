@@ -1,5 +1,9 @@
 import { logs } from "@opentelemetry/api-logs";
 import { ORPCError, os } from "@orpc/server";
+import {
+   isArcjetRateLimitDecision,
+   protectWithRateLimit,
+} from "@core/arcjet/protect";
 import type { AuthInstance } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog } from "@core/posthog/server";
@@ -59,10 +63,44 @@ export interface ORPCContextWithOrganization extends ORPCContextAuthenticated {
 // Base procedure builder with pre-populated context (auth, db, session)
 const baseProcedure = os.$context<ORPCContextWithAuth>();
 
+const withArcjetPublic = baseProcedure.use(async ({ context, next }) => {
+   const decision = await protectWithRateLimit(context.request, {
+      max: 120,
+      interval: "1m",
+      characteristics: ["ip.src", "http.request.uri.path"],
+   });
+
+   if (decision.isDenied()) {
+      const isRateLimit = isArcjetRateLimitDecision(decision);
+      throw new ORPCError(isRateLimit ? "TOO_MANY_REQUESTS" : "FORBIDDEN", {
+         message: isRateLimit ? "Rate limit exceeded" : "Request denied",
+      });
+   }
+
+   return next();
+});
+
+const withArcjetProtected = baseProcedure.use(async ({ context, next }) => {
+   const decision = await protectWithRateLimit(context.request, {
+      max: 180,
+      interval: "1m",
+      characteristics: ["ip.src", "http.request.uri.path"],
+   });
+
+   if (decision.isDenied()) {
+      const isRateLimit = isArcjetRateLimitDecision(decision);
+      throw new ORPCError(isRateLimit ? "TOO_MANY_REQUESTS" : "FORBIDDEN", {
+         message: isRateLimit ? "Rate limit exceeded" : "Request denied",
+      });
+   }
+
+   return next();
+});
+
 /**
  * Procedure requiring authentication
  */
-const withAuth = baseProcedure.use(async ({ context, next }) => {
+const withAuth = withArcjetProtected.use(async ({ context, next }) => {
    const { session } = context;
 
    if (!session?.user) {
@@ -245,7 +283,7 @@ const withTelemetry = withOrganization.use(
  * Context includes auth, db, and session (may be null)
  * Use this for publicly accessible endpoints (e.g., shared content, public pages)
  */
-export const publicProcedure = os.$context<ORPCContextWithAuth>();
+export const publicProcedure = withArcjetPublic;
 
 /**
  * Authenticated procedure - requires authenticated session (userId only)

@@ -47,9 +47,12 @@ export const env = createEnv({
       EXA_API_KEYS: z.string().optional(),
       FIRECRAWL_API_KEYS: z.string().optional(),
 
-      // Security (Optional - Arcjet for rate limiting)
-      ARCJET_KEY: z.string().optional(),
-      ARCJET_ENV: z.enum(["development", "production"]).optional(),
+      // Security (Required - Arcjet)
+      ARCJET_KEY: z.string().min(1),
+      ARCJET_ENV: z
+         .enum(["development", "production"])
+         .optional()
+         .default("development"),
 
       // General
       NODE_ENV: z

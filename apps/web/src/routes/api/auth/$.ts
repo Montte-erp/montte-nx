@@ -1,4 +1,8 @@
 import { auth, getDevMagicLink } from "@core/authentication/server";
+import {
+   isArcjetRateLimitDecision,
+   protectWithRateLimit,
+} from "@core/arcjet/protect";
 import { createFileRoute } from "@tanstack/react-router";
 
 function handleDevMagicLink(request: Request): Response | null {
@@ -11,9 +15,44 @@ function handleDevMagicLink(request: Request): Response | null {
 export const Route = createFileRoute("/api/auth/$")({
    server: {
       handlers: {
-         GET: ({ request }) =>
-            handleDevMagicLink(request) ?? auth.handler(request),
-         POST: ({ request }) => auth.handler(request),
+         GET: async ({ request }) => {
+            const decision = await protectWithRateLimit(request, {
+               max: 30,
+               interval: "1m",
+               characteristics: ["ip.src", "http.request.uri.path"],
+            });
+
+            if (decision.isDenied()) {
+               const isRateLimit = isArcjetRateLimitDecision(decision);
+               return new Response(
+                  isRateLimit ? "Rate limit exceeded" : "Forbidden",
+                  {
+                     status: isRateLimit ? 429 : 403,
+                  },
+               );
+            }
+
+            return handleDevMagicLink(request) ?? auth.handler(request);
+         },
+         POST: async ({ request }) => {
+            const decision = await protectWithRateLimit(request, {
+               max: 30,
+               interval: "1m",
+               characteristics: ["ip.src", "http.request.uri.path"],
+            });
+
+            if (decision.isDenied()) {
+               const isRateLimit = isArcjetRateLimitDecision(decision);
+               return new Response(
+                  isRateLimit ? "Rate limit exceeded" : "Forbidden",
+                  {
+                     status: isRateLimit ? 429 : 403,
+                  },
+               );
+            }
+
+            return auth.handler(request);
+         },
       },
    },
 });

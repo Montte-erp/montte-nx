@@ -8,9 +8,13 @@
    ],
    "type": "module",
    "exports": {
-      "./auth-wrapper": {
-         "types": "./dist/src/auth-wrapper.d.ts",
-         "default": "./src/auth-wrapper.ts"
+      "./client": {
+         "types": "./dist/src/client.d.ts",
+         "default": "./src/client.ts"
+      },
+      "./protect": {
+         "types": "./dist/src/protect.d.ts",
+         "default": "./src/protect.ts"
       }
    },
    "scripts": {
@@ -22,7 +26,8 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "@core/authentication": "workspace:*"
+      "@core/environment": "workspace:*",
+      "arcjet": "^1.2.0"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
