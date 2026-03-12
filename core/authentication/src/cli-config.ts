@@ -1,7 +1,5 @@
-import { createDb } from "@core/database/client";
-import { env } from "@core/environment/server";
 import type { betterAuth } from "better-auth";
-import { createAuth } from "@core/authentication/server";
+import { auth } from "@core/authentication/server";
 
 /**
  * @internal
@@ -14,7 +12,4 @@ import { createAuth } from "@core/authentication/server";
  * The documentation for better-auth CLI can be found here:
  * - https://www.better-auth.com/docs/concepts/cli
  */
-export const auth = createAuth({
-   db: createDb({ databaseUrl: env.DATABASE_URL }),
-   env,
-}) as unknown as ReturnType<typeof betterAuth>;
+export default auth as unknown as ReturnType<typeof betterAuth>;

@@ -1,12 +1,5 @@
 import { wrapAuthHandler } from "@packages/arcjet/auth-wrapper";
-import { createAuth } from "@core/authentication/server";
-import { env } from "@core/environment/server";
-import { db } from "./database";
-
-const authInstance = createAuth({
-   db,
-   env,
-});
+import { auth as authInstance } from "@core/authentication/server";
 
 const protectedHandler = await wrapAuthHandler(authInstance);
 
