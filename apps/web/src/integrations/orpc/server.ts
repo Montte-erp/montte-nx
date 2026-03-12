@@ -2,11 +2,11 @@ import { logs } from "@opentelemetry/api-logs";
 import { ORPCError, os } from "@orpc/server";
 import type { AuthInstance } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
+import type { PostHog } from "@core/posthog/server";
 import {
    captureError,
    captureServerEvent,
    identifyUser,
-   posthog,
    setGroup,
 } from "@core/posthog/server";
 import type { StripeClient } from "@core/stripe";
@@ -24,7 +24,7 @@ export interface ORPCContext {
 }
 
 /**
- * Base ORPC context - includes auth, db, and session (from route handler)
+ * Base ORPC context - includes auth, db, session, and posthog (from route handler)
  */
 export interface ORPCContextWithAuth {
    headers: Headers;
@@ -32,6 +32,7 @@ export interface ORPCContextWithAuth {
    auth: AuthInstance;
    db: DatabaseInstance;
    session: Awaited<ReturnType<AuthInstance["api"]["getSession"]>> | null;
+   posthog?: PostHog;
    stripeClient?: StripeClient;
 }
 

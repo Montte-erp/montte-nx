@@ -1,4 +1,4 @@
-import { createDb } from "@core/database/client";
+import { db } from "@core/database/client";
 import { env } from "@core/environment/worker";
 import {
    startHealthHeartbeat,
@@ -6,33 +6,24 @@ import {
 } from "@core/logging/health";
 import { initOtel, shutdownOtel } from "@core/logging/otel";
 import { initLogger } from "@core/logging/root";
-import { getElysiaPosthogConfig, shutdownPosthog } from "@core/posthog/server";
+import { posthog, shutdownPosthog } from "@core/posthog/server";
+import { redis } from "@core/redis/connection";
 import { createQueueConnection } from "@packages/events/queues/connection";
-import { createRedisConnection } from "@core/redis/connection";
 import { startScheduler } from "./scheduler";
 import { startWebhookDeliveryWorker } from "./workers/webhook-delivery";
 
 const logger = initLogger({ name: "montte-worker", level: "info" });
 
-// Initialize OTel SDK for PostHog logs
 initOtel({
    serviceName: "montte-worker",
    posthogKey: env.POSTHOG_KEY,
    posthogHost: env.POSTHOG_HOST,
 });
-const posthog = getElysiaPosthogConfig(env);
 startHealthHeartbeat({ serviceName: "montte-worker", posthog });
 
 async function main(): Promise<void> {
    logger.info("Starting Montte Worker...");
 
-   // 1. Initialize Redis
-   const redis = createRedisConnection(env.REDIS_URL);
-
-   // 2. Initialize Database
-   const db = createDb({ databaseUrl: env.DATABASE_URL });
-
-   // 3. Create BullMQ connection
    const queueConnection = createQueueConnection(env.REDIS_URL);
 
    // 4. Start BullMQ workers
@@ -54,7 +45,7 @@ async function main(): Promise<void> {
       await webhookWorker.close();
       await redis.quit();
       stopHealthHeartbeat();
-      await shutdownPosthog(posthog);
+      await shutdownPosthog();
       await shutdownOtel();
 
       logger.info("Shutdown complete");

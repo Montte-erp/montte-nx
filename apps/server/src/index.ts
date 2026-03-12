@@ -14,7 +14,7 @@ import { Elysia } from "elysia";
 import { auth } from "./integrations/auth";
 import { db } from "./integrations/database";
 import { minioClient } from "./integrations/minio";
-import { posthog } from "./integrations/posthog";
+import { posthog } from "@core/posthog/server";
 import {
    mcpRequestHandler,
    protectedResourceMetadataHandler,
@@ -103,7 +103,7 @@ logger.info({ port: app.server?.port }, "Server started");
 // Graceful shutdown
 const shutdown = async (signal: string) => {
    logger.info({ signal }, "Received signal, shutting down");
-   await shutdownPosthog(posthog);
+   await shutdownPosthog();
    stopHealthHeartbeat();
    await shutdownOtel();
    process.exit(0);

@@ -1,12 +1,12 @@
 import { ORPCError, os } from "@orpc/server";
 import { auth } from "../integrations/auth";
 import { db } from "../integrations/database";
-import type { posthog } from "../integrations/posthog";
+import type { PostHog } from "@core/posthog/server";
 import { checkDomainAllowed } from "../utils/sdk-auth";
 
 interface BaseContext {
    db: typeof db;
-   posthog: typeof posthog;
+   posthog: PostHog;
    request: Request;
 }
 

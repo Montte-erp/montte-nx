@@ -1,12 +1,12 @@
 import { apiKey } from "@better-auth/api-key";
 import { oauthProvider } from "@better-auth/oauth-provider";
 import { stripe as stripePlugin } from "@better-auth/stripe";
-import type { DatabaseInstance } from "@core/database/client";
+import { db } from "@core/database/client";
 import { findMemberByUserId } from "@core/database/repositories/auth-repository";
 import { getDomain, isProduction } from "@core/environment/helpers";
-import type { ServerEnv } from "@core/environment/server";
+import { env } from "@core/environment/server";
 import { getLogger } from "@core/logging/root";
-import { getElysiaPosthogConfig } from "@core/posthog/server";
+import { posthog } from "@core/posthog/server";
 import { redis } from "@core/redis/connection";
 import { stripeClient } from "@core/stripe";
 import {
@@ -45,442 +45,424 @@ export function getDevMagicLink(email: string): string | undefined {
    return url;
 }
 
-export interface SimplifiedAuthConfig {
-   db: DatabaseInstance;
-   env: ServerEnv;
-}
+export const auth = betterAuth({
+   baseURL: env.BETTER_AUTH_URL,
+   secret: env.BETTER_AUTH_SECRET,
+   trustedOrigins: env.BETTER_AUTH_TRUSTED_ORIGINS.split(","),
 
-export function createAuth(config: SimplifiedAuthConfig) {
-   const { db, env } = config;
+   account: {
+      accountLinking: {
+         enabled: true,
+      },
+   },
 
-   const posthogClient = getElysiaPosthogConfig({
-      POSTHOG_HOST: env.POSTHOG_HOST,
-      POSTHOG_KEY: env.POSTHOG_KEY,
-   });
+   socialProviders: {
+      google: {
+         clientId: env.BETTER_AUTH_GOOGLE_CLIENT_ID,
+         clientSecret: env.BETTER_AUTH_GOOGLE_CLIENT_SECRET,
+      },
+   },
 
-   return betterAuth({
-      baseURL: env.BETTER_AUTH_URL,
-      secret: env.BETTER_AUTH_SECRET,
-      trustedOrigins: env.BETTER_AUTH_TRUSTED_ORIGINS.split(","),
+   advanced: {
+      database: { generateId: "uuid" },
+   },
 
-      account: {
-         accountLinking: {
-            enabled: true,
+   secondaryStorage: createBetterAuthStorage(redis),
+
+   database: drizzleAdapter(db, {
+      provider: "pg",
+   }),
+
+   databaseHooks: {
+      session: {
+         create: {
+            before: async (session) => {
+               try {
+                  const member = await findMemberByUserId(db, session.userId);
+
+                  if (member?.organizationId) {
+                     const existingTeam = await db.query.team.findFirst({
+                        where: { organizationId: member.organizationId },
+                     });
+
+                     return {
+                        data: {
+                           ...session,
+                           activeOrganizationId: member.organizationId,
+                           activeTeamId: existingTeam?.id,
+                        },
+                     };
+                  }
+
+                  // No organization — session created without org context.
+                  // User will be redirected to onboarding by route guards.
+                  return { data: session };
+               } catch (error) {
+                  logger.error(
+                     { err: error },
+                     "Error in session create before hook",
+                  );
+                  return { data: session };
+               }
+            },
          },
       },
-
-      socialProviders: {
-         google: {
-            clientId: env.BETTER_AUTH_GOOGLE_CLIENT_ID,
-            clientSecret: env.BETTER_AUTH_GOOGLE_CLIENT_SECRET,
+      user: {
+         create: {
+            after: async (_user) => {
+               // Organization creation handled by onboarding flow.
+               // No auto-creation — user starts with zero orgs.
+            },
          },
       },
+   },
 
-      advanced: {
-         database: { generateId: "uuid" },
+   emailAndPassword: {
+      enabled: true,
+      requireEmailVerification: isProduction,
+   },
+
+   emailVerification: {
+      autoSignInAfterVerification: true,
+      sendOnSignUp: isProduction,
+   },
+
+   experimental: {
+      joins: true,
+   },
+
+   session: {
+      storeSessionInDatabase: true,
+      cookieCache: {
+         enabled: true,
+         maxAge: 5 * 60,
       },
+   },
 
-      secondaryStorage: createBetterAuthStorage(redis),
+   user: {
+      changeEmail: {
+         enabled: true,
+      },
+      additionalFields: {
+         telemetryConsent: {
+            defaultValue: false,
+            input: true,
+            required: true,
+            type: "boolean",
+         },
+      },
+   },
 
-      database: drizzleAdapter(db, {
-         provider: "pg",
+   plugins: [
+      admin(),
+
+      magicLink({
+         expiresIn: 60 * 15, // 15 minutes
+         async sendMagicLink({ email, url }) {
+            if (!isProduction) {
+               logger.info({ email, url }, "DEV magic link generated");
+               devMagicLinkStore.set(email, url);
+               return;
+            }
+            await sendMagicLinkEmail(resendClient, {
+               email,
+               magicLinkUrl: url,
+            });
+         },
       }),
 
-      databaseHooks: {
-         session: {
-            create: {
-               before: async (session) => {
-                  try {
-                     const member = await findMemberByUserId(
-                        db,
-                        session.userId,
-                     );
-
-                     if (member?.organizationId) {
-                        const existingTeam = await db.query.team.findFirst({
-                           where: { organizationId: member.organizationId },
-                        });
-
-                        return {
-                           data: {
-                              ...session,
-                              activeOrganizationId: member.organizationId,
-                              activeTeamId: existingTeam?.id,
-                           },
-                        };
-                     }
-
-                     // No organization — session created without org context.
-                     // User will be redirected to onboarding by route guards.
-                     return { data: session };
-                  } catch (error) {
-                     logger.error(
-                        { err: error },
-                        "Error in session create before hook",
-                     );
-                     return { data: session };
-                  }
-               },
-            },
-         },
-         user: {
-            create: {
-               after: async (_user) => {
-                  // Organization creation handled by onboarding flow.
-                  // No auto-creation — user starts with zero orgs.
-               },
-            },
-         },
-      },
-
-      emailAndPassword: {
-         enabled: true,
-         requireEmailVerification: isProduction,
-      },
-
-      emailVerification: {
-         autoSignInAfterVerification: true,
-         sendOnSignUp: isProduction,
-      },
-
-      experimental: {
-         joins: true,
-      },
-
-      session: {
-         storeSessionInDatabase: true,
-         cookieCache: {
-            enabled: true,
-            maxAge: 5 * 60,
-         },
-      },
-
-      user: {
+      emailOTP({
+         expiresIn: 60 * 10,
+         otpLength: 6,
+         sendVerificationOnSignUp: isProduction,
          changeEmail: {
             enabled: true,
          },
-         additionalFields: {
-            telemetryConsent: {
-               defaultValue: false,
-               input: true,
-               required: true,
-               type: "boolean",
+         async sendVerificationOTP({ email, otp, type }) {
+            if (!isProduction) {
+               logger.info({ email, type, otp }, "DEV OTP generated");
+               return;
+            }
+            await sendEmailOTP(resendClient, { email, otp, type });
+         },
+      }),
+
+      lastLoginMethod(),
+
+      organization({
+         organizationLimit: ORGANIZATION_LIMIT,
+         schema: {
+            organization: {
+               additionalFields: {
+                  context: {
+                     defaultValue: "personal",
+                     input: true,
+                     required: false,
+                     type: "string",
+                  },
+                  description: {
+                     defaultValue: "",
+                     input: true,
+                     required: false,
+                     type: "string",
+                  },
+                  onboardingCompleted: {
+                     defaultValue: false,
+                     input: true,
+                     required: false,
+                     type: "boolean",
+                  },
+               },
+            },
+            team: {
+               additionalFields: {
+                  slug: {
+                     input: true,
+                     required: true,
+                     type: "string",
+                  },
+                  description: {
+                     defaultValue: "",
+                     input: true,
+                     required: false,
+                     type: "string",
+                  },
+                  allowedDomains: {
+                     type: "string[]",
+                     input: true,
+                     required: false,
+                     validator: {
+                        input: z.array(
+                           z
+                              .string()
+                              .regex(
+                                 /^(\*\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/,
+                                 "Invalid domain pattern. Examples: example.com, *.example.com, app.example.com, localhost",
+                              ),
+                        ),
+                     },
+                  },
+                  onboardingCompleted: {
+                     defaultValue: false,
+                     input: true,
+                     required: false,
+                     type: "boolean",
+                  },
+                  onboardingProducts: {
+                     defaultValue: null,
+                     input: true,
+                     required: false,
+                     type: "json",
+                     validator: {
+                        input: z
+                           .array(z.enum(["content", "forms", "analytics"]))
+                           .nullable(),
+                     },
+                  },
+                  onboardingTasks: {
+                     defaultValue: null,
+                     input: true,
+                     required: false,
+                     type: "json",
+                     validator: {
+                        input: z.record(z.string(), z.boolean()).nullable(),
+                     },
+                  },
+                  accountType: {
+                     defaultValue: "personal",
+                     input: true,
+                     required: false,
+                     type: "string",
+                     validator: {
+                        input: z
+                           .enum(["personal", "business"])
+                           .nullable()
+                           .optional(),
+                     },
+                  },
+               },
             },
          },
-      },
+         async sendInvitationEmail(data) {
+            const inviteLink = `${getDomain()}/callback/organization/invitation/${data.id}`;
+            if (!isProduction) {
+               logger.info(
+                  { email: data.email, inviteLink },
+                  "DEV organization invitation generated",
+               );
+               return;
+            }
+            await sendOrganizationInvitation(resendClient, {
+               email: data.email,
+               invitedByEmail: data.inviter.user.email,
+               invitedByUsername: data.inviter.user.name,
+               inviteLink,
+               teamName: data.organization.name,
+            });
+         },
+         teams: {
+            allowRemovingAllTeams: false,
+            defaultTeam: {
+               enabled: false, // Don't auto-create team on org creation
+            },
+            enabled: true,
+            maximumMembersPerTeam: 50,
+            maximumTeams: 10,
+         },
+      }),
 
-      plugins: [
-         admin(),
+      twoFactor({
+         issuer: "Montte",
+         skipVerificationOnEnable: false,
+         totpOptions: {
+            digits: 6,
+            period: 30,
+         },
+         backupCodeOptions: {
+            amount: 10,
+            length: 10,
+         },
+      }),
 
-         magicLink({
-            expiresIn: 60 * 15, // 15 minutes
-            async sendMagicLink({ email, url }) {
-               if (!isProduction) {
-                  logger.info({ email, url }, "DEV magic link generated");
-                  devMagicLinkStore.set(email, url);
-                  return;
-               }
-               await sendMagicLinkEmail(resendClient, {
-                  email,
-                  magicLinkUrl: url,
+      // Used by webhooks for signing secrets (stored via Better Auth's key table)
+      apiKey({
+         enableSessionForAPIKeys: true,
+         enableMetadata: true,
+         defaultPrefix: "cta_",
+         apiKeyHeaders: ["sdk-api-key", "x-api-key"],
+         rateLimit: {
+            enabled: true,
+            timeWindow: 1000 * 60, // 1 minute
+            maxRequests: 100,
+         },
+      }),
+
+      stripePlugin({
+         createCustomerOnSignUp: true,
+         stripeClient,
+         stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET,
+         subscription: {
+            authorizeReference: async ({ user, referenceId }) => {
+               const membership = await db.query.member.findFirst({
+                  where: { organizationId: referenceId, userId: user.id },
                });
+               if (!membership) return false;
+               return (
+                  membership.role === "owner" || membership.role === "admin"
+               );
             },
-         }),
-
-         emailOTP({
-            expiresIn: 60 * 10,
-            otpLength: 6,
-            sendVerificationOnSignUp: isProduction,
-            changeEmail: {
-               enabled: true,
-            },
-            async sendVerificationOTP({ email, otp, type }) {
-               if (!isProduction) {
-                  logger.info({ email, type, otp }, "DEV OTP generated");
-                  return;
-               }
-               await sendEmailOTP(resendClient, { email, otp, type });
-            },
-         }),
-
-         lastLoginMethod(),
-
-         organization({
-            organizationLimit: ORGANIZATION_LIMIT,
-            schema: {
-               organization: {
-                  additionalFields: {
-                     context: {
-                        defaultValue: "personal",
-                        input: true,
-                        required: false,
-                        type: "string",
-                     },
-                     description: {
-                        defaultValue: "",
-                        input: true,
-                        required: false,
-                        type: "string",
-                     },
-                     onboardingCompleted: {
-                        defaultValue: false,
-                        input: true,
-                        required: false,
-                        type: "boolean",
-                     },
-                  },
+            enabled: true,
+            getCheckoutSessionParams: async () => ({
+               params: {
+                  allow_promotion_codes: true,
                },
-               team: {
-                  additionalFields: {
-                     slug: {
-                        input: true,
-                        required: true,
-                        type: "string",
-                     },
-                     description: {
-                        defaultValue: "",
-                        input: true,
-                        required: false,
-                        type: "string",
-                     },
-                     allowedDomains: {
-                        type: "string[]",
-                        input: true,
-                        required: false,
-                        validator: {
-                           input: z.array(
-                              z
-                                 .string()
-                                 .regex(
-                                    /^(\*\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/,
-                                    "Invalid domain pattern. Examples: example.com, *.example.com, app.example.com, localhost",
-                                 ),
-                           ),
-                        },
-                     },
-                     onboardingCompleted: {
-                        defaultValue: false,
-                        input: true,
-                        required: false,
-                        type: "boolean",
-                     },
-                     onboardingProducts: {
-                        defaultValue: null,
-                        input: true,
-                        required: false,
-                        type: "json",
-                        validator: {
-                           input: z
-                              .array(z.enum(["content", "forms", "analytics"]))
-                              .nullable(),
-                        },
-                     },
-                     onboardingTasks: {
-                        defaultValue: null,
-                        input: true,
-                        required: false,
-                        type: "json",
-                        validator: {
-                           input: z.record(z.string(), z.boolean()).nullable(),
-                        },
-                     },
-                     accountType: {
-                        defaultValue: "personal",
-                        input: true,
-                        required: false,
-                        type: "string",
-                        validator: {
-                           input: z
-                              .enum(["personal", "business"])
-                              .nullable()
-                              .optional(),
-                        },
-                     },
-                  },
+            }),
+            plans: [
+               // Platform addons
+               {
+                  name: "boost",
+                  priceId: env.STRIPE_BOOST_PRICE_ID,
                },
-            },
-            async sendInvitationEmail(data) {
-               const inviteLink = `${getDomain()}/callback/organization/invitation/${data.id}`;
-               if (!isProduction) {
-                  logger.info(
-                     { email: data.email, inviteLink },
-                     "DEV organization invitation generated",
-                  );
-                  return;
-               }
-               await sendOrganizationInvitation(resendClient, {
-                  email: data.email,
-                  invitedByEmail: data.inviter.user.email,
-                  invitedByUsername: data.inviter.user.name,
-                  inviteLink,
-                  teamName: data.organization.name,
-               });
-            },
-            teams: {
-               allowRemovingAllTeams: false,
-               defaultTeam: {
-                  enabled: false, // Don't auto-create team on org creation
+               {
+                  name: "scale",
+                  priceId: env.STRIPE_SCALE_PRICE_ID,
                },
-               enabled: true,
-               maximumMembersPerTeam: 50,
-               maximumTeams: 10,
-            },
-         }),
-
-         twoFactor({
-            issuer: "Montte",
-            skipVerificationOnEnable: false,
-            totpOptions: {
-               digits: 6,
-               period: 30,
-            },
-            backupCodeOptions: {
-               amount: 10,
-               length: 10,
-            },
-         }),
-
-         // Used by webhooks for signing secrets (stored via Better Auth's key table)
-         apiKey({
-            enableSessionForAPIKeys: true,
-            enableMetadata: true,
-            defaultPrefix: "cta_",
-            apiKeyHeaders: ["sdk-api-key", "x-api-key"],
-            rateLimit: {
-               enabled: true,
-               timeWindow: 1000 * 60, // 1 minute
-               maxRequests: 100,
-            },
-         }),
-
-         stripePlugin({
-            createCustomerOnSignUp: true,
-            stripeClient,
-            stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET,
-            subscription: {
-               authorizeReference: async ({ user, referenceId }) => {
-                  const membership = await db.query.member.findFirst({
-                     where: { organizationId: referenceId, userId: user.id },
-                  });
-                  if (!membership) return false;
-                  return (
-                     membership.role === "owner" || membership.role === "admin"
-                  );
+               {
+                  name: "enterprise",
+                  priceId: env.STRIPE_ENTERPRISE_PRICE_ID,
                },
-               enabled: true,
-               getCheckoutSessionParams: async () => ({
-                  params: {
-                     allow_promotion_codes: true,
-                  },
-               }),
-               plans: [
-                  // Platform addons
-                  {
-                     name: "boost",
-                     priceId: env.STRIPE_BOOST_PRICE_ID,
-                  },
-                  {
-                     name: "scale",
-                     priceId: env.STRIPE_SCALE_PRICE_ID,
-                  },
-                  {
-                     name: "enterprise",
-                     priceId: env.STRIPE_ENTERPRISE_PRICE_ID,
-                  },
-               ],
-            },
-            onSubscriptionComplete: async ({
-               subscription,
-               stripeSubscription,
-            }: {
-               subscription: { id: string; plan: string; referenceId: string };
-               stripeSubscription: Stripe.Subscription;
-            }) => {
-               try {
-                  const invoice = await stripeClient.invoices.retrieve(
-                     stripeSubscription.latest_invoice as string,
-                  );
-                  posthogClient.capture({
-                     distinctId: subscription.referenceId,
-                     event: "subscription_started",
-                     groups: { organization: subscription.referenceId },
-                     properties: {
-                        $currency: invoice.currency.toUpperCase(),
-                        $revenue: invoice.amount_paid / 100,
-                        interval:
-                           stripeSubscription.items.data[0]?.plan.interval,
-                        organization_id: subscription.referenceId,
-                        plan_name: subscription.plan,
-                        subscription_id: subscription.id,
-                     },
-                  });
-               } catch (error) {
-                  logger.error(
-                     { err: error },
-                     "Failed to capture subscription_started event",
-                  );
-               }
-            },
-            onSubscriptionCancel: async ({
-               subscription,
-            }: {
-               subscription: { id: string; plan: string; referenceId: string };
-            }) => {
-               try {
-                  posthogClient.capture({
-                     distinctId: subscription.referenceId,
-                     event: "subscription_canceled",
-                     groups: { organization: subscription.referenceId },
-                     properties: {
-                        organization_id: subscription.referenceId,
-                        plan_name: subscription.plan,
-                        subscription_id: subscription.id,
-                     },
-                  });
-               } catch (error) {
-                  logger.error(
-                     { err: error },
-                     "Failed to capture subscription_canceled event",
-                  );
-               }
-            },
-         }),
-
-         // JWT + OAuth 2.1 Provider (enables MCP authentication)
-         jwt(),
-
-         oauthProvider({
-            loginPage: "/sign-in",
-            consentPage: "/oauth/consent",
-            enableMcp: true,
-            allowDynamicClientRegistration: true,
-            allowUnauthenticatedClientRegistration: true,
-            scopes: [
-               "openid",
-               "profile",
-               "email",
-               "offline_access",
-               "content:read",
-               "content:write",
-               "content:publish",
-               "writer:read",
             ],
-            accessTokenExpiresIn: 3600, // 1 hour
-            refreshTokenExpiresIn: 2592000, // 30 days
-            postLogin: {
-               page: "/oauth/select-organization",
-               shouldRedirect: async () => false,
-               consentReferenceId: ({ session }) => {
-                  const orgId = session?.activeOrganizationId;
-                  return typeof orgId === "string" ? orgId : undefined;
-               },
+         },
+         onSubscriptionComplete: async ({
+            subscription,
+            stripeSubscription,
+         }: {
+            subscription: { id: string; plan: string; referenceId: string };
+            stripeSubscription: Stripe.Subscription;
+         }) => {
+            try {
+               const invoice = await stripeClient.invoices.retrieve(
+                  stripeSubscription.latest_invoice as string,
+               );
+               posthog.capture({
+                  distinctId: subscription.referenceId,
+                  event: "subscription_started",
+                  groups: { organization: subscription.referenceId },
+                  properties: {
+                     $currency: invoice.currency.toUpperCase(),
+                     $revenue: invoice.amount_paid / 100,
+                     interval: stripeSubscription.items.data[0]?.plan.interval,
+                     organization_id: subscription.referenceId,
+                     plan_name: subscription.plan,
+                     subscription_id: subscription.id,
+                  },
+               });
+            } catch (error) {
+               logger.error(
+                  { err: error },
+                  "Failed to capture subscription_started event",
+               );
+            }
+         },
+         onSubscriptionCancel: async ({
+            subscription,
+         }: {
+            subscription: { id: string; plan: string; referenceId: string };
+         }) => {
+            try {
+               posthog.capture({
+                  distinctId: subscription.referenceId,
+                  event: "subscription_canceled",
+                  groups: { organization: subscription.referenceId },
+                  properties: {
+                     organization_id: subscription.referenceId,
+                     plan_name: subscription.plan,
+                     subscription_id: subscription.id,
+                  },
+               });
+            } catch (error) {
+               logger.error(
+                  { err: error },
+                  "Failed to capture subscription_canceled event",
+               );
+            }
+         },
+      }),
+
+      // JWT + OAuth 2.1 Provider (enables MCP authentication)
+      jwt(),
+
+      oauthProvider({
+         loginPage: "/sign-in",
+         consentPage: "/oauth/consent",
+         enableMcp: true,
+         allowDynamicClientRegistration: true,
+         allowUnauthenticatedClientRegistration: true,
+         scopes: [
+            "openid",
+            "profile",
+            "email",
+            "offline_access",
+            "content:read",
+            "content:write",
+            "content:publish",
+            "writer:read",
+         ],
+         accessTokenExpiresIn: 3600, // 1 hour
+         refreshTokenExpiresIn: 2592000, // 30 days
+         postLogin: {
+            page: "/oauth/select-organization",
+            shouldRedirect: async () => false,
+            consentReferenceId: ({ session }) => {
+               const orgId = session?.activeOrganizationId;
+               return typeof orgId === "string" ? orgId : undefined;
             },
-         }),
+         },
+      }),
 
-         // Must be last - enables proper cookie handling for TanStack Start
-         tanstackStartCookies(),
-      ],
-   });
-}
+      // Must be last - enables proper cookie handling for TanStack Start
+      tanstackStartCookies(),
+   ],
+});
 
-export type AuthInstance = ReturnType<typeof createAuth>;
+export type AuthInstance = typeof auth;
