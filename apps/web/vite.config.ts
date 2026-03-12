@@ -20,6 +20,9 @@ const config = defineConfig({
          tslib: require.resolve("tslib/tslib.es6.mjs"),
       },
    },
+   ssr: {
+      external: ["posthog-js"],
+   },
    optimizeDeps: {
       include: ["react", "react-dom"],
    },

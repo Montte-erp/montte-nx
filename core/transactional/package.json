@@ -15,6 +15,10 @@
       "./utils": {
          "types": "./dist/src/utils.d.ts",
          "default": "./src/utils.ts"
+      },
+      "./emails/*": {
+         "types": "./dist/src/emails/*.d.ts",
+         "default": "./src/emails/*.tsx"
       }
    },
    "scripts": {

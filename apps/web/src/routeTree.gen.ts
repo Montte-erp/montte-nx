@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from "./routes/__root";
 import { Route as AuthRouteImport } from "./routes/auth";
 import { Route as AuthenticatedRouteImport } from "./routes/_authenticated";
 import { Route as IndexRouteImport } from "./routes/index";
-import { Route as OauthConsentRouteImport } from "./routes/oauth/consent";
 import { Route as AuthSignUpRouteImport } from "./routes/auth/sign-up";
 import { Route as AuthSignInRouteImport } from "./routes/auth/sign-in";
 import { Route as AuthMagicLinkRouteImport } from "./routes/auth/magic-link";
@@ -22,7 +21,6 @@ import { Route as AuthCallbackRouteImport } from "./routes/auth/callback";
 import { Route as ApiSplatRouteImport } from "./routes/api/$";
 import { Route as AuthenticatedOnboardingRouteImport } from "./routes/_authenticated/onboarding";
 import { Route as AuthenticatedSlugRouteImport } from "./routes/_authenticated/$slug";
-import { Route as DotwellKnownOpenidConfigurationRouteImport } from "./routes/[.]well-known.openid-configuration";
 import { Route as AuthSignInIndexRouteImport } from "./routes/auth/sign-in/index";
 import { Route as AuthSignInEmailRouteImport } from "./routes/auth/sign-in/email";
 import { Route as ApiRpcSplatRouteImport } from "./routes/api/rpc/$";
@@ -31,7 +29,6 @@ import { Route as ApiElectricSplatRouteImport } from "./routes/api/electric/$";
 import { Route as ApiChatSplatRouteImport } from "./routes/api/chat/$";
 import { Route as ApiAuthSplatRouteImport } from "./routes/api/auth/$";
 import { Route as AuthenticatedSlugTeamSlugRouteImport } from "./routes/_authenticated/$slug/$teamSlug";
-import { Route as DotwellKnownOauthAuthorizationServerSplatRouteImport } from "./routes/[.]well-known.oauth-authorization-server.$";
 import { Route as CallbackOrganizationInvitationInvitationIdRouteImport } from "./routes/callback/organization/invitation/$invitationId";
 import { Route as AuthenticatedSlugTeamSlugDashboardRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard";
 import { Route as AuthenticatedSlugTeamSlugDashboardTransactionsRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/transactions";
@@ -52,7 +49,6 @@ import { Route as AuthenticatedSlugTeamSlugDashboardHomeIndexRouteImport } from 
 import { Route as AuthenticatedSlugTeamSlugDashboardChatIndexRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/chat/index";
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsSecurityRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/security";
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProfileRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/profile";
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsPersonalApiKeysRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/personal-api-keys";
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews";
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/danger-zone";
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/customization";
@@ -66,10 +62,8 @@ import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectWebhooksRoute
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations";
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general";
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone";
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectActivityLogsRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/activity-logs";
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectAccessControlRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/access-control";
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsOrganizationSecurityRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/security";
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsOrganizationRolesRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/roles";
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members";
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general";
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone";
@@ -81,7 +75,6 @@ import { Route as AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsDashboard
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro";
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsEstoqueRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/estoque";
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos";
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents";
 
 const AuthRoute = AuthRouteImport.update({
    id: "/auth",
@@ -95,11 +88,6 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
    id: "/",
    path: "/",
-   getParentRoute: () => rootRouteImport,
-} as any);
-const OauthConsentRoute = OauthConsentRouteImport.update({
-   id: "/oauth/consent",
-   path: "/oauth/consent",
    getParentRoute: () => rootRouteImport,
 } as any);
 const AuthSignUpRoute = AuthSignUpRouteImport.update({
@@ -147,12 +135,6 @@ const AuthenticatedSlugRoute = AuthenticatedSlugRouteImport.update({
    path: "/$slug",
    getParentRoute: () => AuthenticatedRoute,
 } as any);
-const DotwellKnownOpenidConfigurationRoute =
-   DotwellKnownOpenidConfigurationRouteImport.update({
-      id: "/.well-known/openid-configuration",
-      path: "/.well-known/openid-configuration",
-      getParentRoute: () => rootRouteImport,
-   } as any);
 const AuthSignInIndexRoute = AuthSignInIndexRouteImport.update({
    id: "/",
    path: "/",
@@ -193,12 +175,6 @@ const AuthenticatedSlugTeamSlugRoute =
       id: "/$teamSlug",
       path: "/$teamSlug",
       getParentRoute: () => AuthenticatedSlugRoute,
-   } as any);
-const DotwellKnownOauthAuthorizationServerSplatRoute =
-   DotwellKnownOauthAuthorizationServerSplatRouteImport.update({
-      id: "/.well-known/oauth-authorization-server/$",
-      path: "/.well-known/oauth-authorization-server/$",
-      getParentRoute: () => rootRouteImport,
    } as any);
 const CallbackOrganizationInvitationInvitationIdRoute =
    CallbackOrganizationInvitationInvitationIdRouteImport.update({
@@ -319,12 +295,6 @@ const AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute =
       path: "/profile",
       getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
    } as any);
-const AuthenticatedSlugTeamSlugDashboardSettingsPersonalApiKeysRoute =
-   AuthenticatedSlugTeamSlugDashboardSettingsPersonalApiKeysRouteImport.update({
-      id: "/personal-api-keys",
-      path: "/personal-api-keys",
-      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-   } as any);
 const AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute =
    AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRouteImport.update({
       id: "/feature-previews",
@@ -412,14 +382,6 @@ const AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute =
          getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
       } as any,
    );
-const AuthenticatedSlugTeamSlugDashboardSettingsProjectActivityLogsRoute =
-   AuthenticatedSlugTeamSlugDashboardSettingsProjectActivityLogsRouteImport.update(
-      {
-         id: "/project/activity-logs",
-         path: "/project/activity-logs",
-         getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-      } as any,
-   );
 const AuthenticatedSlugTeamSlugDashboardSettingsProjectAccessControlRoute =
    AuthenticatedSlugTeamSlugDashboardSettingsProjectAccessControlRouteImport.update(
       {
@@ -433,14 +395,6 @@ const AuthenticatedSlugTeamSlugDashboardSettingsOrganizationSecurityRoute =
       {
          id: "/organization/security",
          path: "/organization/security",
-         getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-      } as any,
-   );
-const AuthenticatedSlugTeamSlugDashboardSettingsOrganizationRolesRoute =
-   AuthenticatedSlugTeamSlugDashboardSettingsOrganizationRolesRouteImport.update(
-      {
-         id: "/organization/roles",
-         path: "/organization/roles",
          getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
       } as any,
    );
@@ -534,19 +488,10 @@ const AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute =
          getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
       } as any,
    );
-const AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute =
-   AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRouteImport.update(
-      {
-         id: "/project/products/ai-agents",
-         path: "/project/products/ai-agents",
-         getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-      } as any,
-   );
 
 export interface FileRoutesByFullPath {
    "/": typeof IndexRoute;
    "/auth": typeof AuthRouteWithChildren;
-   "/.well-known/openid-configuration": typeof DotwellKnownOpenidConfigurationRoute;
    "/$slug": typeof AuthenticatedSlugRouteWithChildren;
    "/onboarding": typeof AuthenticatedOnboardingRoute;
    "/api/$": typeof ApiSplatRoute;
@@ -556,8 +501,6 @@ export interface FileRoutesByFullPath {
    "/auth/magic-link": typeof AuthMagicLinkRoute;
    "/auth/sign-in": typeof AuthSignInRouteWithChildren;
    "/auth/sign-up": typeof AuthSignUpRoute;
-   "/oauth/consent": typeof OauthConsentRoute;
-   "/.well-known/oauth-authorization-server/$": typeof DotwellKnownOauthAuthorizationServerSplatRoute;
    "/$slug/$teamSlug": typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren;
    "/api/auth/$": typeof ApiAuthSplatRoute;
    "/api/chat/$": typeof ApiChatSplatRoute;
@@ -585,7 +528,6 @@ export interface FileRoutesByFullPath {
    "/$slug/$teamSlug/settings/customization": typeof AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute;
    "/$slug/$teamSlug/settings/danger-zone": typeof AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute;
    "/$slug/$teamSlug/settings/feature-previews": typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute;
-   "/$slug/$teamSlug/settings/personal-api-keys": typeof AuthenticatedSlugTeamSlugDashboardSettingsPersonalApiKeysRoute;
    "/$slug/$teamSlug/settings/profile": typeof AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute;
    "/$slug/$teamSlug/settings/security": typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute;
    "/$slug/$teamSlug/chat/": typeof AuthenticatedSlugTeamSlugDashboardChatIndexRoute;
@@ -600,10 +542,8 @@ export interface FileRoutesByFullPath {
    "/$slug/$teamSlug/settings/organization/danger-zone": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute;
    "/$slug/$teamSlug/settings/organization/general": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute;
    "/$slug/$teamSlug/settings/organization/members": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute;
-   "/$slug/$teamSlug/settings/organization/roles": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationRolesRoute;
    "/$slug/$teamSlug/settings/organization/security": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationSecurityRoute;
    "/$slug/$teamSlug/settings/project/access-control": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectAccessControlRoute;
-   "/$slug/$teamSlug/settings/project/activity-logs": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectActivityLogsRoute;
    "/$slug/$teamSlug/settings/project/danger-zone": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute;
    "/$slug/$teamSlug/settings/project/general": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute;
    "/$slug/$teamSlug/settings/project/integrations": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute;
@@ -611,7 +551,6 @@ export interface FileRoutesByFullPath {
    "/$slug/$teamSlug/analytics/dashboards/": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute;
    "/$slug/$teamSlug/analytics/data-management/": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementIndexRoute;
    "/$slug/$teamSlug/analytics/insights/": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute;
-   "/$slug/$teamSlug/settings/project/products/ai-agents": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute;
    "/$slug/$teamSlug/settings/project/products/contatos": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute;
    "/$slug/$teamSlug/settings/project/products/estoque": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsEstoqueRoute;
    "/$slug/$teamSlug/settings/project/products/financeiro": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute;
@@ -619,7 +558,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
    "/": typeof IndexRoute;
    "/auth": typeof AuthRouteWithChildren;
-   "/.well-known/openid-configuration": typeof DotwellKnownOpenidConfigurationRoute;
    "/$slug": typeof AuthenticatedSlugRouteWithChildren;
    "/onboarding": typeof AuthenticatedOnboardingRoute;
    "/api/$": typeof ApiSplatRoute;
@@ -628,8 +566,6 @@ export interface FileRoutesByTo {
    "/auth/forgot-password": typeof AuthForgotPasswordRoute;
    "/auth/magic-link": typeof AuthMagicLinkRoute;
    "/auth/sign-up": typeof AuthSignUpRoute;
-   "/oauth/consent": typeof OauthConsentRoute;
-   "/.well-known/oauth-authorization-server/$": typeof DotwellKnownOauthAuthorizationServerSplatRoute;
    "/$slug/$teamSlug": typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren;
    "/api/auth/$": typeof ApiAuthSplatRoute;
    "/api/chat/$": typeof ApiChatSplatRoute;
@@ -654,7 +590,6 @@ export interface FileRoutesByTo {
    "/$slug/$teamSlug/settings/customization": typeof AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute;
    "/$slug/$teamSlug/settings/danger-zone": typeof AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute;
    "/$slug/$teamSlug/settings/feature-previews": typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute;
-   "/$slug/$teamSlug/settings/personal-api-keys": typeof AuthenticatedSlugTeamSlugDashboardSettingsPersonalApiKeysRoute;
    "/$slug/$teamSlug/settings/profile": typeof AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute;
    "/$slug/$teamSlug/settings/security": typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute;
    "/$slug/$teamSlug/chat": typeof AuthenticatedSlugTeamSlugDashboardChatIndexRoute;
@@ -669,10 +604,8 @@ export interface FileRoutesByTo {
    "/$slug/$teamSlug/settings/organization/danger-zone": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute;
    "/$slug/$teamSlug/settings/organization/general": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute;
    "/$slug/$teamSlug/settings/organization/members": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute;
-   "/$slug/$teamSlug/settings/organization/roles": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationRolesRoute;
    "/$slug/$teamSlug/settings/organization/security": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationSecurityRoute;
    "/$slug/$teamSlug/settings/project/access-control": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectAccessControlRoute;
-   "/$slug/$teamSlug/settings/project/activity-logs": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectActivityLogsRoute;
    "/$slug/$teamSlug/settings/project/danger-zone": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute;
    "/$slug/$teamSlug/settings/project/general": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute;
    "/$slug/$teamSlug/settings/project/integrations": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute;
@@ -680,7 +613,6 @@ export interface FileRoutesByTo {
    "/$slug/$teamSlug/analytics/dashboards": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute;
    "/$slug/$teamSlug/analytics/data-management": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementIndexRoute;
    "/$slug/$teamSlug/analytics/insights": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute;
-   "/$slug/$teamSlug/settings/project/products/ai-agents": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute;
    "/$slug/$teamSlug/settings/project/products/contatos": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute;
    "/$slug/$teamSlug/settings/project/products/estoque": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsEstoqueRoute;
    "/$slug/$teamSlug/settings/project/products/financeiro": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute;
@@ -690,7 +622,6 @@ export interface FileRoutesById {
    "/": typeof IndexRoute;
    "/_authenticated": typeof AuthenticatedRouteWithChildren;
    "/auth": typeof AuthRouteWithChildren;
-   "/.well-known/openid-configuration": typeof DotwellKnownOpenidConfigurationRoute;
    "/_authenticated/$slug": typeof AuthenticatedSlugRouteWithChildren;
    "/_authenticated/onboarding": typeof AuthenticatedOnboardingRoute;
    "/api/$": typeof ApiSplatRoute;
@@ -700,8 +631,6 @@ export interface FileRoutesById {
    "/auth/magic-link": typeof AuthMagicLinkRoute;
    "/auth/sign-in": typeof AuthSignInRouteWithChildren;
    "/auth/sign-up": typeof AuthSignUpRoute;
-   "/oauth/consent": typeof OauthConsentRoute;
-   "/.well-known/oauth-authorization-server/$": typeof DotwellKnownOauthAuthorizationServerSplatRoute;
    "/_authenticated/$slug/$teamSlug": typeof AuthenticatedSlugTeamSlugRouteWithChildren;
    "/api/auth/$": typeof ApiAuthSplatRoute;
    "/api/chat/$": typeof ApiChatSplatRoute;
@@ -730,7 +659,6 @@ export interface FileRoutesById {
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/customization": typeof AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/danger-zone": typeof AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews": typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute;
-   "/_authenticated/$slug/$teamSlug/_dashboard/settings/personal-api-keys": typeof AuthenticatedSlugTeamSlugDashboardSettingsPersonalApiKeysRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/profile": typeof AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/security": typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/chat/": typeof AuthenticatedSlugTeamSlugDashboardChatIndexRoute;
@@ -745,10 +673,8 @@ export interface FileRoutesById {
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute;
-   "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/roles": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationRolesRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/security": typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationSecurityRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/access-control": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectAccessControlRoute;
-   "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/activity-logs": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectActivityLogsRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute;
@@ -756,7 +682,6 @@ export interface FileRoutesById {
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDashboardsIndexRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsDataManagementIndexRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/": typeof AuthenticatedSlugTeamSlugDashboardAnalyticsInsightsIndexRoute;
-   "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/estoque": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsEstoqueRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro": typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute;
@@ -766,7 +691,6 @@ export interface FileRouteTypes {
    fullPaths:
       | "/"
       | "/auth"
-      | "/.well-known/openid-configuration"
       | "/$slug"
       | "/onboarding"
       | "/api/$"
@@ -776,8 +700,6 @@ export interface FileRouteTypes {
       | "/auth/magic-link"
       | "/auth/sign-in"
       | "/auth/sign-up"
-      | "/oauth/consent"
-      | "/.well-known/oauth-authorization-server/$"
       | "/$slug/$teamSlug"
       | "/api/auth/$"
       | "/api/chat/$"
@@ -805,7 +727,6 @@ export interface FileRouteTypes {
       | "/$slug/$teamSlug/settings/customization"
       | "/$slug/$teamSlug/settings/danger-zone"
       | "/$slug/$teamSlug/settings/feature-previews"
-      | "/$slug/$teamSlug/settings/personal-api-keys"
       | "/$slug/$teamSlug/settings/profile"
       | "/$slug/$teamSlug/settings/security"
       | "/$slug/$teamSlug/chat/"
@@ -820,10 +741,8 @@ export interface FileRouteTypes {
       | "/$slug/$teamSlug/settings/organization/danger-zone"
       | "/$slug/$teamSlug/settings/organization/general"
       | "/$slug/$teamSlug/settings/organization/members"
-      | "/$slug/$teamSlug/settings/organization/roles"
       | "/$slug/$teamSlug/settings/organization/security"
       | "/$slug/$teamSlug/settings/project/access-control"
-      | "/$slug/$teamSlug/settings/project/activity-logs"
       | "/$slug/$teamSlug/settings/project/danger-zone"
       | "/$slug/$teamSlug/settings/project/general"
       | "/$slug/$teamSlug/settings/project/integrations"
@@ -831,7 +750,6 @@ export interface FileRouteTypes {
       | "/$slug/$teamSlug/analytics/dashboards/"
       | "/$slug/$teamSlug/analytics/data-management/"
       | "/$slug/$teamSlug/analytics/insights/"
-      | "/$slug/$teamSlug/settings/project/products/ai-agents"
       | "/$slug/$teamSlug/settings/project/products/contatos"
       | "/$slug/$teamSlug/settings/project/products/estoque"
       | "/$slug/$teamSlug/settings/project/products/financeiro";
@@ -839,7 +757,6 @@ export interface FileRouteTypes {
    to:
       | "/"
       | "/auth"
-      | "/.well-known/openid-configuration"
       | "/$slug"
       | "/onboarding"
       | "/api/$"
@@ -848,8 +765,6 @@ export interface FileRouteTypes {
       | "/auth/forgot-password"
       | "/auth/magic-link"
       | "/auth/sign-up"
-      | "/oauth/consent"
-      | "/.well-known/oauth-authorization-server/$"
       | "/$slug/$teamSlug"
       | "/api/auth/$"
       | "/api/chat/$"
@@ -874,7 +789,6 @@ export interface FileRouteTypes {
       | "/$slug/$teamSlug/settings/customization"
       | "/$slug/$teamSlug/settings/danger-zone"
       | "/$slug/$teamSlug/settings/feature-previews"
-      | "/$slug/$teamSlug/settings/personal-api-keys"
       | "/$slug/$teamSlug/settings/profile"
       | "/$slug/$teamSlug/settings/security"
       | "/$slug/$teamSlug/chat"
@@ -889,10 +803,8 @@ export interface FileRouteTypes {
       | "/$slug/$teamSlug/settings/organization/danger-zone"
       | "/$slug/$teamSlug/settings/organization/general"
       | "/$slug/$teamSlug/settings/organization/members"
-      | "/$slug/$teamSlug/settings/organization/roles"
       | "/$slug/$teamSlug/settings/organization/security"
       | "/$slug/$teamSlug/settings/project/access-control"
-      | "/$slug/$teamSlug/settings/project/activity-logs"
       | "/$slug/$teamSlug/settings/project/danger-zone"
       | "/$slug/$teamSlug/settings/project/general"
       | "/$slug/$teamSlug/settings/project/integrations"
@@ -900,7 +812,6 @@ export interface FileRouteTypes {
       | "/$slug/$teamSlug/analytics/dashboards"
       | "/$slug/$teamSlug/analytics/data-management"
       | "/$slug/$teamSlug/analytics/insights"
-      | "/$slug/$teamSlug/settings/project/products/ai-agents"
       | "/$slug/$teamSlug/settings/project/products/contatos"
       | "/$slug/$teamSlug/settings/project/products/estoque"
       | "/$slug/$teamSlug/settings/project/products/financeiro";
@@ -909,7 +820,6 @@ export interface FileRouteTypes {
       | "/"
       | "/_authenticated"
       | "/auth"
-      | "/.well-known/openid-configuration"
       | "/_authenticated/$slug"
       | "/_authenticated/onboarding"
       | "/api/$"
@@ -919,8 +829,6 @@ export interface FileRouteTypes {
       | "/auth/magic-link"
       | "/auth/sign-in"
       | "/auth/sign-up"
-      | "/oauth/consent"
-      | "/.well-known/oauth-authorization-server/$"
       | "/_authenticated/$slug/$teamSlug"
       | "/api/auth/$"
       | "/api/chat/$"
@@ -949,7 +857,6 @@ export interface FileRouteTypes {
       | "/_authenticated/$slug/$teamSlug/_dashboard/settings/customization"
       | "/_authenticated/$slug/$teamSlug/_dashboard/settings/danger-zone"
       | "/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews"
-      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/personal-api-keys"
       | "/_authenticated/$slug/$teamSlug/_dashboard/settings/profile"
       | "/_authenticated/$slug/$teamSlug/_dashboard/settings/security"
       | "/_authenticated/$slug/$teamSlug/_dashboard/chat/"
@@ -964,10 +871,8 @@ export interface FileRouteTypes {
       | "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone"
       | "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general"
       | "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members"
-      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/roles"
       | "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/security"
       | "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/access-control"
-      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/activity-logs"
       | "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone"
       | "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general"
       | "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations"
@@ -975,7 +880,6 @@ export interface FileRouteTypes {
       | "/_authenticated/$slug/$teamSlug/_dashboard/analytics/dashboards/"
       | "/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/"
       | "/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/"
-      | "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents"
       | "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/contatos"
       | "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/estoque"
       | "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro";
@@ -985,10 +889,7 @@ export interface RootRouteChildren {
    IndexRoute: typeof IndexRoute;
    AuthenticatedRoute: typeof AuthenticatedRouteWithChildren;
    AuthRoute: typeof AuthRouteWithChildren;
-   DotwellKnownOpenidConfigurationRoute: typeof DotwellKnownOpenidConfigurationRoute;
    ApiSplatRoute: typeof ApiSplatRoute;
-   OauthConsentRoute: typeof OauthConsentRoute;
-   DotwellKnownOauthAuthorizationServerSplatRoute: typeof DotwellKnownOauthAuthorizationServerSplatRoute;
    ApiAuthSplatRoute: typeof ApiAuthSplatRoute;
    ApiChatSplatRoute: typeof ApiChatSplatRoute;
    ApiElectricSplatRoute: typeof ApiElectricSplatRoute;
@@ -1018,13 +919,6 @@ declare module "@tanstack/react-router" {
          path: "/";
          fullPath: "/";
          preLoaderRoute: typeof IndexRouteImport;
-         parentRoute: typeof rootRouteImport;
-      };
-      "/oauth/consent": {
-         id: "/oauth/consent";
-         path: "/oauth/consent";
-         fullPath: "/oauth/consent";
-         preLoaderRoute: typeof OauthConsentRouteImport;
          parentRoute: typeof rootRouteImport;
       };
       "/auth/sign-up": {
@@ -1090,13 +984,6 @@ declare module "@tanstack/react-router" {
          preLoaderRoute: typeof AuthenticatedSlugRouteImport;
          parentRoute: typeof AuthenticatedRoute;
       };
-      "/.well-known/openid-configuration": {
-         id: "/.well-known/openid-configuration";
-         path: "/.well-known/openid-configuration";
-         fullPath: "/.well-known/openid-configuration";
-         preLoaderRoute: typeof DotwellKnownOpenidConfigurationRouteImport;
-         parentRoute: typeof rootRouteImport;
-      };
       "/auth/sign-in/": {
          id: "/auth/sign-in/";
          path: "/";
@@ -1152,13 +1039,6 @@ declare module "@tanstack/react-router" {
          fullPath: "/$slug/$teamSlug";
          preLoaderRoute: typeof AuthenticatedSlugTeamSlugRouteImport;
          parentRoute: typeof AuthenticatedSlugRoute;
-      };
-      "/.well-known/oauth-authorization-server/$": {
-         id: "/.well-known/oauth-authorization-server/$";
-         path: "/.well-known/oauth-authorization-server/$";
-         fullPath: "/.well-known/oauth-authorization-server/$";
-         preLoaderRoute: typeof DotwellKnownOauthAuthorizationServerSplatRouteImport;
-         parentRoute: typeof rootRouteImport;
       };
       "/callback/organization/invitation/$invitationId": {
          id: "/callback/organization/invitation/$invitationId";
@@ -1300,13 +1180,6 @@ declare module "@tanstack/react-router" {
          preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProfileRouteImport;
          parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
       };
-      "/_authenticated/$slug/$teamSlug/_dashboard/settings/personal-api-keys": {
-         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/personal-api-keys";
-         path: "/personal-api-keys";
-         fullPath: "/$slug/$teamSlug/settings/personal-api-keys";
-         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsPersonalApiKeysRouteImport;
-         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
-      };
       "/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews": {
          id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews";
          path: "/feature-previews";
@@ -1398,13 +1271,6 @@ declare module "@tanstack/react-router" {
          preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRouteImport;
          parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
       };
-      "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/activity-logs": {
-         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/activity-logs";
-         path: "/project/activity-logs";
-         fullPath: "/$slug/$teamSlug/settings/project/activity-logs";
-         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectActivityLogsRouteImport;
-         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
-      };
       "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/access-control": {
          id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/access-control";
          path: "/project/access-control";
@@ -1417,13 +1283,6 @@ declare module "@tanstack/react-router" {
          path: "/organization/security";
          fullPath: "/$slug/$teamSlug/settings/organization/security";
          preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationSecurityRouteImport;
-         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
-      };
-      "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/roles": {
-         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/roles";
-         path: "/organization/roles";
-         fullPath: "/$slug/$teamSlug/settings/organization/roles";
-         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationRolesRouteImport;
          parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
       };
       "/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members": {
@@ -1503,13 +1362,6 @@ declare module "@tanstack/react-router" {
          preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRouteImport;
          parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
       };
-      "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents": {
-         id: "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents";
-         path: "/project/products/ai-agents";
-         fullPath: "/$slug/$teamSlug/settings/project/products/ai-agents";
-         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRouteImport;
-         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute;
-      };
    }
 }
 
@@ -1535,7 +1387,6 @@ interface AuthenticatedSlugTeamSlugDashboardSettingsRouteChildren {
    AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRoute;
    AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute;
    AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute;
-   AuthenticatedSlugTeamSlugDashboardSettingsPersonalApiKeysRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsPersonalApiKeysRoute;
    AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute;
    AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute;
    AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute;
@@ -1543,15 +1394,12 @@ interface AuthenticatedSlugTeamSlugDashboardSettingsRouteChildren {
    AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute;
    AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute;
    AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute;
-   AuthenticatedSlugTeamSlugDashboardSettingsOrganizationRolesRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationRolesRoute;
    AuthenticatedSlugTeamSlugDashboardSettingsOrganizationSecurityRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationSecurityRoute;
    AuthenticatedSlugTeamSlugDashboardSettingsProjectAccessControlRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectAccessControlRoute;
-   AuthenticatedSlugTeamSlugDashboardSettingsProjectActivityLogsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectActivityLogsRoute;
    AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute;
    AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute;
    AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute;
    AuthenticatedSlugTeamSlugDashboardSettingsProjectWebhooksRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectWebhooksRoute;
-   AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute;
    AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute;
    AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsEstoqueRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsEstoqueRoute;
    AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute;
@@ -1565,8 +1413,6 @@ const AuthenticatedSlugTeamSlugDashboardSettingsRouteChildren: AuthenticatedSlug
          AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRoute,
       AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute:
          AuthenticatedSlugTeamSlugDashboardSettingsFeaturePreviewsRoute,
-      AuthenticatedSlugTeamSlugDashboardSettingsPersonalApiKeysRoute:
-         AuthenticatedSlugTeamSlugDashboardSettingsPersonalApiKeysRoute,
       AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute:
          AuthenticatedSlugTeamSlugDashboardSettingsProfileRoute,
       AuthenticatedSlugTeamSlugDashboardSettingsSecurityRoute:
@@ -1581,14 +1427,10 @@ const AuthenticatedSlugTeamSlugDashboardSettingsRouteChildren: AuthenticatedSlug
          AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute,
       AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute:
          AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute,
-      AuthenticatedSlugTeamSlugDashboardSettingsOrganizationRolesRoute:
-         AuthenticatedSlugTeamSlugDashboardSettingsOrganizationRolesRoute,
       AuthenticatedSlugTeamSlugDashboardSettingsOrganizationSecurityRoute:
          AuthenticatedSlugTeamSlugDashboardSettingsOrganizationSecurityRoute,
       AuthenticatedSlugTeamSlugDashboardSettingsProjectAccessControlRoute:
          AuthenticatedSlugTeamSlugDashboardSettingsProjectAccessControlRoute,
-      AuthenticatedSlugTeamSlugDashboardSettingsProjectActivityLogsRoute:
-         AuthenticatedSlugTeamSlugDashboardSettingsProjectActivityLogsRoute,
       AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute:
          AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute,
       AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute:
@@ -1597,8 +1439,6 @@ const AuthenticatedSlugTeamSlugDashboardSettingsRouteChildren: AuthenticatedSlug
          AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute,
       AuthenticatedSlugTeamSlugDashboardSettingsProjectWebhooksRoute:
          AuthenticatedSlugTeamSlugDashboardSettingsProjectWebhooksRoute,
-      AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute:
-         AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute,
       AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute:
          AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsContatosRoute,
       AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsEstoqueRoute:
@@ -1783,11 +1623,7 @@ const rootRouteChildren: RootRouteChildren = {
    IndexRoute: IndexRoute,
    AuthenticatedRoute: AuthenticatedRouteWithChildren,
    AuthRoute: AuthRouteWithChildren,
-   DotwellKnownOpenidConfigurationRoute: DotwellKnownOpenidConfigurationRoute,
    ApiSplatRoute: ApiSplatRoute,
-   OauthConsentRoute: OauthConsentRoute,
-   DotwellKnownOauthAuthorizationServerSplatRoute:
-      DotwellKnownOauthAuthorizationServerSplatRoute,
    ApiAuthSplatRoute: ApiAuthSplatRoute,
    ApiChatSplatRoute: ApiChatSplatRoute,
    ApiElectricSplatRoute: ApiElectricSplatRoute,

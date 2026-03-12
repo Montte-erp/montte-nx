@@ -45,7 +45,7 @@ const getORPCClient = createIsomorphicFn()
       const link = new RPCLink({
          url: `${window.location.origin}/api/rpc`, // Use relative URL - SSR safe, no window reference needed
          headers: () => {
-            const posthogSessionId = posthogJs.get_session_id?.();
+            const posthogSessionId = posthogJs?.get_session_id?.();
             return {
                ...(posthogSessionId
                   ? { "X-PostHog-Session-Id": posthogSessionId }
