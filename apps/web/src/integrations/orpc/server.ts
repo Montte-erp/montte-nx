@@ -2,8 +2,13 @@ import { logs } from "@opentelemetry/api-logs";
 import { ORPCError, os } from "@orpc/server";
 import type { AuthInstance } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
-import type { PostHog } from "@core/posthog/server";
-import { captureError, identifyUser, setGroup } from "@core/posthog/server";
+import {
+   captureError,
+   captureServerEvent,
+   identifyUser,
+   posthog,
+   setGroup,
+} from "@core/posthog/server";
 import type { StripeClient } from "@core/stripe";
 import { sanitizeData } from "@core/utils/sanitization";
 
@@ -19,7 +24,7 @@ export interface ORPCContext {
 }
 
 /**
- * Base ORPC context - includes auth, db, session, and posthog (from route handler)
+ * Base ORPC context - includes auth, db, and session (from route handler)
  */
 export interface ORPCContextWithAuth {
    headers: Headers;
@@ -27,7 +32,6 @@ export interface ORPCContextWithAuth {
    auth: AuthInstance;
    db: DatabaseInstance;
    session: Awaited<ReturnType<AuthInstance["api"]["getSession"]>> | null;
-   posthog?: PostHog;
    stripeClient?: StripeClient;
 }
 
@@ -115,7 +119,6 @@ const otelLogger = logs.getLogger("montte-web-orpc");
 const withTelemetry = withOrganization.use(
    async ({ context, path, next }, input) => {
       const startDate = new Date();
-      const { posthog } = context;
       const userId = context.session?.user?.id;
       const userEmail = context.session?.user?.email;
       const userName = context.session?.user?.name;
@@ -143,14 +146,14 @@ const withTelemetry = withOrganization.use(
       });
 
       // Identify user if consented
-      if (userId && hasConsent && posthog) {
-         identifyUser(posthog, userId, {
+      if (userId && hasConsent) {
+         identifyUser(userId, {
             email: userEmail,
             name: userName,
          });
 
          if (organizationId) {
-            setGroup(posthog, organizationId, {});
+            setGroup(organizationId, {});
          }
       }
 
@@ -184,14 +187,14 @@ const withTelemetry = withOrganization.use(
          });
 
          // Capture PostHog analytics events
-         if (userId && hasConsent && posthog) {
+         if (userId && hasConsent) {
             try {
                const rootPath = path[0];
 
                if (!isSuccess && error) {
                   const errorId = crypto.randomUUID();
 
-                  captureError(posthog, {
+                  captureError({
                      code: "INTERNAL_SERVER_ERROR",
                      errorId,
                      input: sanitizeData(input),
@@ -202,8 +205,8 @@ const withTelemetry = withOrganization.use(
                   });
                }
 
-               posthog.capture({
-                  distinctId: userId,
+               captureServerEvent({
+                  userId,
                   event: "orpc_request",
                   properties: {
                      durationMs,
@@ -213,9 +216,6 @@ const withTelemetry = withOrganization.use(
                      rootPath,
                      startAt: startDate.toISOString(),
                      success: isSuccess,
-                     ...(organizationId
-                        ? { $groups: { organization: organizationId } }
-                        : {}),
                      ...(isSuccess
                         ? {}
                         : {
@@ -223,6 +223,9 @@ const withTelemetry = withOrganization.use(
                              errorName: error?.name,
                           }),
                   },
+                  groups: organizationId
+                     ? { organization: organizationId }
+                     : undefined,
                });
             } catch {
                // Silently fail telemetry to not affect the main request

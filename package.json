@@ -284,8 +284,6 @@
       "pino-opentelemetry-transport": "^3.0.0"
    },
    "devDependencies": {
-      "@commitlint/cli": "20.4.1",
-      "@commitlint/config-conventional": "20.4.1",
       "@nx/js": "22.5.1",
       "@rolldown/plugin-babel": "^0.2.0",
       "@swc-node/register": "1.11.1",
