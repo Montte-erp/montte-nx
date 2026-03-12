@@ -1,7 +1,7 @@
 import type { DatabaseInstance } from "@core/database/client";
 import { transactions } from "@core/database/schemas/transactions";
 import { AppError, propagateError } from "@core/logging/errors";
-import { and, inArray, sql } from "drizzle-orm";
+import { type SQL, and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import {
    resolveDateRange,
    resolveDateRangeWithComparison,
@@ -49,6 +49,19 @@ export async function executeKpiQuery(
    }
 }
 
+function aggregationExpr(aggregation: "sum" | "count" | "avg" | "net") {
+   switch (aggregation) {
+      case "count":
+         return sql<number>`count(*)::int`;
+      case "sum":
+         return sql<number>`coalesce(sum(${transactions.amount}), 0)::float`;
+      case "avg":
+         return sql<number>`coalesce(avg(${transactions.amount}), 0)::float`;
+      case "net":
+         return sql<number>`coalesce(sum(case when ${transactions.type} = 'income' then ${transactions.amount}::float when ${transactions.type} = 'expense' then -(${transactions.amount}::float) else 0 end), 0)`;
+   }
+}
+
 async function computeValue(
    db: DatabaseInstance,
    teamId: string,
@@ -58,40 +71,8 @@ async function computeValue(
    end: Date,
 ): Promise<number> {
    const conditions = buildConditions(teamId, filters, start, end);
-
-   if (aggregation === "count") {
-      const result = await db
-         .select({ value: sql<number>`count(*)::int` })
-         .from(transactions)
-         .where(and(...conditions));
-      return result[0]?.value ?? 0;
-   }
-
-   if (aggregation === "sum") {
-      const result = await db
-         .select({
-            value: sql<number>`coalesce(sum(${transactions.amount}), 0)::float`,
-         })
-         .from(transactions)
-         .where(and(...conditions));
-      return Number(result[0]?.value ?? 0);
-   }
-
-   if (aggregation === "net") {
-      const result = await db
-         .select({
-            value: sql<number>`coalesce(sum(case when ${transactions.type} = 'income' then ${transactions.amount}::float when ${transactions.type} = 'expense' then -(${transactions.amount}::float) else 0 end), 0)`,
-         })
-         .from(transactions)
-         .where(and(...conditions));
-      return Number(result[0]?.value ?? 0);
-   }
-
-   // avg
    const result = await db
-      .select({
-         value: sql<number>`coalesce(avg(${transactions.amount}), 0)::float`,
-      })
+      .select({ value: aggregationExpr(aggregation) })
       .from(transactions)
       .where(and(...conditions));
    return Number(result[0]?.value ?? 0);
@@ -102,15 +83,14 @@ export function buildConditions(
    filters: TransactionFilters,
    start: Date,
    end: Date,
-) {
+): SQL[] {
    const startStr = start.toISOString().split("T")[0];
    const endStr = end.toISOString().split("T")[0];
 
-   // biome-ignore lint/suspicious/noExplicitAny: drizzle condition array
-   const conditions: any[] = [
-      sql`${transactions.teamId} = ${teamId}`,
-      sql`${transactions.date} >= ${startStr}::date`,
-      sql`${transactions.date} <= ${endStr}::date`,
+   const conditions: SQL[] = [
+      eq(transactions.teamId, teamId),
+      gte(transactions.date, startStr),
+      lte(transactions.date, endStr),
    ];
 
    if (filters.transactionType?.length) {

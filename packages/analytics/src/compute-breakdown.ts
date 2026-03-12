@@ -9,6 +9,25 @@ import { buildConditions } from "./compute-kpi";
 import { resolveDateRange } from "./date-ranges";
 import type { BreakdownConfig, BreakdownItem, BreakdownResult } from "./types";
 
+const TRANSACTION_TYPE_LABELS: Record<string, string> = {
+   income: "Receita",
+   expense: "Despesa",
+   transfer: "Transferência",
+};
+
+function aggregationExpr(aggregation: "sum" | "count" | "avg" | "net") {
+   switch (aggregation) {
+      case "count":
+         return sql<number>`count(*)::int`;
+      case "sum":
+         return sql<number>`coalesce(sum(${transactions.amount}), 0)::float`;
+      case "avg":
+         return sql<number>`coalesce(avg(${transactions.amount}), 0)::float`;
+      case "net":
+         return sql<number>`coalesce(sum(case when ${transactions.type} = 'income' then ${transactions.amount}::float when ${transactions.type} = 'expense' then -(${transactions.amount}::float) else 0 end), 0)`;
+   }
+}
+
 async function computeTotal(
    db: DatabaseInstance,
    teamId: string,
@@ -17,14 +36,8 @@ async function computeTotal(
    end: Date,
 ): Promise<number> {
    const conditions = buildConditions(teamId, config.filters, start, end);
-   let valueExpr = sql<number>`count(*)::int`;
-   if (config.measure.aggregation === "sum") {
-      valueExpr = sql<number>`coalesce(sum(${transactions.amount}), 0)::float`;
-   } else if (config.measure.aggregation === "avg") {
-      valueExpr = sql<number>`coalesce(avg(${transactions.amount}), 0)::float`;
-   }
    const result = await db
-      .select({ value: valueExpr })
+      .select({ value: aggregationExpr(config.measure.aggregation) })
       .from(transactions)
       .where(and(...conditions));
    return Number(result[0]?.value ?? 0);
@@ -39,13 +52,7 @@ export async function executeBreakdownQuery(
       const { start, end } = resolveDateRange(config.filters.dateRange);
       const conditions = buildConditions(teamId, config.filters, start, end);
       const limit = config.limit ?? 10;
-
-      let valueExpr = sql<number>`count(*)::int`;
-      if (config.measure.aggregation === "sum") {
-         valueExpr = sql<number>`coalesce(sum(${transactions.amount}), 0)::float`;
-      } else if (config.measure.aggregation === "avg") {
-         valueExpr = sql<number>`coalesce(avg(${transactions.amount}), 0)::float`;
-      }
+      const valueExpr = aggregationExpr(config.measure.aggregation);
 
       let rows: BreakdownItem[] = [];
 
@@ -104,13 +111,11 @@ export async function executeBreakdownQuery(
                .groupBy(transactions.type)
                .orderBy(desc(valueExpr))
                .limit(limit);
-            const typeLabels: Record<string, string> = {
-               income: "Receita",
-               expense: "Despesa",
-               transfer: "Transferência",
-            };
             rows = results.map((r) => ({
-               label: typeLabels[r.label ?? ""] ?? r.label ?? "Desconhecido",
+               label:
+                  TRANSACTION_TYPE_LABELS[r.label ?? ""] ??
+                  r.label ??
+                  "Desconhecido",
                value: Number(r.value),
             }));
             break;

@@ -1,9 +1,5 @@
 import { z } from "zod";
 
-// ──────────────────────────────────────────────
-// Shared Primitives (keep these — used by date-ranges.ts)
-// ──────────────────────────────────────────────
-
 export const relativeDateRangeSchema = z.object({
    type: z.literal("relative"),
    value: z.enum([
@@ -31,10 +27,6 @@ export const dateRangeSchema = z.discriminatedUnion("type", [
    absoluteDateRangeSchema,
 ]);
 
-// ──────────────────────────────────────────────
-// Transaction Filters (shared across all insight types)
-// ──────────────────────────────────────────────
-
 export const transactionFiltersSchema = z.object({
    dateRange: dateRangeSchema,
    transactionType: z
@@ -44,17 +36,9 @@ export const transactionFiltersSchema = z.object({
    categoryIds: z.array(z.string().uuid()).optional(),
 });
 
-// ──────────────────────────────────────────────
-// Measure
-// ──────────────────────────────────────────────
-
 export const measureSchema = z.object({
    aggregation: z.enum(["sum", "count", "avg", "net"]),
 });
-
-// ──────────────────────────────────────────────
-// KPI Config
-// ──────────────────────────────────────────────
 
 export const kpiConfigSchema = z.object({
    type: z.literal("kpi"),
@@ -62,10 +46,6 @@ export const kpiConfigSchema = z.object({
    filters: transactionFiltersSchema,
    compare: z.boolean().optional().default(false),
 });
-
-// ──────────────────────────────────────────────
-// Time Series Config
-// ──────────────────────────────────────────────
 
 export const timeSeriesConfigSchema = z.object({
    type: z.literal("time_series"),
@@ -75,10 +55,6 @@ export const timeSeriesConfigSchema = z.object({
    chartType: z.enum(["line", "bar"]).default("line"),
    compare: z.boolean().optional().default(false),
 });
-
-// ──────────────────────────────────────────────
-// Breakdown Config
-// ──────────────────────────────────────────────
 
 export const breakdownConfigSchema = z.object({
    type: z.literal("breakdown"),
@@ -90,19 +66,11 @@ export const breakdownConfigSchema = z.object({
    limit: z.number().int().positive().optional().default(10),
 });
 
-// ──────────────────────────────────────────────
-// Union
-// ──────────────────────────────────────────────
-
 export const insightConfigSchema = z.discriminatedUnion("type", [
    kpiConfigSchema,
    timeSeriesConfigSchema,
    breakdownConfigSchema,
 ]);
-
-// ──────────────────────────────────────────────
-// Inferred Types
-// ──────────────────────────────────────────────
 
 export type DateRange = z.infer<typeof dateRangeSchema>;
 export type TransactionFilters = z.infer<typeof transactionFiltersSchema>;
@@ -111,10 +79,6 @@ export type KpiConfig = z.infer<typeof kpiConfigSchema>;
 export type TimeSeriesConfig = z.infer<typeof timeSeriesConfigSchema>;
 export type BreakdownConfig = z.infer<typeof breakdownConfigSchema>;
 export type InsightConfig = z.infer<typeof insightConfigSchema>;
-
-// ──────────────────────────────────────────────
-// Result Types
-// ──────────────────────────────────────────────
 
 export interface KpiResult {
    value: number;

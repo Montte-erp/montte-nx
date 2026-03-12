@@ -46,6 +46,19 @@ export async function executeTimeSeriesQuery(
    }
 }
 
+function aggregationExpr(aggregation: "sum" | "count" | "avg" | "net") {
+   switch (aggregation) {
+      case "count":
+         return sql<number>`count(*)::int`;
+      case "sum":
+         return sql<number>`coalesce(sum(${transactions.amount}), 0)::float`;
+      case "avg":
+         return sql<number>`coalesce(avg(${transactions.amount}), 0)::float`;
+      case "net":
+         return sql<number>`coalesce(sum(case when ${transactions.type} = 'income' then ${transactions.amount}::float when ${transactions.type} = 'expense' then -(${transactions.amount}::float) else 0 end), 0)`;
+   }
+}
+
 async function computeSeries(
    db: DatabaseInstance,
    teamId: string,
@@ -54,24 +67,12 @@ async function computeSeries(
    end: Date,
 ): Promise<TimeSeriesDataPoint[]> {
    const conditions = buildConditions(teamId, config.filters, start, end);
-
    const truncExpr = sql<string>`date_trunc(${config.interval}, ${transactions.date}::timestamp)::date::text`;
-
-   let valueExpr = sql<number>`count(*)::int`;
-   if (config.measure.aggregation === "count") {
-      valueExpr = sql<number>`count(*)::int`;
-   } else if (config.measure.aggregation === "sum") {
-      valueExpr = sql<number>`coalesce(sum(${transactions.amount}), 0)::float`;
-   } else if (config.measure.aggregation === "net") {
-      valueExpr = sql<number>`coalesce(sum(case when ${transactions.type} = 'income' then ${transactions.amount}::float when ${transactions.type} = 'expense' then -(${transactions.amount}::float) else 0 end), 0)`;
-   } else {
-      valueExpr = sql<number>`coalesce(avg(${transactions.amount}), 0)::float`;
-   }
 
    const rows = await db
       .select({
          date: truncExpr,
-         value: valueExpr,
+         value: aggregationExpr(config.measure.aggregation),
       })
       .from(transactions)
       .where(and(...conditions))

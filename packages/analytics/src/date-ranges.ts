@@ -1,9 +1,5 @@
 import type { DateRange } from "./types";
 
-// ──────────────────────────────────────────────
-// Public Types
-// ──────────────────────────────────────────────
-
 export interface ResolvedDateRange {
    start: Date;
    end: Date;
@@ -13,13 +9,6 @@ export interface ResolvedDateRangeWithComparison extends ResolvedDateRange {
    previous: ResolvedDateRange;
 }
 
-// ──────────────────────────────────────────────
-// Public Functions
-// ──────────────────────────────────────────────
-
-/**
- * Resolves a relative or absolute date range to concrete start/end dates.
- */
 export function resolveDateRange(dateRange: DateRange): ResolvedDateRange {
    if (dateRange.type === "absolute") {
       return {
@@ -29,7 +18,7 @@ export function resolveDateRange(dateRange: DateRange): ResolvedDateRange {
    }
 
    const now = new Date();
-   const end = startOfDay(addDays(now, 1)); // end of today (exclusive)
+   const end = startOfDay(addDays(now, 1));
 
    switch (dateRange.value) {
       case "7d":
@@ -60,10 +49,6 @@ export function resolveDateRange(dateRange: DateRange): ResolvedDateRange {
    }
 }
 
-/**
- * Resolves the main date range and computes the previous period of equal length
- * for comparison purposes.
- */
 export function resolveDateRangeWithComparison(
    dateRange: DateRange,
 ): ResolvedDateRangeWithComparison {
@@ -80,10 +65,6 @@ export function resolveDateRangeWithComparison(
       previous,
    };
 }
-
-// ──────────────────────────────────────────────
-// Private Date Helpers
-// ──────────────────────────────────────────────
 
 function startOfDay(date: Date): Date {
    const d = new Date(date);
