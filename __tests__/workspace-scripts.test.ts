@@ -24,6 +24,32 @@ describe("workspace scripts", () => {
       expect(packageJson.scripts).not.toHaveProperty("rag:reindex");
    });
 
+   it("provides root tooling for running script tests", () => {
+      const packageJson = JSON.parse(readWorkspaceFile("package.json")) as {
+         scripts?: Record<string, string>;
+      };
+      const rootVitestConfig = readWorkspaceFile("vitest.config.ts");
+      const rootTestTsconfig = JSON.parse(
+         readWorkspaceFile("tsconfig.test.json"),
+      ) as {
+         extends?: string;
+         include?: string[];
+      };
+
+      expect(packageJson.scripts?.["test:scripts"]).toBe(
+         "vitest run __tests__/workspace-scripts.test.ts",
+      );
+      expect(rootVitestConfig).toContain("defineConfig");
+      expect(rootVitestConfig).toContain("./tsconfig.test.json");
+      expect(rootVitestConfig).toContain("./__tests__/**/*.test.ts");
+      expect(rootTestTsconfig.extends).toBe("./tsconfig.json");
+      expect(rootTestTsconfig.include).toEqual([
+         "__tests__",
+         "scripts",
+         "*.ts",
+      ]);
+   });
+
    it("uses cac instead of commander in active root cli scripts", () => {
       const scriptFiles = [
          "scripts/clean.ts",

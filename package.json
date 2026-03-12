@@ -231,6 +231,8 @@
       "release:version": "nx release version",
       "reset": "bun run scripts/clean.ts reset",
       "test": "nx run-many -t test --parallel=3",
+      "test:scripts": "vitest run __tests__/workspace-scripts.test.ts",
+      "test:coverage": "nx run-many -t test --parallel=3 -- --coverage",
       "typecheck": "nx run-many -t typecheck --parallel=8",
       "web:build": "bun run --filter=web build",
       "web:start": "bun run --filter=web start"
@@ -254,6 +256,7 @@
       "@tooling/typescript": "workspace:*",
       "@typescript/native-preview": "^7.0.0-dev.20260211.1",
       "@vitejs/plugin-react": "6.0.0-beta.0",
+      "@vitest/coverage-v8": "4.0.18",
       "bun-types": "latest",
       "cac": "^6.7.14",
       "dotenv": "catalog:enviroment",
@@ -261,7 +264,9 @@
       "nx": "22.5.4",
       "oxfmt": "^0.39.0",
       "oxlint": "^1.54.0",
-      "typescript": "catalog:development"
+      "typescript": "catalog:development",
+      "vite-tsconfig-paths": "catalog:vite",
+      "vitest": "catalog:testing"
    },
    "engines": {
       "node": ">=20"
