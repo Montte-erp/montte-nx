@@ -74,7 +74,7 @@ function buildIssue(payload: FeedbackPayload): IssueData {
 export function githubAdapter(config: GitHubAdapterConfig): FeedbackAdapter {
    return {
       name: "github",
-      async send(payload) {
+      async send({ payload }) {
          const issue = buildIssue(payload);
 
          try {

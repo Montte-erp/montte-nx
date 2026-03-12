@@ -80,7 +80,7 @@ function buildEmbed(payload: FeedbackPayload): DiscordEmbed {
 export function discordAdapter(config: DiscordAdapterConfig): FeedbackAdapter {
    return {
       name: "discord",
-      async send(payload) {
+      async send({ payload }) {
          const embed = buildEmbed(payload);
 
          try {

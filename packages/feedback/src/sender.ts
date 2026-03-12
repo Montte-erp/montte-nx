@@ -1,46 +1,17 @@
 import { Octokit } from "@octokit/rest";
-import { getLogger } from "@core/logging/root";
-
-const logger = getLogger().child({ module: "feedback" });
-
 import { env } from "@core/environment/server";
-import type { FeedbackAdapter, FeedbackPayload } from "./schemas";
-
-// =============================================================================
-// Adapters (internal)
-// =============================================================================
+import { getLogger } from "@core/logging/root";
+import { posthog } from "@core/posthog/server";
 
 import { discordAdapter } from "./adapters/discord";
 import { githubAdapter } from "./adapters/github";
 import { posthogAdapter } from "./adapters/posthog";
+import type { FeedbackAdapter, FeedbackMessage } from "./schemas";
 
-// =============================================================================
-// Sender Config
-// =============================================================================
+const logger = getLogger().child({ module: "feedback" });
 
-type FeedbackSenderConfig = {
-   posthog?: {
-      capture: (event: {
-         distinctId: string;
-         event: string;
-         properties?: Record<string, unknown>;
-      }) => void;
-   };
-   userId: string;
-};
-
-// =============================================================================
-// Factory
-// =============================================================================
-
-export function createFeedbackSender(config: FeedbackSenderConfig) {
-   const adapters: FeedbackAdapter[] = [];
-
-   if (config.posthog) {
-      adapters.push(
-         posthogAdapter({ posthog: config.posthog, userId: config.userId }),
-      );
-   }
+function createAdapters(): FeedbackAdapter[] {
+   const adapters: FeedbackAdapter[] = [posthogAdapter({ posthog })];
 
    if (env.DISCORD_FEEDBACK_WEBHOOK_URL) {
       adapters.push(
@@ -62,20 +33,24 @@ export function createFeedbackSender(config: FeedbackSenderConfig) {
       );
    }
 
-   return {
-      async send(payload: FeedbackPayload): Promise<void> {
-         const results = await Promise.allSettled(
-            adapters.map((adapter) => adapter.send(payload)),
-         );
-
-         for (const [i, result] of results.entries()) {
-            if (result.status === "rejected") {
-               logger.error(
-                  { err: result.reason, adapter: adapters[i]?.name },
-                  "Adapter failed",
-               );
-            }
-         }
-      },
-   };
+   return adapters;
 }
+
+const adapters = createAdapters();
+
+export const feedbackSender = {
+   async send(message: FeedbackMessage): Promise<void> {
+      const results = await Promise.allSettled(
+         adapters.map((adapter) => adapter.send(message)),
+      );
+
+      for (const [index, result] of results.entries()) {
+         if (result.status === "rejected") {
+            logger.error(
+               { adapter: adapters[index]?.name, err: result.reason },
+               "Adapter failed",
+            );
+         }
+      }
+   },
+};

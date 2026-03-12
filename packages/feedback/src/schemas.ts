@@ -1,9 +1,5 @@
 import { z } from "zod";
 
-// =============================================================================
-// Individual Feedback Schemas
-// =============================================================================
-
 export const bugReportSchema = z.object({
    type: z.literal("bug_report"),
    description: z.string().min(1),
@@ -24,10 +20,6 @@ export const featureFeedbackSchema = z.object({
    improvement: z.string().optional(),
 });
 
-// =============================================================================
-// Discriminated Union
-// =============================================================================
-
 export const feedbackPayloadSchema = z.discriminatedUnion("type", [
    bugReportSchema,
    featureRequestSchema,
@@ -39,11 +31,12 @@ export type FeatureRequest = z.infer<typeof featureRequestSchema>;
 export type FeatureFeedback = z.infer<typeof featureFeedbackSchema>;
 export type FeedbackPayload = z.infer<typeof feedbackPayloadSchema>;
 
-// =============================================================================
-// Adapter Interface
-// =============================================================================
+export type FeedbackMessage = {
+   payload: FeedbackPayload;
+   userId: string;
+};
 
 export type FeedbackAdapter = {
    name: string;
-   send: (payload: FeedbackPayload) => Promise<void>;
+   send: (message: FeedbackMessage) => Promise<void>;
 };

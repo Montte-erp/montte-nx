@@ -20,15 +20,20 @@
    "scripts": {
       "build": "tsc --build",
       "check": "oxlint ./src",
+      "test": "vitest run",
       "typecheck": "tsgo"
    },
    "dependencies": {
       "@core/environment": "workspace:*",
+      "@core/logging": "workspace:*",
+      "@core/posthog": "workspace:*",
       "@octokit/rest": "^21.1.1",
       "zod": "catalog:validation"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
-      "typescript": "catalog:development"
+      "typescript": "catalog:development",
+      "vite-tsconfig-paths": "catalog:build",
+      "vitest": "catalog:testing"
    }
 }

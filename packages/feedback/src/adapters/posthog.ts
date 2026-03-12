@@ -16,7 +16,6 @@ type PostHogLike = {
 
 type PostHogAdapterConfig = {
    posthog: PostHogLike;
-   userId: string;
 };
 
 function buildSurveyResponses(
@@ -46,12 +45,12 @@ function buildSurveyResponses(
 export function posthogAdapter(config: PostHogAdapterConfig): FeedbackAdapter {
    return {
       name: "posthog",
-      async send(payload) {
+      async send({ payload, userId }) {
          const surveyId = SURVEY_IDS[payload.type];
          const responses = buildSurveyResponses(payload);
 
          config.posthog.capture({
-            distinctId: config.userId,
+            distinctId: userId,
             event: "survey sent",
             properties: {
                $survey_id: surveyId,
