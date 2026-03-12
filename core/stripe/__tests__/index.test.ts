@@ -1,32 +1,41 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("stripe", () => {
-   return {
-      default: class MockStripe {
-         constructor() {
-            return { billing: { meterEvents: { create: vi.fn() } } };
-         }
+const { stripeClientMock, stripeConstructorMock } = vi.hoisted(() => ({
+   stripeClientMock: {
+      billing: {
+         meterEvents: {
+            create: vi.fn(),
+         },
       },
-   };
-});
+   },
+   stripeConstructorMock: vi.fn(),
+}));
 
-vi.mock("@core/logging/errors", () => ({
-   AppError: {
-      validation: (msg: string) => new Error(msg),
+vi.mock("@core/environment/server", () => ({
+   env: {
+      STRIPE_SECRET_KEY: "sk_test_123",
    },
 }));
 
-import { getStripeClient } from "../src/index";
+vi.mock("stripe", () => ({
+   default: function MockStripe(...args: unknown[]) {
+      stripeConstructorMock(...args);
+      return stripeClientMock;
+   },
+}));
 
-describe("getStripeClient", () => {
-   it("creates a Stripe instance with the provided key", () => {
-      const client = getStripeClient("sk_test_123");
-      expect(client).toBeDefined();
+describe("stripe client", () => {
+   beforeEach(() => {
+      vi.clearAllMocks();
+      vi.resetModules();
    });
 
-   it("throws when key is missing", () => {
-      expect(() => getStripeClient("" as any)).toThrow(
-         "Stripe key is required",
-      );
+   it("creates a Stripe instance with env configuration", async () => {
+      const { stripeClient } = await import("../src/index");
+
+      expect(stripeClient).toBe(stripeClientMock);
+      expect(stripeConstructorMock).toHaveBeenCalledWith("sk_test_123", {
+         apiVersion: "2026-02-25.clover",
+      });
    });
 });

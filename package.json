@@ -8,6 +8,12 @@
    },
    "workspaces": {
       "catalogs": {
+         "assistant-ui": {
+            "@ai-sdk/react": "^3.0.118",
+            "@assistant-ui/react": "^0.12.17",
+            "@assistant-ui/react-ai-sdk": "^1.3.13",
+            "@assistant-ui/react-markdown": "^0.12.5"
+         },
          "astro": {
             "@astrojs/check": "^0.9.6",
             "@astrojs/mdx": "^4.3.13",
@@ -174,12 +180,6 @@
             "ioredis": "5.9.3",
             "node-cron": "^4.2.1",
             "@types/node-cron": "^3.0.11"
-         },
-         "editor": {
-            "platejs": "52.0.17",
-            "@platejs/ai": "52.3.1",
-            "@platejs/basic-nodes": "52.0.11",
-            "@platejs/link": "^52.0.11"
          },
          "orpc": {
             "@orpc/client": "^1.13.6",

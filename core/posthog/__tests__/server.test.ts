@@ -1,5 +1,56 @@
-import { describe, expect, it } from "vitest";
-import { createMockPostHog } from "./helpers/create-mock-posthog";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const { posthogClientMock, posthogConstructorMock } = vi.hoisted(() => {
+   const client = {
+      capture: vi.fn(),
+      identify: vi.fn(),
+      groupIdentify: vi.fn(),
+      shutdown: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+      isFeatureEnabled: vi
+         .fn<() => Promise<boolean | undefined>>()
+         .mockResolvedValue(false),
+      getFeatureFlag: vi
+         .fn<() => Promise<string | boolean | undefined>>()
+         .mockResolvedValue(undefined),
+      getFeatureFlagPayload: vi
+         .fn<() => Promise<unknown>>()
+         .mockResolvedValue(undefined),
+      getAllFlags: vi
+         .fn<() => Promise<Record<string, string | boolean>>>()
+         .mockResolvedValue({}),
+      getAllFlagsAndPayloads: vi
+         .fn<
+            () => Promise<{
+               featureFlags?: Record<string, string | boolean>;
+               featureFlagPayloads?: Record<string, unknown>;
+            }>
+         >()
+         .mockResolvedValue({
+            featureFlags: {},
+            featureFlagPayloads: {},
+         }),
+   };
+
+   return {
+      posthogClientMock: client,
+      posthogConstructorMock: vi.fn(),
+   };
+});
+
+vi.mock("@core/environment/server", () => ({
+   env: {
+      POSTHOG_HOST: "https://app.posthog.com",
+      POSTHOG_KEY: "phc_test_key",
+   },
+}));
+
+vi.mock("posthog-node", () => ({
+   PostHog: function MockPostHog(...args: unknown[]) {
+      posthogConstructorMock(...args);
+      return posthogClientMock;
+   },
+}));
+
 import {
    captureError,
    captureServerEvent,
@@ -13,26 +64,32 @@ import {
    shutdownPosthog,
 } from "../src/server";
 
-function createClient() {
-   return createMockPostHog();
-}
+beforeEach(() => {
+   vi.clearAllMocks();
+});
+
+describe("posthog singleton", () => {
+   it("creates the client with env configuration", async () => {
+      const { posthog } = await import("../src/server");
+
+      expect(posthog).toBe(posthogClientMock);
+   });
+});
 
 describe("identifyUser", () => {
    it("calls identify with userId and properties", () => {
-      const client = createClient();
-      identifyUser(client, "user-1", { email: "a@b.com", name: "A" });
+      identifyUser("user-1", { email: "a@b.com", name: "A" });
 
-      expect(client.identify).toHaveBeenCalledWith({
+      expect(posthogClientMock.identify).toHaveBeenCalledWith({
          distinctId: "user-1",
          properties: { email: "a@b.com", name: "A" },
       });
    });
 
    it("defaults to empty properties", () => {
-      const client = createClient();
-      identifyUser(client, "user-2");
+      identifyUser("user-2");
 
-      expect(client.identify).toHaveBeenCalledWith({
+      expect(posthogClientMock.identify).toHaveBeenCalledWith({
          distinctId: "user-2",
          properties: {},
       });
@@ -41,10 +98,9 @@ describe("identifyUser", () => {
 
 describe("setGroup", () => {
    it("calls groupIdentify with organization type", () => {
-      const client = createClient();
-      setGroup(client, "org-1", { name: "Acme", slug: "acme" });
+      setGroup("org-1", { name: "Acme", slug: "acme" });
 
-      expect(client.groupIdentify).toHaveBeenCalledWith({
+      expect(posthogClientMock.groupIdentify).toHaveBeenCalledWith({
          groupKey: "org-1",
          groupType: "organization",
          properties: { name: "Acme", slug: "acme" },
@@ -52,10 +108,9 @@ describe("setGroup", () => {
    });
 
    it("defaults to empty properties", () => {
-      const client = createClient();
-      setGroup(client, "org-2");
+      setGroup("org-2");
 
-      expect(client.groupIdentify).toHaveBeenCalledWith({
+      expect(posthogClientMock.groupIdentify).toHaveBeenCalledWith({
          groupKey: "org-2",
          groupType: "organization",
          properties: {},
@@ -65,8 +120,7 @@ describe("setGroup", () => {
 
 describe("captureError", () => {
    it("captures orpc_error with organization group", () => {
-      const client = createClient();
-      captureError(client, {
+      captureError({
          userId: "user-1",
          organizationId: "org-1",
          errorId: "err-1",
@@ -76,7 +130,7 @@ describe("captureError", () => {
          input: { x: 1 },
       });
 
-      expect(client.capture).toHaveBeenCalledWith({
+      expect(posthogClientMock.capture).toHaveBeenCalledWith({
          distinctId: "user-1",
          event: "orpc_error",
          properties: {
@@ -91,8 +145,7 @@ describe("captureError", () => {
    });
 
    it("omits groups when no organizationId", () => {
-      const client = createClient();
-      captureError(client, {
+      captureError({
          userId: "user-1",
          errorId: "err-2",
          path: "auth.login",
@@ -100,7 +153,7 @@ describe("captureError", () => {
          message: "Denied",
       });
 
-      expect(client.capture).toHaveBeenCalledWith({
+      expect(posthogClientMock.capture).toHaveBeenCalledWith({
          distinctId: "user-1",
          event: "orpc_error",
          properties: {
@@ -117,9 +170,8 @@ describe("captureError", () => {
 
 describe("captureServerEvent", () => {
    it("captures event with all properties", () => {
-      const client = createClient();
       const ts = new Date("2026-01-01");
-      captureServerEvent(client, {
+      captureServerEvent({
          userId: "user-1",
          event: "purchase",
          properties: { amount: 99 },
@@ -127,7 +179,7 @@ describe("captureServerEvent", () => {
          timestamp: ts,
       });
 
-      expect(client.capture).toHaveBeenCalledWith({
+      expect(posthogClientMock.capture).toHaveBeenCalledWith({
          distinctId: "user-1",
          event: "purchase",
          properties: { amount: 99 },
@@ -137,10 +189,9 @@ describe("captureServerEvent", () => {
    });
 
    it("defaults properties to empty object", () => {
-      const client = createClient();
-      captureServerEvent(client, { userId: "user-1", event: "ping" });
+      captureServerEvent({ userId: "user-1", event: "ping" });
 
-      expect(client.capture).toHaveBeenCalledWith({
+      expect(posthogClientMock.capture).toHaveBeenCalledWith({
          distinctId: "user-1",
          event: "ping",
          properties: {},
@@ -152,68 +203,66 @@ describe("captureServerEvent", () => {
 
 describe("isFeatureEnabled", () => {
    it("returns true when enabled", async () => {
-      const client = createClient();
-      client.isFeatureEnabled.mockResolvedValue(true);
+      posthogClientMock.isFeatureEnabled.mockResolvedValue(true);
 
-      const result = await isFeatureEnabled(client, "flag-1", {
+      const result = await isFeatureEnabled("flag-1", {
          userId: "u-1",
       });
       expect(result).toBe(true);
    });
 
    it("returns false when disabled", async () => {
-      const client = createClient();
-      client.isFeatureEnabled.mockResolvedValue(false);
+      posthogClientMock.isFeatureEnabled.mockResolvedValue(false);
 
-      const result = await isFeatureEnabled(client, "flag-2", {
+      const result = await isFeatureEnabled("flag-2", {
          userId: "u-1",
       });
       expect(result).toBe(false);
    });
 
    it("returns false when undefined", async () => {
-      const client = createClient();
-      client.isFeatureEnabled.mockResolvedValue(undefined);
+      posthogClientMock.isFeatureEnabled.mockResolvedValue(undefined);
 
-      const result = await isFeatureEnabled(client, "flag-3", {
+      const result = await isFeatureEnabled("flag-3", {
          userId: "u-1",
       });
       expect(result).toBe(false);
    });
 
    it("passes user and group properties", async () => {
-      const client = createClient();
-      client.isFeatureEnabled.mockResolvedValue(true);
+      posthogClientMock.isFeatureEnabled.mockResolvedValue(true);
 
-      await isFeatureEnabled(client, "flag-4", {
+      await isFeatureEnabled("flag-4", {
          userId: "u-1",
          userProperties: { plan: "pro" },
          groups: { organization: "org-1" },
          groupProperties: { organization: { tier: "enterprise" } },
       });
 
-      expect(client.isFeatureEnabled).toHaveBeenCalledWith("flag-4", "u-1", {
-         personProperties: { plan: "pro" },
-         groups: { organization: "org-1" },
-         groupProperties: { organization: { tier: "enterprise" } },
-      });
+      expect(posthogClientMock.isFeatureEnabled).toHaveBeenCalledWith(
+         "flag-4",
+         "u-1",
+         {
+            personProperties: { plan: "pro" },
+            groups: { organization: "org-1" },
+            groupProperties: { organization: { tier: "enterprise" } },
+         },
+      );
    });
 });
 
 describe("getFeatureFlag", () => {
    it("returns string variant", async () => {
-      const client = createClient();
-      client.getFeatureFlag.mockResolvedValue("variant-a");
+      posthogClientMock.getFeatureFlag.mockResolvedValue("variant-a");
 
-      const result = await getFeatureFlag(client, "ab-test", { userId: "u-1" });
+      const result = await getFeatureFlag("ab-test", { userId: "u-1" });
       expect(result).toBe("variant-a");
    });
 
    it("returns boolean flag", async () => {
-      const client = createClient();
-      client.getFeatureFlag.mockResolvedValue(true);
+      posthogClientMock.getFeatureFlag.mockResolvedValue(true);
 
-      const result = await getFeatureFlag(client, "bool-flag", {
+      const result = await getFeatureFlag("bool-flag", {
          userId: "u-1",
       });
       expect(result).toBe(true);
@@ -222,21 +271,19 @@ describe("getFeatureFlag", () => {
 
 describe("getFeatureFlagPayload", () => {
    it("returns payload", async () => {
-      const client = createClient();
       const payload = { color: "blue" };
-      client.getFeatureFlagPayload.mockResolvedValue(payload);
+      posthogClientMock.getFeatureFlagPayload.mockResolvedValue(payload);
 
-      const result = await getFeatureFlagPayload(client, "config", "u-1");
+      const result = await getFeatureFlagPayload("config", "u-1");
       expect(result).toEqual(payload);
    });
 
    it("passes matchValue", async () => {
-      const client = createClient();
-      client.getFeatureFlagPayload.mockResolvedValue({});
+      posthogClientMock.getFeatureFlagPayload.mockResolvedValue({});
 
-      await getFeatureFlagPayload(client, "ab", "u-1", "variant-b");
+      await getFeatureFlagPayload("ab", "u-1", "variant-b");
 
-      expect(client.getFeatureFlagPayload).toHaveBeenCalledWith(
+      expect(posthogClientMock.getFeatureFlagPayload).toHaveBeenCalledWith(
          "ab",
          "u-1",
          "variant-b",
@@ -246,37 +293,30 @@ describe("getFeatureFlagPayload", () => {
 
 describe("getAllFeatureFlags", () => {
    it("returns all flags", async () => {
-      const client = createClient();
       const flags = { a: true, b: "v1" };
-      client.getAllFlags.mockResolvedValue(flags);
+      posthogClientMock.getAllFlags.mockResolvedValue(flags);
 
-      const result = await getAllFeatureFlags(client, { userId: "u-1" });
+      const result = await getAllFeatureFlags({ userId: "u-1" });
       expect(result).toEqual(flags);
    });
 });
 
 describe("getAllFeatureFlagsAndPayloads", () => {
    it("returns flags and payloads", async () => {
-      const client = createClient();
-      client.getAllFlagsAndPayloads.mockResolvedValue({
+      posthogClientMock.getAllFlagsAndPayloads.mockResolvedValue({
          featureFlags: { a: true },
          featureFlagPayloads: { a: { x: 1 } },
       });
 
-      const result = await getAllFeatureFlagsAndPayloads(client, {
-         userId: "u-1",
-      });
+      const result = await getAllFeatureFlagsAndPayloads({ userId: "u-1" });
       expect(result.featureFlags).toEqual({ a: true });
       expect(result.featureFlagPayloads).toEqual({ a: { x: 1 } });
    });
 
    it("defaults to empty objects when response is empty", async () => {
-      const client = createClient();
-      client.getAllFlagsAndPayloads.mockResolvedValue({});
+      posthogClientMock.getAllFlagsAndPayloads.mockResolvedValue({});
 
-      const result = await getAllFeatureFlagsAndPayloads(client, {
-         userId: "u-1",
-      });
+      const result = await getAllFeatureFlagsAndPayloads({ userId: "u-1" });
       expect(result.featureFlags).toEqual({});
       expect(result.featureFlagPayloads).toEqual({});
    });
@@ -284,8 +324,7 @@ describe("getAllFeatureFlagsAndPayloads", () => {
 
 describe("shutdownPosthog", () => {
    it("calls shutdown", async () => {
-      const client = createClient();
-      await shutdownPosthog(client);
-      expect(client.shutdown).toHaveBeenCalled();
+      await shutdownPosthog();
+      expect(posthogClientMock.shutdown).toHaveBeenCalled();
    });
 });

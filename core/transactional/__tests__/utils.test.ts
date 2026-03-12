@@ -1,24 +1,37 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("resend", () => {
-   class MockResend {
-      constructor(public apiKey: string) {}
-      emails = { send: vi.fn() };
-   }
-   return { Resend: MockResend };
-});
+const { resendClientMock, resendConstructorMock } = vi.hoisted(() => ({
+   resendClientMock: {
+      emails: {
+         send: vi.fn(),
+      },
+   },
+   resendConstructorMock: vi.fn(),
+}));
 
-import { getResendClient } from "../src/utils";
+vi.mock("@core/environment/server", () => ({
+   env: {
+      RESEND_API_KEY: "re_test_123",
+   },
+}));
 
-describe("getResendClient", () => {
-   it("creates a Resend instance with the provided key", () => {
-      const client = getResendClient("re_test_123");
-      expect(client).toBeDefined();
+vi.mock("resend", () => ({
+   Resend: function MockResend(...args: unknown[]) {
+      resendConstructorMock(...args);
+      return resendClientMock;
+   },
+}));
+
+describe("resend client", () => {
+   beforeEach(() => {
+      vi.clearAllMocks();
+      vi.resetModules();
    });
 
-   it("throws when key is missing", () => {
-      expect(() => getResendClient("" as any)).toThrow(
-         "RESEND_API_KEY is required",
-      );
+   it("creates a Resend instance with env configuration", async () => {
+      const { resendClient } = await import("../src/utils");
+
+      expect(resendClient).toBe(resendClientMock);
+      expect(resendConstructorMock).toHaveBeenCalledWith("re_test_123");
    });
 });

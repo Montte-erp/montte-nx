@@ -44,7 +44,6 @@
       "@mastra/pg": "catalog:mastra",
       "@mastra/posthog": "catalog:mastra",
       "@mastra/rag": "catalog:mastra",
-      "@packages/files": "workspace:*",
       "@packages/search": "workspace:*",
       "ai": "catalog:mastra",
       "zod": "catalog:validation"

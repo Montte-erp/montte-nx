@@ -1,5 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createMockResend } from "./helpers/create-mock-resend";
+
+vi.mock("@core/environment/server", () => ({
+   env: {
+      RESEND_API_KEY: "re_test_123",
+   },
+}));
+
+vi.mock("resend", () => ({
+   Resend: function MockResend() {
+      return createMockResend();
+   },
+}));
+
 import {
    sendBudgetAlertEmail,
    sendEmailOTP,
