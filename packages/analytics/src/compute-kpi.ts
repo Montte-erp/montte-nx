@@ -1,7 +1,7 @@
 import type { DatabaseInstance } from "@core/database/client";
 import { transactions } from "@core/database/schemas/transactions";
 import { AppError, propagateError } from "@core/logging/errors";
-import { type SQL, and, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import {
    resolveDateRange,
    resolveDateRangeWithComparison,
@@ -83,11 +83,11 @@ export function buildConditions(
    filters: TransactionFilters,
    start: Date,
    end: Date,
-): SQL[] {
-   const startStr = start.toISOString().split("T")[0];
-   const endStr = end.toISOString().split("T")[0];
+) {
+   const startStr = start.toISOString().split("T")[0]!;
+   const endStr = end.toISOString().split("T")[0]!;
 
-   const conditions: SQL[] = [
+   const conditions = [
       eq(transactions.teamId, teamId),
       gte(transactions.date, startStr),
       lte(transactions.date, endStr),
