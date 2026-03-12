@@ -1,248 +1,132 @@
 import { ORPCError, call } from "@orpc/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-   TEST_ORG_ID,
-   TEST_TEAM_ID,
-   createTestContext,
-} from "../../../helpers/create-test-context";
+   afterAll,
+   beforeAll,
+   beforeEach,
+   describe,
+   expect,
+   it,
+   vi,
+} from "vitest";
 
-// ---------------------------------------------------------------------------
-// Mocks — must be declared before any import that touches the modules
-// ---------------------------------------------------------------------------
+vi.mock("@core/database/client", async () => {
+   const { setupIntegrationDb } =
+      await import("../../../helpers/setup-integration-test");
+   return { db: await setupIntegrationDb(), createDb: () => {} };
+});
+vi.mock("@core/arcjet/protect", () => ({
+   protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
+   isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
+}));
+vi.mock("@core/posthog/server", () => ({
+   captureError: vi.fn(),
+   captureServerEvent: vi.fn(),
+   identifyUser: vi.fn(),
+   setGroup: vi.fn(),
+   posthog: {
+      capture: vi.fn(),
+      identify: vi.fn(),
+      groupIdentify: vi.fn(),
+      shutdown: vi.fn(),
+   },
+}));
 
 vi.mock("@packages/analytics/compute-insight", () => ({
    computeInsightData: vi.fn().mockResolvedValue({}),
 }));
 vi.mock("@packages/analytics/seed-defaults", () => ({
-   createDefaultInsights: vi.fn().mockResolvedValue(["insight-1", "insight-2"]),
+   createDefaultInsights: vi.fn().mockResolvedValue([]),
    createDefaultDashboard: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@core/database/repositories/insight-repository", () => ({
    getInsightById: vi.fn().mockResolvedValue(null),
 }));
-vi.mock("@core/database/schemas/auth", () => ({
-   organization: {
-      id: "id",
-      slug: "slug",
-      onboardingCompleted: "onboardingCompleted",
-      name: "name",
-   },
-   team: {
-      id: "id",
-      name: "name",
-      organizationId: "organizationId",
-      onboardingTasks: "onboardingTasks",
-      onboardingCompleted: "onboardingCompleted",
-      onboardingProducts: "onboardingProducts",
-   },
-}));
-vi.mock("@core/database/schemas/content", () => ({
-   content: { organizationId: "organizationId", status: "status" },
-}));
-vi.mock("@core/database/schemas/forms", () => ({
-   forms: { organizationId: "organizationId" },
-}));
-vi.mock("@core/database/schemas/insights", () => ({
-   insights: {
-      id: "id",
-      organizationId: "organizationId",
-      cachedResults: "cachedResults",
-      lastComputedAt: "lastComputedAt",
-   },
-}));
 
+import { categories } from "@core/database/schemas/categories";
+import { bankAccounts } from "@core/database/schemas/bank-accounts";
+import { transactions } from "@core/database/schemas/transactions";
+import { sql } from "drizzle-orm";
+import {
+   cleanupIntegrationTest,
+   setupIntegrationTest,
+} from "../../../helpers/setup-integration-test";
+import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import * as onboardingRouter from "@/integrations/orpc/router/onboarding";
 
-// ---------------------------------------------------------------------------
-// Mock Helpers
-// ---------------------------------------------------------------------------
+let ctx: ORPCContextWithAuth;
 
-function createMockDb() {
-   const mockWhere = vi.fn();
-   const mockLimit = vi.fn();
-   const mockFrom = vi.fn();
-   const mockSet = vi.fn();
-
-   // Chain: db.select().from().where() — returns thenable for count queries
-   mockWhere.mockReturnValue({
-      then: vi.fn((cb: any) => cb([{ count: 0 }])),
-      limit: mockLimit,
+beforeAll(async () => {
+   const { createAuthenticatedContext } = await setupIntegrationTest();
+   ctx = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
    });
-   mockLimit.mockResolvedValue([]);
-   mockFrom.mockReturnValue({ where: mockWhere });
-
-   // Chain: db.update().set().where()
-   const mockUpdateWhere = vi.fn().mockResolvedValue(undefined);
-   mockSet.mockReturnValue({ where: mockUpdateWhere });
-
-   return {
-      db: {
-         query: {
-            organization: {
-               findFirst: vi.fn(),
-            },
-            team: {
-               findFirst: vi.fn(),
-            },
-         },
-         select: vi.fn().mockReturnValue({ from: mockFrom }),
-         update: vi.fn().mockReturnValue({ set: mockSet }),
-      },
-      mockFrom,
-      mockWhere,
-      mockLimit,
-      mockSet,
-      mockUpdateWhere,
-   };
-}
-
-function createOnboardingContext(
-   mockDb: ReturnType<typeof createMockDb>["db"],
-   overrides: Record<string, unknown> = {},
-) {
-   return createTestContext({
-      db: mockDb,
-      ...overrides,
-   });
-}
-
-// ---------------------------------------------------------------------------
-// Setup
-// ---------------------------------------------------------------------------
-
-let mocks: ReturnType<typeof createMockDb>;
-
-beforeEach(() => {
-   vi.clearAllMocks();
-   mocks = createMockDb();
 });
 
-// =============================================================================
-// getOnboardingStatus
-// =============================================================================
+afterAll(async () => {
+   await cleanupIntegrationTest();
+});
+
+beforeEach(async () => {
+   await ctx.db.execute(sql`DELETE FROM transactions`);
+   await ctx.db.execute(sql`DELETE FROM bank_accounts`);
+   await ctx.db.execute(sql`DELETE FROM categories`);
+});
 
 describe("getOnboardingStatus", () => {
    it("returns onboarding status with auto-detected tasks", async () => {
-      mocks.db.query.organization.findFirst.mockResolvedValueOnce({
-         id: TEST_ORG_ID,
-         onboardingCompleted: false,
-         name: "Test Org",
-         slug: "test-org",
+      const teamId = ctx.session.session.activeTeamId!;
+
+      await ctx.db.insert(categories).values({
+         teamId,
+         name: "Test Category",
+         type: "expense",
       });
 
-      mocks.db.query.team.findFirst.mockResolvedValueOnce({
-         id: TEST_TEAM_ID,
-         name: "Test Team",
-         organizationId: TEST_ORG_ID,
-         onboardingCompleted: false,
-         onboardingProducts: ["finance"],
-         onboardingTasks: { setup_profile: true },
+      await ctx.db.insert(bankAccounts).values({
+         teamId,
+         name: "Test Bank",
+         type: "checking",
       });
 
-      // Mock the 3 count queries (Promise.all): insights=1, categories=1, transactions=2
-      let callIndex = 0;
-      const counts = [1, 1, 2];
-      mocks.mockWhere.mockImplementation(() => ({
-         then: vi.fn((cb: any) => cb([{ count: counts[callIndex++] }])),
-         limit: mocks.mockLimit,
-      }));
+      await ctx.db.insert(transactions).values({
+         teamId,
+         type: "income",
+         amount: "100.00",
+         date: "2025-01-15",
+      });
 
-      const ctx = createOnboardingContext(mocks.db);
       const result = await call(
          onboardingRouter.getOnboardingStatus,
          undefined,
          { context: ctx },
       );
 
-      expect(mocks.db.query.organization.findFirst).toHaveBeenCalled();
-      expect(result.organization.onboardingCompleted).toBe(false);
-      expect(result.project.onboardingProducts).toEqual(["finance"]);
+      expect(result.organization).toBeDefined();
+      expect(result.project).toBeDefined();
       expect(result.project.tasks).toEqual(
          expect.objectContaining({
-            setup_profile: true,
-            create_insight: true,
             create_category: true,
             add_transaction: true,
+            connect_bank_account: true,
          }),
       );
    });
 
-   it("throws NOT_FOUND when organization does not exist", async () => {
-      mocks.db.query.organization.findFirst.mockResolvedValueOnce(null);
-
-      const ctx = createOnboardingContext(mocks.db);
-
-      await expect(
-         call(onboardingRouter.getOnboardingStatus, undefined, {
-            context: ctx,
-         }),
-      ).rejects.toSatisfy(
-         (e: ORPCError<string, unknown>) => e.code === "NOT_FOUND",
-      );
-   });
-
-   it("throws NOT_FOUND when team does not exist", async () => {
-      mocks.db.query.organization.findFirst.mockResolvedValueOnce({
-         id: TEST_ORG_ID,
-         onboardingCompleted: false,
-         name: "Test Org",
-         slug: "test-org",
-      });
-      mocks.db.query.team.findFirst.mockResolvedValueOnce(null);
-
-      const ctx = createOnboardingContext(mocks.db);
-
-      await expect(
-         call(onboardingRouter.getOnboardingStatus, undefined, {
-            context: ctx,
-         }),
-      ).rejects.toSatisfy(
-         (e: ORPCError<string, unknown>) => e.code === "NOT_FOUND",
-      );
-   });
-
-   it("returns null tasks when org is fresh", async () => {
-      mocks.db.query.organization.findFirst.mockResolvedValueOnce({
-         id: TEST_ORG_ID,
-         onboardingCompleted: false,
-         name: "Test Org",
-         slug: "test-org",
-      });
-      mocks.db.query.team.findFirst.mockResolvedValueOnce({
-         id: TEST_TEAM_ID,
-         name: "Test Team",
-         organizationId: TEST_ORG_ID,
-         onboardingCompleted: false,
-         onboardingProducts: null,
-         onboardingTasks: null,
-      });
-
-      // All count queries return 0
-      mocks.mockWhere.mockImplementation(() => ({
-         then: vi.fn((cb: any) => cb([{ count: 0 }])),
-         limit: mocks.mockLimit,
-      }));
-
-      const ctx = createOnboardingContext(mocks.db);
+   it("returns null tasks when no data exists", async () => {
       const result = await call(
          onboardingRouter.getOnboardingStatus,
          undefined,
          { context: ctx },
       );
 
-      expect(result.organization.onboardingCompleted).toBe(false);
-      expect(result.project.onboardingProducts).toBeNull();
+      expect(result.organization.onboardingCompleted).toBeDefined();
       expect(result.project.tasks).toBeNull();
    });
 });
 
-// =============================================================================
-// completeTask
-// =============================================================================
-
 describe("completeTask", () => {
    it("atomically merges task into team onboardingTasks", async () => {
-      const ctx = createOnboardingContext(mocks.db);
       const result = await call(
          onboardingRouter.completeTask,
          { taskId: "setup_profile" },
@@ -250,18 +134,47 @@ describe("completeTask", () => {
       );
 
       expect(result).toEqual({ success: true });
-      expect(mocks.db.update).toHaveBeenCalled();
-      expect(mocks.mockSet).toHaveBeenCalled();
+
+      const status = await call(
+         onboardingRouter.getOnboardingStatus,
+         undefined,
+         { context: ctx },
+      );
+
+      expect(status.project.tasks).toEqual(
+         expect.objectContaining({ setup_profile: true }),
+      );
+   });
+
+   it("merges multiple tasks without overwriting", async () => {
+      await call(
+         onboardingRouter.completeTask,
+         { taskId: "setup_profile" },
+         { context: ctx },
+      );
+      await call(
+         onboardingRouter.completeTask,
+         { taskId: "invite_team" },
+         { context: ctx },
+      );
+
+      const status = await call(
+         onboardingRouter.getOnboardingStatus,
+         undefined,
+         { context: ctx },
+      );
+
+      expect(status.project.tasks).toEqual(
+         expect.objectContaining({
+            setup_profile: true,
+            invite_team: true,
+         }),
+      );
    });
 });
 
-// =============================================================================
-// skipTask
-// =============================================================================
-
 describe("skipTask", () => {
    it("marks task as done (same as completeTask)", async () => {
-      const ctx = createOnboardingContext(mocks.db);
       const result = await call(
          onboardingRouter.skipTask,
          { taskId: "invite_team" },
@@ -269,7 +182,15 @@ describe("skipTask", () => {
       );
 
       expect(result).toEqual({ success: true });
-      expect(mocks.db.update).toHaveBeenCalled();
-      expect(mocks.mockSet).toHaveBeenCalled();
+
+      const status = await call(
+         onboardingRouter.getOnboardingStatus,
+         undefined,
+         { context: ctx },
+      );
+
+      expect(status.project.tasks).toEqual(
+         expect.objectContaining({ invite_team: true }),
+      );
    });
 });

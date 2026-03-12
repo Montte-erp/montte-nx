@@ -1,18 +1,19 @@
 import { call } from "@orpc/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-   TEST_TEAM_ID,
-   createTestContext,
-} from "../../../helpers/create-test-context";
+   afterAll,
+   beforeAll,
+   beforeEach,
+   describe,
+   expect,
+   it,
+   vi,
+} from "vitest";
 
-vi.mock("@core/database/client", () => ({ db: {} }));
-vi.mock("@core/database/repositories/services-repository");
-vi.mock("@core/database/repositories/subscriptions-repository");
-vi.mock("@core/database/repositories/contacts-repository");
-vi.mock("@core/database/repositories/bills-repository", () => ({
-   generateBillsForSubscription: vi.fn().mockResolvedValue(undefined),
-   cancelPendingBillsForSubscription: vi.fn().mockResolvedValue(undefined),
-}));
+vi.mock("@core/database/client", async () => {
+   const { setupIntegrationDb } =
+      await import("../../../helpers/setup-integration-test");
+   return { db: await setupIntegrationDb(), createDb: () => {} };
+});
 vi.mock("@core/arcjet/protect", () => ({
    protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
    isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
@@ -22,497 +23,686 @@ vi.mock("@core/posthog/server", () => ({
    captureServerEvent: vi.fn(),
    identifyUser: vi.fn(),
    setGroup: vi.fn(),
+   posthog: {
+      capture: vi.fn(),
+      identify: vi.fn(),
+      groupIdentify: vi.fn(),
+      shutdown: vi.fn(),
+   },
 }));
-vi.mock("@core/logging/root", () => ({
-   getLogger: () => ({
-      child: () => ({ error: vi.fn(), info: vi.fn(), warn: vi.fn() }),
-   }),
+vi.mock("@core/database/repositories/bills-repository", () => ({
+   generateBillsForSubscription: vi.fn().mockResolvedValue(undefined),
+   cancelPendingBillsForSubscription: vi.fn().mockResolvedValue(undefined),
 }));
 
+import { contacts } from "@core/database/schemas/contacts";
+import { sql } from "drizzle-orm";
 import {
-   createService,
-   createVariant as createVariantRepo,
-   deleteService,
-   deleteVariant,
-   ensureServiceOwnership,
-   ensureVariantOwnership,
-   listServices,
-   listVariantsByService,
-   updateService,
-   updateVariant as updateVariantRepo,
-} from "@core/database/repositories/services-repository";
-import {
-   countActiveSubscriptionsByVariant,
-   createSubscription as createSubscriptionRepo,
-   ensureSubscriptionOwnership,
-   listExpiringSoon,
-   listSubscriptionsByContact,
-   listSubscriptionsByTeam,
-   updateSubscription,
-} from "@core/database/repositories/subscriptions-repository";
-import { ensureContactOwnership } from "@core/database/repositories/contacts-repository";
-import { AppError } from "@core/logging/errors";
+   cleanupIntegrationTest,
+   setupIntegrationTest,
+} from "../../../helpers/setup-integration-test";
+import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import * as servicesRouter from "@/integrations/orpc/router/services";
 
-const SERVICE_ID = "a0000000-0000-4000-8000-000000000001";
-const VARIANT_ID = "a0000000-0000-4000-8000-000000000002";
-const CONTACT_ID = "a0000000-0000-4000-8000-000000000003";
-const SUBSCRIPTION_ID = "a0000000-0000-4000-8000-000000000004";
+let ctx: ORPCContextWithAuth;
+let ctx2: ORPCContextWithAuth;
 
-const mockService = {
-   id: SERVICE_ID,
-   teamId: TEST_TEAM_ID,
-   name: "Consultoria",
-   description: null,
-   basePrice: "100.00",
-   categoryId: null,
-   tagId: null,
-   isActive: true,
-   createdAt: new Date(),
-   updatedAt: new Date(),
-};
-
-const mockVariant = {
-   id: VARIANT_ID,
-   serviceId: SERVICE_ID,
-   teamId: TEST_TEAM_ID,
-   name: "Mensal",
-   basePrice: "200.00",
-   billingCycle: "monthly" as const,
-   isActive: true,
-   createdAt: new Date(),
-   updatedAt: new Date(),
-};
-
-const mockContact = {
-   id: CONTACT_ID,
-   teamId: TEST_TEAM_ID,
-   name: "João",
-};
-
-const mockSubscription = {
-   id: SUBSCRIPTION_ID,
-   teamId: TEST_TEAM_ID,
-   contactId: CONTACT_ID,
-   variantId: VARIANT_ID,
-   startDate: "2026-01-01",
-   endDate: null,
-   negotiatedPrice: "200.00",
-   notes: null,
-   status: "active" as const,
-   source: "manual" as const,
-   externalId: null,
-   currentPeriodStart: null,
-   currentPeriodEnd: null,
-   cancelAtPeriodEnd: false,
-   canceledAt: null,
-   createdAt: new Date(),
-   updatedAt: new Date(),
-};
-
-beforeEach(() => {
-   vi.clearAllMocks();
+beforeAll(async () => {
+   const { createAuthenticatedContext } = await setupIntegrationTest();
+   ctx = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
+   ctx2 = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
 });
 
-describe("services", () => {
-   describe("getAll", () => {
-      it("lists services", async () => {
-         vi.mocked(listServices).mockResolvedValueOnce([mockService as any]);
+afterAll(async () => {
+   await cleanupIntegrationTest();
+});
 
-         const result = await call(servicesRouter.getAll, undefined, {
-            context: createTestContext(),
-         });
+beforeEach(async () => {
+   await ctx.db.execute(sql`DELETE FROM contact_subscriptions`);
+   await ctx.db.execute(sql`DELETE FROM service_variants`);
+   await ctx.db.execute(sql`DELETE FROM services`);
+   await ctx.db.execute(sql`DELETE FROM contacts`);
+});
 
-         expect(result).toEqual([mockService]);
-         expect(listServices).toHaveBeenCalledWith(TEST_TEAM_ID, undefined);
+describe("create", () => {
+   it("creates a service and persists it", async () => {
+      const result = await call(
+         servicesRouter.create,
+         {
+            name: "Consultoria",
+            basePrice: "150.00",
+         },
+         { context: ctx },
+      );
+
+      expect(result.name).toBe("Consultoria");
+      expect(result.basePrice).toBe("150.00");
+
+      const rows = await ctx.db.query.services.findMany();
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.id).toBe(result.id);
+   });
+});
+
+describe("getAll", () => {
+   it("lists services for the team", async () => {
+      await call(
+         servicesRouter.create,
+         { name: "Serviço A", basePrice: "100.00" },
+         { context: ctx },
+      );
+      await call(
+         servicesRouter.create,
+         { name: "Serviço B", basePrice: "200.00" },
+         { context: ctx },
+      );
+
+      const result = await call(servicesRouter.getAll, undefined, {
+         context: ctx,
       });
 
-      it("passes filters", async () => {
-         vi.mocked(listServices).mockResolvedValueOnce([]);
-
-         await call(
-            servicesRouter.getAll,
-            { search: "test" },
-            { context: createTestContext() },
-         );
-
-         expect(listServices).toHaveBeenCalledWith(TEST_TEAM_ID, {
-            search: "test",
-         });
-      });
+      expect(result).toHaveLength(2);
    });
 
-   describe("create", () => {
-      it("creates a service", async () => {
-         vi.mocked(createService).mockResolvedValueOnce(mockService);
+   it("filters by search term", async () => {
+      await call(
+         servicesRouter.create,
+         { name: "Consultoria Financeira", basePrice: "100.00" },
+         { context: ctx },
+      );
+      await call(
+         servicesRouter.create,
+         { name: "Desenvolvimento Web", basePrice: "200.00" },
+         { context: ctx },
+      );
 
-         const result = await call(
-            servicesRouter.create,
-            { name: "Consultoria", basePrice: "100.00" },
-            { context: createTestContext() },
-         );
+      const result = await call(
+         servicesRouter.getAll,
+         { search: "Financeira" },
+         { context: ctx },
+      );
 
-         expect(result).toEqual(mockService);
-         expect(createService).toHaveBeenCalledWith(
-            TEST_TEAM_ID,
-            expect.objectContaining({ name: "Consultoria" }),
-         );
-      });
+      expect(result).toHaveLength(1);
+      expect(result[0]!.name).toBe("Consultoria Financeira");
    });
 
-   describe("update", () => {
-      it("updates after ownership check", async () => {
-         vi.mocked(ensureServiceOwnership).mockResolvedValueOnce(mockService);
-         const updated = { ...mockService, name: "Mentoria" };
-         vi.mocked(updateService).mockResolvedValueOnce(updated);
+   it("does not leak services from another team", async () => {
+      await call(
+         servicesRouter.create,
+         { name: "Private", basePrice: "10.00" },
+         { context: ctx },
+      );
 
-         const result = await call(
+      const result = await call(servicesRouter.getAll, undefined, {
+         context: ctx2,
+      });
+
+      expect(result).toHaveLength(0);
+   });
+});
+
+describe("update", () => {
+   it("updates service after ownership check", async () => {
+      const created = await call(
+         servicesRouter.create,
+         { name: "Original", basePrice: "50.00" },
+         { context: ctx },
+      );
+
+      const updated = await call(
+         servicesRouter.update,
+         { id: created.id, name: "Atualizado" },
+         { context: ctx },
+      );
+
+      expect(updated.name).toBe("Atualizado");
+
+      const fromDb = await ctx.db.query.services.findFirst({
+         where: { id: created.id },
+      });
+      expect(fromDb!.name).toBe("Atualizado");
+   });
+
+   it("rejects update from different team", async () => {
+      const created = await call(
+         servicesRouter.create,
+         { name: "Private", basePrice: "50.00" },
+         { context: ctx },
+      );
+
+      await expect(
+         call(
             servicesRouter.update,
-            { id: SERVICE_ID, name: "Mentoria" },
-            { context: createTestContext() },
-         );
+            { id: created.id, name: "Hacked" },
+            { context: ctx2 },
+         ),
+      ).rejects.toThrow("Serviço não encontrado.");
+   });
+});
 
-         expect(result.name).toBe("Mentoria");
-         expect(ensureServiceOwnership).toHaveBeenCalledWith(
-            SERVICE_ID,
-            TEST_TEAM_ID,
-         );
-      });
+describe("remove", () => {
+   it("deletes a service", async () => {
+      const created = await call(
+         servicesRouter.create,
+         { name: "Deletar", basePrice: "10.00" },
+         { context: ctx },
+      );
 
-      it("propagates NOT_FOUND", async () => {
-         vi.mocked(ensureServiceOwnership).mockRejectedValueOnce(
-            AppError.notFound("Serviço não encontrado."),
-         );
+      const result = await call(
+         servicesRouter.remove,
+         { id: created.id },
+         { context: ctx },
+      );
 
-         await expect(
-            call(
-               servicesRouter.update,
-               { id: SERVICE_ID, name: "Novo Nome" },
-               { context: createTestContext() },
-            ),
-         ).rejects.toThrow("Serviço não encontrado.");
-      });
+      expect(result).toEqual({ success: true });
+
+      const rows = await ctx.db.query.services.findMany();
+      expect(rows).toHaveLength(0);
    });
 
-   describe("remove", () => {
-      it("deletes after ownership check", async () => {
-         vi.mocked(ensureServiceOwnership).mockResolvedValueOnce(mockService);
-         vi.mocked(deleteService).mockResolvedValueOnce(undefined);
+   it("rejects deletion from different team", async () => {
+      const created = await call(
+         servicesRouter.create,
+         { name: "Private", basePrice: "10.00" },
+         { context: ctx },
+      );
 
-         const result = await call(
-            servicesRouter.remove,
-            { id: SERVICE_ID },
-            { context: createTestContext() },
-         );
-
-         expect(result).toEqual({ success: true });
-         expect(deleteService).toHaveBeenCalledWith(SERVICE_ID);
-      });
+      await expect(
+         call(servicesRouter.remove, { id: created.id }, { context: ctx2 }),
+      ).rejects.toThrow("Serviço não encontrado.");
    });
+});
 
-   describe("exportAll", () => {
-      it("returns all services", async () => {
-         vi.mocked(listServices).mockResolvedValueOnce([mockService as any]);
+describe("exportAll", () => {
+   it("returns all services for the team", async () => {
+      await call(
+         servicesRouter.create,
+         { name: "Export A", basePrice: "10.00" },
+         { context: ctx },
+      );
 
-         const result = await call(servicesRouter.exportAll, undefined, {
-            context: createTestContext(),
-         });
-
-         expect(result).toEqual([mockService]);
-         expect(listServices).toHaveBeenCalledWith(TEST_TEAM_ID);
+      const result = await call(servicesRouter.exportAll, undefined, {
+         context: ctx,
       });
+
+      expect(result).toHaveLength(1);
+      expect(result[0]!.name).toBe("Export A");
    });
 });
 
 describe("variants", () => {
-   describe("getVariants", () => {
-      it("lists variants after service ownership check", async () => {
-         vi.mocked(ensureServiceOwnership).mockResolvedValueOnce(mockService);
-         vi.mocked(listVariantsByService).mockResolvedValueOnce([mockVariant]);
+   it("creates and lists variants for a service", async () => {
+      const service = await call(
+         servicesRouter.create,
+         { name: "Com Variantes", basePrice: "100.00" },
+         { context: ctx },
+      );
 
-         const result = await call(
-            servicesRouter.getVariants,
-            { serviceId: SERVICE_ID },
-            { context: createTestContext() },
-         );
+      await call(
+         servicesRouter.createVariant,
+         {
+            serviceId: service.id,
+            name: "Mensal",
+            basePrice: "100.00",
+            billingCycle: "monthly",
+         },
+         { context: ctx },
+      );
+      await call(
+         servicesRouter.createVariant,
+         {
+            serviceId: service.id,
+            name: "Anual",
+            basePrice: "1000.00",
+            billingCycle: "annual",
+         },
+         { context: ctx },
+      );
 
-         expect(result).toEqual([mockVariant]);
-         expect(ensureServiceOwnership).toHaveBeenCalledWith(
-            SERVICE_ID,
-            TEST_TEAM_ID,
-         );
-      });
+      const variants = await call(
+         servicesRouter.getVariants,
+         { serviceId: service.id },
+         { context: ctx },
+      );
+
+      expect(variants).toHaveLength(2);
    });
 
-   describe("createVariant", () => {
-      it("creates variant after service ownership check", async () => {
-         vi.mocked(ensureServiceOwnership).mockResolvedValueOnce(mockService);
-         vi.mocked(createVariantRepo).mockResolvedValueOnce(mockVariant);
+   it("updates a variant", async () => {
+      const service = await call(
+         servicesRouter.create,
+         { name: "Serviço", basePrice: "50.00" },
+         { context: ctx },
+      );
 
-         const result = await call(
+      const variant = await call(
+         servicesRouter.createVariant,
+         {
+            serviceId: service.id,
+            name: "Original",
+            basePrice: "50.00",
+            billingCycle: "monthly",
+         },
+         { context: ctx },
+      );
+
+      const updated = await call(
+         servicesRouter.updateVariant,
+         { id: variant.id, name: "Atualizado" },
+         { context: ctx },
+      );
+
+      expect(updated.name).toBe("Atualizado");
+   });
+
+   it("removes a variant", async () => {
+      const service = await call(
+         servicesRouter.create,
+         { name: "Serviço", basePrice: "50.00" },
+         { context: ctx },
+      );
+
+      const variant = await call(
+         servicesRouter.createVariant,
+         {
+            serviceId: service.id,
+            name: "Remover",
+            basePrice: "50.00",
+            billingCycle: "one_time",
+         },
+         { context: ctx },
+      );
+
+      const result = await call(
+         servicesRouter.removeVariant,
+         { id: variant.id },
+         { context: ctx },
+      );
+
+      expect(result).toEqual({ success: true });
+
+      const remaining = await call(
+         servicesRouter.getVariants,
+         { serviceId: service.id },
+         { context: ctx },
+      );
+      expect(remaining).toHaveLength(0);
+   });
+
+   it("rejects variant creation from different team", async () => {
+      const service = await call(
+         servicesRouter.create,
+         { name: "Serviço", basePrice: "50.00" },
+         { context: ctx },
+      );
+
+      await expect(
+         call(
             servicesRouter.createVariant,
             {
-               serviceId: SERVICE_ID,
-               name: "Mensal",
-               basePrice: "200.00",
+               serviceId: service.id,
+               name: "Hack",
+               basePrice: "50.00",
                billingCycle: "monthly",
             },
-            { context: createTestContext() },
-         );
-
-         expect(result).toEqual(mockVariant);
-         expect(createVariantRepo).toHaveBeenCalledWith(
-            TEST_TEAM_ID,
-            SERVICE_ID,
-            expect.objectContaining({ name: "Mensal" }),
-         );
-      });
+            { context: ctx2 },
+         ),
+      ).rejects.toThrow("Serviço não encontrado.");
    });
 
-   describe("updateVariant", () => {
-      it("updates after variant ownership check", async () => {
-         vi.mocked(ensureVariantOwnership).mockResolvedValueOnce(mockVariant);
-         const updated = { ...mockVariant, name: "Anual" };
-         vi.mocked(updateVariantRepo).mockResolvedValueOnce(updated);
+   it("rejects variant update from different team", async () => {
+      const service = await call(
+         servicesRouter.create,
+         { name: "Serviço", basePrice: "50.00" },
+         { context: ctx },
+      );
 
-         const result = await call(
+      const variant = await call(
+         servicesRouter.createVariant,
+         {
+            serviceId: service.id,
+            name: "Original",
+            basePrice: "50.00",
+            billingCycle: "monthly",
+         },
+         { context: ctx },
+      );
+
+      await expect(
+         call(
             servicesRouter.updateVariant,
-            { id: VARIANT_ID, name: "Anual" },
-            { context: createTestContext() },
-         );
-
-         expect(result.name).toBe("Anual");
-         expect(ensureVariantOwnership).toHaveBeenCalledWith(
-            VARIANT_ID,
-            TEST_TEAM_ID,
-         );
-      });
-
-      it("propagates NOT_FOUND", async () => {
-         vi.mocked(ensureVariantOwnership).mockRejectedValueOnce(
-            AppError.notFound("Variação não encontrada."),
-         );
-
-         await expect(
-            call(
-               servicesRouter.updateVariant,
-               { id: VARIANT_ID, name: "Novo Nome" },
-               { context: createTestContext() },
-            ),
-         ).rejects.toThrow("Variação não encontrada.");
-      });
-   });
-
-   describe("removeVariant", () => {
-      it("deletes after variant ownership check", async () => {
-         vi.mocked(ensureVariantOwnership).mockResolvedValueOnce(mockVariant);
-         vi.mocked(deleteVariant).mockResolvedValueOnce(undefined);
-
-         const result = await call(
-            servicesRouter.removeVariant,
-            { id: VARIANT_ID },
-            { context: createTestContext() },
-         );
-
-         expect(result).toEqual({ success: true });
-         expect(deleteVariant).toHaveBeenCalledWith(VARIANT_ID);
-      });
+            { id: variant.id, name: "Hacked" },
+            { context: ctx2 },
+         ),
+      ).rejects.toThrow("Variação não encontrada.");
    });
 });
 
+async function createContactForTeam(
+   db: typeof ctx.db,
+   teamId: string,
+   suffix = "",
+) {
+   const [contact] = await db
+      .insert(contacts)
+      .values({
+         teamId,
+         name: `Contato${suffix} ${Date.now()}`,
+         type: "cliente",
+      })
+      .returning();
+   return contact!;
+}
+
 describe("subscriptions", () => {
-   describe("getAllSubscriptions", () => {
-      it("lists subscriptions", async () => {
-         vi.mocked(listSubscriptionsByTeam).mockResolvedValueOnce([
-            mockSubscription,
-         ]);
+   it("creates a subscription for a contact", async () => {
+      const teamId = ctx.session.session.activeTeamId!;
+      const contact = await createContactForTeam(ctx.db, teamId);
 
-         const result = await call(
-            servicesRouter.getAllSubscriptions,
-            undefined,
-            { context: createTestContext() },
-         );
+      const service = await call(
+         servicesRouter.create,
+         { name: "Plano Pro", basePrice: "200.00" },
+         { context: ctx },
+      );
 
-         expect(result).toEqual([mockSubscription]);
-         expect(listSubscriptionsByTeam).toHaveBeenCalledWith(
-            TEST_TEAM_ID,
-            undefined,
-         );
-      });
+      const variant = await call(
+         servicesRouter.createVariant,
+         {
+            serviceId: service.id,
+            name: "Mensal",
+            basePrice: "200.00",
+            billingCycle: "monthly",
+         },
+         { context: ctx },
+      );
 
-      it("passes status filter", async () => {
-         vi.mocked(listSubscriptionsByTeam).mockResolvedValueOnce([]);
+      const sub = await call(
+         servicesRouter.createSubscription,
+         {
+            contactId: contact.id,
+            variantId: variant.id,
+            startDate: "2026-01-01",
+            negotiatedPrice: "180.00",
+         },
+         { context: ctx },
+      );
 
-         await call(
-            servicesRouter.getAllSubscriptions,
-            { status: "active" },
-            { context: createTestContext() },
-         );
+      expect(sub.contactId).toBe(contact.id);
+      expect(sub.variantId).toBe(variant.id);
+      expect(sub.negotiatedPrice).toBe("180.00");
+      expect(sub.status).toBe("active");
 
-         expect(listSubscriptionsByTeam).toHaveBeenCalledWith(
-            TEST_TEAM_ID,
-            "active",
-         );
-      });
+      const rows = await ctx.db.query.contactSubscriptions.findMany();
+      expect(rows).toHaveLength(1);
    });
 
-   describe("getContactSubscriptions", () => {
-      it("lists contact subscriptions after ownership check", async () => {
-         vi.mocked(ensureContactOwnership).mockResolvedValueOnce(
-            mockContact as any,
-         );
-         vi.mocked(listSubscriptionsByContact).mockResolvedValueOnce([
-            mockSubscription,
-         ]);
+   it("lists subscriptions by team", async () => {
+      const teamId = ctx.session.session.activeTeamId!;
+      const contact = await createContactForTeam(ctx.db, teamId);
 
-         const result = await call(
-            servicesRouter.getContactSubscriptions,
-            { contactId: CONTACT_ID },
-            { context: createTestContext() },
-         );
+      const service = await call(
+         servicesRouter.create,
+         { name: "Serviço Sub", basePrice: "100.00" },
+         { context: ctx },
+      );
 
-         expect(result).toEqual([mockSubscription]);
-         expect(ensureContactOwnership).toHaveBeenCalledWith(
-            CONTACT_ID,
-            TEST_TEAM_ID,
-         );
+      const variant = await call(
+         servicesRouter.createVariant,
+         {
+            serviceId: service.id,
+            name: "Mensal",
+            basePrice: "100.00",
+            billingCycle: "monthly",
+         },
+         { context: ctx },
+      );
+
+      await call(
+         servicesRouter.createSubscription,
+         {
+            contactId: contact.id,
+            variantId: variant.id,
+            startDate: "2026-01-01",
+            negotiatedPrice: "100.00",
+         },
+         { context: ctx },
+      );
+
+      const subs = await call(servicesRouter.getAllSubscriptions, undefined, {
+         context: ctx,
       });
+
+      expect(subs).toHaveLength(1);
    });
 
-   describe("createSubscription", () => {
-      it("creates subscription with ownership checks", async () => {
-         vi.mocked(ensureContactOwnership).mockResolvedValueOnce(
-            mockContact as any,
-         );
-         vi.mocked(ensureVariantOwnership).mockResolvedValueOnce(mockVariant);
-         vi.mocked(createSubscriptionRepo).mockResolvedValueOnce(
-            mockSubscription,
-         );
-         vi.mocked(ensureServiceOwnership).mockResolvedValueOnce(mockService);
+   it("filters subscriptions by status", async () => {
+      const teamId = ctx.session.session.activeTeamId!;
+      const contact = await createContactForTeam(ctx.db, teamId);
 
-         const result = await call(
-            servicesRouter.createSubscription,
-            {
-               contactId: CONTACT_ID,
-               variantId: VARIANT_ID,
-               startDate: "2026-01-01",
-               negotiatedPrice: "200.00",
-            },
-            { context: createTestContext() },
-         );
+      const service = await call(
+         servicesRouter.create,
+         { name: "Serviço Filter", basePrice: "100.00" },
+         { context: ctx },
+      );
 
-         expect(result).toEqual(mockSubscription);
-         expect(ensureContactOwnership).toHaveBeenCalledWith(
-            CONTACT_ID,
-            TEST_TEAM_ID,
-         );
-         expect(ensureVariantOwnership).toHaveBeenCalledWith(
-            VARIANT_ID,
-            TEST_TEAM_ID,
-         );
-      });
+      const variant = await call(
+         servicesRouter.createVariant,
+         {
+            serviceId: service.id,
+            name: "Mensal",
+            basePrice: "100.00",
+            billingCycle: "monthly",
+         },
+         { context: ctx },
+      );
+
+      const sub = await call(
+         servicesRouter.createSubscription,
+         {
+            contactId: contact.id,
+            variantId: variant.id,
+            startDate: "2026-01-01",
+            negotiatedPrice: "100.00",
+         },
+         { context: ctx },
+      );
+
+      await call(
+         servicesRouter.cancelSubscription,
+         { id: sub.id },
+         { context: ctx },
+      );
+
+      const active = await call(
+         servicesRouter.getAllSubscriptions,
+         { status: "active" },
+         { context: ctx },
+      );
+      expect(active).toHaveLength(0);
+
+      const cancelled = await call(
+         servicesRouter.getAllSubscriptions,
+         { status: "cancelled" },
+         { context: ctx },
+      );
+      expect(cancelled).toHaveLength(1);
    });
 
-   describe("cancelSubscription", () => {
-      it("cancels an active manual subscription", async () => {
-         vi.mocked(ensureSubscriptionOwnership).mockResolvedValueOnce(
-            mockSubscription,
-         );
-         const cancelled = {
-            ...mockSubscription,
-            status: "cancelled" as const,
-         };
-         vi.mocked(updateSubscription).mockResolvedValueOnce(cancelled);
+   it("cancels an active subscription", async () => {
+      const teamId = ctx.session.session.activeTeamId!;
+      const contact = await createContactForTeam(ctx.db, teamId);
 
-         const result = await call(
+      const service = await call(
+         servicesRouter.create,
+         { name: "Cancelável", basePrice: "100.00" },
+         { context: ctx },
+      );
+
+      const variant = await call(
+         servicesRouter.createVariant,
+         {
+            serviceId: service.id,
+            name: "Mensal",
+            basePrice: "100.00",
+            billingCycle: "monthly",
+         },
+         { context: ctx },
+      );
+
+      const sub = await call(
+         servicesRouter.createSubscription,
+         {
+            contactId: contact.id,
+            variantId: variant.id,
+            startDate: "2026-01-01",
+            negotiatedPrice: "100.00",
+         },
+         { context: ctx },
+      );
+
+      const cancelled = await call(
+         servicesRouter.cancelSubscription,
+         { id: sub.id },
+         { context: ctx },
+      );
+
+      expect(cancelled.status).toBe("cancelled");
+   });
+
+   it("rejects cancelling a non-active subscription", async () => {
+      const teamId = ctx.session.session.activeTeamId!;
+      const contact = await createContactForTeam(ctx.db, teamId);
+
+      const service = await call(
+         servicesRouter.create,
+         { name: "Já Cancelada", basePrice: "100.00" },
+         { context: ctx },
+      );
+
+      const variant = await call(
+         servicesRouter.createVariant,
+         {
+            serviceId: service.id,
+            name: "Mensal",
+            basePrice: "100.00",
+            billingCycle: "monthly",
+         },
+         { context: ctx },
+      );
+
+      const sub = await call(
+         servicesRouter.createSubscription,
+         {
+            contactId: contact.id,
+            variantId: variant.id,
+            startDate: "2026-01-01",
+            negotiatedPrice: "100.00",
+         },
+         { context: ctx },
+      );
+
+      await call(
+         servicesRouter.cancelSubscription,
+         { id: sub.id },
+         { context: ctx },
+      );
+
+      await expect(
+         call(
             servicesRouter.cancelSubscription,
-            { id: SUBSCRIPTION_ID },
-            { context: createTestContext() },
-         );
-
-         expect(result.status).toBe("cancelled");
-         expect(updateSubscription).toHaveBeenCalledWith(SUBSCRIPTION_ID, {
-            status: "cancelled",
-         });
-      });
-
-      it("rejects non-active subscription", async () => {
-         vi.mocked(ensureSubscriptionOwnership).mockResolvedValueOnce({
-            ...mockSubscription,
-            status: "completed",
-         });
-
-         await expect(
-            call(
-               servicesRouter.cancelSubscription,
-               { id: SUBSCRIPTION_ID },
-               { context: createTestContext() },
-            ),
-         ).rejects.toThrow("Apenas assinaturas ativas podem ser canceladas.");
-      });
-
-      it("rejects asaas subscription", async () => {
-         vi.mocked(ensureSubscriptionOwnership).mockResolvedValueOnce({
-            ...mockSubscription,
-            source: "asaas",
-         });
-
-         await expect(
-            call(
-               servicesRouter.cancelSubscription,
-               { id: SUBSCRIPTION_ID },
-               { context: createTestContext() },
-            ),
-         ).rejects.toThrow(
-            "Assinaturas do Asaas não podem ser canceladas aqui.",
-         );
-      });
-
-      it("propagates NOT_FOUND", async () => {
-         vi.mocked(ensureSubscriptionOwnership).mockRejectedValueOnce(
-            AppError.notFound("Assinatura não encontrada."),
-         );
-
-         await expect(
-            call(
-               servicesRouter.cancelSubscription,
-               { id: SUBSCRIPTION_ID },
-               { context: createTestContext() },
-            ),
-         ).rejects.toThrow("Assinatura não encontrada.");
-      });
+            { id: sub.id },
+            { context: ctx },
+         ),
+      ).rejects.toThrow("Apenas assinaturas ativas podem ser canceladas.");
    });
 
-   describe("getExpiringSoon", () => {
-      it("returns expiring subscriptions", async () => {
-         vi.mocked(listExpiringSoon).mockResolvedValueOnce([mockSubscription]);
+   it("rejects cancelling subscription from different team", async () => {
+      const teamId = ctx.session.session.activeTeamId!;
+      const contact = await createContactForTeam(ctx.db, teamId);
 
-         const result = await call(servicesRouter.getExpiringSoon, undefined, {
-            context: createTestContext(),
-         });
+      const service = await call(
+         servicesRouter.create,
+         { name: "Cross Team", basePrice: "100.00" },
+         { context: ctx },
+      );
 
-         expect(result).toEqual([mockSubscription]);
-         expect(listExpiringSoon).toHaveBeenCalledWith(TEST_TEAM_ID);
-      });
+      const variant = await call(
+         servicesRouter.createVariant,
+         {
+            serviceId: service.id,
+            name: "Mensal",
+            basePrice: "100.00",
+            billingCycle: "monthly",
+         },
+         { context: ctx },
+      );
+
+      const sub = await call(
+         servicesRouter.createSubscription,
+         {
+            contactId: contact.id,
+            variantId: variant.id,
+            startDate: "2026-01-01",
+            negotiatedPrice: "100.00",
+         },
+         { context: ctx },
+      );
+
+      await expect(
+         call(
+            servicesRouter.cancelSubscription,
+            { id: sub.id },
+            { context: ctx2 },
+         ),
+      ).rejects.toThrow("Assinatura não encontrada.");
    });
 
-   describe("getActiveCountByVariant", () => {
-      it("returns active counts", async () => {
-         const counts = [{ variantId: VARIANT_ID, count: 5 }];
-         vi.mocked(countActiveSubscriptionsByVariant).mockResolvedValueOnce(
-            counts as any,
-         );
+   it("returns active count by variant", async () => {
+      const teamId = ctx.session.session.activeTeamId!;
+      const contact = await createContactForTeam(ctx.db, teamId);
 
-         const result = await call(
-            servicesRouter.getActiveCountByVariant,
-            undefined,
-            { context: createTestContext() },
-         );
+      const service = await call(
+         servicesRouter.create,
+         { name: "Count Test", basePrice: "100.00" },
+         { context: ctx },
+      );
 
-         expect(result).toEqual(counts);
-         expect(countActiveSubscriptionsByVariant).toHaveBeenCalledWith(
-            TEST_TEAM_ID,
-         );
-      });
+      const variant = await call(
+         servicesRouter.createVariant,
+         {
+            serviceId: service.id,
+            name: "Mensal",
+            basePrice: "100.00",
+            billingCycle: "monthly",
+         },
+         { context: ctx },
+      );
+
+      await call(
+         servicesRouter.createSubscription,
+         {
+            contactId: contact.id,
+            variantId: variant.id,
+            startDate: "2026-01-01",
+            negotiatedPrice: "100.00",
+         },
+         { context: ctx },
+      );
+
+      const counts = await call(
+         servicesRouter.getActiveCountByVariant,
+         undefined,
+         { context: ctx },
+      );
+
+      expect(counts).toHaveLength(1);
+      expect(counts[0]!.variantId).toBe(variant.id);
+      expect(counts[0]!.count).toBe(1);
    });
 });

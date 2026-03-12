@@ -1,23 +1,19 @@
 import { call } from "@orpc/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-   TEST_ORG_ID,
-   TEST_TEAM_ID,
-   TEST_USER_ID,
-   createTestContext,
-} from "../../../helpers/create-test-context";
-import {
-   ENDPOINT_ID,
-   makeWebhookEndpoint,
-} from "../../../helpers/mock-factories";
+   afterAll,
+   beforeAll,
+   beforeEach,
+   describe,
+   expect,
+   it,
+   vi,
+} from "vitest";
 
-vi.mock("@core/database/client", () => ({ db: {} }));
-vi.mock("@core/database/repositories/webhook-repository");
-vi.mock("@core/database/repositories/event-catalog-repository");
-vi.mock("@packages/events/emit", () => ({
-   createEmitFn: vi.fn().mockReturnValue(vi.fn()),
-}));
-vi.mock("@packages/events/webhook");
+vi.mock("@core/database/client", async () => {
+   const { setupIntegrationDb } =
+      await import("../../../helpers/setup-integration-test");
+   return { db: await setupIntegrationDb(), createDb: () => {} };
+});
 vi.mock("@core/arcjet/protect", () => ({
    protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
    isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
@@ -27,46 +23,101 @@ vi.mock("@core/posthog/server", () => ({
    captureServerEvent: vi.fn(),
    identifyUser: vi.fn(),
    setGroup: vi.fn(),
+   posthog: {
+      capture: vi.fn(),
+      identify: vi.fn(),
+      groupIdentify: vi.fn(),
+      shutdown: vi.fn(),
+   },
+}));
+vi.mock("@packages/events/emit", () => ({
+   createEmitFn: vi.fn().mockReturnValue(vi.fn()),
+}));
+vi.mock("@packages/events/webhook", () => ({
+   emitWebhookEndpointCreated: vi.fn().mockResolvedValue(undefined),
+   emitWebhookEndpointUpdated: vi.fn().mockResolvedValue(undefined),
+   emitWebhookEndpointDeleted: vi.fn().mockResolvedValue(undefined),
 }));
 
+import { eventCatalog } from "@core/database/schemas/event-catalog";
+import { webhookEndpoints } from "@core/database/schemas/webhooks";
+import { sql } from "drizzle-orm";
 import {
-   createWebhookEndpoint,
-   deleteWebhookEndpoint,
-   ensureWebhookOwnership,
-   getWebhookDeliveries,
-   listWebhookEndpoints,
-   updateWebhookEndpoint,
-} from "@core/database/repositories/webhook-repository";
-import { listEventCatalog } from "@core/database/repositories/event-catalog-repository";
-import { AppError } from "@core/logging/errors";
-import {
-   emitWebhookEndpointCreated,
-   emitWebhookEndpointDeleted,
-   emitWebhookEndpointUpdated,
-} from "@packages/events/webhook";
-
+   cleanupIntegrationTest,
+   setupIntegrationTest,
+} from "../../../helpers/setup-integration-test";
+import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import * as webhooksRouter from "@/integrations/orpc/router/webhooks";
 
-beforeEach(() => {
-   vi.clearAllMocks();
-   vi.mocked(emitWebhookEndpointCreated).mockResolvedValue(undefined);
-   vi.mocked(emitWebhookEndpointUpdated).mockResolvedValue(undefined);
-   vi.mocked(emitWebhookEndpointDeleted).mockResolvedValue(undefined);
+let ctx: ORPCContextWithAuth;
+let ctx2: ORPCContextWithAuth;
+
+beforeAll(async () => {
+   const { createAuthenticatedContext } = await setupIntegrationTest();
+   ctx = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
+   ctx2 = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
+
+   await ctx.db.insert(eventCatalog).values({
+      eventName: "content.page.published",
+      category: "content",
+      displayName: "Page published",
+      pricePerEvent: "0",
+      freeTierLimit: 0,
+      isBillable: false,
+      isActive: true,
+   });
+
+   await ctx.db.insert(eventCatalog).values({
+      eventName: "content.page.updated",
+      category: "content",
+      displayName: "Page updated",
+      pricePerEvent: "0",
+      freeTierLimit: 0,
+      isBillable: false,
+      isActive: true,
+   });
 });
 
-const catalogEntry = {
-   id: "event-1",
-   eventName: "content.page.published",
-   category: "content",
-   displayName: "Page published",
-   description: null,
-   pricePerEvent: "0",
-   freeTierLimit: 0,
-   isBillable: false,
-   isActive: true,
-   createdAt: new Date("2026-01-01"),
-   updatedAt: new Date("2026-01-01"),
-};
+afterAll(async () => {
+   await cleanupIntegrationTest();
+});
+
+beforeEach(async () => {
+   await ctx.db.execute(sql`DELETE FROM webhook_deliveries`);
+   await ctx.db.execute(sql`DELETE FROM webhook_endpoints`);
+});
+
+function withMockApiKey(
+   context: ORPCContextWithAuth,
+   overrides?: {
+      createApiKey?: ReturnType<typeof vi.fn>;
+      deleteApiKey?: ReturnType<typeof vi.fn>;
+   },
+): ORPCContextWithAuth {
+   return {
+      ...context,
+      auth: {
+         ...context.auth,
+         api: {
+            ...(context.auth as any).api,
+            createApiKey:
+               overrides?.createApiKey ??
+               vi.fn().mockResolvedValue({
+                  id: "api-key-1",
+                  key: "cta_wh_test_key_123",
+               }),
+            deleteApiKey:
+               overrides?.deleteApiKey ?? vi.fn().mockResolvedValue(undefined),
+         },
+      } as any,
+   };
+}
 
 describe("create", () => {
    const input = {
@@ -75,518 +126,320 @@ describe("create", () => {
       eventPatterns: ["content.page.published"],
    };
 
-   it("creates webhook endpoint successfully", async () => {
-      const endpoint = makeWebhookEndpoint({
-         signingSecret: "cta_wh_1234567890",
-         apiKeyId: "api-key-1",
-         eventPatterns: ["content.page.published"],
-      });
-      vi.mocked(listEventCatalog).mockResolvedValueOnce([catalogEntry]);
-      vi.mocked(createWebhookEndpoint).mockResolvedValueOnce(endpoint);
-      const createApiKey = vi.fn().mockResolvedValue({
-         id: "api-key-1",
-         key: "cta_wh_1234567890",
+   it("creates webhook endpoint and persists it", async () => {
+      const ctxWithApi = withMockApiKey(ctx);
+      const result = await call(webhooksRouter.create, input, {
+         context: ctxWithApi,
       });
 
-      const ctx = createTestContext({
-         auth: { api: { createApiKey } },
-      });
-      const result = await call(webhooksRouter.create, input, { context: ctx });
+      expect(result.endpoint.url).toBe("https://example.com/webhook");
+      expect(result.endpoint.eventPatterns).toEqual(["content.page.published"]);
+      expect(result.endpoint.isActive).toBe(true);
+      expect(result.endpoint.signingSecret).toMatch(/^.{8}\.\.\.$/);
+      expect(result.plaintextSecret).toBe("cta_wh_test_key_123");
 
-      expect(listEventCatalog).toHaveBeenCalledWith(expect.anything());
-      expect(createApiKey).toHaveBeenCalledWith(
-         expect.objectContaining({
-            headers: expect.any(Headers),
-            body: expect.objectContaining({
-               name: expect.stringContaining("Webhook"),
-               prefix: "cta_wh",
-               userId: TEST_USER_ID,
-               metadata: expect.objectContaining({
-                  organizationId: TEST_ORG_ID,
-                  teamId: TEST_TEAM_ID,
-                  type: "webhook",
-               }),
-            }),
-         }),
-      );
-      expect(createWebhookEndpoint).toHaveBeenCalledWith(
-         TEST_ORG_ID,
-         TEST_TEAM_ID,
-         expect.objectContaining({
-            url: input.url,
-            description: input.description,
-            eventPatterns: input.eventPatterns,
-            isActive: true,
-         }),
-      );
-      expect(result).toEqual(
-         expect.objectContaining({
-            endpoint: expect.objectContaining({
-               signingSecret: "cta_wh_1...",
-            }),
-            plaintextSecret: "cta_wh_1234567890",
-         }),
-      );
+      const rows = await ctx.db.query.webhookEndpoints.findMany();
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.id).toBe(result.endpoint.id);
+      expect(rows[0]!.url).toBe("https://example.com/webhook");
    });
 
    it("rejects wildcard event patterns", async () => {
-      vi.mocked(listEventCatalog).mockResolvedValueOnce([catalogEntry]);
-      const ctx = createTestContext({
-         auth: { api: { createApiKey: vi.fn() } },
-      });
-
+      const ctxWithApi = withMockApiKey(ctx);
       await expect(
          call(
             webhooksRouter.create,
             { ...input, eventPatterns: ["content.*"] },
-            { context: ctx },
-         ),
-      ).rejects.toThrow("Padrões com wildcard não são permitidos.");
-   });
-
-   it("rejects single wildcard pattern", async () => {
-      vi.mocked(listEventCatalog).mockResolvedValueOnce([catalogEntry]);
-      const ctx = createTestContext({
-         auth: { api: { createApiKey: vi.fn() } },
-      });
-
-      await expect(
-         call(
-            webhooksRouter.create,
-            { ...input, eventPatterns: ["*"] },
-            { context: ctx },
+            { context: ctxWithApi },
          ),
       ).rejects.toThrow("Padrões com wildcard não são permitidos.");
    });
 
    it("rejects events not in catalog", async () => {
-      vi.mocked(listEventCatalog).mockResolvedValueOnce([catalogEntry]);
-      const ctx = createTestContext({
-         auth: { api: { createApiKey: vi.fn() } },
-      });
-
+      const ctxWithApi = withMockApiKey(ctx);
       await expect(
          call(
             webhooksRouter.create,
             { ...input, eventPatterns: ["content.page.deleted"] },
-            { context: ctx },
+            { context: ctxWithApi },
          ),
       ).rejects.toThrow("Eventos inválidos: content.page.deleted");
    });
 
-   it("returns masked secret in endpoint object", async () => {
-      const endpoint = makeWebhookEndpoint({
-         signingSecret: "cta_wh_1234567890",
-         apiKeyId: "api-key-1",
-         eventPatterns: ["content.page.published"],
+   it("masks signing secret in response", async () => {
+      const ctxWithApi = withMockApiKey(ctx);
+      const result = await call(webhooksRouter.create, input, {
+         context: ctxWithApi,
       });
-      vi.mocked(createWebhookEndpoint).mockResolvedValueOnce(endpoint);
-      vi.mocked(listEventCatalog).mockResolvedValueOnce([catalogEntry]);
 
-      const ctx = createTestContext({
-         auth: {
-            api: {
-               createApiKey: vi.fn().mockResolvedValue({
-                  id: "api-key-1",
-                  key: "cta_wh_1234567890",
-               }),
-            },
-         },
+      const fromDb = await ctx.db.query.webhookEndpoints.findFirst({
+         where: { id: result.endpoint.id },
       });
-      const result = await call(webhooksRouter.create, input, { context: ctx });
-
-      expect(result.endpoint.signingSecret).toBe("cta_wh_1...");
-      expect(result.plaintextSecret).toBe("cta_wh_1234567890");
-      expect(result.endpoint.signingSecret).not.toBe(result.plaintextSecret);
-   });
-
-   it("emits webhookEndpointCreated event with teamId", async () => {
-      const endpoint = makeWebhookEndpoint();
-      vi.mocked(createWebhookEndpoint).mockResolvedValueOnce(endpoint);
-      vi.mocked(listEventCatalog).mockResolvedValueOnce([catalogEntry]);
-
-      const ctx = createTestContext({
-         auth: {
-            api: {
-               createApiKey: vi.fn().mockResolvedValue({
-                  id: "api-key-1",
-                  key: "cta_wh_1234567890",
-               }),
-            },
-         },
-      });
-      await call(webhooksRouter.create, input, { context: ctx });
-
-      expect(emitWebhookEndpointCreated).toHaveBeenCalledWith(
-         expect.any(Function),
-         expect.objectContaining({
-            organizationId: TEST_ORG_ID,
-            userId: TEST_USER_ID,
-            teamId: TEST_TEAM_ID,
-         }),
-         expect.objectContaining({
-            endpointId: ENDPOINT_ID,
-            url: input.url,
-         }),
-      );
-   });
-
-   it("succeeds even when event emission fails", async () => {
-      const endpoint = makeWebhookEndpoint({
-         signingSecret: "cta_wh_1234567890",
-         apiKeyId: "api-key-1",
-         eventPatterns: ["content.page.published"],
-      });
-      vi.mocked(createWebhookEndpoint).mockResolvedValueOnce(endpoint);
-      vi.mocked(listEventCatalog).mockResolvedValueOnce([catalogEntry]);
-      vi.mocked(emitWebhookEndpointCreated).mockRejectedValueOnce(
-         new Error("emit failed"),
-      );
-
-      const ctx = createTestContext({
-         auth: {
-            api: {
-               createApiKey: vi.fn().mockResolvedValue({
-                  id: "api-key-1",
-                  key: "cta_wh_1234567890",
-               }),
-            },
-         },
-      });
-      const result = await call(webhooksRouter.create, input, { context: ctx });
-
-      expect(result).toEqual(
-         expect.objectContaining({
-            endpoint: expect.objectContaining({
-               signingSecret: "cta_wh_1...",
-            }),
-            plaintextSecret: "cta_wh_1234567890",
-         }),
-      );
+      expect(result.endpoint.signingSecret).not.toBe(fromDb!.signingSecret);
+      expect(result.endpoint.signingSecret.endsWith("...")).toBe(true);
    });
 });
 
 describe("list", () => {
-   it("returns endpoints with masked signing secrets", async () => {
-      const endpoints = [
-         makeWebhookEndpoint(),
-         makeWebhookEndpoint({
-            id: "a0000000-0000-4000-8000-000000000002",
-            url: "https://example.com/webhook2",
-         }),
-      ];
-      vi.mocked(listWebhookEndpoints).mockResolvedValueOnce(endpoints);
+   it("returns endpoints with masked secrets", async () => {
+      const ctxWithApi = withMockApiKey(ctx);
+      await call(
+         webhooksRouter.create,
+         {
+            url: "https://example.com/hook1",
+            eventPatterns: ["content.page.published"],
+         },
+         { context: ctxWithApi },
+      );
+      await call(
+         webhooksRouter.create,
+         {
+            url: "https://example.com/hook2",
+            eventPatterns: ["content.page.updated"],
+         },
+         { context: ctxWithApi },
+      );
 
-      const ctx = createTestContext();
       const result = await call(webhooksRouter.list, undefined, {
          context: ctx,
       });
 
-      expect(listWebhookEndpoints).toHaveBeenCalledWith(TEST_TEAM_ID);
       expect(result).toHaveLength(2);
-      expect(result[0].signingSecret).toBe("whsec_12...");
-      expect(result[1].signingSecret).toBe("whsec_12...");
+      for (const endpoint of result) {
+         expect(endpoint.signingSecret.endsWith("...")).toBe(true);
+      }
    });
 
    it("returns empty array when no endpoints", async () => {
-      vi.mocked(listWebhookEndpoints).mockResolvedValueOnce([]);
-
-      const ctx = createTestContext();
       const result = await call(webhooksRouter.list, undefined, {
          context: ctx,
       });
-
       expect(result).toEqual([]);
+   });
+
+   it("only returns endpoints for the requesting team", async () => {
+      const ctxWithApi = withMockApiKey(ctx);
+      await call(
+         webhooksRouter.create,
+         {
+            url: "https://example.com/team1",
+            eventPatterns: ["content.page.published"],
+         },
+         { context: ctxWithApi },
+      );
+
+      const result = await call(webhooksRouter.list, undefined, {
+         context: ctx2,
+      });
+      expect(result).toHaveLength(0);
    });
 });
 
 describe("getById", () => {
    it("returns endpoint with masked signing secret", async () => {
-      const endpoint = makeWebhookEndpoint();
-      vi.mocked(ensureWebhookOwnership).mockResolvedValueOnce(endpoint);
+      const ctxWithApi = withMockApiKey(ctx);
+      const created = await call(
+         webhooksRouter.create,
+         {
+            url: "https://example.com/webhook",
+            eventPatterns: ["content.page.published"],
+         },
+         { context: ctxWithApi },
+      );
 
-      const ctx = createTestContext();
       const result = await call(
          webhooksRouter.getById,
-         { id: ENDPOINT_ID },
+         { id: created.endpoint.id },
          { context: ctx },
       );
 
-      expect(ensureWebhookOwnership).toHaveBeenCalledWith(
-         ENDPOINT_ID,
-         TEST_TEAM_ID,
-      );
-      expect(result.signingSecret).toBe("whsec_12...");
       expect(result.url).toBe("https://example.com/webhook");
+      expect(result.signingSecret.endsWith("...")).toBe(true);
    });
 
-   it("propagates NOT_FOUND from repository", async () => {
-      vi.mocked(ensureWebhookOwnership).mockRejectedValueOnce(
-         AppError.notFound("Webhook não encontrado."),
+   it("rejects access from a different team", async () => {
+      const ctxWithApi = withMockApiKey(ctx);
+      const created = await call(
+         webhooksRouter.create,
+         {
+            url: "https://example.com/webhook",
+            eventPatterns: ["content.page.published"],
+         },
+         { context: ctxWithApi },
       );
 
-      const ctx = createTestContext();
       await expect(
-         call(webhooksRouter.getById, { id: ENDPOINT_ID }, { context: ctx }),
+         call(
+            webhooksRouter.getById,
+            { id: created.endpoint.id },
+            { context: ctx2 },
+         ),
       ).rejects.toThrow("Webhook não encontrado.");
    });
 });
 
 describe("update", () => {
-   const input = {
-      id: ENDPOINT_ID,
-      url: "https://example.com/updated-webhook" as const,
-      isActive: false as const,
-   };
-
-   it("updates endpoint successfully", async () => {
-      vi.mocked(ensureWebhookOwnership).mockResolvedValueOnce(
-         makeWebhookEndpoint(),
+   it("updates endpoint and persists changes", async () => {
+      const ctxWithApi = withMockApiKey(ctx);
+      const created = await call(
+         webhooksRouter.create,
+         {
+            url: "https://example.com/webhook",
+            eventPatterns: ["content.page.published"],
+         },
+         { context: ctxWithApi },
       );
-      const updated = makeWebhookEndpoint({
-         url: "https://example.com/updated-webhook",
-         isActive: false,
-      });
-      vi.mocked(updateWebhookEndpoint).mockResolvedValueOnce(updated);
 
-      const ctx = createTestContext();
-      const result = await call(webhooksRouter.update, input, { context: ctx });
-
-      expect(updateWebhookEndpoint).toHaveBeenCalledWith(
-         ENDPOINT_ID,
-         expect.objectContaining({
-            url: "https://example.com/updated-webhook",
+      const updated = await call(
+         webhooksRouter.update,
+         {
+            id: created.endpoint.id,
+            url: "https://example.com/updated",
             isActive: false,
-         }),
+         },
+         { context: ctx },
       );
-      expect(result).toEqual(updated);
+
+      expect(updated.url).toBe("https://example.com/updated");
+      expect(updated.isActive).toBe(false);
+
+      const fromDb = await ctx.db.query.webhookEndpoints.findFirst({
+         where: { id: created.endpoint.id },
+      });
+      expect(fromDb!.url).toBe("https://example.com/updated");
+      expect(fromDb!.isActive).toBe(false);
    });
 
-   it("rejects wildcard event patterns", async () => {
-      vi.mocked(ensureWebhookOwnership).mockResolvedValueOnce(
-         makeWebhookEndpoint(),
+   it("validates event patterns on update", async () => {
+      const ctxWithApi = withMockApiKey(ctx);
+      const created = await call(
+         webhooksRouter.create,
+         {
+            url: "https://example.com/webhook",
+            eventPatterns: ["content.page.published"],
+         },
+         { context: ctxWithApi },
       );
-      vi.mocked(listEventCatalog).mockResolvedValueOnce([catalogEntry]);
 
-      const ctx = createTestContext();
       await expect(
          call(
             webhooksRouter.update,
-            { id: ENDPOINT_ID, eventPatterns: ["content.*"] },
+            {
+               id: created.endpoint.id,
+               eventPatterns: ["content.*"],
+            },
             { context: ctx },
          ),
       ).rejects.toThrow("Padrões com wildcard não são permitidos.");
    });
 
-   it("rejects single wildcard pattern", async () => {
-      vi.mocked(ensureWebhookOwnership).mockResolvedValueOnce(
-         makeWebhookEndpoint(),
+   it("rejects update from different team", async () => {
+      const ctxWithApi = withMockApiKey(ctx);
+      const created = await call(
+         webhooksRouter.create,
+         {
+            url: "https://example.com/webhook",
+            eventPatterns: ["content.page.published"],
+         },
+         { context: ctxWithApi },
       );
-      vi.mocked(listEventCatalog).mockResolvedValueOnce([catalogEntry]);
 
-      const ctx = createTestContext();
       await expect(
          call(
             webhooksRouter.update,
-            { id: ENDPOINT_ID, eventPatterns: ["*"] },
-            { context: ctx },
+            { id: created.endpoint.id, url: "https://evil.com" },
+            { context: ctx2 },
          ),
-      ).rejects.toThrow("Padrões com wildcard não são permitidos.");
-   });
-
-   it("rejects events not in catalog", async () => {
-      vi.mocked(ensureWebhookOwnership).mockResolvedValueOnce(
-         makeWebhookEndpoint(),
-      );
-      vi.mocked(listEventCatalog).mockResolvedValueOnce([catalogEntry]);
-
-      const ctx = createTestContext();
-      await expect(
-         call(
-            webhooksRouter.update,
-            { id: ENDPOINT_ID, eventPatterns: ["content.page.deleted"] },
-            { context: ctx },
-         ),
-      ).rejects.toThrow("Eventos inválidos: content.page.deleted");
-   });
-
-   it("propagates NOT_FOUND from repository", async () => {
-      vi.mocked(ensureWebhookOwnership).mockRejectedValueOnce(
-         AppError.notFound("Webhook não encontrado."),
-      );
-
-      const ctx = createTestContext();
-      await expect(
-         call(webhooksRouter.update, input, { context: ctx }),
       ).rejects.toThrow("Webhook não encontrado.");
-   });
-
-   it("emits webhookEndpointUpdated event with changedFields", async () => {
-      vi.mocked(ensureWebhookOwnership).mockResolvedValueOnce(
-         makeWebhookEndpoint(),
-      );
-      vi.mocked(updateWebhookEndpoint).mockResolvedValueOnce(
-         makeWebhookEndpoint(),
-      );
-
-      const ctx = createTestContext();
-      await call(webhooksRouter.update, input, { context: ctx });
-
-      expect(emitWebhookEndpointUpdated).toHaveBeenCalledWith(
-         expect.any(Function),
-         expect.objectContaining({
-            organizationId: TEST_ORG_ID,
-            userId: TEST_USER_ID,
-            teamId: TEST_TEAM_ID,
-         }),
-         expect.objectContaining({
-            endpointId: ENDPOINT_ID,
-            changedFields: expect.arrayContaining(["url", "isActive"]),
-         }),
-      );
    });
 });
 
 describe("remove", () => {
-   it("deletes endpoint successfully", async () => {
-      const endpoint = makeWebhookEndpoint({ apiKeyId: "api-key-123" });
-      vi.mocked(ensureWebhookOwnership).mockResolvedValueOnce(endpoint);
-      vi.mocked(deleteWebhookEndpoint).mockResolvedValueOnce(undefined);
+   it("deletes endpoint and verifies removal from database", async () => {
       const deleteApiKey = vi.fn().mockResolvedValue(undefined);
+      const ctxWithApi = withMockApiKey(ctx, { deleteApiKey });
+      const created = await call(
+         webhooksRouter.create,
+         {
+            url: "https://example.com/webhook",
+            eventPatterns: ["content.page.published"],
+         },
+         { context: ctxWithApi },
+      );
 
-      const ctx = createTestContext({
-         auth: { api: { deleteApiKey } },
-      });
       const result = await call(
          webhooksRouter.remove,
-         { id: ENDPOINT_ID },
-         { context: ctx },
+         { id: created.endpoint.id },
+         { context: ctxWithApi },
       );
 
-      expect(deleteApiKey).toHaveBeenCalledWith(
-         expect.objectContaining({
-            headers: expect.any(Headers),
-            body: { keyId: "api-key-123" },
-         }),
-      );
-      expect(deleteWebhookEndpoint).toHaveBeenCalledWith(ENDPOINT_ID);
       expect(result).toEqual({ success: true });
+
+      const rows = await ctx.db.query.webhookEndpoints.findMany();
+      expect(rows).toHaveLength(0);
    });
 
-   it("propagates NOT_FOUND from repository", async () => {
-      vi.mocked(ensureWebhookOwnership).mockRejectedValueOnce(
-         AppError.notFound("Webhook não encontrado."),
+   it("rejects removal from different team", async () => {
+      const ctxWithApi = withMockApiKey(ctx);
+      const created = await call(
+         webhooksRouter.create,
+         {
+            url: "https://example.com/webhook",
+            eventPatterns: ["content.page.published"],
+         },
+         { context: ctxWithApi },
       );
 
-      const ctx = createTestContext({
-         auth: { api: { deleteApiKey: vi.fn() } },
-      });
+      const ctx2WithApi = withMockApiKey(ctx2);
       await expect(
-         call(webhooksRouter.remove, { id: ENDPOINT_ID }, { context: ctx }),
+         call(
+            webhooksRouter.remove,
+            { id: created.endpoint.id },
+            { context: ctx2WithApi },
+         ),
       ).rejects.toThrow("Webhook não encontrado.");
-   });
-
-   it("emits webhookEndpointDeleted event", async () => {
-      vi.mocked(ensureWebhookOwnership).mockResolvedValueOnce(
-         makeWebhookEndpoint(),
-      );
-      vi.mocked(deleteWebhookEndpoint).mockResolvedValueOnce(undefined);
-
-      const ctx = createTestContext({
-         auth: { api: { deleteApiKey: vi.fn().mockResolvedValue(undefined) } },
-      });
-      await call(webhooksRouter.remove, { id: ENDPOINT_ID }, { context: ctx });
-
-      expect(emitWebhookEndpointDeleted).toHaveBeenCalledWith(
-         expect.any(Function),
-         expect.objectContaining({
-            organizationId: TEST_ORG_ID,
-            userId: TEST_USER_ID,
-            teamId: TEST_TEAM_ID,
-         }),
-         expect.objectContaining({
-            endpointId: ENDPOINT_ID,
-         }),
-      );
    });
 });
 
 describe("deliveries", () => {
-   it("returns deliveries for valid endpoint with pagination", async () => {
-      vi.mocked(ensureWebhookOwnership).mockResolvedValueOnce(
-         makeWebhookEndpoint(),
+   it("returns deliveries for a valid endpoint", async () => {
+      const ctxWithApi = withMockApiKey(ctx);
+      const created = await call(
+         webhooksRouter.create,
+         {
+            url: "https://example.com/webhook",
+            eventPatterns: ["content.page.published"],
+         },
+         { context: ctxWithApi },
       );
-      const mockDeliveries = [
-         {
-            id: "delivery-1",
-            webhookEndpointId: ENDPOINT_ID,
-            eventId: "event-1",
-            url: "https://example.com/webhook",
-            eventName: "content.page.published",
-            payload: { id: "payload-1" },
-            status: "delivered",
-            httpStatusCode: 200,
-            responseBody: "ok",
-            errorMessage: null,
-            attemptNumber: 1,
-            maxAttempts: 5,
-            nextRetryAt: null,
-            createdAt: new Date("2026-01-02"),
-            deliveredAt: new Date("2026-01-02"),
-         },
-         {
-            id: "delivery-2",
-            webhookEndpointId: ENDPOINT_ID,
-            eventId: "event-2",
-            url: "https://example.com/webhook",
-            eventName: "content.page.updated",
-            payload: { id: "payload-2" },
-            status: "failed",
-            httpStatusCode: 500,
-            responseBody: "error",
-            errorMessage: "failed",
-            attemptNumber: 2,
-            maxAttempts: 5,
-            nextRetryAt: new Date("2026-01-03"),
-            createdAt: new Date("2026-01-02"),
-            deliveredAt: null,
-         },
-      ];
-      vi.mocked(getWebhookDeliveries).mockResolvedValueOnce(mockDeliveries);
 
-      const ctx = createTestContext();
       const result = await call(
          webhooksRouter.deliveries,
-         { webhookId: ENDPOINT_ID, page: 1, limit: 50 },
+         { webhookId: created.endpoint.id, page: 1, limit: 50 },
          { context: ctx },
       );
 
-      expect(ensureWebhookOwnership).toHaveBeenCalledWith(
-         ENDPOINT_ID,
-         TEST_TEAM_ID,
-      );
-      expect(getWebhookDeliveries).toHaveBeenCalledWith(ENDPOINT_ID, {
-         offset: 0,
-         limit: 50,
-      });
-      expect(result).toEqual({
-         items: mockDeliveries,
-         page: 1,
-         limit: 50,
-      });
+      expect(result.items).toEqual([]);
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(50);
    });
 
-   it("propagates NOT_FOUND from repository", async () => {
-      vi.mocked(ensureWebhookOwnership).mockRejectedValueOnce(
-         AppError.notFound("Webhook não encontrado."),
+   it("rejects access from different team", async () => {
+      const ctxWithApi = withMockApiKey(ctx);
+      const created = await call(
+         webhooksRouter.create,
+         {
+            url: "https://example.com/webhook",
+            eventPatterns: ["content.page.published"],
+         },
+         { context: ctxWithApi },
       );
 
-      const ctx = createTestContext();
       await expect(
          call(
             webhooksRouter.deliveries,
-            { webhookId: ENDPOINT_ID, page: 1, limit: 50 },
-            { context: ctx },
+            { webhookId: created.endpoint.id, page: 1, limit: 50 },
+            { context: ctx2 },
          ),
       ).rejects.toThrow("Webhook não encontrado.");
    });

@@ -11,7 +11,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { organization, team, user } from "@core/database/schemas/auth";
 
-export const insightTypeEnum = ["trends", "funnels", "retention"] as const;
+export const insightTypeEnum = ["kpi", "time_series", "breakdown"] as const;
 export const insightSizeEnum = ["sm", "md", "lg", "full"] as const;
 
 export const insightConfigSchema = z.record(z.string(), z.unknown());

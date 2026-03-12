@@ -22,7 +22,8 @@
          "@packages/analytics/*": ["../../packages/analytics/src/*"],
          "@packages/events/*": ["../../packages/events/src/*"],
          "@packages/feedback/*": ["../../packages/feedback/src/*"],
-         "@packages/ui/*": ["../../packages/ui/src/*"]
+         "@packages/ui/*": ["../../packages/ui/src/*"],
+         "@montte/cli/*": ["../../libraries/cli/src/*"]
       }
    },
    "include": ["src"]

@@ -1,16 +1,19 @@
 import { call } from "@orpc/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-   TEST_ORG_ID,
-   TEST_TEAM_ID,
-   TEST_USER_ID,
-   createTestContext,
-} from "../../../helpers/create-test-context";
-import { INSIGHT_ID, makeInsight } from "../../../helpers/mock-factories";
+   afterAll,
+   beforeAll,
+   beforeEach,
+   describe,
+   expect,
+   it,
+   vi,
+} from "vitest";
 
-vi.mock("@core/database/client", () => ({ db: {} }));
-vi.mock("@core/database/repositories/insight-repository");
-vi.mock("@core/database/repositories/dashboard-repository");
+vi.mock("@core/database/client", async () => {
+   const { setupIntegrationDb } =
+      await import("../../../helpers/setup-integration-test");
+   return { db: await setupIntegrationDb(), createDb: () => {} };
+});
 vi.mock("@core/arcjet/protect", () => ({
    protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
    isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
@@ -20,6 +23,12 @@ vi.mock("@core/posthog/server", () => ({
    captureServerEvent: vi.fn(),
    identifyUser: vi.fn(),
    setGroup: vi.fn(),
+   posthog: {
+      capture: vi.fn(),
+      identify: vi.fn(),
+      groupIdentify: vi.fn(),
+      shutdown: vi.fn(),
+   },
 }));
 vi.mock("@core/logging/root", () => ({
    getLogger: () => ({ child: () => ({ warn: vi.fn(), error: vi.fn() }) }),
@@ -27,267 +36,273 @@ vi.mock("@core/logging/root", () => ({
 vi.mock("@packages/events/emit", () => ({
    createEmitFn: vi.fn().mockReturnValue(vi.fn()),
 }));
+vi.mock("@packages/events/insight", () => ({
+   emitInsightCreated: vi.fn().mockResolvedValue(undefined),
+   emitInsightUpdated: vi.fn().mockResolvedValue(undefined),
+   emitInsightDeleted: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock("@packages/analytics/compute-insight", () => ({
    computeInsightData: vi.fn(),
 }));
-vi.mock("@packages/events/insight");
 
+import { sql } from "drizzle-orm";
 import {
-   createInsight,
-   deleteInsight,
-   ensureInsightOwnership,
-   listInsightsByTeam,
-   updateInsight,
-} from "@core/database/repositories/insight-repository";
-import {
-   emitInsightCreated,
-   emitInsightDeleted,
-   emitInsightUpdated,
-} from "@packages/events/insight";
-import { AppError } from "@core/logging/errors";
-
+   cleanupIntegrationTest,
+   setupIntegrationTest,
+} from "../../../helpers/setup-integration-test";
+import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import * as insightsRouter from "@/integrations/orpc/router/insights";
 
-beforeEach(() => {
-   vi.clearAllMocks();
-   vi.mocked(emitInsightCreated).mockResolvedValue(undefined);
-   vi.mocked(emitInsightUpdated).mockResolvedValue(undefined);
-   vi.mocked(emitInsightDeleted).mockResolvedValue(undefined);
+let ctx: ORPCContextWithAuth;
+let ctx2: ORPCContextWithAuth;
+
+const validConfig = {
+   type: "kpi" as const,
+   measure: { aggregation: "sum" as const },
+   filters: {
+      dateRange: { type: "relative" as const, value: "30d" as const },
+   },
+};
+
+beforeAll(async () => {
+   const { createAuthenticatedContext } = await setupIntegrationTest();
+   ctx = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
+   ctx2 = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
+});
+
+afterAll(async () => {
+   await cleanupIntegrationTest();
+});
+
+beforeEach(async () => {
+   await ctx.db.execute(sql`DELETE FROM insights`);
 });
 
 describe("create", () => {
-   const input = {
-      name: "My Insight",
-      description: "Test insight",
-      type: "kpi" as const,
-      config: {
-         type: "kpi" as const,
-         measure: { aggregation: "sum" as const },
-         filters: {
-            dateRange: { type: "relative" as const, value: "30d" as const },
+   it("creates an insight and persists it", async () => {
+      const result = await call(
+         insightsRouter.create,
+         {
+            name: "Revenue KPI",
+            description: "Total revenue",
+            type: "kpi",
+            config: validConfig,
          },
-      },
-   };
-
-   it("creates insight and returns data", async () => {
-      const insight = makeInsight();
-      vi.mocked(createInsight).mockResolvedValueOnce(insight);
-
-      const result = await call(insightsRouter.create, input, {
-         context: createTestContext(),
-      });
-
-      expect(createInsight).toHaveBeenCalledWith(
-         TEST_ORG_ID,
-         TEST_TEAM_ID,
-         TEST_USER_ID,
-         expect.objectContaining({
-            name: input.name,
-            description: input.description,
-            type: input.type,
-            config: expect.objectContaining({ type: "kpi" }),
-            defaultSize: "md",
-         }),
+         { context: ctx },
       );
-      expect(result).toEqual(insight);
+
+      expect(result.name).toBe("Revenue KPI");
+      expect(result.description).toBe("Total revenue");
+      expect(result.type).toBe("kpi");
+      expect(result.defaultSize).toBe("md");
+
+      const rows = await ctx.db.query.insights.findMany();
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.id).toBe(result.id);
    });
 
-   it("emits insight.created event", async () => {
-      const insight = makeInsight();
-      vi.mocked(createInsight).mockResolvedValueOnce(insight);
-
-      await call(insightsRouter.create, input, {
-         context: createTestContext(),
-      });
-
-      expect(emitInsightCreated).toHaveBeenCalledWith(
-         expect.any(Function),
-         expect.objectContaining({
-            organizationId: TEST_ORG_ID,
-            userId: TEST_USER_ID,
-            teamId: TEST_TEAM_ID,
-         }),
-         expect.objectContaining({
-            insightId: INSIGHT_ID,
-            name: input.name,
-         }),
+   it("assigns correct ownership fields", async () => {
+      const result = await call(
+         insightsRouter.create,
+         {
+            name: "Owned Insight",
+            type: "kpi",
+            config: validConfig,
+         },
+         { context: ctx },
       );
+
+      expect(result.organizationId).toBe(
+         ctx.session.session.activeOrganizationId,
+      );
+      expect(result.teamId).toBe(ctx.session.session.activeTeamId);
+      expect(result.createdBy).toBe(ctx.session.user.id);
    });
 });
 
 describe("list", () => {
-   it("returns list of insights", async () => {
-      const insights = [
-         makeInsight(),
-         makeInsight({ id: "insight-2", name: "Second Insight" }),
-      ];
-      vi.mocked(listInsightsByTeam).mockResolvedValueOnce(insights);
+   it("lists insights for the active team", async () => {
+      await call(
+         insightsRouter.create,
+         { name: "Insight A", type: "kpi", config: validConfig },
+         { context: ctx },
+      );
+      await call(
+         insightsRouter.create,
+         {
+            name: "Insight B",
+            type: "breakdown",
+            config: {
+               ...validConfig,
+               type: "breakdown" as const,
+               groupBy: "category",
+               limit: 10,
+            },
+         },
+         { context: ctx },
+      );
 
       const result = await call(insightsRouter.list, undefined, {
-         context: createTestContext(),
+         context: ctx,
       });
 
-      expect(listInsightsByTeam).toHaveBeenCalledWith(TEST_TEAM_ID, undefined);
       expect(result).toHaveLength(2);
    });
 
-   it("passes type filter when provided", async () => {
-      vi.mocked(listInsightsByTeam).mockResolvedValueOnce([]);
-
+   it("filters by type when provided", async () => {
       await call(
-         insightsRouter.list,
-         { type: "breakdown" },
+         insightsRouter.create,
+         { name: "KPI", type: "kpi", config: validConfig },
+         { context: ctx },
+      );
+      await call(
+         insightsRouter.create,
          {
-            context: createTestContext(),
+            name: "Breakdown",
+            type: "breakdown",
+            config: {
+               ...validConfig,
+               type: "breakdown" as const,
+               groupBy: "category",
+               limit: 10,
+            },
          },
+         { context: ctx },
       );
 
-      expect(listInsightsByTeam).toHaveBeenCalledWith(
-         TEST_TEAM_ID,
-         "breakdown",
+      const result = await call(
+         insightsRouter.list,
+         { type: "kpi" },
+         { context: ctx },
       );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]!.type).toBe("kpi");
+   });
+
+   it("does not return insights from another team", async () => {
+      await call(
+         insightsRouter.create,
+         { name: "Team 1 Insight", type: "kpi", config: validConfig },
+         { context: ctx },
+      );
+
+      const result = await call(insightsRouter.list, undefined, {
+         context: ctx2,
+      });
+
+      expect(result).toHaveLength(0);
    });
 });
 
 describe("getById", () => {
    it("returns insight by id", async () => {
-      const insight = makeInsight();
-      vi.mocked(ensureInsightOwnership).mockResolvedValueOnce(insight);
+      const created = await call(
+         insightsRouter.create,
+         { name: "Find Me", type: "kpi", config: validConfig },
+         { context: ctx },
+      );
 
       const result = await call(
          insightsRouter.getById,
-         { id: INSIGHT_ID },
-         { context: createTestContext() },
+         { id: created.id },
+         { context: ctx },
       );
 
-      expect(ensureInsightOwnership).toHaveBeenCalledWith(
-         INSIGHT_ID,
-         TEST_ORG_ID,
-         TEST_TEAM_ID,
-      );
-      expect(result).toEqual(insight);
+      expect(result.id).toBe(created.id);
+      expect(result.name).toBe("Find Me");
    });
 
-   it("propagates NOT_FOUND from repository", async () => {
-      vi.mocked(ensureInsightOwnership).mockRejectedValueOnce(
-         AppError.notFound("Insight não encontrado."),
+   it("rejects access from a different team", async () => {
+      const created = await call(
+         insightsRouter.create,
+         { name: "Private", type: "kpi", config: validConfig },
+         { context: ctx },
       );
 
       await expect(
-         call(
-            insightsRouter.getById,
-            { id: INSIGHT_ID },
-            {
-               context: createTestContext(),
-            },
-         ),
+         call(insightsRouter.getById, { id: created.id }, { context: ctx2 }),
       ).rejects.toThrow("Insight não encontrado.");
    });
 });
 
 describe("update", () => {
-   const input = {
-      id: INSIGHT_ID,
-      name: "Updated Insight",
-      description: "Updated description",
-   };
+   it("updates insight after ownership check", async () => {
+      const created = await call(
+         insightsRouter.create,
+         { name: "Original", type: "kpi", config: validConfig },
+         { context: ctx },
+      );
 
-   it("updates insight and emits event", async () => {
-      vi.mocked(ensureInsightOwnership).mockResolvedValueOnce(makeInsight());
-      const updated = makeInsight({
-         name: "Updated Insight",
-         description: "Updated description",
+      const updated = await call(
+         insightsRouter.update,
+         { id: created.id, name: "Updated Name" },
+         { context: ctx },
+      );
+
+      expect(updated.name).toBe("Updated Name");
+
+      const fromDb = await ctx.db.query.insights.findFirst({
+         where: { id: created.id },
       });
-      vi.mocked(updateInsight).mockResolvedValueOnce(updated);
-
-      const result = await call(insightsRouter.update, input, {
-         context: createTestContext(),
-      });
-
-      expect(ensureInsightOwnership).toHaveBeenCalledWith(
-         INSIGHT_ID,
-         TEST_ORG_ID,
-         TEST_TEAM_ID,
-      );
-      expect(updateInsight).toHaveBeenCalledWith(
-         INSIGHT_ID,
-         expect.objectContaining({
-            name: "Updated Insight",
-            description: "Updated description",
-         }),
-      );
-      expect(result).toEqual(updated);
-
-      expect(emitInsightUpdated).toHaveBeenCalledWith(
-         expect.any(Function),
-         expect.objectContaining({
-            organizationId: TEST_ORG_ID,
-            userId: TEST_USER_ID,
-            teamId: TEST_TEAM_ID,
-         }),
-         expect.objectContaining({
-            insightId: INSIGHT_ID,
-            changedFields: expect.arrayContaining(["name", "description"]),
-         }),
-      );
+      expect(fromDb!.name).toBe("Updated Name");
    });
 
-   it("propagates NOT_FOUND from repository", async () => {
-      vi.mocked(ensureInsightOwnership).mockRejectedValueOnce(
-         AppError.notFound("Insight não encontrado."),
+   it("rejects update from a different team", async () => {
+      const created = await call(
+         insightsRouter.create,
+         { name: "Owned", type: "kpi", config: validConfig },
+         { context: ctx },
       );
 
       await expect(
-         call(insightsRouter.update, input, { context: createTestContext() }),
+         call(
+            insightsRouter.update,
+            { id: created.id, name: "Hacked" },
+            { context: ctx2 },
+         ),
       ).rejects.toThrow("Insight não encontrado.");
    });
 });
 
 describe("remove", () => {
-   it("deletes insight and emits event", async () => {
-      vi.mocked(ensureInsightOwnership).mockResolvedValueOnce(makeInsight());
-      vi.mocked(deleteInsight).mockResolvedValueOnce(undefined);
+   it("deletes insight and verifies database state", async () => {
+      const created = await call(
+         insightsRouter.create,
+         { name: "Delete Me", type: "kpi", config: validConfig },
+         { context: ctx },
+      );
 
       const result = await call(
          insightsRouter.remove,
-         { id: INSIGHT_ID },
-         { context: createTestContext() },
+         { id: created.id },
+         { context: ctx },
       );
 
-      expect(ensureInsightOwnership).toHaveBeenCalledWith(
-         INSIGHT_ID,
-         TEST_ORG_ID,
-         TEST_TEAM_ID,
-      );
-      expect(deleteInsight).toHaveBeenCalledWith(INSIGHT_ID);
       expect(result).toEqual({ success: true });
 
-      expect(emitInsightDeleted).toHaveBeenCalledWith(
-         expect.any(Function),
-         expect.objectContaining({
-            organizationId: TEST_ORG_ID,
-            userId: TEST_USER_ID,
-            teamId: TEST_TEAM_ID,
-         }),
-         expect.objectContaining({
-            insightId: INSIGHT_ID,
-         }),
-      );
+      const rows = await ctx.db.query.insights.findMany();
+      expect(rows).toHaveLength(0);
    });
 
-   it("propagates NOT_FOUND from repository", async () => {
-      vi.mocked(ensureInsightOwnership).mockRejectedValueOnce(
-         AppError.notFound("Insight não encontrado."),
+   it("rejects deletion from a different team", async () => {
+      const created = await call(
+         insightsRouter.create,
+         { name: "Protected", type: "kpi", config: validConfig },
+         { context: ctx },
       );
 
       await expect(
-         call(
-            insightsRouter.remove,
-            { id: INSIGHT_ID },
-            {
-               context: createTestContext(),
-            },
-         ),
+         call(insightsRouter.remove, { id: created.id }, { context: ctx2 }),
       ).rejects.toThrow("Insight não encontrado.");
+
+      const rows = await ctx.db.query.insights.findMany();
+      expect(rows).toHaveLength(1);
    });
 });

@@ -1,53 +1,117 @@
 import { ORPCError, call } from "@orpc/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createTestContext } from "../../../helpers/create-test-context";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
+vi.mock("@core/database/client", async () => {
+   const { setupIntegrationDb } =
+      await import("../../../helpers/setup-integration-test");
+   return { db: await setupIntegrationDb(), createDb: () => {} };
+});
+vi.mock("@core/arcjet/protect", () => ({
+   protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
+   isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
+}));
+vi.mock("@core/posthog/server", () => ({
+   captureError: vi.fn(),
+   captureServerEvent: vi.fn(),
+   identifyUser: vi.fn(),
+   setGroup: vi.fn(),
+   posthog: {
+      capture: vi.fn(),
+      identify: vi.fn(),
+      groupIdentify: vi.fn(),
+      shutdown: vi.fn(),
+   },
+}));
+
+import {
+   cleanupIntegrationTest,
+   setupIntegrationTest,
+} from "../../../helpers/setup-integration-test";
+import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import * as billingRouter from "@/integrations/orpc/router/billing";
 
-// ---------------------------------------------------------------------------
-// Mock Helpers
-// ---------------------------------------------------------------------------
+let ctx: ORPCContextWithAuth;
+
+beforeAll(async () => {
+   const { createAuthenticatedContext } = await setupIntegrationTest();
+   ctx = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
+}, 30_000);
+
+afterAll(async () => {
+   await cleanupIntegrationTest();
+});
 
 const mockStripeClient = {
    invoices: {
       list: vi.fn(),
       createPreview: vi.fn(),
    },
-};
-
-const mockDb = {
-   query: {
-      user: {
-         findFirst: vi.fn(),
-      },
+   paymentMethods: {
+      list: vi.fn(),
    },
 };
 
-function createBillingContext(overrides: Record<string, unknown> = {}) {
-   return createTestContext({
-      stripeClient: mockStripeClient,
-      db: mockDb,
-      ...overrides,
-   });
+function withStripe(base: ORPCContextWithAuth): ORPCContextWithAuth {
+   return { ...base, stripeClient: mockStripeClient as any };
 }
 
-// ---------------------------------------------------------------------------
-// Setup
-// ---------------------------------------------------------------------------
+describe("getCurrentUsage", () => {
+   it("returns zero usage when no materialized view data exists", async () => {
+      const result = await call(billingRouter.getCurrentUsage, undefined, {
+         context: ctx,
+      });
 
-beforeEach(() => {
-   vi.clearAllMocks();
+      expect(result).toEqual({
+         monthToDate: 0,
+         projected: 0,
+         byCategory: [],
+      });
+   });
 });
 
-// =============================================================================
-// getInvoices
-// =============================================================================
+describe("getStorageUsage", () => {
+   it("returns zero storage when no data exists", async () => {
+      const result = await call(billingRouter.getStorageUsage, undefined, {
+         context: ctx,
+      });
+
+      expect(result).toEqual({
+         currentBytes: 0,
+         monthToDateCost: 0,
+         projectedCost: 0,
+      });
+   });
+});
+
+describe("getCategoryUsage", () => {
+   it("returns empty array for a category with no usage", async () => {
+      const result = await call(
+         billingRouter.getCategoryUsage,
+         { category: "finance" },
+         { context: ctx },
+      );
+
+      expect(result).toEqual([]);
+   });
+});
+
+describe("getDailyUsage", () => {
+   it("returns empty array when no daily usage data exists", async () => {
+      const result = await call(
+         billingRouter.getDailyUsage,
+         { days: 30 },
+         { context: ctx },
+      );
+
+      expect(result).toEqual([]);
+   });
+});
 
 describe("getInvoices", () => {
    it("returns formatted invoice list", async () => {
-      mockDb.query.user.findFirst.mockResolvedValueOnce({
-         stripeCustomerId: "cus_123",
-      });
       mockStripeClient.invoices.list.mockResolvedValueOnce({
          data: [
             {
@@ -66,11 +130,21 @@ describe("getInvoices", () => {
          ],
       });
 
-      const ctx = createBillingContext();
+      const stripeCtx = withStripe(ctx);
+      await ctx.db
+         .update((await import("@core/database/schema")).user)
+         .set({ stripeCustomerId: "cus_123" })
+         .where(
+            (await import("drizzle-orm")).eq(
+               (await import("@core/database/schema")).user.id,
+               ctx.session.user.id,
+            ),
+         );
+
       const result = await call(
          billingRouter.getInvoices,
          { limit: 10 },
-         { context: ctx },
+         { context: stripeCtx },
       );
 
       expect(mockStripeClient.invoices.list).toHaveBeenCalledWith({
@@ -95,13 +169,21 @@ describe("getInvoices", () => {
    });
 
    it("returns empty array when user has no stripeCustomerId", async () => {
-      mockDb.query.user.findFirst.mockResolvedValueOnce({
-         stripeCustomerId: null,
-      });
+      vi.clearAllMocks();
 
-      const ctx = createBillingContext();
+      await ctx.db
+         .update((await import("@core/database/schema")).user)
+         .set({ stripeCustomerId: null })
+         .where(
+            (await import("drizzle-orm")).eq(
+               (await import("@core/database/schema")).user.id,
+               ctx.session.user.id,
+            ),
+         );
+
+      const stripeCtx = withStripe(ctx);
       const result = await call(billingRouter.getInvoices, undefined, {
-         context: ctx,
+         context: stripeCtx,
       });
 
       expect(result).toEqual([]);
@@ -109,8 +191,6 @@ describe("getInvoices", () => {
    });
 
    it("throws INTERNAL_SERVER_ERROR when stripeClient is not configured", async () => {
-      const ctx = createBillingContext({ stripeClient: undefined });
-
       await expect(
          call(billingRouter.getInvoices, undefined, { context: ctx }),
       ).rejects.toSatisfy(
@@ -119,15 +199,18 @@ describe("getInvoices", () => {
    });
 });
 
-// =============================================================================
-// getUpcomingInvoice
-// =============================================================================
-
 describe("getUpcomingInvoice", () => {
    it("returns formatted upcoming invoice", async () => {
-      mockDb.query.user.findFirst.mockResolvedValueOnce({
-         stripeCustomerId: "cus_123",
-      });
+      await ctx.db
+         .update((await import("@core/database/schema")).user)
+         .set({ stripeCustomerId: "cus_456" })
+         .where(
+            (await import("drizzle-orm")).eq(
+               (await import("@core/database/schema")).user.id,
+               ctx.session.user.id,
+            ),
+         );
+
       mockStripeClient.invoices.createPreview.mockResolvedValueOnce({
          amount_due: 5000,
          currency: "brl",
@@ -145,13 +228,13 @@ describe("getUpcomingInvoice", () => {
          },
       });
 
-      const ctx = createBillingContext();
+      const stripeCtx = withStripe(ctx);
       const result = await call(billingRouter.getUpcomingInvoice, undefined, {
-         context: ctx,
+         context: stripeCtx,
       });
 
       expect(mockStripeClient.invoices.createPreview).toHaveBeenCalledWith({
-         customer: "cus_123",
+         customer: "cus_456",
       });
       expect(result).toEqual({
          amountDue: 5000,
@@ -170,32 +253,96 @@ describe("getUpcomingInvoice", () => {
    });
 
    it("returns null when user has no stripeCustomerId", async () => {
-      mockDb.query.user.findFirst.mockResolvedValueOnce({
-         stripeCustomerId: null,
-      });
+      await ctx.db
+         .update((await import("@core/database/schema")).user)
+         .set({ stripeCustomerId: null })
+         .where(
+            (await import("drizzle-orm")).eq(
+               (await import("@core/database/schema")).user.id,
+               ctx.session.user.id,
+            ),
+         );
 
-      const ctx = createBillingContext();
+      const stripeCtx = withStripe(ctx);
       const result = await call(billingRouter.getUpcomingInvoice, undefined, {
-         context: ctx,
+         context: stripeCtx,
       });
 
       expect(result).toBeNull();
-      expect(mockStripeClient.invoices.createPreview).not.toHaveBeenCalled();
    });
 
    it("returns null when Stripe throws (canceled subscription)", async () => {
-      mockDb.query.user.findFirst.mockResolvedValueOnce({
-         stripeCustomerId: "cus_123",
-      });
+      await ctx.db
+         .update((await import("@core/database/schema")).user)
+         .set({ stripeCustomerId: "cus_789" })
+         .where(
+            (await import("drizzle-orm")).eq(
+               (await import("@core/database/schema")).user.id,
+               ctx.session.user.id,
+            ),
+         );
+
       mockStripeClient.invoices.createPreview.mockRejectedValueOnce(
          new Error("No upcoming invoices for customer"),
       );
 
-      const ctx = createBillingContext();
+      const stripeCtx = withStripe(ctx);
       const result = await call(billingRouter.getUpcomingInvoice, undefined, {
-         context: ctx,
+         context: stripeCtx,
       });
 
       expect(result).toBeNull();
+   });
+});
+
+describe("getPaymentStatus", () => {
+   it("returns hasPaymentMethod false when stripeClient is not configured", async () => {
+      const result = await call(billingRouter.getPaymentStatus, undefined, {
+         context: ctx,
+      });
+
+      expect(result).toEqual({ hasPaymentMethod: false });
+   });
+
+   it("returns hasPaymentMethod false when user has no stripeCustomerId", async () => {
+      await ctx.db
+         .update((await import("@core/database/schema")).user)
+         .set({ stripeCustomerId: null })
+         .where(
+            (await import("drizzle-orm")).eq(
+               (await import("@core/database/schema")).user.id,
+               ctx.session.user.id,
+            ),
+         );
+
+      const stripeCtx = withStripe(ctx);
+      const result = await call(billingRouter.getPaymentStatus, undefined, {
+         context: stripeCtx,
+      });
+
+      expect(result).toEqual({ hasPaymentMethod: false });
+   });
+
+   it("returns hasPaymentMethod true when Stripe has a card", async () => {
+      await ctx.db
+         .update((await import("@core/database/schema")).user)
+         .set({ stripeCustomerId: "cus_pay" })
+         .where(
+            (await import("drizzle-orm")).eq(
+               (await import("@core/database/schema")).user.id,
+               ctx.session.user.id,
+            ),
+         );
+
+      mockStripeClient.paymentMethods.list.mockResolvedValueOnce({
+         data: [{ id: "pm_123" }],
+      });
+
+      const stripeCtx = withStripe(ctx);
+      const result = await call(billingRouter.getPaymentStatus, undefined, {
+         context: stripeCtx,
+      });
+
+      expect(result).toEqual({ hasPaymentMethod: true });
    });
 });

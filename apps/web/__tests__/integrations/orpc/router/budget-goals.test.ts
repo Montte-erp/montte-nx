@@ -1,12 +1,19 @@
 import { call } from "@orpc/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-   TEST_TEAM_ID,
-   createTestContext,
-} from "../../../helpers/create-test-context";
+   afterAll,
+   beforeAll,
+   beforeEach,
+   describe,
+   expect,
+   it,
+   vi,
+} from "vitest";
 
-vi.mock("@core/database/client", () => ({ db: {} }));
-vi.mock("@core/database/repositories/budget-goals-repository");
+vi.mock("@core/database/client", async () => {
+   const { setupIntegrationDb } =
+      await import("../../../helpers/setup-integration-test");
+   return { db: await setupIntegrationDb(), createDb: () => {} };
+});
 vi.mock("@core/arcjet/protect", () => ({
    protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
    isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
@@ -16,120 +23,246 @@ vi.mock("@core/posthog/server", () => ({
    captureServerEvent: vi.fn(),
    identifyUser: vi.fn(),
    setGroup: vi.fn(),
+   posthog: {
+      capture: vi.fn(),
+      identify: vi.fn(),
+      groupIdentify: vi.fn(),
+      shutdown: vi.fn(),
+   },
 }));
 
+import { budgetGoals } from "@core/database/schemas/budget-goals";
+import { categories } from "@core/database/schemas/categories";
+import { transactions } from "@core/database/schemas/transactions";
+import { sql } from "drizzle-orm";
 import {
-   copyPreviousMonth,
-   createBudgetGoal,
-   deleteBudgetGoal,
-   ensureBudgetGoalOwnership,
-   listBudgetGoals,
-   updateBudgetGoal,
-} from "@core/database/repositories/budget-goals-repository";
-import { AppError } from "@core/logging/errors";
+   cleanupIntegrationTest,
+   setupIntegrationTest,
+} from "../../../helpers/setup-integration-test";
+import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import * as budgetGoalsRouter from "@/integrations/orpc/router/budget-goals";
 
-const GOAL_ID = "a0000000-0000-4000-8000-000000000020";
+let ctx: ORPCContextWithAuth;
+let ctx2: ORPCContextWithAuth;
+let expenseCategoryId: string;
 
-const mockGoal = {
-   id: GOAL_ID,
-   teamId: TEST_TEAM_ID,
-   categoryId: "a0000000-0000-4000-8000-000000000021",
-   month: 3,
-   year: 2026,
-   limitAmount: "5000.00",
-   alertThreshold: 80,
-   alertSentAt: null,
-   createdAt: new Date(),
-   updatedAt: new Date(),
-};
+async function createExpenseCategory(
+   context: ORPCContextWithAuth,
+   name = "Alimentação",
+) {
+   const teamId = context.session.session.activeTeamId!;
+   const [cat] = await context.db
+      .insert(categories)
+      .values({
+         teamId,
+         name,
+         type: "expense",
+         icon: "utensils",
+         color: "#f59e0b",
+      })
+      .returning();
+   return cat!;
+}
 
-const mockGoalWithProgress = {
-   ...mockGoal,
-   categoryName: "Alimentação",
-   categoryIcon: "utensils",
-   categoryColor: "#f59e0b",
-   spentAmount: "3500.00",
-   percentUsed: 70,
-};
-
-beforeEach(() => {
-   vi.clearAllMocks();
-});
-
-describe("getAll", () => {
-   it("lists budget goals with progress", async () => {
-      vi.mocked(listBudgetGoals).mockResolvedValueOnce([mockGoalWithProgress]);
-
-      const result = await call(
-         budgetGoalsRouter.getAll,
-         { month: 3, year: 2026 },
-         { context: createTestContext() },
-      );
-
-      expect(result).toEqual([mockGoalWithProgress]);
-      expect(listBudgetGoals).toHaveBeenCalledWith(TEST_TEAM_ID, 3, 2026);
+beforeAll(async () => {
+   const { createAuthenticatedContext } = await setupIntegrationTest();
+   ctx = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
+   ctx2 = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
    });
 });
 
-describe("create", () => {
-   it("creates a budget goal", async () => {
-      vi.mocked(createBudgetGoal).mockResolvedValueOnce(mockGoal);
+afterAll(async () => {
+   await cleanupIntegrationTest();
+});
 
+beforeEach(async () => {
+   await ctx.db.execute(sql`DELETE FROM budget_goals`);
+   await ctx.db.execute(sql`DELETE FROM transactions`);
+   await ctx.db.execute(sql`DELETE FROM categories`);
+
+   const cat = await createExpenseCategory(ctx);
+   expenseCategoryId = cat.id;
+});
+
+describe("create", () => {
+   it("creates a budget goal and persists it", async () => {
       const result = await call(
          budgetGoalsRouter.create,
          {
-            categoryId: mockGoal.categoryId,
+            categoryId: expenseCategoryId,
             month: 3,
             year: 2026,
             limitAmount: "5000.00",
             alertThreshold: 80,
          },
-         { context: createTestContext() },
+         { context: ctx },
       );
 
-      expect(result).toEqual(mockGoal);
-      expect(createBudgetGoal).toHaveBeenCalledWith(
-         TEST_TEAM_ID,
-         expect.objectContaining({ categoryId: mockGoal.categoryId }),
+      expect(result.categoryId).toBe(expenseCategoryId);
+      expect(result.limitAmount).toBe("5000.00");
+      expect(result.month).toBe(3);
+      expect(result.year).toBe(2026);
+      expect(result.alertThreshold).toBe(80);
+
+      const rows = await ctx.db.query.budgetGoals.findMany();
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.id).toBe(result.id);
+   });
+
+   it("rejects creation with income category", async () => {
+      const teamId = ctx.session.session.activeTeamId!;
+      const [incomeCat] = await ctx.db
+         .insert(categories)
+         .values({ teamId, name: "Salário", type: "income" })
+         .returning();
+
+      await expect(
+         call(
+            budgetGoalsRouter.create,
+            {
+               categoryId: incomeCat!.id,
+               month: 3,
+               year: 2026,
+               limitAmount: "5000.00",
+            },
+            { context: ctx },
+         ),
+      ).rejects.toThrow(
+         "Orçamento só pode ser vinculado a categorias de despesa.",
       );
+   });
+});
+
+describe("getAll", () => {
+   it("lists budget goals with progress", async () => {
+      await call(
+         budgetGoalsRouter.create,
+         {
+            categoryId: expenseCategoryId,
+            month: 3,
+            year: 2026,
+            limitAmount: "5000.00",
+            alertThreshold: 80,
+         },
+         { context: ctx },
+      );
+
+      const result = await call(
+         budgetGoalsRouter.getAll,
+         { month: 3, year: 2026 },
+         { context: ctx },
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]!.categoryName).toBe("Alimentação");
+      expect(result[0]!.categoryIcon).toBe("utensils");
+      expect(result[0]!.categoryColor).toBe("#f59e0b");
+      expect(result[0]!.spentAmount).toBeDefined();
+      expect(result[0]!.percentUsed).toBeDefined();
+   });
+
+   it("computes spent amount from transactions", async () => {
+      await call(
+         budgetGoalsRouter.create,
+         {
+            categoryId: expenseCategoryId,
+            month: 3,
+            year: 2026,
+            limitAmount: "1000.00",
+         },
+         { context: ctx },
+      );
+
+      const teamId = ctx.session.session.activeTeamId!;
+      await ctx.db.insert(transactions).values({
+         teamId,
+         type: "expense",
+         amount: "300.00",
+         date: "2026-03-10",
+         categoryId: expenseCategoryId,
+      });
+
+      const result = await call(
+         budgetGoalsRouter.getAll,
+         { month: 3, year: 2026 },
+         { context: ctx },
+      );
+
+      expect(result[0]!.spentAmount).toBe("300.00");
+      expect(result[0]!.percentUsed).toBe(30);
+   });
+
+   it("does not return goals from another team", async () => {
+      await call(
+         budgetGoalsRouter.create,
+         {
+            categoryId: expenseCategoryId,
+            month: 3,
+            year: 2026,
+            limitAmount: "5000.00",
+         },
+         { context: ctx },
+      );
+
+      const result = await call(
+         budgetGoalsRouter.getAll,
+         { month: 3, year: 2026 },
+         { context: ctx2 },
+      );
+
+      expect(result).toHaveLength(0);
    });
 });
 
 describe("update", () => {
    it("updates goal after ownership check", async () => {
-      vi.mocked(ensureBudgetGoalOwnership).mockResolvedValueOnce(mockGoal);
-      const updated = { ...mockGoal, limitAmount: "8000.00" };
-      vi.mocked(updateBudgetGoal).mockResolvedValueOnce(updated);
+      const created = await call(
+         budgetGoalsRouter.create,
+         {
+            categoryId: expenseCategoryId,
+            month: 3,
+            year: 2026,
+            limitAmount: "5000.00",
+         },
+         { context: ctx },
+      );
 
-      const result = await call(
+      const updated = await call(
          budgetGoalsRouter.update,
-         { id: GOAL_ID, limitAmount: "8000.00" },
-         { context: createTestContext() },
+         { id: created.id, limitAmount: "8000.00" },
+         { context: ctx },
       );
 
-      expect(result.limitAmount).toBe("8000.00");
-      expect(ensureBudgetGoalOwnership).toHaveBeenCalledWith(
-         GOAL_ID,
-         TEST_TEAM_ID,
-      );
-      expect(updateBudgetGoal).toHaveBeenCalledWith(GOAL_ID, TEST_TEAM_ID, {
-         limitAmount: "8000.00",
+      expect(updated.limitAmount).toBe("8000.00");
+
+      const fromDb = await ctx.db.query.budgetGoals.findFirst({
+         where: { id: created.id },
       });
+      expect(fromDb!.limitAmount).toBe("8000.00");
    });
 
-   it("propagates NOT_FOUND from repository", async () => {
-      vi.mocked(ensureBudgetGoalOwnership).mockRejectedValueOnce(
-         AppError.notFound("Meta de orçamento não encontrada."),
+   it("rejects update from a different team", async () => {
+      const created = await call(
+         budgetGoalsRouter.create,
+         {
+            categoryId: expenseCategoryId,
+            month: 3,
+            year: 2026,
+            limitAmount: "5000.00",
+         },
+         { context: ctx },
       );
 
       await expect(
          call(
             budgetGoalsRouter.update,
-            { id: GOAL_ID, limitAmount: "8000.00" },
-            {
-               context: createTestContext(),
-            },
+            { id: created.id, limitAmount: "8000.00" },
+            { context: ctx2 },
          ),
       ).rejects.toThrow("Meta de orçamento não encontrada.");
    });
@@ -137,72 +270,113 @@ describe("update", () => {
 
 describe("remove", () => {
    it("deletes goal after ownership check", async () => {
-      vi.mocked(ensureBudgetGoalOwnership).mockResolvedValueOnce(mockGoal);
-      vi.mocked(deleteBudgetGoal).mockResolvedValueOnce(undefined);
+      const created = await call(
+         budgetGoalsRouter.create,
+         {
+            categoryId: expenseCategoryId,
+            month: 3,
+            year: 2026,
+            limitAmount: "5000.00",
+         },
+         { context: ctx },
+      );
 
       const result = await call(
          budgetGoalsRouter.remove,
-         { id: GOAL_ID },
-         { context: createTestContext() },
+         { id: created.id },
+         { context: ctx },
       );
 
       expect(result).toEqual({ success: true });
-      expect(deleteBudgetGoal).toHaveBeenCalledWith(GOAL_ID, TEST_TEAM_ID);
+
+      const rows = await ctx.db.query.budgetGoals.findMany();
+      expect(rows).toHaveLength(0);
    });
 
-   it("propagates NOT_FOUND from repository", async () => {
-      vi.mocked(ensureBudgetGoalOwnership).mockRejectedValueOnce(
-         AppError.notFound("Meta de orçamento não encontrada."),
+   it("rejects deletion from a different team", async () => {
+      const created = await call(
+         budgetGoalsRouter.create,
+         {
+            categoryId: expenseCategoryId,
+            month: 3,
+            year: 2026,
+            limitAmount: "5000.00",
+         },
+         { context: ctx },
       );
 
       await expect(
-         call(
-            budgetGoalsRouter.remove,
-            { id: GOAL_ID },
-            {
-               context: createTestContext(),
-            },
-         ),
+         call(budgetGoalsRouter.remove, { id: created.id }, { context: ctx2 }),
       ).rejects.toThrow("Meta de orçamento não encontrada.");
    });
 });
 
 describe("copyFromPreviousMonth", () => {
    it("copies goals from previous month", async () => {
-      vi.mocked(copyPreviousMonth).mockResolvedValueOnce(3);
+      await call(
+         budgetGoalsRouter.create,
+         {
+            categoryId: expenseCategoryId,
+            month: 2,
+            year: 2026,
+            limitAmount: "5000.00",
+            alertThreshold: 80,
+         },
+         { context: ctx },
+      );
 
       const result = await call(
          budgetGoalsRouter.copyFromPreviousMonth,
          { month: 3, year: 2026 },
-         { context: createTestContext() },
+         { context: ctx },
       );
 
-      expect(result).toEqual({ count: 3 });
-      expect(copyPreviousMonth).toHaveBeenCalledWith(
-         TEST_TEAM_ID,
-         2,
-         2026,
-         3,
-         2026,
+      expect(result).toEqual({ count: 1 });
+
+      const marchGoals = await call(
+         budgetGoalsRouter.getAll,
+         { month: 3, year: 2026 },
+         { context: ctx },
       );
+      expect(marchGoals).toHaveLength(1);
+      expect(marchGoals[0]!.limitAmount).toBe("5000.00");
    });
 
    it("handles January wraparound", async () => {
-      vi.mocked(copyPreviousMonth).mockResolvedValueOnce(2);
+      await call(
+         budgetGoalsRouter.create,
+         {
+            categoryId: expenseCategoryId,
+            month: 12,
+            year: 2025,
+            limitAmount: "3000.00",
+         },
+         { context: ctx },
+      );
 
       const result = await call(
          budgetGoalsRouter.copyFromPreviousMonth,
          { month: 1, year: 2026 },
-         { context: createTestContext() },
+         { context: ctx },
       );
 
-      expect(result).toEqual({ count: 2 });
-      expect(copyPreviousMonth).toHaveBeenCalledWith(
-         TEST_TEAM_ID,
-         12,
-         2025,
-         1,
-         2026,
+      expect(result).toEqual({ count: 1 });
+
+      const janGoals = await call(
+         budgetGoalsRouter.getAll,
+         { month: 1, year: 2026 },
+         { context: ctx },
       );
+      expect(janGoals).toHaveLength(1);
+   });
+
+   it("returns zero when no previous goals exist", async () => {
+      const result = await call(
+         budgetGoalsRouter.copyFromPreviousMonth,
+         { month: 3, year: 2026 },
+         { context: ctx },
+      );
+
+      expect(result).toEqual({ count: 0 });
    });
 });

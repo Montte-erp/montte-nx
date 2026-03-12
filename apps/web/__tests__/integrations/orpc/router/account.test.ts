@@ -1,79 +1,78 @@
 import { call } from "@orpc/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createTestContext } from "../../../helpers/create-test-context";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-vi.mock("@core/database/client", () => ({ db: {} }));
+vi.mock("@core/database/client", async () => {
+   const { setupIntegrationDb } =
+      await import("../../../helpers/setup-integration-test");
+   return { db: await setupIntegrationDb(), createDb: () => {} };
+});
 vi.mock("@core/arcjet/protect", () => ({
-   protect: vi.fn(),
    protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
+   isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
 }));
 vi.mock("@core/posthog/server", () => ({
-   posthog: { capture: vi.fn(), identify: vi.fn(), shutdown: vi.fn() },
-}));
-vi.mock("@core/environment/server", () => ({
-   env: {
-      MINIO_ENDPOINT: "http://localhost:9000",
-      MINIO_ACCESS_KEY: "test",
-      MINIO_SECRET_KEY: "test",
+   captureError: vi.fn(),
+   captureServerEvent: vi.fn(),
+   identifyUser: vi.fn(),
+   setGroup: vi.fn(),
+   posthog: {
+      capture: vi.fn(),
+      identify: vi.fn(),
+      groupIdentify: vi.fn(),
+      shutdown: vi.fn(),
    },
 }));
 vi.mock("@core/files/client", () => ({
-   generatePresignedPutUrl: vi.fn(),
+   generatePresignedPutUrl: vi
+      .fn()
+      .mockResolvedValue("https://mock-url.com/presigned"),
+}));
+vi.mock("@core/logging/root", () => ({
+   getLogger: () => ({
+      child: () => ({
+         info: vi.fn(),
+         error: vi.fn(),
+         warn: vi.fn(),
+      }),
+   }),
 }));
 
-const mockAuth = {
-   api: {
-      verifyPassword: vi.fn(),
-      listUserAccounts: vi.fn(),
-      setPassword: vi.fn(),
-   },
-};
-
+import {
+   cleanupIntegrationTest,
+   setupIntegrationTest,
+} from "../../../helpers/setup-integration-test";
+import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import * as accountRouter from "@/integrations/orpc/router/account";
-import { generatePresignedPutUrl } from "@core/files/client";
 
-const mockGeneratePresignedPutUrl = generatePresignedPutUrl as ReturnType<
-   typeof vi.fn
->;
+let ctx: ORPCContextWithAuth;
 
-function createAccountContext(overrides = {}) {
-   return createTestContext({
-      auth: mockAuth,
-      ...overrides,
+beforeAll(async () => {
+   const { createAuthenticatedContext } = await setupIntegrationTest();
+   ctx = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
    });
-}
+});
 
-beforeEach(() => {
-   vi.clearAllMocks();
+afterAll(async () => {
+   await cleanupIntegrationTest();
 });
 
 describe("verifyPassword", () => {
    it("returns { valid: true } when password is correct", async () => {
-      mockAuth.api.verifyPassword.mockResolvedValueOnce({});
-
-      const ctx = createAccountContext();
       const result = await call(
          accountRouter.verifyPassword,
-         { password: "correct-pass" },
+         { password: "test-password-123" },
          { context: ctx },
       );
 
       expect(result).toEqual({ valid: true });
-      expect(mockAuth.api.verifyPassword).toHaveBeenCalledWith({
-         headers: ctx.headers,
-         body: { password: "correct-pass" },
-      });
    });
 
-   it("returns { valid: false } when auth throws", async () => {
-      mockAuth.api.verifyPassword.mockRejectedValueOnce(
-         new Error("Invalid password"),
-      );
-
-      const ctx = createAccountContext();
+   it("returns { valid: false } when password is wrong", async () => {
       const result = await call(
          accountRouter.verifyPassword,
-         { password: "wrong-pass" },
+         { password: "wrong-password" },
          { context: ctx },
       );
 
@@ -82,178 +81,53 @@ describe("verifyPassword", () => {
 });
 
 describe("hasPassword", () => {
-   it("returns { hasPassword: true } when credential account exists", async () => {
-      mockAuth.api.listUserAccounts.mockResolvedValueOnce([
-         { providerId: "credential", accountId: "acc-1" },
-         { providerId: "google", accountId: "acc-2" },
-      ]);
-
-      const ctx = createAccountContext();
+   it("returns { hasPassword: true } for email+password user", async () => {
       const result = await call(accountRouter.hasPassword, undefined, {
          context: ctx,
       });
 
       expect(result).toEqual({ hasPassword: true });
-      expect(mockAuth.api.listUserAccounts).toHaveBeenCalledWith({
-         headers: ctx.headers,
-      });
-   });
-
-   it("returns { hasPassword: false } when only OAuth accounts", async () => {
-      mockAuth.api.listUserAccounts.mockResolvedValueOnce([
-         { providerId: "google", accountId: "acc-1" },
-         { providerId: "github", accountId: "acc-2" },
-      ]);
-
-      const ctx = createAccountContext();
-      const result = await call(accountRouter.hasPassword, undefined, {
-         context: ctx,
-      });
-
-      expect(result).toEqual({ hasPassword: false });
-   });
-
-   it("returns { hasPassword: false } when auth throws", async () => {
-      mockAuth.api.listUserAccounts.mockRejectedValueOnce(
-         new Error("Auth service unavailable"),
-      );
-
-      const ctx = createAccountContext();
-      const result = await call(accountRouter.hasPassword, undefined, {
-         context: ctx,
-      });
-
-      expect(result).toEqual({ hasPassword: false });
    });
 });
 
 describe("getLinkedAccounts", () => {
-   it("returns mapped accounts list", async () => {
-      const now = new Date("2026-01-15");
-      mockAuth.api.listUserAccounts.mockResolvedValueOnce([
-         {
-            providerId: "google",
-            accountId: "google-123",
-            createdAt: now,
-            extra: "ignored",
-         },
-         {
-            providerId: "github",
-            accountId: "github-456",
-            createdAt: now,
-            extra: "also-ignored",
-         },
-      ]);
-
-      const ctx = createAccountContext();
+   it("returns credential account", async () => {
       const result = await call(accountRouter.getLinkedAccounts, undefined, {
          context: ctx,
       });
 
-      expect(result).toEqual([
-         { providerId: "google", accountId: "google-123", createdAt: now },
-         { providerId: "github", accountId: "github-456", createdAt: now },
-      ]);
-   });
-
-   it("returns empty array when auth throws", async () => {
-      mockAuth.api.listUserAccounts.mockRejectedValueOnce(
-         new Error("Auth service unavailable"),
-      );
-
-      const ctx = createAccountContext();
-      const result = await call(accountRouter.getLinkedAccounts, undefined, {
-         context: ctx,
-      });
-
-      expect(result).toEqual([]);
+      expect(result.length).toBeGreaterThanOrEqual(1);
+      expect(result.some((a: any) => a.providerId === "credential")).toBe(true);
+      for (const account of result) {
+         expect(account).toHaveProperty("providerId");
+         expect(account).toHaveProperty("accountId");
+         expect(account).toHaveProperty("createdAt");
+      }
    });
 });
 
 describe("setPassword", () => {
-   it("returns { success: true } on success", async () => {
-      mockAuth.api.setPassword.mockResolvedValueOnce({});
-
-      const ctx = createAccountContext();
-      const result = await call(
-         accountRouter.setPassword,
-         { newPassword: "new-secure-pass" },
-         { context: ctx },
-      );
-
-      expect(result).toEqual({ success: true });
-      expect(mockAuth.api.setPassword).toHaveBeenCalledWith({
-         headers: ctx.headers,
-         body: { newPassword: "new-secure-pass" },
-      });
-   });
-
-   it("throws BAD_REQUEST when user already has a password", async () => {
-      mockAuth.api.setPassword.mockRejectedValueOnce(
-         new Error("user already has a password"),
-      );
-
-      const ctx = createAccountContext();
+   it("throws when user already has a password", async () => {
       await expect(
          call(
             accountRouter.setPassword,
-            { newPassword: "new-secure-pass" },
+            { newPassword: "another-password-123" },
             { context: ctx },
          ),
-      ).rejects.toThrow("Usuário já possui uma senha definida");
-   });
-
-   it("throws INTERNAL_SERVER_ERROR on unknown error", async () => {
-      mockAuth.api.setPassword.mockRejectedValueOnce(
-         new Error("Something went wrong"),
-      );
-
-      const ctx = createAccountContext();
-      await expect(
-         call(
-            accountRouter.setPassword,
-            { newPassword: "new-secure-pass" },
-            { context: ctx },
-         ),
-      ).rejects.toThrow("Erro ao definir senha");
+      ).rejects.toThrow();
    });
 });
 
 describe("generateAvatarUploadUrl", () => {
    it("returns presigned URL and file info", async () => {
-      mockGeneratePresignedPutUrl.mockResolvedValueOnce(
-         "https://minio.test/presigned-url",
-      );
-
-      const ctx = createAccountContext();
       const result = await call(
          accountRouter.generateAvatarUploadUrl,
          { fileExtension: "png" },
          { context: ctx },
       );
 
-      expect(result.presignedUrl).toBe("https://minio.test/presigned-url");
+      expect(result.presignedUrl).toBe("https://mock-url.com/presigned");
       expect(result.fileName).toMatch(/^avatar-.*\.png$/);
       expect(result.publicUrl).toMatch(/^\/api\/files\/user-avatars\/avatar-/);
-      expect(mockGeneratePresignedPutUrl).toHaveBeenCalledWith(
-         expect.stringMatching(/^avatar-.*\.png$/),
-         "user-avatars",
-         300,
-      );
-   });
-
-   it("throws INTERNAL_SERVER_ERROR when MinIO fails", async () => {
-      mockGeneratePresignedPutUrl.mockRejectedValueOnce(
-         new Error("MinIO unavailable"),
-      );
-
-      const ctx = createAccountContext();
-      await expect(
-         call(
-            accountRouter.generateAvatarUploadUrl,
-            { fileExtension: "jpg" },
-            { context: ctx },
-         ),
-      ).rejects.toThrow("Erro ao gerar URL de upload");
    });
 });

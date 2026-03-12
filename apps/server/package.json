@@ -11,7 +11,6 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "@contentta/sdk": "workspace:*",
       "@core/arcjet": "workspace:*",
       "@core/authentication": "workspace:*",
       "@core/database": "workspace:*",
@@ -21,6 +20,7 @@
       "@core/stripe": "workspace:*",
       "@core/transactional": "workspace:*",
       "@elysiajs/cors": "catalog:server",
+      "@montte/cli": "workspace:*",
       "@orpc/server": "catalog:orpc",
       "@packages/events": "workspace:*",
       "elysia": "catalog:server"

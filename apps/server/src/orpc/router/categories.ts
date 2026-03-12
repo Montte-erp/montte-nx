@@ -1,0 +1,72 @@
+import { z } from "zod";
+import {
+   listCategories,
+   ensureCategoryOwnership,
+   createCategory,
+   updateCategory,
+   archiveCategory,
+   deleteCategory,
+} from "@core/database/repositories/categories-repository";
+import {
+   CreateCategorySchema,
+   UpdateCategorySchema,
+} from "@montte/cli/contract";
+import { sdkProcedure } from "../server";
+
+function mapCategory(cat: Record<string, unknown>) {
+   return {
+      ...cat,
+      createdAt: (cat.createdAt as Date).toISOString(),
+      updatedAt: (cat.updatedAt as Date).toISOString(),
+   };
+}
+
+export const list = sdkProcedure
+   .input(
+      z.object({
+         type: z.enum(["income", "expense"]).optional(),
+         includeArchived: z.boolean().optional(),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      const cats = await listCategories(context.teamId!, {
+         type: input.type,
+         includeArchived: input.includeArchived,
+      });
+      return cats.map(mapCategory);
+   });
+
+export const create = sdkProcedure
+   .input(CreateCategorySchema)
+   .handler(async ({ context, input }) => {
+      const cat = await createCategory(context.teamId!, {
+         ...input,
+         participatesDre: false,
+      });
+      return mapCategory(cat);
+   });
+
+export const update = sdkProcedure
+   .input(z.object({ id: z.string().uuid() }).merge(UpdateCategorySchema))
+   .handler(async ({ context, input }) => {
+      const { id, ...data } = input;
+      await ensureCategoryOwnership(id, context.teamId!);
+      const cat = await updateCategory(id, data);
+      return mapCategory(cat);
+   });
+
+export const remove = sdkProcedure
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      await ensureCategoryOwnership(input.id, context.teamId!);
+      await deleteCategory(input.id);
+      return { success: true as const };
+   });
+
+export const archive = sdkProcedure
+   .input(z.object({ id: z.string().uuid() }))
+   .handler(async ({ context, input }) => {
+      await ensureCategoryOwnership(input.id, context.teamId!);
+      const cat = await archiveCategory(input.id);
+      return mapCategory(cat!);
+   });

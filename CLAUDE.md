@@ -1,6 +1,6 @@
-# Contentta - Claude Code Guidelines
+# Montte - Claude Code Guidelines
 
-AI-powered CMS built as an Nx monorepo with Bun. Provides AI-assisted content creation, SERP analysis, content optimization, and team collaboration.
+AI-powered ERP built as an Nx monorepo with Bun. Provides AI-assisted workflows, analytics, automation, and team collaboration.
 
 ---
 
@@ -30,12 +30,13 @@ bun run test         # Tests with parallelization
 
 # Database
 bun run db:push      # Push schema changes
-bun run db:studio    # Drizzle Studio GUI
+bun run db:studio:local  # Drizzle Studio (local)
+bun run db:studio:prod   # Drizzle Studio (production)
 
 # Scripts (all in root scripts/ directory)
 bun run scripts/seed-default-dashboard.ts run [--env production] [--dry-run]
 bun run scripts/seed-event-catalog.ts run [--env production] [--dry-run]
-bun run scripts/reindex-content.ts
+bun run scripts/doctor.ts check
 ```
 
 ---
@@ -43,7 +44,7 @@ bun run scripts/reindex-content.ts
 ## Monorepo Structure
 
 ```
-contentta-nx/
+montte-nx/
 ├── core/
 │   ├── database/        # Drizzle ORM schemas & repositories
 │   ├── authentication/  # Better Auth setup
@@ -51,6 +52,9 @@ contentta-nx/
 │   ├── redis/           # Redis singleton
 │   ├── logging/         # Pino logger
 │   ├── files/           # MinIO file storage singleton
+│   ├── posthog/         # PostHog server/client setup
+│   ├── stripe/          # Stripe singleton and helpers
+│   ├── transactional/   # Resend + email utilities
 │   ├── arcjet/          # Rate limiting & auth wrapper
 │   └── utils/           # Shared utilities + error classes
 ├── apps/
@@ -61,13 +65,10 @@ contentta-nx/
 │   ├── agents/          # Mastra AI agents (planning, research, editing)
 │   ├── analytics/       # Analytics engine
 │   ├── events/          # Event catalog, schemas, emit, credits
-│   ├── queue/           # BullMQ abstractions (producer side)
-│   ├── search/          # Web search providers (Tavily/Exa/Firecrawl)
-│   ├── stripe/          # Stripe SDK wrapper
-│   ├── transactional/   # Email templates (React Email + Resend)
+│   ├── feedback/        # Product feedback primitives
 │   └── ui/              # Radix + Tailwind + CVA components
 ├── libraries/
-│   └── sdk/             # TypeScript SDK for Contentta API
+│   └── sdk/             # TypeScript SDK for Montte API
 └── tooling/
     ├── oxc/             # oxlint + oxfmt configs
     └── typescript/      # Shared TypeScript configs
@@ -79,7 +80,7 @@ contentta-nx/
 
 Routers live in `apps/web/src/integrations/orpc/router/`. Uses `@orpc/server`, NOT tRPC.
 
-**Available routers:** account, actions, agent, analytics, annotations, api-keys, billing, chat, content, content-analytics, dashboards, data-sources, event-catalog, forms, insights, onboarding, organization, personal-api-key, property-definitions, sdk-usage, session, team, usage, webhooks
+**Available routers:** account, agent, analytics, bank-accounts, billing, bills, budget-goals, categories, chat, contacts, credit-cards, dashboards, early-access, feedback, insights, inventory, onboarding, organization, search, services, services-bills, session, tags, team, transactions, webhooks
 
 **Router pattern:**
 
@@ -97,8 +98,8 @@ export const getAll = protectedProcedure
 **Errors in routers:** Use `ORPCError` — NOT native `Error`, NOT `APIError`/`AppError`:
 
 ```typescript
-throw new ORPCError("NOT_FOUND", { message: "Content not found" });
-throw new ORPCError("FORBIDDEN", { message: "Insufficient credits" });
+throw new ORPCError("NOT_FOUND", { message: "Transaction not found" });
+throw new ORPCError("FORBIDDEN", { message: "Insufficient permissions" });
 ```
 
 **Errors in repositories** (`core/database/src/repositories/`): Use `AppError` + `propagateError()` from `@core/utils/errors`.
@@ -110,12 +111,12 @@ throw new ORPCError("FORBIDDEN", { message: "Insufficient credits" });
 ```typescript
 // Queries — use useSuspenseQuery, NOT useQuery (guarantees data defined)
 const { data } = useSuspenseQuery(
-   orpc.content.getAll.queryOptions({ input: { teamId } })
+   orpc.transactions.getAll.queryOptions({ input: { page: 1, pageSize: 20 } })
 );
 
 // Mutations — callbacks go INSIDE mutationOptions()
 const mutation = useMutation(
-   orpc.content.create.mutationOptions({
+   orpc.transactions.create.mutationOptions({
       onSuccess: () => { queryClient.invalidateQueries(...) },
    })
 );
@@ -134,9 +135,9 @@ const mutation = useMutation(
 
 ## Code Style
 
-**Files:** kebab-case (`content-editor.tsx`, `use-content.ts`)
-**Components:** PascalCase `[Feature][Action][Type]` (`ContentEditor`, `AgentSettingsSection`)
-**Hooks:** `use[Feature][Action]` (`useContent`, `useCreateContent`)
+**Files:** kebab-case (`transactions-table.tsx`, `use-transactions.ts`)
+**Components:** PascalCase `[Feature][Action][Type]` (`TransactionsTable`, `AgentSettingsSection`)
+**Hooks:** `use[Feature][Action]` (`useTransactions`, `useCreateTransaction`)
 
 **No comments in code.** Never add comments, JSDoc, section dividers, or inline explanations. Code should be self-documenting.
 
@@ -257,8 +258,8 @@ Packages use explicit `package.json` exports. Always match the export path exact
 ```typescript
 // Core packages use @core/* prefix
 import { db } from "@core/database/client";
-import { content } from "@core/database/schemas/content";
-import { createContent } from "@core/database/repositories/content-repository";
+import { bankAccounts } from "@core/database/schemas/bank-accounts";
+import { createBankAccount } from "@core/database/repositories/bank-accounts-repository";
 import { auth } from "@core/authentication/server";
 import { env } from "@core/environment/server";
 import { redis } from "@core/redis/connection";
@@ -280,54 +281,30 @@ Common patterns: `.` (root), `./client`, `./server`, `./schemas/*`, `./repositor
 
 ## AI Agents (packages/agents/)
 
-### Agent Network Hierarchy
-
-```
-platform-router-agent (top-level)
-└── content-agent (content domain)
-    ├── research-agent
-    ├── writer-agent
-    ├── seo-auditor-agent
-    └── reviewer-agent
-```
-
-`platform-router-agent` is the entry point for all chat interactions. It routes requests to the appropriate domain agent (`content-agent`), which in turn delegates to specialized sub-agents.
+Current Mastra setup registers a single domain agent: `rubiAgent`.
 
 **Usage in routers:**
 
 ```typescript
 import { mastra, createRequestContext } from "@packages/agents";
 
-const agent = mastra.getAgent("platformRouterAgent");
+const agent = mastra.getAgent("rubiAgent");
 const context = createRequestContext({
    userId: "user-id",
-   brandId: "brand-id",
-   writerId: "writer-id",
+   teamId: "team-id",
+   organizationId: "organization-id",
    model: "openrouter/moonshotai/kimi-k2.5",
    language: "pt-BR",
-   writerInstructions: [...],
 });
 
-const result = await agent.generate("Write a post about TypeScript", {
+const result = await agent.generate("Summarize this month's transactions", {
    requestContext: context
 });
 ```
 
 **Agent IDs (Mastra registration):**
 
-- `platformRouterAgent` — top-level router
-- `contentAgent` — content domain coordinator
-- `researchAgent` — SERP, competitor, and fact research
-- `writerAgent` — article writing and editing
-- `seoAuditorAgent` — SEO analysis and optimization
-- `reviewerAgent` — quality checks and feedback
-- `fimAgent` — fill-in-the-middle autocomplete
-- `inlineEditAgent` — real-time inline editing
-
-### Specialized Agents
-
-- **FIM Agent** (`fimAgent`) - Autocomplete and fill-in-the-middle
-- **Inline Edit Agent** (`inlineEditAgent`) - Real-time inline editing
+- `rubiAgent` — finance assistant and ERP workflows
 
 ---
 
@@ -340,7 +317,7 @@ features/[name]/
 └── utils/     (when needed)
 ```
 
-Features: analytics, billing, content, editor, file-upload, forms, onboarding, organization, personal-api-keys, search, settings
+Features: access-control, analytics, bank-accounts, billing, bills, budget-goals, categories, contacts, credit-cards, feedback, file-upload, inventory, onboarding, organization, rubi-chat, search, services, settings, tags, transactions, webhooks
 
 ---
 
@@ -348,11 +325,15 @@ Features: analytics, billing, content, editor, file-upload, forms, onboarding, o
 
 ```
 apps/web/src/routes/
-├── auth/                  # sign-in, sign-up, forgot-password
+├── auth/                  # sign-in, sign-up, forgot-password, magic-link
 ├── _authenticated/
 │   └── $slug/
-│       ├── onboarding.tsx
-│       └── $teamId/       # team-scoped dashboard routes
+│       └── $teamSlug/     # team-scoped dashboard routes
+│           └── _dashboard/
+│               ├── transactions.tsx
+│               ├── bank-accounts.tsx
+│               ├── bills.tsx
+│               └── inventory/
 └── api/                   # API routes
 ```
 
@@ -362,18 +343,23 @@ Conventions: kebab-case files, `$` for dynamic segments, `_` for layout routes.
 
 ## Database (Drizzle ORM + PostgreSQL)
 
-**Schemas** at `core/database/src/schemas/`: content, writer, chat, forms, dashboards, insights, events, webhooks, auth, etc.
+**Schemas** at `core/database/src/schemas/`: bank-accounts, bills, budget-goals, categories, contacts, credit-cards, dashboards, insights, inventory, services, transactions, webhooks, auth, etc.
 
 **Repository pattern** at `core/database/src/repositories/`:
 
 ```typescript
-export async function createContent(db: DatabaseInstance, data: NewContent) {
+export async function createBankAccount(
+   teamId: string,
+   data: CreateBankAccountInput,
+) {
+   const validated = validateInput(createBankAccountSchema, data);
    try {
-      const result = await db.insert(content).values(data).returning();
-      return result[0];
+      const [account] = await db.insert(bankAccounts).values({ ...validated, teamId }).returning();
+      if (!account) throw AppError.database("Failed to create bank account");
+      return account;
    } catch (err) {
       propagateError(err);
-      throw AppError.database("Failed to create content");
+      throw AppError.database("Failed to create bank account");
    }
 }
 ```
@@ -508,9 +494,9 @@ For simple button actions (no form): `startTransition(async () => { await authCl
 
 | Hook             | Purpose                           | Use For                                           |
 | ---------------- | --------------------------------- | ------------------------------------------------- |
-| `useSheet`       | Side panel forms                  | Creating/editing content, agents, brands, invites |
+| `useSheet`       | Side panel forms                  | Creating/editing records, agents, brands, invites |
 | `useCredenza`    | Modal (desktop) / Drawer (mobile) | Selecting agents, export formats                  |
-| `useAlertDialog` | Destructive confirmations         | Deleting content, revoking access                 |
+| `useAlertDialog` | Destructive confirmations         | Deleting records, revoking access                 |
 
 **⚠️ ALWAYS use these hooks — NEVER import Credenza, Dialog, Sheet, Drawer, or AlertDialog components manually.**
 
@@ -522,13 +508,13 @@ const { openCredenza } = useCredenza();
 openCredenza({ children: <SelectAgentForm /> });
 
 const { openSheet, closeSheet } = useSheet();
-openSheet({ children: <CreateContentForm onSuccess={closeSheet} /> });
+openSheet({ children: <CreateTransactionForm onSuccess={closeSheet} /> });
 
 const { openAlertDialog } = useAlertDialog();
 openAlertDialog({
-   title: "Delete content?",
+   title: "Delete transaction?",
    description: "This action cannot be undone.",
-   onAction: () => deleteContent(id),
+   onAction: () => deleteTransaction(id),
 });
 
 // ❌ Wrong — never import and render these directly
@@ -581,7 +567,7 @@ import { useMediaQuery, useLocalStorage } from "@uidotdev/usehooks";
 
 ## Events & Credits (packages/events/)
 
-File-per-category pattern: `content.ts`, `ai.ts`, `forms.ts`, `seo.ts`, `emit.ts`, `credits.ts`
+File-per-category pattern: `finance.ts`, `ai.ts`, `contact.ts`, `inventory.ts`, `service.ts`, `nfe.ts`, `document.ts`, `webhook.ts`, `emit.ts`, `credits.ts`
 
 - `emitEvent()` is non-throwing (inner try-catch)
 - `enforceCreditBudget()` throws plain Error — wrap as `ORPCError("FORBIDDEN")` in routers
@@ -595,7 +581,7 @@ Tests live at `apps/web/__tests__/integrations/orpc/router/`. Run with Vitest.
 
 ```bash
 bun run test                          # Run all tests (Nx parallelized)
-npx vitest run apps/web/__tests__/integrations/orpc/router/content.test.ts  # Single file
+npx vitest run apps/web/__tests__/integrations/orpc/router/transactions.test.ts  # Single file
 ```
 
 **Gotcha — Better Auth tables need explicit `createdAt`:**
@@ -660,36 +646,35 @@ The billing overview renders product cards driven by two config objects. **Addin
 // Category must also exist in CATEGORY_CONFIG.
 // When enrolled → card visible + stage badge shown.
 // When not enrolled → card hidden entirely.
-experiment: { flag: "experiments", fallbackStage: "alpha" },
-form:        { flag: "forms-beta", fallbackStage: "beta"  },
+nfe:      { flag: "nfe", fallbackStage: "alpha" },
+document: { flag: "document-signing", fallbackStage: "alpha" },
 ```
 
-### Volume-based features (non-event, e.g. storage)
+### Coming soon categories (no enroll CTA)
 
 ```typescript
-// VOLUME_FEATURE_CONFIG: Record<flagKey, { label, description, icon, priceLabel, unit, fallbackStage }>
-// Renders a VolumeFeatureCard showing per-unit pricing.
-// Visible only when isEnrolled(flagKey).
-"asset-bank": {
-   label: "Banco de Imagens",
-   priceLabel: "R$ 1,50",   // Railway cost: $0.15/GB — charged at R$ 1,50/GB
-   unit: "GB/mês",
-   fallbackStage: "alpha",
-},
+// COMING_SOON_CATEGORIES are rendered as "Em breve".
+// Current values:
+new Set(["nfe", "document"]);
 ```
 
 ### Stage resolution
 
 Stage is resolved from PostHog's early access feature config at runtime (`features.find(f => f.flagKey === key)?.stage`), falling back to `fallbackStage` in the local config. No manual sync needed — PostHog is the source of truth.
 
-### Flag keys (from sidebar-nav-items.ts)
+### Flag keys (from billing-overview.tsx)
 
-| Feature          | Flag key          | Stage |
-| ---------------- | ----------------- | ----- |
-| Banco de Imagens | `asset-bank`      | alpha |
-| Conteúdo         | `content`         | alpha |
-| Experimentos     | `experiments`     | alpha |
-| Formulários      | `forms-beta`      | beta  |
-| Dashboards       | `dashboards`      | beta  |
-| Insights         | `insights`        | beta  |
-| Dados            | `data-management` | beta  |
+| Feature              | Flag key            | Stage |
+| -------------------- | ------------------- | ----- |
+| NF-e                 | `nfe`               | alpha |
+| Assinatura Digital   | `document-signing`  | alpha |
+
+### Other early-access flag keys (from sidebar-nav-items.ts + early-access.ts)
+
+| Feature        | Flag key             | Where used |
+| -------------- | -------------------- | ---------- |
+| Contatos       | `contacts`           | Sidebar gating, onboarding enrollment |
+| Estoque        | `inventory`          | Sidebar gating, onboarding enrollment |
+| Serviços       | `services`           | Sidebar gating, onboarding enrollment |
+| Dashboards     | `advanced-analytics` | Sidebar gating, onboarding enrollment |
+| Dados          | `data-management`    | Sidebar gating, onboarding enrollment |

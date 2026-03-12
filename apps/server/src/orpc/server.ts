@@ -52,7 +52,6 @@ export const sdkProcedure = baseProcedure.use(async ({ context, next }) => {
       throw new ORPCError("UNAUTHORIZED", { message: "Missing API Key" });
    }
 
-   // Verify API key via Better Auth
    const result = await auth.api.verifyApiKey({
       body: { key: apiKeyHeader },
    });
@@ -68,14 +67,12 @@ export const sdkProcedure = baseProcedure.use(async ({ context, next }) => {
    const { plan, organizationId, sdkMode, teamId, apiKeyType } =
       result.key.metadata ?? {};
 
-   // Validate organizationId exists
    if (!organizationId || typeof organizationId !== "string") {
       throw new ORPCError("FORBIDDEN", {
          message: "API key has no associated organization",
       });
    }
 
-   // Check domain allowlist
    const resolvedTeamId = typeof teamId === "string" ? teamId : undefined;
    const domainCheck = await checkDomainAllowed(request, resolvedTeamId, db);
    if (!domainCheck.allowed) {

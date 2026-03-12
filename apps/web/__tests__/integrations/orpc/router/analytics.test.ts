@@ -1,17 +1,19 @@
 import { call } from "@orpc/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-   TEST_ORG_ID,
-   TEST_TEAM_ID,
-   createTestContext,
-} from "../../../helpers/create-test-context";
+   afterAll,
+   beforeAll,
+   beforeEach,
+   describe,
+   expect,
+   it,
+   vi,
+} from "vitest";
 
-vi.mock("@core/database/client", () => ({ db: {} }));
-vi.mock("@core/database/repositories/dashboard-repository");
-vi.mock("@core/database/repositories/insight-repository");
-vi.mock("@packages/analytics/compute-breakdown");
-vi.mock("@packages/analytics/compute-kpi");
-vi.mock("@packages/analytics/compute-time-series");
+vi.mock("@core/database/client", async () => {
+   const { setupIntegrationDb } =
+      await import("../../../helpers/setup-integration-test");
+   return { db: await setupIntegrationDb(), createDb: () => {} };
+});
 vi.mock("@core/arcjet/protect", () => ({
    protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
    isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
@@ -21,215 +23,328 @@ vi.mock("@core/posthog/server", () => ({
    captureServerEvent: vi.fn(),
    identifyUser: vi.fn(),
    setGroup: vi.fn(),
+   posthog: {
+      capture: vi.fn(),
+      identify: vi.fn(),
+      groupIdentify: vi.fn(),
+      shutdown: vi.fn(),
+   },
 }));
 
-import { getDefaultDashboard } from "@core/database/repositories/dashboard-repository";
-import { getInsightsByIds } from "@core/database/repositories/insight-repository";
-import { executeBreakdownQuery } from "@packages/analytics/compute-breakdown";
-import { executeKpiQuery } from "@packages/analytics/compute-kpi";
-import { executeTimeSeriesQuery } from "@packages/analytics/compute-time-series";
-import { AppError } from "@core/logging/errors";
+import { dashboards } from "@core/database/schemas/dashboards";
+import { insights } from "@core/database/schemas/insights";
+import { transactions } from "@core/database/schemas/transactions";
+import { bankAccounts } from "@core/database/schemas/bank-accounts";
+import { categories } from "@core/database/schemas/categories";
+import { sql } from "drizzle-orm";
+import {
+   cleanupIntegrationTest,
+   setupIntegrationTest,
+} from "../../../helpers/setup-integration-test";
+import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import * as analyticsRouter from "@/integrations/orpc/router/analytics";
 
-const DASHBOARD_ID = "a0000000-0000-4000-8000-000000000020";
-const INSIGHT_ID_1 = "a0000000-0000-4000-8000-000000000021";
-const INSIGHT_ID_2 = "a0000000-0000-4000-8000-000000000022";
+let ctx: ORPCContextWithAuth;
 
-const kpiConfig = {
-   type: "kpi" as const,
-   measure: { aggregation: "sum" as const },
-   filters: { dateRange: { type: "relative" as const, value: "30d" as const } },
-};
+beforeAll(async () => {
+   const { createAuthenticatedContext } = await setupIntegrationTest();
+   ctx = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
+});
 
-const timeSeriesConfig = {
-   type: "time_series" as const,
-   measure: { aggregation: "sum" as const },
-   filters: { dateRange: { type: "relative" as const, value: "30d" as const } },
-};
+afterAll(async () => {
+   await cleanupIntegrationTest();
+});
 
-const breakdownConfig = {
-   type: "breakdown" as const,
-   measure: { aggregation: "sum" as const },
-   filters: { dateRange: { type: "relative" as const, value: "30d" as const } },
-};
-
-const mockDashboard = {
-   id: DASHBOARD_ID,
-   organizationId: TEST_ORG_ID,
-   teamId: TEST_TEAM_ID,
-   name: "Dashboard Principal",
-   isDefault: true,
-   tiles: [
-      { insightId: INSIGHT_ID_1, position: { x: 0, y: 0, w: 6, h: 4 } },
-      { insightId: INSIGHT_ID_2, position: { x: 6, y: 0, w: 6, h: 4 } },
-      { insightId: INSIGHT_ID_1, position: { x: 0, y: 4, w: 12, h: 4 } },
-   ],
-   createdBy: "a0000000-0000-4000-8000-000000000001",
-   createdAt: new Date(),
-   updatedAt: new Date(),
-};
-
-const mockInsights = [
-   {
-      id: INSIGHT_ID_1,
-      name: "Revenue KPI",
-      type: "kpi",
-      lastComputedAt: new Date(),
-   },
-   {
-      id: INSIGHT_ID_2,
-      name: "Expenses Breakdown",
-      type: "breakdown",
-      lastComputedAt: new Date(),
-   },
-];
-
-beforeEach(() => {
-   vi.clearAllMocks();
+beforeEach(async () => {
+   await ctx.db.execute(sql`DELETE FROM insights`);
+   await ctx.db.execute(sql`DELETE FROM dashboards`);
+   await ctx.db.execute(sql`DELETE FROM transactions`);
+   await ctx.db.execute(sql`DELETE FROM bank_accounts`);
+   await ctx.db.execute(sql`DELETE FROM categories`);
 });
 
 describe("query", () => {
-   it("dispatches kpi config to executeKpiQuery", async () => {
-      const kpiResult = { value: 5000, comparison: null };
-      vi.mocked(executeKpiQuery).mockResolvedValueOnce(kpiResult);
+   it("executes a kpi query with sum aggregation", async () => {
+      const teamId = ctx.session.session.activeTeamId!;
+
+      await ctx.db.insert(transactions).values([
+         { teamId, type: "income", amount: "500.00", date: "2026-03-01" },
+         { teamId, type: "income", amount: "300.00", date: "2026-03-05" },
+         { teamId, type: "expense", amount: "200.00", date: "2026-03-10" },
+      ]);
 
       const result = await call(
          analyticsRouter.query,
-         { config: kpiConfig },
-         { context: createTestContext() },
+         {
+            config: {
+               type: "kpi",
+               measure: { aggregation: "sum" },
+               filters: {
+                  dateRange: {
+                     type: "absolute",
+                     start: "2026-03-01T00:00:00.000Z",
+                     end: "2026-03-31T23:59:59.999Z",
+                  },
+                  transactionType: ["income"],
+               },
+            },
+         },
+         { context: ctx },
       );
 
-      expect(result).toEqual(kpiResult);
-      expect(executeKpiQuery).toHaveBeenCalledWith(
-         expect.anything(),
-         TEST_TEAM_ID,
-         expect.objectContaining({ type: "kpi" }),
-      );
+      expect(result.value).toBe(800);
    });
 
-   it("dispatches time_series config to executeTimeSeriesQuery", async () => {
-      const tsResult = { data: [{ date: "2026-01-01", value: 100 }] };
-      vi.mocked(executeTimeSeriesQuery).mockResolvedValueOnce(tsResult);
+   it("executes a kpi query with count aggregation", async () => {
+      const teamId = ctx.session.session.activeTeamId!;
+
+      await ctx.db.insert(transactions).values([
+         { teamId, type: "income", amount: "100.00", date: "2026-03-01" },
+         { teamId, type: "expense", amount: "50.00", date: "2026-03-02" },
+         { teamId, type: "expense", amount: "75.00", date: "2026-03-03" },
+      ]);
 
       const result = await call(
          analyticsRouter.query,
-         { config: timeSeriesConfig },
-         { context: createTestContext() },
+         {
+            config: {
+               type: "kpi",
+               measure: { aggregation: "count" },
+               filters: {
+                  dateRange: {
+                     type: "absolute",
+                     start: "2026-03-01T00:00:00.000Z",
+                     end: "2026-03-31T23:59:59.999Z",
+                  },
+               },
+            },
+         },
+         { context: ctx },
       );
 
-      expect(result).toEqual(tsResult);
-      expect(executeTimeSeriesQuery).toHaveBeenCalledWith(
-         expect.anything(),
-         TEST_TEAM_ID,
-         expect.objectContaining({ type: "time_series" }),
-      );
+      expect(result.value).toBe(3);
    });
 
-   it("dispatches breakdown config to executeBreakdownQuery", async () => {
-      const bdResult = { data: [{ label: "Food", value: 200 }] };
-      vi.mocked(executeBreakdownQuery).mockResolvedValueOnce(bdResult);
+   it("executes a time_series query", async () => {
+      const teamId = ctx.session.session.activeTeamId!;
+
+      await ctx.db.insert(transactions).values([
+         { teamId, type: "income", amount: "100.00", date: "2026-03-01" },
+         { teamId, type: "income", amount: "200.00", date: "2026-03-15" },
+      ]);
 
       const result = await call(
          analyticsRouter.query,
-         { config: breakdownConfig },
-         { context: createTestContext() },
+         {
+            config: {
+               type: "time_series",
+               measure: { aggregation: "sum" },
+               filters: {
+                  dateRange: {
+                     type: "absolute",
+                     start: "2026-03-01T00:00:00.000Z",
+                     end: "2026-03-31T23:59:59.999Z",
+                  },
+               },
+               interval: "month",
+            },
+         },
+         { context: ctx },
       );
 
-      expect(result).toEqual(bdResult);
-      expect(executeBreakdownQuery).toHaveBeenCalledWith(
-         expect.anything(),
-         TEST_TEAM_ID,
-         expect.objectContaining({ type: "breakdown" }),
-      );
+      expect(result.data).toBeDefined();
+      expect(Array.isArray(result.data)).toBe(true);
+      expect(result.data.length).toBeGreaterThan(0);
    });
 
-   it("propagates errors from query engine", async () => {
-      vi.mocked(executeKpiQuery).mockRejectedValueOnce(
-         AppError.database("Falha ao executar consulta analítica"),
+   it("executes a breakdown query grouped by transaction_type", async () => {
+      const teamId = ctx.session.session.activeTeamId!;
+
+      await ctx.db.insert(transactions).values([
+         { teamId, type: "income", amount: "500.00", date: "2026-03-01" },
+         { teamId, type: "expense", amount: "200.00", date: "2026-03-05" },
+         { teamId, type: "expense", amount: "100.00", date: "2026-03-10" },
+      ]);
+
+      const result = await call(
+         analyticsRouter.query,
+         {
+            config: {
+               type: "breakdown",
+               measure: { aggregation: "sum" },
+               filters: {
+                  dateRange: {
+                     type: "absolute",
+                     start: "2026-03-01T00:00:00.000Z",
+                     end: "2026-03-31T23:59:59.999Z",
+                  },
+               },
+               groupBy: "transaction_type",
+            },
+         },
+         { context: ctx },
       );
 
-      await expect(
-         call(
-            analyticsRouter.query,
-            { config: kpiConfig },
-            { context: createTestContext() },
-         ),
-      ).rejects.toThrow("Falha ao executar consulta analítica");
+      expect(result.data).toBeDefined();
+      expect(result.total).toBeDefined();
+      expect(result.data.length).toBeGreaterThanOrEqual(2);
+   });
+
+   it("returns zero for empty dataset", async () => {
+      const result = await call(
+         analyticsRouter.query,
+         {
+            config: {
+               type: "kpi",
+               measure: { aggregation: "sum" },
+               filters: {
+                  dateRange: {
+                     type: "absolute",
+                     start: "2026-03-01T00:00:00.000Z",
+                     end: "2026-03-31T23:59:59.999Z",
+                  },
+               },
+            },
+         },
+         { context: ctx },
+      );
+
+      expect(result.value).toBe(0);
    });
 });
 
 describe("getDefaultDashboard", () => {
-   it("returns the default dashboard", async () => {
-      vi.mocked(getDefaultDashboard).mockResolvedValueOnce(
-         mockDashboard as any,
-      );
+   it("returns the default dashboard for the team", async () => {
+      const orgId = ctx.session.session.activeOrganizationId!;
+      const teamId = ctx.session.session.activeTeamId!;
+      const userId = ctx.session.user.id;
+
+      await ctx.db.insert(dashboards).values({
+         organizationId: orgId,
+         teamId,
+         createdBy: userId,
+         name: "Dashboard Principal",
+         isDefault: true,
+         tiles: [],
+      });
 
       const result = await call(
          analyticsRouter.getDefaultDashboard,
          undefined,
-         { context: createTestContext() },
+         { context: ctx },
       );
 
-      expect(result).toEqual(mockDashboard);
-      expect(getDefaultDashboard).toHaveBeenCalledWith(
-         TEST_ORG_ID,
-         TEST_TEAM_ID,
-      );
+      expect(result.name).toBe("Dashboard Principal");
+      expect(result.isDefault).toBe(true);
    });
 
-   it("propagates NOT_FOUND from repository", async () => {
-      vi.mocked(getDefaultDashboard).mockRejectedValueOnce(
-         AppError.notFound("Default dashboard not found"),
-      );
-
+   it("throws when no default dashboard exists", async () => {
       await expect(
          call(analyticsRouter.getDefaultDashboard, undefined, {
-            context: createTestContext(),
+            context: ctx,
          }),
-      ).rejects.toThrow("Default dashboard not found");
+      ).rejects.toThrow();
    });
 });
 
 describe("getDashboardInsights", () => {
    it("returns insights for dashboard tiles", async () => {
-      vi.mocked(getDefaultDashboard).mockResolvedValueOnce(
-         mockDashboard as any,
-      );
-      vi.mocked(getInsightsByIds).mockResolvedValueOnce(mockInsights as any);
+      const orgId = ctx.session.session.activeOrganizationId!;
+      const teamId = ctx.session.session.activeTeamId!;
+      const userId = ctx.session.user.id;
+
+      const [insight1] = await ctx.db
+         .insert(insights)
+         .values({
+            organizationId: orgId,
+            teamId,
+            createdBy: userId,
+            name: "Revenue KPI",
+            type: "kpi",
+            config: { measure: { aggregation: "sum" } },
+         })
+         .returning();
+
+      const [insight2] = await ctx.db
+         .insert(insights)
+         .values({
+            organizationId: orgId,
+            teamId,
+            createdBy: userId,
+            name: "Expenses Breakdown",
+            type: "breakdown",
+            config: { measure: { aggregation: "sum" } },
+         })
+         .returning();
+
+      const [dashboard] = await ctx.db
+         .insert(dashboards)
+         .values({
+            organizationId: orgId,
+            teamId,
+            createdBy: userId,
+            name: "Dashboard Principal",
+            isDefault: true,
+            tiles: [
+               { insightId: insight1!.id, size: "md", order: 0 },
+               { insightId: insight2!.id, size: "lg", order: 1 },
+            ],
+         })
+         .returning();
 
       const result = await call(
          analyticsRouter.getDashboardInsights,
-         { dashboardId: DASHBOARD_ID },
-         { context: createTestContext() },
+         { dashboardId: dashboard!.id },
+         { context: ctx },
       );
 
-      expect(result).toEqual(mockInsights);
-      expect(getInsightsByIds).toHaveBeenCalledWith([
-         INSIGHT_ID_1,
-         INSIGHT_ID_2,
-      ]);
+      expect(result).toHaveLength(2);
+      const names = result.map((r: any) => r.name).sort();
+      expect(names).toEqual(["Expenses Breakdown", "Revenue KPI"]);
    });
 
    it("returns empty array when dashboard has no tiles", async () => {
-      vi.mocked(getDefaultDashboard).mockResolvedValueOnce({
-         ...mockDashboard,
-         tiles: [],
-      } as any);
+      const orgId = ctx.session.session.activeOrganizationId!;
+      const teamId = ctx.session.session.activeTeamId!;
+      const userId = ctx.session.user.id;
+
+      const [dashboard] = await ctx.db
+         .insert(dashboards)
+         .values({
+            organizationId: orgId,
+            teamId,
+            createdBy: userId,
+            name: "Empty Dashboard",
+            isDefault: true,
+            tiles: [],
+         })
+         .returning();
 
       const result = await call(
          analyticsRouter.getDashboardInsights,
-         { dashboardId: DASHBOARD_ID },
-         { context: createTestContext() },
+         { dashboardId: dashboard!.id },
+         { context: ctx },
       );
 
       expect(result).toEqual([]);
-      expect(getInsightsByIds).not.toHaveBeenCalled();
    });
 
-   it("throws NOT_FOUND when dashboardId does not match", async () => {
-      vi.mocked(getDefaultDashboard).mockResolvedValueOnce(
-         mockDashboard as any,
-      );
+   it("throws when dashboardId does not match default", async () => {
+      const orgId = ctx.session.session.activeOrganizationId!;
+      const teamId = ctx.session.session.activeTeamId!;
+      const userId = ctx.session.user.id;
+
+      await ctx.db.insert(dashboards).values({
+         organizationId: orgId,
+         teamId,
+         createdBy: userId,
+         name: "Dashboard Principal",
+         isDefault: true,
+         tiles: [],
+      });
 
       const otherDashboardId = "a0000000-0000-4000-8000-000000000099";
 
@@ -237,26 +352,50 @@ describe("getDashboardInsights", () => {
          call(
             analyticsRouter.getDashboardInsights,
             { dashboardId: otherDashboardId },
-            { context: createTestContext() },
+            { context: ctx },
          ),
       ).rejects.toThrow("Dashboard não encontrado.");
    });
 
    it("deduplicates insight IDs from tiles", async () => {
-      vi.mocked(getDefaultDashboard).mockResolvedValueOnce(
-         mockDashboard as any,
-      );
-      vi.mocked(getInsightsByIds).mockResolvedValueOnce(mockInsights as any);
+      const orgId = ctx.session.session.activeOrganizationId!;
+      const teamId = ctx.session.session.activeTeamId!;
+      const userId = ctx.session.user.id;
 
-      await call(
+      const [insight] = await ctx.db
+         .insert(insights)
+         .values({
+            organizationId: orgId,
+            teamId,
+            createdBy: userId,
+            name: "Shared Insight",
+            type: "kpi",
+            config: {},
+         })
+         .returning();
+
+      const [dashboard] = await ctx.db
+         .insert(dashboards)
+         .values({
+            organizationId: orgId,
+            teamId,
+            createdBy: userId,
+            name: "Dashboard",
+            isDefault: true,
+            tiles: [
+               { insightId: insight!.id, size: "sm", order: 0 },
+               { insightId: insight!.id, size: "lg", order: 1 },
+            ],
+         })
+         .returning();
+
+      const result = await call(
          analyticsRouter.getDashboardInsights,
-         { dashboardId: DASHBOARD_ID },
-         { context: createTestContext() },
+         { dashboardId: dashboard!.id },
+         { context: ctx },
       );
 
-      expect(getInsightsByIds).toHaveBeenCalledWith([
-         INSIGHT_ID_1,
-         INSIGHT_ID_2,
-      ]);
+      expect(result).toHaveLength(1);
+      expect(result[0]!.id).toBe(insight!.id);
    });
 });

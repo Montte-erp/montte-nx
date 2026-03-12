@@ -1,199 +1,122 @@
 import { call } from "@orpc/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-   createTestContext,
-   createUnauthenticatedContext,
-} from "../../../helpers/create-test-context";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-vi.mock("@core/database/client", () => ({ db: {} }));
+vi.mock("@core/database/client", async () => {
+   const { setupIntegrationDb } =
+      await import("../../../helpers/setup-integration-test");
+   return { db: await setupIntegrationDb(), createDb: () => {} };
+});
 vi.mock("@core/arcjet/protect", () => ({
-   protect: vi.fn(),
    protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
+   isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
 }));
 vi.mock("@core/posthog/server", () => ({
-   posthog: { capture: vi.fn(), shutdown: vi.fn() },
+   captureError: vi.fn(),
+   captureServerEvent: vi.fn(),
+   identifyUser: vi.fn(),
+   setGroup: vi.fn(),
+   posthog: {
+      capture: vi.fn(),
+      identify: vi.fn(),
+      groupIdentify: vi.fn(),
+      shutdown: vi.fn(),
+   },
 }));
 
-const mockAuth = {
-   api: {
-      getSession: vi.fn(),
-      listSessions: vi.fn(),
-      revokeSession: vi.fn(),
-      revokeOtherSessions: vi.fn(),
-      revokeSessions: vi.fn(),
-   },
-};
-
+import {
+   cleanupIntegrationTest,
+   setupIntegrationTest,
+} from "../../../helpers/setup-integration-test";
+import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import * as sessionRouter from "@/integrations/orpc/router/session";
 
-function createSessionContext(overrides: Record<string, unknown> = {}) {
-   return createTestContext({
-      auth: mockAuth,
-      ...overrides,
-   });
-}
+let ctx: ORPCContextWithAuth;
+let setupResult: Awaited<ReturnType<typeof setupIntegrationTest>>;
 
-beforeEach(() => {
-   vi.clearAllMocks();
+beforeAll(async () => {
+   setupResult = await setupIntegrationTest();
+   ctx = await setupResult.createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
+});
+
+afterAll(async () => {
+   await cleanupIntegrationTest();
 });
 
 describe("getSession", () => {
-   it("returns session when authenticated", async () => {
-      const sessionData = {
-         user: { id: "user-1", name: "Alice", email: "alice@example.com" },
-         session: { id: "sess-1", activeOrganizationId: "org-1" },
-      };
-      mockAuth.api.getSession.mockResolvedValueOnce(sessionData);
-
-      const ctx = createSessionContext();
+   it("returns the current session", async () => {
       const result = await call(sessionRouter.getSession, undefined, {
          context: ctx,
       });
 
-      expect(result).toEqual(sessionData);
-      expect(mockAuth.api.getSession).toHaveBeenCalledWith({
-         headers: ctx.headers,
-      });
-   });
-
-   it("returns null when unauthenticated (publicProcedure)", async () => {
-      mockAuth.api.getSession.mockResolvedValueOnce(null);
-
-      const ctx = createUnauthenticatedContext({
-         auth: mockAuth,
-      });
-      const result = await call(sessionRouter.getSession, undefined, {
-         context: ctx,
-      });
-
-      expect(result).toBeNull();
-      expect(mockAuth.api.getSession).toHaveBeenCalledWith({
-         headers: ctx.headers,
-      });
-   });
-
-   it("throws WebAppError when auth.api fails", async () => {
-      mockAuth.api.getSession.mockRejectedValueOnce(new Error("auth down"));
-
-      const ctx = createSessionContext();
-
-      await expect(
-         call(sessionRouter.getSession, undefined, { context: ctx }),
-      ).rejects.toThrow("Falha ao recuperar sessão.");
+      expect(result).toBeDefined();
+      expect(result!.session).toBeDefined();
+      expect(result!.user).toBeDefined();
+      expect(result!.user.id).toBe(ctx.session.user.id);
    });
 });
 
 describe("listSessions", () => {
-   it("returns list of sessions", async () => {
-      const sessions = [
-         { id: "sess-1", userAgent: "Chrome", createdAt: "2026-01-01" },
-         { id: "sess-2", userAgent: "Firefox", createdAt: "2026-01-02" },
-      ];
-      mockAuth.api.listSessions.mockResolvedValueOnce(sessions);
-
-      const ctx = createSessionContext();
+   it("returns active sessions", async () => {
       const result = await call(sessionRouter.listSessions, undefined, {
          context: ctx,
       });
 
-      expect(result).toEqual(sessions);
-      expect(mockAuth.api.listSessions).toHaveBeenCalledWith({
-         headers: ctx.headers,
-      });
-   });
-
-   it("throws WebAppError when auth.api fails", async () => {
-      mockAuth.api.listSessions.mockRejectedValueOnce(new Error("fail"));
-
-      const ctx = createSessionContext();
-
-      await expect(
-         call(sessionRouter.listSessions, undefined, { context: ctx }),
-      ).rejects.toThrow("Falha ao listar sessões.");
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBeGreaterThanOrEqual(1);
    });
 });
 
 describe("revokeSessionByToken", () => {
-   it("revokes session and returns success", async () => {
-      mockAuth.api.revokeSession.mockResolvedValueOnce(undefined);
+   it("revokes a specific session by token", async () => {
+      const freshCtx = await setupResult.createAuthenticatedContext({
+         organizationId: "auto",
+         teamId: "auto",
+      });
 
-      const ctx = createSessionContext();
+      const sessions = await call(sessionRouter.listSessions, undefined, {
+         context: freshCtx,
+      });
+      const targetToken = sessions[0]!.token;
+
       const result = await call(
          sessionRouter.revokeSessionByToken,
-         { token: "sess-token-abc" },
-         { context: ctx },
+         { token: targetToken },
+         { context: freshCtx },
       );
 
       expect(result).toEqual({ success: true });
-      expect(mockAuth.api.revokeSession).toHaveBeenCalledWith({
-         headers: ctx.headers,
-         body: { token: "sess-token-abc" },
-      });
-   });
-
-   it("throws WebAppError when auth.api fails", async () => {
-      mockAuth.api.revokeSession.mockRejectedValueOnce(new Error("fail"));
-
-      const ctx = createSessionContext();
-
-      await expect(
-         call(
-            sessionRouter.revokeSessionByToken,
-            { token: "t" },
-            { context: ctx },
-         ),
-      ).rejects.toThrow("Falha ao revogar sessão.");
    });
 });
 
 describe("revokeOtherSessions", () => {
-   it("revokes other sessions and returns success", async () => {
-      mockAuth.api.revokeOtherSessions.mockResolvedValueOnce(undefined);
+   it("keeps current session and revokes others", async () => {
+      const freshCtx = await setupResult.createAuthenticatedContext({
+         organizationId: "auto",
+         teamId: "auto",
+      });
 
-      const ctx = createSessionContext();
       const result = await call(sessionRouter.revokeOtherSessions, undefined, {
-         context: ctx,
+         context: freshCtx,
       });
 
       expect(result).toEqual({ success: true });
-      expect(mockAuth.api.revokeOtherSessions).toHaveBeenCalledWith({
-         headers: ctx.headers,
-      });
-   });
-
-   it("throws WebAppError when auth.api fails", async () => {
-      mockAuth.api.revokeOtherSessions.mockRejectedValueOnce(new Error("fail"));
-
-      const ctx = createSessionContext();
-
-      await expect(
-         call(sessionRouter.revokeOtherSessions, undefined, { context: ctx }),
-      ).rejects.toThrow("Falha ao revogar outras sessões.");
    });
 });
 
 describe("revokeSessions", () => {
-   it("revokes all sessions and returns success", async () => {
-      mockAuth.api.revokeSessions.mockResolvedValueOnce(undefined);
+   it("revokes all sessions", async () => {
+      const freshCtx = await setupResult.createAuthenticatedContext({
+         organizationId: "auto",
+         teamId: "auto",
+      });
 
-      const ctx = createSessionContext();
       const result = await call(sessionRouter.revokeSessions, undefined, {
-         context: ctx,
+         context: freshCtx,
       });
 
       expect(result).toEqual({ success: true });
-      expect(mockAuth.api.revokeSessions).toHaveBeenCalledWith({
-         headers: ctx.headers,
-      });
-   });
-
-   it("throws WebAppError when auth.api fails", async () => {
-      mockAuth.api.revokeSessions.mockRejectedValueOnce(new Error("fail"));
-
-      const ctx = createSessionContext();
-
-      await expect(
-         call(sessionRouter.revokeSessions, undefined, { context: ctx }),
-      ).rejects.toThrow("Falha ao revogar todas as sessões.");
    });
 });

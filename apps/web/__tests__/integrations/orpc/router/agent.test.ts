@@ -1,11 +1,55 @@
 import { call } from "@orpc/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-   TEST_ORG_ID,
-   TEST_TEAM_ID,
-   TEST_USER_ID,
-   createTestContext,
-} from "../../../helpers/create-test-context";
+   afterAll,
+   beforeAll,
+   beforeEach,
+   describe,
+   expect,
+   it,
+   vi,
+} from "vitest";
+
+vi.mock("@core/database/client", async () => {
+   const { setupIntegrationDb } =
+      await import("../../../helpers/setup-integration-test");
+   return { db: await setupIntegrationDb(), createDb: () => {} };
+});
+vi.mock("@core/arcjet/protect", () => ({
+   protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
+   isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
+}));
+vi.mock("@core/posthog/server", () => ({
+   captureError: vi.fn(),
+   captureServerEvent: vi.fn(),
+   identifyUser: vi.fn(),
+   setGroup: vi.fn(),
+   posthog: {
+      capture: vi.fn(),
+      identify: vi.fn(),
+      groupIdentify: vi.fn(),
+      shutdown: vi.fn(),
+   },
+}));
+
+vi.mock("@core/redis/connection", () => ({
+   getRedisConnection: vi.fn().mockReturnValue({
+      get: vi.fn(),
+      set: vi.fn(),
+      incr: vi.fn(),
+      expire: vi.fn(),
+   }),
+   redis: {
+      get: vi.fn(),
+      set: vi.fn(),
+      incr: vi.fn(),
+      expire: vi.fn(),
+   },
+}));
+
+vi.mock("@packages/events/emit", () => ({
+   createEmitFn: vi.fn().mockReturnValue(vi.fn()),
+   emitEvent: vi.fn(),
+}));
 
 vi.mock("@packages/agents", () => ({
    mastra: {
@@ -27,10 +71,18 @@ vi.mock("@packages/agents/models", () => ({
 }));
 
 vi.mock("@packages/events/ai");
+
 import { mastra } from "@packages/agents";
 import { emitAiChatMessage } from "@packages/events/ai";
 
+import {
+   cleanupIntegrationTest,
+   setupIntegrationTest,
+} from "../../../helpers/setup-integration-test";
+import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import * as agentRouter from "@/integrations/orpc/router/agent";
+
+let ctx: ORPCContextWithAuth;
 
 function createMockFullStream(
    events: Array<{ type: string; textDelta?: string }>,
@@ -50,11 +102,6 @@ function setupAgentMock(streamResult: unknown) {
    } as unknown as ReturnType<typeof mastra.getAgent>);
 }
 
-beforeEach(() => {
-   vi.clearAllMocks();
-   vi.mocked(emitAiChatMessage).mockResolvedValue(undefined);
-});
-
 async function collectChunks<T>(iterable: AsyncIterable<T>): Promise<T[]> {
    const chunks: T[] = [];
    for await (const chunk of iterable) {
@@ -62,6 +109,23 @@ async function collectChunks<T>(iterable: AsyncIterable<T>): Promise<T[]> {
    }
    return chunks;
 }
+
+beforeAll(async () => {
+   const { createAuthenticatedContext } = await setupIntegrationTest();
+   ctx = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
+});
+
+afterAll(async () => {
+   await cleanupIntegrationTest();
+});
+
+beforeEach(() => {
+   vi.clearAllMocks();
+   vi.mocked(emitAiChatMessage).mockResolvedValue(undefined);
+});
 
 describe("aiCommandStream", () => {
    it("yields text chunks from fullStream", async () => {
@@ -72,7 +136,6 @@ describe("aiCommandStream", () => {
          ]),
       );
 
-      const ctx = createTestContext();
       const iterable = await call(
          agentRouter.aiCommandStream,
          { prompt: "Hello" },
@@ -96,7 +159,6 @@ describe("aiCommandStream", () => {
          createMockFullStream([{ type: "text-delta", textDelta: "Hi" }]),
       );
 
-      const ctx = createTestContext();
       const iterable = await call(
          agentRouter.aiCommandStream,
          { prompt: "Hello" },
@@ -104,12 +166,16 @@ describe("aiCommandStream", () => {
       );
       await collectChunks(iterable);
 
+      const orgId = ctx.session.session.activeOrganizationId;
+      const userId = ctx.session.user.id;
+      const teamId = ctx.session.session.activeTeamId;
+
       expect(emitAiChatMessage).toHaveBeenCalledWith(
          expect.any(Function),
          expect.objectContaining({
-            organizationId: TEST_ORG_ID,
-            userId: TEST_USER_ID,
-            teamId: TEST_TEAM_ID,
+            organizationId: orgId,
+            userId,
+            teamId,
          }),
          expect.objectContaining({
             provider: "openrouter",
