@@ -1,5 +1,5 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { and, count, eq, gte, lte, sql } from "drizzle-orm";
+import { and, count, eq, gte, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "@core/database/client";
 import {
    type CreateBillInput,
@@ -16,6 +16,8 @@ import {
 } from "@core/database/schemas/bills";
 import type { ContactSubscription } from "@core/database/schemas/subscriptions";
 import type { ServiceVariant } from "@core/database/schemas/services";
+import { bankAccounts } from "@core/database/schemas/bank-accounts";
+import { categories } from "@core/database/schemas/categories";
 import { getBankAccount } from "@core/database/repositories/bank-accounts-repository";
 import { getCategory } from "@core/database/repositories/categories-repository";
 import { getContact } from "@core/database/repositories/contacts-repository";
@@ -158,20 +160,32 @@ export async function listBills(options: ListBillsOptions) {
       const whereClause = and(...conditions);
       const offset = (page - 1) * pageSize;
 
-      const rows = await db.query.bills.findMany({
-         where: { RAW: whereClause },
-         with: { bankAccount: true, category: true },
-         orderBy: { dueDate: "desc" },
-         limit: pageSize,
-         offset,
-      });
+      const rows = await db
+         .select({
+            bill: bills,
+            bankAccount: bankAccounts,
+            category: categories,
+         })
+         .from(bills)
+         .leftJoin(bankAccounts, eq(bills.bankAccountId, bankAccounts.id))
+         .leftJoin(categories, eq(bills.categoryId, categories.id))
+         .where(whereClause)
+         .orderBy(sql`${bills.dueDate} desc`)
+         .limit(pageSize)
+         .offset(offset);
+
+      const items = rows.map((row) => ({
+         ...row.bill,
+         bankAccount: row.bankAccount,
+         category: row.category,
+      }));
 
       const [countResult] = await db
          .select({ total: count() })
          .from(bills)
          .where(whereClause);
 
-      return { items: rows, total: countResult?.total ?? 0, page, pageSize };
+      return { items, total: countResult?.total ?? 0, page, pageSize };
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to list bills");
@@ -224,11 +238,15 @@ export async function getActiveRecurrenceSettings(): Promise<
 > {
    try {
       const today = new Date().toISOString().substring(0, 10);
-      return await db.query.recurrenceSettings.findMany({
-         where: {
-            RAW: sql`(${recurrenceSettings.endsAt} IS NULL OR ${recurrenceSettings.endsAt} >= ${today})`,
-         },
-      });
+      return await db
+         .select()
+         .from(recurrenceSettings)
+         .where(
+            or(
+               isNull(recurrenceSettings.endsAt),
+               gte(recurrenceSettings.endsAt, today),
+            ),
+         );
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to get recurrence settings");

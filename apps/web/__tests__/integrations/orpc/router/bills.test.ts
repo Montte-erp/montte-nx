@@ -158,7 +158,7 @@ describe("create", () => {
 });
 
 describe("getAll", () => {
-   it.skip("lists bills for the team (RAW where not supported in PGlite)", async () => {
+   it("lists bills for the team", async () => {
       await call(billsRouter.create, { bill: billInput }, { context: ctx });
       await call(
          billsRouter.create,
@@ -174,7 +174,7 @@ describe("getAll", () => {
       expect(result.total).toBe(2);
    });
 
-   it.skip("isolates bills between teams (RAW where not supported in PGlite)", async () => {
+   it("isolates bills between teams", async () => {
       await call(billsRouter.create, { bill: billInput }, { context: ctx });
       await call(
          billsRouter.create,
@@ -189,7 +189,7 @@ describe("getAll", () => {
       expect(result.items[0]!.name).toBe("Aluguel");
    });
 
-   it.skip("filters by type (RAW where not supported in PGlite)", async () => {
+   it("filters by type", async () => {
       await call(billsRouter.create, { bill: billInput }, { context: ctx });
       await call(
          billsRouter.create,
