@@ -3,9 +3,9 @@
 ## Quick Start
 
 1. **Clone & install:** `git clone https://github.com/F-O-T/contentta-nx.git && cd contentta-nx && bun install`
-2. **Set up env:** Run `bun run scripts/env-setup setup` to configure your environment files
-3. **Database:** Run `bun run scripts/db-push push` to set up the database schema
-4. **Start dev:** `bun run dev:all` (or `bun run dev:dashboard`, `bun run dev:blog`)
+2. **Set up env:** Run `bun run scripts/env-setup.ts setup` to configure your environment files
+3. **Database:** Run `bun run db:push` to set up the database schema
+4. **Start dev:** `bun run dev:all` (or `bun run dev`, `bun run dev:server`, `bun run dev:worker`)
 
 ## How to Contribute
 
@@ -29,8 +29,9 @@
 
 Nx monorepo with:
 
-**Apps:** `server/` (ElysiaJS + tRPC), `dashboard/` (React), `blog/` (Astro), `docs/`, `landing-page/`
-**Packages:** `api/`, `authentication/`, `database/`, `ui/` (shadcn/ui), and more for localization, environment management
+**Apps:** `web/` (React + Vite), `server/` (Elysia), `worker/`
+**Core:** `authentication/`, `database/`, `environment/`, `files/`, `logging/`, `redis/`, `stripe/`, `transactional/`, `utils/`
+**Packages:** `agents/`, `analytics/`, `events/`, `feedback/`, `ui/`
 
 ## Code Standards
 

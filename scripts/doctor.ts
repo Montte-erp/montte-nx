@@ -2,17 +2,42 @@ import { execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import chalk from "chalk";
+import { cac } from "cac";
+
+const colors = {
+   blue: chalk.blue,
+   cyan: chalk.cyan,
+   green: chalk.green,
+   red: chalk.red,
+};
+
+function listEnvDirectories() {
+   const directoryGroups = ["apps", "packages", "core"];
+
+   return directoryGroups.flatMap((group) => {
+      if (!fs.existsSync(group)) {
+         return [];
+      }
+
+      return fs
+         .readdirSync(group, { withFileTypes: true })
+         .filter((entry) => entry.isDirectory())
+         .map((entry) => path.join(group, entry.name));
+   });
+}
 
 const checks = [
    {
       fn: () => {
          const version = process.versions.node;
-         const majorVersion = parseInt(version.split(".")[0] || "0", 10);
+         const majorVersion = Number.parseInt(version.split(".")[0] || "0", 10);
+
          if (majorVersion < 20) {
             throw new Error(
                `Node.js version is ${version}, but >=20 is required.`,
             );
          }
+
          return `v${version}`;
       },
       name: "Node.js Version",
@@ -20,8 +45,7 @@ const checks = [
    {
       fn: () => {
          try {
-            const version = execSync("bun --version").toString().trim();
-            return version;
+            return execSync("bun --version").toString().trim();
          } catch (error) {
             console.error(error);
             throw new Error(
@@ -34,11 +58,9 @@ const checks = [
    {
       fn: () => {
          try {
-            const version = execSync("podman --version").toString().trim();
-            return version;
+            return execSync("podman --version").toString().trim();
          } catch (error) {
             console.error(error);
-
             throw new Error(
                "Podman is not installed or not in PATH. Please install it to run local dependencies.",
             );
@@ -49,13 +71,9 @@ const checks = [
    {
       fn: () => {
          try {
-            const version = execSync("podman-compose version")
-               .toString()
-               .trim();
-            return version;
+            return execSync("podman-compose version").toString().trim();
          } catch (error) {
             console.error(error);
-
             throw new Error(
                "Podman Compose is not available. Please ensure you have podman-compose installed.",
             );
@@ -70,35 +88,18 @@ const checks = [
                "node_modules not found. Please run 'bun install'.",
             );
          }
+
          return "Installed";
       },
       name: "Dependencies",
    },
    {
       fn: () => {
-         const allDirs: string[] = [];
-
-         // Check apps directory
-         if (fs.existsSync("apps")) {
-            const appDirs = fs
-               .readdirSync("apps")
-               .map((name) => `apps/${name}`);
-            allDirs.push(...appDirs);
-         }
-
-         // Check packages directory
-         if (fs.existsSync("packages")) {
-            const pkgDirs = fs
-               .readdirSync("packages")
-               .map((name) => `packages/${name}`);
-            allDirs.push(...pkgDirs);
-         }
-
          const missingEnv: string[] = [];
          const missingLocal: string[] = [];
          const missingProduction: string[] = [];
 
-         for (const dir of allDirs) {
+         for (const dir of listEnvDirectories()) {
             const dirName = path.basename(dir);
             const hasExample = fs.existsSync(path.join(dir, ".env.example"));
 
@@ -106,34 +107,36 @@ const checks = [
                continue;
             }
 
-            // Check for .env file for all packages/apps that have .env.example
             if (!fs.existsSync(path.join(dir, ".env"))) {
                missingEnv.push(dirName);
             }
 
-            // Special handling for RAG and database packages - they need both local and production env files
-            if (dirName === "database" || dirName === "rag") {
+            if (dir === path.join("core", "database")) {
                if (!fs.existsSync(path.join(dir, ".env.local"))) {
                   missingLocal.push(dirName);
                }
-               if (!fs.existsSync(path.join(dir, ".env.production.local"))) {
+
+               if (!fs.existsSync(path.join(dir, ".env.production"))) {
                   missingProduction.push(dirName);
                }
             }
          }
 
-         const issues = [];
+         const issues: string[] = [];
+
          if (missingEnv.length > 0) {
             issues.push(`Missing .env files in: ${missingEnv.join(", ")}`);
          }
+
          if (missingLocal.length > 0) {
             issues.push(
-               `Missing .env.local files (database/rag only): ${missingLocal.join(", ")}`,
+               `Missing .env.local files (core/database only): ${missingLocal.join(", ")}`,
             );
          }
+
          if (missingProduction.length > 0) {
             issues.push(
-               `Missing .env.production.local files (database/rag only): ${missingProduction.join(", ")}`,
+               `Missing .env.production files (core/database only): ${missingProduction.join(", ")}`,
             );
          }
 
@@ -142,6 +145,7 @@ const checks = [
                `${issues.join(". ")}. Run 'bun run scripts/env-setup.ts setup' to create missing environment files.`,
             );
          }
+
          return "All environment files found";
       },
       name: "Environment Files",
@@ -151,6 +155,7 @@ const checks = [
          if (!fs.existsSync("tsconfig.json")) {
             throw new Error("Root tsconfig.json not found");
          }
+
          return "Found";
       },
       name: "TypeScript Configuration",
@@ -160,45 +165,61 @@ const checks = [
          if (!fs.existsSync("nx.json")) {
             throw new Error("nx.json not found");
          }
+
          return "Found";
       },
-      name: "NX Configuration",
+      name: "Nx Configuration",
    },
 ];
 
 async function runDoctor() {
-   console.log(
-      chalk.blue.bold("🩺 Running Content Writer Environment Doctor..."),
-   );
+   console.log(colors.blue.bold("🩺 Running Contentta Environment Doctor..."));
    console.log("-".repeat(40));
 
    let allGood = true;
 
    for (const check of checks) {
-      process.stdout.write(`- ${chalk.cyan(check.name)}: `);
+      process.stdout.write(`- ${colors.cyan(check.name)}: `);
+
       try {
          const result = await Promise.resolve(check.fn());
-         console.log(chalk.green(`✓ OK (${result})`));
+         console.log(colors.green(`✓ OK (${result})`));
       } catch (error) {
          const errorMessage =
             error instanceof Error ? error.message : "Unknown error";
-         console.log(chalk.red(`✗ FAILED`));
-         console.log(`  ${chalk.red(errorMessage)}`);
+         console.log(colors.red("✗ FAILED"));
+         console.log(`  ${colors.red(errorMessage)}`);
          allGood = false;
       }
    }
 
    console.log("-".repeat(40));
+
    if (allGood) {
-      console.log(chalk.green.bold("✅ Your environment looks good!"));
-   } else {
-      console.log(
-         chalk.red.bold(
-            "❌ Some checks failed. Please resolve the issues above.",
-         ),
-      );
-      process.exit(1);
+      console.log(colors.green.bold("✅ Your environment looks good!"));
+      return;
    }
+
+   console.log(
+      colors.red.bold(
+         "❌ Some checks failed. Please resolve the issues above.",
+      ),
+   );
+   process.exit(1);
 }
 
-runDoctor();
+const cli = cac("doctor");
+
+cli.help();
+cli.version("1.0.0");
+cli.parse();
+
+if (cli.args.length > 0) {
+   cli.outputHelp();
+   process.exit(1);
+}
+
+runDoctor().catch((error) => {
+   console.error(colors.red("Doctor failed:"), error);
+   process.exit(1);
+});

@@ -14,17 +14,13 @@ import { NFE_EVENTS } from "@packages/events/nfe";
 import { SERVICE_EVENTS } from "@packages/events/service";
 import { WEBHOOK_EVENTS } from "@packages/events/webhook";
 import chalk from "chalk";
-import { Command } from "commander";
+import { cac } from "cac";
 import { config } from "dotenv";
-
-// ---------------------------------------------------------------------------
-// Event catalog seed data
-// ---------------------------------------------------------------------------
 
 interface EventPricing {
    eventName: string;
    category: string;
-   pricePerEvent: string; // decimal string, e.g. "0.001000"
+   pricePerEvent: string;
    freeTierLimit: number;
    displayName: string;
    description: string;
@@ -32,7 +28,6 @@ interface EventPricing {
 }
 
 const EVENT_PRICING: EventPricing[] = [
-   // Finance
    {
       eventName: FINANCE_EVENTS["finance.transaction_created"],
       category: EVENT_CATEGORIES.finance,
@@ -78,7 +73,6 @@ const EVENT_PRICING: EventPricing[] = [
       description: "Registrada quando uma tag de transação é criada.",
       isBillable: false,
    },
-   // AI
    {
       eventName: AI_EVENTS["ai.chat_message"],
       category: EVENT_CATEGORIES.ai,
@@ -97,7 +91,6 @@ const EVENT_PRICING: EventPricing[] = [
       description: "Registrada por ação discreta de um agente IA.",
       isBillable: true,
    },
-   // Webhooks
    {
       eventName: WEBHOOK_EVENTS["webhook.endpoint.created"],
       category: EVENT_CATEGORIES.webhook,
@@ -134,7 +127,6 @@ const EVENT_PRICING: EventPricing[] = [
       description: "Registrada por entrega bem-sucedida de webhook.",
       isBillable: true,
    },
-   // Dashboards
    {
       eventName: DASHBOARD_EVENTS["dashboard.created"],
       category: EVENT_CATEGORIES.dashboard,
@@ -162,7 +154,6 @@ const EVENT_PRICING: EventPricing[] = [
       description: "Registrada quando um dashboard é deletado.",
       isBillable: false,
    },
-   // Insights
    {
       eventName: INSIGHT_EVENTS["insight.created"],
       category: EVENT_CATEGORIES.insight,
@@ -190,7 +181,6 @@ const EVENT_PRICING: EventPricing[] = [
       description: "Registrada quando um insight é deletado.",
       isBillable: false,
    },
-   // Contacts
    {
       eventName: CONTACT_EVENTS["contact.created"],
       category: EVENT_CATEGORIES.contact,
@@ -218,7 +208,6 @@ const EVENT_PRICING: EventPricing[] = [
       description: "Registrada quando um contato é deletado.",
       isBillable: false,
    },
-   // Inventory
    {
       eventName: INVENTORY_EVENTS["inventory.item_created"],
       category: EVENT_CATEGORIES.inventory,
@@ -246,7 +235,6 @@ const EVENT_PRICING: EventPricing[] = [
       description: "Registrada quando um item de estoque é deletado.",
       isBillable: false,
    },
-   // Services
    {
       eventName: SERVICE_EVENTS["service.created"],
       category: EVENT_CATEGORIES.service,
@@ -274,7 +262,6 @@ const EVENT_PRICING: EventPricing[] = [
       description: "Registrada quando um serviço é deletado.",
       isBillable: false,
    },
-   // NF-e
    {
       eventName: NFE_EVENTS["nfe.emitted"],
       category: EVENT_CATEGORIES.nfe,
@@ -293,7 +280,6 @@ const EVENT_PRICING: EventPricing[] = [
       description: "Registrada quando uma NF-e é cancelada.",
       isBillable: false,
    },
-   // Document Signature
    {
       eventName: DOCUMENT_EVENTS["document.signed"],
       category: EVENT_CATEGORIES.document,
@@ -304,6 +290,16 @@ const EVENT_PRICING: EventPricing[] = [
       isBillable: true,
    },
 ];
+
+const colors = {
+   blue: chalk.blue,
+   cyan: chalk.cyan,
+   green: chalk.green,
+   red: chalk.red,
+   yellow: chalk.yellow,
+};
+
+const DATABASE_PACKAGE_DIR = path.join(process.cwd(), "core", "database");
 
 function toSeedEntry(pricing: EventPricing) {
    return {
@@ -317,21 +313,7 @@ function toSeedEntry(pricing: EventPricing) {
    };
 }
 
-// ---------------------------------------------------------------------------
-
-const program = new Command();
-
-const colors = {
-   blue: chalk.blue,
-   cyan: chalk.cyan,
-   green: chalk.green,
-   red: chalk.red,
-   yellow: chalk.yellow,
-};
-
-const DATABASE_PACKAGE_DIR = path.join(process.cwd(), "packages", "database");
-
-function getEnvFilePath(env: string): string {
+function getEnvFilePath(env: string) {
    const possibleFiles = [
       `.env.${env}.local`,
       `.env.${env}`,
@@ -341,12 +323,13 @@ function getEnvFilePath(env: string): string {
 
    for (const file of possibleFiles) {
       const filePath = path.join(DATABASE_PACKAGE_DIR, file);
+
       if (fs.existsSync(filePath)) {
          return filePath;
       }
    }
 
-   throw new Error(`No environment file found for ${env} in packages/database`);
+   throw new Error(`No environment file found for ${env} in core/database`);
 }
 
 function loadEnv(env: string) {
@@ -357,10 +340,12 @@ function loadEnv(env: string) {
 
 function requireDatabaseUrl() {
    const databaseUrl = process.env.DATABASE_URL;
+
    if (!databaseUrl) {
       console.error(colors.red("❌ DATABASE_URL is required"));
       process.exit(1);
    }
+
    return databaseUrl;
 }
 
@@ -391,8 +376,11 @@ async function runSeed(env: string, dryRun: boolean) {
    const databaseUrl = requireDatabaseUrl();
 
    if (dryRun) {
-      const inserted = EVENT_PRICING.map(toSeedEntry);
-      printSummary(inserted as Array<typeof eventCatalog.$inferSelect>);
+      printSummary(
+         EVENT_PRICING.map(toSeedEntry) as Array<
+            typeof eventCatalog.$inferSelect
+         >,
+      );
       console.log(
          colors.yellow("\n⚠️  DRY RUN completed - no data was modified"),
       );
@@ -415,102 +403,95 @@ async function runSeed(env: string, dryRun: boolean) {
    console.log(colors.green("\n--- Done ---"));
 }
 
-program
-   .name("seed-event-catalog")
-   .description("Seed the event_catalog table")
-   .version("1.0.0");
+async function checkCatalog(env: string) {
+   loadEnv(env);
+   const databaseUrl = requireDatabaseUrl();
 
-program
-   .command("run")
-   .description("Seed the event catalog")
-   .option(
-      "-e, --env <environment>",
-      "Environment to use (local, production, etc.)",
-      "local",
-   )
-   .option("--dry-run", "Preview changes without modifying data", false)
+   console.log(colors.blue("🔍 Checking event catalog drift...\n"));
+
+   try {
+      const db = createDb({ databaseUrl });
+      const rows = await db
+         .select({ eventName: eventCatalog.eventName })
+         .from(eventCatalog);
+
+      const dbNames = new Set(rows.map((row) => row.eventName));
+      const codeNames = new Set(EVENT_PRICING.map((entry) => entry.eventName));
+      const missingInDb = [...codeNames].filter((name) => !dbNames.has(name));
+      const extraInDb = [...dbNames].filter((name) => !codeNames.has(name));
+
+      if (missingInDb.length > 0) {
+         console.log(
+            colors.red(
+               `❌ ${missingInDb.length} event(s) defined in code but missing from DB catalog:`,
+            ),
+         );
+
+         for (const name of missingInDb) {
+            console.log(colors.red(`   - ${name}`));
+         }
+      }
+
+      if (extraInDb.length > 0) {
+         console.log(
+            colors.yellow(
+               `⚠️  ${extraInDb.length} event(s) in DB catalog but not defined in code (stale rows):`,
+            ),
+         );
+
+         for (const name of extraInDb) {
+            console.log(colors.yellow(`   - ${name}`));
+         }
+      }
+
+      if (missingInDb.length === 0 && extraInDb.length === 0) {
+         console.log(
+            colors.green(
+               `✅ Catalog is in sync. ${codeNames.size} events match.`,
+            ),
+         );
+         return;
+      }
+
+      console.log(
+         colors.red("\n❌ Catalog drift detected. Run: bun run seed:events"),
+      );
+      process.exit(1);
+   } catch (error) {
+      console.error(
+         colors.red("❌ Failed to connect to database or query event_catalog:"),
+         error,
+      );
+      process.exit(1);
+   }
+}
+
+const cli = cac("seed-event-catalog");
+
+cli.command("run")
+   .option("-e, --env <environment>", "Environment to use", {
+      default: "local",
+   })
+   .option("--dry-run", "Preview changes without modifying data")
    .action(async (options) => {
-      await runSeed(options.env, options.dryRun).catch((err) => {
-         console.error(colors.red("Seed failed:"), err);
+      await runSeed(options.env, Boolean(options.dryRun)).catch((error) => {
+         console.error(colors.red("Seed failed:"), error);
          process.exit(1);
       });
    });
 
-program
-   .command("check")
-   .description(
-      "Diff EVENT_PRICING code definitions against the live event_catalog table. Exits non-zero on drift.",
-   )
-   .option(
-      "-e, --env <environment>",
-      "Environment to use (local, production, etc.)",
-      "local",
-   )
+cli.command("check")
+   .option("-e, --env <environment>", "Environment to use", {
+      default: "local",
+   })
    .action(async (options) => {
-      loadEnv(options.env);
-      const databaseUrl = requireDatabaseUrl();
-
-      console.log(colors.blue("🔍 Checking event catalog drift...\n"));
-
-      try {
-         const db = createDb({ databaseUrl });
-
-         const rows = await db
-            .select({ eventName: eventCatalog.eventName })
-            .from(eventCatalog);
-
-         const dbNames = new Set(rows.map((r) => r.eventName));
-         const codeNames = new Set(EVENT_PRICING.map((e) => e.eventName));
-
-         const missingInDb = [...codeNames].filter((n) => !dbNames.has(n));
-         const extraInDb = [...dbNames].filter((n) => !codeNames.has(n));
-
-         if (missingInDb.length > 0) {
-            console.log(
-               colors.red(
-                  `❌ ${missingInDb.length} event(s) defined in code but missing from DB catalog:`,
-               ),
-            );
-            for (const name of missingInDb) {
-               console.log(colors.red(`   - ${name}`));
-            }
-         }
-
-         if (extraInDb.length > 0) {
-            console.log(
-               colors.yellow(
-                  `⚠️  ${extraInDb.length} event(s) in DB catalog but not defined in code (stale rows):`,
-               ),
-            );
-            for (const name of extraInDb) {
-               console.log(colors.yellow(`   - ${name}`));
-            }
-         }
-
-         if (missingInDb.length === 0 && extraInDb.length === 0) {
-            console.log(
-               colors.green(
-                  `✅ Catalog is in sync. ${codeNames.size} events match.`,
-               ),
-            );
-            process.exit(0);
-         } else {
-            console.log(
-               colors.red(
-                  "\n❌ Catalog drift detected. Run: bun run seed:events run",
-               ),
-            );
-            process.exit(1);
-         }
-      } catch (err) {
-         console.error(
-            colors.red(
-               "❌ Failed to connect to database or query event_catalog:",
-            ),
-            err,
-         );
-         process.exit(1);
-      }
+      await checkCatalog(options.env);
    });
 
-program.parse();
+cli.help();
+cli.version("1.0.0");
+cli.parse();
+
+if (cli.args.length === 0) {
+   cli.outputHelp();
+}

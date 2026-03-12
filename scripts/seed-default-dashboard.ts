@@ -1,15 +1,3 @@
-/**
- * Seed Default Dashboard with Insights
- *
- * This script adds default insights and tiles to existing empty dashboards.
- * It's useful when dashboards were created before the default tile logic was added.
- *
- * Usage:
- *   bun run scripts/seed-default-dashboard.ts run
- *   bun run scripts/seed-default-dashboard.ts run --env production
- *   bun run scripts/seed-default-dashboard.ts run --dry-run
- */
-
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { createDb } from "@core/database/client";
@@ -17,11 +5,9 @@ import { dashboards } from "@core/database/schemas/dashboards";
 import { insights } from "@core/database/schemas/insights";
 import { DEFAULT_INSIGHTS } from "@packages/analytics/defaults";
 import chalk from "chalk";
-import { Command } from "commander";
+import { cac } from "cac";
 import { config } from "dotenv";
 import { eq } from "drizzle-orm";
-
-const program = new Command();
 
 const colors = {
    blue: chalk.blue,
@@ -34,7 +20,7 @@ const colors = {
 
 const DATABASE_PACKAGE_DIR = path.join(process.cwd(), "core", "database");
 
-function getEnvFilePath(env: string): string {
+function getEnvFilePath(env: string) {
    const possibleFiles = [
       `.env.${env}.local`,
       `.env.${env}`,
@@ -44,12 +30,13 @@ function getEnvFilePath(env: string): string {
 
    for (const file of possibleFiles) {
       const filePath = path.join(DATABASE_PACKAGE_DIR, file);
+
       if (fs.existsSync(filePath)) {
          return filePath;
       }
    }
 
-   throw new Error(`No environment file found for ${env} in packages/database`);
+   throw new Error(`No environment file found for ${env} in core/database`);
 }
 
 function loadEnv(env: string) {
@@ -60,10 +47,12 @@ function loadEnv(env: string) {
 
 function requireDatabaseUrl() {
    const databaseUrl = process.env.DATABASE_URL;
+
    if (!databaseUrl) {
       console.error(colors.red("❌ DATABASE_URL is required"));
       process.exit(1);
    }
+
    return databaseUrl;
 }
 
@@ -74,12 +63,10 @@ async function runSeed(env: string, dryRun: boolean) {
    console.log(colors.cyan("-".repeat(50)));
 
    loadEnv(env);
-   const databaseUrl = requireDatabaseUrl();
-   const db = createDb({ databaseUrl });
+   const db = createDb({ databaseUrl: requireDatabaseUrl() });
 
    console.log(colors.blue("\n🔍 Finding dashboards without tiles...\n"));
 
-   // Find all default dashboards
    const allDashboards = await db
       .select()
       .from(dashboards)
@@ -89,7 +76,9 @@ async function runSeed(env: string, dryRun: boolean) {
       colors.gray(`   Found ${allDashboards.length} default dashboard(s)\n`),
    );
 
-   const emptyDashboards = allDashboards.filter((d) => d.tiles.length === 0);
+   const emptyDashboards = allDashboards.filter(
+      (dashboard) => dashboard.tiles.length === 0,
+   );
 
    if (emptyDashboards.length === 0) {
       console.log(
@@ -116,17 +105,14 @@ async function runSeed(env: string, dryRun: boolean) {
          ),
       );
 
-      // Check if this org already has insights
       const existingInsights = await db
          .select()
          .from(insights)
          .where(eq(insights.organizationId, dashboard.organizationId));
 
       let insightIds: string[];
-      let createdCount = 0;
 
       if (existingInsights.length >= DEFAULT_INSIGHTS.length) {
-         // Use existing insights
          console.log(
             colors.gray(
                `   ℹ️  Using ${existingInsights.length} existing insights`,
@@ -134,75 +120,73 @@ async function runSeed(env: string, dryRun: boolean) {
          );
          insightIds = existingInsights
             .slice(0, DEFAULT_INSIGHTS.length)
-            .map((i) => i.id);
+            .map((insight) => insight.id);
+      } else if (dryRun) {
+         console.log(
+            colors.yellow(
+               `   [DRY RUN] Would create ${DEFAULT_INSIGHTS.length} insights`,
+            ),
+         );
+         insightIds = Array.from(
+            { length: DEFAULT_INSIGHTS.length },
+            () => "mock-id",
+         );
       } else {
-         // Create new insights
          console.log(
             colors.cyan(
                `   ➕ Creating ${DEFAULT_INSIGHTS.length} default insights...`,
             ),
          );
 
-         if (!dryRun) {
-            const insightRecords = DEFAULT_INSIGHTS.map((def) => ({
-               organizationId: dashboard.organizationId,
-               createdBy: dashboard.createdBy,
-               name: def.name,
-               description: def.description,
-               type: def.type,
-               config: def.config as Record<string, unknown>,
-               defaultSize: def.defaultSize,
-            }));
+         const created = await db
+            .insert(insights)
+            .values(
+               DEFAULT_INSIGHTS.map((definition) => ({
+                  organizationId: dashboard.organizationId,
+                  teamId: dashboard.teamId,
+                  createdBy: dashboard.createdBy,
+                  name: definition.name,
+                  description: definition.description,
+                  type: definition.type,
+                  config: definition.config as Record<string, unknown>,
+                  defaultSize: definition.defaultSize,
+               })),
+            )
+            .returning({ id: insights.id });
 
-            const created = await db
-               .insert(insights)
-               .values(insightRecords)
-               .returning({ id: insights.id });
-
-            insightIds = created.map((r) => r.id);
-            createdCount = insightIds.length;
-            totalInsightsCreated += createdCount;
-
-            console.log(colors.green(`   ✓ Created ${createdCount} insights`));
-         } else {
-            console.log(
-               colors.yellow(
-                  `   [DRY RUN] Would create ${DEFAULT_INSIGHTS.length} insights`,
-               ),
-            );
-            insightIds = Array(DEFAULT_INSIGHTS.length)
-               .fill("")
-               .map(() => "mock-id");
-         }
+         insightIds = created.map((entry) => entry.id);
+         totalInsightsCreated += insightIds.length;
+         console.log(
+            colors.green(`   ✓ Created ${insightIds.length} insights`),
+         );
       }
 
-      // Build tiles
       const tiles = insightIds.map((insightId, index) => ({
          insightId,
          size: DEFAULT_INSIGHTS[index]?.defaultSize || "md",
          order: index,
       }));
 
-      // Update dashboard with tiles
-      if (!dryRun) {
-         await db
-            .update(dashboards)
-            .set({ tiles })
-            .where(eq(dashboards.id, dashboard.id));
-
-         totalDashboardsUpdated++;
-         console.log(
-            colors.green(
-               `   ✓ Added ${tiles.length} tiles to "${dashboard.name}"\n`,
-            ),
-         );
-      } else {
+      if (dryRun) {
          console.log(
             colors.yellow(
                `   [DRY RUN] Would add ${tiles.length} tiles to "${dashboard.name}"\n`,
             ),
          );
+         continue;
       }
+
+      await db
+         .update(dashboards)
+         .set({ tiles })
+         .where(eq(dashboards.id, dashboard.id));
+
+      totalDashboardsUpdated++;
+      console.log(
+         colors.green(
+            `   ✓ Added ${tiles.length} tiles to "${dashboard.name}"\n`,
+         ),
+      );
    }
 
    console.log(colors.cyan("-".repeat(50)));
@@ -220,63 +204,58 @@ async function runSeed(env: string, dryRun: boolean) {
          ),
       );
       console.log(colors.yellow("\n⚠️  DRY RUN - no data was modified\n"));
-   } else {
-      console.log(
-         colors.green(`   ✓ Updated ${totalDashboardsUpdated} dashboard(s)`),
-      );
-      console.log(
-         colors.green(`   ✓ Created ${totalInsightsCreated} insight(s)`),
-      );
-      console.log(colors.green("\n✅ Seeding complete!\n"));
+      return;
    }
+
+   console.log(
+      colors.green(`   ✓ Updated ${totalDashboardsUpdated} dashboard(s)`),
+   );
+   console.log(colors.green(`   ✓ Created ${totalInsightsCreated} insight(s)`));
+   console.log(colors.green("\n✅ Seeding complete!\n"));
 }
 
-program
-   .name("seed-default-dashboard")
-   .description("Add default insights and tiles to empty dashboards")
-   .version("1.0.0");
+function checkConfiguration(env: string) {
+   loadEnv(env);
 
-program
-   .command("run")
-   .description("Seed default dashboards with insights and tiles")
-   .option(
-      "-e, --env <environment>",
-      "Environment to use (local, production, etc.)",
-      "local",
-   )
-   .option("--dry-run", "Preview changes without modifying data", false)
+   console.log(colors.blue("🔍 Checking configuration...\n"));
+
+   if (!process.env.DATABASE_URL) {
+      console.log(colors.red("❌ DATABASE_URL is not set"));
+      process.exit(1);
+   }
+
+   console.log(colors.green("✅ DATABASE_URL is set"));
+   console.log(
+      colors.green(`✅ ${DEFAULT_INSIGHTS.length} default insights configured`),
+   );
+}
+
+const cli = cac("seed-default-dashboard");
+
+cli.command("run")
+   .option("-e, --env <environment>", "Environment to use", {
+      default: "local",
+   })
+   .option("--dry-run", "Preview changes without modifying data")
    .action(async (options) => {
-      await runSeed(options.env, options.dryRun).catch((err) => {
-         console.error(colors.red("\n❌ Seed failed:"), err);
+      await runSeed(options.env, Boolean(options.dryRun)).catch((error) => {
+         console.error(colors.red("\n❌ Seed failed:"), error);
          process.exit(1);
       });
    });
 
-program
-   .command("check")
-   .description("Check required configuration for seeding")
-   .option(
-      "-e, --env <environment>",
-      "Environment to use (local, production, etc.)",
-      "local",
-   )
+cli.command("check")
+   .option("-e, --env <environment>", "Environment to use", {
+      default: "local",
+   })
    .action((options) => {
-      loadEnv(options.env);
-      const databaseUrl = process.env.DATABASE_URL;
-
-      console.log(colors.blue("🔍 Checking configuration...\n"));
-
-      if (!databaseUrl) {
-         console.log(colors.red("❌ DATABASE_URL is not set"));
-         process.exit(1);
-      }
-
-      console.log(colors.green("✅ DATABASE_URL is set"));
-      console.log(
-         colors.green(
-            `✅ ${DEFAULT_INSIGHTS.length} default insights configured`,
-         ),
-      );
+      checkConfiguration(options.env);
    });
 
-program.parse();
+cli.help();
+cli.version("1.0.0");
+cli.parse();
+
+if (cli.args.length === 0) {
+   cli.outputHelp();
+}
