@@ -1,12 +1,19 @@
 import { call } from "@orpc/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-   TEST_TEAM_ID,
-   createTestContext,
-} from "../../../helpers/create-test-context";
+   afterAll,
+   beforeAll,
+   beforeEach,
+   describe,
+   expect,
+   it,
+   vi,
+} from "vitest";
 
-vi.mock("@core/database/client", () => ({ db: {} }));
-vi.mock("@core/database/repositories/categories-repository");
+vi.mock("@core/database/client", async () => {
+   const { setupIntegrationDb } =
+      await import("../../../helpers/setup-integration-test");
+   return { db: await setupIntegrationDb(), createDb: () => {} };
+});
 vi.mock("@core/arcjet/protect", () => ({
    protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
    isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
@@ -16,203 +23,361 @@ vi.mock("@core/posthog/server", () => ({
    captureServerEvent: vi.fn(),
    identifyUser: vi.fn(),
    setGroup: vi.fn(),
+   posthog: {
+      capture: vi.fn(),
+      identify: vi.fn(),
+      groupIdentify: vi.fn(),
+      shutdown: vi.fn(),
+   },
 }));
 
+import { categories } from "@core/database/schemas/categories";
+import { transactions } from "@core/database/schemas/transactions";
+import { sql } from "drizzle-orm";
 import {
-   archiveCategory,
-   createCategory,
-   deleteCategory,
-   ensureCategoryOwnership,
-   listCategories,
-   updateCategory,
-} from "@core/database/repositories/categories-repository";
-import { AppError } from "@core/logging/errors";
+   cleanupIntegrationTest,
+   setupIntegrationTest,
+} from "../../../helpers/setup-integration-test";
+import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import * as categoriesRouter from "@/integrations/orpc/router/categories";
 
-const CATEGORY_ID = "a0000000-0000-4000-8000-000000000001";
+let ctx: ORPCContextWithAuth;
+let ctx2: ORPCContextWithAuth;
 
-const mockCategory = {
-   id: CATEGORY_ID,
-   teamId: TEST_TEAM_ID,
-   parentId: null,
-   name: "Alimentação",
-   type: "expense" as const,
-   level: 1,
-   description: null,
-   isDefault: false,
-   color: "#ef4444",
-   icon: null,
-   isArchived: false,
-   keywords: null,
-   notes: null,
-   participatesDre: false,
-   dreGroupId: null,
-   createdAt: new Date(),
-   updatedAt: new Date(),
-};
+beforeAll(async () => {
+   const { createAuthenticatedContext } = await setupIntegrationTest();
+   ctx = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
+   ctx2 = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
+});
 
-beforeEach(() => {
-   vi.clearAllMocks();
+afterAll(async () => {
+   await cleanupIntegrationTest();
+});
+
+beforeEach(async () => {
+   await ctx.db.execute(sql`DELETE FROM transactions`);
+   await ctx.db.execute(sql`DELETE FROM categories`);
 });
 
 describe("create", () => {
-   it("creates a category", async () => {
-      vi.mocked(createCategory).mockResolvedValueOnce(mockCategory);
-
+   it("creates a category and persists it", async () => {
       const result = await call(
          categoriesRouter.create,
-         {
-            name: "Alimentação",
-            type: "expense",
-         },
-         { context: createTestContext() },
+         { name: "Alimentação", type: "expense" },
+         { context: ctx },
       );
 
-      expect(result).toEqual(mockCategory);
-      expect(createCategory).toHaveBeenCalledWith(
-         TEST_TEAM_ID,
-         expect.objectContaining({ name: "Alimentação" }),
+      expect(result.name).toBe("Alimentação");
+      expect(result.type).toBe("expense");
+      expect(result.level).toBe(1);
+      expect(result.isDefault).toBe(false);
+
+      const rows = await ctx.db.query.categories.findMany();
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.id).toBe(result.id);
+   });
+
+   it("creates a subcategory under a parent", async () => {
+      const parent = await call(
+         categoriesRouter.create,
+         { name: "Alimentação", type: "expense" },
+         { context: ctx },
       );
+
+      const child = await call(
+         categoriesRouter.create,
+         { name: "Restaurantes", type: "expense", parentId: parent.id },
+         { context: ctx },
+      );
+
+      expect(child.parentId).toBe(parent.id);
+      expect(child.level).toBe(2);
+      expect(child.type).toBe("expense");
+   });
+
+   it("creates a category with keywords", async () => {
+      const result = await call(
+         categoriesRouter.create,
+         { name: "Transporte", type: "expense", keywords: ["uber", "taxi"] },
+         { context: ctx },
+      );
+
+      expect(result.keywords).toEqual(["uber", "taxi"]);
    });
 });
 
 describe("getAll", () => {
-   it("lists categories", async () => {
-      vi.mocked(listCategories).mockResolvedValueOnce([mockCategory]);
+   it("lists categories for the team", async () => {
+      await call(
+         categoriesRouter.create,
+         { name: "Alimentação", type: "expense" },
+         { context: ctx },
+      );
+      await call(
+         categoriesRouter.create,
+         { name: "Salário", type: "income" },
+         { context: ctx },
+      );
 
       const result = await call(categoriesRouter.getAll, undefined, {
-         context: createTestContext(),
+         context: ctx,
       });
 
-      expect(result).toEqual([mockCategory]);
-      expect(listCategories).toHaveBeenCalledWith(TEST_TEAM_ID, {
-         type: undefined,
-         includeArchived: undefined,
-      });
+      expect(result).toHaveLength(2);
    });
 
    it("filters by type", async () => {
-      vi.mocked(listCategories).mockResolvedValueOnce([mockCategory]);
-
       await call(
-         categoriesRouter.getAll,
-         { type: "expense" },
-         { context: createTestContext() },
+         categoriesRouter.create,
+         { name: "Alimentação", type: "expense" },
+         { context: ctx },
+      );
+      await call(
+         categoriesRouter.create,
+         { name: "Salário", type: "income" },
+         { context: ctx },
       );
 
-      expect(listCategories).toHaveBeenCalledWith(TEST_TEAM_ID, {
-         type: "expense",
-         includeArchived: undefined,
+      const result = await call(
+         categoriesRouter.getAll,
+         { type: "expense" },
+         { context: ctx },
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]!.name).toBe("Alimentação");
+   });
+
+   it("excludes archived categories by default", async () => {
+      const created = await call(
+         categoriesRouter.create,
+         { name: "Lazer", type: "expense" },
+         { context: ctx },
+      );
+
+      await call(
+         categoriesRouter.archive,
+         { id: created.id },
+         { context: ctx },
+      );
+
+      const result = await call(categoriesRouter.getAll, undefined, {
+         context: ctx,
       });
+      expect(result).toHaveLength(0);
+   });
+
+   it("includes archived when requested", async () => {
+      const created = await call(
+         categoriesRouter.create,
+         { name: "Lazer", type: "expense" },
+         { context: ctx },
+      );
+
+      await call(
+         categoriesRouter.archive,
+         { id: created.id },
+         { context: ctx },
+      );
+
+      const result = await call(
+         categoriesRouter.getAll,
+         { includeArchived: true },
+         { context: ctx },
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0]!.isArchived).toBe(true);
+   });
+
+   it("does not return categories from another team", async () => {
+      await call(
+         categoriesRouter.create,
+         { name: "Alimentação", type: "expense" },
+         { context: ctx },
+      );
+
+      const result = await call(categoriesRouter.getAll, undefined, {
+         context: ctx2,
+      });
+      expect(result).toHaveLength(0);
    });
 });
 
 describe("update", () => {
    it("updates category after ownership check", async () => {
-      vi.mocked(ensureCategoryOwnership).mockResolvedValueOnce(mockCategory);
-      const updated = { ...mockCategory, name: "Alimentação e Bebidas" };
-      vi.mocked(updateCategory).mockResolvedValueOnce(updated);
+      const created = await call(
+         categoriesRouter.create,
+         { name: "Alimentação", type: "expense" },
+         { context: ctx },
+      );
 
-      const result = await call(
+      const updated = await call(
          categoriesRouter.update,
-         { id: CATEGORY_ID, name: "Alimentação e Bebidas" },
-         { context: createTestContext() },
+         { id: created.id, name: "Alimentação e Bebidas" },
+         { context: ctx },
       );
 
-      expect(result.name).toBe("Alimentação e Bebidas");
-      expect(ensureCategoryOwnership).toHaveBeenCalledWith(
-         CATEGORY_ID,
-         TEST_TEAM_ID,
-      );
+      expect(updated.name).toBe("Alimentação e Bebidas");
+
+      const fromDb = await ctx.db.query.categories.findFirst({
+         where: { id: created.id },
+      });
+      expect(fromDb!.name).toBe("Alimentação e Bebidas");
    });
 
-   it("propagates NOT_FOUND from repository", async () => {
-      vi.mocked(ensureCategoryOwnership).mockRejectedValueOnce(
-         AppError.notFound("Categoria não encontrada."),
+   it("rejects update from a different team", async () => {
+      const created = await call(
+         categoriesRouter.create,
+         { name: "Alimentação", type: "expense" },
+         { context: ctx },
       );
 
       await expect(
          call(
             categoriesRouter.update,
-            { id: CATEGORY_ID, name: "Test" },
-            {
-               context: createTestContext(),
-            },
+            { id: created.id, name: "Hacked" },
+            { context: ctx2 },
          ),
       ).rejects.toThrow("Categoria não encontrada.");
+   });
+
+   it("rejects update on default categories", async () => {
+      await ctx.db.insert(categories).values({
+         teamId: ctx.session.session.activeTeamId!,
+         name: "Default Cat",
+         type: "expense",
+         level: 1,
+         isDefault: true,
+      });
+
+      const rows = await ctx.db.query.categories.findMany();
+      const defaultCat = rows[0]!;
+
+      await expect(
+         call(
+            categoriesRouter.update,
+            { id: defaultCat.id, name: "Changed" },
+            { context: ctx },
+         ),
+      ).rejects.toThrow("Categorias padrão não podem ser editadas.");
    });
 });
 
 describe("remove", () => {
-   it("deletes category after ownership check", async () => {
-      vi.mocked(ensureCategoryOwnership).mockResolvedValueOnce(mockCategory);
-      vi.mocked(deleteCategory).mockResolvedValueOnce(undefined);
+   it("deletes category with no transactions", async () => {
+      const created = await call(
+         categoriesRouter.create,
+         { name: "Deletar", type: "expense" },
+         { context: ctx },
+      );
 
       const result = await call(
          categoriesRouter.remove,
-         { id: CATEGORY_ID },
-         { context: createTestContext() },
+         { id: created.id },
+         { context: ctx },
       );
 
       expect(result).toEqual({ success: true });
-      expect(deleteCategory).toHaveBeenCalledWith(CATEGORY_ID);
+
+      const rows = await ctx.db.query.categories.findMany();
+      expect(rows).toHaveLength(0);
    });
 
-   it("propagates NOT_FOUND from repository", async () => {
-      vi.mocked(ensureCategoryOwnership).mockRejectedValueOnce(
-         AppError.notFound("Categoria não encontrada."),
+   it("rejects deletion from a different team", async () => {
+      const created = await call(
+         categoriesRouter.create,
+         { name: "Private", type: "expense" },
+         { context: ctx },
       );
 
       await expect(
-         call(
-            categoriesRouter.remove,
-            { id: CATEGORY_ID },
-            {
-               context: createTestContext(),
-            },
-         ),
+         call(categoriesRouter.remove, { id: created.id }, { context: ctx2 }),
       ).rejects.toThrow("Categoria não encontrada.");
    });
 
-   it("propagates CONFLICT when category has transactions", async () => {
-      vi.mocked(ensureCategoryOwnership).mockResolvedValueOnce(mockCategory);
-      vi.mocked(deleteCategory).mockRejectedValueOnce(
-         AppError.conflict(
-            "Categoria com lançamentos não pode ser excluída. Use arquivamento.",
-         ),
+   it("rejects deletion when category has transactions", async () => {
+      const created = await call(
+         categoriesRouter.create,
+         { name: "Com Lançamentos", type: "expense" },
+         { context: ctx },
       );
 
+      const teamId = ctx.session.session.activeTeamId!;
+
+      const [bankAccount] = await ctx.db
+         .insert(
+            (await import("@core/database/schemas/bank-accounts")).bankAccounts,
+         )
+         .values({ teamId, name: "Test Account", type: "checking" })
+         .returning();
+
+      await ctx.db.insert(transactions).values({
+         teamId,
+         type: "expense",
+         amount: "50.00",
+         date: "2025-01-15",
+         categoryId: created.id,
+         bankAccountId: bankAccount!.id,
+      });
+
       await expect(
-         call(
-            categoriesRouter.remove,
-            { id: CATEGORY_ID },
-            {
-               context: createTestContext(),
-            },
-         ),
+         call(categoriesRouter.remove, { id: created.id }, { context: ctx }),
       ).rejects.toThrow("Categoria com lançamentos não pode ser excluída.");
+   });
+
+   it("rejects deletion of default categories", async () => {
+      await ctx.db.insert(categories).values({
+         teamId: ctx.session.session.activeTeamId!,
+         name: "Default Cat",
+         type: "expense",
+         level: 1,
+         isDefault: true,
+      });
+
+      const rows = await ctx.db.query.categories.findMany();
+      const defaultCat = rows[0]!;
+
+      await expect(
+         call(categoriesRouter.remove, { id: defaultCat.id }, { context: ctx }),
+      ).rejects.toThrow("Categorias padrão não podem ser excluídas.");
    });
 });
 
 describe("exportAll", () => {
    it("returns all categories including archived", async () => {
-      vi.mocked(listCategories).mockResolvedValueOnce([mockCategory]);
+      const created = await call(
+         categoriesRouter.create,
+         { name: "Lazer", type: "expense" },
+         { context: ctx },
+      );
+      await call(
+         categoriesRouter.create,
+         { name: "Salário", type: "income" },
+         { context: ctx },
+      );
+
+      await call(
+         categoriesRouter.archive,
+         { id: created.id },
+         { context: ctx },
+      );
 
       const result = await call(categoriesRouter.exportAll, undefined, {
-         context: createTestContext(),
+         context: ctx,
       });
 
-      expect(result).toEqual([mockCategory]);
-      expect(listCategories).toHaveBeenCalledWith(TEST_TEAM_ID, {
-         includeArchived: true,
-      });
+      expect(result).toHaveLength(2);
    });
 });
 
 describe("importBatch", () => {
-   it("creates multiple categories", async () => {
-      vi.mocked(createCategory).mockResolvedValue(mockCategory);
-
+   it("creates multiple categories and persists them", async () => {
       const result = await call(
          categoriesRouter.importBatch,
          {
@@ -221,46 +386,87 @@ describe("importBatch", () => {
                { name: "Salário", type: "income" },
             ],
          },
-         { context: createTestContext() },
+         { context: ctx },
       );
 
       expect(result).toHaveLength(2);
-      expect(createCategory).toHaveBeenCalledTimes(2);
+
+      const rows = await ctx.db.query.categories.findMany();
+      expect(rows).toHaveLength(2);
    });
 });
 
 describe("archive", () => {
-   it("archives category after ownership check", async () => {
-      vi.mocked(ensureCategoryOwnership).mockResolvedValueOnce(mockCategory);
-      const archived = { ...mockCategory, isArchived: true };
-      vi.mocked(archiveCategory).mockResolvedValueOnce(archived);
+   it("archives category and persists the change", async () => {
+      const created = await call(
+         categoriesRouter.create,
+         { name: "Lazer", type: "expense" },
+         { context: ctx },
+      );
 
       const result = await call(
          categoriesRouter.archive,
-         { id: CATEGORY_ID },
-         { context: createTestContext() },
+         { id: created.id },
+         { context: ctx },
       );
 
-      expect(result.isArchived).toBe(true);
-      expect(ensureCategoryOwnership).toHaveBeenCalledWith(
-         CATEGORY_ID,
-         TEST_TEAM_ID,
-      );
+      expect(result!.isArchived).toBe(true);
+
+      const fromDb = await ctx.db.query.categories.findFirst({
+         where: { id: created.id },
+      });
+      expect(fromDb!.isArchived).toBe(true);
    });
 
-   it("propagates NOT_FOUND from repository", async () => {
-      vi.mocked(ensureCategoryOwnership).mockRejectedValueOnce(
-         AppError.notFound("Categoria não encontrada."),
+   it("rejects archive from a different team", async () => {
+      const created = await call(
+         categoriesRouter.create,
+         { name: "Private", type: "expense" },
+         { context: ctx },
       );
+
+      await expect(
+         call(categoriesRouter.archive, { id: created.id }, { context: ctx2 }),
+      ).rejects.toThrow("Categoria não encontrada.");
+   });
+
+   it("rejects archive of default categories", async () => {
+      await ctx.db.insert(categories).values({
+         teamId: ctx.session.session.activeTeamId!,
+         name: "Default Cat",
+         type: "expense",
+         level: 1,
+         isDefault: true,
+      });
+
+      const rows = await ctx.db.query.categories.findMany();
+      const defaultCat = rows[0]!;
 
       await expect(
          call(
             categoriesRouter.archive,
-            { id: CATEGORY_ID },
-            {
-               context: createTestContext(),
-            },
+            { id: defaultCat.id },
+            { context: ctx },
          ),
-      ).rejects.toThrow("Categoria não encontrada.");
+      ).rejects.toThrow("Categorias padrão não podem ser arquivadas.");
+   });
+
+   it("archives descendants too", async () => {
+      const parent = await call(
+         categoriesRouter.create,
+         { name: "Alimentação", type: "expense" },
+         { context: ctx },
+      );
+      await call(
+         categoriesRouter.create,
+         { name: "Restaurantes", type: "expense", parentId: parent.id },
+         { context: ctx },
+      );
+
+      await call(categoriesRouter.archive, { id: parent.id }, { context: ctx });
+
+      const rows = await ctx.db.query.categories.findMany();
+      expect(rows).toHaveLength(2);
+      expect(rows.every((r) => r.isArchived)).toBe(true);
    });
 });

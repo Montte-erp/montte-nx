@@ -7,29 +7,37 @@ import {
 } from "../../../helpers/create-test-context";
 import { makeDashboard } from "../../../helpers/mock-factories";
 
-// ---------------------------------------------------------------------------
-// Mocks
-// ---------------------------------------------------------------------------
-
+vi.mock("@core/database/client", () => ({ db: {} }));
 vi.mock("@core/database/repositories/dashboard-repository");
+vi.mock("@core/arcjet/protect", () => ({
+   protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
+   isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
+}));
+vi.mock("@core/posthog/server", () => ({
+   captureError: vi.fn(),
+   captureServerEvent: vi.fn(),
+   identifyUser: vi.fn(),
+   setGroup: vi.fn(),
+}));
 vi.mock("@packages/events/dashboard");
+vi.mock("@packages/events/emit");
+vi.mock("@core/redis/connection", () => ({
+   redis: {},
+   getRedisConnection: vi.fn(),
+}));
 
 import {
    createDashboard,
-   getDashboardById,
+   ensureDashboardOwnership,
    listDashboardsByTeam,
 } from "@core/database/repositories/dashboard-repository";
+import { AppError } from "@core/logging/errors";
 import {
    emitDashboardCreated,
    emitDashboardDeleted,
    emitDashboardUpdated,
 } from "@packages/events/dashboard";
-
 import * as dashboardsRouter from "@/integrations/orpc/router/dashboards";
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
 
 const TEAM_A_ID = "team-a-00000000-0000-0000-0000-000000000001";
 const TEAM_B_ID = "team-b-00000000-0000-0000-0000-000000000002";
@@ -44,20 +52,12 @@ function createTeamContext(teamId: string) {
    });
 }
 
-// ---------------------------------------------------------------------------
-// Setup
-// ---------------------------------------------------------------------------
-
 beforeEach(() => {
    vi.clearAllMocks();
    vi.mocked(emitDashboardCreated).mockResolvedValue(undefined);
    vi.mocked(emitDashboardUpdated).mockResolvedValue(undefined);
    vi.mocked(emitDashboardDeleted).mockResolvedValue(undefined);
 });
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe("Dashboards Team Scoping", () => {
    it("should create dashboard scoped to active team", async () => {
@@ -94,10 +94,7 @@ describe("Dashboards Team Scoping", () => {
       expect(results).toHaveLength(1);
       expect(results[0].name).toBe("Team A Dashboard");
       expect(results[0].teamId).toBe(TEAM_A_ID);
-      expect(listDashboardsByTeam).toHaveBeenCalledWith(
-         expect.anything(),
-         TEAM_A_ID,
-      );
+      expect(listDashboardsByTeam).toHaveBeenCalledWith(TEAM_A_ID);
    });
 
    it("should isolate dashboards when switching teams", async () => {
@@ -112,14 +109,12 @@ describe("Dashboards Team Scoping", () => {
          name: "Dashboard B",
       });
 
-      // Team A active
       vi.mocked(listDashboardsByTeam).mockResolvedValueOnce([dashA]);
       let context = createTeamContext(TEAM_A_ID);
       let results = await call(dashboardsRouter.list, undefined, { context });
       expect(results).toHaveLength(1);
       expect(results[0].name).toBe("Dashboard A");
 
-      // Team B active
       vi.mocked(listDashboardsByTeam).mockResolvedValueOnce([dashB]);
       context = createTeamContext(TEAM_B_ID);
       results = await call(dashboardsRouter.list, undefined, { context });
@@ -128,41 +123,50 @@ describe("Dashboards Team Scoping", () => {
    });
 
    it("should not allow access to dashboard from different team", async () => {
-      // Dashboard belongs to Team A
-      const dashboard = makeDashboard({ teamId: TEAM_A_ID });
-      vi.mocked(getDashboardById).mockResolvedValueOnce(dashboard);
+      vi.mocked(ensureDashboardOwnership).mockRejectedValueOnce(
+         AppError.notFound("Dashboard não encontrado."),
+      );
 
-      // Access with Team B context
       const context = createTeamContext(TEAM_B_ID);
 
       await expect(
-         call(dashboardsRouter.getById, { id: dashboard.id }, { context }),
-      ).rejects.toThrow("Dashboard not found");
+         call(
+            dashboardsRouter.getById,
+            { id: "d0d0d0d0-e1e1-4f2f-a3a3-b4b4b4b4b4b4" },
+            { context },
+         ),
+      ).rejects.toThrow("Dashboard não encontrado.");
    });
 
    it("should not allow updating dashboard from different team", async () => {
-      const dashboard = makeDashboard({ teamId: TEAM_A_ID });
-      vi.mocked(getDashboardById).mockResolvedValueOnce(dashboard);
+      vi.mocked(ensureDashboardOwnership).mockRejectedValueOnce(
+         AppError.notFound("Dashboard não encontrado."),
+      );
 
       const context = createTeamContext(TEAM_B_ID);
 
       await expect(
          call(
             dashboardsRouter.update,
-            { id: dashboard.id, name: "Updated" },
+            { id: "d0d0d0d0-e1e1-4f2f-a3a3-b4b4b4b4b4b4", name: "Updated" },
             { context },
          ),
-      ).rejects.toThrow("Dashboard not found");
+      ).rejects.toThrow("Dashboard não encontrado.");
    });
 
    it("should not allow deleting dashboard from different team", async () => {
-      const dashboard = makeDashboard({ teamId: TEAM_A_ID });
-      vi.mocked(getDashboardById).mockResolvedValueOnce(dashboard);
+      vi.mocked(ensureDashboardOwnership).mockRejectedValueOnce(
+         AppError.notFound("Dashboard não encontrado."),
+      );
 
       const context = createTeamContext(TEAM_B_ID);
 
       await expect(
-         call(dashboardsRouter.remove, { id: dashboard.id }, { context }),
-      ).rejects.toThrow("Dashboard not found");
+         call(
+            dashboardsRouter.remove,
+            { id: "d0d0d0d0-e1e1-4f2f-a3a3-b4b4b4b4b4b4" },
+            { context },
+         ),
+      ).rejects.toThrow("Dashboard não encontrado.");
    });
 });

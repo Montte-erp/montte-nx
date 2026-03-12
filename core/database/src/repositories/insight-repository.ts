@@ -111,6 +111,22 @@ export async function updateInsight(
    }
 }
 
+export async function ensureInsightOwnership(
+   insightId: string,
+   organizationId: string,
+   teamId: string,
+) {
+   const insight = await getInsightById(insightId);
+   if (
+      !insight ||
+      insight.organizationId !== organizationId ||
+      insight.teamId !== teamId
+   ) {
+      throw AppError.notFound("Insight não encontrado.");
+   }
+   return insight;
+}
+
 export async function deleteInsight(insightId: string) {
    try {
       await db.delete(insights).where(eq(insights.id, insightId));

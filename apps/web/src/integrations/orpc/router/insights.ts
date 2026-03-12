@@ -1,10 +1,9 @@
-import { ORPCError } from "@orpc/server";
 import { computeInsightData } from "@packages/analytics/compute-insight";
-import { insightConfigSchema } from "@packages/analytics/types";
-import { getDashboardById } from "@core/database/repositories/dashboard-repository";
+import { ensureDashboardOwnership } from "@core/database/repositories/dashboard-repository";
 import {
    createInsight,
    deleteInsight,
+   ensureInsightOwnership,
    getInsightById,
    listInsightsByTeam,
    updateInsight,
@@ -17,13 +16,17 @@ import {
    emitInsightUpdated,
 } from "@packages/events/insight";
 import { getLogger } from "@core/logging/root";
+import { insightConfigSchema } from "@packages/analytics/types";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
+import { db } from "@core/database/client";
 
 const logger = getLogger().child({ module: "router:insights" });
 
-const createInsightSchema = z.object({
+const idSchema = z.object({ id: z.string().uuid() });
+
+const createInputSchema = z.object({
    name: z.string().min(1),
    description: z.string().optional(),
    type: z.enum(["kpi", "time_series", "breakdown"]),
@@ -31,23 +34,21 @@ const createInsightSchema = z.object({
    defaultSize: z.enum(["sm", "md", "lg", "full"]).optional().default("md"),
 });
 
-const updateInsightSchema = z.object({
-   id: z.string().uuid(),
-   name: z.string().min(1).optional(),
-   description: z.string().optional(),
-   config: insightConfigSchema.optional(),
-   defaultSize: z.enum(["sm", "md", "lg", "full"]).optional(),
-});
+const updateInputSchema = idSchema.merge(
+   z.object({
+      name: z.string().min(1).optional(),
+      description: z.string().optional(),
+      config: insightConfigSchema.optional(),
+      defaultSize: z.enum(["sm", "md", "lg", "full"]).optional(),
+   }),
+);
 
 export const create = protectedProcedure
-   .input(createInsightSchema)
+   .input(createInputSchema)
    .handler(async ({ context, input }) => {
-      const { organizationId, userId, db, posthog, teamId } = context;
+      const { organizationId, userId, teamId, posthog } = context;
 
-      const insight = await createInsight(db, {
-         organizationId,
-         teamId,
-         createdBy: userId,
+      const insight = await createInsight(organizationId, teamId, userId, {
          name: input.name,
          description: input.description,
          type: input.type,
@@ -61,9 +62,7 @@ export const create = protectedProcedure
             { organizationId, userId, teamId },
             { insightId: insight.id, name: input.name },
          );
-      } catch {
-         // Event emission must not break the main flow
-      }
+      } catch {}
 
       return insight;
    });
@@ -77,47 +76,28 @@ export const list = protectedProcedure
          .optional(),
    )
    .handler(async ({ context, input }) => {
-      const { teamId, db } = context;
-      return await listInsightsByTeam(db, teamId, input?.type);
+      return listInsightsByTeam(context.teamId, input?.type);
    });
 
 export const getById = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idSchema)
    .handler(async ({ context, input }) => {
-      const { organizationId, teamId, db } = context;
-      const insight = await getInsightById(db, input.id);
-
-      if (
-         !insight ||
-         insight.organizationId !== organizationId ||
-         insight.teamId !== teamId
-      ) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Insight not found.",
-         });
-      }
-
-      return insight;
+      return ensureInsightOwnership(
+         input.id,
+         context.organizationId,
+         context.teamId,
+      );
    });
 
 export const update = protectedProcedure
-   .input(updateInsightSchema)
+   .input(updateInputSchema)
    .handler(async ({ context, input }) => {
-      const { organizationId, db, posthog, userId, teamId } = context;
-      const insight = await getInsightById(db, input.id);
+      const { organizationId, userId, teamId, posthog } = context;
 
-      if (
-         !insight ||
-         insight.organizationId !== organizationId ||
-         insight.teamId !== teamId
-      ) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Insight not found.",
-         });
-      }
+      await ensureInsightOwnership(input.id, organizationId, teamId);
 
-      const { id: _, ...updateData } = input;
-      const updated = await updateInsight(db, input.id, updateData);
+      const { id, ...updateData } = input;
+      const updated = await updateInsight(id, updateData);
 
       try {
          const changedFields = Object.keys(updateData).filter(
@@ -126,32 +106,20 @@ export const update = protectedProcedure
          await emitInsightUpdated(
             createEmitFn(db, posthog),
             { organizationId, userId, teamId },
-            { insightId: input.id, changedFields },
+            { insightId: id, changedFields },
          );
-      } catch {
-         // Event emission must not break the main flow
-      }
+      } catch {}
 
       return updated;
    });
 
 export const remove = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idSchema)
    .handler(async ({ context, input }) => {
-      const { organizationId, db, posthog, userId, teamId } = context;
-      const insight = await getInsightById(db, input.id);
+      const { organizationId, userId, teamId, posthog } = context;
 
-      if (
-         !insight ||
-         insight.organizationId !== organizationId ||
-         insight.teamId !== teamId
-      ) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Insight not found.",
-         });
-      }
-
-      await deleteInsight(db, input.id);
+      await ensureInsightOwnership(input.id, organizationId, teamId);
+      await deleteInsight(input.id);
 
       try {
          await emitInsightDeleted(
@@ -159,44 +127,29 @@ export const remove = protectedProcedure
             { organizationId, userId, teamId },
             { insightId: input.id },
          );
-      } catch {
-         // Event emission must not break the main flow
-      }
+      } catch {}
 
       return { success: true };
    });
 
-/**
- * Refresh cached results for all insights on a specific dashboard.
- * This is triggered manually by the user via the dashboard refresh button.
- */
 export const refreshDashboard = protectedProcedure
    .input(z.object({ dashboardId: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { organizationId, teamId, db } = context;
+      const { organizationId, teamId } = context;
 
-      // Verify dashboard ownership
-      const dashboard = await getDashboardById(db, input.dashboardId);
+      const dashboard = await ensureDashboardOwnership(
+         input.dashboardId,
+         organizationId,
+         teamId,
+      );
 
-      if (
-         !dashboard ||
-         dashboard.organizationId !== organizationId ||
-         dashboard.teamId !== teamId
-      ) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Dashboard not found.",
-         });
-      }
-
-      // Extract unique insight IDs from dashboard tiles
       const insightIds = [
          ...new Set(dashboard.tiles.map((tile) => tile.insightId)),
       ];
 
-      // Refresh each insight's cached data in parallel
       const refreshPromises = insightIds.map(async (insightId) => {
          try {
-            const insight = await getInsightById(db, insightId);
+            const insight = await getInsightById(insightId);
             if (!insight) {
                logger.warn({ insightId }, "Insight not found during refresh");
                return;
@@ -216,7 +169,6 @@ export const refreshDashboard = protectedProcedure
                { err: error, insightId },
                "Failed to refresh insight",
             );
-            // Continue with other insights even if one fails
          }
       });
 

@@ -1,21 +1,17 @@
-import { ORPCError } from "@orpc/server";
 import { generatePresignedPutUrl } from "@core/files/client";
+import { WebAppError } from "@core/logging/errors";
 import { getLogger } from "@core/logging/root";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
 const logger = getLogger().child({ module: "router:account" });
 
-/**
- * Verify the user's current password
- */
 export const verifyPassword = protectedProcedure
    .input(z.object({ password: z.string() }))
    .handler(async ({ context, input }) => {
       const { auth, headers } = context;
 
       try {
-         // Use Better Auth's verify password endpoint
          await auth.api.verifyPassword({
             headers,
             body: { password: input.password },
@@ -26,93 +22,44 @@ export const verifyPassword = protectedProcedure
       }
    });
 
-/**
- * Check if user has a password set (vs. OAuth-only)
- */
 export const hasPassword = protectedProcedure.handler(async ({ context }) => {
    const { auth, headers } = context;
 
    try {
       const accounts = await auth.api.listUserAccounts({ headers });
       const hasCredential = accounts.some(
-         (account) => account.providerId === "credential",
+         (account: { providerId: string }) =>
+            account.providerId === "credential",
       );
       return { hasPassword: hasCredential };
-   } catch (error) {
-      // Convert Better Auth API errors to ORPCError
-      if (error && typeof error === "object" && "status" in error) {
-         const apiError = error as { status: string; statusCode?: number };
-
-         if (
-            apiError.status === "UNAUTHORIZED" ||
-            apiError.statusCode === 401
-         ) {
-            throw new ORPCError("UNAUTHORIZED", {
-               message: "Authentication required to check password status",
-            });
-         }
-
-         if (apiError.status === "FORBIDDEN" || apiError.statusCode === 403) {
-            throw new ORPCError("FORBIDDEN", {
-               message: "Insufficient permissions to check password status",
-            });
-         }
-      }
-
-      // For other errors, return false as fallback
+   } catch {
       return { hasPassword: false };
    }
 });
 
-/**
- * Get linked accounts (OAuth providers)
- */
 export const getLinkedAccounts = protectedProcedure.handler(
    async ({ context }) => {
       const { auth, headers } = context;
 
       try {
          const accounts = await auth.api.listUserAccounts({ headers });
-         return accounts.map((account) => ({
-            providerId: account.providerId,
-            accountId: account.accountId,
-            createdAt: account.createdAt,
-         }));
-      } catch (error) {
-         // Convert Better Auth API errors to ORPCError
-         if (error && typeof error === "object" && "status" in error) {
-            const apiError = error as { status: string; statusCode?: number };
-
-            if (
-               apiError.status === "UNAUTHORIZED" ||
-               apiError.statusCode === 401
-            ) {
-               throw new ORPCError("UNAUTHORIZED", {
-                  message: "Authentication required to access linked accounts",
-               });
-            }
-
-            if (
-               apiError.status === "FORBIDDEN" ||
-               apiError.statusCode === 403
-            ) {
-               throw new ORPCError("FORBIDDEN", {
-                  message: "Insufficient permissions to access linked accounts",
-               });
-            }
-         }
-
-         // For other errors, return empty array as fallback
+         return accounts.map(
+            (account: {
+               providerId: string;
+               accountId: string;
+               createdAt: Date;
+            }) => ({
+               providerId: account.providerId,
+               accountId: account.accountId,
+               createdAt: account.createdAt,
+            }),
+         );
+      } catch {
          return [];
       }
    },
 );
 
-/**
- * Set password for the first time (magic link users only).
- * Uses Better Auth's setPassword endpoint which creates a credential account
- * if one doesn't already exist.
- */
 export const setPassword = protectedProcedure
    .input(z.object({ newPassword: z.string().min(8) }))
    .handler(async ({ context, input }) => {
@@ -128,20 +75,17 @@ export const setPassword = protectedProcedure
          if (error && typeof error === "object" && "message" in error) {
             const msg = (error as { message: string }).message;
             if (msg === "user already has a password") {
-               throw new ORPCError("BAD_REQUEST", {
+               throw new WebAppError("BAD_REQUEST", {
                   message: "Usuário já possui uma senha definida",
                });
             }
          }
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
+         throw new WebAppError("INTERNAL_SERVER_ERROR", {
             message: "Erro ao definir senha",
          });
       }
    });
 
-/**
- * Generate presigned URL for user avatar upload
- */
 export const generateAvatarUploadUrl = protectedProcedure
    .input(
       z.object({
@@ -170,8 +114,8 @@ export const generateAvatarUploadUrl = protectedProcedure
          };
       } catch (error) {
          logger.error({ err: error }, "Failed to generate avatar upload URL");
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to generate upload URL",
+         throw new WebAppError("INTERNAL_SERVER_ERROR", {
+            message: "Erro ao gerar URL de upload",
          });
       }
    });

@@ -5,9 +5,14 @@ import {
    createUnauthenticatedContext,
 } from "../../../helpers/create-test-context";
 
-// ---------------------------------------------------------------------------
-// Mocks
-// ---------------------------------------------------------------------------
+vi.mock("@core/database/client", () => ({ db: {} }));
+vi.mock("@core/arcjet/protect", () => ({
+   protect: vi.fn(),
+   protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
+}));
+vi.mock("@core/posthog/server", () => ({
+   posthog: { capture: vi.fn(), shutdown: vi.fn() },
+}));
 
 const mockAuth = {
    api: {
@@ -21,10 +26,6 @@ const mockAuth = {
 
 import * as sessionRouter from "@/integrations/orpc/router/session";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function createSessionContext(overrides: Record<string, unknown> = {}) {
    return createTestContext({
       auth: mockAuth,
@@ -32,17 +33,9 @@ function createSessionContext(overrides: Record<string, unknown> = {}) {
    });
 }
 
-// ---------------------------------------------------------------------------
-// Setup
-// ---------------------------------------------------------------------------
-
 beforeEach(() => {
    vi.clearAllMocks();
 });
-
-// =============================================================================
-// getSession
-// =============================================================================
 
 describe("getSession", () => {
    it("returns session when authenticated", async () => {
@@ -78,11 +71,17 @@ describe("getSession", () => {
          headers: ctx.headers,
       });
    });
-});
 
-// =============================================================================
-// listSessions
-// =============================================================================
+   it("throws WebAppError when auth.api fails", async () => {
+      mockAuth.api.getSession.mockRejectedValueOnce(new Error("auth down"));
+
+      const ctx = createSessionContext();
+
+      await expect(
+         call(sessionRouter.getSession, undefined, { context: ctx }),
+      ).rejects.toThrow("Falha ao recuperar sessão.");
+   });
+});
 
 describe("listSessions", () => {
    it("returns list of sessions", async () => {
@@ -102,11 +101,17 @@ describe("listSessions", () => {
          headers: ctx.headers,
       });
    });
-});
 
-// =============================================================================
-// revokeSessionByToken
-// =============================================================================
+   it("throws WebAppError when auth.api fails", async () => {
+      mockAuth.api.listSessions.mockRejectedValueOnce(new Error("fail"));
+
+      const ctx = createSessionContext();
+
+      await expect(
+         call(sessionRouter.listSessions, undefined, { context: ctx }),
+      ).rejects.toThrow("Falha ao listar sessões.");
+   });
+});
 
 describe("revokeSessionByToken", () => {
    it("revokes session and returns success", async () => {
@@ -125,11 +130,21 @@ describe("revokeSessionByToken", () => {
          body: { token: "sess-token-abc" },
       });
    });
-});
 
-// =============================================================================
-// revokeOtherSessions
-// =============================================================================
+   it("throws WebAppError when auth.api fails", async () => {
+      mockAuth.api.revokeSession.mockRejectedValueOnce(new Error("fail"));
+
+      const ctx = createSessionContext();
+
+      await expect(
+         call(
+            sessionRouter.revokeSessionByToken,
+            { token: "t" },
+            { context: ctx },
+         ),
+      ).rejects.toThrow("Falha ao revogar sessão.");
+   });
+});
 
 describe("revokeOtherSessions", () => {
    it("revokes other sessions and returns success", async () => {
@@ -145,11 +160,17 @@ describe("revokeOtherSessions", () => {
          headers: ctx.headers,
       });
    });
-});
 
-// =============================================================================
-// revokeSessions
-// =============================================================================
+   it("throws WebAppError when auth.api fails", async () => {
+      mockAuth.api.revokeOtherSessions.mockRejectedValueOnce(new Error("fail"));
+
+      const ctx = createSessionContext();
+
+      await expect(
+         call(sessionRouter.revokeOtherSessions, undefined, { context: ctx }),
+      ).rejects.toThrow("Falha ao revogar outras sessões.");
+   });
+});
 
 describe("revokeSessions", () => {
    it("revokes all sessions and returns success", async () => {
@@ -164,5 +185,15 @@ describe("revokeSessions", () => {
       expect(mockAuth.api.revokeSessions).toHaveBeenCalledWith({
          headers: ctx.headers,
       });
+   });
+
+   it("throws WebAppError when auth.api fails", async () => {
+      mockAuth.api.revokeSessions.mockRejectedValueOnce(new Error("fail"));
+
+      const ctx = createSessionContext();
+
+      await expect(
+         call(sessionRouter.revokeSessions, undefined, { context: ctx }),
+      ).rejects.toThrow("Falha ao revogar todas as sessões.");
    });
 });

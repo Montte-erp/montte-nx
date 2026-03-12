@@ -7,17 +7,34 @@ import {
 } from "../../../helpers/create-test-context";
 import { makeInsight } from "../../../helpers/mock-factories";
 
-// ---------------------------------------------------------------------------
-// Mocks
-// ---------------------------------------------------------------------------
-
+vi.mock("@core/database/client", () => ({ db: {} }));
 vi.mock("@core/database/repositories/insight-repository");
+vi.mock("@core/database/repositories/dashboard-repository");
+vi.mock("@core/arcjet/protect", () => ({
+   protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
+   isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
+}));
+vi.mock("@core/posthog/server", () => ({
+   captureError: vi.fn(),
+   captureServerEvent: vi.fn(),
+   identifyUser: vi.fn(),
+   setGroup: vi.fn(),
+}));
+vi.mock("@core/logging/root", () => ({
+   getLogger: () => ({ child: () => ({ warn: vi.fn(), error: vi.fn() }) }),
+}));
+vi.mock("@packages/events/emit", () => ({
+   createEmitFn: vi.fn().mockReturnValue(vi.fn()),
+}));
+vi.mock("@packages/analytics/compute-insight", () => ({
+   computeInsightData: vi.fn(),
+}));
 vi.mock("@packages/events/insight");
 
 import {
    createInsight,
    deleteInsight,
-   getInsightById,
+   ensureInsightOwnership,
    listInsightsByTeam,
 } from "@core/database/repositories/insight-repository";
 import {
@@ -25,12 +42,9 @@ import {
    emitInsightDeleted,
    emitInsightUpdated,
 } from "@packages/events/insight";
+import { AppError } from "@core/logging/errors";
 
 import * as insightsRouter from "@/integrations/orpc/router/insights";
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
 
 const TEAM_A_ID = "team-a-00000000-0000-0000-0000-000000000001";
 const TEAM_B_ID = "team-b-00000000-0000-0000-0000-000000000002";
@@ -45,20 +59,12 @@ function createTeamContext(teamId: string) {
    });
 }
 
-// ---------------------------------------------------------------------------
-// Setup
-// ---------------------------------------------------------------------------
-
 beforeEach(() => {
    vi.clearAllMocks();
    vi.mocked(emitInsightCreated).mockResolvedValue(undefined);
    vi.mocked(emitInsightUpdated).mockResolvedValue(undefined);
    vi.mocked(emitInsightDeleted).mockResolvedValue(undefined);
 });
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe("Insights Team Scoping", () => {
    it("should create insight scoped to active team", async () => {
@@ -110,11 +116,7 @@ describe("Insights Team Scoping", () => {
       expect(results).toHaveLength(1);
       expect(results[0].name).toBe("Team A Insight");
       expect(results[0].teamId).toBe(TEAM_A_ID);
-      expect(listInsightsByTeam).toHaveBeenCalledWith(
-         expect.anything(),
-         TEAM_A_ID,
-         undefined,
-      );
+      expect(listInsightsByTeam).toHaveBeenCalledWith(TEAM_A_ID, undefined);
    });
 
    it("should isolate insights when switching teams", async () => {
@@ -129,14 +131,12 @@ describe("Insights Team Scoping", () => {
          name: "Insight B",
       });
 
-      // Team A active
       vi.mocked(listInsightsByTeam).mockResolvedValueOnce([insightA]);
       let context = createTeamContext(TEAM_A_ID);
       let results = await call(insightsRouter.list, undefined, { context });
       expect(results).toHaveLength(1);
       expect(results[0].name).toBe("Insight A");
 
-      // Team B active
       vi.mocked(listInsightsByTeam).mockResolvedValueOnce([insightB]);
       context = createTeamContext(TEAM_B_ID);
       results = await call(insightsRouter.list, undefined, { context });
@@ -146,18 +146,22 @@ describe("Insights Team Scoping", () => {
 
    it("should not allow access to insight from different team", async () => {
       const insight = makeInsight({ teamId: TEAM_A_ID });
-      vi.mocked(getInsightById).mockResolvedValueOnce(insight);
+      vi.mocked(ensureInsightOwnership).mockRejectedValueOnce(
+         AppError.notFound("Insight não encontrado."),
+      );
 
       const context = createTeamContext(TEAM_B_ID);
 
       await expect(
          call(insightsRouter.getById, { id: insight.id }, { context }),
-      ).rejects.toThrow("Insight not found");
+      ).rejects.toThrow("Insight não encontrado.");
    });
 
    it("should not allow updating insight from different team", async () => {
       const insight = makeInsight({ teamId: TEAM_A_ID });
-      vi.mocked(getInsightById).mockResolvedValueOnce(insight);
+      vi.mocked(ensureInsightOwnership).mockRejectedValueOnce(
+         AppError.notFound("Insight não encontrado."),
+      );
 
       const context = createTeamContext(TEAM_B_ID);
 
@@ -167,18 +171,20 @@ describe("Insights Team Scoping", () => {
             { id: insight.id, name: "Updated" },
             { context },
          ),
-      ).rejects.toThrow("Insight not found");
+      ).rejects.toThrow("Insight não encontrado.");
    });
 
    it("should not allow deleting insight from different team", async () => {
       const insight = makeInsight({ teamId: TEAM_A_ID });
-      vi.mocked(getInsightById).mockResolvedValueOnce(insight);
+      vi.mocked(ensureInsightOwnership).mockRejectedValueOnce(
+         AppError.notFound("Insight não encontrado."),
+      );
 
       const context = createTeamContext(TEAM_B_ID);
 
       await expect(
          call(insightsRouter.remove, { id: insight.id }, { context }),
-      ).rejects.toThrow("Insight not found");
+      ).rejects.toThrow("Insight não encontrado.");
 
       expect(deleteInsight).not.toHaveBeenCalled();
    });
@@ -199,7 +205,6 @@ describe("Insights Team Scoping", () => {
 
       const context = createTeamContext(TEAM_A_ID);
 
-      // Query only kpi
       vi.mocked(listInsightsByTeam).mockResolvedValueOnce([kpiInsight]);
       const kpiResults = await call(
          insightsRouter.list,
@@ -209,7 +214,6 @@ describe("Insights Team Scoping", () => {
       expect(kpiResults).toHaveLength(1);
       expect(kpiResults[0].type).toBe("kpi");
 
-      // Query only breakdown
       vi.mocked(listInsightsByTeam).mockResolvedValueOnce([breakdownInsight]);
       const breakdownResults = await call(
          insightsRouter.list,

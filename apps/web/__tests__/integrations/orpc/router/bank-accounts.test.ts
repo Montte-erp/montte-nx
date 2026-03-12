@@ -1,12 +1,19 @@
 import { call } from "@orpc/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-   TEST_TEAM_ID,
-   createTestContext,
-} from "../../../helpers/create-test-context";
+   afterAll,
+   beforeAll,
+   beforeEach,
+   describe,
+   expect,
+   it,
+   vi,
+} from "vitest";
 
-vi.mock("@core/database/client", () => ({ db: {} }));
-vi.mock("@core/database/repositories/bank-accounts-repository");
+vi.mock("@core/database/client", async () => {
+   const { setupIntegrationDb } =
+      await import("../../../helpers/setup-integration-test");
+   return { db: await setupIntegrationDb(), createDb: () => {} };
+});
 vi.mock("@core/arcjet/protect", () => ({
    protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
    isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
@@ -16,48 +23,50 @@ vi.mock("@core/posthog/server", () => ({
    captureServerEvent: vi.fn(),
    identifyUser: vi.fn(),
    setGroup: vi.fn(),
+   posthog: {
+      capture: vi.fn(),
+      identify: vi.fn(),
+      groupIdentify: vi.fn(),
+      shutdown: vi.fn(),
+   },
 }));
 
+import { bankAccounts } from "@core/database/schemas/bank-accounts";
+import { transactions } from "@core/database/schemas/transactions";
+import { sql } from "drizzle-orm";
 import {
-   computeBankAccountBalance,
-   createBankAccount,
-   deleteBankAccount,
-   ensureBankAccountOwnership,
-   listBankAccountsWithBalance,
-   updateBankAccount,
-} from "@core/database/repositories/bank-accounts-repository";
-import { AppError } from "@core/logging/errors";
+   cleanupIntegrationTest,
+   setupIntegrationTest,
+} from "../../../helpers/setup-integration-test";
+import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import * as bankAccountsRouter from "@/integrations/orpc/router/bank-accounts";
 
-const ACCOUNT_ID = "a0000000-0000-4000-8000-000000000010";
+let ctx: ORPCContextWithAuth;
+let ctx2: ORPCContextWithAuth;
 
-const mockAccount = {
-   id: ACCOUNT_ID,
-   teamId: TEST_TEAM_ID,
-   name: "Nubank",
-   type: "checking" as const,
-   status: "active" as const,
-   color: "#6366f1",
-   iconUrl: null,
-   bankCode: "260",
-   bankName: "Nu Pagamentos",
-   branch: null,
-   accountNumber: null,
-   initialBalance: "1000.00",
-   initialBalanceDate: null,
-   notes: null,
-   createdAt: new Date(),
-   updatedAt: new Date(),
-};
+beforeAll(async () => {
+   const { createAuthenticatedContext } = await setupIntegrationTest();
+   ctx = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
+   ctx2 = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
+});
 
-beforeEach(() => {
-   vi.clearAllMocks();
+afterAll(async () => {
+   await cleanupIntegrationTest();
+});
+
+beforeEach(async () => {
+   await ctx.db.execute(sql`DELETE FROM transactions`);
+   await ctx.db.execute(sql`DELETE FROM bank_accounts`);
 });
 
 describe("create", () => {
-   it("creates a bank account", async () => {
-      vi.mocked(createBankAccount).mockResolvedValueOnce(mockAccount);
-
+   it("creates a bank account and persists it", async () => {
       const result = await call(
          bankAccountsRouter.create,
          {
@@ -67,71 +76,93 @@ describe("create", () => {
             bankCode: "260",
             initialBalance: "1000.00",
          },
-         { context: createTestContext() },
+         { context: ctx },
       );
 
-      expect(result).toEqual(mockAccount);
-      expect(createBankAccount).toHaveBeenCalledWith(
-         TEST_TEAM_ID,
-         expect.objectContaining({ name: "Nubank" }),
-      );
+      expect(result.name).toBe("Nubank");
+      expect(result.type).toBe("checking");
+      expect(result.initialBalance).toBe("1000.00");
+
+      const rows = await ctx.db.query.bankAccounts.findMany();
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.id).toBe(result.id);
    });
 });
 
 describe("getAll", () => {
    it("lists accounts with balance", async () => {
-      const accounts = [
+      await call(
+         bankAccountsRouter.create,
          {
-            ...mockAccount,
-            currentBalance: "1500.00",
-            projectedBalance: "1200.00",
+            name: "Conta A",
+            type: "checking",
+            bankCode: "001",
+            initialBalance: "500.00",
          },
-      ];
-      vi.mocked(listBankAccountsWithBalance).mockResolvedValueOnce(accounts);
+         { context: ctx },
+      );
+      await call(
+         bankAccountsRouter.create,
+         {
+            name: "Conta B",
+            type: "savings",
+            bankCode: "002",
+            initialBalance: "200.00",
+         },
+         { context: ctx },
+      );
 
       const result = await call(bankAccountsRouter.getAll, undefined, {
-         context: createTestContext(),
+         context: ctx,
       });
 
-      expect(result).toEqual(accounts);
-      expect(listBankAccountsWithBalance).toHaveBeenCalledWith(TEST_TEAM_ID);
+      expect(result).toHaveLength(2);
+      expect(result[0]!.currentBalance).toBeDefined();
+      expect(result[0]!.projectedBalance).toBeDefined();
    });
 });
 
 describe("getById", () => {
-   it("returns account with balance", async () => {
-      vi.mocked(ensureBankAccountOwnership).mockResolvedValueOnce(mockAccount);
-      vi.mocked(computeBankAccountBalance).mockResolvedValueOnce({
-         currentBalance: "1500.00",
-         projectedBalance: "1200.00",
-      });
+   it("returns account with balance fields", async () => {
+      const created = await call(
+         bankAccountsRouter.create,
+         {
+            name: "Inter",
+            type: "checking",
+            bankCode: "077",
+            initialBalance: "750.00",
+         },
+         { context: ctx },
+      );
 
       const result = await call(
          bankAccountsRouter.getById,
-         { id: ACCOUNT_ID },
-         { context: createTestContext() },
+         { id: created.id },
+         { context: ctx },
       );
 
-      expect(result.currentBalance).toBe("1500.00");
-      expect(result.projectedBalance).toBe("1200.00");
-      expect(ensureBankAccountOwnership).toHaveBeenCalledWith(
-         ACCOUNT_ID,
-         TEST_TEAM_ID,
-      );
+      expect(result.id).toBe(created.id);
+      expect(result.currentBalance).toBe("750.00");
+      expect(result.projectedBalance).toBe("750.00");
    });
 
-   it("propagates NOT_FOUND from repository", async () => {
-      vi.mocked(ensureBankAccountOwnership).mockRejectedValueOnce(
-         AppError.notFound("Conta bancária não encontrada."),
+   it("rejects access from a different team", async () => {
+      const created = await call(
+         bankAccountsRouter.create,
+         {
+            name: "Private",
+            type: "checking",
+            bankCode: "341",
+            initialBalance: "100.00",
+         },
+         { context: ctx },
       );
 
       await expect(
          call(
             bankAccountsRouter.getById,
-            { id: ACCOUNT_ID },
-            {
-               context: createTestContext(),
-            },
+            { id: created.id },
+            { context: ctx2 },
          ),
       ).rejects.toThrow("Conta bancária não encontrada.");
    });
@@ -139,54 +170,70 @@ describe("getById", () => {
 
 describe("update", () => {
    it("updates account after ownership check", async () => {
-      vi.mocked(ensureBankAccountOwnership).mockResolvedValueOnce(mockAccount);
-      const updated = { ...mockAccount, name: "Nubank PJ" };
-      vi.mocked(updateBankAccount).mockResolvedValueOnce(updated);
-
-      const result = await call(
-         bankAccountsRouter.update,
-         { id: ACCOUNT_ID, name: "Nubank PJ" },
-         { context: createTestContext() },
+      const created = await call(
+         bankAccountsRouter.create,
+         { name: "Bradesco", type: "checking", bankCode: "237" },
+         { context: ctx },
       );
 
-      expect(result.name).toBe("Nubank PJ");
-      expect(updateBankAccount).toHaveBeenCalledWith(ACCOUNT_ID, {
-         name: "Nubank PJ",
+      const updated = await call(
+         bankAccountsRouter.update,
+         { id: created.id, name: "Bradesco PJ" },
+         { context: ctx },
+      );
+
+      expect(updated.name).toBe("Bradesco PJ");
+
+      const fromDb = await ctx.db.query.bankAccounts.findFirst({
+         where: { id: created.id },
       });
+      expect(fromDb!.name).toBe("Bradesco PJ");
    });
 });
 
 describe("remove", () => {
-   it("deletes account after ownership check", async () => {
-      vi.mocked(ensureBankAccountOwnership).mockResolvedValueOnce(mockAccount);
-      vi.mocked(deleteBankAccount).mockResolvedValueOnce(undefined);
+   it("deletes account with no transactions", async () => {
+      const created = await call(
+         bankAccountsRouter.create,
+         { name: "Deletar", type: "cash" },
+         { context: ctx },
+      );
 
       const result = await call(
          bankAccountsRouter.remove,
-         { id: ACCOUNT_ID },
-         { context: createTestContext() },
+         { id: created.id },
+         { context: ctx },
       );
 
       expect(result).toEqual({ success: true });
-      expect(deleteBankAccount).toHaveBeenCalledWith(ACCOUNT_ID);
+
+      const rows = await ctx.db.query.bankAccounts.findMany();
+      expect(rows).toHaveLength(0);
    });
 
-   it("propagates CONFLICT when account has transactions", async () => {
-      vi.mocked(ensureBankAccountOwnership).mockResolvedValueOnce(mockAccount);
-      vi.mocked(deleteBankAccount).mockRejectedValueOnce(
-         AppError.conflict(
-            "Conta com lançamentos não pode ser excluída. Use arquivamento.",
-         ),
+   it("rejects deletion when account has transactions", async () => {
+      const created = await call(
+         bankAccountsRouter.create,
+         {
+            name: "Com Lancamentos",
+            type: "checking",
+            bankCode: "001",
+            initialBalance: "100.00",
+         },
+         { context: ctx },
       );
 
+      const teamId = ctx.session.session.activeTeamId!;
+      await ctx.db.insert(transactions).values({
+         teamId,
+         type: "income",
+         amount: "50.00",
+         date: "2025-01-15",
+         bankAccountId: created.id,
+      });
+
       await expect(
-         call(
-            bankAccountsRouter.remove,
-            { id: ACCOUNT_ID },
-            {
-               context: createTestContext(),
-            },
-         ),
+         call(bankAccountsRouter.remove, { id: created.id }, { context: ctx }),
       ).rejects.toThrow("Conta com lançamentos não pode ser excluída.");
    });
 });

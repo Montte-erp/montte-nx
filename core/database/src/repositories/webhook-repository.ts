@@ -16,6 +16,14 @@ export function generateWebhookSecret(): string {
    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+export async function ensureWebhookOwnership(id: string, teamId: string) {
+   const endpoint = await getWebhookEndpoint(id);
+   if (!endpoint || endpoint.teamId !== teamId) {
+      throw AppError.notFound("Webhook não encontrado.");
+   }
+   return endpoint;
+}
+
 export async function createWebhookEndpoint(
    organizationId: string,
    teamId: string,

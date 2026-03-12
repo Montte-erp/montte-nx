@@ -249,3 +249,87 @@ export async function getLastBillForRecurrenceGroup(
       throw AppError.database("Failed to get last bill for recurrence group");
    }
 }
+
+export async function generateBillsForSubscription(
+   subscription: ContactSubscription,
+   variant: ServiceVariant,
+   serviceName: string,
+): Promise<void> {
+   const { billingCycle } = variant;
+   if (billingCycle === "hourly") return;
+
+   const amount = subscription.negotiatedPrice;
+   const start = new Date(subscription.startDate);
+   const end = subscription.endDate ? new Date(subscription.endDate) : null;
+
+   const formatMonthYear = (d: Date) => {
+      const month = d
+         .toLocaleDateString("pt-BR", { month: "short" })
+         .replace(".", "")
+         .replace(/^\w/, (c) => c.toUpperCase());
+      return `${month}/${d.getFullYear()}`;
+   };
+
+   const makeBill = (dueDate: Date, label: string) => ({
+      teamId: subscription.teamId,
+      name: `${serviceName} – ${variant.name}`,
+      description: `${serviceName} – ${variant.name} (${label})`,
+      type: "receivable" as const,
+      amount,
+      dueDate: dueDate.toISOString().slice(0, 10),
+      contactId: subscription.contactId,
+      subscriptionId: subscription.id,
+      status: "pending" as const,
+   });
+
+   const billsToCreate = [];
+
+   if (billingCycle === "one_time") {
+      billsToCreate.push(makeBill(start, "Pagamento único"));
+   } else if (billingCycle === "annual") {
+      billsToCreate.push(makeBill(start, formatMonthYear(start)));
+   } else if (billingCycle === "monthly") {
+      const cursor = new Date(start);
+      const limit =
+         end ??
+         (() => {
+            const d = new Date(start);
+            d.setFullYear(d.getFullYear() + 2);
+            return d;
+         })();
+      while (cursor <= limit) {
+         billsToCreate.push(
+            makeBill(new Date(cursor), formatMonthYear(cursor)),
+         );
+         cursor.setMonth(cursor.getMonth() + 1);
+      }
+   }
+
+   if (billsToCreate.length === 0) return;
+
+   try {
+      await db.insert(bills).values(billsToCreate);
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Falha ao gerar cobranças da assinatura.");
+   }
+}
+
+export async function cancelPendingBillsForSubscription(
+   subscriptionId: string,
+): Promise<void> {
+   try {
+      await db
+         .update(bills)
+         .set({ status: "cancelled" })
+         .where(
+            and(
+               eq(bills.subscriptionId, subscriptionId),
+               eq(bills.status, "pending"),
+            ),
+         );
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Falha ao cancelar cobranças pendentes.");
+   }
+}

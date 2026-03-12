@@ -11,6 +11,22 @@ import {
    updateDashboardSchema,
 } from "@core/database/schemas/dashboards";
 
+export async function ensureDashboardOwnership(
+   id: string,
+   organizationId: string,
+   teamId: string,
+) {
+   const dashboard = await getDashboardById(id);
+   if (
+      !dashboard ||
+      dashboard.organizationId !== organizationId ||
+      dashboard.teamId !== teamId
+   ) {
+      throw AppError.notFound("Dashboard não encontrado.");
+   }
+   return dashboard;
+}
+
 export async function createDashboard(
    organizationId: string,
    teamId: string,

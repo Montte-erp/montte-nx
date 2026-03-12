@@ -1,7 +1,7 @@
-import { ORPCError } from "@orpc/server";
 import {
    createDashboard,
    deleteDashboard,
+   ensureDashboardOwnership,
    getDashboardById,
    listDashboardsByTeam,
    setDashboardAsHome,
@@ -11,7 +11,9 @@ import {
 import {
    DashboardDateRangeSchema,
    DashboardFilterSchema,
-   type NewDashboard,
+   createDashboardSchema,
+   dashboardTileSchema,
+   updateDashboardSchema,
 } from "@core/database/schemas/dashboards";
 import {
    emitDashboardCreated,
@@ -22,39 +24,14 @@ import { createEmitFn } from "@packages/events/emit";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
-const tileSchema = z.object({
-   insightId: z.string().uuid(),
-   size: z.enum(["sm", "md", "lg", "full"]),
-   order: z.number().int().min(0),
-});
-
-const createDashboardSchema = z.object({
-   name: z.string().min(1),
-   description: z.string().optional(),
-});
-
-const updateDashboardSchema = z.object({
-   id: z.string().uuid(),
-   name: z.string().min(1).optional(),
-   description: z.string().optional(),
-});
-
-const updateTilesSchema = z.object({
-   id: z.string().uuid(),
-   name: z.string().min(1).optional(),
-   description: z.string().optional(),
-   tiles: z.array(tileSchema).optional(),
-});
+const idSchema = z.object({ id: z.string().uuid() });
 
 export const create = protectedProcedure
-   .input(createDashboardSchema)
+   .input(createDashboardSchema.pick({ name: true, description: true }))
    .handler(async ({ context, input }) => {
-      const { organizationId, userId, db, posthog, teamId } = context;
+      const { organizationId, userId, teamId, db, posthog } = context;
 
-      const dashboard = await createDashboard(db, {
-         organizationId,
-         teamId,
-         createdBy: userId,
+      const dashboard = await createDashboard(organizationId, teamId, userId, {
          name: input.name,
          description: input.description,
       });
@@ -65,55 +42,38 @@ export const create = protectedProcedure
             { organizationId, userId, teamId },
             { dashboardId: dashboard.id, name: input.name },
          );
-      } catch {
-         // Event emission must not break the main flow
-      }
+      } catch {}
 
       return dashboard;
    });
 
 export const list = protectedProcedure.handler(async ({ context }) => {
-   const { teamId, db } = context;
-   return await listDashboardsByTeam(db, teamId);
+   return listDashboardsByTeam(context.teamId);
 });
 
 export const getById = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idSchema)
    .handler(async ({ context, input }) => {
-      const { organizationId, teamId, db } = context;
-      const dashboard = await getDashboardById(db, input.id);
-
-      if (
-         !dashboard ||
-         dashboard.organizationId !== organizationId ||
-         dashboard.teamId !== teamId
-      ) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Dashboard not found.",
-         });
-      }
-
-      return dashboard;
+      return ensureDashboardOwnership(
+         input.id,
+         context.organizationId,
+         context.teamId,
+      );
    });
 
 export const update = protectedProcedure
-   .input(updateDashboardSchema)
+   .input(
+      idSchema.extend({
+         name: z.string().min(1).optional(),
+         description: z.string().optional(),
+      }),
+   )
    .handler(async ({ context, input }) => {
-      const { organizationId, db, posthog, userId, teamId } = context;
-      const dashboard = await getDashboardById(db, input.id);
+      const { organizationId, userId, teamId, db, posthog } = context;
+      await ensureDashboardOwnership(input.id, organizationId, teamId);
 
-      if (
-         !dashboard ||
-         dashboard.organizationId !== organizationId ||
-         dashboard.teamId !== teamId
-      ) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Dashboard not found.",
-         });
-      }
-
-      const { id: _, ...updateData } = input;
-      const updated = await updateDashboard(db, input.id, updateData);
+      const { id, ...updateData } = input;
+      const updated = await updateDashboard(id, updateData);
 
       try {
          const changedFields = Object.keys(updateData).filter(
@@ -122,44 +82,36 @@ export const update = protectedProcedure
          await emitDashboardUpdated(
             createEmitFn(db, posthog),
             { organizationId, userId, teamId },
-            { dashboardId: input.id, changedFields },
+            { dashboardId: id, changedFields },
          );
-      } catch {
-         // Event emission must not break the main flow
-      }
+      } catch {}
 
       return updated;
    });
 
 export const updateTiles = protectedProcedure
-   .input(updateTilesSchema)
+   .input(
+      idSchema.extend({
+         name: z.string().min(1).optional(),
+         description: z.string().optional(),
+         tiles: z.array(dashboardTileSchema).optional(),
+      }),
+   )
    .handler(async ({ context, input }) => {
       const { organizationId, teamId, db, posthog, userId } = context;
-      const dashboard = await getDashboardById(db, input.id);
+      await ensureDashboardOwnership(input.id, organizationId, teamId);
 
-      if (
-         !dashboard ||
-         dashboard.organizationId !== organizationId ||
-         dashboard.teamId !== teamId
-      ) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Dashboard not found.",
-         });
-      }
-
-      // Update tiles if provided
       if (input.tiles !== undefined) {
-         await updateDashboardTiles(db, input.id, input.tiles);
+         await updateDashboardTiles(input.id, input.tiles);
       }
 
-      // Update metadata if provided
       const metadataUpdate: { name?: string; description?: string } = {};
       if (input.name !== undefined) metadataUpdate.name = input.name;
       if (input.description !== undefined)
          metadataUpdate.description = input.description;
 
       if (Object.keys(metadataUpdate).length > 0) {
-         await updateDashboard(db, input.id, metadataUpdate);
+         await updateDashboard(input.id, metadataUpdate);
 
          try {
             const changedFields = Object.keys(metadataUpdate);
@@ -168,40 +120,19 @@ export const updateTiles = protectedProcedure
                { organizationId, userId, teamId },
                { dashboardId: input.id, changedFields },
             );
-         } catch {
-            // Event emission must not break the main flow
-         }
+         } catch {}
       }
 
-      return await getDashboardById(db, input.id);
+      return getDashboardById(input.id);
    });
 
 export const remove = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idSchema)
    .handler(async ({ context, input }) => {
-      const { organizationId, db, posthog, userId, teamId } = context;
-      const dashboard = await getDashboardById(db, input.id);
+      const { organizationId, userId, teamId, db, posthog } = context;
+      await ensureDashboardOwnership(input.id, organizationId, teamId);
 
-      if (
-         !dashboard ||
-         dashboard.organizationId !== organizationId ||
-         dashboard.teamId !== teamId
-      ) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Dashboard not found.",
-         });
-      }
-
-      try {
-         await deleteDashboard(db, input.id);
-      } catch (err) {
-         if (err instanceof Error && err.message.includes("home dashboard")) {
-            throw new ORPCError("BAD_REQUEST", {
-               message: err.message,
-            });
-         }
-         throw err;
-      }
+      await deleteDashboard(input.id);
 
       try {
          await emitDashboardDeleted(
@@ -209,9 +140,7 @@ export const remove = protectedProcedure
             { organizationId, userId, teamId },
             { dashboardId: input.id },
          );
-      } catch {
-         // Event emission must not break the main flow
-      }
+      } catch {}
 
       return { success: true };
    });
@@ -226,34 +155,15 @@ export const updateGlobalFilters = protectedProcedure
    )
    .handler(async ({ context, input }) => {
       const { organizationId, teamId, db, posthog, userId } = context;
+      await ensureDashboardOwnership(input.dashboardId, organizationId, teamId);
 
-      // Verify dashboard ownership
-      const dashboard = await getDashboardById(db, input.dashboardId);
-
-      if (
-         !dashboard ||
-         dashboard.organizationId !== organizationId ||
-         dashboard.teamId !== teamId
-      ) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Dashboard not found.",
-         });
-      }
-
-      // Build update object
-      const updateData: Parameters<typeof updateDashboard>[2] &
-         Partial<Pick<NewDashboard, "globalDateRange" | "globalFilters">> = {};
-
-      if (input.globalDateRange !== undefined) {
+      const updateData: Record<string, unknown> = {};
+      if (input.globalDateRange !== undefined)
          updateData.globalDateRange = input.globalDateRange;
-      }
-
-      if (input.globalFilters !== undefined) {
+      if (input.globalFilters !== undefined)
          updateData.globalFilters = input.globalFilters;
-      }
 
-      // Update dashboard
-      const updated = await updateDashboard(db, input.dashboardId, updateData);
+      const updated = await updateDashboard(input.dashboardId, updateData);
 
       try {
          const changedFields = Object.keys(updateData);
@@ -262,35 +172,26 @@ export const updateGlobalFilters = protectedProcedure
             { organizationId, userId, teamId },
             { dashboardId: input.dashboardId, changedFields },
          );
-      } catch {
-         // Event emission must not break the main flow
-      }
+      } catch {}
 
       return updated;
    });
 
 export const setAsHome = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idSchema)
    .handler(async ({ context, input }) => {
       const { organizationId, teamId, db, posthog, userId } = context;
-
-      const dashboard = await getDashboardById(db, input.id);
-
-      if (
-         !dashboard ||
-         dashboard.organizationId !== organizationId ||
-         dashboard.teamId !== teamId
-      ) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Dashboard not found.",
-         });
-      }
+      const dashboard = await ensureDashboardOwnership(
+         input.id,
+         organizationId,
+         teamId,
+      );
 
       if (dashboard.isDefault) {
          return dashboard;
       }
 
-      const updated = await setDashboardAsHome(db, input.id, teamId);
+      const updated = await setDashboardAsHome(input.id, teamId);
 
       try {
          await emitDashboardUpdated(
@@ -298,9 +199,7 @@ export const setAsHome = protectedProcedure
             { organizationId, userId, teamId },
             { dashboardId: input.id, changedFields: ["isDefault"] },
          );
-      } catch {
-         // Event emission must not break the main flow
-      }
+      } catch {}
 
       return updated;
    });

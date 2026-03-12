@@ -80,6 +80,7 @@
       "zod": "catalog:validation"
    },
    "devDependencies": {
+      "@electric-sql/pglite": "^0.3.16",
       "@tanstack/devtools-event-client": "catalog:tanstack",
       "@tanstack/devtools-vite": "catalog:tanstack",
       "@testing-library/dom": "catalog:testing",

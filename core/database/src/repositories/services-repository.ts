@@ -187,3 +187,19 @@ export async function deleteVariant(id: string) {
       throw AppError.database("Failed to delete variant");
    }
 }
+
+export async function ensureServiceOwnership(id: string, teamId: string) {
+   const service = await getService(id);
+   if (!service || service.teamId !== teamId) {
+      throw AppError.notFound("Serviço não encontrado.");
+   }
+   return service;
+}
+
+export async function ensureVariantOwnership(id: string, teamId: string) {
+   const variant = await getVariant(id);
+   if (!variant || variant.teamId !== teamId) {
+      throw AppError.notFound("Variação não encontrada.");
+   }
+   return variant;
+}

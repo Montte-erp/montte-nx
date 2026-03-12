@@ -1,12 +1,19 @@
 import { call } from "@orpc/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-   TEST_TEAM_ID,
-   createTestContext,
-} from "../../../helpers/create-test-context";
+   afterAll,
+   beforeAll,
+   beforeEach,
+   describe,
+   expect,
+   it,
+   vi,
+} from "vitest";
 
-vi.mock("@core/database/client", () => ({ db: {} }));
-vi.mock("@core/database/repositories/tags-repository");
+vi.mock("@core/database/client", async () => {
+   const { setupIntegrationDb } =
+      await import("../../../helpers/setup-integration-test");
+   return { db: await setupIntegrationDb(), createDb: () => {} };
+});
 vi.mock("@core/arcjet/protect", () => ({
    protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
    isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
@@ -16,161 +23,245 @@ vi.mock("@core/posthog/server", () => ({
    captureServerEvent: vi.fn(),
    identifyUser: vi.fn(),
    setGroup: vi.fn(),
+   posthog: {
+      capture: vi.fn(),
+      identify: vi.fn(),
+      groupIdentify: vi.fn(),
+      shutdown: vi.fn(),
+   },
 }));
 
+import { tags } from "@core/database/schemas/tags";
+import { transactions } from "@core/database/schemas/transactions";
+import { transactionTags } from "@core/database/schemas/transactions";
+import { sql } from "drizzle-orm";
 import {
-   archiveTag,
-   createTag,
-   deleteTag,
-   ensureTagOwnership,
-   listTags,
-   updateTag,
-} from "@core/database/repositories/tags-repository";
-import { AppError } from "@core/logging/errors";
+   cleanupIntegrationTest,
+   setupIntegrationTest,
+} from "../../../helpers/setup-integration-test";
+import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import * as tagsRouter from "@/integrations/orpc/router/tags";
 
-const TAG_ID = "a0000000-0000-4000-8000-000000000020";
+let ctx: ORPCContextWithAuth;
+let ctx2: ORPCContextWithAuth;
 
-const mockTag = {
-   id: TAG_ID,
-   teamId: TEST_TEAM_ID,
-   name: "Marketing",
-   color: "#6366f1",
-   description: null,
-   isArchived: false,
-   createdAt: new Date(),
-   updatedAt: new Date(),
-};
+beforeAll(async () => {
+   const { createAuthenticatedContext } = await setupIntegrationTest();
+   ctx = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
+   ctx2 = await createAuthenticatedContext({
+      organizationId: "auto",
+      teamId: "auto",
+   });
+});
 
-beforeEach(() => {
-   vi.clearAllMocks();
+afterAll(async () => {
+   await cleanupIntegrationTest();
+});
+
+beforeEach(async () => {
+   await ctx.db.execute(sql`DELETE FROM transaction_tags`);
+   await ctx.db.execute(sql`DELETE FROM transactions`);
+   await ctx.db.execute(sql`DELETE FROM tags`);
 });
 
 describe("create", () => {
-   it("creates a tag", async () => {
-      vi.mocked(createTag).mockResolvedValueOnce(mockTag);
-
+   it("creates a tag and persists it", async () => {
       const result = await call(
          tagsRouter.create,
-         { name: "Marketing" },
-         { context: createTestContext() },
+         { name: "Marketing", color: "#6366f1" },
+         { context: ctx },
       );
 
-      expect(result).toEqual(mockTag);
-      expect(createTag).toHaveBeenCalledWith(
-         TEST_TEAM_ID,
-         expect.objectContaining({ name: "Marketing" }),
+      expect(result.name).toBe("Marketing");
+      expect(result.color).toBe("#6366f1");
+      expect(result.isArchived).toBe(false);
+
+      const rows = await ctx.db.query.tags.findMany();
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.id).toBe(result.id);
+   });
+
+   it("creates a tag with description", async () => {
+      const result = await call(
+         tagsRouter.create,
+         { name: "Vendas", description: "Departamento de vendas" },
+         { context: ctx },
       );
+
+      expect(result.name).toBe("Vendas");
+      expect(result.description).toBe("Departamento de vendas");
    });
 });
 
 describe("getAll", () => {
-   it("lists tags", async () => {
-      vi.mocked(listTags).mockResolvedValueOnce([mockTag]);
+   it("lists tags for the team", async () => {
+      await call(tagsRouter.create, { name: "Alpha" }, { context: ctx });
+      await call(tagsRouter.create, { name: "Beta" }, { context: ctx });
+
+      const result = await call(tagsRouter.getAll, undefined, { context: ctx });
+
+      expect(result).toHaveLength(2);
+   });
+
+   it("does not list archived tags", async () => {
+      const created = await call(
+         tagsRouter.create,
+         { name: "Old" },
+         { context: ctx },
+      );
+      await call(tagsRouter.archive, { id: created.id }, { context: ctx });
+
+      const result = await call(tagsRouter.getAll, undefined, { context: ctx });
+      expect(result).toHaveLength(0);
+   });
+
+   it("does not list tags from another team", async () => {
+      await call(tagsRouter.create, { name: "Private" }, { context: ctx });
 
       const result = await call(tagsRouter.getAll, undefined, {
-         context: createTestContext(),
+         context: ctx2,
       });
-
-      expect(result).toEqual([mockTag]);
-      expect(listTags).toHaveBeenCalledWith(TEST_TEAM_ID);
+      expect(result).toHaveLength(0);
    });
 });
 
 describe("update", () => {
    it("updates tag after ownership check", async () => {
-      vi.mocked(ensureTagOwnership).mockResolvedValueOnce(mockTag);
-      const updated = { ...mockTag, name: "Vendas" };
-      vi.mocked(updateTag).mockResolvedValueOnce(updated);
-
-      const result = await call(
-         tagsRouter.update,
-         { id: TAG_ID, name: "Vendas" },
-         { context: createTestContext() },
+      const created = await call(
+         tagsRouter.create,
+         { name: "Marketing" },
+         { context: ctx },
       );
 
-      expect(result.name).toBe("Vendas");
-      expect(updateTag).toHaveBeenCalledWith(TAG_ID, { name: "Vendas" });
+      const updated = await call(
+         tagsRouter.update,
+         { id: created.id, name: "Vendas" },
+         { context: ctx },
+      );
+
+      expect(updated.name).toBe("Vendas");
+
+      const fromDb = await ctx.db.query.tags.findFirst({
+         where: { id: created.id },
+      });
+      expect(fromDb!.name).toBe("Vendas");
    });
 
-   it("propagates NOT_FOUND from repository", async () => {
-      vi.mocked(ensureTagOwnership).mockRejectedValueOnce(
-         AppError.notFound("Tag não encontrada."),
+   it("rejects access from a different team", async () => {
+      const created = await call(
+         tagsRouter.create,
+         { name: "Private" },
+         { context: ctx },
       );
 
       await expect(
          call(
             tagsRouter.update,
-            { id: TAG_ID, name: "Vendas" },
-            {
-               context: createTestContext(),
-            },
+            { id: created.id, name: "Hacked" },
+            { context: ctx2 },
          ),
       ).rejects.toThrow("Tag não encontrada.");
    });
 });
 
 describe("remove", () => {
-   it("deletes tag after ownership check", async () => {
-      vi.mocked(ensureTagOwnership).mockResolvedValueOnce(mockTag);
-      vi.mocked(deleteTag).mockResolvedValueOnce(undefined);
+   it("deletes tag with no transactions", async () => {
+      const created = await call(
+         tagsRouter.create,
+         { name: "Deletar" },
+         { context: ctx },
+      );
 
       const result = await call(
          tagsRouter.remove,
-         { id: TAG_ID },
-         { context: createTestContext() },
+         { id: created.id },
+         { context: ctx },
       );
 
       expect(result).toEqual({ success: true });
-      expect(deleteTag).toHaveBeenCalledWith(TAG_ID);
+
+      const rows = await ctx.db.query.tags.findMany();
+      expect(rows).toHaveLength(0);
    });
 
-   it("propagates NOT_FOUND from repository", async () => {
-      vi.mocked(ensureTagOwnership).mockRejectedValueOnce(
-         AppError.notFound("Tag não encontrada."),
+   it("rejects deletion when tag has transactions", async () => {
+      const created = await call(
+         tagsRouter.create,
+         { name: "Com Lancamentos" },
+         { context: ctx },
+      );
+
+      const teamId = ctx.session.session.activeTeamId!;
+
+      const [txn] = await ctx.db
+         .insert(transactions)
+         .values({
+            teamId,
+            type: "income",
+            amount: "50.00",
+            date: "2025-01-15",
+         })
+         .returning();
+
+      await ctx.db.insert(transactionTags).values({
+         transactionId: txn!.id,
+         tagId: created.id,
+      });
+
+      await expect(
+         call(tagsRouter.remove, { id: created.id }, { context: ctx }),
+      ).rejects.toThrow(
+         "Tag com lançamentos não pode ser excluída. Use arquivamento.",
+      );
+   });
+
+   it("rejects access from a different team", async () => {
+      const created = await call(
+         tagsRouter.create,
+         { name: "Private" },
+         { context: ctx },
       );
 
       await expect(
-         call(
-            tagsRouter.remove,
-            { id: TAG_ID },
-            {
-               context: createTestContext(),
-            },
-         ),
+         call(tagsRouter.remove, { id: created.id }, { context: ctx2 }),
       ).rejects.toThrow("Tag não encontrada.");
    });
 });
 
 describe("archive", () => {
    it("archives tag after ownership check", async () => {
-      vi.mocked(ensureTagOwnership).mockResolvedValueOnce(mockTag);
-      const archived = { ...mockTag, isArchived: true };
-      vi.mocked(archiveTag).mockResolvedValueOnce(archived);
+      const created = await call(
+         tagsRouter.create,
+         { name: "Arquivar" },
+         { context: ctx },
+      );
 
       const result = await call(
          tagsRouter.archive,
-         { id: TAG_ID },
-         { context: createTestContext() },
+         { id: created.id },
+         { context: ctx },
       );
 
       expect(result.isArchived).toBe(true);
-      expect(archiveTag).toHaveBeenCalledWith(TAG_ID);
+
+      const fromDb = await ctx.db.query.tags.findFirst({
+         where: { id: created.id },
+      });
+      expect(fromDb!.isArchived).toBe(true);
    });
 
-   it("propagates NOT_FOUND from repository", async () => {
-      vi.mocked(ensureTagOwnership).mockRejectedValueOnce(
-         AppError.notFound("Tag não encontrada."),
+   it("rejects access from a different team", async () => {
+      const created = await call(
+         tagsRouter.create,
+         { name: "Private" },
+         { context: ctx },
       );
 
       await expect(
-         call(
-            tagsRouter.archive,
-            { id: TAG_ID },
-            {
-               context: createTestContext(),
-            },
-         ),
+         call(tagsRouter.archive, { id: created.id }, { context: ctx2 }),
       ).rejects.toThrow("Tag não encontrada.");
    });
 });

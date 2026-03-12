@@ -31,12 +31,10 @@ import {
    updateInventoryProduct,
    upsertInventorySettings,
 } from "@core/database/repositories/inventory-repository";
-import { createTransaction } from "@core/database/repositories/transactions-repository";
 import { AppError } from "@core/logging/errors";
 import * as inventoryRouter from "@/integrations/orpc/router/inventory";
 
 const PRODUCT_ID = "a0000000-0000-4000-8000-000000000010";
-const SUPPLIER_ID = "a0000000-0000-4000-8000-000000000020";
 const BANK_ACCOUNT_ID = "a0000000-0000-4000-8000-000000000030";
 
 const mockProduct = {
@@ -147,7 +145,7 @@ describe("updateProduct", () => {
       await expect(
          call(
             inventoryRouter.updateProduct,
-            { id: PRODUCT_ID, name: "X" },
+            { id: PRODUCT_ID, name: "Teste" },
             { context: createTestContext() },
          ),
       ).rejects.toThrow("Produto não encontrado.");

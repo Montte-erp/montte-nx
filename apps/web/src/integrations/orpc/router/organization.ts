@@ -1,27 +1,16 @@
-import { ORPCError } from "@orpc/server";
 import { getOrganizationMembers } from "@core/database/repositories/auth-repository";
 import { member, organization } from "@core/database/schemas/auth";
 import { generatePresignedPutUrl } from "@core/files/client";
-import { getLogger } from "@core/logging/root";
+import { WebAppError } from "@core/logging/errors";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { authenticatedProcedure, protectedProcedure } from "../server";
 
-const logger = getLogger().child({ module: "router:organization" });
-
-// =============================================================================
-// Procedures
-// =============================================================================
-// Force rebuild: logo upload procedures added
-
-/**
- * Get all organizations the user is a member of, with their role
- */
 export const getOrganizations = authenticatedProcedure.handler(
    async ({ context }) => {
       const { db, userId } = context;
 
-      const memberships = await db
+      return db
          .select({
             id: organization.id,
             name: organization.name,
@@ -33,14 +22,9 @@ export const getOrganizations = authenticatedProcedure.handler(
          .from(member)
          .innerJoin(organization, eq(member.organizationId, organization.id))
          .where(eq(member.userId, userId));
-
-      return memberships;
    },
 );
 
-/**
- * Get the currently active organization with subscription info
- */
 export const getActiveOrganization = protectedProcedure.handler(
    async ({ context }) => {
       const { auth, headers, session, db, stripeClient, userId } = context;
@@ -52,36 +36,33 @@ export const getActiveOrganization = protectedProcedure.handler(
             return null;
          }
 
-         const organization = await auth.api.getFullOrganization({
+         const org = await auth.api.getFullOrganization({
             headers,
-            query: {
-               organizationId,
-            },
+            query: { organizationId },
          });
 
-         if (!organization) {
+         if (!org) {
             return null;
          }
 
-         // Fetch active subscriptions for the organization
          const subscriptions = await auth.api.listActiveSubscriptions({
             headers,
-            query: { referenceId: organization.id },
+            query: { referenceId: org.id },
          });
 
-         const activeSubscription = subscriptions.find(
-            (subscription) =>
-               subscription.status === "active" ||
-               subscription.status === "trialing",
-         );
+         const activeSubscription =
+            subscriptions.find(
+               (subscription) =>
+                  subscription.status === "active" ||
+                  subscription.status === "trialing",
+            ) ?? null;
 
          const teams = await auth.api.listOrganizationTeams({
             headers,
-            query: { organizationId: organization.id },
+            query: { organizationId: org.id },
          });
          const projectCount = teams.length;
 
-         // Determine project limit based on whether the user has a saved payment method
          let projectLimit = 1;
          try {
             if (stripeClient) {
@@ -101,19 +82,17 @@ export const getActiveOrganization = protectedProcedure.handler(
                   }
                }
             }
-         } catch (_error) {
-            // Fall back to free limit if Stripe check fails
+         } catch {
             projectLimit = 1;
          }
 
          return {
-            ...organization,
-            activeSubscription: activeSubscription ?? null,
+            ...org,
+            activeSubscription,
             projectLimit,
             projectCount,
          };
       } catch (error) {
-         // Convert Better Auth API errors to ORPCError
          if (error && typeof error === "object" && "status" in error) {
             const apiError = error as { status: string; statusCode?: number };
 
@@ -121,39 +100,30 @@ export const getActiveOrganization = protectedProcedure.handler(
                apiError.status === "UNAUTHORIZED" ||
                apiError.statusCode === 401
             ) {
-               throw new ORPCError("UNAUTHORIZED", {
-                  message:
-                     "Authentication required to access organization data",
-               });
+               throw WebAppError.unauthorized(
+                  "Authentication required to access organization data",
+               );
             }
 
             if (
                apiError.status === "FORBIDDEN" ||
                apiError.statusCode === 403
             ) {
-               throw new ORPCError("FORBIDDEN", {
-                  message:
-                     "Insufficient permissions to access organization data",
-               });
+               throw WebAppError.forbidden(
+                  "Insufficient permissions to access organization data",
+               );
             }
          }
 
-         // Re-throw ORPCErrors as-is
-         if (error instanceof ORPCError) {
+         if (error instanceof WebAppError) {
             throw error;
          }
 
-         // Convert unknown errors to INTERNAL_SERVER_ERROR
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to retrieve organization data",
-         });
+         throw WebAppError.internal("Failed to retrieve organization data");
       }
    },
 );
 
-/**
- * List teams for the currently active organization
- */
 export const getOrganizationTeams = protectedProcedure.handler(
    async ({ context }) => {
       const { auth, headers, organizationId } = context;
@@ -169,7 +139,6 @@ export const getOrganizationTeams = protectedProcedure.handler(
             slug: (team as Record<string, unknown>).slug as string,
          }));
       } catch (error) {
-         // Convert Better Auth API errors to ORPCError
          if (error && typeof error === "object" && "status" in error) {
             const apiError = error as { status: string; statusCode?: number };
 
@@ -177,39 +146,30 @@ export const getOrganizationTeams = protectedProcedure.handler(
                apiError.status === "UNAUTHORIZED" ||
                apiError.statusCode === 401
             ) {
-               throw new ORPCError("UNAUTHORIZED", {
-                  message:
-                     "Authentication required to access organization teams",
-               });
+               throw WebAppError.unauthorized(
+                  "Authentication required to access organization teams",
+               );
             }
 
             if (
                apiError.status === "FORBIDDEN" ||
                apiError.statusCode === 403
             ) {
-               throw new ORPCError("FORBIDDEN", {
-                  message:
-                     "Insufficient permissions to access organization teams",
-               });
+               throw WebAppError.forbidden(
+                  "Insufficient permissions to access organization teams",
+               );
             }
          }
 
-         // Re-throw ORPCErrors as-is
-         if (error instanceof ORPCError) {
+         if (error instanceof WebAppError) {
             throw error;
          }
 
-         // Convert unknown errors to INTERNAL_SERVER_ERROR
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to retrieve organization teams",
-         });
+         throw WebAppError.internal("Failed to retrieve organization teams");
       }
    },
 );
 
-/**
- * Get all members of the currently active organization
- */
 export const getMembers = protectedProcedure.handler(async ({ context }) => {
    const { db, organizationId } = context;
 
@@ -226,27 +186,21 @@ export const getMembers = protectedProcedure.handler(async ({ context }) => {
    }));
 });
 
-/**
- * Get teams a specific user has access to within the organization
- */
 export const getMemberTeams = protectedProcedure
    .input(z.object({ userId: z.uuid() }))
    .handler(async ({ context, input }) => {
       const { db, organizationId } = context;
 
-      // Get all teams for this organization
       const teams = await db.query.team.findMany({
          where: { organizationId },
       });
 
-      // Get team memberships for this user
       const teamMemberships = await db.query.teamMember.findMany({
          where: { userId: input.userId },
       });
 
       const memberTeamIds = new Set(teamMemberships.map((tm) => tm.teamId));
 
-      // Return only teams this user is a member of
       return teams
          .filter((t) => memberTeamIds.has(t.id))
          .map((t) => ({
@@ -255,9 +209,6 @@ export const getMemberTeams = protectedProcedure
          }));
    });
 
-/**
- * Check if organization has a specific addon activated
- */
 export const hasAddon = protectedProcedure
    .input(z.object({ addonId: z.string() }))
    .handler(async ({ context, input }) => {
@@ -277,9 +228,6 @@ export const hasAddon = protectedProcedure
       return { hasAddon: !!addon };
    });
 
-/**
- * Get all active addons for organization
- */
 export const getAddons = protectedProcedure.handler(async ({ context }) => {
    const { db, organizationId } = context;
 
@@ -302,9 +250,6 @@ export const getAddons = protectedProcedure.handler(async ({ context }) => {
    }));
 });
 
-/**
- * Generate presigned URL for organization logo upload
- */
 export const generateLogoUploadUrl = protectedProcedure
    .input(
       z.object({
@@ -317,7 +262,6 @@ export const generateLogoUploadUrl = protectedProcedure
 
       try {
          const bucketName = "organization-logos";
-
          const fileName = `org-${organizationId}-${crypto.randomUUID()}.${input.fileExtension}`;
 
          const presignedUrl = await generatePresignedPutUrl(
@@ -332,16 +276,12 @@ export const generateLogoUploadUrl = protectedProcedure
             publicUrl: `/api/files/${bucketName}/${fileName}`,
          };
       } catch (error) {
-         logger.error({ err: error }, "Failed to generate presigned URL");
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to generate upload URL",
+         throw WebAppError.internal("Failed to generate upload URL", {
+            cause: error,
          });
       }
    });
 
-/**
- * Update organization logo URL
- */
 export const updateLogo = protectedProcedure
    .input(
       z.object({
@@ -351,17 +291,10 @@ export const updateLogo = protectedProcedure
    .handler(async ({ context, input }) => {
       const { db, organizationId } = context;
 
-      try {
-         await db
-            .update(organization)
-            .set({ logo: input.logoUrl })
-            .where(eq(organization.id, organizationId));
+      await db
+         .update(organization)
+         .set({ logo: input.logoUrl })
+         .where(eq(organization.id, organizationId));
 
-         return { success: true };
-      } catch (error) {
-         logger.error({ err: error }, "Failed to update organization logo");
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to update logo",
-         });
-      }
+      return { success: true };
    });

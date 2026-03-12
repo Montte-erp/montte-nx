@@ -54,15 +54,9 @@
 - **Role-Based Access**: Owner, Admin, and Member roles with granular permissions
 - **Invitations**: Invite members via email with pending invitation management
 
-### Billing & Subscriptions
+### Billing
 
-| Plan   | Credits |
-| ------ | ------- |
-| FREE   | R$5     |
-| LITE   | R$50    |
-| PRO    | R$100   |
-
-Stripe-powered billing with monthly/annual options and credit-based AI usage tracking.
+Usage-based billing powered by Stripe meter events. Each billable event (AI chat, transactions, webhooks, etc.) has a free tier — usage above the free tier is metered and billed automatically. Optional addon subscriptions (Boost, Scale, Enterprise) unlock additional features.
 
 ### Security & Authentication
 

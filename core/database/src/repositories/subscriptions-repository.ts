@@ -151,6 +151,14 @@ export async function countActiveSubscriptionsByVariant(teamId: string) {
    }
 }
 
+export async function ensureSubscriptionOwnership(id: string, teamId: string) {
+   const subscription = await getSubscription(id);
+   if (!subscription || subscription.teamId !== teamId) {
+      throw AppError.notFound("Assinatura não encontrada.");
+   }
+   return subscription;
+}
+
 export async function listExpiringSoon(teamId: string, withinDays = 30) {
    try {
       const now = new Date().toISOString().split("T")[0]!;

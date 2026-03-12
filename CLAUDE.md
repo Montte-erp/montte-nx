@@ -641,15 +641,9 @@ Procedures in `apps/web/src/integrations/orpc/router/onboarding.ts`.
 
 ---
 
-## Subscription Plans
+## Billing Model
 
-| Plan | Credits                   |
-| ---- | ------------------------- |
-| FREE | R$5 (AI + Platform pools) |
-| LITE | R$50                      |
-| PRO  | R$100                     |
-
-Credit tracking: Redis real-time, materialized views reconcile hourly (worker cron).
+100% usage-based billing via Stripe meter events. No fixed plans or credit pools. Each billable event has a free tier (enforced via Redis counters with monthly TTL). Usage above the free tier is reported to Stripe as meter events and billed automatically. Optional addon subscriptions (Boost, Scale, Enterprise) unlock additional features. Redis tracks real-time usage; materialized views reconcile hourly (worker cron).
 
 ---
 

@@ -1,4 +1,4 @@
-import { ORPCError, call } from "@orpc/server";
+import { call } from "@orpc/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
    TEST_ORG_ID,
@@ -8,17 +8,34 @@ import {
 } from "../../../helpers/create-test-context";
 import { INSIGHT_ID, makeInsight } from "../../../helpers/mock-factories";
 
-// ---------------------------------------------------------------------------
-// Mocks — must be declared before any import that touches the modules
-// ---------------------------------------------------------------------------
-
+vi.mock("@core/database/client", () => ({ db: {} }));
 vi.mock("@core/database/repositories/insight-repository");
+vi.mock("@core/database/repositories/dashboard-repository");
+vi.mock("@core/arcjet/protect", () => ({
+   protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
+   isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
+}));
+vi.mock("@core/posthog/server", () => ({
+   captureError: vi.fn(),
+   captureServerEvent: vi.fn(),
+   identifyUser: vi.fn(),
+   setGroup: vi.fn(),
+}));
+vi.mock("@core/logging/root", () => ({
+   getLogger: () => ({ child: () => ({ warn: vi.fn(), error: vi.fn() }) }),
+}));
+vi.mock("@packages/events/emit", () => ({
+   createEmitFn: vi.fn().mockReturnValue(vi.fn()),
+}));
+vi.mock("@packages/analytics/compute-insight", () => ({
+   computeInsightData: vi.fn(),
+}));
 vi.mock("@packages/events/insight");
 
 import {
    createInsight,
    deleteInsight,
-   getInsightById,
+   ensureInsightOwnership,
    listInsightsByTeam,
    updateInsight,
 } from "@core/database/repositories/insight-repository";
@@ -27,12 +44,9 @@ import {
    emitInsightDeleted,
    emitInsightUpdated,
 } from "@packages/events/insight";
+import { AppError } from "@core/logging/errors";
 
 import * as insightsRouter from "@/integrations/orpc/router/insights";
-
-// ---------------------------------------------------------------------------
-// Setup
-// ---------------------------------------------------------------------------
 
 beforeEach(() => {
    vi.clearAllMocks();
@@ -40,10 +54,6 @@ beforeEach(() => {
    vi.mocked(emitInsightUpdated).mockResolvedValue(undefined);
    vi.mocked(emitInsightDeleted).mockResolvedValue(undefined);
 });
-
-// =============================================================================
-// create
-// =============================================================================
 
 describe("create", () => {
    const input = {
@@ -63,17 +73,15 @@ describe("create", () => {
       const insight = makeInsight();
       vi.mocked(createInsight).mockResolvedValueOnce(insight);
 
-      const ctx = createTestContext();
       const result = await call(insightsRouter.create, input, {
-         context: ctx,
+         context: createTestContext(),
       });
 
       expect(createInsight).toHaveBeenCalledWith(
-         expect.anything(),
+         TEST_ORG_ID,
+         TEST_TEAM_ID,
+         TEST_USER_ID,
          expect.objectContaining({
-            organizationId: TEST_ORG_ID,
-            teamId: TEST_TEAM_ID,
-            createdBy: TEST_USER_ID,
             name: input.name,
             description: input.description,
             type: input.type,
@@ -84,12 +92,13 @@ describe("create", () => {
       expect(result).toEqual(insight);
    });
 
-   it("emits insight.created event with correct params including teamId", async () => {
+   it("emits insight.created event", async () => {
       const insight = makeInsight();
       vi.mocked(createInsight).mockResolvedValueOnce(insight);
 
-      const ctx = createTestContext();
-      await call(insightsRouter.create, input, { context: ctx });
+      await call(insightsRouter.create, input, {
+         context: createTestContext(),
+      });
 
       expect(emitInsightCreated).toHaveBeenCalledWith(
          expect.any(Function),
@@ -106,10 +115,6 @@ describe("create", () => {
    });
 });
 
-// =============================================================================
-// list
-// =============================================================================
-
 describe("list", () => {
    it("returns list of insights", async () => {
       const insights = [
@@ -118,83 +123,67 @@ describe("list", () => {
       ];
       vi.mocked(listInsightsByTeam).mockResolvedValueOnce(insights);
 
-      const ctx = createTestContext();
       const result = await call(insightsRouter.list, undefined, {
-         context: ctx,
+         context: createTestContext(),
       });
 
-      expect(listInsightsByTeam).toHaveBeenCalledWith(
-         expect.anything(),
-         TEST_TEAM_ID,
-         undefined,
-      );
+      expect(listInsightsByTeam).toHaveBeenCalledWith(TEST_TEAM_ID, undefined);
       expect(result).toHaveLength(2);
    });
 
    it("passes type filter when provided", async () => {
       vi.mocked(listInsightsByTeam).mockResolvedValueOnce([]);
 
-      const ctx = createTestContext();
-      await call(insightsRouter.list, { type: "breakdown" }, { context: ctx });
+      await call(
+         insightsRouter.list,
+         { type: "breakdown" },
+         {
+            context: createTestContext(),
+         },
+      );
 
       expect(listInsightsByTeam).toHaveBeenCalledWith(
-         expect.anything(),
          TEST_TEAM_ID,
          "breakdown",
       );
    });
 });
 
-// =============================================================================
-// getById
-// =============================================================================
-
 describe("getById", () => {
    it("returns insight by id", async () => {
       const insight = makeInsight();
-      vi.mocked(getInsightById).mockResolvedValueOnce(insight);
+      vi.mocked(ensureInsightOwnership).mockResolvedValueOnce(insight);
 
-      const ctx = createTestContext();
       const result = await call(
          insightsRouter.getById,
          { id: INSIGHT_ID },
-         { context: ctx },
+         { context: createTestContext() },
       );
 
-      expect(getInsightById).toHaveBeenCalledWith(
-         expect.anything(),
+      expect(ensureInsightOwnership).toHaveBeenCalledWith(
          INSIGHT_ID,
+         TEST_ORG_ID,
+         TEST_TEAM_ID,
       );
       expect(result).toEqual(insight);
    });
 
-   it("throws NOT_FOUND when insight does not exist", async () => {
-      vi.mocked(getInsightById).mockResolvedValueOnce(null as any);
-
-      const ctx = createTestContext();
-      await expect(
-         call(insightsRouter.getById, { id: INSIGHT_ID }, { context: ctx }),
-      ).rejects.toSatisfy(
-         (e: ORPCError<string, unknown>) => e.code === "NOT_FOUND",
+   it("propagates NOT_FOUND from repository", async () => {
+      vi.mocked(ensureInsightOwnership).mockRejectedValueOnce(
+         AppError.notFound("Insight não encontrado."),
       );
-   });
 
-   it("throws NOT_FOUND when insight belongs to different org", async () => {
-      const insight = makeInsight({ organizationId: "other-org-id" });
-      vi.mocked(getInsightById).mockResolvedValueOnce(insight);
-
-      const ctx = createTestContext();
       await expect(
-         call(insightsRouter.getById, { id: INSIGHT_ID }, { context: ctx }),
-      ).rejects.toSatisfy(
-         (e: ORPCError<string, unknown>) => e.code === "NOT_FOUND",
-      );
+         call(
+            insightsRouter.getById,
+            { id: INSIGHT_ID },
+            {
+               context: createTestContext(),
+            },
+         ),
+      ).rejects.toThrow("Insight não encontrado.");
    });
 });
-
-// =============================================================================
-// update
-// =============================================================================
 
 describe("update", () => {
    const input = {
@@ -203,21 +192,24 @@ describe("update", () => {
       description: "Updated description",
    };
 
-   it("updates insight successfully and emits event with changedFields", async () => {
-      vi.mocked(getInsightById).mockResolvedValueOnce(makeInsight());
+   it("updates insight and emits event", async () => {
+      vi.mocked(ensureInsightOwnership).mockResolvedValueOnce(makeInsight());
       const updated = makeInsight({
          name: "Updated Insight",
          description: "Updated description",
       });
       vi.mocked(updateInsight).mockResolvedValueOnce(updated);
 
-      const ctx = createTestContext();
       const result = await call(insightsRouter.update, input, {
-         context: ctx,
+         context: createTestContext(),
       });
 
+      expect(ensureInsightOwnership).toHaveBeenCalledWith(
+         INSIGHT_ID,
+         TEST_ORG_ID,
+         TEST_TEAM_ID,
+      );
       expect(updateInsight).toHaveBeenCalledWith(
-         expect.anything(),
          INSIGHT_ID,
          expect.objectContaining({
             name: "Updated Insight",
@@ -240,35 +232,34 @@ describe("update", () => {
       );
    });
 
-   it("throws NOT_FOUND when insight does not exist", async () => {
-      vi.mocked(getInsightById).mockResolvedValueOnce(null as any);
-
-      const ctx = createTestContext();
-      await expect(
-         call(insightsRouter.update, input, { context: ctx }),
-      ).rejects.toSatisfy(
-         (e: ORPCError<string, unknown>) => e.code === "NOT_FOUND",
+   it("propagates NOT_FOUND from repository", async () => {
+      vi.mocked(ensureInsightOwnership).mockRejectedValueOnce(
+         AppError.notFound("Insight não encontrado."),
       );
+
+      await expect(
+         call(insightsRouter.update, input, { context: createTestContext() }),
+      ).rejects.toThrow("Insight não encontrado.");
    });
 });
 
-// =============================================================================
-// remove
-// =============================================================================
-
 describe("remove", () => {
    it("deletes insight and emits event", async () => {
-      vi.mocked(getInsightById).mockResolvedValueOnce(makeInsight());
+      vi.mocked(ensureInsightOwnership).mockResolvedValueOnce(makeInsight());
       vi.mocked(deleteInsight).mockResolvedValueOnce(undefined);
 
-      const ctx = createTestContext();
       const result = await call(
          insightsRouter.remove,
          { id: INSIGHT_ID },
-         { context: ctx },
+         { context: createTestContext() },
       );
 
-      expect(deleteInsight).toHaveBeenCalledWith(expect.anything(), INSIGHT_ID);
+      expect(ensureInsightOwnership).toHaveBeenCalledWith(
+         INSIGHT_ID,
+         TEST_ORG_ID,
+         TEST_TEAM_ID,
+      );
+      expect(deleteInsight).toHaveBeenCalledWith(INSIGHT_ID);
       expect(result).toEqual({ success: true });
 
       expect(emitInsightDeleted).toHaveBeenCalledWith(
@@ -284,14 +275,19 @@ describe("remove", () => {
       );
    });
 
-   it("throws NOT_FOUND when insight does not exist", async () => {
-      vi.mocked(getInsightById).mockResolvedValueOnce(null as any);
-
-      const ctx = createTestContext();
-      await expect(
-         call(insightsRouter.remove, { id: INSIGHT_ID }, { context: ctx }),
-      ).rejects.toSatisfy(
-         (e: ORPCError<string, unknown>) => e.code === "NOT_FOUND",
+   it("propagates NOT_FOUND from repository", async () => {
+      vi.mocked(ensureInsightOwnership).mockRejectedValueOnce(
+         AppError.notFound("Insight não encontrado."),
       );
+
+      await expect(
+         call(
+            insightsRouter.remove,
+            { id: INSIGHT_ID },
+            {
+               context: createTestContext(),
+            },
+         ),
+      ).rejects.toThrow("Insight não encontrado.");
    });
 });
