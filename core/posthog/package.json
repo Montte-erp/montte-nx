@@ -11,21 +11,18 @@
       "./server": {
          "types": "./dist/src/server.d.ts",
          "default": "./src/server.ts"
-      },
-      "./sdk/server": {
-         "types": "./dist/src/sdk/server.d.ts",
-         "default": "./src/sdk/server.ts"
       }
    },
    "scripts": {
       "build": "tsc --build",
-      "check": "oxlint ./src",
+      "check": "oxlint -c ../../tooling/oxc/core.json ./src",
+      "format": "oxfmt --config ../../tooling/oxc/oxfmt.json --write ./src",
+      "format:check": "oxfmt --config ../../tooling/oxc/oxfmt.json --check ./src",
       "test": "vitest run --passWithNoTests",
       "typecheck": "tsgo"
    },
    "dependencies": {
       "@core/environment": "workspace:*",
-      "posthog-js": "catalog:analytics-client",
       "posthog-node": "catalog:analytics-client"
    },
    "devDependencies": {

@@ -1,9 +1,10 @@
 import type { DatabaseInstance } from "@core/database/client";
 import { team } from "@core/database/schemas/auth";
-import { captureSDKAuthFailed } from "@core/posthog/sdk/server";
+import { getLogger } from "@core/logging/root";
 import { eq } from "drizzle-orm";
 import { auth } from "../integrations/auth";
-import { posthog } from "../integrations/posthog";
+
+const logger = getLogger().child({ module: "sdk-auth" });
 
 /**
  * Resolves an API key from the request, checking multiple sources:
@@ -45,10 +46,7 @@ export async function authenticateRequest(
    const apiKeyValue = resolveApiKey(request);
 
    if (!apiKeyValue) {
-      captureSDKAuthFailed(posthog, {
-         reason: "missing_api_key",
-         endpoint,
-      });
+      logger.error({ reason: "missing_api_key", endpoint }, "SDK auth failed");
       set.status = 401;
       return { success: false, error: "Missing API Key." };
    }
@@ -61,15 +59,16 @@ export async function authenticateRequest(
       const isRateLimited = result.error?.code === "RATE_LIMITED";
       const reason = isRateLimited ? "rate_limited" : "invalid_key";
 
-      captureSDKAuthFailed(posthog, {
-         reason,
-         endpoint,
-         organizationId: result.key?.metadata?.organizationId as
-            | string
-            | undefined,
-         plan: result.key?.metadata?.plan as string | undefined,
-         remaining: result.key?.remaining ?? undefined,
-      });
+      logger.error(
+         {
+            reason,
+            endpoint,
+            organizationId: result.key?.metadata?.organizationId,
+            plan: result.key?.metadata?.plan,
+            remaining: result.key?.remaining,
+         },
+         "SDK auth failed",
+      );
 
       if (isRateLimited) {
          set.status = 429;
