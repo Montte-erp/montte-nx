@@ -1,4 +1,0 @@
-{
-   "extends": "@tooling/typescript/tsconfig.package.json",
-   "include": ["src"]
-}
