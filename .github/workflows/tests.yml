@@ -19,5 +19,12 @@ jobs:
          - name: Bun & Nx Setup
            uses: ./.github/actions/setup-bun-nx
 
-         - name: Run Nx affected tests
-           run: bunx nx affected -t test --base=origin/master --head=HEAD
+         - name: Run Nx affected tests with coverage
+           run: bunx nx affected -t test --base=origin/master --head=HEAD -- --coverage --coverage.reporter=lcov
+
+         - name: Upload coverage reports to Codecov
+           uses: codecov/codecov-action@v5
+           with:
+              token: ${{ secrets.CODECOV_TOKEN }}
+              files: ./apps/*/coverage/lcov.info,./core/*/coverage/lcov.info,./packages/*/coverage/lcov.info
+              fail_ci_if_error: true
