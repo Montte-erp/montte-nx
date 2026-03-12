@@ -1,9 +1,8 @@
-import { ORPCError } from "@orpc/server";
 import {
    archiveInventoryProduct,
    createInventoryMovement,
    createInventoryProduct,
-   getInventoryProduct,
+   ensureProductOwnership,
    getInventorySettings,
    listInventoryMovements,
    listInventoryProducts,
@@ -13,22 +12,15 @@ import {
 } from "@core/database/repositories/inventory-repository";
 import { createTransaction } from "@core/database/repositories/transactions-repository";
 import {
-   inventoryProducts,
+   createInventoryProductSchema,
    inventorySettings,
+   updateInventoryProductSchema,
 } from "@core/database/schemas/inventory";
 import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
-const productSchema = createInsertSchema(inventoryProducts).pick({
-   name: true,
-   description: true,
-   baseUnit: true,
-   purchaseUnit: true,
-   purchaseUnitFactor: true,
-   sellingPrice: true,
-   initialStock: true,
-});
+const idSchema = z.object({ id: z.string().uuid() });
 
 const movementSchema = z.discriminatedUnion("type", [
    z.object({
@@ -69,49 +61,27 @@ const settingsSchema = createInsertSchema(inventorySettings).omit({
 });
 
 export const getProducts = protectedProcedure.handler(async ({ context }) => {
-   const { teamId } = context;
-   return listInventoryProducts(teamId);
+   return listInventoryProducts(context.teamId);
 });
 
 export const createProduct = protectedProcedure
-   .input(productSchema)
+   .input(createInventoryProductSchema)
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
-      return createInventoryProduct(teamId, {
-         name: input.name,
-         description: input.description ?? null,
-         baseUnit: input.baseUnit,
-         purchaseUnit: input.purchaseUnit,
-         purchaseUnitFactor: input.purchaseUnitFactor ?? "1",
-         sellingPrice: input.sellingPrice ?? null,
-         initialStock: input.initialStock ?? "0",
-      });
+      return createInventoryProduct(context.teamId, input);
    });
 
 export const updateProduct = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }).merge(productSchema.partial()))
+   .input(idSchema.merge(updateInventoryProductSchema.partial()))
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
+      await ensureProductOwnership(input.id, context.teamId);
       const { id, ...data } = input;
-      const product = await getInventoryProduct(id);
-      if (!product || product.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Produto não encontrado.",
-         });
-      }
       return updateInventoryProduct(id, data);
    });
 
 export const archiveProduct = protectedProcedure
-   .input(z.object({ id: z.string().uuid() }))
+   .input(idSchema)
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
-      const product = await getInventoryProduct(input.id);
-      if (!product || product.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Produto não encontrado.",
-         });
-      }
+      await ensureProductOwnership(input.id, context.teamId);
       return archiveInventoryProduct(input.id);
    });
 
@@ -119,14 +89,7 @@ export const registerMovement = protectedProcedure
    .input(movementSchema)
    .handler(async ({ context, input }) => {
       const { teamId } = context;
-
-      const product = await getInventoryProduct(input.productId);
-      if (!product || product.teamId !== teamId) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Produto não encontrado.",
-         });
-      }
-
+      const product = await ensureProductOwnership(input.productId, teamId);
       const settings = await getInventorySettings(teamId);
 
       let transactionId: string | null = null;
@@ -168,12 +131,6 @@ export const registerMovement = protectedProcedure
          baseQty = input.qty;
          unitPrice = input.unitPrice ?? input.totalAmount / baseQty;
 
-         if (Number(product.currentStock) < baseQty) {
-            throw new ORPCError("BAD_REQUEST", {
-               message: "Estoque insuficiente para registrar a venda.",
-            });
-         }
-
          try {
             const bankAccountId = settings?.purchaseBankAccountId;
             if (bankAccountId) {
@@ -191,12 +148,6 @@ export const registerMovement = protectedProcedure
          } catch {}
       } else {
          baseQty = input.qty;
-
-         if (Number(product.currentStock) < baseQty) {
-            throw new ORPCError("BAD_REQUEST", {
-               message: "Estoque insuficiente para registrar o descarte.",
-            });
-         }
 
          const lossAmount = baseQty * Number(product.sellingPrice ?? 0);
          if (lossAmount > 0 && settings?.purchaseBankAccountId) {
@@ -234,26 +185,21 @@ export const registerMovement = protectedProcedure
                  unitPrice: String(unitPrice ?? 0),
               };
 
-      const movement = await createInventoryMovement(teamId, movementData);
-
-      return movement;
+      return createInventoryMovement(teamId, movementData);
    });
 
 export const getMovements = protectedProcedure
    .input(z.object({ productId: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
-      return listInventoryMovements(input.productId, teamId);
+      return listInventoryMovements(input.productId, context.teamId);
    });
 
 export const getSettings = protectedProcedure.handler(async ({ context }) => {
-   const { teamId } = context;
-   return getInventorySettings(teamId);
+   return getInventorySettings(context.teamId);
 });
 
 export const upsertSettings = protectedProcedure
    .input(settingsSchema.partial())
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
-      return upsertInventorySettings(teamId, input);
+      return upsertInventorySettings(context.teamId, input);
    });

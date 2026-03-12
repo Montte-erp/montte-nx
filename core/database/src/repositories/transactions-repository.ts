@@ -30,6 +30,10 @@ import {
    transactions,
    transactionTags,
 } from "@core/database/schemas/transactions";
+import { getBankAccount } from "@core/database/repositories/bank-accounts-repository";
+import { getCategory } from "@core/database/repositories/categories-repository";
+import { getContact } from "@core/database/repositories/contacts-repository";
+import { getTag } from "@core/database/repositories/tags-repository";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
 import { contacts } from "@core/database/schemas/contacts";
@@ -96,6 +100,84 @@ function conditionToSql(condition: Condition) {
          return ilike(col as Parameters<typeof ilike>[0], `%${value}`);
       default:
          return null;
+   }
+}
+
+export async function ensureTransactionOwnership(id: string, teamId: string) {
+   const [transaction] = await db
+      .select()
+      .from(transactions)
+      .where(and(eq(transactions.id, id), eq(transactions.teamId, teamId)));
+   if (!transaction) {
+      throw AppError.notFound("Transação não encontrada.");
+   }
+   return transaction;
+}
+
+export async function validateTransactionReferences(
+   teamId: string,
+   refs: {
+      bankAccountId?: string | null;
+      destinationBankAccountId?: string | null;
+      categoryId?: string | null;
+      contactId?: string | null;
+      tagIds?: string[];
+      date?: Date | string | null;
+   },
+) {
+   if (refs.bankAccountId) {
+      const account = await getBankAccount(refs.bankAccountId);
+      if (!account || account.teamId !== teamId) {
+         throw AppError.validation("Conta bancária inválida.");
+      }
+      if (account.initialBalanceDate && refs.date) {
+         const txDate = new Date(refs.date);
+         const balanceDate = new Date(account.initialBalanceDate);
+         if (txDate < balanceDate) {
+            throw AppError.validation(
+               `Não é possível registrar lançamentos antes da data do saldo inicial (${balanceDate.toLocaleDateString("pt-BR")}).`,
+            );
+         }
+      }
+   }
+
+   if (refs.destinationBankAccountId) {
+      const dest = await getBankAccount(refs.destinationBankAccountId);
+      if (!dest || dest.teamId !== teamId) {
+         throw AppError.validation("Conta de destino inválida.");
+      }
+      if (dest.initialBalanceDate && refs.date) {
+         const txDate = new Date(refs.date);
+         const balanceDate = new Date(dest.initialBalanceDate);
+         if (txDate < balanceDate) {
+            throw AppError.validation(
+               `Não é possível registrar lançamentos antes da data do saldo inicial da conta de destino (${balanceDate.toLocaleDateString("pt-BR")}).`,
+            );
+         }
+      }
+   }
+
+   if (refs.categoryId) {
+      const cat = await getCategory(refs.categoryId);
+      if (!cat || cat.teamId !== teamId) {
+         throw AppError.validation("Categoria inválida.");
+      }
+   }
+
+   if (refs.tagIds && refs.tagIds.length > 0) {
+      for (const tagId of refs.tagIds) {
+         const tag = await getTag(tagId);
+         if (!tag || tag.teamId !== teamId) {
+            throw AppError.validation("Tag inválida.");
+         }
+      }
+   }
+
+   if (refs.contactId) {
+      const contact = await getContact(refs.contactId);
+      if (!contact || contact.teamId !== teamId) {
+         throw AppError.validation("Contato inválido.");
+      }
    }
 }
 

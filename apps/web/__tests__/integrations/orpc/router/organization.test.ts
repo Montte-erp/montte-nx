@@ -128,7 +128,7 @@ describe("getActiveOrganization", () => {
       };
       mockAuth.api.getFullOrganization.mockResolvedValueOnce(fullOrg);
       mockAuth.api.listActiveSubscriptions.mockResolvedValueOnce([
-         { id: "sub_1", status: "active", plan: "pro" },
+         { id: "sub_1", status: "active", plan: "boost" },
       ]);
       mockAuth.api.listOrganizationTeams.mockResolvedValueOnce([
          { id: "team-1" },
@@ -166,7 +166,7 @@ describe("getActiveOrganization", () => {
       });
       expect(result).toEqual({
          ...fullOrg,
-         activeSubscription: { id: "sub_1", status: "active", plan: "pro" },
+         activeSubscription: { id: "sub_1", status: "active", plan: "boost" },
          projectLimit: 6,
          projectCount: 2,
       });
@@ -210,7 +210,7 @@ describe("getActiveOrganization", () => {
       };
       mockAuth.api.getFullOrganization.mockResolvedValueOnce(fullOrg);
       mockAuth.api.listActiveSubscriptions.mockResolvedValueOnce([
-         { id: "sub_1", status: "canceled", plan: "pro" },
+         { id: "sub_1", status: "canceled", plan: "boost" },
       ]);
       mockAuth.api.listOrganizationTeams.mockResolvedValueOnce([]);
 

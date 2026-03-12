@@ -14,6 +14,52 @@ import {
    updateBillSchema,
    createRecurrenceSettingSchema,
 } from "@core/database/schemas/bills";
+import type { ContactSubscription } from "@core/database/schemas/subscriptions";
+import type { ServiceVariant } from "@core/database/schemas/services";
+import { getBankAccount } from "@core/database/repositories/bank-accounts-repository";
+import { getCategory } from "@core/database/repositories/categories-repository";
+import { getContact } from "@core/database/repositories/contacts-repository";
+
+export async function ensureBillOwnership(
+   id: string,
+   teamId: string,
+): Promise<Bill> {
+   const bill = await getBill(id);
+   if (!bill || bill.teamId !== teamId) {
+      throw AppError.notFound("Conta a pagar/receber não encontrada.");
+   }
+   return bill;
+}
+
+export async function validateBillReferences(
+   teamId: string,
+   refs: {
+      bankAccountId?: string | null;
+      categoryId?: string | null;
+      contactId?: string | null;
+   },
+): Promise<void> {
+   if (refs.bankAccountId) {
+      const account = await getBankAccount(refs.bankAccountId);
+      if (!account || account.teamId !== teamId) {
+         throw AppError.validation("Conta bancária inválida.");
+      }
+   }
+
+   if (refs.categoryId) {
+      const cat = await getCategory(refs.categoryId);
+      if (!cat || cat.teamId !== teamId) {
+         throw AppError.validation("Categoria inválida.");
+      }
+   }
+
+   if (refs.contactId) {
+      const contact = await getContact(refs.contactId);
+      if (!contact || contact.teamId !== teamId) {
+         throw AppError.validation("Contato inválido.");
+      }
+   }
+}
 
 export async function createBill(
    teamId: string,

@@ -70,6 +70,14 @@ export async function getInventoryProduct(id: string) {
    }
 }
 
+export async function ensureProductOwnership(id: string, teamId: string) {
+   const product = await getInventoryProduct(id);
+   if (!product || product.teamId !== teamId) {
+      throw AppError.notFound("Produto não encontrado.");
+   }
+   return product;
+}
+
 export async function updateInventoryProduct(
    id: string,
    data: UpdateInventoryProductInput,

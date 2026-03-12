@@ -31,7 +31,6 @@ import {
    Calendar,
    Check,
    Copy,
-   CreditCard,
    Hash,
    Loader2,
    Users,
@@ -292,12 +291,10 @@ function OrganizationDetailsSection({
    slug,
    memberCount,
    createdAt,
-   plan,
 }: {
    slug: string;
    memberCount: number;
    createdAt: Date | string | null;
-   plan: string | null;
 }) {
    const [lastCopied, copy] = useCopyToClipboard();
    const copied = lastCopied === slug;
@@ -363,20 +360,6 @@ function OrganizationDetailsSection({
                   <ItemDescription>{formatDate(createdAt)}</ItemDescription>
                </ItemContent>
             </Item>
-
-            {plan && (
-               <Item variant="muted">
-                  <ItemMedia variant="icon">
-                     <CreditCard className="size-4" />
-                  </ItemMedia>
-                  <ItemContent>
-                     <ItemTitle>Plano</ItemTitle>
-                     <ItemDescription className="capitalize">
-                        {plan}
-                     </ItemDescription>
-                  </ItemContent>
-               </Item>
-            )}
          </div>
       </section>
    );
@@ -484,7 +467,6 @@ function OrganizationGeneralContent() {
          <OrganizationDetailsSection
             createdAt={activeOrganization.createdAt}
             memberCount={memberCount}
-            plan={activeOrganization.activeSubscription?.plan ?? "free"}
             slug={activeOrganization.slug}
          />
       </div>
