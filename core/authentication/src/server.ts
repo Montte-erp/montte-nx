@@ -7,14 +7,14 @@ import { getDomain, isProduction } from "@core/environment/helpers";
 import type { ServerEnv } from "@core/environment/server";
 import { getLogger } from "@core/logging/root";
 import { getElysiaPosthogConfig } from "@core/posthog/server";
-import { createRedisConnection } from "@core/redis/connection";
-import { getStripeClient } from "@packages/stripe";
+import { redis } from "@core/redis/connection";
+import { stripeClient } from "@core/stripe";
 import {
-   getResendClient,
    sendEmailOTP,
    sendMagicLinkEmail,
    sendOrganizationInvitation,
-} from "@packages/transactional/client";
+} from "@core/transactional/client";
+import { resendClient } from "@core/transactional/utils";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { betterAuth } from "better-auth/minimal";
 import {
@@ -29,7 +29,7 @@ import {
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import type Stripe from "stripe";
 import { z } from "zod";
-import { createBetterAuthStorage } from "./cache";
+import { createBetterAuthStorage } from "@core/authentication/cache";
 
 const logger = getLogger().child({ module: "auth" });
 
@@ -52,10 +52,6 @@ export interface SimplifiedAuthConfig {
 
 export function createAuth(config: SimplifiedAuthConfig) {
    const { db, env } = config;
-
-   const redis = createRedisConnection(env.REDIS_URL);
-   const resendClient = getResendClient(env.RESEND_API_KEY ?? "");
-   const stripeClient = getStripeClient(env.STRIPE_SECRET_KEY);
 
    const posthogClient = getElysiaPosthogConfig({
       POSTHOG_HOST: env.POSTHOG_HOST,

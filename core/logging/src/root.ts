@@ -1,5 +1,5 @@
-import { createSafeLogger } from "./logger";
-import type { Logger, LoggerConfig } from "./types";
+import { createSafeLogger } from "@core/logging";
+import type { Logger, LoggerConfig } from "@core/logging/types";
 
 let rootLogger: Logger | null = null;
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { createDiff, createLineDiff } from "../src/diff";
 
 describe("diff utilities", () => {

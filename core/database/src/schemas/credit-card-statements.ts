@@ -11,9 +11,9 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
-import { bills } from "./bills";
-import { creditCards } from "./credit-cards";
-import { transactions } from "./transactions";
+import { bills } from "@core/database/schemas/bills";
+import { creditCards } from "@core/database/schemas/credit-cards";
+import { transactions } from "@core/database/schemas/transactions";
 
 // =============================================================================
 // Enums

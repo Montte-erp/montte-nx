@@ -13,6 +13,7 @@
 ### Task 1: Contacts schema + validators
 
 **Files:**
+
 - Modify: `core/database/src/schemas/contacts.ts`
 
 **Context:** Contacts schema currently has no Zod validators and no `isArchived` field. We need to add both. Follow the pattern from `bank-accounts.ts` schema (which has `createBankAccountSchema`, `updateBankAccountSchema`, `numericPositive` helpers, and type exports).
@@ -78,6 +79,7 @@ git commit -m "feat(database): add isArchived field and Zod validators to contac
 ### Task 2: Contacts repository refactor
 
 **Files:**
+
 - Modify: `core/database/src/repositories/contacts-repository.ts`
 
 **Context:** Current contacts repository uses `db: DatabaseInstance` parameter pattern. Refactor to singleton `db` import, `validateInput`, and add `archiveContact`/`reactivateContact`. The `deleteContact` must check both transactions AND bills. Follow `bank-accounts-repository.ts` pattern exactly.
@@ -246,6 +248,7 @@ git commit -m "refactor(database): rewrite contacts repository with singleton db
 ### Task 3: Contacts repository tests
 
 **Files:**
+
 - Create: `core/database/__tests__/repositories/contacts-repository.test.ts`
 
 **Context:** Test the contacts repository with PGlite. Follow the `bank-accounts-repository.test.ts` pattern exactly: `setupTestDb`, `vi.mock`, `randomTeamId`, `validCreateInput` helper.
@@ -300,14 +303,20 @@ describe("contacts-repository", () => {
       it("rejects name longer than 120 characters", async () => {
          const teamId = randomTeamId();
          await expect(
-            repo.createContact(teamId, validCreateInput({ name: "A".repeat(121) })),
+            repo.createContact(
+               teamId,
+               validCreateInput({ name: "A".repeat(121) }),
+            ),
          ).rejects.toThrow(/máximo 120/);
       });
 
       it("rejects invalid email", async () => {
          const teamId = randomTeamId();
          await expect(
-            repo.createContact(teamId, validCreateInput({ email: "not-an-email" })),
+            repo.createContact(
+               teamId,
+               validCreateInput({ email: "not-an-email" }),
+            ),
          ).rejects.toThrow(/Email/i);
       });
    });
@@ -344,7 +353,10 @@ describe("contacts-repository", () => {
 
       it("lists all contacts when includeArchived is true", async () => {
          const teamId = randomTeamId();
-         await repo.createContact(teamId, validCreateInput({ name: "Contact A" }));
+         await repo.createContact(
+            teamId,
+            validCreateInput({ name: "Contact A" }),
+         );
          const b = await repo.createContact(
             teamId,
             validCreateInput({ name: "Contact B" }),
@@ -498,6 +510,7 @@ git commit -m "test(database): add contacts repository tests"
 ### Task 4: Transactions schema validators
 
 **Files:**
+
 - Modify: `core/database/src/schemas/transactions.ts`
 
 **Context:** Transactions schema has no Zod validators. Add `createTransactionSchema` and `updateTransactionSchema` with type-based validation (superRefine). Also change `contactId` onDelete from `set null` to `restrict`.
@@ -505,12 +518,14 @@ git commit -m "test(database): add contacts repository tests"
 **Step 1: Add validators and change contactId onDelete**
 
 Add to imports:
+
 ```typescript
 import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
 ```
 
 Change contactId reference:
+
 ```typescript
 contactId: uuid("contact_id").references(() => contacts.id, {
    onDelete: "restrict",
@@ -518,6 +533,7 @@ contactId: uuid("contact_id").references(() => contacts.id, {
 ```
 
 Add after type exports:
+
 ```typescript
 const numericPositive = (msg: string) =>
    z.string().refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0, {
@@ -672,6 +688,7 @@ git commit -m "feat(database): add Zod validators to transactions schema"
 ### Task 5: Bills schema validators
 
 **Files:**
+
 - Modify: `core/database/src/schemas/bills.ts`
 
 **Context:** Bills schema has no Zod validators. Add validators for bills and recurrence settings. Also make `contactId` a real FK to contacts with onDelete restrict.
@@ -679,6 +696,7 @@ git commit -m "feat(database): add Zod validators to transactions schema"
 **Step 1: Add FK import and validators**
 
 Add to imports:
+
 ```typescript
 import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
@@ -686,6 +704,7 @@ import { contacts } from "./contacts";
 ```
 
 Change `contactId` in bills table:
+
 ```typescript
 contactId: uuid("contact_id").references(() => contacts.id, {
    onDelete: "restrict",
@@ -693,6 +712,7 @@ contactId: uuid("contact_id").references(() => contacts.id, {
 ```
 
 Add after type exports:
+
 ```typescript
 const numericPositive = (msg: string) =>
    z.string().refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0, {
@@ -730,9 +750,7 @@ export const createBillSchema = baseBillSchema.extend({
    type: z.enum(["payable", "receivable"], {
       required_error: "Tipo é obrigatório.",
    }),
-   amount: numericPositive(
-      "Valor deve ser um número válido maior que zero.",
-   ),
+   amount: numericPositive("Valor deve ser um número válido maior que zero."),
    dueDate: dateSchema,
    bankAccountId: z.string().uuid().nullable().optional(),
    categoryId: z.string().uuid().nullable().optional(),
@@ -784,6 +802,7 @@ git commit -m "feat(database): add Zod validators to bills schema and make conta
 ### Task 6: Transactions repository refactor
 
 **Files:**
+
 - Modify: `core/database/src/repositories/transactions-repository.ts`
 
 **Context:** Refactor to singleton db, add `validateInput` with Zod, add `@f-o-t/money` for summary values. Keep all existing functions. The complex `listTransactions` with condition groups and weighted scoring must be preserved exactly as-is — only remove `db: DatabaseInstance` parameter and use singleton `db`.
@@ -791,6 +810,7 @@ git commit -m "feat(database): add Zod validators to bills schema and make conta
 **Step 1: Rewrite transactions-repository.ts**
 
 Key changes:
+
 - Replace `db: DatabaseInstance` param with `import { db } from "@core/database/client"`
 - Add `validateInput` in `createTransaction` and `updateTransaction`
 - Import schemas: `createTransactionSchema`, `updateTransactionSchema`
@@ -800,6 +820,7 @@ Key changes:
 - Keep `conditionToSql`, `ListTransactionsFilter`, weighted scoring, and all query logic exactly
 
 Import changes at top:
+
 ```typescript
 import type { Condition, ConditionGroup } from "@f-o-t/condition-evaluator";
 import { evaluateConditionGroup } from "@f-o-t/condition-evaluator";
@@ -840,6 +861,7 @@ import {
 ```
 
 Function signature changes (remove `db: DatabaseInstance` first param from all):
+
 - `createTransaction(data: CreateTransactionInput, tagIds?: string[])` — add `validateInput(createTransactionSchema, data)` before insert
 - `listTransactions(filter: ListTransactionsFilter)` — no validation needed (filter interface)
 - `getTransactionsSummary(filter: ListTransactionsFilter)` — wrap return values with `toDecimal(of(value, "BRL"))`
@@ -851,6 +873,7 @@ Function signature changes (remove `db: DatabaseInstance` first param from all):
 - `replaceTransactionItems(transactionId: string, teamId: string, items: ...)`
 
 For `getTransactionsSummary`, change the return to use `@f-o-t/money`:
+
 ```typescript
 const currency = "BRL";
 return {
@@ -862,6 +885,7 @@ return {
 ```
 
 For `createTransaction`, the `data` param type changes from `NewTransaction` to `CreateTransactionInput`. The function validates and then inserts with `teamId` from the validated data (note: `teamId` is NOT in the schema validator — it's added by the caller). So the signature should be:
+
 ```typescript
 export async function createTransaction(
    teamId: string,
@@ -880,6 +904,7 @@ export async function createTransaction(
 ```
 
 For `updateTransaction`:
+
 ```typescript
 export async function updateTransaction(
    id: string,
@@ -909,6 +934,7 @@ git commit -m "refactor(database): rewrite transactions repository with singleto
 ### Task 7: Bills repository refactor
 
 **Files:**
+
 - Modify: `core/database/src/repositories/bills-repository.ts`
 
 **Context:** Refactor to singleton db, add `validateInput` with Zod, add `@f-o-t/money` for amount. Keep all existing functions. Follow the same pattern as transactions repository refactor.
@@ -916,6 +942,7 @@ git commit -m "refactor(database): rewrite transactions repository with singleto
 **Step 1: Rewrite bills-repository.ts**
 
 Import changes:
+
 ```typescript
 import { AppError, propagateError, validateInput } from "@core/utils/errors";
 import { and, count, eq, gte, lte, sql } from "drizzle-orm";
@@ -935,6 +962,7 @@ import {
 ```
 
 Function signature changes (remove `db: DatabaseInstance` first param from all):
+
 - `createBill(teamId: string, data: CreateBillInput)` — add `validateInput(createBillSchema, data)`, then `{ ...validated, teamId }`
 - `createBillsBatch(teamId: string, data: CreateBillInput[])` — validate each item, add teamId
 - `createRecurrenceSetting(teamId: string, data: CreateRecurrenceSettingInput)` — validate, add teamId
@@ -953,7 +981,10 @@ Option B: Validate each item.
 Go with **Option A** for batch — the caller (router) validates the base bill input, then computes installment/recurrence data. The batch function just inserts. Individual `createBill` validates.
 
 ```typescript
-export async function createBill(teamId: string, data: CreateBillInput): Promise<Bill> {
+export async function createBill(
+   teamId: string,
+   data: CreateBillInput,
+): Promise<Bill> {
    const validated = validateInput(createBillSchema, data);
    try {
       const [bill] = await db
@@ -1013,6 +1044,7 @@ git commit -m "refactor(database): rewrite bills repository with singleton db pa
 ### Task 8: Update consumers (routers + workers)
 
 **Files:**
+
 - Modify: `apps/web/src/integrations/orpc/router/transactions.ts`
 - Modify: `apps/web/src/integrations/orpc/router/bills.ts`
 - Modify: `apps/web/src/integrations/orpc/router/contacts.ts`
@@ -1024,6 +1056,7 @@ git commit -m "refactor(database): rewrite bills repository with singleton db pa
 **Step 1: Update transactions router**
 
 Key changes in `apps/web/src/integrations/orpc/router/transactions.ts`:
+
 - `createTransaction(db, {...data, teamId}, tagIds)` → `createTransaction(teamId, data, tagIds)`
 - `listTransactions(db, { teamId, ...input })` → `listTransactions({ teamId, ...input })`
 - `getTransactionsSummary(db, { teamId, ...input })` → `getTransactionsSummary({ teamId, ...input })`
@@ -1038,6 +1071,7 @@ Key changes in `apps/web/src/integrations/orpc/router/transactions.ts`:
 **Step 2: Update bills router**
 
 Key changes in `apps/web/src/integrations/orpc/router/bills.ts`:
+
 - `createBill(db, { ...bill, teamId })` → `createBill(teamId, bill)`
 - `createBillsBatch(db, batchData)` → `createBillsBatch(batchData)` (batch data already has teamId)
 - `createRecurrenceSetting(db, { teamId, ... })` → `createRecurrenceSetting(teamId, { ... })`
@@ -1052,6 +1086,7 @@ Key changes in `apps/web/src/integrations/orpc/router/bills.ts`:
 **Step 3: Update contacts router**
 
 Key changes in `apps/web/src/integrations/orpc/router/contacts.ts`:
+
 - `createContact(db, { ...input, teamId })` → `createContact(teamId, input)`
 - `listContacts(db, teamId, input?.type)` → `listContacts(teamId, input?.type)`
 - `getContact(db, input.id)` → `getContact(input.id)`
@@ -1063,11 +1098,13 @@ Key changes in `apps/web/src/integrations/orpc/router/contacts.ts`:
 **Step 4: Update inventory router**
 
 In `apps/web/src/integrations/orpc/router/inventory.ts`:
+
 - `createTransaction(db, ...)` → `createTransaction(teamId, ...)`
 
 **Step 5: Update bill occurrences worker**
 
 In `apps/worker/src/jobs/generate-bill-occurrences.ts`:
+
 - `getActiveRecurrenceSettings(db)` → `getActiveRecurrenceSettings()`
 - `getLastBillForRecurrenceGroup(db, setting.id)` → `getLastBillForRecurrenceGroup(setting.id)`
 - `createBillsBatch(db, toCreate)` → `createBillsBatch(toCreate)`
@@ -1089,6 +1126,7 @@ git commit -m "refactor(database): update consumers to new repository signatures
 ### Task 9: Credit card statements repository update
 
 **Files:**
+
 - Modify: `core/database/src/repositories/credit-card-statements-repository.ts`
 
 **Context:** This repository already uses singleton `db` import. However, it directly inserts into `bills` and `transactions` tables inline (in `getOrCreateStatement` and `payStatement`). These direct inserts should remain as-is (they use `tx` inside transactions). No functional changes needed — just verify it compiles with the updated schema (bills.contactId FK change).
@@ -1111,6 +1149,7 @@ git commit -m "fix(database): update credit card statements for schema changes"
 ### Task 10: Transactions repository tests
 
 **Files:**
+
 - Create: `core/database/__tests__/repositories/transactions-repository.test.ts`
 
 **Context:** Test the refactored transactions repository. Follow the same patterns as `bank-accounts-repository.test.ts`. Need to create bank accounts as FK dependencies for transactions.
@@ -1154,7 +1193,10 @@ async function createTestBankAccount(teamId: string, name = "Conta Teste") {
    return account!;
 }
 
-async function createTestCategory(teamId: string, type: "income" | "expense" = "expense") {
+async function createTestCategory(
+   teamId: string,
+   type: "income" | "expense" = "expense",
+) {
    const [category] = await testDb.db
       .insert(categories)
       .values({ teamId, name: `Cat-${crypto.randomUUID().slice(0, 8)}`, type })
@@ -1572,6 +1614,7 @@ git commit -m "test(database): add transactions repository tests"
 ### Task 11: Bills repository tests
 
 **Files:**
+
 - Create: `core/database/__tests__/repositories/bills-repository.test.ts`
 
 **Context:** Test the refactored bills repository. Need bank accounts and categories as FK dependencies. Also test recurrence settings and batch creation.
@@ -1628,7 +1671,10 @@ describe("bills-repository", () => {
       it("rejects invalid dueDate format", async () => {
          const teamId = randomTeamId();
          await expect(
-            repo.createBill(teamId, validCreateInput({ dueDate: "01/02/2026" })),
+            repo.createBill(
+               teamId,
+               validCreateInput({ dueDate: "01/02/2026" }),
+            ),
          ).rejects.toThrow(/YYYY-MM-DD/);
       });
 
@@ -1642,7 +1688,10 @@ describe("bills-repository", () => {
       it("rejects missing type", async () => {
          const teamId = randomTeamId();
          await expect(
-            repo.createBill(teamId, { ...validCreateInput(), type: undefined } as any),
+            repo.createBill(teamId, {
+               ...validCreateInput(),
+               type: undefined,
+            } as any),
          ).rejects.toThrow();
       });
    });
@@ -1702,7 +1751,10 @@ describe("bills-repository", () => {
 
       it("filters by status", async () => {
          const teamId = randomTeamId();
-         await repo.createBill(teamId, validCreateInput({ dueDate: "2099-01-01" }));
+         await repo.createBill(
+            teamId,
+            validCreateInput({ dueDate: "2099-01-01" }),
+         );
          await repo.createBill(
             teamId,
             validCreateInput({ name: "Pago", dueDate: "2099-02-01" }),
@@ -1759,9 +1811,30 @@ describe("bills-repository", () => {
       it("creates multiple bills at once", async () => {
          const teamId = randomTeamId();
          const batch = [
-            { teamId, name: "Parcela 1/3", type: "payable" as const, amount: "500.00", dueDate: "2026-01-01", status: "pending" as const },
-            { teamId, name: "Parcela 2/3", type: "payable" as const, amount: "500.00", dueDate: "2026-02-01", status: "pending" as const },
-            { teamId, name: "Parcela 3/3", type: "payable" as const, amount: "500.00", dueDate: "2026-03-01", status: "pending" as const },
+            {
+               teamId,
+               name: "Parcela 1/3",
+               type: "payable" as const,
+               amount: "500.00",
+               dueDate: "2026-01-01",
+               status: "pending" as const,
+            },
+            {
+               teamId,
+               name: "Parcela 2/3",
+               type: "payable" as const,
+               amount: "500.00",
+               dueDate: "2026-02-01",
+               status: "pending" as const,
+            },
+            {
+               teamId,
+               name: "Parcela 3/3",
+               type: "payable" as const,
+               amount: "500.00",
+               dueDate: "2026-03-01",
+               status: "pending" as const,
+            },
          ];
 
          const result = await repo.createBillsBatch(batch);
@@ -1844,9 +1917,11 @@ describe("bills-repository", () => {
          );
 
          await expect(
-            testDb.db.delete(contacts).where(
-               (await import("drizzle-orm")).eq(contacts.id, contact!.id),
-            ),
+            testDb.db
+               .delete(contacts)
+               .where(
+                  (await import("drizzle-orm")).eq(contacts.id, contact!.id),
+               ),
          ).rejects.toThrow();
       });
    });

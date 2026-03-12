@@ -13,8 +13,8 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
-import { categories } from "./categories";
-import { transactions } from "./transactions";
+import { categories } from "@core/database/schemas/categories";
+import { transactions } from "@core/database/schemas/transactions";
 
 export const goalMovementTypeEnum = pgEnum("goal_movement_type", [
    "deposit",

@@ -5,8 +5,13 @@ const logger = getLogger().child({ module: "db:auth" });
 
 import { createSlug, generateRandomSuffix } from "@core/utils/text";
 import { eq } from "drizzle-orm";
-import type { DatabaseInstance } from "../client";
-import { member, organization, team, teamMember } from "../schemas/auth";
+import type { DatabaseInstance } from "@core/database/client";
+import {
+   member,
+   organization,
+   team,
+   teamMember,
+} from "@core/database/schemas/auth";
 
 export async function findMemberByUserId(
    dbClient: DatabaseInstance,

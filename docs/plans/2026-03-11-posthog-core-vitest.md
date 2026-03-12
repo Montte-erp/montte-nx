@@ -13,6 +13,7 @@
 ### Task 1: Add Vitest Config
 
 **Files:**
+
 - Create: `core/posthog/vitest.config.ts`
 - Create: `core/posthog/tsconfig.test.json`
 - Modify: `core/posthog/package.json`
@@ -65,6 +66,7 @@ git commit -m "chore(posthog): add vitest config"
 ### Task 2: Create Mock Helper
 
 **Files:**
+
 - Create: `core/posthog/__tests__/helpers/create-mock-posthog.ts`
 
 **Step 1: Create the mock factory**
@@ -81,14 +83,29 @@ export function createMockPostHog() {
       identify: vi.fn(),
       groupIdentify: vi.fn(),
       shutdown: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
-      isFeatureEnabled: vi.fn<() => Promise<boolean | undefined>>().mockResolvedValue(false),
-      getFeatureFlag: vi.fn<() => Promise<string | boolean | undefined>>().mockResolvedValue(undefined),
-      getFeatureFlagPayload: vi.fn<() => Promise<unknown>>().mockResolvedValue(undefined),
-      getAllFlags: vi.fn<() => Promise<Record<string, string | boolean>>>().mockResolvedValue({}),
-      getAllFlagsAndPayloads: vi.fn<() => Promise<{ featureFlags: Record<string, string | boolean>; featureFlagPayloads: Record<string, unknown> }>>().mockResolvedValue({
-         featureFlags: {},
-         featureFlagPayloads: {},
-      }),
+      isFeatureEnabled: vi
+         .fn<() => Promise<boolean | undefined>>()
+         .mockResolvedValue(false),
+      getFeatureFlag: vi
+         .fn<() => Promise<string | boolean | undefined>>()
+         .mockResolvedValue(undefined),
+      getFeatureFlagPayload: vi
+         .fn<() => Promise<unknown>>()
+         .mockResolvedValue(undefined),
+      getAllFlags: vi
+         .fn<() => Promise<Record<string, string | boolean>>>()
+         .mockResolvedValue({}),
+      getAllFlagsAndPayloads: vi
+         .fn<
+            () => Promise<{
+               featureFlags: Record<string, string | boolean>;
+               featureFlagPayloads: Record<string, unknown>;
+            }>
+         >()
+         .mockResolvedValue({
+            featureFlags: {},
+            featureFlagPayloads: {},
+         }),
    } as unknown as PostHog & {
       capture: ReturnType<typeof vi.fn>;
       identify: ReturnType<typeof vi.fn>;
@@ -115,11 +132,13 @@ git commit -m "test(posthog): add mock PostHog factory"
 ### Task 3: Rewrite `server.test.ts` with Vitest + Mocks
 
 **Files:**
+
 - Rewrite: `core/posthog/__tests__/server.test.ts`
 
 **Step 1: Write the full test file**
 
 Key changes from the old tests:
+
 - `bun:test` → `vitest`
 - Real `PostHog` instances → `createMockPostHog()`
 - Fix stale event name: test expected `"trpc_error"` but code emits `"orpc_error"`
@@ -283,7 +302,9 @@ describe("isFeatureEnabled", () => {
       const client = createClient();
       client.isFeatureEnabled.mockResolvedValue(true);
 
-      const result = await isFeatureEnabled(client, "flag-1", { userId: "u-1" });
+      const result = await isFeatureEnabled(client, "flag-1", {
+         userId: "u-1",
+      });
       expect(result).toBe(true);
    });
 
@@ -291,7 +312,9 @@ describe("isFeatureEnabled", () => {
       const client = createClient();
       client.isFeatureEnabled.mockResolvedValue(false);
 
-      const result = await isFeatureEnabled(client, "flag-2", { userId: "u-1" });
+      const result = await isFeatureEnabled(client, "flag-2", {
+         userId: "u-1",
+      });
       expect(result).toBe(false);
    });
 
@@ -299,7 +322,9 @@ describe("isFeatureEnabled", () => {
       const client = createClient();
       client.isFeatureEnabled.mockResolvedValue(undefined);
 
-      const result = await isFeatureEnabled(client, "flag-3", { userId: "u-1" });
+      const result = await isFeatureEnabled(client, "flag-3", {
+         userId: "u-1",
+      });
       expect(result).toBe(false);
    });
 
@@ -335,7 +360,9 @@ describe("getFeatureFlag", () => {
       const client = createClient();
       client.getFeatureFlag.mockResolvedValue(true);
 
-      const result = await getFeatureFlag(client, "bool-flag", { userId: "u-1" });
+      const result = await getFeatureFlag(client, "bool-flag", {
+         userId: "u-1",
+      });
       expect(result).toBe(true);
    });
 });
@@ -356,7 +383,11 @@ describe("getFeatureFlagPayload", () => {
 
       await getFeatureFlagPayload(client, "ab", "u-1", "variant-b");
 
-      expect(client.getFeatureFlagPayload).toHaveBeenCalledWith("ab", "u-1", "variant-b");
+      expect(client.getFeatureFlagPayload).toHaveBeenCalledWith(
+         "ab",
+         "u-1",
+         "variant-b",
+      );
    });
 });
 
@@ -379,7 +410,9 @@ describe("getAllFeatureFlagsAndPayloads", () => {
          featureFlagPayloads: { a: { x: 1 } },
       });
 
-      const result = await getAllFeatureFlagsAndPayloads(client, { userId: "u-1" });
+      const result = await getAllFeatureFlagsAndPayloads(client, {
+         userId: "u-1",
+      });
       expect(result.featureFlags).toEqual({ a: true });
       expect(result.featureFlagPayloads).toEqual({ a: { x: 1 } });
    });
@@ -388,7 +421,9 @@ describe("getAllFeatureFlagsAndPayloads", () => {
       const client = createClient();
       client.getAllFlagsAndPayloads.mockResolvedValue({});
 
-      const result = await getAllFeatureFlagsAndPayloads(client, { userId: "u-1" });
+      const result = await getAllFeatureFlagsAndPayloads(client, {
+         userId: "u-1",
+      });
       expect(result.featureFlags).toEqual({});
       expect(result.featureFlagPayloads).toEqual({});
    });
@@ -420,6 +455,7 @@ git commit -m "test(posthog): rewrite server tests with vitest and mocks"
 ### Task 4: Add SDK Server Tests
 
 **Files:**
+
 - Create: `core/posthog/__tests__/sdk-server.test.ts`
 
 The SDK has 6 capture functions — all untested. Each follows the same pattern: destructure props, call `posthog.capture()` with event name, properties, and optional group.
@@ -524,7 +560,12 @@ describe("captureSDKContentFetched", () => {
       expect(client.capture).toHaveBeenCalledWith({
          distinctId: "u-1",
          event: "sdk_content_fetched",
-         properties: { agentId: "agent-1", slug: "my-post", found: true, latencyMs: 25 },
+         properties: {
+            agentId: "agent-1",
+            slug: "my-post",
+            found: true,
+            latencyMs: 25,
+         },
          groups: { organization: "org-1" },
       });
    });
@@ -562,7 +603,11 @@ describe("captureSDKAuthFailed", () => {
       expect(client.capture).toHaveBeenCalledWith({
          distinctId: "org-1",
          event: "sdk_auth_failed",
-         properties: { reason: "invalid_key", plan: "free", endpoint: "/api/content" },
+         properties: {
+            reason: "invalid_key",
+            plan: "free",
+            endpoint: "/api/content",
+         },
          groups: { organization: "org-1" },
       });
    });
@@ -577,7 +622,11 @@ describe("captureSDKAuthFailed", () => {
       expect(client.capture).toHaveBeenCalledWith({
          distinctId: "anonymous_sdk_user",
          event: "sdk_auth_failed",
-         properties: { reason: "missing_api_key", plan: undefined, endpoint: "/api/content" },
+         properties: {
+            reason: "missing_api_key",
+            plan: undefined,
+            endpoint: "/api/content",
+         },
          groups: undefined,
       });
    });
@@ -597,7 +646,11 @@ describe("captureSDKError", () => {
       expect(client.capture).toHaveBeenCalledWith({
          distinctId: "u-1",
          event: "sdk_error",
-         properties: { endpoint: "/api/content", errorCode: "500", errorMessage: "Internal error" },
+         properties: {
+            endpoint: "/api/content",
+            errorCode: "500",
+            errorMessage: "Internal error",
+         },
          groups: { organization: "org-1" },
       });
    });
@@ -614,7 +667,11 @@ describe("captureSDKError", () => {
       expect(client.capture).toHaveBeenCalledWith({
          distinctId: "org-1",
          event: "sdk_error",
-         properties: { endpoint: "/api/content", errorCode: "403", errorMessage: "Forbidden" },
+         properties: {
+            endpoint: "/api/content",
+            errorCode: "403",
+            errorMessage: "Forbidden",
+         },
          groups: { organization: "org-1" },
       });
    });
@@ -630,7 +687,11 @@ describe("captureSDKError", () => {
       expect(client.capture).toHaveBeenCalledWith({
          distinctId: "anonymous_sdk_user",
          event: "sdk_error",
-         properties: { endpoint: "/api/content", errorCode: "500", errorMessage: "Crash" },
+         properties: {
+            endpoint: "/api/content",
+            errorCode: "500",
+            errorMessage: "Crash",
+         },
          groups: undefined,
       });
    });
@@ -654,6 +715,7 @@ git commit -m "test(posthog): add SDK server function tests"
 ### Task 5: Delete Dead Client Test & Clean Up
 
 **Files:**
+
 - Delete: `core/posthog/__tests__/client.test.ts`
 - Modify: `core/posthog/src/sdk/server.ts` (remove comments)
 

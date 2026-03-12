@@ -4,17 +4,9 @@ import { getLogger } from "@core/logging/root";
 const logger = getLogger().child({ module: "events:reconcile" });
 
 import { currentMonthUsageByEvent } from "@core/database/schema";
-import { FREE_TIER_LIMITS } from "@packages/stripe/constants";
+import { FREE_TIER_LIMITS } from "@core/stripe/constants";
 import type { Redis } from "ioredis";
 
-/**
- * Reconcile Redis per-product usage counters with materialized view data.
- * Called hourly after refreshUsageViews().
- *
- * 1. Query current_month_usage_by_event for all orgs
- * 2. For each billable event, SET Redis counter to actual event count
- * 3. Refresh TTL to end of current month
- */
 export async function reconcileUsageCounters(
    db: DatabaseInstance,
    redis: Redis,
@@ -22,13 +14,10 @@ export async function reconcileUsageCounters(
    const startTime = Date.now();
 
    try {
-      // Query all current month usage grouped by org and event name
       const rows = await db.select().from(currentMonthUsageByEvent);
 
-      // Only reconcile events that have a free tier limit (billable events)
       const billableEventNames = new Set(Object.keys(FREE_TIER_LIMITS));
 
-      // Group counts by org + event
       const orgEventCounts = new Map<string, Map<string, number>>();
 
       for (const row of rows) {
@@ -41,7 +30,6 @@ export async function reconcileUsageCounters(
          eventMap.set(row.eventName, row.eventCount);
       }
 
-      // SET Redis counters to match materialized view data
       const pipeline = redis.pipeline();
 
       const now = new Date();

@@ -1,4 +1,4 @@
-import { AddonName } from "@packages/stripe/constants";
+import { AddonName } from "@core/stripe/constants";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { orpc } from "@/integrations/orpc/client";

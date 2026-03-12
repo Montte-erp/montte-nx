@@ -5,7 +5,7 @@ import {
    updateWebhookLastSuccess,
 } from "@core/database/repositories/webhook-repository";
 import { getLogger } from "@core/logging/root";
-import type { WebhookDeliveryJobData } from "@packages/queue/webhook-delivery";
+import type { WebhookDeliveryJobData } from "@packages/events/queues/webhook-delivery";
 
 const logger = getLogger().child({ module: "job:webhook" });
 

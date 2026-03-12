@@ -1,5 +1,5 @@
 import { format, fromMinorUnits, of } from "@f-o-t/money";
-import { FREE_TIER_LIMITS } from "@packages/stripe/constants";
+import { FREE_TIER_LIMITS } from "@core/stripe/constants";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {

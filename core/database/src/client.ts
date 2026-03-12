@@ -1,8 +1,8 @@
 import { env } from "@core/environment/server";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 
-import * as schema from "./schema";
-import { relations } from "./relations";
+import * as schema from "@core/database/schema";
+import { relations } from "@core/database/relations";
 
 export interface DatabaseClientOptions {
    databaseUrl?: string;

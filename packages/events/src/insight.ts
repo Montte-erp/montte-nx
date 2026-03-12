@@ -2,10 +2,6 @@ import { z } from "zod";
 
 import { type EmitFn, EVENT_CATEGORIES } from "./catalog";
 
-// ---------------------------------------------------------------------------
-// Insight Event Names
-// ---------------------------------------------------------------------------
-
 export const INSIGHT_EVENTS = {
    "insight.created": "insight.created",
    "insight.updated": "insight.updated",
@@ -15,19 +11,11 @@ export const INSIGHT_EVENTS = {
 export type InsightEventName =
    (typeof INSIGHT_EVENTS)[keyof typeof INSIGHT_EVENTS];
 
-// ---------------------------------------------------------------------------
-// Insight Pricing
-// ---------------------------------------------------------------------------
-
 export const INSIGHT_PRICING: Record<string, string> = {
    "insight.created": "0.000000",
    "insight.updated": "0.000000",
    "insight.deleted": "0.000000",
 };
-
-// ---------------------------------------------------------------------------
-// insight.created
-// ---------------------------------------------------------------------------
 
 export const insightCreatedEventSchema = z.object({
    insightId: z.string().uuid(),
@@ -48,10 +36,6 @@ export function emitInsightCreated(
    });
 }
 
-// ---------------------------------------------------------------------------
-// insight.updated
-// ---------------------------------------------------------------------------
-
 export const insightUpdatedEventSchema = z.object({
    insightId: z.string().uuid(),
    changedFields: z.array(z.string()),
@@ -70,10 +54,6 @@ export function emitInsightUpdated(
       properties,
    });
 }
-
-// ---------------------------------------------------------------------------
-// insight.deleted
-// ---------------------------------------------------------------------------
 
 export const insightDeletedEventSchema = z.object({
    insightId: z.string().uuid(),

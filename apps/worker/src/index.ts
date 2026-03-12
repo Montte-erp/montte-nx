@@ -7,7 +7,7 @@ import {
 import { initOtel, shutdownOtel } from "@core/logging/otel";
 import { initLogger } from "@core/logging/root";
 import { getElysiaPosthogConfig, shutdownPosthog } from "@core/posthog/server";
-import { createQueueConnection } from "@packages/queue/connection";
+import { createQueueConnection } from "@packages/events/queues/connection";
 import { createRedisConnection } from "@core/redis/connection";
 import { startScheduler } from "./scheduler";
 import { startWebhookDeliveryWorker } from "./workers/webhook-delivery";

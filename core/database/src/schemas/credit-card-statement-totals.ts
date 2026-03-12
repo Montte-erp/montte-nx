@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { pgMaterializedView } from "drizzle-orm/pg-core";
-import { transactions } from "./transactions";
+import { transactions } from "@core/database/schemas/transactions";
 
 export const creditCardStatementTotals = pgMaterializedView(
    "credit_card_statement_totals",

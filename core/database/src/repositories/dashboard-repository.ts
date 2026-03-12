@@ -1,7 +1,7 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@core/database/client";
-import { DEFAULT_INSIGHTS } from "../default-insights";
+import { DEFAULT_INSIGHTS } from "@core/database/default-insights";
 import {
    type CreateDashboardInput,
    type Dashboard,

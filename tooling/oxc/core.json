@@ -13,6 +13,10 @@
                {
                   "group": ["@/*"],
                   "message": "core/ cannot depend on app internals"
+               },
+               {
+                  "group": ["./*", "../*"],
+                  "message": "Use @core/<package>/* path aliases instead of relative imports"
                }
             ]
          }

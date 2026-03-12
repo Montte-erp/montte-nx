@@ -8,7 +8,7 @@ const logger = getLogger().child({ module: "worker:webhook" });
 import {
    WEBHOOK_DELIVERY_QUEUE,
    type WebhookDeliveryJobData,
-} from "@packages/queue/webhook-delivery";
+} from "@packages/events/queues/webhook-delivery";
 import { deliverWebhook } from "../jobs/deliver-webhook";
 
 const SERVICE_NAME = "montte-worker";

@@ -1,5 +1,5 @@
 import pino from "pino";
-import type { Logger, LoggerConfig } from "./types";
+import type { Logger, LoggerConfig } from "@core/logging/types";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
@@ -55,4 +55,4 @@ export function createSafeLogger(config: LoggerConfig): Logger {
 }
 
 export { pino };
-export type { Logger, LoggerConfig, LogLevel } from "./types";
+export type { Logger, LoggerConfig, LogLevel } from "@core/logging/types";

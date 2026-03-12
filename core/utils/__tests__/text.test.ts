@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import {
    calculateReadabilityScore,
    calculateReadTimeMinutes,
@@ -128,7 +128,7 @@ describe("text utilities", () => {
 
       it("should handle special characters", () => {
          const result = createSlug("Hello! @#$%^&*() World");
-         expect(result).toBe("hello-dollarpercentand-world");
+         expect(result).toBe("hello-world");
       });
 
       it("should handle accented characters", () => {

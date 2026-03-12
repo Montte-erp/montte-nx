@@ -11,9 +11,9 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
-import { categories } from "./categories";
-import { billingCycleEnum } from "./subscriptions";
-import { tags } from "./tags";
+import { categories } from "@core/database/schemas/categories";
+import { billingCycleEnum } from "@core/database/schemas/subscriptions";
+import { tags } from "@core/database/schemas/tags";
 
 export const services = pgTable(
    "services",

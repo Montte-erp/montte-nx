@@ -28,7 +28,9 @@
    "scripts": {
       "build": "tsc --build",
       "check": "oxlint ./src",
-      "test": "bun test --pass-with-no-tests",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "test": "vitest run --passWithNoTests",
       "typecheck": "tsgo"
    },
    "dependencies": {

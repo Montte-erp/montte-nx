@@ -153,6 +153,20 @@ import { Button } from "@packages/ui/src/components/button";
 import { emitEvent } from "@packages/events";
 ```
 
+**No relative imports in core/.** Core packages must use `@core/<package>/*` path aliases for all internal imports. Relative imports (`./`, `../`) are banned by oxlint (`no-restricted-imports` in `tooling/oxc/core.json`). Each package has `"@core/<package>/*": ["./src/*"]` in its `tsconfig.json`.
+
+```typescript
+// ✅ Good — path alias
+import { createSafeLogger } from "@core/logging";
+import type { Logger } from "@core/logging/types";
+import { categories } from "@core/database/schemas/categories";
+
+// ❌ Bad — relative import (oxlint error)
+import { createSafeLogger } from "./logger";
+import type { Logger } from "../types";
+import { categories } from "./categories";
+```
+
 **oxlint suppression:** Place `// oxlint-ignore <rule-name>` or `// oxlint-ignore -- <reason>` directly above the triggering line. For JSX props, place above the prop, not the element.
 
 **Array index keys:** Prefer `key={\`step-${index + 1}\`}`over suppressing`noArrayIndexKey`.

@@ -14,7 +14,6 @@
       "@core/logging": "workspace:*",
       "@core/redis": "workspace:*",
       "@packages/events": "workspace:*",
-      "@packages/queue": "workspace:*",
       "bullmq": "catalog:workers",
       "ioredis": "catalog:workers",
       "node-cron": "catalog:workers"

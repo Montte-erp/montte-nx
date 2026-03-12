@@ -48,11 +48,10 @@
    "scripts": {
       "build": "tsc --build",
       "check": "oxlint ./src",
-      "test": "bun test",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "test": "vitest run",
       "typecheck": "tsgo"
-   },
-   "dependencies": {
-      "slugify": "catalog:ui"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",

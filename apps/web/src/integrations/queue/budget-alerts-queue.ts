@@ -1,8 +1,8 @@
 import {
    type BudgetAlertJobData,
    createBudgetAlertsQueue,
-} from "@packages/queue/budget-alerts";
-import { createQueueConnection } from "@packages/queue/connection";
+} from "@packages/events/queues/budget-alerts";
+import { createQueueConnection } from "@packages/events/queues/connection";
 import type { Queue } from "bullmq";
 
 let _queue: Queue<BudgetAlertJobData> | null = null;

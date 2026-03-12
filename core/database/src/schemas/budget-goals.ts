@@ -10,7 +10,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
-import { categories } from "./categories";
+import { categories } from "@core/database/schemas/categories";
 
 export const budgetGoals = pgTable(
    "budget_goals",

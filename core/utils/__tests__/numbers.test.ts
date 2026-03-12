@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { formatWindow } from "../src/numbers";
 
 describe("number utilities", () => {

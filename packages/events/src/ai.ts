@@ -2,18 +2,10 @@ import { z } from "zod";
 
 import { type EmitFn, EVENT_CATEGORIES } from "./catalog";
 
-// ---------------------------------------------------------------------------
-// AI Pricing (metered — used for event catalog seed)
-// ---------------------------------------------------------------------------
-
 export const AI_PRICING: Record<string, string> = {
    "ai.chat_message": "0.020000",
    "ai.agent_action": "0.040000",
 };
-
-// ---------------------------------------------------------------------------
-// AI Event Names
-// ---------------------------------------------------------------------------
 
 export const AI_EVENTS = {
    "ai.chat_message": "ai.chat_message",
@@ -21,10 +13,6 @@ export const AI_EVENTS = {
 } as const;
 
 export type AiEventName = (typeof AI_EVENTS)[keyof typeof AI_EVENTS];
-
-// ---------------------------------------------------------------------------
-// ai.chat_message
-// ---------------------------------------------------------------------------
 
 export const aiChatMessageEventSchema = z.object({
    chatId: z.uuid(),
@@ -51,10 +39,6 @@ export function emitAiChatMessage(
       properties,
    });
 }
-
-// ---------------------------------------------------------------------------
-// ai.agent_action
-// ---------------------------------------------------------------------------
 
 export const aiAgentActionEventSchema = z.object({
    agentId: z.uuid(),

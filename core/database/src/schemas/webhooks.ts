@@ -11,8 +11,8 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
-import { organization, team } from "./auth";
-import { events } from "./events";
+import { organization, team } from "@core/database/schemas/auth";
+import { events } from "@core/database/schemas/events";
 
 export const webhookEndpoints = pgTable(
    "webhook_endpoints",

@@ -9,7 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { organization, team, user } from "./auth";
+import { organization, team, user } from "@core/database/schemas/auth";
 
 export const insightTypeEnum = ["trends", "funnels", "retention"] as const;
 export const insightSizeEnum = ["sm", "md", "lg", "full"] as const;

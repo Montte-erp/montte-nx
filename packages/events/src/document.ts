@@ -12,7 +12,7 @@ export type DocumentEventName =
 export const documentSignedSchema = z.object({
    documentId: z.string().uuid(),
    signatureType: z.enum(["a1", "a3"]),
-   signerCpfHash: z.string(), // hashed — never store raw CPF
+   signerCpfHash: z.string(),
 });
 export type DocumentSignedEvent = z.infer<typeof documentSignedSchema>;
 export function emitDocumentSigned(

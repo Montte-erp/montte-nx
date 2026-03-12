@@ -1,5 +1,5 @@
 import { getLogger } from "@core/logging/root";
-import type { Redis } from "ioredis";
+import type { Redis } from "@core/redis/connection";
 
 const logger = getLogger().child({ module: "auth:cache" });
 

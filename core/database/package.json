@@ -40,6 +40,9 @@
    "scripts": {
       "build": "tsc --build",
       "check": "oxlint ./src",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "test": "vitest run",
       "db-push-local": "dotenv -e .env.local drizzle-kit push",
       "db-push-prod": "dotenv -e .env.production drizzle-kit push",
       "db-studio-local": "dotenv -e .env.local drizzle-kit studio",

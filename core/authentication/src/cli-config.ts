@@ -1,7 +1,7 @@
 import { createDb } from "@core/database/client";
 import { env } from "@core/environment/server";
 import type { betterAuth } from "better-auth";
-import { createAuth } from "./server";
+import { createAuth } from "@core/authentication/server";
 
 /**
  * @internal

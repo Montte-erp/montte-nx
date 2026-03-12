@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { bigint, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
-import { organization } from "./auth";
+import { organization } from "@core/database/schemas/auth";
 
 export const assets = pgTable("assets", {
    id: uuid("id")

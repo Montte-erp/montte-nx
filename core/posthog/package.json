@@ -15,9 +15,9 @@
    },
    "scripts": {
       "build": "tsc --build",
-      "check": "oxlint -c ../../tooling/oxc/core.json ./src",
-      "format": "oxfmt --config ../../tooling/oxc/oxfmt.json --write ./src",
-      "format:check": "oxfmt --config ../../tooling/oxc/oxfmt.json --check ./src",
+      "check": "oxlint ./src",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
       "test": "vitest run --passWithNoTests",
       "typecheck": "tsgo"
    },

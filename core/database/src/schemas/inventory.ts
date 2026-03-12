@@ -11,11 +11,11 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
-import { bankAccounts } from "./bank-accounts";
-import { categories } from "./categories";
-import { contacts } from "./contacts";
-import { creditCards } from "./credit-cards";
-import { transactions } from "./transactions";
+import { bankAccounts } from "@core/database/schemas/bank-accounts";
+import { categories } from "@core/database/schemas/categories";
+import { contacts } from "@core/database/schemas/contacts";
+import { creditCards } from "@core/database/schemas/credit-cards";
+import { transactions } from "@core/database/schemas/transactions";
 
 export const inventoryMovementTypeEnum = pgEnum("inventory_movement_type", [
    "purchase",

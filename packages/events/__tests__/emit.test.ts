@@ -21,11 +21,11 @@ const mockCreateWebhookDeliveryQueue = mock(() => ({
 }));
 const mockCreateQueueConnection = mock(() => ({}));
 
-mock.module("@packages/queue/connection", () => ({
+mock.module("../src/queues/connection", () => ({
    createQueueConnection: mockCreateQueueConnection,
 }));
 
-mock.module("@packages/queue/webhook-delivery", () => ({
+mock.module("../src/queues/webhook-delivery", () => ({
    createWebhookDeliveryQueue: mockCreateWebhookDeliveryQueue,
 }));
 

@@ -1,0 +1,9 @@
+{
+   "extends": "@tooling/typescript/tsconfig.package.json",
+   "compilerOptions": {
+      "paths": {
+         "@core/stripe/*": ["./src/*"]
+      }
+   },
+   "include": ["src"]
+}

@@ -1,7 +1,10 @@
 {
    "extends": "@tooling/typescript/core.json",
    "compilerOptions": {
-      "jsx": "react-jsx"
+      "jsx": "react-jsx",
+      "paths": {
+         "@core/authentication/*": ["./src/*"]
+      }
    },
    "include": ["src"]
 }

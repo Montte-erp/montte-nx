@@ -2,10 +2,6 @@ import { z } from "zod";
 
 import { type EmitFn, EVENT_CATEGORIES } from "./catalog";
 
-// ---------------------------------------------------------------------------
-// Dashboard Event Names
-// ---------------------------------------------------------------------------
-
 export const DASHBOARD_EVENTS = {
    "dashboard.created": "dashboard.created",
    "dashboard.updated": "dashboard.updated",
@@ -15,19 +11,11 @@ export const DASHBOARD_EVENTS = {
 export type DashboardEventName =
    (typeof DASHBOARD_EVENTS)[keyof typeof DASHBOARD_EVENTS];
 
-// ---------------------------------------------------------------------------
-// Dashboard Pricing
-// ---------------------------------------------------------------------------
-
 export const DASHBOARD_PRICING: Record<string, string> = {
    "dashboard.created": "0.000000",
    "dashboard.updated": "0.000000",
    "dashboard.deleted": "0.000000",
 };
-
-// ---------------------------------------------------------------------------
-// dashboard.created
-// ---------------------------------------------------------------------------
 
 export const dashboardCreatedEventSchema = z.object({
    dashboardId: z.string().uuid(),
@@ -48,10 +36,6 @@ export function emitDashboardCreated(
    });
 }
 
-// ---------------------------------------------------------------------------
-// dashboard.updated
-// ---------------------------------------------------------------------------
-
 export const dashboardUpdatedEventSchema = z.object({
    dashboardId: z.string().uuid(),
    changedFields: z.array(z.string()),
@@ -70,10 +54,6 @@ export function emitDashboardUpdated(
       properties,
    });
 }
-
-// ---------------------------------------------------------------------------
-// dashboard.deleted
-// ---------------------------------------------------------------------------
 
 export const dashboardDeletedEventSchema = z.object({
    dashboardId: z.string().uuid(),

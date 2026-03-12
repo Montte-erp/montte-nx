@@ -12,11 +12,6 @@ import {
    monthlyAiUsage,
 } from "@core/database/schema";
 
-/**
- * Refresh all materialized views (billing + analytics).
- * Uses CONCURRENTLY to avoid blocking reads.
- * Should be called hourly via a scheduled job.
- */
 export async function refreshUsageViews(db: DatabaseInstance): Promise<void> {
    const startTime = Date.now();
 

@@ -1,4 +1,9 @@
 {
    "extends": "@tooling/typescript/core.json",
+   "compilerOptions": {
+      "paths": {
+         "@core/redis/*": ["./src/*"]
+      }
+   },
    "include": ["src"]
 }

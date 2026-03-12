@@ -12,10 +12,6 @@
          "types": "./dist/src/client.d.ts",
          "default": "./src/client.ts"
       },
-      "./helpers": {
-         "types": "./dist/src/helpers/index.d.ts",
-         "default": "./src/helpers/index.ts"
-      },
       "./server": {
          "types": "./dist/src/server.d.ts",
          "default": "./src/server.ts"
@@ -27,16 +23,15 @@
       "./cache": {
          "types": "./dist/src/cache.d.ts",
          "default": "./src/cache.ts"
-      },
-      "./redis-connection": {
-         "types": "./dist/src/redis-connection.d.ts",
-         "default": "./src/redis-connection.ts"
       }
    },
    "scripts": {
       "auth-schema-generate": "npx auth generate --config ./src/cli-config.ts --output ../database/src/schemas/auth.ts",
       "build": "tsc --build",
       "check": "oxlint ./src",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "test": "vitest run --passWithNoTests",
       "typecheck": "tsgo"
    },
    "dependencies": {
@@ -46,10 +41,9 @@
       "@core/database": "workspace:*",
       "@core/environment": "workspace:*",
       "@core/redis": "workspace:*",
-      "@packages/stripe": "workspace:*",
-      "@packages/transactional": "workspace:*",
+      "@core/stripe": "workspace:*",
+      "@core/transactional": "workspace:*",
       "better-auth": "catalog:auth",
-      "ioredis": "catalog:workers",
       "react": "catalog:react",
       "react-dom": "catalog:react"
    },

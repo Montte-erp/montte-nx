@@ -12,7 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
-import { organization, team, user } from "./auth";
+import { organization, team, user } from "@core/database/schemas/auth";
 
 export const dashboardTileSchema = z.object({
    insightId: z.string().uuid("ID do insight inválido."),

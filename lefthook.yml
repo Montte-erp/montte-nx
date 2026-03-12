@@ -3,7 +3,7 @@ pre-commit:
       format:
          glob: "*.{js,jsx,ts,tsx,mjs,cjs,json,css}"
          staged_files_command: git diff --cached --name-only
-         run: oxfmt --config tooling/oxc/oxfmt.json --write {staged_files} && git add {staged_files}
+         run: npx oxfmt --write {staged_files} && git add {staged_files}
 
 commit-msg:
    commands:

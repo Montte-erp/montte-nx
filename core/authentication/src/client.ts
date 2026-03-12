@@ -11,7 +11,7 @@ import {
    twoFactorClient,
 } from "better-auth/client/plugins";
 import { createAuthClient as createBetterAuthClient } from "better-auth/react";
-import type { AuthInstance } from "./server";
+import type { AuthInstance } from "@core/authentication/server";
 
 export interface AuthClientError {
    status: number;

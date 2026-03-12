@@ -9,7 +9,7 @@ import {
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
-import { organization, team, user } from "./auth";
+import { organization, team, user } from "@core/database/schemas/auth";
 
 export const events = pgTable(
    "events",

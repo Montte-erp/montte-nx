@@ -8,11 +8,11 @@ import { env } from "@core/environment/worker";
 import { createEmitFn } from "@packages/events/emit";
 import { emitFinanceBudgetAlertTriggered } from "@packages/events/finance";
 import { getLogger } from "@core/logging/root";
-import type { BudgetAlertJobData } from "@packages/queue/budget-alerts";
+import type { BudgetAlertJobData } from "@packages/events/queues/budget-alerts";
 import {
    getResendClient,
    sendBudgetAlertEmail,
-} from "@packages/transactional/client";
+} from "@core/transactional/client";
 import { eq } from "drizzle-orm";
 
 const logger = getLogger().child({ module: "job:budget-alerts" });

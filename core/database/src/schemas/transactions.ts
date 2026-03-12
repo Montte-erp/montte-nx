@@ -13,12 +13,12 @@ import {
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
-import { bankAccounts } from "./bank-accounts";
-import { categories } from "./categories";
-import { contacts } from "./contacts";
-import { creditCards } from "./credit-cards";
-import { services } from "./services";
-import { tags } from "./tags";
+import { bankAccounts } from "@core/database/schemas/bank-accounts";
+import { categories } from "@core/database/schemas/categories";
+import { contacts } from "@core/database/schemas/contacts";
+import { creditCards } from "@core/database/schemas/credit-cards";
+import { services } from "@core/database/schemas/services";
+import { tags } from "@core/database/schemas/tags";
 import { z } from "zod";
 
 export const paymentMethodEnum = pgEnum("payment_method", [

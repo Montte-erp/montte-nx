@@ -13,6 +13,7 @@
 ### Task 1: Delete unused schemas
 
 **Files:**
+
 - Delete: `core/database/src/schemas/personal-api-key.ts`
 - Delete: `core/database/src/schemas/product-settings.ts`
 - Delete: `core/database/src/schemas/resource-permissions.ts`
@@ -26,6 +27,7 @@
 **Step 1: Delete the 8 schema files**
 
 Delete these files:
+
 - `core/database/src/schemas/personal-api-key.ts`
 - `core/database/src/schemas/product-settings.ts`
 - `core/database/src/schemas/resource-permissions.ts`
@@ -38,6 +40,7 @@ Delete these files:
 **Step 2: Remove re-exports from `schema.ts`**
 
 Remove these lines from `core/database/src/schema.ts`:
+
 ```typescript
 // Remove these:
 export * from "./schemas/activity-logs";
@@ -62,6 +65,7 @@ git commit -m "refactor(database): remove 8 unused schemas (personal-api-key, pr
 ### Task 2: Delete unused repositories
 
 **Files:**
+
 - Delete: `core/database/src/repositories/personal-api-key-repository.ts`
 - Delete: `core/database/src/repositories/product-settings-repository.ts`
 - Delete: `core/database/src/repositories/resource-permission-repository.ts`
@@ -70,6 +74,7 @@ git commit -m "refactor(database): remove 8 unused schemas (personal-api-key, pr
 **Step 1: Delete the 4 repository files**
 
 Delete:
+
 - `core/database/src/repositories/personal-api-key-repository.ts`
 - `core/database/src/repositories/product-settings-repository.ts`
 - `core/database/src/repositories/resource-permission-repository.ts`
@@ -87,6 +92,7 @@ git commit -m "refactor(database): remove repositories for deleted schemas"
 ### Task 3: Clean up relations.ts
 
 **Files:**
+
 - Modify: `core/database/src/relations.ts`
 
 **Step 1: Remove relation blocks for deleted schemas**
@@ -165,6 +171,7 @@ git commit -m "refactor(database): clean up relations for deleted schemas"
 ### Task 4: Inline enums into owner schemas
 
 **Files:**
+
 - Modify: `core/database/src/schemas/contacts.ts`
 - Modify: `core/database/src/schemas/subscriptions.ts`
 - Modify: `core/database/src/schemas/financial-goals.ts`
@@ -208,10 +215,12 @@ export const subscriptionStatusEnum = pgEnum("subscription_status", [
 ]);
 
 export type BillingCycle = (typeof billingCycleEnum.enumValues)[number];
-export type SubscriptionStatus = (typeof subscriptionStatusEnum.enumValues)[number];
+export type SubscriptionStatus =
+   (typeof subscriptionStatusEnum.enumValues)[number];
 ```
 
 Remove the import of these from `./enums`:
+
 ```typescript
 // Remove this line:
 import { serviceSourceEnum, subscriptionStatusEnum } from "./enums";
@@ -240,6 +249,7 @@ export type GoalMovementType = (typeof goalMovementTypeEnum.enumValues)[number];
 ```
 
 Remove the import:
+
 ```typescript
 // Remove this line:
 import { goalMovementTypeEnum } from "./enums";
@@ -262,6 +272,7 @@ import { billingCycleEnum } from "./subscriptions";
 Delete `core/database/src/schemas/enums.ts`.
 
 Remove from `schema.ts`:
+
 ```typescript
 // Remove:
 export * from "./schemas/enums";
@@ -287,6 +298,7 @@ git commit -m "refactor(database): inline enums into owner schemas and delete en
 ### Task 5: Add Zod validators to dashboards schema
 
 **Files:**
+
 - Modify: `core/database/src/schemas/dashboards.ts`
 
 **Step 1: Add Zod schemas for JSONB types and create/update validators**
@@ -412,6 +424,7 @@ git commit -m "feat(database): add Zod validators to dashboards schema"
 ### Task 6: Refactor dashboard-repository to singleton db + validateInput
 
 **Files:**
+
 - Modify: `core/database/src/repositories/dashboard-repository.ts`
 
 **Step 1: Rewrite to singleton pattern**
@@ -651,6 +664,7 @@ git commit -m "refactor(database): convert dashboard-repository to singleton db 
 ### Task 7: Add dashboard repository tests
 
 **Files:**
+
 - Create: `core/database/__tests__/repositories/dashboard-repository.test.ts`
 
 **Step 1: Write tests**
@@ -696,7 +710,12 @@ describe("dashboard-repository", () => {
       it("rejects name shorter than 2 chars", async () => {
          const { organizationId, teamId, userId } = ids();
          await expect(
-            repo.createDashboard(organizationId, teamId, userId, validInput({ name: "A" })),
+            repo.createDashboard(
+               organizationId,
+               teamId,
+               userId,
+               validInput({ name: "A" }),
+            ),
          ).rejects.toThrow();
       });
 
@@ -704,7 +723,9 @@ describe("dashboard-repository", () => {
          const { organizationId, teamId, userId } = ids();
          await expect(
             repo.createDashboard(
-               organizationId, teamId, userId,
+               organizationId,
+               teamId,
+               userId,
                validInput({ name: "A".repeat(121) }),
             ),
          ).rejects.toThrow();
@@ -714,8 +735,12 @@ describe("dashboard-repository", () => {
          const { organizationId, teamId, userId } = ids();
          await expect(
             repo.createDashboard(
-               organizationId, teamId, userId,
-               validInput({ tiles: [{ insightId: "not-uuid", size: "xl", order: -1 }] }),
+               organizationId,
+               teamId,
+               userId,
+               validInput({
+                  tiles: [{ insightId: "not-uuid", size: "xl", order: -1 }],
+               }),
             ),
          ).rejects.toThrow();
       });
@@ -725,7 +750,9 @@ describe("dashboard-repository", () => {
       it("creates dashboard with defaults", async () => {
          const { organizationId, teamId, userId } = ids();
          const dashboard = await repo.createDashboard(
-            organizationId, teamId, userId,
+            organizationId,
+            teamId,
+            userId,
             validInput(),
          );
 
@@ -744,22 +771,38 @@ describe("dashboard-repository", () => {
          const { organizationId, teamId, userId } = ids();
          const insightId = crypto.randomUUID();
          const dashboard = await repo.createDashboard(
-            organizationId, teamId, userId,
+            organizationId,
+            teamId,
+            userId,
             validInput({
                tiles: [{ insightId, size: "md", order: 0 }],
             }),
          );
 
          expect(dashboard.tiles).toHaveLength(1);
-         expect(dashboard.tiles[0]).toMatchObject({ insightId, size: "md", order: 0 });
+         expect(dashboard.tiles[0]).toMatchObject({
+            insightId,
+            size: "md",
+            order: 0,
+         });
       });
    });
 
    describe("listDashboardsByTeam", () => {
       it("lists dashboards for a team", async () => {
          const { organizationId, teamId, userId } = ids();
-         await repo.createDashboard(organizationId, teamId, userId, validInput({ name: "D1" }));
-         await repo.createDashboard(organizationId, teamId, userId, validInput({ name: "D2" }));
+         await repo.createDashboard(
+            organizationId,
+            teamId,
+            userId,
+            validInput({ name: "D1" }),
+         );
+         await repo.createDashboard(
+            organizationId,
+            teamId,
+            userId,
+            validInput({ name: "D2" }),
+         );
 
          const list = await repo.listDashboardsByTeam(teamId);
          expect(list).toHaveLength(2);
@@ -768,8 +811,18 @@ describe("dashboard-repository", () => {
       it("does not return other team's dashboards", async () => {
          const ctx1 = ids();
          const ctx2 = ids();
-         await repo.createDashboard(ctx1.organizationId, ctx1.teamId, ctx1.userId, validInput({ name: "D1" }));
-         await repo.createDashboard(ctx2.organizationId, ctx2.teamId, ctx2.userId, validInput({ name: "D2" }));
+         await repo.createDashboard(
+            ctx1.organizationId,
+            ctx1.teamId,
+            ctx1.userId,
+            validInput({ name: "D1" }),
+         );
+         await repo.createDashboard(
+            ctx2.organizationId,
+            ctx2.teamId,
+            ctx2.userId,
+            validInput({ name: "D2" }),
+         );
 
          const list = await repo.listDashboardsByTeam(ctx1.teamId);
          expect(list).toHaveLength(1);
@@ -780,7 +833,12 @@ describe("dashboard-repository", () => {
    describe("getDashboardById", () => {
       it("returns dashboard by id", async () => {
          const { organizationId, teamId, userId } = ids();
-         const created = await repo.createDashboard(organizationId, teamId, userId, validInput());
+         const created = await repo.createDashboard(
+            organizationId,
+            teamId,
+            userId,
+            validInput(),
+         );
 
          const found = await repo.getDashboardById(created.id);
          expect(found).toMatchObject({ id: created.id, name: "Meu Dashboard" });
@@ -795,7 +853,12 @@ describe("dashboard-repository", () => {
    describe("updateDashboard", () => {
       it("updates name and description", async () => {
          const { organizationId, teamId, userId } = ids();
-         const created = await repo.createDashboard(organizationId, teamId, userId, validInput());
+         const created = await repo.createDashboard(
+            organizationId,
+            teamId,
+            userId,
+            validInput(),
+         );
 
          const updated = await repo.updateDashboard(created.id, {
             name: "Novo Nome",
@@ -809,7 +872,12 @@ describe("dashboard-repository", () => {
    describe("updateDashboardTiles", () => {
       it("replaces tiles array", async () => {
          const { organizationId, teamId, userId } = ids();
-         const created = await repo.createDashboard(organizationId, teamId, userId, validInput());
+         const created = await repo.createDashboard(
+            organizationId,
+            teamId,
+            userId,
+            validInput(),
+         );
 
          const insightId = crypto.randomUUID();
          const updated = await repo.updateDashboardTiles(created.id, [
@@ -823,7 +891,12 @@ describe("dashboard-repository", () => {
    describe("deleteDashboard", () => {
       it("deletes a dashboard", async () => {
          const { organizationId, teamId, userId } = ids();
-         const created = await repo.createDashboard(organizationId, teamId, userId, validInput());
+         const created = await repo.createDashboard(
+            organizationId,
+            teamId,
+            userId,
+            validInput(),
+         );
 
          await repo.deleteDashboard(created.id);
          const found = await repo.getDashboardById(created.id);
@@ -834,8 +907,18 @@ describe("dashboard-repository", () => {
    describe("setDashboardAsHome", () => {
       it("sets dashboard as default and unsets previous", async () => {
          const { organizationId, teamId, userId } = ids();
-         const d1 = await repo.createDashboard(organizationId, teamId, userId, validInput({ name: "D1" }));
-         const d2 = await repo.createDashboard(organizationId, teamId, userId, validInput({ name: "D2" }));
+         const d1 = await repo.createDashboard(
+            organizationId,
+            teamId,
+            userId,
+            validInput({ name: "D1" }),
+         );
+         const d2 = await repo.createDashboard(
+            organizationId,
+            teamId,
+            userId,
+            validInput({ name: "D2" }),
+         );
 
          await repo.setDashboardAsHome(d1.id, teamId);
          const home1 = await repo.getDashboardById(d1.id);
@@ -871,6 +954,7 @@ git commit -m "test(database): add dashboard repository tests"
 ### Task 8: Add Zod validators to insights schema + refactor repository
 
 **Files:**
+
 - Modify: `core/database/src/schemas/insights.ts`
 - Modify: `core/database/src/repositories/insight-repository.ts`
 
@@ -1027,7 +1111,9 @@ export async function listInsightsByTeam(teamId: string, type?: string) {
    }
 }
 
-export async function getInsightById(insightId: string): Promise<Insight | null> {
+export async function getInsightById(
+   insightId: string,
+): Promise<Insight | null> {
    try {
       const [insight] = await db
          .select()
@@ -1040,7 +1126,9 @@ export async function getInsightById(insightId: string): Promise<Insight | null>
    }
 }
 
-export async function getInsightsByIds(insightIds: string[]): Promise<Insight[]> {
+export async function getInsightsByIds(
+   insightIds: string[],
+): Promise<Insight[]> {
    if (insightIds.length === 0) return [];
 
    try {
@@ -1095,6 +1183,7 @@ git commit -m "refactor(database): add Zod validators to insights schema and con
 ### Task 9: Add insight repository tests
 
 **Files:**
+
 - Create: `core/database/__tests__/repositories/insight-repository.test.ts`
 
 **Step 1: Write tests**
@@ -1142,14 +1231,24 @@ describe("insight-repository", () => {
       it("rejects name shorter than 2 chars", async () => {
          const { organizationId, teamId, userId } = ids();
          await expect(
-            repo.createInsight(organizationId, teamId, userId, validInput({ name: "A" })),
+            repo.createInsight(
+               organizationId,
+               teamId,
+               userId,
+               validInput({ name: "A" }),
+            ),
          ).rejects.toThrow();
       });
 
       it("rejects invalid type", async () => {
          const { organizationId, teamId, userId } = ids();
          await expect(
-            repo.createInsight(organizationId, teamId, userId, validInput({ type: "invalid" })),
+            repo.createInsight(
+               organizationId,
+               teamId,
+               userId,
+               validInput({ type: "invalid" }),
+            ),
          ).rejects.toThrow();
       });
    });
@@ -1157,7 +1256,12 @@ describe("insight-repository", () => {
    describe("createInsight", () => {
       it("creates insight with defaults", async () => {
          const { organizationId, teamId, userId } = ids();
-         const insight = await repo.createInsight(organizationId, teamId, userId, validInput());
+         const insight = await repo.createInsight(
+            organizationId,
+            teamId,
+            userId,
+            validInput(),
+         );
 
          expect(insight).toMatchObject({
             organizationId,
@@ -1175,8 +1279,18 @@ describe("insight-repository", () => {
    describe("listInsightsByTeam", () => {
       it("lists insights for a team", async () => {
          const { organizationId, teamId, userId } = ids();
-         await repo.createInsight(organizationId, teamId, userId, validInput({ name: "I1" }));
-         await repo.createInsight(organizationId, teamId, userId, validInput({ name: "I2" }));
+         await repo.createInsight(
+            organizationId,
+            teamId,
+            userId,
+            validInput({ name: "I1" }),
+         );
+         await repo.createInsight(
+            organizationId,
+            teamId,
+            userId,
+            validInput({ name: "I2" }),
+         );
 
          const list = await repo.listInsightsByTeam(teamId);
          expect(list).toHaveLength(2);
@@ -1184,8 +1298,18 @@ describe("insight-repository", () => {
 
       it("filters by type", async () => {
          const { organizationId, teamId, userId } = ids();
-         await repo.createInsight(organizationId, teamId, userId, validInput({ name: "Trends", type: "trends" }));
-         await repo.createInsight(organizationId, teamId, userId, validInput({ name: "Funnels", type: "funnels" }));
+         await repo.createInsight(
+            organizationId,
+            teamId,
+            userId,
+            validInput({ name: "Trends", type: "trends" }),
+         );
+         await repo.createInsight(
+            organizationId,
+            teamId,
+            userId,
+            validInput({ name: "Funnels", type: "funnels" }),
+         );
 
          const list = await repo.listInsightsByTeam(teamId, "funnels");
          expect(list).toHaveLength(1);
@@ -1196,7 +1320,12 @@ describe("insight-repository", () => {
    describe("getInsightById", () => {
       it("returns insight by id", async () => {
          const { organizationId, teamId, userId } = ids();
-         const created = await repo.createInsight(organizationId, teamId, userId, validInput());
+         const created = await repo.createInsight(
+            organizationId,
+            teamId,
+            userId,
+            validInput(),
+         );
 
          const found = await repo.getInsightById(created.id);
          expect(found).toMatchObject({ id: created.id, name: "Meu Insight" });
@@ -1211,8 +1340,18 @@ describe("insight-repository", () => {
    describe("getInsightsByIds", () => {
       it("returns multiple insights by ids", async () => {
          const { organizationId, teamId, userId } = ids();
-         const i1 = await repo.createInsight(organizationId, teamId, userId, validInput({ name: "I1" }));
-         const i2 = await repo.createInsight(organizationId, teamId, userId, validInput({ name: "I2" }));
+         const i1 = await repo.createInsight(
+            organizationId,
+            teamId,
+            userId,
+            validInput({ name: "I1" }),
+         );
+         const i2 = await repo.createInsight(
+            organizationId,
+            teamId,
+            userId,
+            validInput({ name: "I2" }),
+         );
 
          const found = await repo.getInsightsByIds([i1.id, i2.id]);
          expect(found).toHaveLength(2);
@@ -1227,7 +1366,12 @@ describe("insight-repository", () => {
    describe("updateInsight", () => {
       it("updates name and config", async () => {
          const { organizationId, teamId, userId } = ids();
-         const created = await repo.createInsight(organizationId, teamId, userId, validInput());
+         const created = await repo.createInsight(
+            organizationId,
+            teamId,
+            userId,
+            validInput(),
+         );
 
          const updated = await repo.updateInsight(created.id, {
             name: "Novo Nome",
@@ -1241,7 +1385,12 @@ describe("insight-repository", () => {
    describe("deleteInsight", () => {
       it("deletes an insight", async () => {
          const { organizationId, teamId, userId } = ids();
-         const created = await repo.createInsight(organizationId, teamId, userId, validInput());
+         const created = await repo.createInsight(
+            organizationId,
+            teamId,
+            userId,
+            validInput(),
+         );
 
          await repo.deleteInsight(created.id);
          const found = await repo.getInsightById(created.id);
@@ -1269,6 +1418,7 @@ git commit -m "test(database): add insight repository tests"
 ### Task 10: Add Zod validators to webhooks schema + refactor repository
 
 **Files:**
+
 - Modify: `core/database/src/schemas/webhooks.ts`
 - Modify: `core/database/src/repositories/webhook-repository.ts`
 
@@ -1304,10 +1454,15 @@ export const createWebhookEndpointSchema = baseWebhookEndpointSchema.extend({
    isActive: z.boolean().default(true),
 });
 
-export const updateWebhookEndpointSchema = createWebhookEndpointSchema.partial();
+export const updateWebhookEndpointSchema =
+   createWebhookEndpointSchema.partial();
 
-export type CreateWebhookEndpointInput = z.infer<typeof createWebhookEndpointSchema>;
-export type UpdateWebhookEndpointInput = z.infer<typeof updateWebhookEndpointSchema>;
+export type CreateWebhookEndpointInput = z.infer<
+   typeof createWebhookEndpointSchema
+>;
+export type UpdateWebhookEndpointInput = z.infer<
+   typeof updateWebhookEndpointSchema
+>;
 ```
 
 **Step 2: Refactor webhook-repository to singleton db + validateInput**
@@ -1347,7 +1502,8 @@ export async function createWebhookEndpoint(
             signingSecret: generateWebhookSecret(),
          })
          .returning();
-      if (!endpoint) throw AppError.database("Failed to create webhook endpoint");
+      if (!endpoint)
+         throw AppError.database("Failed to create webhook endpoint");
       return endpoint;
    } catch (err) {
       propagateError(err);
@@ -1549,6 +1705,7 @@ git commit -m "refactor(database): add Zod validators to webhooks schema and con
 ### Task 11: Add webhook repository tests
 
 **Files:**
+
 - Create: `core/database/__tests__/repositories/webhook-repository.test.ts`
 
 **Step 1: Write tests**
@@ -1597,14 +1754,22 @@ describe("webhook-repository", () => {
       it("rejects invalid URL", async () => {
          const { organizationId, teamId } = ids();
          await expect(
-            repo.createWebhookEndpoint(organizationId, teamId, validEndpointInput({ url: "not-a-url" })),
+            repo.createWebhookEndpoint(
+               organizationId,
+               teamId,
+               validEndpointInput({ url: "not-a-url" }),
+            ),
          ).rejects.toThrow();
       });
 
       it("rejects empty eventPatterns", async () => {
          const { organizationId, teamId } = ids();
          await expect(
-            repo.createWebhookEndpoint(organizationId, teamId, validEndpointInput({ eventPatterns: [] })),
+            repo.createWebhookEndpoint(
+               organizationId,
+               teamId,
+               validEndpointInput({ eventPatterns: [] }),
+            ),
          ).rejects.toThrow();
       });
    });
@@ -1613,7 +1778,8 @@ describe("webhook-repository", () => {
       it("creates endpoint with generated secret", async () => {
          const { organizationId, teamId } = ids();
          const endpoint = await repo.createWebhookEndpoint(
-            organizationId, teamId,
+            organizationId,
+            teamId,
             validEndpointInput(),
          );
 
@@ -1632,8 +1798,16 @@ describe("webhook-repository", () => {
    describe("listWebhookEndpoints", () => {
       it("lists endpoints for a team", async () => {
          const { organizationId, teamId } = ids();
-         await repo.createWebhookEndpoint(organizationId, teamId, validEndpointInput({ url: "https://a.com/wh" }));
-         await repo.createWebhookEndpoint(organizationId, teamId, validEndpointInput({ url: "https://b.com/wh" }));
+         await repo.createWebhookEndpoint(
+            organizationId,
+            teamId,
+            validEndpointInput({ url: "https://a.com/wh" }),
+         );
+         await repo.createWebhookEndpoint(
+            organizationId,
+            teamId,
+            validEndpointInput({ url: "https://b.com/wh" }),
+         );
 
          const list = await repo.listWebhookEndpoints(teamId);
          expect(list).toHaveLength(2);
@@ -1643,7 +1817,11 @@ describe("webhook-repository", () => {
    describe("getWebhookEndpoint", () => {
       it("returns endpoint by id", async () => {
          const { organizationId, teamId } = ids();
-         const created = await repo.createWebhookEndpoint(organizationId, teamId, validEndpointInput());
+         const created = await repo.createWebhookEndpoint(
+            organizationId,
+            teamId,
+            validEndpointInput(),
+         );
 
          const found = await repo.getWebhookEndpoint(created.id);
          expect(found).toMatchObject({ id: created.id });
@@ -1658,7 +1836,11 @@ describe("webhook-repository", () => {
    describe("updateWebhookEndpoint", () => {
       it("updates url and isActive", async () => {
          const { organizationId, teamId } = ids();
-         const created = await repo.createWebhookEndpoint(organizationId, teamId, validEndpointInput());
+         const created = await repo.createWebhookEndpoint(
+            organizationId,
+            teamId,
+            validEndpointInput(),
+         );
 
          const updated = await repo.updateWebhookEndpoint(created.id, {
             url: "https://new.com/wh",
@@ -1672,7 +1854,11 @@ describe("webhook-repository", () => {
    describe("deleteWebhookEndpoint", () => {
       it("deletes an endpoint", async () => {
          const { organizationId, teamId } = ids();
-         const created = await repo.createWebhookEndpoint(organizationId, teamId, validEndpointInput());
+         const created = await repo.createWebhookEndpoint(
+            organizationId,
+            teamId,
+            validEndpointInput(),
+         );
 
          await repo.deleteWebhookEndpoint(created.id);
          const found = await repo.getWebhookEndpoint(created.id);
@@ -1683,7 +1869,11 @@ describe("webhook-repository", () => {
    describe("failure tracking", () => {
       it("increments failure count", async () => {
          const { organizationId, teamId } = ids();
-         const created = await repo.createWebhookEndpoint(organizationId, teamId, validEndpointInput());
+         const created = await repo.createWebhookEndpoint(
+            organizationId,
+            teamId,
+            validEndpointInput(),
+         );
 
          await repo.incrementWebhookFailureCount(created.id);
          await repo.incrementWebhookFailureCount(created.id);
@@ -1695,7 +1885,11 @@ describe("webhook-repository", () => {
 
       it("resets failure count on success", async () => {
          const { organizationId, teamId } = ids();
-         const created = await repo.createWebhookEndpoint(organizationId, teamId, validEndpointInput());
+         const created = await repo.createWebhookEndpoint(
+            organizationId,
+            teamId,
+            validEndpointInput(),
+         );
 
          await repo.incrementWebhookFailureCount(created.id);
          await repo.updateWebhookLastSuccess(created.id);
@@ -1710,37 +1904,56 @@ describe("webhook-repository", () => {
       it("matches wildcard patterns", async () => {
          const { organizationId, teamId } = ids();
          await repo.createWebhookEndpoint(
-            organizationId, teamId,
+            organizationId,
+            teamId,
             validEndpointInput({ eventPatterns: ["content.*"] }),
          );
 
-         const matched = await repo.findMatchingWebhooks(organizationId, "content.page.published", teamId);
+         const matched = await repo.findMatchingWebhooks(
+            organizationId,
+            "content.page.published",
+            teamId,
+         );
          expect(matched).toHaveLength(1);
       });
 
       it("matches exact patterns", async () => {
          const { organizationId, teamId } = ids();
          await repo.createWebhookEndpoint(
-            organizationId, teamId,
+            organizationId,
+            teamId,
             validEndpointInput({ eventPatterns: ["form.submitted"] }),
          );
 
-         const matched = await repo.findMatchingWebhooks(organizationId, "form.submitted", teamId);
+         const matched = await repo.findMatchingWebhooks(
+            organizationId,
+            "form.submitted",
+            teamId,
+         );
          expect(matched).toHaveLength(1);
 
-         const noMatch = await repo.findMatchingWebhooks(organizationId, "form.created", teamId);
+         const noMatch = await repo.findMatchingWebhooks(
+            organizationId,
+            "form.created",
+            teamId,
+         );
          expect(noMatch).toHaveLength(0);
       });
 
       it("excludes inactive endpoints", async () => {
          const { organizationId, teamId } = ids();
          const endpoint = await repo.createWebhookEndpoint(
-            organizationId, teamId,
+            organizationId,
+            teamId,
             validEndpointInput({ eventPatterns: ["content.*"] }),
          );
          await repo.updateWebhookEndpoint(endpoint.id, { isActive: false });
 
-         const matched = await repo.findMatchingWebhooks(organizationId, "content.page.published", teamId);
+         const matched = await repo.findMatchingWebhooks(
+            organizationId,
+            "content.page.published",
+            teamId,
+         );
          expect(matched).toHaveLength(0);
       });
    });
@@ -1749,7 +1962,8 @@ describe("webhook-repository", () => {
       it("creates and lists deliveries", async () => {
          const { organizationId, teamId } = ids();
          const endpoint = await repo.createWebhookEndpoint(
-            organizationId, teamId,
+            organizationId,
+            teamId,
             validEndpointInput(),
          );
 
@@ -1809,6 +2023,7 @@ git commit -m "test(database): add webhook repository tests"
 ### Task 12: Review services schema — update enum import
 
 **Files:**
+
 - Modify: `core/database/src/schemas/services.ts`
 
 **Step 1: Update `billingCycleEnum` import**
@@ -1845,6 +2060,7 @@ git commit -m "refactor(database): update services billingCycleEnum import from 
 ### Task 13: Review financial-goals schema — inline enum
 
 **Files:**
+
 - Modify: `core/database/src/schemas/financial-goals.ts`
 
 **Step 1: Inline `goalMovementTypeEnum`**
@@ -1852,12 +2068,14 @@ git commit -m "refactor(database): update services billingCycleEnum import from 
 In `core/database/src/schemas/financial-goals.ts`:
 
 Remove the import:
+
 ```typescript
 // Remove:
 import { goalMovementTypeEnum } from "./enums";
 ```
 
 Add `pgEnum` to the drizzle import and define the enum inline:
+
 ```typescript
 import {
    boolean,

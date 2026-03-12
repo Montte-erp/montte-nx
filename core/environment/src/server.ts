@@ -32,8 +32,8 @@ export const env = createEnv({
       POSTHOG_PUBLIC_KEY: z.string().optional(), // Client-side project API key (safe to expose in tracking scripts)
       POSTHOG_PROJECT_ID: z.string(),
 
-      // Email (Optional - only if using transactional emails)
-      RESEND_API_KEY: z.string().optional(),
+      // Email
+      RESEND_API_KEY: z.string(),
 
       // MinIO (Required for file storage)
       MINIO_ENDPOINT: z.string(),

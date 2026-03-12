@@ -8,7 +8,7 @@ const logger = getLogger().child({ module: "worker:budget-alerts" });
 import {
    BUDGET_ALERTS_QUEUE,
    type BudgetAlertJobData,
-} from "@packages/queue/budget-alerts";
+} from "@packages/events/queues/budget-alerts";
 import { checkBudgetAlerts } from "../jobs/check-budget-alerts";
 
 const SERVICE_NAME = "montte-worker";

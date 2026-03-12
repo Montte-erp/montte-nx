@@ -16,9 +16,14 @@
    "scripts": {
       "build": "tsc --build",
       "check": "oxlint ./src",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "test": "vitest run --passWithNoTests",
       "typecheck": "tsgo"
    },
    "dependencies": {
+      "@core/environment": "workspace:*",
+      "@core/logging": "workspace:*",
       "ioredis": "catalog:workers"
    },
    "devDependencies": {

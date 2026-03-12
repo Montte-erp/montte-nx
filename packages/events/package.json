@@ -71,22 +71,35 @@
       "./document": {
          "types": "./dist/src/document.d.ts",
          "default": "./src/document.ts"
+      },
+      "./queues/connection": {
+         "types": "./dist/src/queues/connection.d.ts",
+         "default": "./src/queues/connection.ts"
+      },
+      "./queues/webhook-delivery": {
+         "types": "./dist/src/queues/webhook-delivery.d.ts",
+         "default": "./src/queues/webhook-delivery.ts"
+      },
+      "./queues/budget-alerts": {
+         "types": "./dist/src/queues/budget-alerts.d.ts",
+         "default": "./src/queues/budget-alerts.ts"
       }
    },
    "scripts": {
       "build": "tsc --build",
       "check": "oxlint ./src",
-      "test": "bun test --pass-with-no-tests",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "test": "vitest run",
       "typecheck": "tsgo"
    },
    "dependencies": {
       "@core/database": "workspace:*",
       "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",
+      "@core/stripe": "workspace:*",
       "@f-o-t/money": "catalog:fot",
       "@orpc/server": "catalog:orpc",
-      "@packages/queue": "workspace:*",
-      "@packages/stripe": "workspace:*",
       "bullmq": "catalog:workers",
       "drizzle-orm": "catalog:database",
       "ioredis": "catalog:workers",

@@ -6,19 +6,19 @@ Refatorar `transactions-repository`, `bills-repository` e `contacts-repository` 
 
 ## Decisões
 
-| Decisão | Escolha | Motivo |
-|---|---|---|
-| Origin field | Não adicionar | Inferível por creditCardId/subscriptionId |
-| Adjustment type | Não adicionar | YAGNI, categoria especial resolve |
-| Conciliação | Fora do escopo (#647) | Módulo de importação não existe |
-| Rateio | Fora do escopo (#648) | Feature empresarial avançada |
-| Transaction items avançados | Fora do escopo (#649) | Evoluir com NFe |
-| bills.contactId | Tornar FK real (restrict) | Consistência |
-| transactions.contactId | onDelete set null → restrict | Proteger dados vinculados |
-| Telas | 3 separadas: Lançamentos, Contas a pagar, Contas a receber | Domínios independentes |
-| Bill + Transaction | Separados, bill.transactionId linka | Já funciona assim |
-| Delete contato | Permite se não tem nada linkado, senão só archive | Protege integridade |
-| Escopo | Só backend (schemas, repositories, testes) | Sem routers, sem front-end |
+| Decisão                     | Escolha                                                    | Motivo                                    |
+| --------------------------- | ---------------------------------------------------------- | ----------------------------------------- |
+| Origin field                | Não adicionar                                              | Inferível por creditCardId/subscriptionId |
+| Adjustment type             | Não adicionar                                              | YAGNI, categoria especial resolve         |
+| Conciliação                 | Fora do escopo (#647)                                      | Módulo de importação não existe           |
+| Rateio                      | Fora do escopo (#648)                                      | Feature empresarial avançada              |
+| Transaction items avançados | Fora do escopo (#649)                                      | Evoluir com NFe                           |
+| bills.contactId             | Tornar FK real (restrict)                                  | Consistência                              |
+| transactions.contactId      | onDelete set null → restrict                               | Proteger dados vinculados                 |
+| Telas                       | 3 separadas: Lançamentos, Contas a pagar, Contas a receber | Domínios independentes                    |
+| Bill + Transaction          | Separados, bill.transactionId linka                        | Já funciona assim                         |
+| Delete contato              | Permite se não tem nada linkado, senão só archive          | Protege integridade                       |
+| Escopo                      | Só backend (schemas, repositories, testes)                 | Sem routers, sem front-end                |
 
 ## Telas (conceitual)
 
@@ -39,9 +39,9 @@ Zod validators:
 - `createTransactionSchema` — name 2-120, type obrigatório, amount numeric string > 0, date YYYY-MM-DD, bankAccountId uuid condicional, destinationBankAccountId uuid condicional, creditCardId uuid opcional, categoryId uuid opcional, contactId uuid opcional, paymentMethod opcional, description max 500 opcional, attachmentUrl opcional
 - `updateTransactionSchema` — partial, sem type (imutável)
 - Validação por tipo via superRefine:
-  - `transfer`: exige bankAccountId + destinationBankAccountId, devem ser diferentes
-  - `expense`: exige bankAccountId OU creditCardId
-  - `income`: exige bankAccountId
+   - `transfer`: exige bankAccountId + destinationBankAccountId, devem ser diferentes
+   - `expense`: exige bankAccountId OU creditCardId
+   - `income`: exige bankAccountId
 
 ### bills.ts
 
@@ -70,12 +70,12 @@ Adicionar `isArchived` (boolean, default false) se não existir.
 - `validateInput` com Zod em create/update
 - `@f-o-t/money` para valores no summary (incomeTotal, expenseTotal, balance)
 - Validação de tipo no repository:
-  - `transfer`: bankAccountId ≠ destinationBankAccountId
-  - `expense`: exigir bankAccountId ou creditCardId
-  - `income`: exigir bankAccountId
+   - `transfer`: bankAccountId ≠ destinationBankAccountId
+   - `expense`: exigir bankAccountId ou creditCardId
+   - `income`: exigir bankAccountId
 - Manter funções existentes:
-  - `createTransaction`, `listTransactions`, `getTransactionsSummary`, `getTransactionWithTags`, `updateTransaction`, `deleteTransaction`
-  - `createTransactionItems`, `getTransactionItems`, `replaceTransactionItems`
+   - `createTransaction`, `listTransactions`, `getTransactionsSummary`, `getTransactionWithTags`, `updateTransaction`, `deleteTransaction`
+   - `createTransactionItems`, `getTransactionItems`, `replaceTransactionItems`
 
 ### bills-repository.ts (refatorar)
 
@@ -83,8 +83,8 @@ Adicionar `isArchived` (boolean, default false) se não existir.
 - `validateInput` com Zod em create/update
 - `@f-o-t/money` para `amount`
 - Manter funções existentes:
-  - `createBill`, `createBillsBatch`, `listBills`, `getBill`, `updateBill`, `deleteBill`
-  - `createRecurrenceSetting`, `getActiveRecurrenceSettings`, `getLastBillForRecurrenceGroup`
+   - `createBill`, `createBillsBatch`, `listBills`, `getBill`, `updateBill`, `deleteBill`
+   - `createRecurrenceSetting`, `getActiveRecurrenceSettings`, `getLastBillForRecurrenceGroup`
 
 ### contacts-repository.ts (refatorar)
 

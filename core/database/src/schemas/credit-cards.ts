@@ -11,7 +11,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
-import { bankAccounts } from "./bank-accounts";
+import { bankAccounts } from "@core/database/schemas/bank-accounts";
 
 export const creditCardStatusEnum = pgEnum("credit_card_status", [
    "active",

@@ -1,4 +1,4 @@
-import { AddonName } from "@packages/stripe/constants";
+import { AddonName } from "@core/stripe/constants";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck } from "lucide-react";

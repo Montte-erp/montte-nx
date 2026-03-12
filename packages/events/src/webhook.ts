@@ -2,10 +2,6 @@ import { z } from "zod";
 
 import { type EmitFn, EVENT_CATEGORIES } from "./catalog";
 
-// ---------------------------------------------------------------------------
-// Webhook Event Names
-// ---------------------------------------------------------------------------
-
 export const WEBHOOK_EVENTS = {
    "webhook.endpoint.created": "webhook.endpoint.created",
    "webhook.endpoint.updated": "webhook.endpoint.updated",
@@ -16,20 +12,12 @@ export const WEBHOOK_EVENTS = {
 export type WebhookEventName =
    (typeof WEBHOOK_EVENTS)[keyof typeof WEBHOOK_EVENTS];
 
-// ---------------------------------------------------------------------------
-// Webhook Pricing
-// ---------------------------------------------------------------------------
-
 export const WEBHOOK_PRICING: Record<string, string> = {
    "webhook.endpoint.created": "0.000000",
    "webhook.endpoint.updated": "0.000000",
    "webhook.endpoint.deleted": "0.000000",
    "webhook.delivered": "0.000500",
 };
-
-// ---------------------------------------------------------------------------
-// webhook.endpoint.created
-// ---------------------------------------------------------------------------
 
 export const webhookEndpointCreatedEventSchema = z.object({
    endpointId: z.string().uuid(),
@@ -52,10 +40,6 @@ export function emitWebhookEndpointCreated(
    });
 }
 
-// ---------------------------------------------------------------------------
-// webhook.endpoint.updated
-// ---------------------------------------------------------------------------
-
 export const webhookEndpointUpdatedEventSchema = z.object({
    endpointId: z.string().uuid(),
    changedFields: z.array(z.string()),
@@ -77,10 +61,6 @@ export function emitWebhookEndpointUpdated(
    });
 }
 
-// ---------------------------------------------------------------------------
-// webhook.endpoint.deleted
-// ---------------------------------------------------------------------------
-
 export const webhookEndpointDeletedEventSchema = z.object({
    endpointId: z.string().uuid(),
 });
@@ -100,10 +80,6 @@ export function emitWebhookEndpointDeleted(
       properties,
    });
 }
-
-// ---------------------------------------------------------------------------
-// webhook.delivered
-// ---------------------------------------------------------------------------
 
 export const webhookDeliveredEventSchema = z.object({
    endpointId: z.string().uuid(),

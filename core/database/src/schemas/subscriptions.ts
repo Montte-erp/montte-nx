@@ -12,8 +12,8 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
-import { contacts, serviceSourceEnum } from "./contacts";
-import { serviceVariants } from "./services";
+import { contacts, serviceSourceEnum } from "@core/database/schemas/contacts";
+import { serviceVariants } from "@core/database/schemas/services";
 
 export const billingCycleEnum = pgEnum("billing_cycle", [
    "hourly",

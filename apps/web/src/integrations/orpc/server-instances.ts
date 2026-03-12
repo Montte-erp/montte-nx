@@ -2,7 +2,7 @@ import { createAuth } from "@core/authentication/server";
 import { createDb } from "@core/database/client";
 import { env } from "@core/environment/server";
 import { getElysiaPosthogConfig } from "@core/posthog/server";
-import { getStripeClient } from "@packages/stripe";
+import { getStripeClient } from "@core/stripe";
 
 export const db = createDb({ databaseUrl: env.DATABASE_URL });
 export const auth = createAuth({ db, env });

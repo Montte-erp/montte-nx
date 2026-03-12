@@ -11,10 +11,10 @@ import {
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
-import { bankAccounts } from "./bank-accounts";
-import { categories } from "./categories";
-import { contacts } from "./contacts";
-import { transactions } from "./transactions";
+import { bankAccounts } from "@core/database/schemas/bank-accounts";
+import { categories } from "@core/database/schemas/categories";
+import { contacts } from "@core/database/schemas/contacts";
+import { transactions } from "@core/database/schemas/transactions";
 import { z } from "zod";
 
 export const billTypeEnum = pgEnum("bill_type", ["payable", "receivable"]);

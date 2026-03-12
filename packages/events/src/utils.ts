@@ -12,11 +12,6 @@ const logger = getLogger().child({ module: "events:utils" });
 const PRICE_SCALE = 6;
 const CURRENCY = "BRL";
 
-/**
- * Looks up the price and billability for a given event name from the event_catalog table.
- * Returns a Money object with 6-decimal precision matching the DB schema.
- * Returns { price: $0, isBillable: false } if the event is not found in the catalog.
- */
 export async function getEventPrice(
    db: DatabaseInstance,
    eventName: string,
@@ -51,10 +46,6 @@ export async function getEventPrice(
    };
 }
 
-/**
- * Retrieves full metadata for an event from the catalog.
- * Returns null if the event is not found.
- */
 export async function getEventMetadata(
    db: DatabaseInstance,
    eventName: string,

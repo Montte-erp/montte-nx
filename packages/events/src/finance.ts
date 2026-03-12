@@ -1,10 +1,6 @@
 import { z } from "zod";
 import { type EmitFn, EVENT_CATEGORIES } from "./catalog";
 
-// ---------------------------------------------------------------------------
-// Finance Event Names
-// ---------------------------------------------------------------------------
-
 export const FINANCE_EVENTS = {
    "finance.transaction_created": "finance.transaction_created",
    "finance.transaction_updated": "finance.transaction_updated",
@@ -16,10 +12,6 @@ export const FINANCE_EVENTS = {
 
 export type FinanceEventName =
    (typeof FINANCE_EVENTS)[keyof typeof FINANCE_EVENTS];
-
-// ---------------------------------------------------------------------------
-// finance.transaction_created
-// ---------------------------------------------------------------------------
 
 export const financeTransactionCreatedSchema = z.object({
    transactionId: z.string().uuid(),
@@ -45,10 +37,6 @@ export function emitFinanceTransactionCreated(
    });
 }
 
-// ---------------------------------------------------------------------------
-// finance.transaction_updated
-// ---------------------------------------------------------------------------
-
 export const financeTransactionUpdatedSchema = z.object({
    transactionId: z.string().uuid(),
 });
@@ -68,10 +56,6 @@ export function emitFinanceTransactionUpdated(
       properties,
    });
 }
-
-// ---------------------------------------------------------------------------
-// finance.bank_account_connected
-// ---------------------------------------------------------------------------
 
 export const financeBankAccountConnectedSchema = z.object({
    bankAccountId: z.string().uuid(),
@@ -101,10 +85,6 @@ export function emitFinanceBankAccountConnected(
    });
 }
 
-// ---------------------------------------------------------------------------
-// finance.category_created
-// ---------------------------------------------------------------------------
-
 export const financeCategoryCreatedSchema = z.object({
    categoryId: z.string().uuid(),
 });
@@ -125,10 +105,6 @@ export function emitFinanceCategoryCreated(
    });
 }
 
-// ---------------------------------------------------------------------------
-// finance.tag_created
-// ---------------------------------------------------------------------------
-
 export const financeTagCreatedSchema = z.object({
    tagId: z.string().uuid(),
 });
@@ -146,10 +122,6 @@ export function emitFinanceTagCreated(
       properties,
    });
 }
-
-// ---------------------------------------------------------------------------
-// finance.budget_alert_triggered
-// ---------------------------------------------------------------------------
 
 export const financeBudgetAlertTriggeredSchema = z.object({
    budgetGoalId: z.string().uuid(),

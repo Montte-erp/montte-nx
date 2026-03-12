@@ -1,7 +1,10 @@
 {
    "extends": "@tooling/typescript/tsconfig.package.json",
    "compilerOptions": {
-      "jsx": "react-jsx"
+      "jsx": "react-jsx",
+      "paths": {
+         "@core/posthog/*": ["./src/*"]
+      }
    },
    "include": ["src"]
 }

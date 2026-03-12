@@ -1,0 +1,10 @@
+{
+   "extends": "@tooling/typescript/tsconfig.package.json",
+   "compilerOptions": {
+      "jsx": "react-jsx",
+      "paths": {
+         "@core/transactional/*": ["./src/*"]
+      }
+   },
+   "include": ["src"]
+}

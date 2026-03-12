@@ -8,13 +8,13 @@ import {
 import { events } from "@core/database/schemas/events";
 import { getLogger } from "@core/logging/root";
 import type { PostHog } from "@core/posthog/server";
-import { createQueueConnection } from "@packages/queue/connection";
+import { createQueueConnection } from "./queues/connection";
 import {
    createWebhookDeliveryQueue,
    type WebhookDeliveryJobData,
-} from "@packages/queue/webhook-delivery";
-import type { StripeClient } from "@packages/stripe";
-import { STRIPE_METER_EVENTS } from "@packages/stripe/constants";
+} from "./queues/webhook-delivery";
+import type { StripeClient } from "@core/stripe";
+import { STRIPE_METER_EVENTS } from "@core/stripe/constants";
 import type { Queue } from "bullmq";
 import type { EmitFn, EventCategory } from "./catalog";
 
@@ -55,25 +55,14 @@ export interface EmitEventBatchParams {
    events: Omit<EmitEventParams, "db" | "posthog">[];
 }
 
-// ---------------------------------------------------------------------------
-// Webhook Queue (lazy-initialized)
-// ---------------------------------------------------------------------------
-
 let webhookQueue: Queue<WebhookDeliveryJobData> | null = null;
 
-/**
- * Initialize the webhook delivery queue.
- * Must be called once at app startup (web or worker).
- */
 export function initializeWebhookQueue(redisUrl: string): void {
    if (webhookQueue) return;
    const connection = createQueueConnection(redisUrl);
    webhookQueue = createWebhookDeliveryQueue(connection);
 }
 
-/**
- * Build the webhook payload from a stored event.
- */
 function buildWebhookPayload(
    eventId: string,
    eventName: string,
@@ -89,22 +78,6 @@ function buildWebhookPayload(
    };
 }
 
-// ---------------------------------------------------------------------------
-// Single Event Emission
-// ---------------------------------------------------------------------------
-
-/**
- * Central event emitter -- dual-write to PostgreSQL and PostHog.
- *
- * 1. Looks up the event price from the catalog.
- * 2. Inserts a row into the `events` table (billing source of truth).
- * 3. Increments the Redis usage counter; if over free tier, sends a Stripe Meter event.
- * 4. Sends a capture call to PostHog (analytics, optional).
- * 5. Triggers matching webhook deliveries via BullMQ (if initialized).
- *
- * **Non-throwing:** errors are logged but never propagated so that event
- * tracking cannot break the caller's main flow.
- */
 export async function emitEvent(params: EmitEventParams): Promise<void> {
    const {
       db,
@@ -124,7 +97,6 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
          ? { price: params.priceOverride, isBillable: true }
          : await getEventPrice(db, eventName);
 
-      // 1. Store in PostgreSQL (billing source of truth)
       const [storedEvent] = await db
          .insert(events)
          .values({
@@ -141,7 +113,6 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
          })
          .returning();
 
-      // 2. Track usage counter + send overage to Stripe Meters
       if (isBillable) {
          await incrementUsage(organizationId, eventName);
          const withinFree = await isWithinFreeTier(organizationId, eventName);
@@ -166,12 +137,10 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
                   { err: stripeErr, meterEventName },
                   "Failed to send meter event to Stripe",
                );
-               // Don't throw — meter billing failure should not block the main flow
             }
          }
       }
 
-      // 3. Send to PostHog for analytics (optional)
       if (posthog) {
          posthog.capture({
             distinctId: userId || organizationId,
@@ -184,7 +153,6 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
          });
       }
 
-      // 4. Trigger webhooks (failure-tolerant)
       if (webhookQueue && storedEvent) {
          try {
             const matchingWebhooks = await findMatchingWebhooks(
@@ -226,27 +194,13 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
             }
          } catch (error) {
             logger.error({ err: error }, "Failed to trigger webhooks");
-            // Don't throw — webhooks should not block events
          }
       }
    } catch (error) {
       logger.error({ err: error, eventName }, "Failed to emit event");
-      // Don't throw -- events should not block the main flow
    }
 }
 
-// ---------------------------------------------------------------------------
-// Batch Event Emission
-// ---------------------------------------------------------------------------
-
-/**
- * Emits multiple events in a single operation.
- *
- * - PostgreSQL rows are inserted in a single bulk `INSERT`.
- * - PostHog captures are sent individually (the SDK batches internally).
- *
- * **Non-throwing:** errors are logged but never propagated.
- */
 export async function emitEventBatch(
    params: EmitEventBatchParams,
 ): Promise<void> {
@@ -255,7 +209,6 @@ export async function emitEventBatch(
    if (eventList.length === 0) return;
 
    try {
-      // Look up prices for all unique event names
       const uniqueNames = [...new Set(eventList.map((e) => e.eventName))];
       const billingMap = new Map<
          string,
@@ -272,7 +225,6 @@ export async function emitEventBatch(
          }),
       );
 
-      // 1. Bulk insert into PostgreSQL
       const rows = eventList.map((evt) => {
          const billing = billingMap.get(evt.eventName) ?? {
             priceStr: "0",
@@ -294,7 +246,6 @@ export async function emitEventBatch(
 
       await db.insert(events).values(rows);
 
-      // 2. Send each event to PostHog (the SDK batches internally)
       if (posthog) {
          for (const evt of eventList) {
             posthog.capture({
@@ -313,6 +264,5 @@ export async function emitEventBatch(
          { err: error, batchSize: eventList.length },
          "Failed to emit event batch",
       );
-      // Don't throw -- events should not block the main flow
    }
 }
