@@ -1,4 +1,4 @@
-import { ORPCError, call } from "@orpc/server";
+import { call } from "@orpc/server";
 import {
    afterAll,
    beforeAll,
@@ -75,7 +75,7 @@ beforeEach(async () => {
 
 describe("getOnboardingStatus", () => {
    it("returns onboarding status with auto-detected tasks", async () => {
-      const teamId = ctx.session.session.activeTeamId!;
+      const teamId = ctx.session!.session.activeTeamId!;
 
       await ctx.db.insert(categories).values({
          teamId,

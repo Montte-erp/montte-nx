@@ -402,7 +402,7 @@ async function createContactForTeam(
 
 describe("subscriptions", () => {
    it("creates a subscription for a contact", async () => {
-      const teamId = ctx.session.session.activeTeamId!;
+      const teamId = ctx.session!.session.activeTeamId!;
       const contact = await createContactForTeam(ctx.db, teamId);
 
       const service = await call(
@@ -443,7 +443,7 @@ describe("subscriptions", () => {
    });
 
    it("lists subscriptions by team", async () => {
-      const teamId = ctx.session.session.activeTeamId!;
+      const teamId = ctx.session!.session.activeTeamId!;
       const contact = await createContactForTeam(ctx.db, teamId);
 
       const service = await call(
@@ -482,7 +482,7 @@ describe("subscriptions", () => {
    });
 
    it("filters subscriptions by status", async () => {
-      const teamId = ctx.session.session.activeTeamId!;
+      const teamId = ctx.session!.session.activeTeamId!;
       const contact = await createContactForTeam(ctx.db, teamId);
 
       const service = await call(
@@ -535,7 +535,7 @@ describe("subscriptions", () => {
    });
 
    it("cancels an active subscription", async () => {
-      const teamId = ctx.session.session.activeTeamId!;
+      const teamId = ctx.session!.session.activeTeamId!;
       const contact = await createContactForTeam(ctx.db, teamId);
 
       const service = await call(
@@ -576,7 +576,7 @@ describe("subscriptions", () => {
    });
 
    it("rejects cancelling a non-active subscription", async () => {
-      const teamId = ctx.session.session.activeTeamId!;
+      const teamId = ctx.session!.session.activeTeamId!;
       const contact = await createContactForTeam(ctx.db, teamId);
 
       const service = await call(
@@ -623,7 +623,7 @@ describe("subscriptions", () => {
    });
 
    it("rejects cancelling subscription from different team", async () => {
-      const teamId = ctx.session.session.activeTeamId!;
+      const teamId = ctx.session!.session.activeTeamId!;
       const contact = await createContactForTeam(ctx.db, teamId);
 
       const service = await call(
@@ -664,7 +664,7 @@ describe("subscriptions", () => {
    });
 
    it("returns active count by variant", async () => {
-      const teamId = ctx.session.session.activeTeamId!;
+      const teamId = ctx.session!.session.activeTeamId!;
       const contact = await createContactForTeam(ctx.db, teamId);
 
       const service = await call(

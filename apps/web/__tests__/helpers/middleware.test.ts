@@ -12,6 +12,28 @@ vi.mock("@packages/files/client", () => ({
    getMinioClient: vi.fn(),
    generatePresignedPutUrl: vi.fn(),
 }));
+vi.mock("@core/arcjet/client", () => ({
+   arcjetClient: {},
+}));
+vi.mock("@core/arcjet/protect", () => ({
+   protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
+   isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
+}));
+vi.mock("@core/files/client", () => ({
+   minioClient: {},
+}));
+vi.mock("@core/posthog/server", () => ({
+   posthog: {
+      capture: vi.fn(),
+      identify: vi.fn(),
+      groupIdentify: vi.fn(),
+      shutdown: vi.fn(),
+   },
+   captureError: vi.fn(),
+   captureServerEvent: vi.fn(),
+   identifyUser: vi.fn(),
+   setGroup: vi.fn(),
+}));
 vi.mock("@core/database/repositories/auth-repository");
 
 import { getOrganizationTeams } from "@/integrations/orpc/router/organization";

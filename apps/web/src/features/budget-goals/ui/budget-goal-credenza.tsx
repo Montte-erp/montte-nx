@@ -178,12 +178,8 @@ export function BudgetGoalCredenza({
          } else if (goal) {
             updateMutation.mutate({
                id: goal.id,
-               data: {
-                  limitAmount: value.limitAmount,
-                  alertThreshold: value.alertEnabled
-                     ? value.alertThreshold
-                     : null,
-               },
+               limitAmount: value.limitAmount,
+               alertThreshold: value.alertEnabled ? value.alertThreshold : null,
             });
          }
       },

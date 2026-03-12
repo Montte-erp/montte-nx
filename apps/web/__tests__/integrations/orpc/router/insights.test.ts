@@ -119,10 +119,10 @@ describe("create", () => {
       );
 
       expect(result.organizationId).toBe(
-         ctx.session.session.activeOrganizationId,
+         ctx.session!.session.activeOrganizationId,
       );
-      expect(result.teamId).toBe(ctx.session.session.activeTeamId);
-      expect(result.createdBy).toBe(ctx.session.user.id);
+      expect(result.teamId).toBe(ctx.session!.session.activeTeamId);
+      expect(result.createdBy).toBe(ctx.session!.user.id);
    });
 });
 

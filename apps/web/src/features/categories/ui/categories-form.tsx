@@ -63,7 +63,6 @@ import {
    Wallet,
    Zap,
 } from "lucide-react";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";

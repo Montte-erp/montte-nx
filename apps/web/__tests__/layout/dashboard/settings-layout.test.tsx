@@ -3,6 +3,68 @@
 import { render, screen } from "@testing-library/react";
 import type React from "react";
 import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@core/environment/server", () => ({
+   env: {
+      DATABASE_URL: "postgres://localhost/test",
+      MINIO_ENDPOINT: "http://localhost:9000",
+      MINIO_ACCESS_KEY: "test",
+      MINIO_SECRET_KEY: "test",
+      ARCJET_KEY: "test",
+      ARCJET_ENV: "development",
+      POSTHOG_KEY: "test",
+      POSTHOG_HOST: "http://localhost",
+      PG_VECTOR_URL: "postgres://localhost/test",
+      BETTER_AUTH_SECRET: "test",
+      BETTER_AUTH_URL: "http://localhost:3000",
+      RESEND_API_KEY: "test",
+      STRIPE_SECRET_KEY: "test",
+      STRIPE_WEBHOOK_SECRET: "test",
+      REDIS_URL: "redis://localhost:6379",
+   },
+}));
+vi.mock("@core/files/client", () => ({
+   minioClient: {},
+}));
+vi.mock("@core/arcjet/client", () => ({
+   arcjetClient: {},
+}));
+vi.mock("@core/arcjet/protect", () => ({
+   protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
+   isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
+}));
+vi.mock("@core/posthog/server", () => ({
+   posthog: {
+      capture: vi.fn(),
+      identify: vi.fn(),
+      groupIdentify: vi.fn(),
+      shutdown: vi.fn(),
+   },
+   captureError: vi.fn(),
+   captureServerEvent: vi.fn(),
+   identifyUser: vi.fn(),
+   setGroup: vi.fn(),
+}));
+vi.mock("@packages/agents", () => ({
+   mastra: { getAgent: vi.fn() },
+   createRequestContext: vi.fn(),
+}));
+vi.mock("@core/database/client", () => ({
+   db: {},
+}));
+vi.mock("@core/redis/connection", () => ({
+   redis: {},
+}));
+vi.mock("@core/authentication/server", () => ({
+   auth: { api: {} },
+}));
+vi.mock("@core/stripe", () => ({
+   stripeClient: {},
+}));
+vi.mock("@core/transactional/utils", () => ({
+   resendClient: {},
+}));
+
 import { SettingsLayout } from "@/layout/dashboard/ui/settings-layout";
 
 vi.mock("@packages/ui/hooks/use-mobile", () => ({

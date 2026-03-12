@@ -593,33 +593,48 @@ function ConfirmStep({ methods, rows }: ConfirmStepProps) {
    const validRows = validated.filter((r) => r.isValid);
    const invalidCount = validated.filter((r) => !r.isValid).length;
 
-   const importMutation = useMutation(
-      orpc.services.bulkCreate.mutationOptions({
-         onSuccess: (data) => {
-            const count = Array.isArray(data) ? data.length : 0;
-            toast.success(`${count} serviço(s) importado(s) com sucesso.`);
-            closeCredenza();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao importar serviços.");
-         },
-      }),
+   const createServiceMutation = useMutation(
+      orpc.services.create.mutationOptions({}),
    );
 
-   function handleImport() {
+   const [isImporting, setIsImporting] = useState(false);
+
+   async function handleImport() {
       if (validRows.length === 0) return;
 
       const payload = validRows.map((row) => ({
          name: row.name.trim(),
          description: row.description.trim() || null,
          basePrice: row.priceCents ?? 0,
-         // category matching is left to the server or set null
       }));
 
-      importMutation.mutate({ services: payload });
+      setIsImporting(true);
+      try {
+         const results = await Promise.all(
+            payload.map((service) =>
+               createServiceMutation.mutateAsync({
+                  name: service.name,
+                  description: service.description,
+                  basePrice: String(service.basePrice),
+               }),
+            ),
+         );
+         toast.success(
+            `${results.length} serviço(s) importado(s) com sucesso.`,
+         );
+         closeCredenza();
+      } catch (error: unknown) {
+         const message =
+            error instanceof Error
+               ? error.message
+               : "Erro ao importar serviços.";
+         toast.error(message);
+      } finally {
+         setIsImporting(false);
+      }
    }
 
-   const isLoading = importMutation.isPending;
+   const isLoading = isImporting;
 
    return (
       <>

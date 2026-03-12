@@ -36,7 +36,7 @@ export function registerAccountsCommands(cli: CAC): void {
       });
 
    cli.command("accounts create", "Create a bank account")
-      .option("--name <name>", "Account name", { required: true })
+      .option("--name <name>", "Account name")
       .option(
          "--type <type>",
          "Account type (checking, savings, investment, payment, cash)",

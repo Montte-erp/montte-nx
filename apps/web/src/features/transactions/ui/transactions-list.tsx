@@ -112,7 +112,7 @@ export function TransactionsList({
       }),
    );
 
-   const transactionData = result.data as TransactionRow[];
+   const transactionData = result.data as unknown as TransactionRow[];
    const totalPages = Math.ceil(result.total / filters.pageSize);
 
    const deleteMutation = useMutation(
@@ -248,7 +248,6 @@ export function TransactionsList({
                      selectedIds.map((id) =>
                         updateMutation.mutateAsync({
                            id,
-                           type: "transfer",
                            bankAccountId,
                            destinationBankAccountId,
                         }),

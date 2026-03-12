@@ -200,6 +200,12 @@ export const remove = protectedProcedure
       return { success: true };
    });
 
+export const getEventCatalog = protectedProcedure.handler(
+   async ({ context }) => {
+      return listEventCatalog(context.db);
+   },
+);
+
 export const deliveries = protectedProcedure
    .input(
       z.object({

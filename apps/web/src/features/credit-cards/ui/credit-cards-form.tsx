@@ -101,7 +101,7 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                creditLimit: value.creditLimit,
                closingDay: value.closingDay,
                dueDay: value.dueDay,
-               bankAccountId: value.bankAccountId || null,
+               bankAccountId: value.bankAccountId || "",
             });
          } else if (card) {
             updateMutation.mutate({
@@ -111,7 +111,7 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                creditLimit: value.creditLimit,
                closingDay: value.closingDay,
                dueDay: value.dueDay,
-               bankAccountId: value.bankAccountId || null,
+               bankAccountId: value.bankAccountId || undefined,
             });
          }
       },

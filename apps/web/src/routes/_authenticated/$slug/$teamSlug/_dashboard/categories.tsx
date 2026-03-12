@@ -91,11 +91,7 @@ interface CategoriesListProps {
    onFiltersChange: (filters: CategoryFilters) => void;
 }
 
-function CategoriesList({
-   view,
-   filters,
-   onFiltersChange,
-}: CategoriesListProps) {
+function CategoriesList({ view, filters }: CategoriesListProps) {
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const {
@@ -115,7 +111,7 @@ function CategoriesList({
       }),
    );
 
-   const categories = result;
+   const categories = result as unknown as CategoryRow[];
 
    const deleteMutation = useMutation(
       orpc.categories.remove.mutationOptions({

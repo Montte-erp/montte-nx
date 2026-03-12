@@ -59,7 +59,7 @@ beforeAll(async () => {
       organizationId: "auto",
       teamId: "auto",
    });
-   teamId = ctx.session.session.activeTeamId!;
+   teamId = ctx.session!.session.activeTeamId!;
 });
 
 afterAll(async () => {

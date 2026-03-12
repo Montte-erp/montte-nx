@@ -64,11 +64,9 @@ export function registerTransactionsCommands(cli: CAC): void {
       });
 
    cli.command("transactions create", "Create a transaction")
-      .option("--type <type>", "Type (income, expense, transfer)", {
-         required: true,
-      })
-      .option("--amount <amount>", "Amount", { required: true })
-      .option("--date <date>", "Date (YYYY-MM-DD)", { required: true })
+      .option("--type <type>", "Type (income, expense, transfer)")
+      .option("--amount <amount>", "Amount")
+      .option("--date <date>", "Date (YYYY-MM-DD)")
       .option("--name <name>", "Name/description")
       .option("--account <id>", "Bank account ID")
       .option("--category <id>", "Category ID")

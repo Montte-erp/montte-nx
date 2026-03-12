@@ -28,8 +28,7 @@ vi.mock("@core/files/client", () => ({
       .mockResolvedValue("https://minio.test/presigned-url"),
 }));
 
-import { organization, teamMember } from "@core/database/schemas/auth";
-import { eq } from "drizzle-orm";
+import { teamMember } from "@core/database/schemas/auth";
 import {
    cleanupIntegrationTest,
    setupIntegrationTest,
@@ -63,7 +62,7 @@ describe("getOrganizations", () => {
       });
 
       expect(result).toHaveLength(1);
-      expect(result[0]!.id).toBe(ctx.session.session.activeOrganizationId);
+      expect(result[0]!.id).toBe(ctx.session!.session.activeOrganizationId);
       expect(result[0]!.role).toBe("owner");
       expect(result[0]!.name).toBeDefined();
       expect(result[0]!.slug).toBeDefined();
@@ -98,14 +97,14 @@ describe("getActiveOrganization", () => {
                listActiveSubscriptions: vi.fn().mockResolvedValue([]),
             },
          },
-      };
+      } as unknown as ORPCContextWithAuth;
 
       const result = await call(orgRouter.getActiveOrganization, undefined, {
          context: ctxWithSubs,
       });
 
       expect(result).not.toBeNull();
-      expect(result!.id).toBe(ctx.session.session.activeOrganizationId);
+      expect(result!.id).toBe(ctx.session!.session.activeOrganizationId);
       expect(result!.projectCount).toBeGreaterThanOrEqual(1);
       expect(result!.projectLimit).toBe(1);
       expect(result!.activeSubscription).toBeNull();
@@ -125,7 +124,7 @@ describe("getActiveOrganization", () => {
       };
 
       const result = await call(orgRouter.getActiveOrganization, undefined, {
-         context: ctxWithSubs,
+         context: ctxWithSubs as unknown as typeof ctx,
       });
 
       expect(result!.activeSubscription).toEqual(activeSub);
@@ -140,7 +139,7 @@ describe("getOrganizationTeams", () => {
 
       expect(result.length).toBeGreaterThanOrEqual(1);
       const team = result.find(
-         (t: any) => t.id === ctx.session.session.activeTeamId,
+         (t: any) => t.id === ctx.session!.session.activeTeamId,
       );
       expect(team).toBeDefined();
       expect(team!.slug).toBeDefined();
@@ -154,7 +153,7 @@ describe("getMembers", () => {
       });
 
       expect(result).toHaveLength(1);
-      expect(result[0]!.userId).toBe(ctx.session.user.id);
+      expect(result[0]!.userId).toBe(ctx.session!.user.id);
       expect(result[0]!.role).toBe("owner");
       expect(result[0]!.email).toBeDefined();
       expect(result[0]!.name).toBeDefined();
@@ -163,8 +162,8 @@ describe("getMembers", () => {
 
 describe("getMemberTeams", () => {
    it("returns teams that the specified user belongs to", async () => {
-      const teamId = ctx.session.session.activeTeamId!;
-      const userId = ctx.session.user.id;
+      const teamId = ctx.session!.session.activeTeamId!;
+      const userId = ctx.session!.user.id;
 
       const existing = await ctx.db.query.teamMember.findFirst({
          where: { teamId, userId },
@@ -225,7 +224,7 @@ describe("updateLogo", () => {
 
       expect(result).toEqual({ success: true });
 
-      const orgId = ctx.session.session.activeOrganizationId!;
+      const orgId = ctx.session!.session.activeOrganizationId!;
       const org = await ctx.db.query.organization.findFirst({
          where: { id: orgId },
       });

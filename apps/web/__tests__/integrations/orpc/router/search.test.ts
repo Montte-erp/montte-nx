@@ -72,8 +72,8 @@ beforeEach(async () => {
    await ctx.db.execute(sql`DELETE FROM dashboards`);
 });
 
-const teamId = () => ctx.session.session.activeTeamId!;
-const teamId2 = () => ctx2.session.session.activeTeamId!;
+const teamId = () => ctx.session!.session.activeTeamId!;
+const teamId2 = () => ctx2.session!.session.activeTeamId!;
 
 describe("globalSearch", () => {
    it("returns empty results when no data exists", async () => {
@@ -168,8 +168,8 @@ describe("globalSearch", () => {
    it("finds matching dashboards", async () => {
       await ctx.db.insert(dashboards).values({
          teamId: teamId(),
-         organizationId: ctx.session.session.activeOrganizationId!,
-         createdBy: ctx.session.user.id,
+         organizationId: ctx.session!.session.activeOrganizationId!,
+         createdBy: ctx.session!.user.id,
          name: "Visão Geral Financeira",
       });
 

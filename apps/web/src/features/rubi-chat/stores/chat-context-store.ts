@@ -5,11 +5,17 @@ import { Store } from "@tanstack/react-store";
 interface ChatContextState {
    model: ModelId;
    thinkingBudget: number;
+   mode: string | null;
+   contextId: string | null;
+   workflow: string | null;
 }
 
 const DEFAULT_STATE: ChatContextState = {
    model: DEFAULT_CONTENT_MODEL_ID,
    thinkingBudget: 0,
+   mode: null,
+   contextId: null,
+   workflow: null,
 };
 
 export const chatContextStore = new Store<ChatContextState>(DEFAULT_STATE);

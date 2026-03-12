@@ -199,10 +199,9 @@ function TransactionFormContent({
    const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
    );
-   const { data: categoriesResult } = useSuspenseQuery(
+   const { data: categories } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
-   const categories = categoriesResult.data;
    const { data: creditCards } = useSuspenseQuery(
       orpc.creditCards.getAll.queryOptions({}),
    );
@@ -262,8 +261,8 @@ function TransactionFormContent({
    );
 
    const createSubcategoryMutation = useMutation(
-      orpc.subcategories.create.mutationOptions({
-         onSuccess: (data) => {
+      orpc.categories.create.mutationOptions({
+         onSuccess: (data: any) => {
             toast.success("Subcategoria criada.");
             form.setFieldValue("subcategoryId", data.id);
          },
@@ -521,9 +520,9 @@ function TransactionFormContent({
                   >
                      {({ type, bankAccountId, categoryId }) => {
                         const isTransfer = type === "transfer";
-                        const selectedSubcategories =
-                           categories.find((c) => c.id === categoryId)
-                              ?.subcategories ?? [];
+                        const selectedSubcategories = categories.filter(
+                           (c) => c.parentId === categoryId,
+                        );
 
                         return (
                            <>
@@ -908,6 +907,10 @@ function TransactionFormContent({
                                                       name,
                                                       closingDay: 25,
                                                       dueDay: 5,
+                                                      bankAccountId:
+                                                         bankAccountId ||
+                                                         bankAccounts[0]?.id ||
+                                                         "",
                                                    },
                                                 )
                                              }
@@ -959,7 +962,7 @@ function TransactionFormContent({
                                                                type ===
                                                                   "expense"
                                                                   ? type
-                                                                  : undefined,
+                                                                  : "expense",
                                                          },
                                                       )
                                                    }
@@ -986,7 +989,11 @@ function TransactionFormContent({
                                                 />
                                                 <FieldError
                                                    errors={
-                                                      field.state.meta.errors
+                                                      field.state.meta
+                                                         .errors as (
+                                                         | { message?: string }
+                                                         | undefined
+                                                      )[]
                                                    }
                                                 />
                                              </Field>
@@ -1054,7 +1061,15 @@ function TransactionFormContent({
                                                       createSubcategoryMutation.mutate(
                                                          {
                                                             name,
-                                                            categoryId,
+                                                            parentId:
+                                                               categoryId,
+                                                            type:
+                                                               type ===
+                                                                  "income" ||
+                                                               type ===
+                                                                  "expense"
+                                                                  ? type
+                                                                  : "expense",
                                                          },
                                                       )
                                                    }

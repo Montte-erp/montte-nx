@@ -40,7 +40,6 @@ vi.mock("@packages/events/webhook", () => ({
 }));
 
 import { eventCatalog } from "@core/database/schemas/event-catalog";
-import { webhookEndpoints } from "@core/database/schemas/webhooks";
 import { sql } from "drizzle-orm";
 import {
    cleanupIntegrationTest,

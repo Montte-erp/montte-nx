@@ -1,5 +1,5 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { and, count, eq, gte, lte, sql } from "drizzle-orm";
+import { and, count, eq, gte, lte } from "drizzle-orm";
 import { db } from "@core/database/client";
 import {
    type CreateSubscriptionInput,

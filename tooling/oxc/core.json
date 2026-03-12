@@ -21,5 +21,27 @@
             ]
          }
       ]
-   }
+   },
+   "overrides": [
+      {
+         "files": ["**/__tests__/**"],
+         "rules": {
+            "no-restricted-imports": [
+               "error",
+               {
+                  "patterns": [
+                     {
+                        "group": ["@packages/*"],
+                        "message": "core/ cannot depend on packages/"
+                     },
+                     {
+                        "group": ["@/*"],
+                        "message": "core/ cannot depend on app internals"
+                     }
+                  ]
+               }
+            ]
+         }
+      }
+   ]
 }

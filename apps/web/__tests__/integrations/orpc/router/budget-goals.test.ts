@@ -31,7 +31,6 @@ vi.mock("@core/posthog/server", () => ({
    },
 }));
 
-import { budgetGoals } from "@core/database/schemas/budget-goals";
 import { categories } from "@core/database/schemas/categories";
 import { transactions } from "@core/database/schemas/transactions";
 import { sql } from "drizzle-orm";
@@ -50,7 +49,7 @@ async function createExpenseCategory(
    context: ORPCContextWithAuth,
    name = "Alimentação",
 ) {
-   const teamId = context.session.session.activeTeamId!;
+   const teamId = context.session!.session.activeTeamId!;
    const [cat] = await context.db
       .insert(categories)
       .values({
@@ -115,7 +114,7 @@ describe("create", () => {
    });
 
    it("rejects creation with income category", async () => {
-      const teamId = ctx.session.session.activeTeamId!;
+      const teamId = ctx.session!.session.activeTeamId!;
       const [incomeCat] = await ctx.db
          .insert(categories)
          .values({ teamId, name: "Salário", type: "income" })
@@ -178,7 +177,7 @@ describe("getAll", () => {
          { context: ctx },
       );
 
-      const teamId = ctx.session.session.activeTeamId!;
+      const teamId = ctx.session!.session.activeTeamId!;
       await ctx.db.insert(transactions).values({
          teamId,
          type: "expense",

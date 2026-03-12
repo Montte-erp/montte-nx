@@ -106,7 +106,7 @@ async function runOnboardingCompletion(
    for (const insightId of insightIds) {
       try {
          logger.info({ insightId }, "Computing insight");
-         const insight = await getInsightById(tx, insightId);
+         const insight = await getInsightById(insightId);
          if (!insight) continue;
          const freshData = await computeInsightData(tx, insight);
          await tx

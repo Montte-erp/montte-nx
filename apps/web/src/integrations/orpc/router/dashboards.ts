@@ -13,7 +13,6 @@ import {
    DashboardFilterSchema,
    createDashboardSchema,
    dashboardTileSchema,
-   updateDashboardSchema,
 } from "@core/database/schemas/dashboards";
 import {
    emitDashboardCreated,
@@ -34,6 +33,8 @@ export const create = protectedProcedure
       const dashboard = await createDashboard(organizationId, teamId, userId, {
          name: input.name,
          description: input.description,
+         tiles: [],
+         globalFilters: [],
       });
 
       try {

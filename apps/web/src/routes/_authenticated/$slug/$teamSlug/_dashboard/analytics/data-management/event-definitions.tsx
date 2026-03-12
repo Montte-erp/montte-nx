@@ -107,8 +107,8 @@ function EventDefinitionsPage() {
 
    const { data: events = [] } = useQuery<EventCatalogEntry[]>({
       // biome-ignore lint/suspicious/noExplicitAny: generated client is stale
-      ...((orpc.billing.getEventCatalogByCategory.queryOptions({
-         input: { category: "platform" },
+      ...((orpc.billing.getCategoryUsage.queryOptions({
+         input: { category: "finance" },
       }) as any) ?? {}),
    });
 

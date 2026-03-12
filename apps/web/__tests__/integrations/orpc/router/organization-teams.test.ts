@@ -45,7 +45,7 @@ beforeAll(async () => {
    await auth.api.createTeam({
       body: {
          name: "Second Team",
-         organizationId: ctx.session.session.activeOrganizationId!,
+         organizationId: ctx.session!.session.activeOrganizationId!,
          slug: `second-team-${Date.now()}`,
       },
       headers: ctx.headers,

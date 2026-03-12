@@ -65,7 +65,7 @@ function WebhooksContent() {
       orpc.webhooks.list.queryOptions({}),
    );
    const { data: eventCatalog } = useSuspenseQuery(
-      orpc.eventCatalog.list.queryOptions({}),
+      orpc.webhooks.getEventCatalog.queryOptions({}),
    );
 
    const deleteMutation = useMutation(

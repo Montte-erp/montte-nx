@@ -231,14 +231,15 @@ export function CategoryImportCredenza({
    }, [rows, headers, mapping]);
 
    const handleImport = useCallback(() => {
-      const payload = mapped.map((cat) => ({
-         name: cat.name,
-         type: cat.type,
-         color: cat.color,
-         icon: cat.icon,
-         keywords: cat.keywords,
-         subcategories: cat.subcategories,
-      }));
+      const payload = mapped
+         .filter((cat) => cat.type === "income" || cat.type === "expense")
+         .map((cat) => ({
+            name: cat.name,
+            type: cat.type as "income" | "expense",
+            color: cat.color,
+            icon: cat.icon,
+            keywords: cat.keywords,
+         }));
       importMutation.mutate({ categories: payload });
    }, [mapped, importMutation]);
 

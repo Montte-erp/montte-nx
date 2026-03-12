@@ -31,8 +31,6 @@ vi.mock("@core/posthog/server", () => ({
    },
 }));
 
-import { bankAccounts } from "@core/database/schemas/bank-accounts";
-import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
 import { sql } from "drizzle-orm";
 import {
    cleanupIntegrationTest,
@@ -41,11 +39,11 @@ import {
 import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import * as bankAccountsRouter from "@/integrations/orpc/router/bank-accounts";
 import * as creditCardsRouter from "@/integrations/orpc/router/credit-cards";
+import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
 
 let ctx: ORPCContextWithAuth;
 let ctx2: ORPCContextWithAuth;
 let bankAccountId: string;
-let bankAccountId2: string;
 
 beforeAll(async () => {
    const { createAuthenticatedContext } = await setupIntegrationTest();
@@ -81,7 +79,7 @@ beforeEach(async () => {
    );
    bankAccountId = ba.id;
 
-   const ba2 = await call(
+   await call(
       bankAccountsRouter.create,
       {
          name: "Conta Teste 2",
@@ -91,7 +89,6 @@ beforeEach(async () => {
       },
       { context: ctx2 },
    );
-   bankAccountId2 = ba2.id;
 });
 
 describe("create", () => {

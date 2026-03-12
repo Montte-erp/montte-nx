@@ -34,8 +34,6 @@ vi.mock("@core/posthog/server", () => ({
 import { dashboards } from "@core/database/schemas/dashboards";
 import { insights } from "@core/database/schemas/insights";
 import { transactions } from "@core/database/schemas/transactions";
-import { bankAccounts } from "@core/database/schemas/bank-accounts";
-import { categories } from "@core/database/schemas/categories";
 import { sql } from "drizzle-orm";
 import {
    cleanupIntegrationTest,
@@ -68,7 +66,7 @@ beforeEach(async () => {
 
 describe("query", () => {
    it("executes a kpi query with sum aggregation", async () => {
-      const teamId = ctx.session.session.activeTeamId!;
+      const teamId = ctx.session!.session.activeTeamId!;
 
       await ctx.db.insert(transactions).values([
          { teamId, type: "income", amount: "500.00", date: "2026-03-01" },
@@ -95,11 +93,11 @@ describe("query", () => {
          { context: ctx },
       );
 
-      expect(result.value).toBe(800);
+      expect((result as any).value).toBe(800);
    });
 
    it("executes a kpi query with count aggregation", async () => {
-      const teamId = ctx.session.session.activeTeamId!;
+      const teamId = ctx.session!.session.activeTeamId!;
 
       await ctx.db.insert(transactions).values([
          { teamId, type: "income", amount: "100.00", date: "2026-03-01" },
@@ -125,11 +123,11 @@ describe("query", () => {
          { context: ctx },
       );
 
-      expect(result.value).toBe(3);
+      expect((result as any).value).toBe(3);
    });
 
    it("executes a time_series query", async () => {
-      const teamId = ctx.session.session.activeTeamId!;
+      const teamId = ctx.session!.session.activeTeamId!;
 
       await ctx.db.insert(transactions).values([
          { teamId, type: "income", amount: "100.00", date: "2026-03-01" },
@@ -155,13 +153,14 @@ describe("query", () => {
          { context: ctx },
       );
 
-      expect(result.data).toBeDefined();
-      expect(Array.isArray(result.data)).toBe(true);
-      expect(result.data.length).toBeGreaterThan(0);
+      const tsResult = result as { data: unknown[] };
+      expect(tsResult.data).toBeDefined();
+      expect(Array.isArray(tsResult.data)).toBe(true);
+      expect(tsResult.data.length).toBeGreaterThan(0);
    });
 
    it("executes a breakdown query grouped by transaction_type", async () => {
-      const teamId = ctx.session.session.activeTeamId!;
+      const teamId = ctx.session!.session.activeTeamId!;
 
       await ctx.db.insert(transactions).values([
          { teamId, type: "income", amount: "500.00", date: "2026-03-01" },
@@ -188,9 +187,10 @@ describe("query", () => {
          { context: ctx },
       );
 
-      expect(result.data).toBeDefined();
-      expect(result.total).toBeDefined();
-      expect(result.data.length).toBeGreaterThanOrEqual(2);
+      const bdResult = result as { data: unknown[]; total: unknown };
+      expect(bdResult.data).toBeDefined();
+      expect(bdResult.total).toBeDefined();
+      expect(bdResult.data.length).toBeGreaterThanOrEqual(2);
    });
 
    it("returns zero for empty dataset", async () => {
@@ -212,15 +212,15 @@ describe("query", () => {
          { context: ctx },
       );
 
-      expect(result.value).toBe(0);
+      expect((result as any).value).toBe(0);
    });
 });
 
 describe("getDefaultDashboard", () => {
    it("returns the default dashboard for the team", async () => {
-      const orgId = ctx.session.session.activeOrganizationId!;
-      const teamId = ctx.session.session.activeTeamId!;
-      const userId = ctx.session.user.id;
+      const orgId = ctx.session!.session.activeOrganizationId!;
+      const teamId = ctx.session!.session.activeTeamId!;
+      const userId = ctx.session!.user.id;
 
       await ctx.db.insert(dashboards).values({
          organizationId: orgId,
@@ -252,9 +252,9 @@ describe("getDefaultDashboard", () => {
 
 describe("getDashboardInsights", () => {
    it("returns insights for dashboard tiles", async () => {
-      const orgId = ctx.session.session.activeOrganizationId!;
-      const teamId = ctx.session.session.activeTeamId!;
-      const userId = ctx.session.user.id;
+      const orgId = ctx.session!.session.activeOrganizationId!;
+      const teamId = ctx.session!.session.activeTeamId!;
+      const userId = ctx.session!.user.id;
 
       const [insight1] = await ctx.db
          .insert(insights)
@@ -307,9 +307,9 @@ describe("getDashboardInsights", () => {
    });
 
    it("returns empty array when dashboard has no tiles", async () => {
-      const orgId = ctx.session.session.activeOrganizationId!;
-      const teamId = ctx.session.session.activeTeamId!;
-      const userId = ctx.session.user.id;
+      const orgId = ctx.session!.session.activeOrganizationId!;
+      const teamId = ctx.session!.session.activeTeamId!;
+      const userId = ctx.session!.user.id;
 
       const [dashboard] = await ctx.db
          .insert(dashboards)
@@ -333,9 +333,9 @@ describe("getDashboardInsights", () => {
    });
 
    it("throws when dashboardId does not match default", async () => {
-      const orgId = ctx.session.session.activeOrganizationId!;
-      const teamId = ctx.session.session.activeTeamId!;
-      const userId = ctx.session.user.id;
+      const orgId = ctx.session!.session.activeOrganizationId!;
+      const teamId = ctx.session!.session.activeTeamId!;
+      const userId = ctx.session!.user.id;
 
       await ctx.db.insert(dashboards).values({
          organizationId: orgId,
@@ -358,9 +358,9 @@ describe("getDashboardInsights", () => {
    });
 
    it("deduplicates insight IDs from tiles", async () => {
-      const orgId = ctx.session.session.activeOrganizationId!;
-      const teamId = ctx.session.session.activeTeamId!;
-      const userId = ctx.session.user.id;
+      const orgId = ctx.session!.session.activeOrganizationId!;
+      const teamId = ctx.session!.session.activeTeamId!;
+      const userId = ctx.session!.user.id;
 
       const [insight] = await ctx.db
          .insert(insights)

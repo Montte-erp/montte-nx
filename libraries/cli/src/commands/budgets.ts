@@ -5,8 +5,8 @@ import { printJson, printTable, printRecord } from "../output";
 
 export function registerBudgetsCommands(cli: CAC): void {
    cli.command("budgets list", "List budget goals for a month")
-      .option("--month <n>", "Month (1-12)", { required: true })
-      .option("--year <n>", "Year", { required: true })
+      .option("--month <n>", "Month (1-12)")
+      .option("--year <n>", "Year")
       .option("--json", "Output as JSON")
       .action(
          async (options: { month: number; year: number; json?: boolean }) => {
@@ -40,10 +40,10 @@ export function registerBudgetsCommands(cli: CAC): void {
       });
 
    cli.command("budgets create", "Create a budget goal")
-      .option("--category <id>", "Category ID", { required: true })
-      .option("--month <n>", "Month (1-12)", { required: true })
-      .option("--year <n>", "Year", { required: true })
-      .option("--limit <amount>", "Limit amount", { required: true })
+      .option("--category <id>", "Category ID")
+      .option("--month <n>", "Month (1-12)")
+      .option("--year <n>", "Year")
+      .option("--limit <amount>", "Limit amount")
       .option("--alert <n>", "Alert threshold percentage (1-100)")
       .option("--json", "Output as JSON")
       .action(

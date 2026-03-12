@@ -13,10 +13,7 @@ import {
    deleteTransaction,
 } from "@core/database/repositories/transactions-repository";
 import { ensureBankAccountOwnership } from "@core/database/repositories/bank-accounts-repository";
-import {
-   createBillSchema,
-   updateBillSchema,
-} from "@core/database/schemas/bills";
+import { createBillSchema } from "@core/database/schemas/bills";
 import { AppError } from "@core/logging/errors";
 import { z } from "zod";
 import { protectedProcedure } from "../server";

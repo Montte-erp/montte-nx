@@ -68,7 +68,7 @@ function SignUpPage() {
             },
          );
       },
-      [router.navigate],
+      [router],
    );
 
    const form = useForm({

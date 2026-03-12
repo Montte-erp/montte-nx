@@ -12,11 +12,8 @@ import {
 } from "@packages/agents/models";
 import { emitAiChatMessage } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
-import { getLogger } from "@core/logging/root";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
-
-const logger = getLogger().child({ module: "router:agent" });
 
 type ChatChunk =
    | { type: "text"; text: string }

@@ -34,8 +34,8 @@ export function registerCategoriesCommands(cli: CAC): void {
       );
 
    cli.command("categories create", "Create a category")
-      .option("--name <name>", "Category name", { required: true })
-      .option("--type <type>", "Type (income, expense)", { required: true })
+      .option("--name <name>", "Category name")
+      .option("--type <type>", "Type (income, expense)")
       .option("--parent <id>", "Parent category ID")
       .option("--color <color>", "Color hex")
       .option("--json", "Output as JSON")

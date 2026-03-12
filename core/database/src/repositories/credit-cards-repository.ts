@@ -8,7 +8,6 @@ import {
    createCreditCardSchema,
    updateCreditCardSchema,
 } from "@core/database/schemas/credit-cards";
-import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
 
 export async function createCreditCard(
    teamId: string,

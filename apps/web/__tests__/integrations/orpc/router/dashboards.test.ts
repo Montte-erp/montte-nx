@@ -37,7 +37,6 @@ vi.mock("@core/redis/connection", () => ({
    getRedisConnection: vi.fn(),
 }));
 
-import { dashboards } from "@core/database/schemas/dashboards";
 import { sql } from "drizzle-orm";
 import {
    cleanupIntegrationTest,

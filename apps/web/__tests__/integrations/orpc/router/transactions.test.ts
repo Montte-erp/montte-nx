@@ -31,9 +31,6 @@ vi.mock("@core/posthog/server", () => ({
    },
 }));
 
-import { bankAccounts } from "@core/database/schemas/bank-accounts";
-import { categories } from "@core/database/schemas/categories";
-import { transactions } from "@core/database/schemas/transactions";
 import { sql } from "drizzle-orm";
 import {
    cleanupIntegrationTest,

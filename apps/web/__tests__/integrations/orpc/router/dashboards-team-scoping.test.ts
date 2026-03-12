@@ -76,9 +76,9 @@ describe("Dashboards Team Scoping", () => {
          { context: ctxTeamA },
       );
 
-      expect(created.teamId).toBe(ctxTeamA.session.session.activeTeamId);
+      expect(created.teamId).toBe(ctxTeamA.session!.session.activeTeamId);
       expect(created.organizationId).toBe(
-         ctxTeamA.session.session.activeOrganizationId,
+         ctxTeamA.session!.session.activeOrganizationId,
       );
    });
 

@@ -31,9 +31,6 @@ vi.mock("@core/posthog/server", () => ({
    },
 }));
 
-import { bankAccounts } from "@core/database/schemas/bank-accounts";
-import { bills } from "@core/database/schemas/bills";
-import { transactions } from "@core/database/schemas/transactions";
 import { sql } from "drizzle-orm";
 import {
    cleanupIntegrationTest,
@@ -97,14 +94,14 @@ describe("create", () => {
       );
 
       expect(result).toBeDefined();
-      expect(result!.name).toBe("Aluguel");
-      expect(result!.type).toBe("payable");
-      expect(result!.amount).toBe("1500.00");
-      expect(result!.status).toBe("pending");
+      expect((result as any).name).toBe("Aluguel");
+      expect((result as any).type).toBe("payable");
+      expect((result as any).amount).toBe("1500.00");
+      expect((result as any).status).toBe("pending");
 
       const rows = await ctx.db.query.bills.findMany();
       expect(rows).toHaveLength(1);
-      expect(rows[0]!.id).toBe(result!.id);
+      expect(rows[0]!.id).toBe((result as any).id);
    });
 
    it("creates a bill with bank account reference", async () => {
@@ -116,7 +113,7 @@ describe("create", () => {
          { context: ctx },
       );
 
-      expect(result!.bankAccountId).toBe(account.id);
+      expect((result as any).bankAccountId).toBe(account.id);
    });
 
    it("rejects invalid bank account reference", async () => {
@@ -149,11 +146,12 @@ describe("create", () => {
       const rows = await ctx.db.query.bills.findMany();
       expect(rows).toHaveLength(3);
 
-      expect(result![0]!.name).toBe("Aluguel (1/3)");
-      expect(result![1]!.name).toBe("Aluguel (2/3)");
-      expect(result![2]!.name).toBe("Aluguel (3/3)");
+      const bills = result as Array<{ name: string; amount: string }>;
+      expect(bills[0]!.name).toBe("Aluguel (1/3)");
+      expect(bills[1]!.name).toBe("Aluguel (2/3)");
+      expect(bills[2]!.name).toBe("Aluguel (3/3)");
 
-      expect(result![0]!.amount).toBe("500.00");
+      expect(bills[0]!.amount).toBe("500.00");
    });
 });
 
@@ -218,14 +216,14 @@ describe("update", () => {
 
       const updated = await call(
          billsRouter.update,
-         { id: created!.id, name: "Aluguel Atualizado" },
+         { id: (created as any).id, name: "Aluguel Atualizado" },
          { context: ctx },
       );
 
       expect(updated.name).toBe("Aluguel Atualizado");
 
       const fromDb = await ctx.db.query.bills.findFirst({
-         where: { id: created!.id },
+         where: { id: (created as any).id },
       });
       expect(fromDb!.name).toBe("Aluguel Atualizado");
    });
@@ -240,7 +238,7 @@ describe("update", () => {
       await expect(
          call(
             billsRouter.update,
-            { id: created!.id, name: "Hack" },
+            { id: (created as any).id, name: "Hack" },
             { context: ctx2 },
          ),
       ).rejects.toThrow("Conta a pagar/receber não encontrada.");
@@ -258,7 +256,7 @@ describe("update", () => {
       await call(
          billsRouter.pay,
          {
-            id: created!.id,
+            id: (created as any).id,
             amount: "1500.00",
             date: "2026-04-01",
             bankAccountId: account.id,
@@ -269,7 +267,7 @@ describe("update", () => {
       await expect(
          call(
             billsRouter.update,
-            { id: created!.id, name: "Novo" },
+            { id: (created as any).id, name: "Novo" },
             { context: ctx },
          ),
       ).rejects.toThrow("Não é possível editar uma conta já paga.");
@@ -288,7 +286,7 @@ describe("pay", () => {
       const result = await call(
          billsRouter.pay,
          {
-            id: created!.id,
+            id: (created as any).id,
             amount: "1500.00",
             date: "2026-04-01",
             bankAccountId: account.id,
@@ -315,7 +313,7 @@ describe("pay", () => {
 
       const result = await call(
          billsRouter.pay,
-         { id: created!.id, amount: "1500.00", date: "2026-04-01" },
+         { id: (created as any).id, amount: "1500.00", date: "2026-04-01" },
          { context: ctx },
       );
 
@@ -332,7 +330,7 @@ describe("pay", () => {
       await expect(
          call(
             billsRouter.pay,
-            { id: created!.id, amount: "1500.00", date: "2026-04-01" },
+            { id: (created as any).id, amount: "1500.00", date: "2026-04-01" },
             { context: ctx },
          ),
       ).rejects.toThrow("Conta bancária é obrigatória para pagar uma conta.");
@@ -349,7 +347,7 @@ describe("pay", () => {
       await call(
          billsRouter.pay,
          {
-            id: created!.id,
+            id: (created as any).id,
             amount: "1500.00",
             date: "2026-04-01",
             bankAccountId: account.id,
@@ -361,7 +359,7 @@ describe("pay", () => {
          call(
             billsRouter.pay,
             {
-               id: created!.id,
+               id: (created as any).id,
                amount: "1500.00",
                date: "2026-04-01",
                bankAccountId: account.id,
@@ -382,7 +380,7 @@ describe("pay", () => {
       const result = await call(
          billsRouter.pay,
          {
-            id: created!.id,
+            id: (created as any).id,
             amount: "500.00",
             date: "2026-04-01",
             bankAccountId: account.id,
@@ -408,7 +406,7 @@ describe("unpay", () => {
       await call(
          billsRouter.pay,
          {
-            id: created!.id,
+            id: (created as any).id,
             amount: "1500.00",
             date: "2026-04-01",
             bankAccountId: account.id,
@@ -418,7 +416,7 @@ describe("unpay", () => {
 
       const result = await call(
          billsRouter.unpay,
-         { id: created!.id },
+         { id: (created as any).id },
          { context: ctx },
       );
 
@@ -437,7 +435,7 @@ describe("unpay", () => {
       );
 
       await expect(
-         call(billsRouter.unpay, { id: created!.id }, { context: ctx }),
+         call(billsRouter.unpay, { id: (created as any).id }, { context: ctx }),
       ).rejects.toThrow("Esta conta não está paga.");
    });
 });
@@ -452,14 +450,14 @@ describe("cancel", () => {
 
       const result = await call(
          billsRouter.cancel,
-         { id: created!.id },
+         { id: (created as any).id },
          { context: ctx },
       );
 
       expect(result.status).toBe("cancelled");
 
       const fromDb = await ctx.db.query.bills.findFirst({
-         where: { id: created!.id },
+         where: { id: (created as any).id },
       });
       expect(fromDb!.status).toBe("cancelled");
    });
@@ -472,7 +470,11 @@ describe("cancel", () => {
       );
 
       await expect(
-         call(billsRouter.cancel, { id: created!.id }, { context: ctx2 }),
+         call(
+            billsRouter.cancel,
+            { id: (created as any).id },
+            { context: ctx2 },
+         ),
       ).rejects.toThrow("Conta a pagar/receber não encontrada.");
    });
 });
@@ -487,7 +489,7 @@ describe("remove", () => {
 
       const result = await call(
          billsRouter.remove,
-         { id: created!.id },
+         { id: (created as any).id },
          { context: ctx },
       );
 
@@ -508,7 +510,7 @@ describe("remove", () => {
       await call(
          billsRouter.pay,
          {
-            id: created!.id,
+            id: (created as any).id,
             amount: "1500.00",
             date: "2026-04-01",
             bankAccountId: account.id,
@@ -517,7 +519,11 @@ describe("remove", () => {
       );
 
       await expect(
-         call(billsRouter.remove, { id: created!.id }, { context: ctx }),
+         call(
+            billsRouter.remove,
+            { id: (created as any).id },
+            { context: ctx },
+         ),
       ).rejects.toThrow("Não é possível excluir uma conta já paga.");
    });
 
@@ -529,7 +535,11 @@ describe("remove", () => {
       );
 
       await expect(
-         call(billsRouter.remove, { id: created!.id }, { context: ctx2 }),
+         call(
+            billsRouter.remove,
+            { id: (created as any).id },
+            { context: ctx2 },
+         ),
       ).rejects.toThrow("Conta a pagar/receber não encontrada.");
    });
 });

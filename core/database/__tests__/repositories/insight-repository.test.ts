@@ -54,7 +54,7 @@ async function seedParents() {
 function validInput(overrides: Record<string, unknown> = {}) {
    return {
       name: "Meu Insight",
-      type: "trends" as const,
+      type: "kpi" as const,
       config: { events: ["page_view"], interval: "day" },
       ...overrides,
    };
@@ -102,7 +102,7 @@ describe("insight-repository", () => {
             teamId,
             createdBy: userId,
             name: "Meu Insight",
-            type: "trends",
+            type: "kpi",
             defaultSize: "md",
          });
          expect(insight.id).toBeDefined();
@@ -148,18 +148,18 @@ describe("insight-repository", () => {
             organizationId,
             teamId,
             userId,
-            validInput({ type: "trends" }),
+            validInput({ type: "kpi" }),
          );
          await repo.createInsight(
             organizationId,
             teamId,
             userId,
-            validInput({ name: "Funil", type: "funnels" }),
+            validInput({ name: "Funil", type: "breakdown" }),
          );
 
-         const list = await repo.listInsightsByTeam(teamId, "funnels");
+         const list = await repo.listInsightsByTeam(teamId, "breakdown");
          expect(list).toHaveLength(1);
-         expect(list[0]!.type).toBe("funnels");
+         expect(list[0]!.type).toBe("breakdown");
       });
    });
 

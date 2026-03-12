@@ -128,7 +128,6 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                basePrice: value.basePrice,
                categoryId,
                tagId,
-               isActive: true,
             });
 
             if (value.variants.length > 0) {
@@ -139,7 +138,6 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                         name: v.name.trim(),
                         basePrice: v.basePrice,
                         billingCycle: v.billingCycle as BillingCycle,
-                        isActive: true,
                      }),
                   ),
                );

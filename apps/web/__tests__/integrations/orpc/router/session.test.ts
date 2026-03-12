@@ -54,7 +54,7 @@ describe("getSession", () => {
       expect(result).toBeDefined();
       expect(result!.session).toBeDefined();
       expect(result!.user).toBeDefined();
-      expect(result!.user.id).toBe(ctx.session.user.id);
+      expect(result!.user.id).toBe(ctx.session!.user.id);
    });
 });
 

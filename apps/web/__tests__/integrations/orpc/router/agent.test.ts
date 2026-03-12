@@ -166,9 +166,9 @@ describe("aiCommandStream", () => {
       );
       await collectChunks(iterable);
 
-      const orgId = ctx.session.session.activeOrganizationId;
-      const userId = ctx.session.user.id;
-      const teamId = ctx.session.session.activeTeamId;
+      const orgId = ctx.session!.session.activeOrganizationId;
+      const userId = ctx.session!.user.id;
+      const teamId = ctx.session!.session.activeTeamId;
 
       expect(emitAiChatMessage).toHaveBeenCalledWith(
          expect.any(Function),

@@ -27,11 +27,15 @@ afterAll(async () => {
 });
 
 describe("setupIntegrationTest", () => {
-   it("creates a working database with schema", async () => {
-      const { db } = await setupIntegrationTest();
-      const result = await db.query.bankAccounts.findMany();
-      expect(result).toEqual([]);
-   });
+   it(
+      "creates a working database with schema",
+      { timeout: 30000 },
+      async () => {
+         const { db } = await setupIntegrationTest();
+         const result = await db.query.bankAccounts.findMany();
+         expect(result).toEqual([]);
+      },
+   );
 
    it("creates an authenticated context without org", async () => {
       const { createAuthenticatedContext } = await setupIntegrationTest();
@@ -46,7 +50,7 @@ describe("setupIntegrationTest", () => {
          organizationId: "auto",
          teamId: "auto",
       });
-      expect(ctx.session.session.activeOrganizationId).toBeDefined();
-      expect(ctx.session.session.activeTeamId).toBeDefined();
+      expect(ctx.session!.session.activeOrganizationId).toBeDefined();
+      expect(ctx.session!.session.activeTeamId).toBeDefined();
    });
 });

@@ -179,9 +179,7 @@ export function BankAccountForm({
          const payload = {
             color: value.color,
             initialBalance: value.initialBalance,
-            initialBalanceDate: value.initialBalanceDate
-               ? new Date(value.initialBalanceDate)
-               : null,
+            initialBalanceDate: value.initialBalanceDate || undefined,
             name: resolvedName,
             type: value.type,
             bankCode: value.bankCode || null,

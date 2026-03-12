@@ -249,7 +249,7 @@ describe("update", () => {
 
    it("rejects update on default categories", async () => {
       await ctx.db.insert(categories).values({
-         teamId: ctx.session.session.activeTeamId!,
+         teamId: ctx.session!.session.activeTeamId!,
          name: "Default Cat",
          type: "expense",
          level: 1,
@@ -308,7 +308,7 @@ describe("remove", () => {
          { context: ctx },
       );
 
-      const teamId = ctx.session.session.activeTeamId!;
+      const teamId = ctx.session!.session.activeTeamId!;
 
       const [bankAccount] = await ctx.db
          .insert(
@@ -333,7 +333,7 @@ describe("remove", () => {
 
    it("rejects deletion of default categories", async () => {
       await ctx.db.insert(categories).values({
-         teamId: ctx.session.session.activeTeamId!,
+         teamId: ctx.session!.session.activeTeamId!,
          name: "Default Cat",
          type: "expense",
          level: 1,
@@ -432,7 +432,7 @@ describe("archive", () => {
 
    it("rejects archive of default categories", async () => {
       await ctx.db.insert(categories).values({
-         teamId: ctx.session.session.activeTeamId!,
+         teamId: ctx.session!.session.activeTeamId!,
          name: "Default Cat",
          type: "expense",
          level: 1,

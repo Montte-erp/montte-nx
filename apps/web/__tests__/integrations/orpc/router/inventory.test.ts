@@ -417,7 +417,7 @@ describe("upsertSettings", () => {
       );
 
       expect(result).toBeTruthy();
-      expect(result.teamId).toBe(ctx.session.session.activeTeamId);
+      expect(result.teamId).toBe(ctx.session!.session.activeTeamId);
    });
 
    it("updates settings on second call", async () => {

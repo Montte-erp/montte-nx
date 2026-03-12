@@ -137,7 +137,7 @@ describe("getInvoices", () => {
          .where(
             (await import("drizzle-orm")).eq(
                (await import("@core/database/schema")).user.id,
-               ctx.session.user.id,
+               ctx.session!.user.id,
             ),
          );
 
@@ -177,7 +177,7 @@ describe("getInvoices", () => {
          .where(
             (await import("drizzle-orm")).eq(
                (await import("@core/database/schema")).user.id,
-               ctx.session.user.id,
+               ctx.session!.user.id,
             ),
          );
 
@@ -207,7 +207,7 @@ describe("getUpcomingInvoice", () => {
          .where(
             (await import("drizzle-orm")).eq(
                (await import("@core/database/schema")).user.id,
-               ctx.session.user.id,
+               ctx.session!.user.id,
             ),
          );
 
@@ -259,7 +259,7 @@ describe("getUpcomingInvoice", () => {
          .where(
             (await import("drizzle-orm")).eq(
                (await import("@core/database/schema")).user.id,
-               ctx.session.user.id,
+               ctx.session!.user.id,
             ),
          );
 
@@ -278,7 +278,7 @@ describe("getUpcomingInvoice", () => {
          .where(
             (await import("drizzle-orm")).eq(
                (await import("@core/database/schema")).user.id,
-               ctx.session.user.id,
+               ctx.session!.user.id,
             ),
          );
 
@@ -311,7 +311,7 @@ describe("getPaymentStatus", () => {
          .where(
             (await import("drizzle-orm")).eq(
                (await import("@core/database/schema")).user.id,
-               ctx.session.user.id,
+               ctx.session!.user.id,
             ),
          );
 
@@ -330,7 +330,7 @@ describe("getPaymentStatus", () => {
          .where(
             (await import("drizzle-orm")).eq(
                (await import("@core/database/schema")).user.id,
-               ctx.session.user.id,
+               ctx.session!.user.id,
             ),
          );
 

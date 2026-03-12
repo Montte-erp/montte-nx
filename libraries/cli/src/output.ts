@@ -10,17 +10,17 @@ export function printTable(
       console.log("No results.");
       return;
    }
-   const keys = columns ?? Object.keys(rows[0]);
+   const keys = columns ?? Object.keys(rows[0] ?? {});
    const widths = keys.map((key) =>
       Math.max(key.length, ...rows.map((r) => String(r[key] ?? "").length)),
    );
-   const header = keys.map((k, i) => k.padEnd(widths[i])).join("  ");
+   const header = keys.map((k, i) => k.padEnd(widths[i] ?? 0)).join("  ");
    const separator = widths.map((w) => "-".repeat(w)).join("  ");
    console.log(header);
    console.log(separator);
    for (const row of rows) {
       const line = keys
-         .map((k, i) => String(row[k] ?? "").padEnd(widths[i]))
+         .map((k, i) => String(row[k] ?? "").padEnd(widths[i] ?? 0))
          .join("  ");
       console.log(line);
    }

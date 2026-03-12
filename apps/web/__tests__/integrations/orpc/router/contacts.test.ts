@@ -31,7 +31,6 @@ vi.mock("@core/posthog/server", () => ({
    },
 }));
 
-import { contacts } from "@core/database/schemas/contacts";
 import { transactions } from "@core/database/schemas/transactions";
 import { sql } from "drizzle-orm";
 import {
@@ -221,7 +220,7 @@ describe("remove", () => {
          { context: ctx },
       );
 
-      const teamId = ctx.session.session.activeTeamId!;
+      const teamId = ctx.session!.session.activeTeamId!;
       await ctx.db.insert(transactions).values({
          teamId,
          type: "income",

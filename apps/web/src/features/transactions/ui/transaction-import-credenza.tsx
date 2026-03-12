@@ -915,27 +915,39 @@ function PreviewStep({
                      />
                   </div>
 
-                  {subcategoryOptions.length > 0 && (
-                     <div className="col-span-2">
-                        <p className="text-xs text-muted-foreground mb-1">
-                           Subcategoria padrão
-                        </p>
-                        <Combobox
-                           className="w-full h-8 text-xs"
-                           emptyMessage="Nenhuma subcategoria."
-                           onValueChange={(v) =>
-                              onDefaultsChange({
-                                 ...defaults,
-                                 subcategoryId: v,
-                              })
-                           }
-                           options={subcategoryOptions}
-                           placeholder="Selecionar..."
-                           searchPlaceholder="Buscar subcategoria..."
-                           value={defaults.subcategoryId}
-                        />
-                     </div>
-                  )}
+                  {defaults.categoryId &&
+                     categories.filter(
+                        (c: { parentId: string | null }) =>
+                           c.parentId === defaults.categoryId,
+                     ).length > 0 && (
+                        <div className="col-span-2">
+                           <p className="text-xs text-muted-foreground mb-1">
+                              Subcategoria padrão
+                           </p>
+                           <Combobox
+                              className="w-full h-8 text-xs"
+                              emptyMessage="Nenhuma subcategoria."
+                              onValueChange={(v) =>
+                                 onDefaultsChange({
+                                    ...defaults,
+                                    subcategoryId: v,
+                                 })
+                              }
+                              options={categories
+                                 .filter(
+                                    (c: { parentId: string | null }) =>
+                                       c.parentId === defaults.categoryId,
+                                 )
+                                 .map((c: { id: string; name: string }) => ({
+                                    value: c.id,
+                                    label: c.name,
+                                 }))}
+                              placeholder="Selecionar..."
+                              searchPlaceholder="Buscar subcategoria..."
+                              value={defaults.subcategoryId}
+                           />
+                        </div>
+                     )}
                </div>
             </div>
 
@@ -1143,7 +1155,7 @@ function ConfirmStep({
    const { data: categoriesResult } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
-   const categories = categoriesResult.data;
+   const categories = categoriesResult;
 
    const visibleRows = ignoreDuplicates
       ? rows.filter((r) => !r.isDuplicate)
@@ -1154,7 +1166,7 @@ function ConfirmStep({
       (acc) => acc.id === defaults.bankAccountId,
    );
    const selectedCategory = categories.find(
-      (cat) => cat.id === defaults.categoryId,
+      (cat: { id: string }) => cat.id === defaults.categoryId,
    );
 
    const importMutation = useMutation(
@@ -1183,7 +1195,7 @@ function ConfirmStep({
 
             const resolvedCategoryId =
                categories.find(
-                  (cat) =>
+                  (cat: { name: string }) =>
                      cat.name.toLowerCase() === row.categoria.toLowerCase(),
                )?.id ||
                defaults.categoryId ||

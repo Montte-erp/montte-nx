@@ -211,9 +211,6 @@ function ServicesList({
                s.description?.toLowerCase().includes(q),
          );
       }
-      if (filters.type) {
-         result = result.filter((s) => s.type === filters.type);
-      }
       if (filters.categoryId) {
          result = result.filter((s) => s.categoryId === filters.categoryId);
       }
@@ -326,7 +323,7 @@ function ServicesPage() {
    const { data: categoriesResult } = useQuery(
       orpc.categories.getAll.queryOptions({}),
    );
-   const categories = categoriesResult?.data;
+   const categories = categoriesResult;
 
    const { data: servicesList } = useQuery(
       orpc.services.getAll.queryOptions({}),

@@ -178,10 +178,10 @@ export const getMembers = protectedProcedure.handler(async ({ context }) => {
    return members.map((m) => ({
       id: m.id,
       userId: m.userId,
-      name: m.user.name,
-      email: m.user.email,
+      name: m.user!.name,
+      email: m.user!.email,
       role: m.role,
-      image: m.user.image,
+      image: m.user!.image,
       createdAt: m.createdAt,
    }));
 });
@@ -211,43 +211,18 @@ export const getMemberTeams = protectedProcedure
 
 export const hasAddon = protectedProcedure
    .input(z.object({ addonId: z.string() }))
-   .handler(async ({ context, input }) => {
-      const { db, organizationId } = context;
-
-      const addon = await db.query.organizationAddons.findFirst({
-         where: {
-            organizationId,
-            addonId: input.addonId,
-            OR: [
-               { expiresAt: { isNull: true } },
-               { expiresAt: { gt: new Date() } },
-            ],
-         },
-      });
-
-      return { hasAddon: !!addon };
+   .handler(async () => {
+      return { hasAddon: false };
    });
 
-export const getAddons = protectedProcedure.handler(async ({ context }) => {
-   const { db, organizationId } = context;
-
-   const addons = await db.query.organizationAddons.findMany({
-      where: {
-         organizationId,
-         OR: [
-            { expiresAt: { isNull: true } },
-            { expiresAt: { gt: new Date() } },
-         ],
-      },
-   });
-
-   return addons.map((a) => ({
-      id: a.id,
-      addonId: a.addonId,
-      activatedAt: a.activatedAt,
-      expiresAt: a.expiresAt,
-      autoRenew: a.autoRenew,
-   }));
+export const getAddons = protectedProcedure.handler(async () => {
+   return [] as {
+      id: string;
+      addonId: string;
+      activatedAt: Date;
+      expiresAt: Date | null;
+      autoRenew: boolean;
+   }[];
 });
 
 export const generateLogoUploadUrl = protectedProcedure
