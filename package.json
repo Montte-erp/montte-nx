@@ -223,7 +223,7 @@
       "seed:events": "bun run scripts/seed-event-catalog.ts run",
       "format": "oxfmt --write .",
       "format:check": "oxfmt --check .",
-      "prepare": "lefthook install",
+      "prepare": "lefthook install || true",
       "release": "nx release",
       "release:changelog": "nx release changelog",
       "release:dry": "nx release --dry-run --first-release",
