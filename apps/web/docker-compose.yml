@@ -64,26 +64,6 @@ services:
       ports:
          - "8000:5432"
 
-   electric:
-      image: electricsql/electric:latest
-      environment:
-         DATABASE_URL: postgresql://postgres:password@contentta-db:5432/montte
-         # Local dev only — replace with ELECTRIC_SECRET in production:
-         #   ELECTRIC_SECRET: <strong-random-secret>
-         # The same secret must be set as ELECTRIC_SECRET in the web app's .env
-         ELECTRIC_INSECURE: "true"
-      ports:
-         - "5133:3000"
-      depends_on:
-         contentta-db:
-            condition: service_healthy
-      restart: on-failure
-      healthcheck:
-         test: ["CMD", "curl", "-f", "http://localhost:3000/v1/health"]
-         interval: 10s
-         timeout: 5s
-         retries: 5
-
 volumes:
    montte_pgdata:
    miniodata:

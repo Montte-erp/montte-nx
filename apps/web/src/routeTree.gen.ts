@@ -25,7 +25,6 @@ import { Route as AuthSignInIndexRouteImport } from './routes/auth/sign-in/index
 import { Route as AuthSignInEmailRouteImport } from './routes/auth/sign-in/email'
 import { Route as ApiRpcSplatRouteImport } from './routes/api/rpc/$'
 import { Route as ApiFilesSplatRouteImport } from './routes/api/files/$'
-import { Route as ApiElectricSplatRouteImport } from './routes/api/electric/$'
 import { Route as ApiChatSplatRouteImport } from './routes/api/chat/$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthenticatedSlugTeamSlugRouteImport } from './routes/_authenticated/$slug/$teamSlug'
@@ -153,11 +152,6 @@ const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
 const ApiFilesSplatRoute = ApiFilesSplatRouteImport.update({
   id: '/api/files/$',
   path: '/api/files/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiElectricSplatRoute = ApiElectricSplatRouteImport.update({
-  id: '/api/electric/$',
-  path: '/api/electric/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatSplatRoute = ApiChatSplatRouteImport.update({
@@ -502,7 +496,6 @@ export interface FileRoutesByFullPath {
   '/$slug/$teamSlug': typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/chat/$': typeof ApiChatSplatRoute
-  '/api/electric/$': typeof ApiElectricSplatRoute
   '/api/files/$': typeof ApiFilesSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
   '/auth/sign-in/email': typeof AuthSignInEmailRoute
@@ -567,7 +560,6 @@ export interface FileRoutesByTo {
   '/$slug/$teamSlug': typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/chat/$': typeof ApiChatSplatRoute
-  '/api/electric/$': typeof ApiElectricSplatRoute
   '/api/files/$': typeof ApiFilesSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
   '/auth/sign-in/email': typeof AuthSignInEmailRoute
@@ -632,7 +624,6 @@ export interface FileRoutesById {
   '/_authenticated/$slug/$teamSlug': typeof AuthenticatedSlugTeamSlugRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/chat/$': typeof ApiChatSplatRoute
-  '/api/electric/$': typeof ApiElectricSplatRoute
   '/api/files/$': typeof ApiFilesSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
   '/auth/sign-in/email': typeof AuthSignInEmailRoute
@@ -701,7 +692,6 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug'
     | '/api/auth/$'
     | '/api/chat/$'
-    | '/api/electric/$'
     | '/api/files/$'
     | '/api/rpc/$'
     | '/auth/sign-in/email'
@@ -766,7 +756,6 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug'
     | '/api/auth/$'
     | '/api/chat/$'
-    | '/api/electric/$'
     | '/api/files/$'
     | '/api/rpc/$'
     | '/auth/sign-in/email'
@@ -830,7 +819,6 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/$teamSlug'
     | '/api/auth/$'
     | '/api/chat/$'
-    | '/api/electric/$'
     | '/api/files/$'
     | '/api/rpc/$'
     | '/auth/sign-in/email'
@@ -890,7 +878,6 @@ export interface RootRouteChildren {
   ApiSplatRoute: typeof ApiSplatRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiChatSplatRoute: typeof ApiChatSplatRoute
-  ApiElectricSplatRoute: typeof ApiElectricSplatRoute
   ApiFilesSplatRoute: typeof ApiFilesSplatRoute
   ApiRpcSplatRoute: typeof ApiRpcSplatRoute
   CallbackOrganizationInvitationInvitationIdRoute: typeof CallbackOrganizationInvitationInvitationIdRoute
@@ -1008,13 +995,6 @@ declare module '@tanstack/react-router' {
       path: '/api/files/$'
       fullPath: '/api/files/$'
       preLoaderRoute: typeof ApiFilesSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/electric/$': {
-      id: '/api/electric/$'
-      path: '/api/electric/$'
-      fullPath: '/api/electric/$'
-      preLoaderRoute: typeof ApiElectricSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/chat/$': {
@@ -1624,7 +1604,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSplatRoute: ApiSplatRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiChatSplatRoute: ApiChatSplatRoute,
-  ApiElectricSplatRoute: ApiElectricSplatRoute,
   ApiFilesSplatRoute: ApiFilesSplatRoute,
   ApiRpcSplatRoute: ApiRpcSplatRoute,
   CallbackOrganizationInvitationInvitationIdRoute:

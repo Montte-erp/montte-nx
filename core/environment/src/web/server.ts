@@ -6,9 +6,6 @@ const serverSchema = z.object({
    PG_VECTOR_URL: z.url().optional(),
    REDIS_URL: z.url().optional().default("redis://localhost:6379"),
 
-   ELECTRIC_URL: z.url().optional().default("http://localhost:5133"),
-   ELECTRIC_SECRET: z.string().optional(),
-
    BETTER_AUTH_SECRET: z.string().min(32),
    BETTER_AUTH_URL: z.url().optional().default("http://localhost:3000"),
    BETTER_AUTH_TRUSTED_ORIGINS: z.string(),
