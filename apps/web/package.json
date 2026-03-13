@@ -6,7 +6,7 @@
       "container-start": "if command -v podman-compose > /dev/null 2>&1; then podman ps -q --filter 'label=com.docker.compose.project=web' 2>/dev/null | grep -q . && echo 'Containers already running, skipping.' || podman-compose up -d; else docker ps -q --filter 'label=com.docker.compose.project=web' 2>/dev/null | grep -q . && echo 'Containers already running, skipping.' || docker-compose up -d; fi",
       "dev": "vite dev --port 3000",
       "build": "vite build",
-      "start": "bun run .output/server/index.mjs",
+      "start": "node .output/server/index.mjs",
       "preview": "bun --bun vite preview",
       "test": "vitest run --passWithNoTests",
       "typecheck": "tsgo",
