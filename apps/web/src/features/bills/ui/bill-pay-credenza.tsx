@@ -233,7 +233,7 @@ function BillPayCredenzaInner({ bill, onSuccess }: BillPayCredenzaProps) {
             </form>
          </CredenzaBody>
          <CredenzaFooter>
-            <form.Subscribe>
+            <form.Subscribe selector={(state) => state}>
                {(state) => (
                   <Button
                      disabled={!state.canSubmit || payMutation.isPending}

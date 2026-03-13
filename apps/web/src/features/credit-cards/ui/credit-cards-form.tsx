@@ -340,7 +340,7 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
          </CredenzaBody>
 
          <CredenzaFooter>
-            <form.Subscribe>
+            <form.Subscribe selector={(state) => state}>
                {(state) => (
                   <Button
                      className="w-full"

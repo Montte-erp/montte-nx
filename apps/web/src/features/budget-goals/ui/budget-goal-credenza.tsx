@@ -376,7 +376,7 @@ export function BudgetGoalCredenza({
          </CredenzaBody>
 
          <CredenzaFooter>
-            <form.Subscribe>
+            <form.Subscribe selector={(state) => state}>
                {(state) => (
                   <Button
                      className="w-full"

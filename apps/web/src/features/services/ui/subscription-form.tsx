@@ -299,7 +299,7 @@ export function SubscriptionForm({
          </CredenzaBody>
 
          <CredenzaFooter>
-            <form.Subscribe>
+            <form.Subscribe selector={(state) => state}>
                {(state) => (
                   <Button
                      className="w-full"

@@ -226,7 +226,7 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
          </CredenzaBody>
 
          <CredenzaFooter>
-            <form.Subscribe>
+            <form.Subscribe selector={(state) => state}>
                {(state) => (
                   <Button
                      className="w-full"

@@ -295,7 +295,7 @@ function SignUpPage() {
                            Voltar
                         </Button>
                         {methods.state.isLast ? (
-                           <form.Subscribe>
+                           <form.Subscribe selector={(state) => state}>
                               {(formState) => (
                                  <Button
                                     className="h-11"

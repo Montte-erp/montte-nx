@@ -1,14 +1,14 @@
 import { sql } from "drizzle-orm";
 import {
-   boolean,
-   index,
-   integer,
-   jsonb,
    pgTable,
    text,
    timestamp,
-   uniqueIndex,
+   boolean,
+   integer,
    uuid,
+   jsonb,
+   index,
+   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
@@ -265,105 +265,4 @@ export const subscription = pgTable("subscription", {
    seats: integer("seats"),
    billingInterval: text("billing_interval"),
    stripeScheduleId: text("stripe_schedule_id"),
-});
-
-export const jwks = pgTable("jwks", {
-   id: uuid("id")
-      .default(sql`pg_catalog.gen_random_uuid()`)
-      .primaryKey(),
-   publicKey: text("public_key").notNull(),
-   privateKey: text("private_key").notNull(),
-   createdAt: timestamp("created_at").notNull(),
-   expiresAt: timestamp("expires_at"),
-});
-
-export const oauthClient = pgTable("oauth_client", {
-   id: uuid("id")
-      .default(sql`pg_catalog.gen_random_uuid()`)
-      .primaryKey(),
-   clientId: text("client_id").notNull().unique(),
-   clientSecret: text("client_secret"),
-   disabled: boolean("disabled").default(false),
-   skipConsent: boolean("skip_consent"),
-   enableEndSession: boolean("enable_end_session"),
-   scopes: text("scopes").array(),
-   userId: uuid("user_id").references(() => user.id, { onDelete: "cascade" }),
-   createdAt: timestamp("created_at"),
-   updatedAt: timestamp("updated_at"),
-   name: text("name"),
-   uri: text("uri"),
-   icon: text("icon"),
-   contacts: text("contacts").array(),
-   tos: text("tos"),
-   policy: text("policy"),
-   softwareId: text("software_id"),
-   softwareVersion: text("software_version"),
-   softwareStatement: text("software_statement"),
-   redirectUris: text("redirect_uris").array().notNull(),
-   postLogoutRedirectUris: text("post_logout_redirect_uris").array(),
-   tokenEndpointAuthMethod: text("token_endpoint_auth_method"),
-   grantTypes: text("grant_types").array(),
-   responseTypes: text("response_types").array(),
-   public: boolean("public"),
-   type: text("type"),
-   requirePKCE: boolean("require_pkce"),
-   referenceId: text("reference_id"),
-   metadata: jsonb("metadata"),
-});
-
-export const oauthRefreshToken = pgTable("oauth_refresh_token", {
-   id: uuid("id")
-      .default(sql`pg_catalog.gen_random_uuid()`)
-      .primaryKey(),
-   token: text("token").notNull(),
-   clientId: text("client_id")
-      .notNull()
-      .references(() => oauthClient.clientId, { onDelete: "cascade" }),
-   sessionId: uuid("session_id").references(() => session.id, {
-      onDelete: "set null",
-   }),
-   userId: uuid("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-   referenceId: text("reference_id"),
-   expiresAt: timestamp("expires_at"),
-   createdAt: timestamp("created_at"),
-   revoked: timestamp("revoked"),
-   authTime: timestamp("auth_time"),
-   scopes: text("scopes").array().notNull(),
-});
-
-export const oauthAccessToken = pgTable("oauth_access_token", {
-   id: uuid("id")
-      .default(sql`pg_catalog.gen_random_uuid()`)
-      .primaryKey(),
-   token: text("token").unique(),
-   clientId: text("client_id")
-      .notNull()
-      .references(() => oauthClient.clientId, { onDelete: "cascade" }),
-   sessionId: uuid("session_id").references(() => session.id, {
-      onDelete: "set null",
-   }),
-   userId: uuid("user_id").references(() => user.id, { onDelete: "cascade" }),
-   referenceId: text("reference_id"),
-   refreshId: uuid("refresh_id").references(() => oauthRefreshToken.id, {
-      onDelete: "cascade",
-   }),
-   expiresAt: timestamp("expires_at"),
-   createdAt: timestamp("created_at"),
-   scopes: text("scopes").array().notNull(),
-});
-
-export const oauthConsent = pgTable("oauth_consent", {
-   id: uuid("id")
-      .default(sql`pg_catalog.gen_random_uuid()`)
-      .primaryKey(),
-   clientId: text("client_id")
-      .notNull()
-      .references(() => oauthClient.clientId, { onDelete: "cascade" }),
-   userId: uuid("user_id").references(() => user.id, { onDelete: "cascade" }),
-   referenceId: text("reference_id"),
-   scopes: text("scopes").array().notNull(),
-   createdAt: timestamp("created_at"),
-   updatedAt: timestamp("updated_at"),
 });

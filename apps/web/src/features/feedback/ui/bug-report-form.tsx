@@ -154,7 +154,7 @@ export function BugReportForm({ onSuccess }: BugReportFormProps) {
                   </form.Field>
                </FieldGroup>
 
-               <form.Subscribe>
+               <form.Subscribe selector={(state) => state}>
                   {(canSubmit) => (
                      <Button
                         className="w-full"

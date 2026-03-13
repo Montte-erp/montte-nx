@@ -191,7 +191,7 @@ const CreateTeamFormContent = () => {
             <Button onClick={closeCredenza} type="button" variant="outline">
                Cancelar
             </Button>
-            <form.Subscribe>
+            <form.Subscribe selector={(state) => state}>
                {(formState) => (
                   <Button
                      disabled={

@@ -439,7 +439,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
          </CredenzaBody>
 
          <CredenzaFooter>
-            <form.Subscribe>
+            <form.Subscribe selector={(state) => state}>
                {(state) => (
                   <Button
                      className="w-full"

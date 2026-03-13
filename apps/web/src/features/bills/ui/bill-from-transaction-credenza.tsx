@@ -313,7 +313,7 @@ function BillFromTransactionCredenzaInner({
          </CredenzaBody>
 
          <CredenzaFooter>
-            <form.Subscribe>
+            <form.Subscribe selector={(state) => state}>
                {(state) => (
                   <Button
                      disabled={

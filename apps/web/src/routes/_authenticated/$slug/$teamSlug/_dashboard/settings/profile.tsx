@@ -582,7 +582,7 @@ function ProfileNameSection({ currentName }: { currentName: string }) {
                   }}
                </form.Field>
             </FieldGroup>
-            <form.Subscribe>
+            <form.Subscribe selector={(state) => state}>
                {(formState) => (
                   <Button
                      disabled={
@@ -876,7 +876,7 @@ function ProfilePasswordSection({ hasPassword }: { hasPassword: boolean }) {
                   }}
                </form.Field>
             </FieldGroup>
-            <form.Subscribe>
+            <form.Subscribe selector={(state) => state}>
                {(formState) => (
                   <Button
                      disabled={!formState.canSubmit || isPending}

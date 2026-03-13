@@ -300,7 +300,7 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
          </CredenzaBody>
 
          <CredenzaFooter>
-            <form.Subscribe>
+            <form.Subscribe selector={(state) => state}>
                {(state) => (
                   <Button
                      className="w-full"

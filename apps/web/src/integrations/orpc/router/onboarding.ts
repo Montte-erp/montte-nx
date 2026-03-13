@@ -4,16 +4,22 @@ import {
    createDefaultDashboard,
    createDefaultInsights,
 } from "@packages/analytics/seed-defaults";
-import type { DatabaseInstance } from "@core/database/client";
 import { getInsightById } from "@core/database/repositories/insight-repository";
-import { organization, team, teamMember } from "@core/database/schemas/auth";
-import { bankAccounts } from "@core/database/schemas/bank-accounts";
-import { categories } from "@core/database/schemas/categories";
-import { insights } from "@core/database/schemas/insights";
-import { transactions } from "@core/database/schemas/transactions";
+import {
+   getOnboardingCounts,
+   getOrgAndTeamOnboardingFlags,
+   getOrganizationById,
+   getOrganizationSlug,
+   getTeamById,
+   getTeamNameAndSlug,
+   insertTeamMember,
+   markOrganizationOnboardingComplete,
+   markTaskDone,
+   markTeamOnboardingComplete,
+   updateInsightCache,
+} from "@core/database/repositories/onboarding-repository";
 import { getLogger } from "@core/logging/root";
 import { createSlug } from "@core/utils/text";
-import { eq, sql } from "drizzle-orm";
 
 const logger = getLogger().child({ module: "router:onboarding" });
 
@@ -52,51 +58,36 @@ async function enrollInAllFeatures(userId: string, organizationId: string) {
    }
 }
 
-async function runOnboardingCompletion(
-   tx: DatabaseInstance,
-   {
-      organizationId,
-      teamId,
-      userId,
-      workspaceName,
-      slug,
-      accountType,
-   }: {
-      organizationId: string;
-      teamId: string;
-      userId: string;
-      workspaceName: string;
-      slug: string;
-      accountType: "personal" | "business";
-   },
-) {
+async function runOnboardingCompletion({
+   organizationId,
+   teamId,
+   userId,
+   workspaceName,
+   slug,
+   accountType,
+}: {
+   organizationId: string;
+   teamId: string;
+   userId: string;
+   workspaceName: string;
+   slug: string;
+   accountType: "personal" | "business";
+}) {
    logger.info("Inserting teamMember");
-   await tx.insert(teamMember).values({
-      teamId,
-      userId,
-      createdAt: new Date(),
-   });
+   await insertTeamMember(teamId, userId);
 
    logger.info("Updating team");
-   await tx
-      .update(team)
-      .set({
-         slug,
-         accountType,
-         onboardingProducts: ["finance"],
-         onboardingCompleted: true,
-      })
-      .where(eq(team.id, teamId));
+   await markTeamOnboardingComplete(teamId, {
+      slug,
+      accountType,
+      onboardingProducts: ["finance"],
+   });
 
    logger.info("Updating organization");
-   await tx
-      .update(organization)
-      .set({ onboardingCompleted: true })
-      .where(eq(organization.id, organizationId));
+   await markOrganizationOnboardingComplete(organizationId);
 
    logger.info("Creating default insights");
    const insightIds = await createDefaultInsights(
-      tx,
       organizationId,
       teamId,
       userId,
@@ -108,11 +99,8 @@ async function runOnboardingCompletion(
          logger.info({ insightId }, "Computing insight");
          const insight = await getInsightById(insightId);
          if (!insight) continue;
-         const freshData = await computeInsightData(tx, insight);
-         await tx
-            .update(insights)
-            .set({ cachedResults: freshData, lastComputedAt: new Date() })
-            .where(eq(insights.id, insightId));
+         const freshData = await computeInsightData(insight);
+         await updateInsightCache(insightId, freshData);
          logger.info({ insightId }, "Insight computed");
       } catch (error) {
          logger.error({ err: error, insightId }, "Failed to compute insight");
@@ -121,7 +109,6 @@ async function runOnboardingCompletion(
 
    logger.info("Creating dashboard");
    await createDefaultDashboard(
-      tx,
       organizationId,
       teamId,
       userId,
@@ -141,7 +128,7 @@ export const createWorkspace = authenticatedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const { auth, headers, db, userId } = context;
+      const { auth, headers, userId } = context;
 
       const slug = createSlug(input.workspaceName);
 
@@ -160,28 +147,24 @@ export const createWorkspace = authenticatedProcedure
          body: { name: input.workspaceName, slug },
       });
 
-      logger.info(
-         { orgId: org?.id, orgSlug: org?.slug },
-         "Organization created",
-      );
-
       if (!org?.id) {
          throw new ORPCError("INTERNAL_SERVER_ERROR", {
             message: "Failed to create workspace",
          });
       }
 
+      logger.info({ orgId: org.id, orgSlug: org.slug }, "Organization created");
+
       await auth.api.setActiveOrganization({
          headers,
          body: { organizationId: org.id },
       });
 
-      logger.info({ orgId: org.id }, "Active organization set");
-
       const accountTypeLabel =
          input.accountType === "business" ? "Empresarial" : "Pessoal";
       const teamName = `${input.workspaceName} - ${accountTypeLabel}`;
       const teamSlug = createSlug(teamName);
+
       const createdTeam = await auth.api.createTeam({
          headers,
          body: {
@@ -192,34 +175,22 @@ export const createWorkspace = authenticatedProcedure
          },
       });
 
-      logger.info({ teamId: createdTeam?.id }, "Team created");
-
       if (!createdTeam?.id) {
          throw new ORPCError("INTERNAL_SERVER_ERROR", {
             message: "Failed to create team",
          });
       }
 
-      try {
-         logger.info("Starting transaction");
-         await db.transaction(async (tx) => {
-            await runOnboardingCompletion(tx, {
-               organizationId: org.id,
-               teamId: createdTeam.id,
-               userId,
-               workspaceName: teamName,
-               slug,
-               accountType: input.accountType,
-            });
-         });
-         logger.info("Transaction committed");
-      } catch (txError) {
-         logger.error(
-            { err: txError, step: "transaction" },
-            "Transaction failed",
-         );
-         throw txError;
-      }
+      logger.info({ teamId: createdTeam.id }, "Team created");
+
+      await runOnboardingCompletion({
+         organizationId: org.id,
+         teamId: createdTeam.id,
+         userId,
+         workspaceName: teamName,
+         slug,
+         accountType: input.accountType,
+      });
 
       if (input.accountType === "business") {
          try {
@@ -238,7 +209,7 @@ export const createWorkspace = authenticatedProcedure
             orgId: org.id,
             orgSlug: org.slug ?? slug,
             teamId: createdTeam.id,
-            teamSlug: slug,
+            teamSlug,
          },
          "Onboarding complete",
       );
@@ -247,21 +218,15 @@ export const createWorkspace = authenticatedProcedure
          orgId: org.id,
          orgSlug: org.slug ?? slug,
          teamId: createdTeam.id,
-         teamSlug: slug,
+         teamSlug,
       };
    });
 
-/**
- * Get the current onboarding status for both organization and project.
- * Used by the post-onboarding checklist on /home to auto-detect completed tasks.
- */
 export const getOnboardingStatus = protectedProcedure.handler(
    async ({ context }) => {
-      const { db, organizationId, teamId } = context;
+      const { organizationId, teamId } = context;
 
-      const org = await db.query.organization.findFirst({
-         where: { id: organizationId },
-      });
+      const org = await getOrganizationById(organizationId);
 
       if (!org) {
          throw new ORPCError("NOT_FOUND", {
@@ -269,9 +234,7 @@ export const getOnboardingStatus = protectedProcedure.handler(
          });
       }
 
-      const currentTeam = await db.query.team.findFirst({
-         where: { id: teamId },
-      });
+      const currentTeam = await getTeamById(teamId);
 
       if (!currentTeam) {
          throw new ORPCError("NOT_FOUND", {
@@ -279,29 +242,12 @@ export const getOnboardingStatus = protectedProcedure.handler(
          });
       }
 
-      const [insightCount, categoryCount, transactionCount, bankAccountCount] =
-         await Promise.all([
-            db
-               .select({ count: sql<number>`count(*)` })
-               .from(insights)
-               .where(eq(insights.organizationId, organizationId))
-               .then((rows) => Number(rows[0]?.count ?? 0)),
-            db
-               .select({ count: sql<number>`count(*)` })
-               .from(categories)
-               .where(eq(categories.teamId, teamId))
-               .then((rows) => Number(rows[0]?.count ?? 0)),
-            db
-               .select({ count: sql<number>`count(*)` })
-               .from(transactions)
-               .where(eq(transactions.teamId, teamId))
-               .then((rows) => Number(rows[0]?.count ?? 0)),
-            db
-               .select({ count: sql<number>`count(*)` })
-               .from(bankAccounts)
-               .where(eq(bankAccounts.teamId, teamId))
-               .then((rows) => Number(rows[0]?.count ?? 0)),
-         ]);
+      const {
+         insightCount,
+         categoryCount,
+         transactionCount,
+         bankAccountCount,
+      } = await getOnboardingCounts(organizationId, teamId);
 
       const storedTasks = currentTeam.onboardingTasks ?? {};
       const autoDetected: Record<string, boolean> = {};
@@ -332,43 +278,19 @@ export const getOnboardingStatus = protectedProcedure.handler(
    },
 );
 
-/**
- * Safely mark org and team onboarding as complete for users who already have
- * an existing org/team but whose onboarding flags are still false.
- * Idempotent — only updates what isn't already marked complete.
- * Returns orgSlug and teamSlug for client-side navigation.
- */
 export const fixOnboarding = authenticatedProcedure
    .input(z.object({ organizationId: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { db, session } = context;
+      const { session } = context;
 
-      const orgId = input.organizationId;
-
-      const org = await db.query.organization.findFirst({
-         where: { id: orgId },
-         columns: { id: true, slug: true, onboardingCompleted: true },
-      });
+      const { org, targetTeam } = await getOrgAndTeamOnboardingFlags(
+         input.organizationId,
+         session.session.activeTeamId,
+      );
 
       if (!org) {
          throw new ORPCError("NOT_FOUND", {
             message: "Organization not found",
-         });
-      }
-
-      const activeTeamId = session.session.activeTeamId;
-
-      let targetTeam = activeTeamId
-         ? await db.query.team.findFirst({
-              where: { id: activeTeamId },
-              columns: { id: true, slug: true, onboardingCompleted: true },
-           })
-         : null;
-
-      if (!targetTeam) {
-         targetTeam = await db.query.team.findFirst({
-            where: { organizationId: orgId },
-            columns: { id: true, slug: true, onboardingCompleted: true },
          });
       }
 
@@ -378,93 +300,52 @@ export const fixOnboarding = authenticatedProcedure
          });
       }
 
-      if (!org.onboardingCompleted || !targetTeam.onboardingCompleted) {
-         await db.transaction(async (tx) => {
-            if (!org.onboardingCompleted) {
-               await tx
-                  .update(organization)
-                  .set({ onboardingCompleted: true })
-                  .where(eq(organization.id, orgId));
-            }
-            // biome-ignore lint/style/noNonNullAssertion: checked above
-            if (!targetTeam!.onboardingCompleted) {
-               await tx
-                  .update(team)
-                  .set({ onboardingCompleted: true })
-                  // biome-ignore lint/style/noNonNullAssertion: checked above
-                  .where(eq(team.id, targetTeam!.id));
-            }
+      if (!org.onboardingCompleted) {
+         await markOrganizationOnboardingComplete(input.organizationId);
+      }
+
+      if (!targetTeam.onboardingCompleted) {
+         await markTeamOnboardingComplete(targetTeam.id, {
+            slug: targetTeam.slug ?? "",
+            accountType: "personal",
+            onboardingProducts: ["finance"],
          });
       }
 
       return { orgSlug: org.slug, teamSlug: targetTeam.slug };
    });
 
-/**
- * Atomically merge a task ID into the team's onboardingTasks jsonb.
- */
-async function markTaskDone(
-   db: DatabaseInstance,
-   teamId: string,
-   taskId: string,
-) {
-   await db
-      .update(team)
-      .set({
-         onboardingTasks: sql`COALESCE(${team.onboardingTasks}, '{}'::jsonb) || ${JSON.stringify({ [taskId]: true })}::jsonb`,
-      })
-      .where(eq(team.id, teamId));
-}
-
-/**
- * Mark a specific onboarding task as completed.
- */
 export const completeTask = protectedProcedure
    .input(z.object({ taskId: z.string().min(1).max(100) }))
    .handler(async ({ context, input }) => {
-      await markTaskDone(context.db, context.teamId, input.taskId);
+      await markTaskDone(context.teamId, input.taskId);
       return { success: true };
    });
 
-/**
- * Skip a specific onboarding task.
- */
 export const skipTask = protectedProcedure
    .input(z.object({ taskId: z.string().min(1).max(100) }))
    .handler(async ({ context, input }) => {
-      await markTaskDone(context.db, context.teamId, input.taskId);
+      await markTaskDone(context.teamId, input.taskId);
       return { success: true };
    });
 
-/**
- * Complete onboarding for an existing org/team.
- * Kept for backwards-compatibility — new workspaces use createWorkspace instead.
- */
 export const completeOnboarding = protectedProcedure
    .input(z.object({ products: z.array(z.enum(["finance"])) }))
    .handler(async ({ context }) => {
-      const { db, organizationId, teamId, userId } = context;
+      const { organizationId, teamId, userId } = context;
 
-      const teamRecord = await db.query.team.findFirst({
-         where: { id: teamId },
-         columns: { name: true, slug: true },
+      const teamRecord = await getTeamNameAndSlug(teamId);
+
+      await runOnboardingCompletion({
+         organizationId,
+         teamId,
+         userId,
+         workspaceName: teamRecord?.name ?? "Workspace",
+         slug: teamRecord?.slug ?? teamId,
+         accountType: "personal",
       });
 
-      await db.transaction(async (tx) => {
-         await runOnboardingCompletion(tx, {
-            organizationId,
-            teamId,
-            userId,
-            workspaceName: teamRecord?.name ?? "Workspace",
-            slug: teamRecord?.slug ?? teamId,
-            accountType: "personal",
-         });
-      });
-
-      const org = await db.query.organization.findFirst({
-         where: { id: organizationId },
-         columns: { slug: true },
-      });
+      const org = await getOrganizationSlug(organizationId);
 
       return { slug: org?.slug ?? "", teamId };
    });

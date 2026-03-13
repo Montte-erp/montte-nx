@@ -187,7 +187,7 @@ export function FeatureRequestForm({
                   </form.Field>
                </FieldGroup>
 
-               <form.Subscribe>
+               <form.Subscribe selector={(state) => state}>
                   {(canSubmit) => (
                      <Button
                         className="w-full"

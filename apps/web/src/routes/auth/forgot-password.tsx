@@ -314,7 +314,7 @@ function ForgotPasswordPage() {
                            Voltar
                         </Button>
                         {methods.state.isLast ? (
-                           <form.Subscribe>
+                           <form.Subscribe selector={(state) => state}>
                               {(formState) => (
                                  <Button
                                     className="flex gap-2 items-center justify-center"

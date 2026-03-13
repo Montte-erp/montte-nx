@@ -2,6 +2,7 @@ import { apiKey } from "@better-auth/api-key";
 import { stripe as stripePlugin } from "@better-auth/stripe";
 import { db } from "@core/database/client";
 import { findMemberByUserId } from "@core/database/repositories/auth-repository";
+import * as schema from "@core/database/schema";
 import { getDomain, isProduction } from "@core/environment/helpers";
 import { env } from "@core/environment/web/server";
 import { getLogger } from "@core/logging/root";
@@ -14,7 +15,7 @@ import {
    sendOrganizationInvitation,
 } from "@core/transactional/client";
 import { resendClient } from "@core/transactional/utils";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { betterAuth } from "better-auth/minimal";
 import {
    admin,
@@ -69,6 +70,7 @@ export const auth = betterAuth({
 
    database: drizzleAdapter(db, {
       provider: "pg",
+      schema,
    }),
 
    databaseHooks: {

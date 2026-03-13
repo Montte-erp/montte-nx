@@ -444,7 +444,7 @@ export function CategoryForm({
                   Cancelar
                </Button>
             </CredenzaClose>
-            <form.Subscribe>
+            <form.Subscribe selector={(state) => state}>
                {(state) => (
                   <Button
                      disabled={

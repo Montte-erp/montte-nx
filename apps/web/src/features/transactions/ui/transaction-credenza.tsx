@@ -1407,7 +1407,7 @@ function TransactionFormContent({
             </CredenzaBody>
 
             <CredenzaFooter>
-               <form.Subscribe>
+               <form.Subscribe selector={(state) => state}>
                   {(formState) => {
                      const createAsBill =
                         isCreate &&

@@ -175,7 +175,7 @@ function MagicLinkPage() {
                   }}
                </form.Field>
             </FieldGroup>
-            <form.Subscribe>
+            <form.Subscribe selector={(state) => state}>
                {(formState) => (
                   <Button
                      className="w-full h-11"
