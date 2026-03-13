@@ -1,7 +1,9 @@
 import { PGlite } from "@electric-sql/pglite";
 import type { DatabaseInstance } from "@core/database/client";
 import * as schema from "@core/database/schema";
+import { session as sessionTable } from "@core/database/schemas/auth";
 import { relations } from "@core/database/relations";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { pushSchema } from "drizzle-kit/api-postgres";
 import { vi } from "vitest";
@@ -100,12 +102,23 @@ export async function setupIntegrationTest() {
          session = await auth.api.getSession({ headers });
 
          if (session) {
-            session.session.activeOrganizationId =
+            const resolvedOrgId =
                options.organizationId === "auto"
                   ? org.id
                   : options.organizationId;
-            session.session.activeTeamId =
+            const resolvedTeamId =
                options.teamId === "auto" ? team.id : options.teamId;
+
+            session.session.activeOrganizationId = resolvedOrgId;
+            session.session.activeTeamId = resolvedTeamId;
+
+            await db
+               .update(sessionTable)
+               .set({
+                  activeOrganizationId: resolvedOrgId,
+                  activeTeamId: resolvedTeamId,
+               })
+               .where(eq(sessionTable.id, session.session.id));
          }
       }
 

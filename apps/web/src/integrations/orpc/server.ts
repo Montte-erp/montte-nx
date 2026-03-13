@@ -40,21 +40,27 @@ export interface ORPCContextWithOrganization extends ORPCContextAuthenticated {
 const base = os.$context<ORPCContext>();
 
 const withDeps = base.use(async ({ context, next }) => {
+   const ctx = context as ORPCContext & Partial<ORPCContextWithAuth>;
+
    let session: Awaited<ReturnType<typeof auth.api.getSession>> | null = null;
-   try {
-      session = await auth.api.getSession({ headers: context.headers });
-   } catch {
-      session = null;
+   if (ctx.session !== undefined) {
+      session = ctx.session;
+   } else {
+      try {
+         session = await auth.api.getSession({ headers: context.headers });
+      } catch {
+         session = null;
+      }
    }
 
    return next({
       context: {
          ...context,
-         auth,
-         db,
+         auth: ctx.auth ?? auth,
+         db: ctx.db ?? db,
          session,
-         posthog,
-         stripeClient,
+         posthog: ctx.posthog ?? posthog,
+         stripeClient: ctx.stripeClient ?? stripeClient,
       },
    });
 });
