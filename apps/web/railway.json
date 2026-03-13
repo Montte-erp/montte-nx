@@ -11,7 +11,7 @@
       ]
    },
    "deploy": {
-      "startCommand": "bun apps/web/.output/server/index.mjs",
+      "startCommand": "node apps/web/.output/server/index.mjs",
       "healthcheckPath": "/api/ping",
       "healthcheckTimeout": 60,
       "numReplicas": 1,
