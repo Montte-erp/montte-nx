@@ -95,6 +95,7 @@
    },
    "dependencies": {
       "@core/database": "workspace:*",
+      "@core/logging": "workspace:*",
       "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",
       "@core/stripe": "workspace:*",

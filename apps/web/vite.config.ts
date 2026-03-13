@@ -32,7 +32,7 @@ const config = defineConfig({
    plugins: [
       devtools(),
       nitro({
-         preset: "node-server",
+         preset: "bun",
       }),
       tailwindcss(),
       tanstackStart(),

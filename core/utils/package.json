@@ -53,6 +53,9 @@
       "test": "vitest run",
       "typecheck": "tsgo"
    },
+   "dependencies": {
+      "@core/logging": "workspace:*"
+   },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
       "typescript": "catalog:development"

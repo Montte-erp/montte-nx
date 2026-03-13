@@ -250,6 +250,7 @@
       "@tanstack/router-cli": "^1.166.7",
       "@tanstack/router-plugin": "^1.166.7",
       "drizzle-orm": "1.0.0-beta.18-dc9676b",
+      "nitro": "3.0.0",
       "pino-opentelemetry-transport": "^3.0.0"
    },
    "devDependencies": {

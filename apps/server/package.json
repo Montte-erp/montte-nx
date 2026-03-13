@@ -15,6 +15,7 @@
       "@core/database": "workspace:*",
       "@core/environment": "workspace:*",
       "@core/files": "workspace:*",
+      "@core/logging": "workspace:*",
       "@core/posthog": "workspace:*",
       "@core/stripe": "workspace:*",
       "@core/transactional": "workspace:*",

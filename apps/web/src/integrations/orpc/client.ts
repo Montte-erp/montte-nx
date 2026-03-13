@@ -12,38 +12,20 @@ import { createIsomorphicFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
 import posthogJs from "posthog-js";
 import router from "./router";
-import type { ORPCContextWithAuth } from "./server";
-import { auth } from "@core/authentication/server";
-import { db } from "@core/database/client";
-import { posthog } from "@core/posthog/server";
-import { stripeClient } from "@core/stripe";
+import type { ORPCContext } from "./server";
 
 const getORPCClient = createIsomorphicFn()
    .server(() =>
       createRouterClient(router, {
-         context: async (): Promise<ORPCContextWithAuth> => {
-            const headers = getRequestHeaders();
-            let session = null;
-            try {
-               session = await auth.api.getSession({ headers });
-            } catch {
-               session = null;
-            }
-            return {
-               headers,
-               request: new Request("http://localhost"), // Placeholder for SSR
-               auth,
-               db,
-               session,
-               posthog,
-               stripeClient,
-            };
-         },
+         context: async (): Promise<ORPCContext> => ({
+            headers: getRequestHeaders(),
+            request: new Request("http://localhost"),
+         }),
       }),
    )
    .client((): RouterClient<typeof router> => {
       const link = new RPCLink({
-         url: `${window.location.origin}/api/rpc`, // Use relative URL - SSR safe, no window reference needed
+         url: `${window.location.origin}/api/rpc`,
          headers: () => {
             const posthogSessionId = posthogJs?.get_session_id?.();
             return {

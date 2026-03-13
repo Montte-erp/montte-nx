@@ -1,35 +1,32 @@
 import { logs } from "@opentelemetry/api-logs";
 import { ORPCError, os } from "@orpc/server";
 import type { AuthInstance } from "@core/authentication/server";
+import { auth } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
+import { db } from "@core/database/client";
 import { AppError, WebAppError } from "@core/logging/errors";
 import type { PostHog } from "@core/posthog/server";
 import {
    captureError,
    captureServerEvent,
    identifyUser,
+   posthog,
    setGroup,
 } from "@core/posthog/server";
 import type { StripeClient } from "@core/stripe";
+import { stripeClient } from "@core/stripe";
 import { sanitizeData } from "@core/utils/sanitization";
 
 // =============================================================================
 // Context Types
 // =============================================================================
 
-/**
- * Client-side context - minimal context for isomorphic client
- */
 export interface ORPCContext {
    headers: Headers;
+   request: Request;
 }
 
-/**
- * Base ORPC context - includes auth, db, session, and posthog (from route handler)
- */
-export interface ORPCContextWithAuth {
-   headers: Headers;
-   request: Request;
+export interface ORPCContextWithAuth extends ORPCContext {
    auth: AuthInstance;
    db: DatabaseInstance;
    session: Awaited<ReturnType<AuthInstance["api"]["getSession"]>> | null;
@@ -57,10 +54,29 @@ export interface ORPCContextWithOrganization extends ORPCContextAuthenticated {
 // Procedures
 // =============================================================================
 
-// Base procedure builder with pre-populated context (auth, db, session)
-const baseProcedure = os.$context<ORPCContextWithAuth>();
+const base = os.$context<ORPCContext>();
 
-const withAuth = baseProcedure.use(async ({ context, next }) => {
+const withDeps = base.use(async ({ context, next }) => {
+   let session: Awaited<ReturnType<typeof auth.api.getSession>> | null = null;
+   try {
+      session = await auth.api.getSession({ headers: context.headers });
+   } catch {
+      session = null;
+   }
+
+   return next({
+      context: {
+         ...context,
+         auth,
+         db,
+         session,
+         posthog,
+         stripeClient,
+      },
+   });
+});
+
+const withAuth = withDeps.use(async ({ context, next }) => {
    const { session } = context;
 
    if (!session?.user) {
@@ -250,7 +266,7 @@ const withTelemetry = withErrorHandling.use(
  * Context includes auth, db, and session (may be null)
  * Use this for publicly accessible endpoints (e.g., shared content, public pages)
  */
-export const publicProcedure = baseProcedure;
+export const publicProcedure = withDeps;
 
 /**
  * Authenticated procedure - requires authenticated session (userId only)
