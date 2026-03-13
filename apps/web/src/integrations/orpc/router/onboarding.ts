@@ -200,21 +200,37 @@ export const createWorkspace = authenticatedProcedure
          });
       }
 
-      logger.info("Starting transaction");
-      await db.transaction(async (tx) => {
-         await runOnboardingCompletion(tx, {
-            organizationId: org.id,
-            teamId: createdTeam.id,
-            userId,
-            workspaceName: teamName,
-            slug,
-            accountType: input.accountType,
+      try {
+         logger.info("Starting transaction");
+         await db.transaction(async (tx) => {
+            await runOnboardingCompletion(tx, {
+               organizationId: org.id,
+               teamId: createdTeam.id,
+               userId,
+               workspaceName: teamName,
+               slug,
+               accountType: input.accountType,
+            });
          });
-      });
-      logger.info("Transaction committed");
+         logger.info("Transaction committed");
+      } catch (txError) {
+         logger.error(
+            { err: txError, step: "transaction" },
+            "Transaction failed",
+         );
+         throw txError;
+      }
 
       if (input.accountType === "business") {
-         await enrollInAllFeatures(userId, org.id);
+         try {
+            await enrollInAllFeatures(userId, org.id);
+         } catch (enrollError) {
+            logger.error(
+               { err: enrollError, step: "enrollInAllFeatures" },
+               "Enrollment failed",
+            );
+            throw enrollError;
+         }
       }
 
       logger.info(
