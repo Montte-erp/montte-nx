@@ -3,7 +3,12 @@
    "build": {
       "builder": "RAILPACK",
       "buildCommand": "bun run --filter=web build",
-      "watchPatterns": ["/apps/web/", "/packages/", "/libraries/**"]
+      "watchPatterns": [
+         "/apps/web/",
+         "/packages/**",
+         "/core/**",
+         "/libraries/**"
+      ]
    },
    "deploy": {
       "startCommand": "bun run --filter=web start",
