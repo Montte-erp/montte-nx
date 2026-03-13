@@ -1,4 +1,4 @@
-import type { WebClientEnv } from "@core/environment/web/client";
+import type { WebClientEnv } from "@core/environment/web";
 import { isClientProduction } from "@core/environment/helpers";
 import posthog from "posthog-js";
 import { PostHogProvider, usePostHog } from "posthog-js/react";

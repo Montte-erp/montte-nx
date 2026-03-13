@@ -4,7 +4,7 @@ import { render, screen } from "@testing-library/react";
 import type React from "react";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@core/environment/web/server", () => ({
+vi.mock("@core/environment/web", () => ({
    env: {
       DATABASE_URL: "postgres://localhost/test",
       MINIO_ENDPOINT: "http://localhost:9000",

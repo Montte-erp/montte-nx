@@ -1,4 +1,4 @@
-import { env } from "@core/environment/web/client";
+import { env } from "@core/environment/web";
 import { Toaster } from "@packages/ui/components/sonner";
 import { ThemeProvider } from "@packages/ui/lib/theme-provider";
 import appCss from "@packages/ui/styles/globals.css?url";

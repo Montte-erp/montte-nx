@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createMockResend } from "./helpers/create-mock-resend";
 
-vi.mock("@core/environment/web/server", () => ({
+vi.mock("@core/environment/web", () => ({
    env: {
       RESEND_API_KEY: "re_test_123",
    },

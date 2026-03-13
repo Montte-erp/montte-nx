@@ -5,7 +5,7 @@ import { createRedis } from "@core/redis/connection";
 import { createPostHog } from "@core/posthog/server";
 import { createStripeClient } from "@core/stripe";
 import { createResendClient } from "@core/transactional/utils";
-import { env } from "@core/environment/web/server";
+import { env } from "@core/environment/web";
 
 const db = createDb({ databaseUrl: env.DATABASE_URL });
 const redis = createRedis(env.REDIS_URL);

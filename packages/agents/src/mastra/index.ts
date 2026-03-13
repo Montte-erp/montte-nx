@@ -4,7 +4,7 @@ import { Observability } from "@mastra/observability";
 import { PostgresStore } from "@mastra/pg";
 import { PosthogExporter } from "@mastra/posthog";
 import type { DatabaseInstance } from "@core/database/client";
-import { env as serverEnv } from "@core/environment/web/server";
+import { env as serverEnv } from "@core/environment/web";
 import type { ModelId } from "../models";
 import { rubiAgent } from "./agents/rubi-agent";
 import { workspace } from "./workspace-instance";

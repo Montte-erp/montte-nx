@@ -1,8 +1,12 @@
-import "../load-env";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
 export const env = createEnv({
+   clientPrefix: "VITE_",
+   client: {
+      VITE_POSTHOG_HOST: z.string().url(),
+      VITE_POSTHOG_KEY: z.string(),
+   },
    server: {
       DATABASE_URL: z.url(),
       PG_VECTOR_URL: z.url().optional(),
@@ -57,7 +61,8 @@ export const env = createEnv({
       GITHUB_FEEDBACK_OWNER: z.string().optional(),
       GITHUB_FEEDBACK_REPO: z.string().optional(),
    },
-   runtimeEnv: process.env,
+   runtimeEnv: { ...process.env, ...import.meta.env },
 });
 
 export type WebServerEnv = typeof env;
+export type WebClientEnv = typeof env;

@@ -1,7 +1,7 @@
 import { ORPCError, call } from "@orpc/server";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@core/environment/web/server", () => ({
+vi.mock("@core/environment/web", () => ({
    env: {
       MINIO_ENDPOINT: "http://localhost:9000",
       MINIO_ACCESS_KEY: "test",

@@ -8,13 +8,9 @@
    ],
    "type": "module",
    "exports": {
-      "./web/client": {
-         "types": "./dist/src/web/client.d.ts",
-         "default": "./src/web/client.ts"
-      },
-      "./web/server": {
-         "types": "./dist/src/web/server.d.ts",
-         "default": "./src/web/server.ts"
+      "./web": {
+         "types": "./dist/src/web.d.ts",
+         "default": "./src/web.ts"
       },
       "./helpers": {
          "types": "./dist/src/helpers.d.ts",
@@ -36,7 +32,6 @@
    "dependencies": {
       "@core/utils": "workspace:*",
       "@t3-oss/env-core": "^0.13.8",
-      "dotenv": "catalog:enviroment",
       "zod": "catalog:validation"
    },
    "devDependencies": {

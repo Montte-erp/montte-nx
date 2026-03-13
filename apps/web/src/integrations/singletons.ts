@@ -1,4 +1,4 @@
-import { env } from "@core/environment/web/server";
+import { env } from "@core/environment/web";
 import { createDb } from "@core/database/client";
 import { createRedis } from "@core/redis/connection";
 import { createPostHog } from "@core/posthog/server";
