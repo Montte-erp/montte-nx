@@ -30,17 +30,15 @@ const config = defineConfig({
    },
 
    plugins: [
-      devtools(),
-      nitro({
-         preset: "bun",
-      }),
-      tailwindcss(),
       tanstackStart(),
+      nitro(),
       viteReact({
          babel: {
             plugins: ["babel-plugin-react-compiler"],
          },
       }),
+      tailwindcss(),
+      devtools(),
    ],
 });
 
