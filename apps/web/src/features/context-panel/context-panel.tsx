@@ -89,8 +89,10 @@ function ViewSwitchPanelAction({ config }: { config: PageViewSwitchConfig }) {
 }
 
 function InfoContent() {
-   const { infoContent, pageActions, pageViewSwitch } =
-      useStore(contextPanelStore);
+   const { infoContent, pageActions, pageViewSwitch } = useStore(
+      contextPanelStore,
+      (s) => s,
+   );
 
    const emptyState = (
       <ContextPanel>
@@ -180,7 +182,7 @@ const INFO_TAB: ContextPanelTab = {
 };
 
 function ContextPanelInner() {
-   const { activeTabId, dynamicTabs } = useStore(contextPanelStore);
+   const { activeTabId, dynamicTabs } = useStore(contextPanelStore, (s) => s);
 
    const allTabs: ContextPanelTab[] = [
       INFO_TAB,
@@ -239,7 +241,7 @@ function ContextPanelInner() {
 }
 
 export function GlobalContextPanel() {
-   const { isOpen } = useStore(contextPanelStore);
+   const { isOpen } = useStore(contextPanelStore, (s) => s);
 
    return (
       <SidebarManager

@@ -5,14 +5,9 @@ export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard",
 )({
    beforeLoad: async ({ context }) => {
-      const [status] = await Promise.all([
-         context.queryClient.fetchQuery(
-            context.orpc.onboarding.getOnboardingStatus.queryOptions(),
-         ),
-         context.queryClient.prefetchQuery(
-            context.orpc.earlyAccess.getEnrolledFeatures.queryOptions(),
-         ),
-      ]);
+      const status = await context.queryClient.fetchQuery(
+         context.orpc.onboarding.getOnboardingStatus.queryOptions(),
+      );
 
       if (
          !status.organization.onboardingCompleted ||
@@ -20,6 +15,11 @@ export const Route = createFileRoute(
       ) {
          throw redirect({ to: "/onboarding" });
       }
+   },
+   loader: async ({ context }) => {
+      await context.queryClient.prefetchQuery(
+         context.orpc.earlyAccess.getEnrolledFeatures.queryOptions(),
+      );
    },
    component: DashboardLayoutRoute,
 });

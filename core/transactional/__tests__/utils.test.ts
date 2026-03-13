@@ -9,7 +9,7 @@ const { resendClientMock, resendConstructorMock } = vi.hoisted(() => ({
    resendConstructorMock: vi.fn(),
 }));
 
-vi.mock("@core/environment/server", () => ({
+vi.mock("@core/environment/web/server", () => ({
    env: {
       RESEND_API_KEY: "re_test_123",
    },

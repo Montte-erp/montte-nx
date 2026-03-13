@@ -11,7 +11,7 @@ const { stripeClientMock, stripeConstructorMock } = vi.hoisted(() => ({
    stripeConstructorMock: vi.fn(),
 }));
 
-vi.mock("@core/environment/server", () => ({
+vi.mock("@core/environment/web/server", () => ({
    env: {
       STRIPE_SECRET_KEY: "sk_test_123",
    },

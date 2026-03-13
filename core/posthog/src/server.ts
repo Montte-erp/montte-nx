@@ -1,4 +1,4 @@
-import { env } from "@core/environment/server";
+import { env } from "@core/environment/web/server";
 import { PostHog } from "posthog-node";
 
 export type { PostHog };

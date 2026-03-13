@@ -1,4 +1,4 @@
-import { env } from "@core/environment/server";
+import { env } from "@core/environment/web/server";
 import Stripe from "stripe";
 
 export const stripeClient = new Stripe(env.STRIPE_SECRET_KEY, {

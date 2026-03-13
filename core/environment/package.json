@@ -8,17 +8,17 @@
    ],
    "type": "module",
    "exports": {
-      "./web": {
-         "types": "./dist/src/web.d.ts",
-         "default": "./src/web.ts"
+      "./web/client": {
+         "types": "./dist/src/web/client.d.ts",
+         "default": "./src/web/client.ts"
+      },
+      "./web/server": {
+         "types": "./dist/src/web/server.d.ts",
+         "default": "./src/web/server.ts"
       },
       "./helpers": {
          "types": "./dist/src/helpers.d.ts",
          "default": "./src/helpers.ts"
-      },
-      "./server": {
-         "types": "./dist/src/server.d.ts",
-         "default": "./src/server.ts"
       },
       "./worker": {
          "types": "./dist/src/worker.d.ts",
@@ -35,7 +35,7 @@
    },
    "dependencies": {
       "@core/utils": "workspace:*",
-      "@t3-oss/env-core": "catalog:enviroment",
+      "dotenv": "catalog:enviroment",
       "zod": "catalog:validation"
    },
    "devDependencies": {

@@ -37,7 +37,7 @@ const { posthogClientMock, posthogConstructorMock } = vi.hoisted(() => {
    };
 });
 
-vi.mock("@core/environment/server", () => ({
+vi.mock("@core/environment/web/server", () => ({
    env: {
       POSTHOG_HOST: "https://app.posthog.com",
       POSTHOG_KEY: "phc_test_key",

@@ -25,7 +25,7 @@ const sidebarVisibilityStore = new Store<{ hiddenItems: string[] }>({
 });
 
 export function useSidebarVisibility() {
-   const { hiddenItems } = useStore(sidebarVisibilityStore);
+   const { hiddenItems } = useStore(sidebarVisibilityStore, (s) => s);
 
    const isVisible = (itemId: string) => !hiddenItems.includes(itemId);
 

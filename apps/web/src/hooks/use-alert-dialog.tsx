@@ -63,7 +63,7 @@ export const useAlertDialog = () => {
 };
 
 export function GlobalAlertDialog() {
-   const state = useStore(alertDialogStore);
+   const state = useStore(alertDialogStore, (s) => s);
    const [isPending, startTransition] = useTransition();
 
    const handleAction = async () => {

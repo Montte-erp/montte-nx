@@ -1,4 +1,4 @@
-import { env } from "@core/environment/web";
+import { env } from "@core/environment/web/client";
 import { Toaster } from "@packages/ui/components/sonner";
 import { ThemeProvider } from "@packages/ui/lib/theme-provider";
 import appCss from "@packages/ui/styles/globals.css?url";
@@ -21,7 +21,7 @@ import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import type { RouterContext } from "../integrations/tanstack-query/root-provider";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-   beforeLoad: async ({ context }) => {
+   loader: async ({ context }) => {
       await context.queryClient.prefetchQuery(
          context.orpc.session.getSession.queryOptions(),
       );

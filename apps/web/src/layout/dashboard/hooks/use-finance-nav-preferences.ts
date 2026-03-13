@@ -35,7 +35,7 @@ export function toggleFinanceNavItem(itemId: string) {
 }
 
 export function useFinanceNavPreferences() {
-   const { wantedItems } = useStore(financeNavPrefsStore);
+   const { wantedItems } = useStore(financeNavPrefsStore, (s) => s);
 
    const isWanted = (itemId: string) => wantedItems.includes(itemId);
 

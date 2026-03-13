@@ -91,7 +91,7 @@ export const useContextPanel = () => {
       infoContent,
       pageActions,
       pageViewSwitch,
-   } = useStore(contextPanelStore);
+   } = useStore(contextPanelStore, (s) => s);
    return {
       isOpen,
       activeTabId,

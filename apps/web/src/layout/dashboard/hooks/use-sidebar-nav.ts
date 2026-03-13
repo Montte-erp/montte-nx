@@ -63,7 +63,7 @@ export function togglePinnedItem(itemId: string) {
 }
 
 export function useSidebarNav() {
-   const state = useStore(sidebarNavStore);
+   const state = useStore(sidebarNavStore, (s) => s);
 
    return {
       activeSection: state.activeSection,

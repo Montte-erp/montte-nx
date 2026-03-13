@@ -1,4 +1,4 @@
-import { env } from "@core/environment/web";
+import { env } from "@core/environment/web/server";
 import { createFileRoute } from "@tanstack/react-router";
 import { auth } from "@core/authentication/server";
 

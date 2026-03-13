@@ -15,7 +15,7 @@ const { loggerErrorMock, minioClientMock } = vi.hoisted(() => ({
    },
 }));
 
-vi.mock("@core/environment/server", () => ({
+vi.mock("@core/environment/web/server", () => ({
    env: {
       MINIO_ACCESS_KEY: "access-key",
       MINIO_ENDPOINT: "https://minio.example.com",

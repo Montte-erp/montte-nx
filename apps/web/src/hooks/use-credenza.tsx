@@ -36,7 +36,7 @@ export const useCredenza = () => {
 };
 
 export function GlobalCredenza() {
-   const { children, isOpen, className } = useStore(credenzaStore);
+   const { children, isOpen, className } = useStore(credenzaStore, (s) => s);
 
    return (
       <Credenza

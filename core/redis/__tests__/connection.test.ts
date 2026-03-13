@@ -24,7 +24,7 @@ const {
    };
 });
 
-vi.mock("@core/environment/server", () => ({
+vi.mock("@core/environment/web/server", () => ({
    env: {
       REDIS_URL: "redis://cache:6379",
    },

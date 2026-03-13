@@ -3,7 +3,7 @@ import { stripe as stripePlugin } from "@better-auth/stripe";
 import { db } from "@core/database/client";
 import { findMemberByUserId } from "@core/database/repositories/auth-repository";
 import { getDomain, isProduction } from "@core/environment/helpers";
-import { env } from "@core/environment/server";
+import { env } from "@core/environment/web/server";
 import { getLogger } from "@core/logging/root";
 import { posthog } from "@core/posthog/server";
 import { redis } from "@core/redis/connection";

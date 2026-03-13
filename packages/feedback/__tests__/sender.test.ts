@@ -14,7 +14,7 @@ const {
    posthogCaptureMock: vi.fn(),
 }));
 
-vi.mock("@core/environment/server", () => ({
+vi.mock("@core/environment/web/server", () => ({
    env: {
       DISCORD_FEEDBACK_WEBHOOK_URL: "https://discord.example/webhook",
       GITHUB_FEEDBACK_OWNER: "contentta",
