@@ -36,7 +36,6 @@
    "dependencies": {
       "@core/utils": "workspace:*",
       "@t3-oss/env-core": "catalog:enviroment",
-      "dotenv": "catalog:enviroment",
       "zod": "catalog:validation"
    },
    "devDependencies": {

@@ -1,10 +1,6 @@
 import type { DatabaseInstance } from "@core/database/client";
 import { team } from "@core/database/schemas/auth";
 import { getLogger } from "@core/logging/root";
-import {
-   isArcjetRateLimitDecision,
-   protectWithRateLimit,
-} from "@core/arcjet/protect";
 import { eq } from "drizzle-orm";
 import { auth } from "@core/authentication/server";
 
@@ -53,28 +49,6 @@ export async function authenticateRequest(
       logger.error({ reason: "missing_api_key", endpoint }, "SDK auth failed");
       set.status = 401;
       return { success: false, error: "Missing API Key." };
-   }
-
-   const arcjetDecision = await protectWithRateLimit(request, {
-      max: 120,
-      interval: "1m",
-      characteristics: [
-         "ip.src",
-         "http.request.uri.path",
-         "http.request.headers['sdk-api-key']",
-         "http.request.headers['x-api-key']",
-      ],
-   });
-
-   if (arcjetDecision.isDenied()) {
-      const isRateLimited = isArcjetRateLimitDecision(arcjetDecision);
-      set.status = isRateLimited ? 429 : 403;
-      return {
-         success: false,
-         error: isRateLimited
-            ? "Rate limit exceeded. Please try again later."
-            : "Request denied.",
-      };
    }
 
    const result = await auth.api.verifyApiKey({

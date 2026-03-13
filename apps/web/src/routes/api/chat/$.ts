@@ -5,10 +5,6 @@ import {
 } from "@packages/agents";
 import { emitAiChatMessage } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
-import {
-   isArcjetRateLimitDecision,
-   protectWithRateLimit,
-} from "@core/arcjet/protect";
 import { getLogger } from "@core/logging/root";
 import { createFileRoute } from "@tanstack/react-router";
 import { createUIMessageStreamResponse } from "ai";
@@ -21,22 +17,6 @@ export const Route = createFileRoute("/api/chat/$")({
    server: {
       handlers: {
          POST: async ({ request }) => {
-            const arcjetDecision = await protectWithRateLimit(request, {
-               max: 30,
-               interval: "1m",
-               characteristics: ["ip.src", "http.request.uri.path"],
-            });
-
-            if (arcjetDecision.isDenied()) {
-               const isRateLimit = isArcjetRateLimitDecision(arcjetDecision);
-               return new Response(
-                  isRateLimit ? "Rate limit exceeded" : "Forbidden",
-                  {
-                     status: isRateLimit ? 429 : 403,
-                  },
-               );
-            }
-
             const session = await auth.api.getSession({
                headers: request.headers,
             });

@@ -6,10 +6,6 @@ vi.mock("@core/database/client", async () => {
       await import("../../../helpers/setup-integration-test");
    return { db: await setupIntegrationDb(), createDb: () => {} };
 });
-vi.mock("@core/arcjet/protect", () => ({
-   protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
-   isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
-}));
 vi.mock("@core/posthog/server", () => ({
    captureError: vi.fn(),
    captureServerEvent: vi.fn(),

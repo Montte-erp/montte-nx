@@ -102,7 +102,6 @@ montte-nx/
 │   ├── redis/           # Redis singleton
 │   ├── logging/         # Pino logger
 │   ├── files/           # MinIO file storage
-│   ├── arcjet/          # Rate limiting & auth wrapper
 │   ├── posthog/         # Analytics (client & server)
 │   ├── stripe/          # Stripe SDK wrapper
 │   ├── transactional/   # Email templates (React Email + Resend)

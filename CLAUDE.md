@@ -55,7 +55,6 @@ montte-nx/
 │   ├── posthog/         # PostHog server/client setup
 │   ├── stripe/          # Stripe singleton and helpers
 │   ├── transactional/   # Resend + email utilities
-│   ├── arcjet/          # Rate limiting & auth wrapper
 │   └── utils/           # Shared utilities + error classes
 ├── apps/
 │   ├── web/             # React/Vite SPA — main dashboard + oRPC routers
@@ -267,7 +266,6 @@ import { posthog } from "@core/posthog/server";
 import { stripeClient } from "@core/stripe";
 import { resendClient } from "@core/transactional/utils";
 import { minioClient } from "@core/files/client";
-import { wrapAuthHandler } from "@core/arcjet/auth-wrapper";
 import { AppError } from "@core/logging/errors";
 
 // Feature packages use @packages/* prefix

@@ -3,7 +3,6 @@
    "compilerOptions": {
       "paths": {
          "@api/*": ["./src/*"],
-         "@core/arcjet/*": ["../../core/arcjet/src/*"],
          "@core/authentication/*": ["../../core/authentication/src/*"],
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],

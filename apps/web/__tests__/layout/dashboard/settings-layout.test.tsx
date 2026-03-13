@@ -26,13 +26,6 @@ vi.mock("@core/environment/server", () => ({
 vi.mock("@core/files/client", () => ({
    minioClient: {},
 }));
-vi.mock("@core/arcjet/client", () => ({
-   arcjetClient: {},
-}));
-vi.mock("@core/arcjet/protect", () => ({
-   protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
-   isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
-}));
 vi.mock("@core/posthog/server", () => ({
    posthog: {
       capture: vi.fn(),

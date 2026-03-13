@@ -2,7 +2,6 @@
    "extends": "@tooling/typescript/core.json",
    "compilerOptions": {
       "paths": {
-         "@core/arcjet/*": ["../../core/arcjet/src/*"],
          "@core/authentication/*": ["../../core/authentication/src/*"],
          "@core/database": ["./src/index.ts"],
          "@core/database/*": ["./src/*"],

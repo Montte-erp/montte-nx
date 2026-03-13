@@ -1,9 +1,5 @@
 import { afterAll, describe, expect, it, vi } from "vitest";
 
-vi.mock("@core/arcjet/protect", () => ({
-   protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
-   isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
-}));
 vi.mock("@core/posthog/server", () => ({
    captureError: vi.fn(),
    captureServerEvent: vi.fn(),

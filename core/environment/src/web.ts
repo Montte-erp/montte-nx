@@ -1,4 +1,3 @@
-import "./load-env";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
@@ -42,12 +41,6 @@ export const env = createEnv({
       TAVILY_API_KEYS: z.string().optional(),
       EXA_API_KEYS: z.string().optional(),
       FIRECRAWL_API_KEYS: z.string().optional(),
-
-      ARCJET_KEY: z.string().min(1),
-      ARCJET_ENV: z
-         .enum(["development", "production"])
-         .optional()
-         .default("development"),
 
       NODE_ENV: z
          .enum(["development", "production", "test"])

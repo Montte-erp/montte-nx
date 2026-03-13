@@ -12,13 +12,6 @@ vi.mock("@packages/files/client", () => ({
    getMinioClient: vi.fn(),
    generatePresignedPutUrl: vi.fn(),
 }));
-vi.mock("@core/arcjet/client", () => ({
-   arcjetClient: {},
-}));
-vi.mock("@core/arcjet/protect", () => ({
-   protectWithRateLimit: vi.fn().mockResolvedValue({ isDenied: () => false }),
-   isArcjetRateLimitDecision: vi.fn().mockReturnValue(false),
-}));
 vi.mock("@core/files/client", () => ({
    minioClient: {},
 }));
