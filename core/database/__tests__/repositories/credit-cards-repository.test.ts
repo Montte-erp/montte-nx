@@ -1,16 +1,10 @@
-import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
+import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { eq } from "drizzle-orm";
 import { setupTestDb } from "../helpers/setup-test-db";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
 import * as repo from "../../src/repositories/credit-cards-repository";
-
-vi.mock("@core/database/client", () => ({
-   get db() {
-      return (globalThis as any).__TEST_DB__;
-   },
-}));
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -59,6 +53,7 @@ describe("credit-cards-repository", () => {
          const bankAccount = await createBankAccount(teamId);
 
          const card = await repo.createCreditCard(
+            testDb.db,
             teamId,
             validInput(bankAccount.id, { brand: "mastercard" }),
          );
@@ -83,6 +78,7 @@ describe("credit-cards-repository", () => {
          const bankAccount = await createBankAccount(teamId);
 
          const card = await repo.createCreditCard(
+            testDb.db,
             teamId,
             validInput(bankAccount.id, {
                creditLimit: "10000.00",
@@ -102,6 +98,7 @@ describe("credit-cards-repository", () => {
 
          await expect(
             repo.createCreditCard(
+               testDb.db,
                teamId,
                validInput(bankAccount.id, { name: "A" }),
             ),
@@ -114,6 +111,7 @@ describe("credit-cards-repository", () => {
 
          await expect(
             repo.createCreditCard(
+               testDb.db,
                teamId,
                validInput(bankAccount.id, { closingDay: 0 }),
             ),
@@ -126,6 +124,7 @@ describe("credit-cards-repository", () => {
 
          await expect(
             repo.createCreditCard(
+               testDb.db,
                teamId,
                validInput(bankAccount.id, { closingDay: 32 }),
             ),
@@ -138,6 +137,7 @@ describe("credit-cards-repository", () => {
 
          await expect(
             repo.createCreditCard(
+               testDb.db,
                teamId,
                validInput(bankAccount.id, { color: "red" }),
             ),
@@ -150,6 +150,7 @@ describe("credit-cards-repository", () => {
 
          await expect(
             repo.createCreditCard(
+               testDb.db,
                teamId,
                validInput(bankAccount.id, { creditLimit: "-100" }),
             ),
@@ -163,10 +164,12 @@ describe("credit-cards-repository", () => {
          const bankAccount = await createBankAccount(teamId);
 
          await repo.createCreditCard(
+            testDb.db,
             teamId,
             validInput(bankAccount.id, { name: "Card A" }),
          );
          await repo.createCreditCard(
+            testDb.db,
             teamId,
             validInput(bankAccount.id, {
                name: "Card B",
@@ -175,7 +178,7 @@ describe("credit-cards-repository", () => {
             }),
          );
 
-         const cards = await repo.listCreditCards(teamId);
+         const cards = await repo.listCreditCards(testDb.db, teamId);
          expect(cards).toHaveLength(2);
          for (const card of cards) {
             expect(card.teamId).toBe(teamId);
@@ -189,15 +192,17 @@ describe("credit-cards-repository", () => {
          const bankB = await createBankAccount(teamB);
 
          await repo.createCreditCard(
+            testDb.db,
             teamA,
             validInput(bankA.id, { name: "Team A Card" }),
          );
          await repo.createCreditCard(
+            testDb.db,
             teamB,
             validInput(bankB.id, { name: "Team B Card" }),
          );
 
-         const cardsA = await repo.listCreditCards(teamA);
+         const cardsA = await repo.listCreditCards(testDb.db, teamA);
          expect(cardsA).toHaveLength(1);
          expect(cardsA[0]!.name).toBe("Team A Card");
       });
@@ -208,11 +213,12 @@ describe("credit-cards-repository", () => {
          const teamId = randomTeamId();
          const bankAccount = await createBankAccount(teamId);
          const created = await repo.createCreditCard(
+            testDb.db,
             teamId,
             validInput(bankAccount.id, { brand: "amex" }),
          );
 
-         const found = await repo.getCreditCard(created.id);
+         const found = await repo.getCreditCard(testDb.db, created.id);
          expect(found).not.toBeNull();
          expect(found!.id).toBe(created.id);
          expect(found!.name).toBe("Nubank Platinum");
@@ -220,7 +226,10 @@ describe("credit-cards-repository", () => {
       });
 
       it("returns null for non-existent id", async () => {
-         const result = await repo.getCreditCard(crypto.randomUUID());
+         const result = await repo.getCreditCard(
+            testDb.db,
+            crypto.randomUUID(),
+         );
          expect(result).toBeNull();
       });
    });
@@ -230,11 +239,12 @@ describe("credit-cards-repository", () => {
          const teamId = randomTeamId();
          const bankAccount = await createBankAccount(teamId);
          const card = await repo.createCreditCard(
+            testDb.db,
             teamId,
             validInput(bankAccount.id),
          );
 
-         const updated = await repo.updateCreditCard(card.id, {
+         const updated = await repo.updateCreditCard(testDb.db, card.id, {
             name: "Updated Name",
             brand: "elo",
             creditLimit: "5000.00",
@@ -247,7 +257,9 @@ describe("credit-cards-repository", () => {
 
       it("throws for non-existent card", async () => {
          await expect(
-            repo.updateCreditCard(crypto.randomUUID(), { name: "Ghost" }),
+            repo.updateCreditCard(testDb.db, crypto.randomUUID(), {
+               name: "Ghost",
+            }),
          ).rejects.toThrow();
       });
    });
@@ -257,11 +269,12 @@ describe("credit-cards-repository", () => {
          const teamId = randomTeamId();
          const bankAccount = await createBankAccount(teamId);
          const card = await repo.createCreditCard(
+            testDb.db,
             teamId,
             validInput(bankAccount.id),
          );
 
-         await repo.deleteCreditCard(card.id);
+         await repo.deleteCreditCard(testDb.db, card.id);
 
          const rows = await testDb.db
             .select()
@@ -274,6 +287,7 @@ describe("credit-cards-repository", () => {
          const teamId = randomTeamId();
          const bankAccount = await createBankAccount(teamId);
          const card = await repo.createCreditCard(
+            testDb.db,
             teamId,
             validInput(bankAccount.id),
          );
@@ -286,9 +300,9 @@ describe("credit-cards-repository", () => {
             status: "open",
          });
 
-         await expect(repo.deleteCreditCard(card.id)).rejects.toThrow(
-            /faturas abertas/,
-         );
+         await expect(
+            repo.deleteCreditCard(testDb.db, card.id),
+         ).rejects.toThrow(/faturas abertas/);
 
          const rows = await testDb.db
             .select()
@@ -301,6 +315,7 @@ describe("credit-cards-repository", () => {
          const teamId = randomTeamId();
          const bankAccount = await createBankAccount(teamId);
          const card = await repo.createCreditCard(
+            testDb.db,
             teamId,
             validInput(bankAccount.id),
          );
@@ -320,7 +335,7 @@ describe("credit-cards-repository", () => {
             .delete(creditCardStatements)
             .where(eq(creditCardStatements.id, statement!.id));
 
-         await repo.deleteCreditCard(card.id);
+         await repo.deleteCreditCard(testDb.db, card.id);
 
          const rows = await testDb.db
             .select()
@@ -335,11 +350,15 @@ describe("credit-cards-repository", () => {
          const teamId = randomTeamId();
          const bankAccount = await createBankAccount(teamId);
          const card = await repo.createCreditCard(
+            testDb.db,
             teamId,
             validInput(bankAccount.id),
          );
 
-         const result = await repo.creditCardHasOpenStatements(card.id);
+         const result = await repo.creditCardHasOpenStatements(
+            testDb.db,
+            card.id,
+         );
          expect(result).toBe(false);
       });
 
@@ -347,6 +366,7 @@ describe("credit-cards-repository", () => {
          const teamId = randomTeamId();
          const bankAccount = await createBankAccount(teamId);
          const card = await repo.createCreditCard(
+            testDb.db,
             teamId,
             validInput(bankAccount.id),
          );
@@ -359,7 +379,10 @@ describe("credit-cards-repository", () => {
             status: "open",
          });
 
-         const result = await repo.creditCardHasOpenStatements(card.id);
+         const result = await repo.creditCardHasOpenStatements(
+            testDb.db,
+            card.id,
+         );
          expect(result).toBe(true);
       });
 
@@ -367,6 +390,7 @@ describe("credit-cards-repository", () => {
          const teamId = randomTeamId();
          const bankAccount = await createBankAccount(teamId);
          const card = await repo.createCreditCard(
+            testDb.db,
             teamId,
             validInput(bankAccount.id),
          );
@@ -379,7 +403,10 @@ describe("credit-cards-repository", () => {
             status: "paid",
          });
 
-         const result = await repo.creditCardHasOpenStatements(card.id);
+         const result = await repo.creditCardHasOpenStatements(
+            testDb.db,
+            card.id,
+         );
          expect(result).toBe(false);
       });
    });

@@ -1,10 +1,9 @@
 import "@/integrations/otel/init";
 
-import { db } from "@core/database/client";
 import { getLogger } from "@core/logging/root";
-import { redis } from "@core/redis/connection";
 import { createFileRoute } from "@tanstack/react-router";
 import { sql } from "drizzle-orm";
+import { db, redis } from "@/integrations/singletons";
 
 const logger = getLogger().child({ module: "api:health" });
 

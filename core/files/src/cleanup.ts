@@ -1,9 +1,10 @@
 import { getLogger } from "@core/logging/root";
-import { minioClient } from "@core/files/client";
+import type { MinioClient } from "@core/files/client";
 
 const logger = getLogger().child({ module: "files:cleanup" });
 
 export async function cleanupOrphanedFiles(
+   client: MinioClient,
    bucketName: string,
    prefix: string,
    olderThanHours: number,
@@ -12,7 +13,7 @@ export async function cleanupOrphanedFiles(
    const cutoffTime = new Date(Date.now() - olderThanHours * 60 * 60 * 1000);
    let deletedCount = 0;
 
-   const stream = minioClient.listObjectsV2(bucketName, prefix, true);
+   const stream = client.listObjectsV2(bucketName, prefix, true);
 
    for await (const obj of stream) {
       if (!obj.name || !obj.lastModified) {
@@ -26,7 +27,7 @@ export async function cleanupOrphanedFiles(
       const isReferenced = await isReferencedInDb(obj.name);
       if (!isReferenced) {
          try {
-            await minioClient.removeObject(bucketName, obj.name);
+            await client.removeObject(bucketName, obj.name);
             deletedCount++;
          } catch (error) {
             logger.error(
@@ -47,6 +48,7 @@ export interface CleanupResult {
 }
 
 export async function cleanupAllOrphanedFiles(
+   client: MinioClient,
    bucketName: string,
    olderThanHours: number,
    dbCheckers: {
@@ -67,6 +69,7 @@ export async function cleanupAllOrphanedFiles(
 
       try {
          deletedCount = await cleanupOrphanedFiles(
+            client,
             bucketName,
             prefix,
             olderThanHours,

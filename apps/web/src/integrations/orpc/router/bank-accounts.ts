@@ -18,21 +18,23 @@ const idSchema = z.object({ id: z.string().uuid() });
 export const create = protectedProcedure
    .input(createBankAccountSchema)
    .handler(async ({ context, input }) => {
-      return createBankAccount(context.teamId, input);
+      return createBankAccount(context.db, context.teamId, input);
    });
 
 export const getAll = protectedProcedure.handler(async ({ context }) => {
-   return listBankAccountsWithBalance(context.teamId);
+   return listBankAccountsWithBalance(context.db, context.teamId);
 });
 
 export const getById = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
       const account = await ensureBankAccountOwnership(
+         context.db,
          input.id,
          context.teamId,
       );
       const balance = await computeBankAccountBalance(
+         context.db,
          account.id,
          account.initialBalance,
       );
@@ -42,15 +44,15 @@ export const getById = protectedProcedure
 export const update = protectedProcedure
    .input(idSchema.merge(updateBankAccountSchema))
    .handler(async ({ context, input }) => {
-      await ensureBankAccountOwnership(input.id, context.teamId);
+      await ensureBankAccountOwnership(context.db, input.id, context.teamId);
       const { id, ...data } = input;
-      return updateBankAccount(id, data);
+      return updateBankAccount(context.db, id, data);
    });
 
 export const remove = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      await ensureBankAccountOwnership(input.id, context.teamId);
-      await deleteBankAccount(input.id);
+      await ensureBankAccountOwnership(context.db, input.id, context.teamId);
+      await deleteBankAccount(context.db, input.id);
       return { success: true };
    });

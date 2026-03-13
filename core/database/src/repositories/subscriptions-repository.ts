@@ -1,6 +1,6 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, count, eq, gte, lte } from "drizzle-orm";
-import { db } from "@core/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateSubscriptionInput,
    type SubscriptionStatus,
@@ -11,6 +11,7 @@ import {
 } from "@core/database/schemas/subscriptions";
 
 export async function createSubscription(
+   db: DatabaseInstance,
    teamId: string,
    data: CreateSubscriptionInput,
 ) {
@@ -29,7 +30,7 @@ export async function createSubscription(
    }
 }
 
-export async function getSubscription(id: string) {
+export async function getSubscription(db: DatabaseInstance, id: string) {
    try {
       const subscription = await db.query.contactSubscriptions.findFirst({
          where: { id },
@@ -42,6 +43,7 @@ export async function getSubscription(id: string) {
 }
 
 export async function updateSubscription(
+   db: DatabaseInstance,
    id: string,
    data: UpdateSubscriptionInput,
 ) {
@@ -60,7 +62,11 @@ export async function updateSubscription(
    }
 }
 
-export async function listSubscriptionsByTeam(teamId: string, status?: string) {
+export async function listSubscriptionsByTeam(
+   db: DatabaseInstance,
+   teamId: string,
+   status?: string,
+) {
    try {
       const conditions = [eq(contactSubscriptions.teamId, teamId)];
       if (status) {
@@ -77,7 +83,10 @@ export async function listSubscriptionsByTeam(teamId: string, status?: string) {
    }
 }
 
-export async function listSubscriptionsByContact(contactId: string) {
+export async function listSubscriptionsByContact(
+   db: DatabaseInstance,
+   contactId: string,
+) {
    try {
       return await db
          .select()
@@ -90,6 +99,7 @@ export async function listSubscriptionsByContact(contactId: string) {
 }
 
 export async function upsertSubscriptionByExternalId(
+   db: DatabaseInstance,
    externalId: string,
    data: CreateSubscriptionInput & { teamId: string },
 ) {
@@ -128,7 +138,10 @@ export async function upsertSubscriptionByExternalId(
    }
 }
 
-export async function countActiveSubscriptionsByVariant(teamId: string) {
+export async function countActiveSubscriptionsByVariant(
+   db: DatabaseInstance,
+   teamId: string,
+) {
    try {
       return await db
          .select({
@@ -151,15 +164,23 @@ export async function countActiveSubscriptionsByVariant(teamId: string) {
    }
 }
 
-export async function ensureSubscriptionOwnership(id: string, teamId: string) {
-   const subscription = await getSubscription(id);
+export async function ensureSubscriptionOwnership(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
+   const subscription = await getSubscription(db, id);
    if (!subscription || subscription.teamId !== teamId) {
       throw AppError.notFound("Assinatura não encontrada.");
    }
    return subscription;
 }
 
-export async function listExpiringSoon(teamId: string, withinDays = 30) {
+export async function listExpiringSoon(
+   db: DatabaseInstance,
+   teamId: string,
+   withinDays = 30,
+) {
    try {
       const now = new Date().toISOString().split("T")[0]!;
       const futureDate = new Date(Date.now() + withinDays * 24 * 60 * 60 * 1000)

@@ -6,6 +6,7 @@ import { drizzle } from "drizzle-orm/pglite";
 import { pushSchema } from "drizzle-kit/api-postgres";
 import { vi } from "vitest";
 import { createTestAuth } from "./create-test-auth";
+import { testStore } from "./test-store";
 import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 
 let cachedDb: DatabaseInstance | null = null;
@@ -15,19 +16,28 @@ export async function setupIntegrationDb(): Promise<DatabaseInstance> {
    if (cachedDb) return cachedDb;
 
    const client = new PGlite();
-   const db = (drizzle as any)({
+   const db = (
+      drizzle as unknown as (opts: {
+         client: PGlite;
+         schema: typeof schema;
+         relations: typeof relations;
+      }) => DatabaseInstance
+   )({
       client,
       schema,
       relations,
-   }) as DatabaseInstance;
+   });
 
-   const { apply } = await pushSchema(schema, db as any, "snake_case");
+   const { apply } = await pushSchema(
+      schema,
+      db as unknown as Parameters<typeof pushSchema>[1],
+      "snake_case",
+   );
    await apply();
 
    cachedClient = client;
    cachedDb = db;
-
-   (globalThis as any).__TEST_DB__ = db;
+   testStore.db = db;
 
    return db;
 }
@@ -37,6 +47,7 @@ let counter = 0;
 export async function setupIntegrationTest() {
    const db = await setupIntegrationDb();
    const auth = createTestAuth(db);
+   testStore.auth = auth;
    const ctx = await auth.$context;
    const testHelpers = ctx.test;
 
@@ -101,15 +112,15 @@ export async function setupIntegrationTest() {
       return {
          headers,
          request: new Request("http://localhost:3000", { headers }),
-         auth: auth as any,
+         auth: auth as unknown as ORPCContextWithAuth["auth"],
          db,
-         session: session as any,
+         session: session as ORPCContextWithAuth["session"],
          posthog: {
             capture: vi.fn(),
             identify: vi.fn(),
             groupIdentify: vi.fn(),
             shutdown: vi.fn(),
-         } as any,
+         } as unknown as ORPCContextWithAuth["posthog"],
          stripeClient: undefined,
       };
    }
@@ -127,5 +138,7 @@ export async function cleanupIntegrationTest() {
       await cachedClient.close();
       cachedClient = null;
       cachedDb = null;
+      testStore.db = null;
+      testStore.auth = null;
    }
 }

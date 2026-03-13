@@ -8,8 +8,7 @@ import { createEmitFn } from "@packages/events/emit";
 import { getLogger } from "@core/logging/root";
 import { createFileRoute } from "@tanstack/react-router";
 import { createUIMessageStreamResponse } from "ai";
-import { auth } from "@core/authentication/server";
-import { db } from "@core/database/client";
+import { auth, db } from "@/integrations/singletons";
 
 const logger = getLogger().child({ module: "api:chat" });
 

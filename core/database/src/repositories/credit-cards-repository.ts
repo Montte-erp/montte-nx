@@ -1,6 +1,6 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { eq } from "drizzle-orm";
-import { db } from "@core/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateCreditCardInput,
    type UpdateCreditCardInput,
@@ -10,6 +10,7 @@ import {
 } from "@core/database/schemas/credit-cards";
 
 export async function createCreditCard(
+   db: DatabaseInstance,
    teamId: string,
    data: CreateCreditCardInput,
 ) {
@@ -27,7 +28,7 @@ export async function createCreditCard(
    }
 }
 
-export async function listCreditCards(teamId: string) {
+export async function listCreditCards(db: DatabaseInstance, teamId: string) {
    try {
       return await db.query.creditCards.findMany({
          where: { teamId },
@@ -39,7 +40,7 @@ export async function listCreditCards(teamId: string) {
    }
 }
 
-export async function getCreditCard(id: string) {
+export async function getCreditCard(db: DatabaseInstance, id: string) {
    try {
       const card = await db.query.creditCards.findFirst({
          where: { id },
@@ -52,6 +53,7 @@ export async function getCreditCard(id: string) {
 }
 
 export async function updateCreditCard(
+   db: DatabaseInstance,
    id: string,
    data: UpdateCreditCardInput,
 ) {
@@ -71,9 +73,9 @@ export async function updateCreditCard(
    }
 }
 
-export async function deleteCreditCard(id: string) {
+export async function deleteCreditCard(db: DatabaseInstance, id: string) {
    try {
-      const hasOpenStatements = await creditCardHasOpenStatements(id);
+      const hasOpenStatements = await creditCardHasOpenStatements(db, id);
       if (hasOpenStatements) {
          throw AppError.conflict(
             "Cartão com faturas abertas não pode ser excluído.",
@@ -86,15 +88,22 @@ export async function deleteCreditCard(id: string) {
    }
 }
 
-export async function ensureCreditCardOwnership(id: string, teamId: string) {
-   const card = await getCreditCard(id);
+export async function ensureCreditCardOwnership(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
+   const card = await getCreditCard(db, id);
    if (!card || card.teamId !== teamId) {
       throw AppError.notFound("Cartão de crédito não encontrado.");
    }
    return card;
 }
 
-export async function creditCardHasOpenStatements(creditCardId: string) {
+export async function creditCardHasOpenStatements(
+   db: DatabaseInstance,
+   creditCardId: string,
+) {
    try {
       const statement = await db.query.creditCardStatements.findFirst({
          where: { creditCardId, status: "open" },

@@ -2,7 +2,7 @@ import type { DatabaseInstance } from "@core/database/client";
 import { team } from "@core/database/schemas/auth";
 import { getLogger } from "@core/logging/root";
 import { eq } from "drizzle-orm";
-import { auth } from "@core/authentication/server";
+import { auth } from "../singletons";
 
 const logger = getLogger().child({ module: "sdk-auth" });
 

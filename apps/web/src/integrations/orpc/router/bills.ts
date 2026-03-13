@@ -1,3 +1,4 @@
+import type { DatabaseInstance } from "@core/database/client";
 import {
    createBill,
    createBillsBatch,
@@ -102,13 +103,14 @@ function buildBatch(
 }
 
 async function buildRecurrenceBatch(
+   db: DatabaseInstance,
    teamId: string,
    bill: z.infer<typeof createBillSchema>,
    recurrence: z.infer<typeof recurrenceSchema>,
 ) {
    const { frequency, windowMonths, endsAt } = recurrence;
 
-   const setting = await createRecurrenceSetting(teamId, {
+   const setting = await createRecurrenceSetting(db, teamId, {
       frequency,
       windowMonths,
       endsAt: endsAt ?? null,
@@ -142,7 +144,7 @@ async function buildRecurrenceBatch(
       );
    }
 
-   return createBillsBatch(batchData);
+   return createBillsBatch(db, batchData);
 }
 
 export const getAll = protectedProcedure
@@ -162,7 +164,7 @@ export const getAll = protectedProcedure
          .optional(),
    )
    .handler(async ({ context, input }) => {
-      return listBills({ teamId: context.teamId, ...input });
+      return listBills(context.db, { teamId: context.teamId, ...input });
    });
 
 export const create = protectedProcedure
@@ -174,35 +176,35 @@ export const create = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
+      const { db, teamId } = context;
       const { bill, installment, recurrence } = input;
 
-      await validateBillReferences(teamId, {
+      await validateBillReferences(db, teamId, {
          bankAccountId: bill.bankAccountId,
          categoryId: bill.categoryId,
          contactId: bill.contactId,
       });
 
       if (!installment && !recurrence) {
-         return createBill(teamId, bill);
+         return createBill(db, teamId, bill);
       }
 
       if (installment) {
-         return createBillsBatch(buildBatch(teamId, bill, installment));
+         return createBillsBatch(db, buildBatch(teamId, bill, installment));
       }
 
       if (recurrence) {
-         return buildRecurrenceBatch(teamId, bill, recurrence);
+         return buildRecurrenceBatch(db, teamId, bill, recurrence);
       }
    });
 
 export const update = protectedProcedure
    .input(idSchema.merge(createBillSchema.partial()))
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
+      const { db, teamId } = context;
       const { id, ...data } = input;
 
-      const existing = await ensureBillOwnership(id, teamId);
+      const existing = await ensureBillOwnership(db, id, teamId);
 
       if (existing.status === "paid") {
          throw AppError.validation("Não é possível editar uma conta já paga.");
@@ -213,14 +215,14 @@ export const update = protectedProcedure
          data.categoryId !== undefined ||
          data.contactId !== undefined
       ) {
-         await validateBillReferences(teamId, {
+         await validateBillReferences(db, teamId, {
             bankAccountId: data.bankAccountId,
             categoryId: data.categoryId,
             contactId: data.contactId,
          });
       }
 
-      return updateBill(id, data);
+      return updateBill(db, id, data);
    });
 
 export const pay = protectedProcedure
@@ -238,10 +240,10 @@ export const pay = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
+      const { db, teamId } = context;
       const { id, amount, date, bankAccountId, paymentType } = input;
 
-      const bill = await ensureBillOwnership(id, teamId);
+      const bill = await ensureBillOwnership(db, id, teamId);
 
       if (bill.status === "paid") {
          throw AppError.validation("Esta conta já foi paga.");
@@ -265,11 +267,12 @@ export const pay = protectedProcedure
          );
       }
 
-      await ensureBankAccountOwnership(resolvedBankAccountId, teamId);
+      await ensureBankAccountOwnership(db, resolvedBankAccountId, teamId);
 
       const transactionType = bill.type === "payable" ? "expense" : "income";
 
       const transaction = await createTransaction(
+         db,
          teamId,
          {
             name: bill.name,
@@ -290,10 +293,10 @@ export const pay = protectedProcedure
 
       if (paymentType === "partial") {
          const remaining = (Number(bill.amount) - Number(amount)).toFixed(2);
-         return updateBill(id, { amount: remaining });
+         return updateBill(db, id, { amount: remaining });
       }
 
-      return updateBill(id, {
+      return updateBill(db, id, {
          status: "paid",
          paidAt: new Date(),
          transactionId: transaction.id,
@@ -303,17 +306,21 @@ export const pay = protectedProcedure
 export const unpay = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      const bill = await ensureBillOwnership(input.id, context.teamId);
+      const bill = await ensureBillOwnership(
+         context.db,
+         input.id,
+         context.teamId,
+      );
 
       if (bill.status !== "paid") {
          throw AppError.validation("Esta conta não está paga.");
       }
 
       if (bill.transactionId) {
-         await deleteTransaction(bill.transactionId);
+         await deleteTransaction(context.db, bill.transactionId);
       }
 
-      return updateBill(input.id, {
+      return updateBill(context.db, input.id, {
          status: "pending",
          paidAt: null,
          transactionId: null,
@@ -323,20 +330,24 @@ export const unpay = protectedProcedure
 export const cancel = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      await ensureBillOwnership(input.id, context.teamId);
-      return updateBill(input.id, { status: "cancelled" });
+      await ensureBillOwnership(context.db, input.id, context.teamId);
+      return updateBill(context.db, input.id, { status: "cancelled" });
    });
 
 export const remove = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      const bill = await ensureBillOwnership(input.id, context.teamId);
+      const bill = await ensureBillOwnership(
+         context.db,
+         input.id,
+         context.teamId,
+      );
 
       if (bill.status === "paid") {
          throw AppError.validation("Não é possível excluir uma conta já paga.");
       }
 
-      await deleteBill(input.id);
+      await deleteBill(context.db, input.id);
       return { success: true };
    });
 
@@ -350,24 +361,24 @@ export const createFromTransaction = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
+      const { db, teamId } = context;
       const { bill, installment, recurrence } = input;
 
-      await validateBillReferences(teamId, {
+      await validateBillReferences(db, teamId, {
          bankAccountId: bill.bankAccountId,
          categoryId: bill.categoryId,
          contactId: bill.contactId,
       });
 
       if (!installment && !recurrence) {
-         return createBill(teamId, bill);
+         return createBill(db, teamId, bill);
       }
 
       if (installment) {
-         return createBillsBatch(buildBatch(teamId, bill, installment));
+         return createBillsBatch(db, buildBatch(teamId, bill, installment));
       }
 
       if (recurrence) {
-         return buildRecurrenceBatch(teamId, bill, recurrence);
+         return buildRecurrenceBatch(db, teamId, bill, recurrence);
       }
    });

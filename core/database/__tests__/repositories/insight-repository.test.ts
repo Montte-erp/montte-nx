@@ -1,13 +1,7 @@
-import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
+import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { setupTestDb } from "../helpers/setup-test-db";
 import { user, organization, team } from "@core/database/schemas/auth";
 import * as repo from "../../src/repositories/insight-repository";
-
-vi.mock("@core/database/client", () => ({
-   get db() {
-      return (globalThis as any).__TEST_DB__;
-   },
-}));
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -66,6 +60,7 @@ describe("insight-repository", () => {
          const { organizationId, teamId, userId } = await seedParents();
          await expect(
             repo.createInsight(
+               testDb.db,
                organizationId,
                teamId,
                userId,
@@ -78,6 +73,7 @@ describe("insight-repository", () => {
          const { organizationId, teamId, userId } = await seedParents();
          await expect(
             repo.createInsight(
+               testDb.db,
                organizationId,
                teamId,
                userId,
@@ -91,6 +87,7 @@ describe("insight-repository", () => {
       it("creates with defaults", async () => {
          const { organizationId, teamId, userId } = await seedParents();
          const insight = await repo.createInsight(
+            testDb.db,
             organizationId,
             teamId,
             userId,
@@ -112,6 +109,7 @@ describe("insight-repository", () => {
          const { organizationId, teamId, userId } = await seedParents();
          const config = { events: ["page_view"], interval: "day" };
          const insight = await repo.createInsight(
+            testDb.db,
             organizationId,
             teamId,
             userId,
@@ -126,38 +124,46 @@ describe("insight-repository", () => {
       it("lists for team", async () => {
          const { organizationId, teamId, userId } = await seedParents();
          await repo.createInsight(
+            testDb.db,
             organizationId,
             teamId,
             userId,
             validInput({ name: "Insight A" }),
          );
          await repo.createInsight(
+            testDb.db,
             organizationId,
             teamId,
             userId,
             validInput({ name: "Insight B" }),
          );
 
-         const list = await repo.listInsightsByTeam(teamId);
+         const list = await repo.listInsightsByTeam(testDb.db, teamId);
          expect(list).toHaveLength(2);
       });
 
       it("filters by type", async () => {
          const { organizationId, teamId, userId } = await seedParents();
          await repo.createInsight(
+            testDb.db,
             organizationId,
             teamId,
             userId,
             validInput({ type: "kpi" }),
          );
          await repo.createInsight(
+            testDb.db,
             organizationId,
             teamId,
             userId,
             validInput({ name: "Funil", type: "breakdown" }),
          );
 
-         const list = await repo.listInsightsByTeam(teamId, "breakdown");
+         const list = await repo.listInsightsByTeam(
+            testDb.db,
+            teamId,
+            "breakdown",
+         );
          expect(list).toHaveLength(1);
          expect(list[0]!.type).toBe("breakdown");
       });
@@ -167,18 +173,22 @@ describe("insight-repository", () => {
       it("returns by id", async () => {
          const { organizationId, teamId, userId } = await seedParents();
          const created = await repo.createInsight(
+            testDb.db,
             organizationId,
             teamId,
             userId,
             validInput(),
          );
 
-         const found = await repo.getInsightById(created.id);
+         const found = await repo.getInsightById(testDb.db, created.id);
          expect(found).toMatchObject({ id: created.id, name: "Meu Insight" });
       });
 
       it("returns null for nonexistent", async () => {
-         const found = await repo.getInsightById(crypto.randomUUID());
+         const found = await repo.getInsightById(
+            testDb.db,
+            crypto.randomUUID(),
+         );
          expect(found).toBeNull();
       });
    });
@@ -187,24 +197,26 @@ describe("insight-repository", () => {
       it("returns multiple", async () => {
          const { organizationId, teamId, userId } = await seedParents();
          const a = await repo.createInsight(
+            testDb.db,
             organizationId,
             teamId,
             userId,
             validInput({ name: "AA" }),
          );
          const b = await repo.createInsight(
+            testDb.db,
             organizationId,
             teamId,
             userId,
             validInput({ name: "BB" }),
          );
 
-         const found = await repo.getInsightsByIds([a.id, b.id]);
+         const found = await repo.getInsightsByIds(testDb.db, [a.id, b.id]);
          expect(found).toHaveLength(2);
       });
 
       it("returns empty for empty array", async () => {
-         const found = await repo.getInsightsByIds([]);
+         const found = await repo.getInsightsByIds(testDb.db, []);
          expect(found).toEqual([]);
       });
    });
@@ -213,13 +225,14 @@ describe("insight-repository", () => {
       it("updates name and config", async () => {
          const { organizationId, teamId, userId } = await seedParents();
          const created = await repo.createInsight(
+            testDb.db,
             organizationId,
             teamId,
             userId,
             validInput(),
          );
 
-         const updated = await repo.updateInsight(created.id, {
+         const updated = await repo.updateInsight(testDb.db, created.id, {
             name: "Novo Nome",
             config: { events: ["click"], interval: "week" },
          });
@@ -237,14 +250,15 @@ describe("insight-repository", () => {
       it("deletes", async () => {
          const { organizationId, teamId, userId } = await seedParents();
          const created = await repo.createInsight(
+            testDb.db,
             organizationId,
             teamId,
             userId,
             validInput(),
          );
 
-         await repo.deleteInsight(created.id);
-         const found = await repo.getInsightById(created.id);
+         await repo.deleteInsight(testDb.db, created.id);
+         const found = await repo.getInsightById(testDb.db, created.id);
          expect(found).toBeNull();
       });
    });

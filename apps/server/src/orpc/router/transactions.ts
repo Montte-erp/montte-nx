@@ -30,7 +30,7 @@ function mapTransaction(tx: Record<string, unknown>) {
 export const list = sdkProcedure
    .input(ListTransactionsFilterSchema)
    .handler(async ({ context, input }) => {
-      const result = await listTransactions({
+      const result = await listTransactions(context.db, {
          teamId: context.teamId!,
          ...input,
       });
@@ -43,7 +43,11 @@ export const list = sdkProcedure
 export const get = sdkProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const tx = await ensureTransactionOwnership(input.id, context.teamId!);
+      const tx = await ensureTransactionOwnership(
+         context.db,
+         input.id,
+         context.teamId!,
+      );
       return mapTransaction(tx);
    });
 
@@ -51,7 +55,7 @@ export const create = sdkProcedure
    .input(CreateTransactionSchema)
    .handler(async ({ context, input }) => {
       const { tagIds, ...data } = input;
-      await validateTransactionReferences(context.teamId!, {
+      await validateTransactionReferences(context.db, context.teamId!, {
          bankAccountId: data.bankAccountId,
          destinationBankAccountId: data.destinationBankAccountId,
          categoryId: data.categoryId,
@@ -59,7 +63,12 @@ export const create = sdkProcedure
          tagIds,
          date: data.date,
       });
-      const tx = await createTransaction(context.teamId!, data, tagIds);
+      const tx = await createTransaction(
+         context.db,
+         context.teamId!,
+         data,
+         tagIds,
+      );
       return mapTransaction(tx!);
    });
 
@@ -67,9 +76,9 @@ export const update = sdkProcedure
    .input(z.object({ id: z.string().uuid() }).merge(UpdateTransactionSchema))
    .handler(async ({ context, input }) => {
       const { id, tagIds, ...data } = input;
-      await ensureTransactionOwnership(id, context.teamId!);
+      await ensureTransactionOwnership(context.db, id, context.teamId!);
       if (Object.keys(data).length > 0 || tagIds) {
-         await validateTransactionReferences(context.teamId!, {
+         await validateTransactionReferences(context.db, context.teamId!, {
             bankAccountId: data.bankAccountId,
             destinationBankAccountId: data.destinationBankAccountId,
             categoryId: data.categoryId,
@@ -78,22 +87,22 @@ export const update = sdkProcedure
             date: data.date,
          });
       }
-      const tx = await updateTransaction(id, data, tagIds);
+      const tx = await updateTransaction(context.db, id, data, tagIds);
       return mapTransaction(tx);
    });
 
 export const remove = sdkProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      await ensureTransactionOwnership(input.id, context.teamId!);
-      await deleteTransaction(input.id);
+      await ensureTransactionOwnership(context.db, input.id, context.teamId!);
+      await deleteTransaction(context.db, input.id);
       return { success: true as const };
    });
 
 export const summary = sdkProcedure
    .input(ListTransactionsFilterSchema)
    .handler(async ({ context, input }) => {
-      return await getTransactionsSummary({
+      return await getTransactionsSummary(context.db, {
          teamId: context.teamId!,
          ...input,
       });

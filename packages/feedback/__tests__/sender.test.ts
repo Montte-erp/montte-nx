@@ -14,15 +14,6 @@ const {
    posthogCaptureMock: vi.fn(),
 }));
 
-vi.mock("@core/environment/web/server", () => ({
-   env: {
-      DISCORD_FEEDBACK_WEBHOOK_URL: "https://discord.example/webhook",
-      GITHUB_FEEDBACK_OWNER: "contentta",
-      GITHUB_FEEDBACK_REPO: "platform",
-      GITHUB_FEEDBACK_TOKEN: "github-token",
-   },
-}));
-
 vi.mock("@core/logging/root", () => ({
    getLogger: () => ({
       child: loggerChildMock.mockReturnValue({
@@ -30,12 +21,6 @@ vi.mock("@core/logging/root", () => ({
          error: loggerErrorMock,
       }),
    }),
-}));
-
-vi.mock("@core/posthog/server", () => ({
-   posthog: {
-      capture: posthogCaptureMock,
-   },
 }));
 
 vi.mock("@octokit/rest", () => ({
@@ -49,15 +34,27 @@ vi.mock("@octokit/rest", () => ({
    },
 }));
 
-describe("feedbackSender", () => {
+const mockPosthog = {
+   capture: posthogCaptureMock,
+} as any;
+
+import { createFeedbackSender } from "../src/sender";
+
+describe("createFeedbackSender", () => {
    beforeEach(() => {
       vi.clearAllMocks();
    });
 
-   it("creates env-backed adapters at module load time", async () => {
-      const { feedbackSender } = await import("../src/sender");
+   it("creates a feedback sender with adapters", () => {
+      const sender = createFeedbackSender({
+         posthog: mockPosthog,
+         discordWebhookUrl: "https://discord.example/webhook",
+         githubToken: "github-token",
+         githubOwner: "contentta",
+         githubRepo: "platform",
+      });
 
-      expect(feedbackSender).toBeDefined();
+      expect(sender).toBeDefined();
       expect(octokitConstructorMock).toHaveBeenCalledWith({
          auth: "github-token",
       });
@@ -71,9 +68,15 @@ describe("feedbackSender", () => {
       });
       vi.stubGlobal("fetch", fetchMock);
 
-      const { feedbackSender } = await import("../src/sender");
+      const sender = createFeedbackSender({
+         posthog: mockPosthog,
+         discordWebhookUrl: "https://discord.example/webhook",
+         githubToken: "github-token",
+         githubOwner: "contentta",
+         githubRepo: "platform",
+      });
 
-      await feedbackSender.send({
+      await sender.send({
          userId: "user-1",
          payload: {
             type: "feature_request",
@@ -130,10 +133,16 @@ describe("feedbackSender", () => {
       vi.stubGlobal("fetch", fetchMock);
       octokitCreateMock.mockRejectedValueOnce(new Error("github down"));
 
-      const { feedbackSender } = await import("../src/sender");
+      const sender = createFeedbackSender({
+         posthog: mockPosthog,
+         discordWebhookUrl: "https://discord.example/webhook",
+         githubToken: "github-token",
+         githubOwner: "contentta",
+         githubRepo: "platform",
+      });
 
       await expect(
-         feedbackSender.send({
+         sender.send({
             userId: "user-2",
             payload: {
                type: "bug_report",

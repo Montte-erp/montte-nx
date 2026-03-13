@@ -20,7 +20,6 @@ import { insightConfigSchema } from "@packages/analytics/types";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
-import { db } from "@core/database/client";
 
 const logger = getLogger().child({ module: "router:insights" });
 
@@ -46,9 +45,9 @@ const updateInputSchema = idSchema.merge(
 export const create = protectedProcedure
    .input(createInputSchema)
    .handler(async ({ context, input }) => {
-      const { organizationId, userId, teamId, posthog } = context;
+      const { db, organizationId, userId, teamId, posthog } = context;
 
-      const insight = await createInsight(organizationId, teamId, userId, {
+      const insight = await createInsight(db, organizationId, teamId, userId, {
          name: input.name,
          description: input.description,
          type: input.type,
@@ -76,13 +75,14 @@ export const list = protectedProcedure
          .optional(),
    )
    .handler(async ({ context, input }) => {
-      return listInsightsByTeam(context.teamId, input?.type);
+      return listInsightsByTeam(context.db, context.teamId, input?.type);
    });
 
 export const getById = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
       return ensureInsightOwnership(
+         context.db,
          input.id,
          context.organizationId,
          context.teamId,
@@ -92,12 +92,12 @@ export const getById = protectedProcedure
 export const update = protectedProcedure
    .input(updateInputSchema)
    .handler(async ({ context, input }) => {
-      const { organizationId, userId, teamId, posthog } = context;
+      const { db, organizationId, userId, teamId, posthog } = context;
 
-      await ensureInsightOwnership(input.id, organizationId, teamId);
+      await ensureInsightOwnership(db, input.id, organizationId, teamId);
 
       const { id, ...updateData } = input;
-      const updated = await updateInsight(id, updateData);
+      const updated = await updateInsight(db, id, updateData);
 
       try {
          const changedFields = Object.keys(updateData).filter(
@@ -116,10 +116,10 @@ export const update = protectedProcedure
 export const remove = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      const { organizationId, userId, teamId, posthog } = context;
+      const { db, organizationId, userId, teamId, posthog } = context;
 
-      await ensureInsightOwnership(input.id, organizationId, teamId);
-      await deleteInsight(input.id);
+      await ensureInsightOwnership(db, input.id, organizationId, teamId);
+      await deleteInsight(db, input.id);
 
       try {
          await emitInsightDeleted(
@@ -135,9 +135,10 @@ export const remove = protectedProcedure
 export const refreshDashboard = protectedProcedure
    .input(z.object({ dashboardId: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { organizationId, teamId } = context;
+      const { db, organizationId, teamId } = context;
 
       const dashboard = await ensureDashboardOwnership(
+         db,
          input.dashboardId,
          organizationId,
          teamId,
@@ -149,7 +150,7 @@ export const refreshDashboard = protectedProcedure
 
       const refreshPromises = insightIds.map(async (insightId) => {
          try {
-            const insight = await getInsightById(insightId);
+            const insight = await getInsightById(db, insightId);
             if (!insight) {
                logger.warn({ insightId }, "Insight not found during refresh");
                return;

@@ -18,7 +18,7 @@ const idSchema = z.object({ id: z.string().uuid() });
 export const create = protectedProcedure
    .input(createCategorySchema)
    .handler(async ({ context, input }) => {
-      return createCategory(context.teamId, input);
+      return createCategory(context.db, context.teamId, input);
    });
 
 const getAllInput = z
@@ -31,7 +31,7 @@ const getAllInput = z
 export const getAll = protectedProcedure
    .input(getAllInput)
    .handler(async ({ context, input }) => {
-      return listCategories(context.teamId, {
+      return listCategories(context.db, context.teamId, {
          type: input?.type,
          includeArchived: input?.includeArchived,
       });
@@ -40,21 +40,21 @@ export const getAll = protectedProcedure
 export const update = protectedProcedure
    .input(idSchema.merge(updateCategorySchema))
    .handler(async ({ context, input }) => {
-      await ensureCategoryOwnership(input.id, context.teamId);
+      await ensureCategoryOwnership(context.db, input.id, context.teamId);
       const { id, ...data } = input;
-      return updateCategory(id, data);
+      return updateCategory(context.db, id, data);
    });
 
 export const remove = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      await ensureCategoryOwnership(input.id, context.teamId);
-      await deleteCategory(input.id);
+      await ensureCategoryOwnership(context.db, input.id, context.teamId);
+      await deleteCategory(context.db, input.id);
       return { success: true };
    });
 
 export const exportAll = protectedProcedure.handler(async ({ context }) => {
-   return listCategories(context.teamId, { includeArchived: true });
+   return listCategories(context.db, context.teamId, { includeArchived: true });
 });
 
 export const importBatch = protectedProcedure
@@ -66,7 +66,7 @@ export const importBatch = protectedProcedure
    .handler(async ({ context, input }) => {
       const results = [];
       for (const cat of input.categories) {
-         const created = await createCategory(context.teamId, cat);
+         const created = await createCategory(context.db, context.teamId, cat);
          results.push(created);
       }
       return results;
@@ -75,6 +75,6 @@ export const importBatch = protectedProcedure
 export const archive = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      await ensureCategoryOwnership(input.id, context.teamId);
-      return archiveCategory(input.id);
+      await ensureCategoryOwnership(context.db, input.id, context.teamId);
+      return archiveCategory(context.db, input.id);
    });

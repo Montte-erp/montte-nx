@@ -4,6 +4,7 @@ import {
    getLastBillForRecurrenceGroup,
 } from "@core/database/repositories/bills-repository";
 import { getLogger } from "@core/logging/root";
+import { db } from "../singletons";
 
 const logger = getLogger().child({ module: "job:bills" });
 
@@ -33,10 +34,10 @@ function computeNextDueDate(from: string, frequency: string): string {
 }
 
 export async function generateBillOccurrences(): Promise<void> {
-   const settings = await getActiveRecurrenceSettings();
+   const settings = await getActiveRecurrenceSettings(db);
 
    for (const setting of settings) {
-      const lastBill = await getLastBillForRecurrenceGroup(setting.id);
+      const lastBill = await getLastBillForRecurrenceGroup(db, setting.id);
       if (!lastBill) continue;
 
       const today = new Date();
@@ -66,7 +67,7 @@ export async function generateBillOccurrences(): Promise<void> {
       }
 
       if (toCreate.length > 0) {
-         await createBillsBatch(toCreate);
+         await createBillsBatch(db, toCreate);
          logger.info(
             { count: toCreate.length, recurrenceGroupId: setting.id },
             "Created bill occurrences",

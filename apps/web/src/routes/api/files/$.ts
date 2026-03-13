@@ -1,6 +1,6 @@
-import { minioClient } from "@core/files/client";
 import { getLogger } from "@core/logging/root";
 import { createFileRoute } from "@tanstack/react-router";
+import { minioClient } from "@/integrations/singletons";
 
 const logger = getLogger().child({ module: "api:files" });
 
@@ -22,10 +22,8 @@ async function handle({
 
       const stream = await minioClient.getObject(bucketName, fileName);
 
-      // Get file stats for content type
       const stat = await minioClient.statObject(bucketName, fileName);
 
-      // Convert Node.js stream to Web ReadableStream
       const webStream = new ReadableStream({
          start(controller) {
             stream.on("data", (chunk: Buffer) => {
@@ -40,7 +38,6 @@ async function handle({
          },
       });
 
-      // Return file with appropriate headers
       return new Response(webStream, {
          headers: {
             "Content-Type":

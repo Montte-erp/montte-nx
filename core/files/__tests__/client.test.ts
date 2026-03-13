@@ -15,14 +15,6 @@ const { loggerErrorMock, minioClientMock } = vi.hoisted(() => ({
    },
 }));
 
-vi.mock("@core/environment/web/server", () => ({
-   env: {
-      MINIO_ACCESS_KEY: "access-key",
-      MINIO_ENDPOINT: "https://minio.example.com",
-      MINIO_SECRET_KEY: "secret-key",
-   },
-}));
-
 vi.mock("@core/logging/root", () => ({
    getLogger: () => ({
       child: () => ({
@@ -37,10 +29,11 @@ vi.mock("minio", () => ({
    }),
 }));
 
+import { createMinioClient, uploadFile, verifyFileExists } from "../src/client";
+
 describe("files client", () => {
    beforeEach(() => {
       vi.clearAllMocks();
-      vi.resetModules();
    });
 
    it("creates the bucket before uploading when it does not exist", async () => {
@@ -48,10 +41,15 @@ describe("files client", () => {
       minioClientMock.makeBucket.mockResolvedValueOnce(undefined);
       minioClientMock.putObject.mockResolvedValueOnce(undefined);
 
-      const { uploadFile } = await import("../src/client");
+      const client = createMinioClient({
+         endpoint: "https://minio.example.com",
+         accessKey: "access-key",
+         secretKey: "secret-key",
+      });
       const fileBuffer = Buffer.from("hello world");
 
       const result = await uploadFile(
+         client,
          "note.md",
          fileBuffer,
          "text/markdown",
@@ -77,10 +75,14 @@ describe("files client", () => {
    it("returns null when a file does not exist", async () => {
       minioClientMock.statObject.mockRejectedValueOnce(new Error("missing"));
 
-      const { verifyFileExists } = await import("../src/client");
+      const client = createMinioClient({
+         endpoint: "https://minio.example.com",
+         accessKey: "access-key",
+         secretKey: "secret-key",
+      });
 
       await expect(
-         verifyFileExists("missing.md", "content-bucket"),
+         verifyFileExists(client, "missing.md", "content-bucket"),
       ).resolves.toBeNull();
    });
 });

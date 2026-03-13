@@ -15,32 +15,32 @@ const idSchema = z.object({ id: z.string().uuid() });
 export const create = protectedProcedure
    .input(createTagSchema)
    .handler(async ({ context, input }) => {
-      return createTag(context.teamId, input);
+      return createTag(context.db, context.teamId, input);
    });
 
 export const getAll = protectedProcedure.handler(async ({ context }) => {
-   return listTags(context.teamId);
+   return listTags(context.db, context.teamId);
 });
 
 export const update = protectedProcedure
    .input(idSchema.merge(updateTagSchema))
    .handler(async ({ context, input }) => {
-      await ensureTagOwnership(input.id, context.teamId);
+      await ensureTagOwnership(context.db, input.id, context.teamId);
       const { id, ...data } = input;
-      return updateTag(id, data);
+      return updateTag(context.db, id, data);
    });
 
 export const remove = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      await ensureTagOwnership(input.id, context.teamId);
-      await deleteTag(input.id);
+      await ensureTagOwnership(context.db, input.id, context.teamId);
+      await deleteTag(context.db, input.id);
       return { success: true };
    });
 
 export const archive = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      await ensureTagOwnership(input.id, context.teamId);
-      return archiveTag(input.id);
+      await ensureTagOwnership(context.db, input.id, context.teamId);
+      return archiveTag(context.db, input.id);
    });

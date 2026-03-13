@@ -1,6 +1,6 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, eq, ilike, or, type SQL } from "drizzle-orm";
-import { db } from "@core/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateServiceInput,
    type CreateVariantInput,
@@ -21,7 +21,11 @@ export interface ListServicesFilters {
    categoryId?: string;
 }
 
-export async function createService(teamId: string, data: CreateServiceInput) {
+export async function createService(
+   db: DatabaseInstance,
+   teamId: string,
+   data: CreateServiceInput,
+) {
    const validated = validateInput(createServiceSchema, data);
    try {
       const [service] = await db
@@ -37,6 +41,7 @@ export async function createService(teamId: string, data: CreateServiceInput) {
 }
 
 export async function listServices(
+   db: DatabaseInstance,
    teamId: string,
    filters?: ListServicesFilters,
 ) {
@@ -84,7 +89,7 @@ export async function listServices(
    }
 }
 
-export async function getService(id: string) {
+export async function getService(db: DatabaseInstance, id: string) {
    try {
       const service = await db.query.services.findFirst({
          where: { id },
@@ -96,7 +101,11 @@ export async function getService(id: string) {
    }
 }
 
-export async function updateService(id: string, data: UpdateServiceInput) {
+export async function updateService(
+   db: DatabaseInstance,
+   id: string,
+   data: UpdateServiceInput,
+) {
    const validated = validateInput(updateServiceSchema, data);
    try {
       const [updated] = await db
@@ -111,7 +120,7 @@ export async function updateService(id: string, data: UpdateServiceInput) {
    }
 }
 
-export async function deleteService(id: string) {
+export async function deleteService(db: DatabaseInstance, id: string) {
    try {
       await db.delete(services).where(eq(services.id, id));
    } catch (err) {
@@ -121,6 +130,7 @@ export async function deleteService(id: string) {
 }
 
 export async function createVariant(
+   db: DatabaseInstance,
    teamId: string,
    serviceId: string,
    data: CreateVariantInput,
@@ -139,7 +149,10 @@ export async function createVariant(
    }
 }
 
-export async function listVariantsByService(serviceId: string) {
+export async function listVariantsByService(
+   db: DatabaseInstance,
+   serviceId: string,
+) {
    try {
       return await db
          .select()
@@ -152,7 +165,7 @@ export async function listVariantsByService(serviceId: string) {
    }
 }
 
-export async function getVariant(id: string) {
+export async function getVariant(db: DatabaseInstance, id: string) {
    try {
       const variant = await db.query.serviceVariants.findFirst({
          where: { id },
@@ -164,7 +177,11 @@ export async function getVariant(id: string) {
    }
 }
 
-export async function updateVariant(id: string, data: UpdateVariantInput) {
+export async function updateVariant(
+   db: DatabaseInstance,
+   id: string,
+   data: UpdateVariantInput,
+) {
    const validated = validateInput(updateVariantSchema, data);
    try {
       const [updated] = await db
@@ -179,7 +196,7 @@ export async function updateVariant(id: string, data: UpdateVariantInput) {
    }
 }
 
-export async function deleteVariant(id: string) {
+export async function deleteVariant(db: DatabaseInstance, id: string) {
    try {
       await db.delete(serviceVariants).where(eq(serviceVariants.id, id));
    } catch (err) {
@@ -188,16 +205,24 @@ export async function deleteVariant(id: string) {
    }
 }
 
-export async function ensureServiceOwnership(id: string, teamId: string) {
-   const service = await getService(id);
+export async function ensureServiceOwnership(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
+   const service = await getService(db, id);
    if (!service || service.teamId !== teamId) {
       throw AppError.notFound("Serviço não encontrado.");
    }
    return service;
 }
 
-export async function ensureVariantOwnership(id: string, teamId: string) {
-   const variant = await getVariant(id);
+export async function ensureVariantOwnership(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
+   const variant = await getVariant(db, id);
    if (!variant || variant.teamId !== teamId) {
       throw AppError.notFound("Variação não encontrada.");
    }

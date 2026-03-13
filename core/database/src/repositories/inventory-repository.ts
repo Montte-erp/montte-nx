@@ -1,6 +1,6 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
-import { db } from "@core/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import { multiply, of, toDecimal } from "@f-o-t/money";
 import { convert, of as uomOf } from "@f-o-t/uom";
 import {
@@ -16,6 +16,7 @@ import {
 } from "@core/database/schemas/inventory";
 
 export async function createInventoryProduct(
+   db: DatabaseInstance,
    teamId: string,
    data: CreateInventoryProductInput,
 ) {
@@ -39,6 +40,7 @@ export async function createInventoryProduct(
 }
 
 export async function listInventoryProducts(
+   db: DatabaseInstance,
    teamId: string,
    opts?: { includeArchived?: boolean },
 ) {
@@ -58,7 +60,7 @@ export async function listInventoryProducts(
    }
 }
 
-export async function getInventoryProduct(id: string) {
+export async function getInventoryProduct(db: DatabaseInstance, id: string) {
    try {
       const product = await db.query.inventoryProducts.findFirst({
          where: { id },
@@ -70,8 +72,12 @@ export async function getInventoryProduct(id: string) {
    }
 }
 
-export async function ensureProductOwnership(id: string, teamId: string) {
-   const product = await getInventoryProduct(id);
+export async function ensureProductOwnership(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
+   const product = await getInventoryProduct(db, id);
    if (!product || product.teamId !== teamId) {
       throw AppError.notFound("Produto não encontrado.");
    }
@@ -79,6 +85,7 @@ export async function ensureProductOwnership(id: string, teamId: string) {
 }
 
 export async function updateInventoryProduct(
+   db: DatabaseInstance,
    id: string,
    data: UpdateInventoryProductInput,
 ) {
@@ -98,7 +105,10 @@ export async function updateInventoryProduct(
    }
 }
 
-export async function archiveInventoryProduct(id: string) {
+export async function archiveInventoryProduct(
+   db: DatabaseInstance,
+   id: string,
+) {
    try {
       const [product] = await db
          .update(inventoryProducts)
@@ -131,6 +141,7 @@ export function toBaseQty(
 }
 
 export async function createInventoryMovement(
+   db: DatabaseInstance,
    teamId: string,
    data: CreateInventoryMovementInput,
 ) {
@@ -184,6 +195,7 @@ export async function createInventoryMovement(
 }
 
 export async function listInventoryMovements(
+   db: DatabaseInstance,
    productId: string,
    teamId: string,
 ) {
@@ -204,7 +216,10 @@ export async function listInventoryMovements(
    }
 }
 
-export async function deleteInventoryMovement(id: string) {
+export async function deleteInventoryMovement(
+   db: DatabaseInstance,
+   id: string,
+) {
    return await db.transaction(async (tx) => {
       const [movement] = await tx
          .select()
@@ -229,7 +244,10 @@ export async function deleteInventoryMovement(id: string) {
    });
 }
 
-export async function getInventorySettings(teamId: string) {
+export async function getInventorySettings(
+   db: DatabaseInstance,
+   teamId: string,
+) {
    try {
       const [settings] = await db
          .select()
@@ -243,6 +261,7 @@ export async function getInventorySettings(teamId: string) {
 }
 
 export async function upsertInventorySettings(
+   db: DatabaseInstance,
    teamId: string,
    data: Omit<
       typeof inventorySettings.$inferInsert,

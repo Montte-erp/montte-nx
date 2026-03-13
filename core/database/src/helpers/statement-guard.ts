@@ -1,11 +1,8 @@
 import { AppError } from "@core/logging/errors";
-import { db } from "@core/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 
-/**
- * Throws if the transaction's statement is already paid.
- * Call before update/delete of any transaction with creditCardId.
- */
 export async function assertTransactionEditable(
+   db: DatabaseInstance,
    creditCardId: string,
    statementPeriod: string,
 ) {

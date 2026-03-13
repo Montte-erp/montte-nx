@@ -50,63 +50,68 @@ export const getAll = protectedProcedure
          .optional(),
    )
    .handler(async ({ context, input }) => {
-      return listServices(context.teamId, input);
+      return listServices(context.db, context.teamId, input);
    });
 
 export const create = protectedProcedure
    .input(createServiceSchema)
    .handler(async ({ context, input }) => {
-      return createService(context.teamId, input);
+      return createService(context.db, context.teamId, input);
    });
 
 export const update = protectedProcedure
    .input(idSchema.merge(updateServiceSchema))
    .handler(async ({ context, input }) => {
-      await ensureServiceOwnership(input.id, context.teamId);
+      await ensureServiceOwnership(context.db, input.id, context.teamId);
       const { id, ...data } = input;
-      return updateService(id, data);
+      return updateService(context.db, id, data);
    });
 
 export const remove = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      await ensureServiceOwnership(input.id, context.teamId);
-      await deleteService(input.id);
+      await ensureServiceOwnership(context.db, input.id, context.teamId);
+      await deleteService(context.db, input.id);
       return { success: true };
    });
 
 export const exportAll = protectedProcedure.handler(async ({ context }) => {
-   return listServices(context.teamId);
+   return listServices(context.db, context.teamId);
 });
 
 export const getVariants = protectedProcedure
    .input(z.object({ serviceId: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      await ensureServiceOwnership(input.serviceId, context.teamId);
-      return listVariantsByService(input.serviceId);
+      await ensureServiceOwnership(context.db, input.serviceId, context.teamId);
+      return listVariantsByService(context.db, input.serviceId);
    });
 
 export const createVariant = protectedProcedure
    .input(z.object({ serviceId: z.string().uuid() }).merge(createVariantSchema))
    .handler(async ({ context, input }) => {
-      await ensureServiceOwnership(input.serviceId, context.teamId);
+      await ensureServiceOwnership(context.db, input.serviceId, context.teamId);
       const { serviceId, ...variantData } = input;
-      return createVariantRepo(context.teamId, serviceId, variantData);
+      return createVariantRepo(
+         context.db,
+         context.teamId,
+         serviceId,
+         variantData,
+      );
    });
 
 export const updateVariant = protectedProcedure
    .input(idSchema.merge(updateVariantSchema))
    .handler(async ({ context, input }) => {
-      await ensureVariantOwnership(input.id, context.teamId);
+      await ensureVariantOwnership(context.db, input.id, context.teamId);
       const { id, ...data } = input;
-      return updateVariantRepo(id, data);
+      return updateVariantRepo(context.db, id, data);
    });
 
 export const removeVariant = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      await ensureVariantOwnership(input.id, context.teamId);
-      await deleteVariant(input.id);
+      await ensureVariantOwnership(context.db, input.id, context.teamId);
+      await deleteVariant(context.db, input.id);
       return { success: true };
    });
 
@@ -119,14 +124,14 @@ export const getAllSubscriptions = protectedProcedure
          .optional(),
    )
    .handler(async ({ context, input }) => {
-      return listSubscriptionsByTeam(context.teamId, input?.status);
+      return listSubscriptionsByTeam(context.db, context.teamId, input?.status);
    });
 
 export const getContactSubscriptions = protectedProcedure
    .input(z.object({ contactId: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      await ensureContactOwnership(input.contactId, context.teamId);
-      return listSubscriptionsByContact(input.contactId);
+      await ensureContactOwnership(context.db, input.contactId, context.teamId);
+      return listSubscriptionsByContact(context.db, input.contactId);
    });
 
 export const createSubscription = protectedProcedure
@@ -141,13 +146,14 @@ export const createSubscription = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      await ensureContactOwnership(input.contactId, context.teamId);
+      await ensureContactOwnership(context.db, input.contactId, context.teamId);
       const variant = await ensureVariantOwnership(
+         context.db,
          input.variantId,
          context.teamId,
       );
 
-      const sub = await createSubscriptionRepo(context.teamId, {
+      const sub = await createSubscriptionRepo(context.db, context.teamId, {
          ...input,
          source: "manual",
          cancelAtPeriodEnd: false,
@@ -155,10 +161,16 @@ export const createSubscription = protectedProcedure
 
       try {
          const service = await ensureServiceOwnership(
+            context.db,
             variant.serviceId,
             context.teamId,
          );
-         await generateBillsForSubscription(sub, variant, service.name);
+         await generateBillsForSubscription(
+            context.db,
+            sub,
+            variant,
+            service.name,
+         );
       } catch (err) {
          logger.error({ err }, "Failed to generate bills for subscription");
       }
@@ -170,6 +182,7 @@ export const cancelSubscription = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
       const subscription = await ensureSubscriptionOwnership(
+         context.db,
          input.id,
          context.teamId,
       );
@@ -186,25 +199,27 @@ export const cancelSubscription = protectedProcedure
          );
       }
 
-      const cancelled = await updateSubscription(input.id, {
+      const cancelled = await updateSubscription(context.db, input.id, {
          status: "cancelled",
       });
 
-      await cancelPendingBillsForSubscription(input.id).catch((err) => {
-         logger.error({ err }, "Failed to cancel pending bills");
-      });
+      await cancelPendingBillsForSubscription(context.db, input.id).catch(
+         (err) => {
+            logger.error({ err }, "Failed to cancel pending bills");
+         },
+      );
 
       return cancelled;
    });
 
 export const getExpiringSoon = protectedProcedure.handler(
    async ({ context }) => {
-      return listExpiringSoon(context.teamId);
+      return listExpiringSoon(context.db, context.teamId);
    },
 );
 
 export const getActiveCountByVariant = protectedProcedure.handler(
    async ({ context }) => {
-      return countActiveSubscriptionsByVariant(context.teamId);
+      return countActiveSubscriptionsByVariant(context.db, context.teamId);
    },
 );

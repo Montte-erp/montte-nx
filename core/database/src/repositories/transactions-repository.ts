@@ -20,7 +20,7 @@ import {
    or,
    sql,
 } from "drizzle-orm";
-import { db } from "@core/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateTransactionInput,
    type UpdateTransactionInput,
@@ -103,7 +103,11 @@ function conditionToSql(condition: Condition) {
    }
 }
 
-export async function ensureTransactionOwnership(id: string, teamId: string) {
+export async function ensureTransactionOwnership(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
    const [transaction] = await db
       .select()
       .from(transactions)
@@ -115,6 +119,7 @@ export async function ensureTransactionOwnership(id: string, teamId: string) {
 }
 
 export async function validateTransactionReferences(
+   db: DatabaseInstance,
    teamId: string,
    refs: {
       bankAccountId?: string | null;
@@ -126,7 +131,7 @@ export async function validateTransactionReferences(
    },
 ) {
    if (refs.bankAccountId) {
-      const account = await getBankAccount(refs.bankAccountId);
+      const account = await getBankAccount(db, refs.bankAccountId);
       if (!account || account.teamId !== teamId) {
          throw AppError.validation("Conta bancária inválida.");
       }
@@ -142,7 +147,7 @@ export async function validateTransactionReferences(
    }
 
    if (refs.destinationBankAccountId) {
-      const dest = await getBankAccount(refs.destinationBankAccountId);
+      const dest = await getBankAccount(db, refs.destinationBankAccountId);
       if (!dest || dest.teamId !== teamId) {
          throw AppError.validation("Conta de destino inválida.");
       }
@@ -158,7 +163,7 @@ export async function validateTransactionReferences(
    }
 
    if (refs.categoryId) {
-      const cat = await getCategory(refs.categoryId);
+      const cat = await getCategory(db, refs.categoryId);
       if (!cat || cat.teamId !== teamId) {
          throw AppError.validation("Categoria inválida.");
       }
@@ -166,7 +171,7 @@ export async function validateTransactionReferences(
 
    if (refs.tagIds && refs.tagIds.length > 0) {
       for (const tagId of refs.tagIds) {
-         const tag = await getTag(tagId);
+         const tag = await getTag(db, tagId);
          if (!tag || tag.teamId !== teamId) {
             throw AppError.validation("Tag inválida.");
          }
@@ -174,7 +179,7 @@ export async function validateTransactionReferences(
    }
 
    if (refs.contactId) {
-      const contact = await getContact(refs.contactId);
+      const contact = await getContact(db, refs.contactId);
       if (!contact || contact.teamId !== teamId) {
          throw AppError.validation("Contato inválido.");
       }
@@ -182,6 +187,7 @@ export async function validateTransactionReferences(
 }
 
 export async function createTransaction(
+   db: DatabaseInstance,
    teamId: string,
    data: CreateTransactionInput,
    tagIds?: string[],
@@ -209,7 +215,10 @@ export async function createTransaction(
    }
 }
 
-export async function listTransactions(filter: ListTransactionsFilter) {
+export async function listTransactions(
+   db: DatabaseInstance,
+   filter: ListTransactionsFilter,
+) {
    try {
       const page = filter.page ?? 1;
       const pageSize = filter.pageSize ?? 50;
@@ -366,7 +375,10 @@ export async function listTransactions(filter: ListTransactionsFilter) {
    }
 }
 
-export async function getTransactionsSummary(filter: ListTransactionsFilter) {
+export async function getTransactionsSummary(
+   db: DatabaseInstance,
+   filter: ListTransactionsFilter,
+) {
    try {
       const conditions = [eq(transactions.teamId, filter.teamId)];
 
@@ -445,7 +457,7 @@ export async function getTransactionsSummary(filter: ListTransactionsFilter) {
    }
 }
 
-export async function getTransactionWithTags(id: string) {
+export async function getTransactionWithTags(db: DatabaseInstance, id: string) {
    try {
       const [transaction] = await db
          .select()
@@ -466,6 +478,7 @@ export async function getTransactionWithTags(id: string) {
 }
 
 export async function updateTransaction(
+   db: DatabaseInstance,
    id: string,
    data: UpdateTransactionInput,
    tagIds?: string[],
@@ -500,7 +513,7 @@ export async function updateTransaction(
    }
 }
 
-export async function deleteTransaction(id: string) {
+export async function deleteTransaction(db: DatabaseInstance, id: string) {
    try {
       await db.delete(transactions).where(eq(transactions.id, id));
    } catch (err) {
@@ -510,6 +523,7 @@ export async function deleteTransaction(id: string) {
 }
 
 export async function createTransactionItems(
+   db: DatabaseInstance,
    transactionId: string,
    teamId: string,
    items: {
@@ -537,7 +551,10 @@ export async function createTransactionItems(
    }
 }
 
-export async function getTransactionItems(transactionId: string) {
+export async function getTransactionItems(
+   db: DatabaseInstance,
+   transactionId: string,
+) {
    try {
       return db
          .select()
@@ -550,6 +567,7 @@ export async function getTransactionItems(transactionId: string) {
 }
 
 export async function replaceTransactionItems(
+   db: DatabaseInstance,
    transactionId: string,
    teamId: string,
    items: {
@@ -564,7 +582,7 @@ export async function replaceTransactionItems(
          .delete(transactionItems)
          .where(eq(transactionItems.transactionId, transactionId));
       if (items.length > 0) {
-         await createTransactionItems(transactionId, teamId, items);
+         await createTransactionItems(db, transactionId, teamId, items);
       }
    } catch (err) {
       propagateError(err);

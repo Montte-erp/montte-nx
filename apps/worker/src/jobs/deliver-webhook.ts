@@ -5,6 +5,7 @@ import {
    updateWebhookLastSuccess,
 } from "@core/database/repositories/webhook-repository";
 import { getLogger } from "@core/logging/root";
+import { db } from "../singletons";
 import type { WebhookDeliveryJobData } from "@packages/events/queues/webhook-delivery";
 
 const logger = getLogger().child({ module: "job:webhook" });
@@ -52,14 +53,14 @@ export async function deliverWebhook(
       const responseBody = await response.text().catch(() => "");
 
       if (response.ok) {
-         await updateWebhookDeliveryStatus(deliveryId, {
+         await updateWebhookDeliveryStatus(db, deliveryId, {
             status: "success",
             httpStatusCode: response.status,
             responseBody: responseBody.slice(0, 1000),
             deliveredAt: new Date(),
          });
 
-         await updateWebhookLastSuccess(webhookEndpointId);
+         await updateWebhookLastSuccess(db, webhookEndpointId);
          logger.info({ url, attemptNumber }, "Webhook delivered");
       } else {
          throw new Error(
@@ -71,7 +72,7 @@ export async function deliverWebhook(
          error instanceof Error ? error.message : "Unknown error";
 
       // Update delivery status — BullMQ handles retry scheduling
-      await updateWebhookDeliveryStatus(deliveryId, {
+      await updateWebhookDeliveryStatus(db, deliveryId, {
          status: "retrying",
          errorMessage,
          attemptNumber,
@@ -81,14 +82,14 @@ export async function deliverWebhook(
 
       // If this was the last attempt, mark as failed
       if (attemptNumber >= 5) {
-         await updateWebhookDeliveryStatus(deliveryId, {
+         await updateWebhookDeliveryStatus(db, deliveryId, {
             status: "failed",
             errorMessage: `Max attempts reached: ${errorMessage}`,
          }).catch((e) =>
             logger.error({ err: e }, "Failed to mark delivery as failed"),
          );
 
-         await incrementWebhookFailureCount(webhookEndpointId).catch((e) =>
+         await incrementWebhookFailureCount(db, webhookEndpointId).catch((e) =>
             logger.error({ err: e }, "Failed to increment failure count"),
          );
       }

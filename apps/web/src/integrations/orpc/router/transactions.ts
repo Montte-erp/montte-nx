@@ -64,7 +64,7 @@ export const create = protectedProcedure
    .input(createTransactionSchema.merge(tagAndItemsSchema))
    .handler(async ({ context, input }) => {
       const { tagIds, items, ...data } = input;
-      await validateTransactionReferences(context.teamId, {
+      await validateTransactionReferences(context.db, context.teamId, {
          bankAccountId: data.bankAccountId,
          destinationBankAccountId: data.destinationBankAccountId,
          categoryId: data.type === "transfer" ? null : data.categoryId,
@@ -79,13 +79,19 @@ export const create = protectedProcedure
             : data;
 
       const transaction = await createTransaction(
+         context.db,
          context.teamId,
          txData,
          tagIds,
       );
 
       if (items.length > 0 && transaction) {
-         await createTransactionItems(transaction.id, context.teamId, items);
+         await createTransactionItems(
+            context.db,
+            transaction.id,
+            context.teamId,
+            items,
+         );
       }
 
       return transaction;
@@ -94,20 +100,23 @@ export const create = protectedProcedure
 export const getAll = protectedProcedure
    .input(filterSchema)
    .handler(async ({ context, input }) => {
-      return listTransactions({ teamId: context.teamId, ...input });
+      return listTransactions(context.db, { teamId: context.teamId, ...input });
    });
 
 export const getSummary = protectedProcedure
    .input(filterSchema)
    .handler(async ({ context, input }) => {
-      return getTransactionsSummary({ teamId: context.teamId, ...input });
+      return getTransactionsSummary(context.db, {
+         teamId: context.teamId,
+         ...input,
+      });
    });
 
 export const getById = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      await ensureTransactionOwnership(input.id, context.teamId);
-      return getTransactionWithTags(input.id);
+      await ensureTransactionOwnership(context.db, input.id, context.teamId);
+      return getTransactionWithTags(context.db, input.id);
    });
 
 export const update = protectedProcedure
@@ -118,6 +127,7 @@ export const update = protectedProcedure
    )
    .handler(async ({ context, input }) => {
       const existing = await ensureTransactionOwnership(
+         context.db,
          input.id,
          context.teamId,
       );
@@ -128,7 +138,7 @@ export const update = protectedProcedure
          input.tagIds ||
          input.contactId
       ) {
-         await validateTransactionReferences(context.teamId, {
+         await validateTransactionReferences(context.db, context.teamId, {
             bankAccountId: input.bankAccountId ?? existing.bankAccountId,
             destinationBankAccountId: input.destinationBankAccountId,
             categoryId: input.categoryId,
@@ -138,9 +148,9 @@ export const update = protectedProcedure
          });
       }
       const { id, tagIds, items, ...data } = input;
-      const result = await updateTransaction(id, data, tagIds);
+      const result = await updateTransaction(context.db, id, data, tagIds);
       if (items !== undefined) {
-         await replaceTransactionItems(id, context.teamId, items);
+         await replaceTransactionItems(context.db, id, context.teamId, items);
       }
       return result;
    });
@@ -148,8 +158,8 @@ export const update = protectedProcedure
 export const remove = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      await ensureTransactionOwnership(input.id, context.teamId);
-      await deleteTransaction(input.id);
+      await ensureTransactionOwnership(context.db, input.id, context.teamId);
+      await deleteTransaction(context.db, input.id);
       return { success: true };
    });
 
@@ -166,14 +176,14 @@ export const importBulk = protectedProcedure
       let imported = 0;
       for (const t of input.transactions) {
          const { tagIds, items, ...data } = t;
-         await validateTransactionReferences(context.teamId, {
+         await validateTransactionReferences(context.db, context.teamId, {
             bankAccountId: data.bankAccountId,
             destinationBankAccountId: data.destinationBankAccountId,
             categoryId: data.categoryId,
             tagIds,
             date: data.date,
          });
-         await createTransaction(context.teamId, data, tagIds);
+         await createTransaction(context.db, context.teamId, data, tagIds);
          imported++;
       }
       return { imported, skipped: 0 };

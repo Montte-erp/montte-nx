@@ -1,6 +1,6 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, count, eq } from "drizzle-orm";
-import { db } from "@core/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateContactInput,
    type UpdateContactInput,
@@ -12,7 +12,11 @@ import {
 import { transactions } from "@core/database/schemas/transactions";
 import { bills } from "@core/database/schemas/bills";
 
-export async function createContact(teamId: string, data: CreateContactInput) {
+export async function createContact(
+   db: DatabaseInstance,
+   teamId: string,
+   data: CreateContactInput,
+) {
    const validated = validateInput(createContactSchema, data);
    try {
       const [contact] = await db
@@ -28,6 +32,7 @@ export async function createContact(teamId: string, data: CreateContactInput) {
 }
 
 export async function listContacts(
+   db: DatabaseInstance,
    teamId: string,
    type?: ContactType,
    includeArchived = false,
@@ -47,7 +52,7 @@ export async function listContacts(
    }
 }
 
-export async function getContact(id: string) {
+export async function getContact(db: DatabaseInstance, id: string) {
    try {
       const [contact] = await db
          .select()
@@ -60,7 +65,11 @@ export async function getContact(id: string) {
    }
 }
 
-export async function updateContact(id: string, data: UpdateContactInput) {
+export async function updateContact(
+   db: DatabaseInstance,
+   id: string,
+   data: UpdateContactInput,
+) {
    const validated = validateInput(updateContactSchema, data);
    try {
       const [updated] = await db
@@ -76,7 +85,7 @@ export async function updateContact(id: string, data: UpdateContactInput) {
    }
 }
 
-export async function archiveContact(id: string) {
+export async function archiveContact(db: DatabaseInstance, id: string) {
    try {
       const [updated] = await db
          .update(contacts)
@@ -91,7 +100,7 @@ export async function archiveContact(id: string) {
    }
 }
 
-export async function reactivateContact(id: string) {
+export async function reactivateContact(db: DatabaseInstance, id: string) {
    try {
       const [updated] = await db
          .update(contacts)
@@ -106,9 +115,9 @@ export async function reactivateContact(id: string) {
    }
 }
 
-export async function deleteContact(id: string) {
+export async function deleteContact(db: DatabaseInstance, id: string) {
    try {
-      const hasLinks = await contactHasLinks(id);
+      const hasLinks = await contactHasLinks(db, id);
       if (hasLinks) {
          throw AppError.conflict(
             "Contato possui lançamentos vinculados. Arquive em vez de excluir.",
@@ -121,15 +130,22 @@ export async function deleteContact(id: string) {
    }
 }
 
-export async function ensureContactOwnership(id: string, teamId: string) {
-   const contact = await getContact(id);
+export async function ensureContactOwnership(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
+   const contact = await getContact(db, id);
    if (!contact || contact.teamId !== teamId) {
       throw AppError.notFound("Contato não encontrado.");
    }
    return contact;
 }
 
-export async function contactHasLinks(id: string): Promise<boolean> {
+export async function contactHasLinks(
+   db: DatabaseInstance,
+   id: string,
+): Promise<boolean> {
    try {
       const [txResult] = await db
          .select({ total: count() })

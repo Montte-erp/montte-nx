@@ -11,10 +11,10 @@ import { getLogger } from "@core/logging/root";
 import { createFileRoute } from "@tanstack/react-router";
 
 import router from "@/integrations/orpc/router";
-import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
-import { auth } from "@core/authentication/server";
-import { db } from "@core/database/client";
-import { posthog } from "@core/posthog/server";
+import type {
+   ORPCContext,
+   ORPCContextWithAuth,
+} from "@/integrations/orpc/server";
 
 const logger = getLogger().child({ module: "api:rpc" });
 
@@ -42,23 +42,13 @@ const handler = new RPCHandler(router, {
 
 async function handle({ request }: { request: Request }) {
    const headers = new Headers(request.headers);
-   let session: ORPCContextWithAuth["session"] = null;
-   try {
-      session = await auth.api.getSession({ headers });
-   } catch {
-      session = null;
-   }
 
    const { response } = await handler.handle(request, {
       prefix: "/api",
       context: {
          headers,
          request,
-         auth,
-         db,
-         session,
-         posthog,
-      } satisfies ORPCContextWithAuth,
+      } satisfies ORPCContext,
    });
 
    return response ?? new Response("Not Found", { status: 404 });

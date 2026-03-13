@@ -1,6 +1,6 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, desc, eq } from "drizzle-orm";
-import { db } from "@core/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateDashboardInput,
    type Dashboard,
@@ -12,11 +12,12 @@ import {
 } from "@core/database/schemas/dashboards";
 
 export async function ensureDashboardOwnership(
+   db: DatabaseInstance,
    id: string,
    organizationId: string,
    teamId: string,
 ) {
-   const dashboard = await getDashboardById(id);
+   const dashboard = await getDashboardById(db, id);
    if (
       !dashboard ||
       dashboard.organizationId !== organizationId ||
@@ -28,6 +29,7 @@ export async function ensureDashboardOwnership(
 }
 
 export async function createDashboard(
+   db: DatabaseInstance,
    organizationId: string,
    teamId: string,
    createdBy: string,
@@ -52,7 +54,10 @@ export async function createDashboard(
    }
 }
 
-export async function listDashboards(organizationId: string) {
+export async function listDashboards(
+   db: DatabaseInstance,
+   organizationId: string,
+) {
    try {
       return await db
          .select()
@@ -65,7 +70,10 @@ export async function listDashboards(organizationId: string) {
    }
 }
 
-export async function listDashboardsByTeam(teamId: string) {
+export async function listDashboardsByTeam(
+   db: DatabaseInstance,
+   teamId: string,
+) {
    try {
       return await db
          .select()
@@ -78,7 +86,10 @@ export async function listDashboardsByTeam(teamId: string) {
    }
 }
 
-export async function getDashboardById(dashboardId: string) {
+export async function getDashboardById(
+   db: DatabaseInstance,
+   dashboardId: string,
+) {
    try {
       const [dashboard] = await db
          .select()
@@ -92,6 +103,7 @@ export async function getDashboardById(dashboardId: string) {
 }
 
 export async function updateDashboard(
+   db: DatabaseInstance,
    dashboardId: string,
    data: UpdateDashboardInput,
 ) {
@@ -111,6 +123,7 @@ export async function updateDashboard(
 }
 
 export async function updateDashboardTiles(
+   db: DatabaseInstance,
    dashboardId: string,
    tiles: DashboardTile[],
 ) {
@@ -128,12 +141,18 @@ export async function updateDashboardTiles(
    }
 }
 
-export async function deleteDashboard(dashboardId: string) {
+export async function deleteDashboard(
+   db: DatabaseInstance,
+   dashboardId: string,
+) {
    try {
-      const dashboard = await getDashboardById(dashboardId);
+      const dashboard = await getDashboardById(db, dashboardId);
 
       if (dashboard?.isDefault) {
-         const teamDashboards = await listDashboardsByTeam(dashboard.teamId);
+         const teamDashboards = await listDashboardsByTeam(
+            db,
+            dashboard.teamId,
+         );
          if (teamDashboards.length > 1) {
             throw AppError.validation(
                "Cannot delete home dashboard. Set another dashboard as home first.",
@@ -148,7 +167,11 @@ export async function deleteDashboard(dashboardId: string) {
    }
 }
 
-export async function setDashboardAsHome(dashboardId: string, teamId: string) {
+export async function setDashboardAsHome(
+   db: DatabaseInstance,
+   dashboardId: string,
+   teamId: string,
+) {
    try {
       return await db.transaction(async (tx) => {
          await tx
@@ -177,6 +200,7 @@ export async function setDashboardAsHome(dashboardId: string, teamId: string) {
 }
 
 export async function getDefaultDashboard(
+   db: DatabaseInstance,
    organizationId: string,
    teamId: string,
 ): Promise<Dashboard> {

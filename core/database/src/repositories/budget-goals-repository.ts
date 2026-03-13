@@ -1,7 +1,7 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { of, toDecimal } from "@f-o-t/money";
 import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
-import { db } from "@core/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import {
    type BudgetGoal,
    type CreateBudgetGoalInput,
@@ -22,6 +22,7 @@ export type BudgetGoalWithProgress = BudgetGoal & {
 };
 
 export async function createBudgetGoal(
+   db: DatabaseInstance,
    teamId: string,
    data: CreateBudgetGoalInput,
 ) {
@@ -48,7 +49,11 @@ export async function createBudgetGoal(
    }
 }
 
-export async function getBudgetGoal(id: string, teamId: string) {
+export async function getBudgetGoal(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
    try {
       const [goal] = await db
          .select()
@@ -61,8 +66,12 @@ export async function getBudgetGoal(id: string, teamId: string) {
    }
 }
 
-export async function ensureBudgetGoalOwnership(id: string, teamId: string) {
-   const goal = await getBudgetGoal(id, teamId);
+export async function ensureBudgetGoalOwnership(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
+   const goal = await getBudgetGoal(db, id, teamId);
    if (!goal) {
       throw AppError.notFound("Meta de orçamento não encontrada.");
    }
@@ -70,6 +79,7 @@ export async function ensureBudgetGoalOwnership(id: string, teamId: string) {
 }
 
 export async function updateBudgetGoal(
+   db: DatabaseInstance,
    id: string,
    teamId: string,
    data: UpdateBudgetGoalInput,
@@ -90,7 +100,11 @@ export async function updateBudgetGoal(
    }
 }
 
-export async function deleteBudgetGoal(id: string, teamId: string) {
+export async function deleteBudgetGoal(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
    try {
       await db
          .delete(budgetGoals)
@@ -101,7 +115,11 @@ export async function deleteBudgetGoal(id: string, teamId: string) {
    }
 }
 
-export async function markAlertSent(id: string, teamId: string) {
+export async function markAlertSent(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
    try {
       const [updated] = await db
          .update(budgetGoals)
@@ -118,6 +136,7 @@ export async function markAlertSent(id: string, teamId: string) {
 }
 
 async function computeSpentAmount(
+   db: DatabaseInstance,
    goal: BudgetGoal,
    month: number,
    year: number,
@@ -152,6 +171,7 @@ function computePercentUsed(spentAmount: string, limitAmount: string): number {
 }
 
 export async function listBudgetGoals(
+   db: DatabaseInstance,
    teamId: string,
    month: number,
    year: number,
@@ -177,7 +197,12 @@ export async function listBudgetGoals(
       const result: BudgetGoalWithProgress[] = [];
 
       for (const row of rows) {
-         const spentAmount = await computeSpentAmount(row.goal, month, year);
+         const spentAmount = await computeSpentAmount(
+            db,
+            row.goal,
+            month,
+            year,
+         );
          const percentUsed = computePercentUsed(
             spentAmount,
             row.goal.limitAmount,
@@ -201,6 +226,7 @@ export async function listBudgetGoals(
 }
 
 export async function copyPreviousMonth(
+   db: DatabaseInstance,
    teamId: string,
    fromMonth: number,
    fromYear: number,
@@ -241,6 +267,7 @@ export async function copyPreviousMonth(
 }
 
 export async function getGoalsForAlertCheck(
+   db: DatabaseInstance,
    month: number,
    year: number,
 ): Promise<BudgetGoalWithProgress[]> {
@@ -266,7 +293,12 @@ export async function getGoalsForAlertCheck(
       const result: BudgetGoalWithProgress[] = [];
 
       for (const row of rows) {
-         const spentAmount = await computeSpentAmount(row.goal, month, year);
+         const spentAmount = await computeSpentAmount(
+            db,
+            row.goal,
+            month,
+            year,
+         );
          const percentUsed = computePercentUsed(
             spentAmount,
             row.goal.limitAmount,

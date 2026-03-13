@@ -31,9 +31,7 @@ vi.mock("@core/logging/root", () => ({
    }),
 }));
 
-vi.mock("@core/redis/connection", () => ({
-   getRedisConnection: () => null,
-}));
+vi.mock("@core/redis/connection", () => ({}));
 
 vi.mock("../src/utils", () => ({
    getEventPrice: mockGetEventPrice,
@@ -163,6 +161,7 @@ describe("emitEvent", () => {
       });
 
       expect(mockFindMatchingWebhooks).toHaveBeenCalledWith(
+         expect.anything(),
          "org-1",
          "finance.transaction_created",
          "team-1",

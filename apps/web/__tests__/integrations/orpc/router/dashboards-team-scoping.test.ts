@@ -29,8 +29,7 @@ vi.mock("@core/posthog/server", () => ({
 vi.mock("@packages/events/dashboard");
 vi.mock("@packages/events/emit");
 vi.mock("@core/redis/connection", () => ({
-   redis: {},
-   getRedisConnection: vi.fn(),
+   createRedis: vi.fn(),
 }));
 
 import { sql } from "drizzle-orm";

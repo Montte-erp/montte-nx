@@ -4,7 +4,10 @@ import MagicLinkEmail from "@core/transactional/emails/magic-link";
 import OrganizationInvitationEmail from "@core/transactional/emails/organization-invitation";
 import OTPEmail from "@core/transactional/emails/otp";
 
-export { resendClient, type ResendClient } from "@core/transactional/utils";
+export {
+   createResendClient,
+   type ResendClient,
+} from "@core/transactional/utils";
 
 export function getResendClient(apiKey: string): Resend {
    return new Resend(apiKey);

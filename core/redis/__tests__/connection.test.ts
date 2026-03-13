@@ -24,12 +24,6 @@ const {
    };
 });
 
-vi.mock("@core/environment/web/server", () => ({
-   env: {
-      REDIS_URL: "redis://cache:6379",
-   },
-}));
-
 vi.mock("@core/logging/root", () => ({
    getLogger: () => ({
       child: () => ({
@@ -50,14 +44,15 @@ vi.mock("ioredis", () => ({
    },
 }));
 
+import { createRedis } from "../src/connection";
+
 describe("redis connection", () => {
    beforeEach(() => {
       vi.clearAllMocks();
-      vi.resetModules();
    });
 
-   it("creates the shared Redis connection with IPv6 family enabled", async () => {
-      const { redis } = await import("../src/connection");
+   it("creates a Redis connection with IPv6 family enabled", () => {
+      const redis = createRedis("redis://cache:6379");
 
       expect(redisConstructorMock).toHaveBeenCalledWith(
          "redis://cache:6379?family=6",
@@ -68,8 +63,8 @@ describe("redis connection", () => {
       expect(redis).toBe(redisInstance);
    });
 
-   it("registers connect and error log handlers", async () => {
-      await import("../src/connection");
+   it("registers connect and error log handlers", () => {
+      createRedis("redis://cache:6379");
 
       expect(redisOnMock).toHaveBeenCalledWith("error", expect.any(Function));
       expect(redisOnMock).toHaveBeenCalledWith("connect", expect.any(Function));

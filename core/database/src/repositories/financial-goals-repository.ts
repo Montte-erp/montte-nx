@@ -1,7 +1,7 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { greaterThanOrEqual, of, toDecimal } from "@f-o-t/money";
 import { and, desc, eq, sql } from "drizzle-orm";
-import { db } from "@core/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateFinancialGoalInput,
    type CreateGoalMovementInput,
@@ -14,6 +14,7 @@ import {
 } from "@core/database/schemas/financial-goals";
 
 export async function createFinancialGoal(
+   db: DatabaseInstance,
    teamId: string,
    data: CreateFinancialGoalInput,
 ) {
@@ -35,7 +36,11 @@ export async function createFinancialGoal(
    }
 }
 
-export async function getFinancialGoal(id: string, teamId: string) {
+export async function getFinancialGoal(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
    try {
       const [goal] = await db
          .select()
@@ -51,6 +56,7 @@ export async function getFinancialGoal(id: string, teamId: string) {
 }
 
 export async function listFinancialGoals(
+   db: DatabaseInstance,
    teamId: string,
    opts?: { isCompleted?: boolean },
 ) {
@@ -71,6 +77,7 @@ export async function listFinancialGoals(
 }
 
 export async function updateFinancialGoal(
+   db: DatabaseInstance,
    id: string,
    teamId: string,
    data: UpdateFinancialGoalInput,
@@ -92,7 +99,11 @@ export async function updateFinancialGoal(
    }
 }
 
-export async function deleteFinancialGoal(id: string, teamId: string) {
+export async function deleteFinancialGoal(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
    try {
       const [goal] = await db
          .delete(financialGoals)
@@ -109,6 +120,7 @@ export async function deleteFinancialGoal(id: string, teamId: string) {
 }
 
 export async function createGoalMovement(
+   db: DatabaseInstance,
    goalId: string,
    data: CreateGoalMovementInput,
 ) {
@@ -160,7 +172,7 @@ export async function createGoalMovement(
    });
 }
 
-export async function deleteGoalMovement(id: string) {
+export async function deleteGoalMovement(db: DatabaseInstance, id: string) {
    return await db.transaction(async (tx) => {
       const [movement] = await tx
          .select()
@@ -188,7 +200,7 @@ export async function deleteGoalMovement(id: string) {
    });
 }
 
-export async function listGoalMovements(goalId: string) {
+export async function listGoalMovements(db: DatabaseInstance, goalId: string) {
    try {
       return await db
          .select()

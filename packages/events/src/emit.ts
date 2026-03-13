@@ -15,6 +15,7 @@ import {
 } from "./queues/webhook-delivery";
 import type { StripeClient } from "@core/stripe";
 import { STRIPE_METER_EVENTS } from "@core/stripe/constants";
+import type { Redis } from "@core/redis/connection";
 import type { Queue } from "bullmq";
 import type { EmitFn, EventCategory } from "./catalog";
 
@@ -25,6 +26,7 @@ import { getEventPrice } from "./utils";
 
 export interface EmitEventParams {
    db: DatabaseInstance;
+   redis?: Redis;
    posthog?: PostHog;
    organizationId: string;
    eventName: string;
@@ -44,15 +46,23 @@ export function createEmitFn(
    posthog?: PostHog,
    stripeClient?: StripeClient,
    stripeCustomerId?: string,
+   redis?: Redis,
 ): EmitFn {
    return (params) =>
-      emitEvent({ ...params, db, posthog, stripeClient, stripeCustomerId });
+      emitEvent({
+         ...params,
+         db,
+         posthog,
+         stripeClient,
+         stripeCustomerId,
+         redis,
+      });
 }
 
 export interface EmitEventBatchParams {
    db: DatabaseInstance;
    posthog?: PostHog;
-   events: Omit<EmitEventParams, "db" | "posthog">[];
+   events: Omit<EmitEventParams, "db" | "posthog" | "redis">[];
 }
 
 let webhookQueue: Queue<WebhookDeliveryJobData> | null = null;
@@ -81,6 +91,7 @@ function buildWebhookPayload(
 export async function emitEvent(params: EmitEventParams): Promise<void> {
    const {
       db,
+      redis,
       posthog,
       organizationId,
       eventName,
@@ -114,8 +125,12 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
          .returning();
 
       if (isBillable) {
-         await incrementUsage(organizationId, eventName);
-         const withinFree = await isWithinFreeTier(organizationId, eventName);
+         await incrementUsage(organizationId, eventName, redis);
+         const withinFree = await isWithinFreeTier(
+            organizationId,
+            eventName,
+            redis,
+         );
          const meterEventName = STRIPE_METER_EVENTS[eventName];
          if (
             !withinFree &&
@@ -156,6 +171,7 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
       if (webhookQueue && storedEvent) {
          try {
             const matchingWebhooks = await findMatchingWebhooks(
+               db,
                organizationId,
                eventName,
                teamId,
@@ -169,7 +185,7 @@ export async function emitEvent(params: EmitEventParams): Promise<void> {
                   properties,
                );
 
-               const delivery = await createWebhookDelivery({
+               const delivery = await createWebhookDelivery(db, {
                   webhookEndpointId: webhook.id,
                   eventId: storedEvent.id,
                   url: webhook.url,

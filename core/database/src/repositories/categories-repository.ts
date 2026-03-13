@@ -1,7 +1,7 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
-import { db } from "@core/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateCategoryInput,
    type UpdateCategoryInput,
@@ -27,6 +27,7 @@ export const DEFAULT_CATEGORIES: Array<{
 ];
 
 export async function createCategory(
+   db: DatabaseInstance,
    teamId: string,
    data: CreateCategoryInput,
 ) {
@@ -48,7 +49,7 @@ export async function createCategory(
       }
 
       if (validated.keywords?.length) {
-         await validateKeywordsUniqueness(teamId, validated.keywords);
+         await validateKeywordsUniqueness(db, teamId, validated.keywords);
       }
 
       const [category] = await db
@@ -68,7 +69,10 @@ export async function createCategory(
    }
 }
 
-export async function seedDefaultCategories(teamId: string) {
+export async function seedDefaultCategories(
+   db: DatabaseInstance,
+   teamId: string,
+) {
    try {
       const values = DEFAULT_CATEGORIES.map((cat) => ({
          teamId,
@@ -85,6 +89,7 @@ export async function seedDefaultCategories(teamId: string) {
 }
 
 export async function listCategories(
+   db: DatabaseInstance,
    teamId: string,
    opts?: {
       type?: "income" | "expense";
@@ -120,15 +125,19 @@ export async function listCategories(
    }
 }
 
-export async function ensureCategoryOwnership(id: string, teamId: string) {
-   const category = await getCategory(id);
+export async function ensureCategoryOwnership(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
+   const category = await getCategory(db, id);
    if (!category || category.teamId !== teamId) {
       throw AppError.notFound("Categoria não encontrada.");
    }
    return category;
 }
 
-export async function getCategory(id: string) {
+export async function getCategory(db: DatabaseInstance, id: string) {
    try {
       const category = await db.query.categories.findFirst({
          where: { id },
@@ -140,7 +149,11 @@ export async function getCategory(id: string) {
    }
 }
 
-export async function updateCategory(id: string, data: UpdateCategoryInput) {
+export async function updateCategory(
+   db: DatabaseInstance,
+   id: string,
+   data: UpdateCategoryInput,
+) {
    const validated = validateInput(updateCategorySchema, data);
    try {
       const existing = await db.query.categories.findFirst({
@@ -153,6 +166,7 @@ export async function updateCategory(id: string, data: UpdateCategoryInput) {
 
       if (validated.keywords?.length) {
          await validateKeywordsUniqueness(
+            db,
             existing.teamId,
             validated.keywords,
             id,
@@ -172,7 +186,7 @@ export async function updateCategory(id: string, data: UpdateCategoryInput) {
    }
 }
 
-export async function archiveCategory(id: string) {
+export async function archiveCategory(db: DatabaseInstance, id: string) {
    try {
       const existing = await db.query.categories.findFirst({
          where: { id },
@@ -182,7 +196,7 @@ export async function archiveCategory(id: string) {
          throw AppError.conflict("Categorias padrão não podem ser arquivadas.");
       }
 
-      const descendantIds = await getDescendantIds(id);
+      const descendantIds = await getDescendantIds(db, id);
       const allIds = [id, ...descendantIds];
 
       await db
@@ -197,7 +211,7 @@ export async function archiveCategory(id: string) {
    }
 }
 
-export async function reactivateCategory(id: string) {
+export async function reactivateCategory(db: DatabaseInstance, id: string) {
    try {
       const [updated] = await db
          .update(categories)
@@ -212,7 +226,7 @@ export async function reactivateCategory(id: string) {
    }
 }
 
-export async function deleteCategory(id: string) {
+export async function deleteCategory(db: DatabaseInstance, id: string) {
    try {
       const existing = await db.query.categories.findFirst({
          where: { id },
@@ -222,7 +236,7 @@ export async function deleteCategory(id: string) {
          throw AppError.conflict("Categorias padrão não podem ser excluídas.");
       }
 
-      const hasTransactions = await categoryTreeHasTransactions(id);
+      const hasTransactions = await categoryTreeHasTransactions(db, id);
       if (hasTransactions) {
          throw AppError.conflict(
             "Categoria com lançamentos não pode ser excluída. Use arquivamento.",
@@ -237,10 +251,11 @@ export async function deleteCategory(id: string) {
 }
 
 export async function categoryTreeHasTransactions(
+   db: DatabaseInstance,
    categoryId: string,
 ): Promise<boolean> {
    try {
-      const descendantIds = await getDescendantIds(categoryId);
+      const descendantIds = await getDescendantIds(db, categoryId);
       const allIds = [categoryId, ...descendantIds];
 
       const [row] = await db
@@ -254,7 +269,10 @@ export async function categoryTreeHasTransactions(
    }
 }
 
-async function getDescendantIds(categoryId: string): Promise<string[]> {
+async function getDescendantIds(
+   db: DatabaseInstance,
+   categoryId: string,
+): Promise<string[]> {
    const level2 = await db
       .select({ id: categories.id })
       .from(categories)
@@ -272,6 +290,7 @@ async function getDescendantIds(categoryId: string): Promise<string[]> {
 }
 
 export async function validateKeywordsUniqueness(
+   db: DatabaseInstance,
    teamId: string,
    keywords: string[],
    excludeCategoryId?: string,

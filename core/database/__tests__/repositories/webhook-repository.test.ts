@@ -1,4 +1,4 @@
-import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
+import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { setupTestDb } from "../helpers/setup-test-db";
 import { organization, team } from "@core/database/schemas/auth";
 import { events } from "@core/database/schemas/events";
@@ -7,12 +7,6 @@ import {
    updateWebhookEndpointSchema,
 } from "@core/database/schemas/webhooks";
 import * as repo from "../../src/repositories/webhook-repository";
-
-vi.mock("@core/database/client", () => ({
-   get db() {
-      return (globalThis as any).__TEST_DB__;
-   },
-}));
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 let orgId: string;
@@ -111,6 +105,7 @@ describe("webhook-repository", () => {
    describe("createWebhookEndpoint", () => {
       it("creates with generated secret (64 chars hex)", async () => {
          const endpoint = await repo.createWebhookEndpoint(
+            testDb.db,
             orgId,
             teamId,
             validInput(),
@@ -133,17 +128,22 @@ describe("webhook-repository", () => {
       it("lists for team", async () => {
          const parents = await seedParents();
          await repo.createWebhookEndpoint(
+            testDb.db,
             parents.orgId,
             parents.teamId,
             validInput({ url: "https://a.com/wh" }),
          );
          await repo.createWebhookEndpoint(
+            testDb.db,
             parents.orgId,
             parents.teamId,
             validInput({ url: "https://b.com/wh" }),
          );
 
-         const list = await repo.listWebhookEndpoints(parents.teamId);
+         const list = await repo.listWebhookEndpoints(
+            testDb.db,
+            parents.teamId,
+         );
          expect(list).toHaveLength(2);
       });
    });
@@ -151,17 +151,21 @@ describe("webhook-repository", () => {
    describe("getWebhookEndpoint", () => {
       it("returns by id", async () => {
          const endpoint = await repo.createWebhookEndpoint(
+            testDb.db,
             orgId,
             teamId,
             validInput(),
          );
 
-         const found = await repo.getWebhookEndpoint(endpoint.id);
+         const found = await repo.getWebhookEndpoint(testDb.db, endpoint.id);
          expect(found).toMatchObject({ id: endpoint.id });
       });
 
       it("returns null for nonexistent", async () => {
-         const found = await repo.getWebhookEndpoint(crypto.randomUUID());
+         const found = await repo.getWebhookEndpoint(
+            testDb.db,
+            crypto.randomUUID(),
+         );
          expect(found).toBeNull();
       });
    });
@@ -169,15 +173,20 @@ describe("webhook-repository", () => {
    describe("updateWebhookEndpoint", () => {
       it("updates url and isActive", async () => {
          const endpoint = await repo.createWebhookEndpoint(
+            testDb.db,
             orgId,
             teamId,
             validInput(),
          );
 
-         const updated = await repo.updateWebhookEndpoint(endpoint.id, {
-            url: "https://new.com/wh",
-            isActive: false,
-         });
+         const updated = await repo.updateWebhookEndpoint(
+            testDb.db,
+            endpoint.id,
+            {
+               url: "https://new.com/wh",
+               isActive: false,
+            },
+         );
 
          expect(updated.url).toBe("https://new.com/wh");
          expect(updated.isActive).toBe(false);
@@ -187,13 +196,14 @@ describe("webhook-repository", () => {
    describe("deleteWebhookEndpoint", () => {
       it("deletes", async () => {
          const endpoint = await repo.createWebhookEndpoint(
+            testDb.db,
             orgId,
             teamId,
             validInput(),
          );
 
-         await repo.deleteWebhookEndpoint(endpoint.id);
-         const found = await repo.getWebhookEndpoint(endpoint.id);
+         await repo.deleteWebhookEndpoint(testDb.db, endpoint.id);
+         const found = await repo.getWebhookEndpoint(testDb.db, endpoint.id);
          expect(found).toBeNull();
       });
    });
@@ -201,31 +211,33 @@ describe("webhook-repository", () => {
    describe("failure tracking", () => {
       it("incrementWebhookFailureCount increments", async () => {
          const endpoint = await repo.createWebhookEndpoint(
+            testDb.db,
             orgId,
             teamId,
             validInput(),
          );
 
-         await repo.incrementWebhookFailureCount(endpoint.id);
-         await repo.incrementWebhookFailureCount(endpoint.id);
+         await repo.incrementWebhookFailureCount(testDb.db, endpoint.id);
+         await repo.incrementWebhookFailureCount(testDb.db, endpoint.id);
 
-         const found = await repo.getWebhookEndpoint(endpoint.id);
+         const found = await repo.getWebhookEndpoint(testDb.db, endpoint.id);
          expect(found!.failureCount).toBe(2);
          expect(found!.lastFailureAt).toBeDefined();
       });
 
       it("updateWebhookLastSuccess resets failure count", async () => {
          const endpoint = await repo.createWebhookEndpoint(
+            testDb.db,
             orgId,
             teamId,
             validInput(),
          );
 
-         await repo.incrementWebhookFailureCount(endpoint.id);
-         await repo.incrementWebhookFailureCount(endpoint.id);
-         await repo.updateWebhookLastSuccess(endpoint.id);
+         await repo.incrementWebhookFailureCount(testDb.db, endpoint.id);
+         await repo.incrementWebhookFailureCount(testDb.db, endpoint.id);
+         await repo.updateWebhookLastSuccess(testDb.db, endpoint.id);
 
-         const found = await repo.getWebhookEndpoint(endpoint.id);
+         const found = await repo.getWebhookEndpoint(testDb.db, endpoint.id);
          expect(found!.failureCount).toBe(0);
          expect(found!.lastSuccessAt).toBeDefined();
       });
@@ -235,12 +247,14 @@ describe("webhook-repository", () => {
       it("matches wildcard patterns", async () => {
          const parents = await seedParents();
          await repo.createWebhookEndpoint(
+            testDb.db,
             parents.orgId,
             parents.teamId,
             validInput({ eventPatterns: ["content.*"] }),
          );
 
          const matches = await repo.findMatchingWebhooks(
+            testDb.db,
             parents.orgId,
             "content.published",
             parents.teamId,
@@ -251,12 +265,14 @@ describe("webhook-repository", () => {
       it("matches exact", async () => {
          const parents = await seedParents();
          await repo.createWebhookEndpoint(
+            testDb.db,
             parents.orgId,
             parents.teamId,
             validInput({ eventPatterns: ["form.submitted"] }),
          );
 
          const matches = await repo.findMatchingWebhooks(
+            testDb.db,
             parents.orgId,
             "form.submitted",
             parents.teamId,
@@ -267,13 +283,17 @@ describe("webhook-repository", () => {
       it("excludes inactive", async () => {
          const parents = await seedParents();
          const endpoint = await repo.createWebhookEndpoint(
+            testDb.db,
             parents.orgId,
             parents.teamId,
             validInput({ eventPatterns: ["content.*"] }),
          );
-         await repo.updateWebhookEndpoint(endpoint.id, { isActive: false });
+         await repo.updateWebhookEndpoint(testDb.db, endpoint.id, {
+            isActive: false,
+         });
 
          const matches = await repo.findMatchingWebhooks(
+            testDb.db,
             parents.orgId,
             "content.published",
             parents.teamId,
@@ -286,13 +306,14 @@ describe("webhook-repository", () => {
       it("creates delivery, updates status, lists by endpoint", async () => {
          const parents = await seedParents();
          const endpoint = await repo.createWebhookEndpoint(
+            testDb.db,
             parents.orgId,
             parents.teamId,
             validInput(),
          );
          const evt = await seedEvent(parents.orgId, parents.teamId);
 
-         const delivery = await repo.createWebhookDelivery({
+         const delivery = await repo.createWebhookDelivery(testDb.db, {
             webhookEndpointId: endpoint.id,
             eventId: evt.id,
             url: endpoint.url,
@@ -303,15 +324,22 @@ describe("webhook-repository", () => {
 
          expect(delivery.status).toBe("pending");
 
-         const updated = await repo.updateWebhookDeliveryStatus(delivery.id, {
-            status: "success",
-            httpStatusCode: 200,
-            deliveredAt: new Date(),
-         });
+         const updated = await repo.updateWebhookDeliveryStatus(
+            testDb.db,
+            delivery.id,
+            {
+               status: "success",
+               httpStatusCode: 200,
+               deliveredAt: new Date(),
+            },
+         );
          expect(updated.status).toBe("success");
          expect(updated.httpStatusCode).toBe(200);
 
-         const deliveries = await repo.getWebhookDeliveries(endpoint.id);
+         const deliveries = await repo.getWebhookDeliveries(
+            testDb.db,
+            endpoint.id,
+         );
          expect(deliveries).toHaveLength(1);
          expect(deliveries[0]!.id).toBe(delivery.id);
       });

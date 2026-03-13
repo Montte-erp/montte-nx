@@ -30,12 +30,18 @@ export const create = protectedProcedure
    .handler(async ({ context, input }) => {
       const { organizationId, userId, teamId, db, posthog } = context;
 
-      const dashboard = await createDashboard(organizationId, teamId, userId, {
-         name: input.name,
-         description: input.description,
-         tiles: [],
-         globalFilters: [],
-      });
+      const dashboard = await createDashboard(
+         db,
+         organizationId,
+         teamId,
+         userId,
+         {
+            name: input.name,
+            description: input.description,
+            tiles: [],
+            globalFilters: [],
+         },
+      );
 
       try {
          await emitDashboardCreated(
@@ -49,13 +55,14 @@ export const create = protectedProcedure
    });
 
 export const list = protectedProcedure.handler(async ({ context }) => {
-   return listDashboardsByTeam(context.teamId);
+   return listDashboardsByTeam(context.db, context.teamId);
 });
 
 export const getById = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
       return ensureDashboardOwnership(
+         context.db,
          input.id,
          context.organizationId,
          context.teamId,
@@ -71,10 +78,10 @@ export const update = protectedProcedure
    )
    .handler(async ({ context, input }) => {
       const { organizationId, userId, teamId, db, posthog } = context;
-      await ensureDashboardOwnership(input.id, organizationId, teamId);
+      await ensureDashboardOwnership(db, input.id, organizationId, teamId);
 
       const { id, ...updateData } = input;
-      const updated = await updateDashboard(id, updateData);
+      const updated = await updateDashboard(db, id, updateData);
 
       try {
          const changedFields = Object.keys(updateData).filter(
@@ -100,10 +107,10 @@ export const updateTiles = protectedProcedure
    )
    .handler(async ({ context, input }) => {
       const { organizationId, teamId, db, posthog, userId } = context;
-      await ensureDashboardOwnership(input.id, organizationId, teamId);
+      await ensureDashboardOwnership(db, input.id, organizationId, teamId);
 
       if (input.tiles !== undefined) {
-         await updateDashboardTiles(input.id, input.tiles);
+         await updateDashboardTiles(db, input.id, input.tiles);
       }
 
       const metadataUpdate: { name?: string; description?: string } = {};
@@ -112,7 +119,7 @@ export const updateTiles = protectedProcedure
          metadataUpdate.description = input.description;
 
       if (Object.keys(metadataUpdate).length > 0) {
-         await updateDashboard(input.id, metadataUpdate);
+         await updateDashboard(db, input.id, metadataUpdate);
 
          try {
             const changedFields = Object.keys(metadataUpdate);
@@ -124,16 +131,16 @@ export const updateTiles = protectedProcedure
          } catch {}
       }
 
-      return getDashboardById(input.id);
+      return getDashboardById(db, input.id);
    });
 
 export const remove = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
       const { organizationId, userId, teamId, db, posthog } = context;
-      await ensureDashboardOwnership(input.id, organizationId, teamId);
+      await ensureDashboardOwnership(db, input.id, organizationId, teamId);
 
-      await deleteDashboard(input.id);
+      await deleteDashboard(db, input.id);
 
       try {
          await emitDashboardDeleted(
@@ -156,7 +163,12 @@ export const updateGlobalFilters = protectedProcedure
    )
    .handler(async ({ context, input }) => {
       const { organizationId, teamId, db, posthog, userId } = context;
-      await ensureDashboardOwnership(input.dashboardId, organizationId, teamId);
+      await ensureDashboardOwnership(
+         db,
+         input.dashboardId,
+         organizationId,
+         teamId,
+      );
 
       const updateData: Record<string, unknown> = {};
       if (input.globalDateRange !== undefined)
@@ -164,7 +176,7 @@ export const updateGlobalFilters = protectedProcedure
       if (input.globalFilters !== undefined)
          updateData.globalFilters = input.globalFilters;
 
-      const updated = await updateDashboard(input.dashboardId, updateData);
+      const updated = await updateDashboard(db, input.dashboardId, updateData);
 
       try {
          const changedFields = Object.keys(updateData);
@@ -183,6 +195,7 @@ export const setAsHome = protectedProcedure
    .handler(async ({ context, input }) => {
       const { organizationId, teamId, db, posthog, userId } = context;
       const dashboard = await ensureDashboardOwnership(
+         db,
          input.id,
          organizationId,
          teamId,
@@ -192,7 +205,7 @@ export const setAsHome = protectedProcedure
          return dashboard;
       }
 
-      const updated = await setDashboardAsHome(input.id, teamId);
+      const updated = await setDashboardAsHome(db, input.id, teamId);
 
       try {
          await emitDashboardUpdated(

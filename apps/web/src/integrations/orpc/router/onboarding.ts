@@ -23,9 +23,10 @@ import { createSlug } from "@core/utils/text";
 
 const logger = getLogger().child({ module: "router:onboarding" });
 
+import type { DatabaseInstance } from "@core/database/client";
+import type { PostHog } from "posthog-node";
 import { z } from "zod";
 import { authenticatedProcedure, protectedProcedure } from "../server";
-import { posthog } from "@core/posthog/server";
 
 const EARLY_ACCESS_FLAG_KEYS = [
    "contacts",
@@ -35,7 +36,11 @@ const EARLY_ACCESS_FLAG_KEYS = [
    "data-management",
 ];
 
-async function enrollInAllFeatures(userId: string, organizationId: string) {
+async function enrollInAllFeatures(
+   posthog: PostHog,
+   userId: string,
+   organizationId: string,
+) {
    try {
       for (const flagKey of EARLY_ACCESS_FLAG_KEYS) {
          posthog.capture({
@@ -59,6 +64,7 @@ async function enrollInAllFeatures(userId: string, organizationId: string) {
 }
 
 async function runOnboardingCompletion({
+   db,
    organizationId,
    teamId,
    userId,
@@ -66,6 +72,7 @@ async function runOnboardingCompletion({
    slug,
    accountType,
 }: {
+   db: DatabaseInstance;
    organizationId: string;
    teamId: string;
    userId: string;
@@ -74,20 +81,21 @@ async function runOnboardingCompletion({
    accountType: "personal" | "business";
 }) {
    logger.info("Inserting teamMember");
-   await insertTeamMember(teamId, userId);
+   await insertTeamMember(db, teamId, userId);
 
    logger.info("Updating team");
-   await markTeamOnboardingComplete(teamId, {
+   await markTeamOnboardingComplete(db, teamId, {
       slug,
       accountType,
       onboardingProducts: ["finance"],
    });
 
    logger.info("Updating organization");
-   await markOrganizationOnboardingComplete(organizationId);
+   await markOrganizationOnboardingComplete(db, organizationId);
 
    logger.info("Creating default insights");
    const insightIds = await createDefaultInsights(
+      db,
       organizationId,
       teamId,
       userId,
@@ -97,10 +105,10 @@ async function runOnboardingCompletion({
    for (const insightId of insightIds) {
       try {
          logger.info({ insightId }, "Computing insight");
-         const insight = await getInsightById(insightId);
+         const insight = await getInsightById(db, insightId);
          if (!insight) continue;
-         const freshData = await computeInsightData(insight);
-         await updateInsightCache(insightId, freshData);
+         const freshData = await computeInsightData(db, insight);
+         await updateInsightCache(db, insightId, freshData);
          logger.info({ insightId }, "Insight computed");
       } catch (error) {
          logger.error({ err: error, insightId }, "Failed to compute insight");
@@ -109,6 +117,7 @@ async function runOnboardingCompletion({
 
    logger.info("Creating dashboard");
    await createDefaultDashboard(
+      db,
       organizationId,
       teamId,
       userId,
@@ -128,7 +137,7 @@ export const createWorkspace = authenticatedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const { auth, headers, userId } = context;
+      const { auth, db, headers, posthog, userId } = context;
 
       const slug = createSlug(input.workspaceName);
 
@@ -184,6 +193,7 @@ export const createWorkspace = authenticatedProcedure
       logger.info({ teamId: createdTeam.id }, "Team created");
 
       await runOnboardingCompletion({
+         db,
          organizationId: org.id,
          teamId: createdTeam.id,
          userId,
@@ -192,9 +202,9 @@ export const createWorkspace = authenticatedProcedure
          accountType: input.accountType,
       });
 
-      if (input.accountType === "business") {
+      if (input.accountType === "business" && posthog) {
          try {
-            await enrollInAllFeatures(userId, org.id);
+            await enrollInAllFeatures(posthog, userId, org.id);
          } catch (enrollError) {
             logger.error(
                { err: enrollError, step: "enrollInAllFeatures" },
@@ -224,9 +234,9 @@ export const createWorkspace = authenticatedProcedure
 
 export const getOnboardingStatus = protectedProcedure.handler(
    async ({ context }) => {
-      const { organizationId, teamId } = context;
+      const { db, organizationId, teamId } = context;
 
-      const org = await getOrganizationById(organizationId);
+      const org = await getOrganizationById(db, organizationId);
 
       if (!org) {
          throw new ORPCError("NOT_FOUND", {
@@ -234,7 +244,7 @@ export const getOnboardingStatus = protectedProcedure.handler(
          });
       }
 
-      const currentTeam = await getTeamById(teamId);
+      const currentTeam = await getTeamById(db, teamId);
 
       if (!currentTeam) {
          throw new ORPCError("NOT_FOUND", {
@@ -247,7 +257,7 @@ export const getOnboardingStatus = protectedProcedure.handler(
          categoryCount,
          transactionCount,
          bankAccountCount,
-      } = await getOnboardingCounts(organizationId, teamId);
+      } = await getOnboardingCounts(db, organizationId, teamId);
 
       const storedTasks = currentTeam.onboardingTasks ?? {};
       const autoDetected: Record<string, boolean> = {};
@@ -281,9 +291,10 @@ export const getOnboardingStatus = protectedProcedure.handler(
 export const fixOnboarding = authenticatedProcedure
    .input(z.object({ organizationId: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      const { session } = context;
+      const { db, session } = context;
 
       const { org, targetTeam } = await getOrgAndTeamOnboardingFlags(
+         db,
          input.organizationId,
          session.session.activeTeamId,
       );
@@ -301,11 +312,11 @@ export const fixOnboarding = authenticatedProcedure
       }
 
       if (!org.onboardingCompleted) {
-         await markOrganizationOnboardingComplete(input.organizationId);
+         await markOrganizationOnboardingComplete(db, input.organizationId);
       }
 
       if (!targetTeam.onboardingCompleted) {
-         await markTeamOnboardingComplete(targetTeam.id, {
+         await markTeamOnboardingComplete(db, targetTeam.id, {
             slug: targetTeam.slug ?? "",
             accountType: "personal",
             onboardingProducts: ["finance"],
@@ -318,25 +329,26 @@ export const fixOnboarding = authenticatedProcedure
 export const completeTask = protectedProcedure
    .input(z.object({ taskId: z.string().min(1).max(100) }))
    .handler(async ({ context, input }) => {
-      await markTaskDone(context.teamId, input.taskId);
+      await markTaskDone(context.db, context.teamId, input.taskId);
       return { success: true };
    });
 
 export const skipTask = protectedProcedure
    .input(z.object({ taskId: z.string().min(1).max(100) }))
    .handler(async ({ context, input }) => {
-      await markTaskDone(context.teamId, input.taskId);
+      await markTaskDone(context.db, context.teamId, input.taskId);
       return { success: true };
    });
 
 export const completeOnboarding = protectedProcedure
    .input(z.object({ products: z.array(z.enum(["finance"])) }))
    .handler(async ({ context }) => {
-      const { organizationId, teamId, userId } = context;
+      const { db, organizationId, teamId, userId } = context;
 
-      const teamRecord = await getTeamNameAndSlug(teamId);
+      const teamRecord = await getTeamNameAndSlug(db, teamId);
 
       await runOnboardingCompletion({
+         db,
          organizationId,
          teamId,
          userId,
@@ -345,7 +357,7 @@ export const completeOnboarding = protectedProcedure
          accountType: "personal",
       });
 
-      const org = await getOrganizationSlug(organizationId);
+      const org = await getOrganizationSlug(db, organizationId);
 
       return { slug: org?.slug ?? "", teamId };
    });

@@ -1,6 +1,6 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { eq, sql } from "drizzle-orm";
-import { db } from "@core/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateTagInput,
    type UpdateTagInput,
@@ -10,7 +10,11 @@ import {
 } from "@core/database/schemas/tags";
 import { transactionTags } from "@core/database/schemas/transactions";
 
-export async function createTag(teamId: string, data: CreateTagInput) {
+export async function createTag(
+   db: DatabaseInstance,
+   teamId: string,
+   data: CreateTagInput,
+) {
    const validated = validateInput(createTagSchema, data);
    try {
       const [tag] = await db
@@ -29,6 +33,7 @@ export async function createTag(teamId: string, data: CreateTagInput) {
 }
 
 export async function listTags(
+   db: DatabaseInstance,
    teamId: string,
    opts?: { includeArchived?: boolean },
 ) {
@@ -49,7 +54,7 @@ export async function listTags(
    }
 }
 
-export async function getTag(id: string) {
+export async function getTag(db: DatabaseInstance, id: string) {
    try {
       const tag = await db.query.tags.findFirst({
          where: { id },
@@ -61,7 +66,11 @@ export async function getTag(id: string) {
    }
 }
 
-export async function updateTag(id: string, data: UpdateTagInput) {
+export async function updateTag(
+   db: DatabaseInstance,
+   id: string,
+   data: UpdateTagInput,
+) {
    const validated = validateInput(updateTagSchema, data);
    try {
       const [updated] = await db
@@ -77,7 +86,7 @@ export async function updateTag(id: string, data: UpdateTagInput) {
    }
 }
 
-export async function archiveTag(id: string) {
+export async function archiveTag(db: DatabaseInstance, id: string) {
    try {
       const [updated] = await db
          .update(tags)
@@ -92,7 +101,7 @@ export async function archiveTag(id: string) {
    }
 }
 
-export async function reactivateTag(id: string) {
+export async function reactivateTag(db: DatabaseInstance, id: string) {
    try {
       const [updated] = await db
          .update(tags)
@@ -107,14 +116,14 @@ export async function reactivateTag(id: string) {
    }
 }
 
-export async function deleteTag(id: string) {
+export async function deleteTag(db: DatabaseInstance, id: string) {
    try {
       const existing = await db.query.tags.findFirst({
          where: { id },
       });
       if (!existing) throw AppError.notFound("Tag não encontrada.");
 
-      const hasTransactions = await tagHasTransactions(id);
+      const hasTransactions = await tagHasTransactions(db, id);
       if (hasTransactions) {
          throw AppError.conflict(
             "Tag com lançamentos não pode ser excluída. Use arquivamento.",
@@ -128,15 +137,22 @@ export async function deleteTag(id: string) {
    }
 }
 
-export async function ensureTagOwnership(id: string, teamId: string) {
-   const tag = await getTag(id);
+export async function ensureTagOwnership(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
+   const tag = await getTag(db, id);
    if (!tag || tag.teamId !== teamId) {
       throw AppError.notFound("Tag não encontrada.");
    }
    return tag;
 }
 
-export async function tagHasTransactions(tagId: string): Promise<boolean> {
+export async function tagHasTransactions(
+   db: DatabaseInstance,
+   tagId: string,
+): Promise<boolean> {
    try {
       const [row] = await db
          .select({ count: sql<number>`count(*)::int` })

@@ -16,8 +16,6 @@ export async function setupTestDb() {
    const { apply } = await pushSchema(schema, db as any, "snake_case");
    await apply();
 
-   (globalThis as any).__TEST_DB__ = db;
-
    return {
       db,
       client,

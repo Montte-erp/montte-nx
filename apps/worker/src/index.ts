@@ -1,4 +1,3 @@
-import { db } from "@core/database/client";
 import { env } from "@core/environment/worker";
 import {
    startHealthHeartbeat,
@@ -6,9 +5,9 @@ import {
 } from "@core/logging/health";
 import { initOtel, shutdownOtel } from "@core/logging/otel";
 import { initLogger } from "@core/logging/root";
-import { posthog, shutdownPosthog } from "@core/posthog/server";
-import { redis } from "@core/redis/connection";
+import { shutdownPosthog } from "@core/posthog/server";
 import { createQueueConnection } from "@packages/events/queues/connection";
+import { db, posthog, redis } from "./singletons";
 import { startScheduler } from "./scheduler";
 import { startWebhookDeliveryWorker } from "./workers/webhook-delivery";
 
@@ -26,15 +25,12 @@ async function main(): Promise<void> {
 
    const queueConnection = createQueueConnection(env.REDIS_URL);
 
-   // 4. Start BullMQ workers
    const webhookWorker = startWebhookDeliveryWorker(queueConnection);
 
-   // 5. Start scheduled jobs
    const scheduledTasks = startScheduler(db, redis);
 
    logger.info("All systems running");
 
-   // Graceful shutdown
    const shutdown = async (signal: string) => {
       logger.info({ signal }, "Received shutdown signal");
 
@@ -45,7 +41,7 @@ async function main(): Promise<void> {
       await webhookWorker.close();
       await redis.quit();
       stopHealthHeartbeat();
-      await shutdownPosthog();
+      await shutdownPosthog(posthog);
       await shutdownOtel();
 
       logger.info("Shutdown complete");

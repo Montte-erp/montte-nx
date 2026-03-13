@@ -1,12 +1,6 @@
-import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
+import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { setupTestDb } from "../helpers/setup-test-db";
 import * as repo from "../../src/repositories/inventory-repository";
-
-vi.mock("@core/database/client", () => ({
-   get db() {
-      return (globalThis as any).__TEST_DB__;
-   },
-}));
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -39,6 +33,7 @@ describe("inventory-repository", () => {
       it("creates product with currentStock equal to initialStock", async () => {
          const teamId = randomTeamId();
          const product = await repo.createInventoryProduct(
+            testDb.db,
             teamId,
             validProductInput(),
          );
@@ -55,7 +50,7 @@ describe("inventory-repository", () => {
 
       it("defaults initialStock and currentStock to '0' when not provided", async () => {
          const teamId = randomTeamId();
-         const product = await repo.createInventoryProduct(teamId, {
+         const product = await repo.createInventoryProduct(testDb.db, teamId, {
             name: "Produto Sem Estoque",
             baseUnit: "un",
             purchaseUnit: "un",
@@ -70,6 +65,7 @@ describe("inventory-repository", () => {
          const teamId = randomTeamId();
          await expect(
             repo.createInventoryProduct(
+               testDb.db,
                teamId,
                validProductInput({ initialStock: "-5" }),
             ),
@@ -81,16 +77,18 @@ describe("inventory-repository", () => {
       it("lists active products only by default", async () => {
          const teamId = randomTeamId();
          await repo.createInventoryProduct(
+            testDb.db,
             teamId,
             validProductInput({ name: "Active" }),
          );
          const archived = await repo.createInventoryProduct(
+            testDb.db,
             teamId,
             validProductInput({ name: "Archived" }),
          );
-         await repo.archiveInventoryProduct(archived.id);
+         await repo.archiveInventoryProduct(testDb.db, archived.id);
 
-         const list = await repo.listInventoryProducts(teamId);
+         const list = await repo.listInventoryProducts(testDb.db, teamId);
          expect(list).toHaveLength(1);
          expect(list[0]!.name).toBe("Active");
       });
@@ -98,16 +96,18 @@ describe("inventory-repository", () => {
       it("lists all when includeArchived true", async () => {
          const teamId = randomTeamId();
          await repo.createInventoryProduct(
+            testDb.db,
             teamId,
             validProductInput({ name: "Produto A" }),
          );
          const b = await repo.createInventoryProduct(
+            testDb.db,
             teamId,
             validProductInput({ name: "Produto B" }),
          );
-         await repo.archiveInventoryProduct(b.id);
+         await repo.archiveInventoryProduct(testDb.db, b.id);
 
-         const list = await repo.listInventoryProducts(teamId, {
+         const list = await repo.listInventoryProducts(testDb.db, teamId, {
             includeArchived: true,
          });
          expect(list).toHaveLength(2);
@@ -118,11 +118,12 @@ describe("inventory-repository", () => {
       it("returns product by id", async () => {
          const teamId = randomTeamId();
          const created = await repo.createInventoryProduct(
+            testDb.db,
             teamId,
             validProductInput(),
          );
 
-         const found = await repo.getInventoryProduct(created.id);
+         const found = await repo.getInventoryProduct(testDb.db, created.id);
          expect(found).toMatchObject({
             id: created.id,
             name: "Café Especial",
@@ -130,7 +131,10 @@ describe("inventory-repository", () => {
       });
 
       it("returns null for non-existent id", async () => {
-         const found = await repo.getInventoryProduct(crypto.randomUUID());
+         const found = await repo.getInventoryProduct(
+            testDb.db,
+            crypto.randomUUID(),
+         );
          expect(found).toBeNull();
       });
    });
@@ -139,13 +143,18 @@ describe("inventory-repository", () => {
       it("updates product fields", async () => {
          const teamId = randomTeamId();
          const created = await repo.createInventoryProduct(
+            testDb.db,
             teamId,
             validProductInput(),
          );
 
-         const updated = await repo.updateInventoryProduct(created.id, {
-            name: "Café Premium",
-         });
+         const updated = await repo.updateInventoryProduct(
+            testDb.db,
+            created.id,
+            {
+               name: "Café Premium",
+            },
+         );
 
          expect(updated.name).toBe("Café Premium");
          expect(updated.id).toBe(created.id);
@@ -156,55 +165,66 @@ describe("inventory-repository", () => {
       it("purchase: creates movement and increments currentStock", async () => {
          const teamId = randomTeamId();
          const product = await repo.createInventoryProduct(
+            testDb.db,
             teamId,
             validProductInput({ initialStock: "10.0000" }),
          );
 
-         const movement = await repo.createInventoryMovement(teamId, {
-            type: "purchase",
-            productId: product.id,
-            qty: "5.0000",
-            unitPrice: "20.00",
-            date: "2026-01-15",
-         });
+         const movement = await repo.createInventoryMovement(
+            testDb.db,
+            teamId,
+            {
+               type: "purchase",
+               productId: product.id,
+               qty: "5.0000",
+               unitPrice: "20.00",
+               date: "2026-01-15",
+            },
+         );
 
          expect(movement.type).toBe("purchase");
          expect(movement.qty).toBe("5.0000");
 
-         const updated = await repo.getInventoryProduct(product.id);
+         const updated = await repo.getInventoryProduct(testDb.db, product.id);
          expect(updated!.currentStock).toBe("15.0000");
       });
 
       it("sale: creates movement and decrements currentStock", async () => {
          const teamId = randomTeamId();
          const product = await repo.createInventoryProduct(
+            testDb.db,
             teamId,
             validProductInput({ initialStock: "10.0000" }),
          );
 
-         const movement = await repo.createInventoryMovement(teamId, {
-            type: "sale",
-            productId: product.id,
-            qty: "3.0000",
-            unitPrice: "50.00",
-            date: "2026-01-15",
-         });
+         const movement = await repo.createInventoryMovement(
+            testDb.db,
+            teamId,
+            {
+               type: "sale",
+               productId: product.id,
+               qty: "3.0000",
+               unitPrice: "50.00",
+               date: "2026-01-15",
+            },
+         );
 
          expect(movement.type).toBe("sale");
 
-         const updated = await repo.getInventoryProduct(product.id);
+         const updated = await repo.getInventoryProduct(testDb.db, product.id);
          expect(updated!.currentStock).toBe("7.0000");
       });
 
       it("sale: blocks when qty > currentStock", async () => {
          const teamId = randomTeamId();
          const product = await repo.createInventoryProduct(
+            testDb.db,
             teamId,
             validProductInput({ initialStock: "5.0000" }),
          );
 
          await expect(
-            repo.createInventoryMovement(teamId, {
+            repo.createInventoryMovement(testDb.db, teamId, {
                type: "sale",
                productId: product.id,
                qty: "10.0000",
@@ -217,33 +237,39 @@ describe("inventory-repository", () => {
       it("waste: creates movement without unitPrice, decrements stock", async () => {
          const teamId = randomTeamId();
          const product = await repo.createInventoryProduct(
+            testDb.db,
             teamId,
             validProductInput({ initialStock: "20.0000" }),
          );
 
-         const movement = await repo.createInventoryMovement(teamId, {
-            type: "waste",
-            productId: product.id,
-            qty: "2.0000",
-            date: "2026-01-15",
-         });
+         const movement = await repo.createInventoryMovement(
+            testDb.db,
+            teamId,
+            {
+               type: "waste",
+               productId: product.id,
+               qty: "2.0000",
+               date: "2026-01-15",
+            },
+         );
 
          expect(movement.type).toBe("waste");
          expect(movement.totalAmount).toBeNull();
 
-         const updated = await repo.getInventoryProduct(product.id);
+         const updated = await repo.getInventoryProduct(testDb.db, product.id);
          expect(updated!.currentStock).toBe("18.0000");
       });
 
       it("waste: blocks when qty > currentStock", async () => {
          const teamId = randomTeamId();
          const product = await repo.createInventoryProduct(
+            testDb.db,
             teamId,
             validProductInput({ initialStock: "3.0000" }),
          );
 
          await expect(
-            repo.createInventoryMovement(teamId, {
+            repo.createInventoryMovement(testDb.db, teamId, {
                type: "waste",
                productId: product.id,
                qty: "5.0000",
@@ -255,17 +281,22 @@ describe("inventory-repository", () => {
       it("purchase: totalAmount is calculated correctly (qty * unitPrice)", async () => {
          const teamId = randomTeamId();
          const product = await repo.createInventoryProduct(
+            testDb.db,
             teamId,
             validProductInput({ initialStock: "0" }),
          );
 
-         const movement = await repo.createInventoryMovement(teamId, {
-            type: "purchase",
-            productId: product.id,
-            qty: "3.0000",
-            unitPrice: "25.50",
-            date: "2026-01-15",
-         });
+         const movement = await repo.createInventoryMovement(
+            testDb.db,
+            teamId,
+            {
+               type: "purchase",
+               productId: product.id,
+               qty: "3.0000",
+               unitPrice: "25.50",
+               date: "2026-01-15",
+            },
+         );
 
          expect(movement.totalAmount).toBe("76.50");
       });
@@ -275,42 +306,52 @@ describe("inventory-repository", () => {
       it("reverts purchase delta on deletion", async () => {
          const teamId = randomTeamId();
          const product = await repo.createInventoryProduct(
+            testDb.db,
             teamId,
             validProductInput({ initialStock: "10.0000" }),
          );
 
-         const movement = await repo.createInventoryMovement(teamId, {
-            type: "purchase",
-            productId: product.id,
-            qty: "5.0000",
-            unitPrice: "20.00",
-            date: "2026-01-15",
-         });
+         const movement = await repo.createInventoryMovement(
+            testDb.db,
+            teamId,
+            {
+               type: "purchase",
+               productId: product.id,
+               qty: "5.0000",
+               unitPrice: "20.00",
+               date: "2026-01-15",
+            },
+         );
 
-         await repo.deleteInventoryMovement(movement.id);
+         await repo.deleteInventoryMovement(testDb.db, movement.id);
 
-         const updated = await repo.getInventoryProduct(product.id);
+         const updated = await repo.getInventoryProduct(testDb.db, product.id);
          expect(updated!.currentStock).toBe("10.0000");
       });
 
       it("reverts sale delta on deletion", async () => {
          const teamId = randomTeamId();
          const product = await repo.createInventoryProduct(
+            testDb.db,
             teamId,
             validProductInput({ initialStock: "10.0000" }),
          );
 
-         const movement = await repo.createInventoryMovement(teamId, {
-            type: "sale",
-            productId: product.id,
-            qty: "4.0000",
-            unitPrice: "50.00",
-            date: "2026-01-15",
-         });
+         const movement = await repo.createInventoryMovement(
+            testDb.db,
+            teamId,
+            {
+               type: "sale",
+               productId: product.id,
+               qty: "4.0000",
+               unitPrice: "50.00",
+               date: "2026-01-15",
+            },
+         );
 
-         await repo.deleteInventoryMovement(movement.id);
+         await repo.deleteInventoryMovement(testDb.db, movement.id);
 
-         const updated = await repo.getInventoryProduct(product.id);
+         const updated = await repo.getInventoryProduct(testDb.db, product.id);
          expect(updated!.currentStock).toBe("10.0000");
       });
    });

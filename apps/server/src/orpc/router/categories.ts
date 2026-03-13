@@ -29,7 +29,7 @@ export const list = sdkProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const cats = await listCategories(context.teamId!, {
+      const cats = await listCategories(context.db, context.teamId!, {
          type: input.type,
          includeArchived: input.includeArchived,
       });
@@ -39,7 +39,7 @@ export const list = sdkProcedure
 export const create = sdkProcedure
    .input(CreateCategorySchema)
    .handler(async ({ context, input }) => {
-      const cat = await createCategory(context.teamId!, {
+      const cat = await createCategory(context.db, context.teamId!, {
          ...input,
          participatesDre: false,
       });
@@ -50,23 +50,23 @@ export const update = sdkProcedure
    .input(z.object({ id: z.string().uuid() }).merge(UpdateCategorySchema))
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
-      await ensureCategoryOwnership(id, context.teamId!);
-      const cat = await updateCategory(id, data);
+      await ensureCategoryOwnership(context.db, id, context.teamId!);
+      const cat = await updateCategory(context.db, id, data);
       return mapCategory(cat);
    });
 
 export const remove = sdkProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      await ensureCategoryOwnership(input.id, context.teamId!);
-      await deleteCategory(input.id);
+      await ensureCategoryOwnership(context.db, input.id, context.teamId!);
+      await deleteCategory(context.db, input.id);
       return { success: true as const };
    });
 
 export const archive = sdkProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      await ensureCategoryOwnership(input.id, context.teamId!);
-      const cat = await archiveCategory(input.id);
+      await ensureCategoryOwnership(context.db, input.id, context.teamId!);
+      const cat = await archiveCategory(context.db, input.id);
       return mapCategory(cat!);
    });

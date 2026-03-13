@@ -61,36 +61,36 @@ const settingsSchema = createInsertSchema(inventorySettings).omit({
 });
 
 export const getProducts = protectedProcedure.handler(async ({ context }) => {
-   return listInventoryProducts(context.teamId);
+   return listInventoryProducts(context.db, context.teamId);
 });
 
 export const createProduct = protectedProcedure
    .input(createInventoryProductSchema)
    .handler(async ({ context, input }) => {
-      return createInventoryProduct(context.teamId, input);
+      return createInventoryProduct(context.db, context.teamId, input);
    });
 
 export const updateProduct = protectedProcedure
    .input(idSchema.merge(updateInventoryProductSchema.partial()))
    .handler(async ({ context, input }) => {
-      await ensureProductOwnership(input.id, context.teamId);
+      await ensureProductOwnership(context.db, input.id, context.teamId);
       const { id, ...data } = input;
-      return updateInventoryProduct(id, data);
+      return updateInventoryProduct(context.db, id, data);
    });
 
 export const archiveProduct = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      await ensureProductOwnership(input.id, context.teamId);
-      return archiveInventoryProduct(input.id);
+      await ensureProductOwnership(context.db, input.id, context.teamId);
+      return archiveInventoryProduct(context.db, input.id);
    });
 
 export const registerMovement = protectedProcedure
    .input(movementSchema)
    .handler(async ({ context, input }) => {
-      const { teamId } = context;
-      const product = await ensureProductOwnership(input.productId, teamId);
-      const settings = await getInventorySettings(teamId);
+      const { db, teamId } = context;
+      const product = await ensureProductOwnership(db, input.productId, teamId);
+      const settings = await getInventorySettings(db, teamId);
 
       let transactionId: string | null = null;
       let baseQty: number;
@@ -109,7 +109,7 @@ export const registerMovement = protectedProcedure
             const bankAccountId =
                input.bankAccountId ?? settings?.purchaseBankAccountId;
             if (bankAccountId) {
-               const tx = await createTransaction(teamId, {
+               const tx = await createTransaction(db, teamId, {
                   type: "expense",
                   name: `Compra: ${product.name} - ${input.purchasedQty} ${product.purchaseUnit}`,
                   amount: String(input.totalAmount),
@@ -134,7 +134,7 @@ export const registerMovement = protectedProcedure
          try {
             const bankAccountId = settings?.purchaseBankAccountId;
             if (bankAccountId) {
-               const tx = await createTransaction(teamId, {
+               const tx = await createTransaction(db, teamId, {
                   type: "income",
                   name: `Venda: ${product.name} - ${baseQty} ${product.baseUnit}`,
                   amount: String(input.totalAmount),
@@ -152,7 +152,7 @@ export const registerMovement = protectedProcedure
          const lossAmount = baseQty * Number(product.sellingPrice ?? 0);
          if (lossAmount > 0 && settings?.purchaseBankAccountId) {
             try {
-               const tx = await createTransaction(teamId, {
+               const tx = await createTransaction(db, teamId, {
                   type: "expense",
                   name: `Desperdício: ${product.name} - ${baseQty} ${product.baseUnit}`,
                   amount: String(lossAmount),
@@ -185,21 +185,25 @@ export const registerMovement = protectedProcedure
                  unitPrice: String(unitPrice ?? 0),
               };
 
-      return createInventoryMovement(teamId, movementData);
+      return createInventoryMovement(db, teamId, movementData);
    });
 
 export const getMovements = protectedProcedure
    .input(z.object({ productId: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      return listInventoryMovements(input.productId, context.teamId);
+      return listInventoryMovements(
+         context.db,
+         input.productId,
+         context.teamId,
+      );
    });
 
 export const getSettings = protectedProcedure.handler(async ({ context }) => {
-   return getInventorySettings(context.teamId);
+   return getInventorySettings(context.db, context.teamId);
 });
 
 export const upsertSettings = protectedProcedure
    .input(settingsSchema.partial())
    .handler(async ({ context, input }) => {
-      return upsertInventorySettings(context.teamId, input);
+      return upsertInventorySettings(context.db, context.teamId, input);
    });

@@ -1,16 +1,10 @@
-import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
+import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { setupTestDb } from "../helpers/setup-test-db";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
 import { tags } from "@core/database/schemas/tags";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import * as repo from "../../src/repositories/transactions-repository";
-
-vi.mock("@core/database/client", () => ({
-   get db() {
-      return (globalThis as any).__TEST_DB__;
-   },
-}));
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -74,7 +68,7 @@ describe("transactions-repository", () => {
          const teamId = randomTeamId();
          const account = await createTestBankAccount(teamId);
          await expect(
-            repo.createTransaction(teamId, {
+            repo.createTransaction(testDb.db, teamId, {
                type: "income",
                amount: "0",
                date: "2026-01-15",
@@ -87,7 +81,7 @@ describe("transactions-repository", () => {
          const teamId = randomTeamId();
          const account = await createTestBankAccount(teamId);
          await expect(
-            repo.createTransaction(teamId, {
+            repo.createTransaction(testDb.db, teamId, {
                type: "income",
                amount: "100.00",
                date: "15/01/2026",
@@ -100,7 +94,7 @@ describe("transactions-repository", () => {
          const teamId = randomTeamId();
          const account = await createTestBankAccount(teamId);
          await expect(
-            repo.createTransaction(teamId, {
+            repo.createTransaction(testDb.db, teamId, {
                type: "transfer",
                amount: "100.00",
                date: "2026-01-15",
@@ -113,7 +107,7 @@ describe("transactions-repository", () => {
          const teamId = randomTeamId();
          const account = await createTestBankAccount(teamId);
          await expect(
-            repo.createTransaction(teamId, {
+            repo.createTransaction(testDb.db, teamId, {
                type: "transfer",
                amount: "100.00",
                date: "2026-01-15",
@@ -126,7 +120,7 @@ describe("transactions-repository", () => {
          const teamId = randomTeamId();
          const account = await createTestBankAccount(teamId);
          await expect(
-            repo.createTransaction(teamId, {
+            repo.createTransaction(testDb.db, teamId, {
                type: "transfer",
                amount: "100.00",
                date: "2026-01-15",
@@ -139,7 +133,7 @@ describe("transactions-repository", () => {
       it("rejects expense without bank account or credit card", async () => {
          const teamId = randomTeamId();
          await expect(
-            repo.createTransaction(teamId, {
+            repo.createTransaction(testDb.db, teamId, {
                type: "expense",
                amount: "100.00",
                date: "2026-01-15",
@@ -150,7 +144,7 @@ describe("transactions-repository", () => {
       it("rejects income without bank account", async () => {
          const teamId = randomTeamId();
          await expect(
-            repo.createTransaction(teamId, {
+            repo.createTransaction(testDb.db, teamId, {
                type: "income",
                amount: "100.00",
                date: "2026-01-15",
@@ -164,7 +158,7 @@ describe("transactions-repository", () => {
          const teamId = randomTeamId();
          const account = await createTestBankAccount(teamId);
 
-         const tx = await repo.createTransaction(teamId, {
+         const tx = await repo.createTransaction(testDb.db, teamId, {
             type: "income",
             amount: "500.00",
             date: "2026-01-15",
@@ -186,7 +180,7 @@ describe("transactions-repository", () => {
          const origin = await createTestBankAccount(teamId, "Origem");
          const dest = await createTestBankAccount(teamId, "Destino");
 
-         const tx = await repo.createTransaction(teamId, {
+         const tx = await repo.createTransaction(testDb.db, teamId, {
             type: "transfer",
             amount: "200.00",
             date: "2026-01-15",
@@ -204,7 +198,7 @@ describe("transactions-repository", () => {
          const account = await createTestBankAccount(teamId);
          const card = await createTestCreditCard(teamId, account.id);
 
-         const tx = await repo.createTransaction(teamId, {
+         const tx = await repo.createTransaction(testDb.db, teamId, {
             type: "expense",
             amount: "150.00",
             date: "2026-01-15",
@@ -220,6 +214,7 @@ describe("transactions-repository", () => {
          const tag = await createTestTag(teamId);
 
          const tx = await repo.createTransaction(
+            testDb.db,
             teamId,
             {
                type: "income",
@@ -230,7 +225,7 @@ describe("transactions-repository", () => {
             [tag.id],
          );
 
-         const withTags = await repo.getTransactionWithTags(tx.id);
+         const withTags = await repo.getTransactionWithTags(testDb.db, tx.id);
          expect(withTags?.tagIds).toContain(tag.id);
       });
    });
@@ -240,14 +235,16 @@ describe("transactions-repository", () => {
          const teamId = randomTeamId();
          const account = await createTestBankAccount(teamId);
 
-         await repo.createTransaction(teamId, {
+         await repo.createTransaction(testDb.db, teamId, {
             type: "income",
             amount: "100.00",
             date: "2026-01-15",
             bankAccountId: account.id,
          });
 
-         const { data, total } = await repo.listTransactions({ teamId });
+         const { data, total } = await repo.listTransactions(testDb.db, {
+            teamId,
+         });
          expect(total).toBe(1);
          expect(data).toHaveLength(1);
       });
@@ -256,20 +253,20 @@ describe("transactions-repository", () => {
          const teamId = randomTeamId();
          const account = await createTestBankAccount(teamId);
 
-         await repo.createTransaction(teamId, {
+         await repo.createTransaction(testDb.db, teamId, {
             type: "income",
             amount: "100.00",
             date: "2026-01-15",
             bankAccountId: account.id,
          });
-         await repo.createTransaction(teamId, {
+         await repo.createTransaction(testDb.db, teamId, {
             type: "expense",
             amount: "50.00",
             date: "2026-01-15",
             bankAccountId: account.id,
          });
 
-         const { total } = await repo.listTransactions({
+         const { total } = await repo.listTransactions(testDb.db, {
             teamId,
             type: "income",
          });
@@ -280,20 +277,20 @@ describe("transactions-repository", () => {
          const teamId = randomTeamId();
          const account = await createTestBankAccount(teamId);
 
-         await repo.createTransaction(teamId, {
+         await repo.createTransaction(testDb.db, teamId, {
             type: "income",
             amount: "100.00",
             date: "2026-01-15",
             bankAccountId: account.id,
          });
-         await repo.createTransaction(teamId, {
+         await repo.createTransaction(testDb.db, teamId, {
             type: "income",
             amount: "200.00",
             date: "2026-02-15",
             bankAccountId: account.id,
          });
 
-         const { total } = await repo.listTransactions({
+         const { total } = await repo.listTransactions(testDb.db, {
             teamId,
             dateFrom: "2026-02-01",
             dateTo: "2026-02-28",
@@ -307,20 +304,22 @@ describe("transactions-repository", () => {
          const teamId = randomTeamId();
          const account = await createTestBankAccount(teamId);
 
-         await repo.createTransaction(teamId, {
+         await repo.createTransaction(testDb.db, teamId, {
             type: "income",
             amount: "1000.00",
             date: "2026-01-15",
             bankAccountId: account.id,
          });
-         await repo.createTransaction(teamId, {
+         await repo.createTransaction(testDb.db, teamId, {
             type: "expense",
             amount: "300.00",
             date: "2026-01-16",
             bankAccountId: account.id,
          });
 
-         const summary = await repo.getTransactionsSummary({ teamId });
+         const summary = await repo.getTransactionsSummary(testDb.db, {
+            teamId,
+         });
          expect(summary.totalCount).toBe(2);
          expect(summary.incomeTotal).toBe("1000.00");
          expect(summary.expenseTotal).toBe("300.00");
@@ -333,7 +332,7 @@ describe("transactions-repository", () => {
          const teamId = randomTeamId();
          const account = await createTestBankAccount(teamId);
 
-         const tx = await repo.createTransaction(teamId, {
+         const tx = await repo.createTransaction(testDb.db, teamId, {
             type: "income",
             amount: "100.00",
             date: "2026-01-15",
@@ -341,7 +340,7 @@ describe("transactions-repository", () => {
             name: "Original",
          });
 
-         const updated = await repo.updateTransaction(tx.id, {
+         const updated = await repo.updateTransaction(testDb.db, tx.id, {
             name: "Updated",
          });
          expect(updated.name).toBe("Updated");
@@ -354,6 +353,7 @@ describe("transactions-repository", () => {
          const tag2 = await createTestTag(teamId);
 
          const tx = await repo.createTransaction(
+            testDb.db,
             teamId,
             {
                type: "income",
@@ -364,9 +364,11 @@ describe("transactions-repository", () => {
             [tag1.id],
          );
 
-         await repo.updateTransaction(tx.id, { name: "Updated" }, [tag2.id]);
+         await repo.updateTransaction(testDb.db, tx.id, { name: "Updated" }, [
+            tag2.id,
+         ]);
 
-         const withTags = await repo.getTransactionWithTags(tx.id);
+         const withTags = await repo.getTransactionWithTags(testDb.db, tx.id);
          expect(withTags?.tagIds).toEqual([tag2.id]);
       });
    });
@@ -376,15 +378,15 @@ describe("transactions-repository", () => {
          const teamId = randomTeamId();
          const account = await createTestBankAccount(teamId);
 
-         const tx = await repo.createTransaction(teamId, {
+         const tx = await repo.createTransaction(testDb.db, teamId, {
             type: "income",
             amount: "100.00",
             date: "2026-01-15",
             bankAccountId: account.id,
          });
 
-         await repo.deleteTransaction(tx.id);
-         const found = await repo.getTransactionWithTags(tx.id);
+         await repo.deleteTransaction(testDb.db, tx.id);
+         const found = await repo.getTransactionWithTags(testDb.db, tx.id);
          expect(found).toBeNull();
       });
    });
@@ -394,19 +396,19 @@ describe("transactions-repository", () => {
          const teamId = randomTeamId();
          const account = await createTestBankAccount(teamId);
 
-         const tx = await repo.createTransaction(teamId, {
+         const tx = await repo.createTransaction(testDb.db, teamId, {
             type: "expense",
             amount: "200.00",
             date: "2026-01-15",
             bankAccountId: account.id,
          });
 
-         await repo.createTransactionItems(tx.id, teamId, [
+         await repo.createTransactionItems(testDb.db, tx.id, teamId, [
             { description: "Item 1", quantity: "2", unitPrice: "50.00" },
             { description: "Item 2", quantity: "1", unitPrice: "100.00" },
          ]);
 
-         const items = await repo.getTransactionItems(tx.id);
+         const items = await repo.getTransactionItems(testDb.db, tx.id);
          expect(items).toHaveLength(2);
       });
 
@@ -414,23 +416,23 @@ describe("transactions-repository", () => {
          const teamId = randomTeamId();
          const account = await createTestBankAccount(teamId);
 
-         const tx = await repo.createTransaction(teamId, {
+         const tx = await repo.createTransaction(testDb.db, teamId, {
             type: "expense",
             amount: "200.00",
             date: "2026-01-15",
             bankAccountId: account.id,
          });
 
-         await repo.createTransactionItems(tx.id, teamId, [
+         await repo.createTransactionItems(testDb.db, tx.id, teamId, [
             { description: "Old", quantity: "1", unitPrice: "200.00" },
          ]);
 
-         await repo.replaceTransactionItems(tx.id, teamId, [
+         await repo.replaceTransactionItems(testDb.db, tx.id, teamId, [
             { description: "New 1", quantity: "1", unitPrice: "100.00" },
             { description: "New 2", quantity: "1", unitPrice: "100.00" },
          ]);
 
-         const items = await repo.getTransactionItems(tx.id);
+         const items = await repo.getTransactionItems(testDb.db, tx.id);
          expect(items).toHaveLength(2);
       });
    });

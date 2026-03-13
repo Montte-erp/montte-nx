@@ -1,4 +1,4 @@
-import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
+import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { setupTestDb } from "../helpers/setup-test-db";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import {
@@ -6,12 +6,6 @@ import {
    transactionTags,
 } from "@core/database/schemas/transactions";
 import * as repo from "../../src/repositories/tags-repository";
-
-vi.mock("@core/database/client", () => ({
-   get db() {
-      return (globalThis as any).__TEST_DB__;
-   },
-}));
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -38,7 +32,11 @@ describe("tags-repository", () => {
    describe("createTag", () => {
       it("creates tag with correct fields", async () => {
          const teamId = randomTeamId();
-         const tag = await repo.createTag(teamId, validCreateInput());
+         const tag = await repo.createTag(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
 
          expect(tag).toMatchObject({
             teamId,
@@ -53,6 +51,7 @@ describe("tags-repository", () => {
       it("creates tag with description and color", async () => {
          const teamId = randomTeamId();
          const tag = await repo.createTag(
+            testDb.db,
             teamId,
             validCreateInput({
                description: "Tag de teste",
@@ -66,41 +65,49 @@ describe("tags-repository", () => {
 
       it("rejects duplicate name within same team", async () => {
          const teamId = randomTeamId();
-         await repo.createTag(teamId, validCreateInput());
+         await repo.createTag(testDb.db, teamId, validCreateInput());
 
          await expect(
-            repo.createTag(teamId, validCreateInput()),
+            repo.createTag(testDb.db, teamId, validCreateInput()),
          ).rejects.toThrow();
       });
 
       it("allows same name in different teams", async () => {
          const teamA = randomTeamId();
          const teamB = randomTeamId();
-         await repo.createTag(teamA, validCreateInput());
+         await repo.createTag(testDb.db, teamA, validCreateInput());
 
          await expect(
-            repo.createTag(teamB, validCreateInput()),
+            repo.createTag(testDb.db, teamB, validCreateInput()),
          ).resolves.toBeDefined();
       });
 
       it("rejects name shorter than 2 chars", async () => {
          const teamId = randomTeamId();
          await expect(
-            repo.createTag(teamId, validCreateInput({ name: "A" })),
+            repo.createTag(testDb.db, teamId, validCreateInput({ name: "A" })),
          ).rejects.toMatchObject({ cause: expect.stringMatching(/mínimo/) });
       });
 
       it("rejects name longer than 120 chars", async () => {
          const teamId = randomTeamId();
          await expect(
-            repo.createTag(teamId, validCreateInput({ name: "A".repeat(121) })),
+            repo.createTag(
+               testDb.db,
+               teamId,
+               validCreateInput({ name: "A".repeat(121) }),
+            ),
          ).rejects.toMatchObject({ cause: expect.stringMatching(/máximo/) });
       });
 
       it("rejects invalid color format", async () => {
          const teamId = randomTeamId();
          await expect(
-            repo.createTag(teamId, validCreateInput({ color: "red" })),
+            repo.createTag(
+               testDb.db,
+               teamId,
+               validCreateInput({ color: "red" }),
+            ),
          ).rejects.toMatchObject({ cause: expect.stringMatching(/hex/) });
       });
    });
@@ -108,43 +115,63 @@ describe("tags-repository", () => {
    describe("listTags", () => {
       it("lists tags for a team", async () => {
          const teamId = randomTeamId();
-         await repo.createTag(teamId, validCreateInput({ name: "Tag A" }));
-         await repo.createTag(teamId, validCreateInput({ name: "Tag B" }));
+         await repo.createTag(
+            testDb.db,
+            teamId,
+            validCreateInput({ name: "Tag A" }),
+         );
+         await repo.createTag(
+            testDb.db,
+            teamId,
+            validCreateInput({ name: "Tag B" }),
+         );
 
-         const list = await repo.listTags(teamId);
+         const list = await repo.listTags(testDb.db, teamId);
          expect(list).toHaveLength(2);
       });
 
       it("does not list archived by default", async () => {
          const teamId = randomTeamId();
          const tag = await repo.createTag(
+            testDb.db,
             teamId,
             validCreateInput({ name: "Archived" }),
          );
-         await repo.archiveTag(tag.id);
+         await repo.archiveTag(testDb.db, tag.id);
 
-         const list = await repo.listTags(teamId);
+         const list = await repo.listTags(testDb.db, teamId);
          expect(list).toHaveLength(0);
       });
 
       it("lists archived when includeArchived=true", async () => {
          const teamId = randomTeamId();
          const tag = await repo.createTag(
+            testDb.db,
             teamId,
             validCreateInput({ name: "Archived" }),
          );
-         await repo.archiveTag(tag.id);
+         await repo.archiveTag(testDb.db, tag.id);
 
-         const list = await repo.listTags(teamId, { includeArchived: true });
+         const list = await repo.listTags(testDb.db, teamId, {
+            includeArchived: true,
+         });
          expect(list).toHaveLength(1);
       });
 
       it("orders by name ascending", async () => {
          const teamId = randomTeamId();
-         await repo.createTag(teamId, validCreateInput({ name: "Zebra" }));
-         await repo.createTag(teamId, validCreateInput({ name: "Alpha" }));
+         await repo.createTag(
+            testDb.db,
+            teamId,
+            validCreateInput({ name: "Zebra" }),
+         );
+         await repo.createTag(
+            testDb.db,
+            teamId,
+            validCreateInput({ name: "Alpha" }),
+         );
 
-         const list = await repo.listTags(teamId);
+         const list = await repo.listTags(testDb.db, teamId);
          expect(list[0]!.name).toBe("Alpha");
          expect(list[1]!.name).toBe("Zebra");
       });
@@ -152,10 +179,18 @@ describe("tags-repository", () => {
       it("does not return other team's tags", async () => {
          const teamA = randomTeamId();
          const teamB = randomTeamId();
-         await repo.createTag(teamA, validCreateInput({ name: "Tag A" }));
-         await repo.createTag(teamB, validCreateInput({ name: "Tag B" }));
+         await repo.createTag(
+            testDb.db,
+            teamA,
+            validCreateInput({ name: "Tag A" }),
+         );
+         await repo.createTag(
+            testDb.db,
+            teamB,
+            validCreateInput({ name: "Tag B" }),
+         );
 
-         const list = await repo.listTags(teamA);
+         const list = await repo.listTags(testDb.db, teamA);
          expect(list).toHaveLength(1);
          expect(list[0]!.name).toBe("Tag A");
       });
@@ -164,14 +199,18 @@ describe("tags-repository", () => {
    describe("getTag", () => {
       it("returns tag by id", async () => {
          const teamId = randomTeamId();
-         const created = await repo.createTag(teamId, validCreateInput());
+         const created = await repo.createTag(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
 
-         const found = await repo.getTag(created.id);
+         const found = await repo.getTag(testDb.db, created.id);
          expect(found).toMatchObject({ id: created.id, name: "Projeto Alpha" });
       });
 
       it("returns null for nonexistent id", async () => {
-         const found = await repo.getTag(crypto.randomUUID());
+         const found = await repo.getTag(testDb.db, crypto.randomUUID());
          expect(found).toBeNull();
       });
    });
@@ -179,9 +218,13 @@ describe("tags-repository", () => {
    describe("updateTag", () => {
       it("updates tag name", async () => {
          const teamId = randomTeamId();
-         const created = await repo.createTag(teamId, validCreateInput());
+         const created = await repo.createTag(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
 
-         const updated = await repo.updateTag(created.id, {
+         const updated = await repo.updateTag(testDb.db, created.id, {
             name: "Novo Nome",
          });
          expect(updated.name).toBe("Novo Nome");
@@ -190,9 +233,13 @@ describe("tags-repository", () => {
 
       it("updates tag description", async () => {
          const teamId = randomTeamId();
-         const created = await repo.createTag(teamId, validCreateInput());
+         const created = await repo.createTag(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
 
-         const updated = await repo.updateTag(created.id, {
+         const updated = await repo.updateTag(testDb.db, created.id, {
             description: "Nova descrição",
          });
          expect(updated.description).toBe("Nova descrição");
@@ -200,7 +247,7 @@ describe("tags-repository", () => {
 
       it("rejects updating nonexistent tag", async () => {
          await expect(
-            repo.updateTag(crypto.randomUUID(), { name: "Nope" }),
+            repo.updateTag(testDb.db, crypto.randomUUID(), { name: "Nope" }),
          ).rejects.toThrow(/não encontrad/);
       });
    });
@@ -208,26 +255,34 @@ describe("tags-repository", () => {
    describe("archiveTag", () => {
       it("archives tag", async () => {
          const teamId = randomTeamId();
-         const tag = await repo.createTag(teamId, validCreateInput());
+         const tag = await repo.createTag(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
 
-         const archived = await repo.archiveTag(tag.id);
+         const archived = await repo.archiveTag(testDb.db, tag.id);
          expect(archived.isArchived).toBe(true);
       });
 
       it("rejects archiving nonexistent tag", async () => {
-         await expect(repo.archiveTag(crypto.randomUUID())).rejects.toThrow(
-            /não encontrad/,
-         );
+         await expect(
+            repo.archiveTag(testDb.db, crypto.randomUUID()),
+         ).rejects.toThrow(/não encontrad/);
       });
    });
 
    describe("reactivateTag", () => {
       it("reactivates archived tag", async () => {
          const teamId = randomTeamId();
-         const tag = await repo.createTag(teamId, validCreateInput());
-         await repo.archiveTag(tag.id);
+         const tag = await repo.createTag(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
+         await repo.archiveTag(testDb.db, tag.id);
 
-         const reactivated = await repo.reactivateTag(tag.id);
+         const reactivated = await repo.reactivateTag(testDb.db, tag.id);
          expect(reactivated.isArchived).toBe(false);
       });
    });
@@ -235,16 +290,24 @@ describe("tags-repository", () => {
    describe("deleteTag", () => {
       it("deletes tag without transactions", async () => {
          const teamId = randomTeamId();
-         const tag = await repo.createTag(teamId, validCreateInput());
+         const tag = await repo.createTag(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
 
-         await repo.deleteTag(tag.id);
-         const found = await repo.getTag(tag.id);
+         await repo.deleteTag(testDb.db, tag.id);
+         const found = await repo.getTag(testDb.db, tag.id);
          expect(found).toBeNull();
       });
 
       it("rejects deleting tag with transactions", async () => {
          const teamId = randomTeamId();
-         const tag = await repo.createTag(teamId, validCreateInput());
+         const tag = await repo.createTag(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
 
          const [account] = await testDb.db
             .insert(bankAccounts)
@@ -274,13 +337,15 @@ describe("tags-repository", () => {
             tagId: tag.id,
          });
 
-         await expect(repo.deleteTag(tag.id)).rejects.toThrow(/lançamentos/);
+         await expect(repo.deleteTag(testDb.db, tag.id)).rejects.toThrow(
+            /lançamentos/,
+         );
       });
 
       it("rejects deleting nonexistent tag", async () => {
-         await expect(repo.deleteTag(crypto.randomUUID())).rejects.toThrow(
-            /não encontrad/,
-         );
+         await expect(
+            repo.deleteTag(testDb.db, crypto.randomUUID()),
+         ).rejects.toThrow(/não encontrad/);
       });
    });
 });

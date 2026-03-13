@@ -1,13 +1,17 @@
 import { AppError, propagateError } from "@core/logging/errors";
 import { eq, sql } from "drizzle-orm";
-import { db } from "@core/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import { organization, team, teamMember } from "@core/database/schemas/auth";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
 import { insights } from "@core/database/schemas/insights";
 import { transactions } from "@core/database/schemas/transactions";
 
-export async function insertTeamMember(teamId: string, userId: string) {
+export async function insertTeamMember(
+   db: DatabaseInstance,
+   teamId: string,
+   userId: string,
+) {
    try {
       await db.insert(teamMember).values({
          teamId,
@@ -21,6 +25,7 @@ export async function insertTeamMember(teamId: string, userId: string) {
 }
 
 export async function markTeamOnboardingComplete(
+   db: DatabaseInstance,
    teamId: string,
    data: {
       slug: string;
@@ -45,6 +50,7 @@ export async function markTeamOnboardingComplete(
 }
 
 export async function markOrganizationOnboardingComplete(
+   db: DatabaseInstance,
    organizationId: string,
 ) {
    try {
@@ -58,7 +64,10 @@ export async function markOrganizationOnboardingComplete(
    }
 }
 
-export async function getOrganizationById(organizationId: string) {
+export async function getOrganizationById(
+   db: DatabaseInstance,
+   organizationId: string,
+) {
    try {
       return await db.query.organization.findFirst({
          where: { id: organizationId },
@@ -69,7 +78,10 @@ export async function getOrganizationById(organizationId: string) {
    }
 }
 
-export async function getOrganizationSlug(organizationId: string) {
+export async function getOrganizationSlug(
+   db: DatabaseInstance,
+   organizationId: string,
+) {
    try {
       return await db.query.organization.findFirst({
          where: { id: organizationId },
@@ -81,7 +93,7 @@ export async function getOrganizationSlug(organizationId: string) {
    }
 }
 
-export async function getTeamById(teamId: string) {
+export async function getTeamById(db: DatabaseInstance, teamId: string) {
    try {
       return await db.query.team.findFirst({
          where: { id: teamId },
@@ -92,7 +104,7 @@ export async function getTeamById(teamId: string) {
    }
 }
 
-export async function getTeamNameAndSlug(teamId: string) {
+export async function getTeamNameAndSlug(db: DatabaseInstance, teamId: string) {
    try {
       return await db.query.team.findFirst({
          where: { id: teamId },
@@ -105,6 +117,7 @@ export async function getTeamNameAndSlug(teamId: string) {
 }
 
 export async function getOnboardingCounts(
+   db: DatabaseInstance,
    organizationId: string,
    teamId: string,
 ) {
@@ -146,6 +159,7 @@ export async function getOnboardingCounts(
 }
 
 export async function getOrgAndTeamOnboardingFlags(
+   db: DatabaseInstance,
    orgId: string,
    activeTeamId: string | null | undefined,
 ) {
@@ -176,7 +190,11 @@ export async function getOrgAndTeamOnboardingFlags(
    }
 }
 
-export async function markTaskDone(teamId: string, taskId: string) {
+export async function markTaskDone(
+   db: DatabaseInstance,
+   teamId: string,
+   taskId: string,
+) {
    try {
       await db
          .update(team)
@@ -191,8 +209,9 @@ export async function markTaskDone(teamId: string, taskId: string) {
 }
 
 export async function updateInsightCache(
+   db: DatabaseInstance,
    insightId: string,
-   cachedResults: unknown,
+   cachedResults: Record<string, unknown>,
 ) {
    try {
       await db

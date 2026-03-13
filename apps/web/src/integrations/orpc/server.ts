@@ -1,25 +1,18 @@
 import { logs } from "@opentelemetry/api-logs";
 import { ORPCError, os } from "@orpc/server";
 import type { AuthInstance } from "@core/authentication/server";
-import { auth } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
-import { db } from "@core/database/client";
 import { AppError, WebAppError } from "@core/logging/errors";
 import type { PostHog } from "@core/posthog/server";
 import {
    captureError,
    captureServerEvent,
    identifyUser,
-   posthog,
    setGroup,
 } from "@core/posthog/server";
 import type { StripeClient } from "@core/stripe";
-import { stripeClient } from "@core/stripe";
 import { sanitizeData } from "@core/utils/sanitization";
-
-// =============================================================================
-// Context Types
-// =============================================================================
+import { auth, db, posthog, stripeClient } from "@/integrations/singletons";
 
 export interface ORPCContext {
    headers: Headers;
@@ -34,25 +27,15 @@ export interface ORPCContextWithAuth extends ORPCContext {
    stripeClient?: StripeClient;
 }
 
-/**
- * Context after auth middleware - session is guaranteed to be non-null
- */
 export interface ORPCContextAuthenticated extends ORPCContextWithAuth {
    session: NonNullable<ORPCContextWithAuth["session"]>;
    userId: string;
 }
 
-/**
- * Context after organization middleware - includes organizationId and teamId
- */
 export interface ORPCContextWithOrganization extends ORPCContextAuthenticated {
    organizationId: string;
    teamId: string;
 }
-
-// =============================================================================
-// Procedures
-// =============================================================================
 
 const base = os.$context<ORPCContext>();
 
@@ -94,9 +77,6 @@ const withAuth = withDeps.use(async ({ context, next }) => {
    });
 });
 
-/**
- * Procedure requiring active organization and team
- */
 const withOrganization = withAuth.use(async ({ context, next }) => {
    const { session } = context;
 
@@ -108,7 +88,6 @@ const withOrganization = withAuth.use(async ({ context, next }) => {
       });
    }
 
-   // Extract team/project ID (now required)
    const teamId = session.session.activeTeamId;
 
    if (!teamId) {
@@ -148,10 +127,8 @@ const withTelemetry = withErrorHandling.use(
       const organizationId = context.organizationId;
       const teamId = context.teamId;
 
-      // Read PostHog session ID from frontend header (links logs to session replay)
       const sessionId = context.headers.get("x-posthog-session-id");
 
-      // PostHog identification attributes for OTel log records
       const otelIdentity = {
          posthogDistinctId: userId ?? "anonymous",
          ...(sessionId ? { sessionId } : {}),
@@ -160,22 +137,20 @@ const withTelemetry = withErrorHandling.use(
          path: path.join("."),
       };
 
-      // Emit OTel log: request started (linked to user + session replay)
       otelLogger.emit({
          severityText: "info",
          body: `oRPC request: ${path.join(".")}`,
          attributes: otelIdentity,
       });
 
-      // Identify user if consented
-      if (userId && hasConsent) {
-         identifyUser(userId, {
+      if (userId && hasConsent && context.posthog) {
+         identifyUser(context.posthog, userId, {
             email: userEmail,
             name: userName,
          });
 
          if (organizationId) {
-            setGroup(organizationId, {});
+            setGroup(context.posthog, organizationId, {});
          }
       }
 
@@ -192,7 +167,6 @@ const withTelemetry = withErrorHandling.use(
       } finally {
          const durationMs = Date.now() - startDate.getTime();
 
-         // Emit OTel log: request completed/failed (linked to user + session replay)
          otelLogger.emit({
             severityText: isSuccess ? "info" : "error",
             body: isSuccess
@@ -208,15 +182,14 @@ const withTelemetry = withErrorHandling.use(
             },
          });
 
-         // Capture PostHog analytics events
-         if (userId && hasConsent) {
+         if (userId && hasConsent && context.posthog) {
             try {
                const rootPath = path[0];
 
                if (!isSuccess && error) {
                   const errorId = crypto.randomUUID();
 
-                  captureError({
+                  captureError(context.posthog, {
                      code: "INTERNAL_SERVER_ERROR",
                      errorId,
                      input: sanitizeData(input),
@@ -227,7 +200,7 @@ const withTelemetry = withErrorHandling.use(
                   });
                }
 
-               captureServerEvent({
+               captureServerEvent(context.posthog, {
                   userId,
                   event: "orpc_request",
                   properties: {
@@ -257,28 +230,8 @@ const withTelemetry = withErrorHandling.use(
    },
 );
 
-// =============================================================================
-// Exported Procedures
-// =============================================================================
-
-/**
- * Public procedure - no authentication required
- * Context includes auth, db, and session (may be null)
- * Use this for publicly accessible endpoints (e.g., shared content, public pages)
- */
 export const publicProcedure = withDeps;
 
-/**
- * Authenticated procedure - requires authenticated session (userId only)
- * Use this for endpoints that need a logged-in user but NOT org/team context
- * (e.g., listing organizations, account settings)
- */
 export const authenticatedProcedure = withAuth;
 
-/**
- * Protected procedure - requires authenticated session with active organization
- * Use this for all workspace-scoped operations (most endpoints)
- * Automatically provides userId and organizationId in context
- * Includes telemetry middleware for PostHog analytics
- */
 export const protectedProcedure = withTelemetry;

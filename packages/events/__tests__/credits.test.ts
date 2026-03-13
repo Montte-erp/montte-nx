@@ -4,13 +4,11 @@ const mockGet = vi.fn<(key: string) => Promise<string | null>>();
 const mockIncr = vi.fn<(key: string) => Promise<number>>();
 const mockPexpire = vi.fn<(key: string, ms: number) => Promise<number>>();
 
-vi.mock("@core/redis/connection", () => ({
-   getRedisConnection: () => ({
-      get: mockGet,
-      incr: mockIncr,
-      pexpire: mockPexpire,
-   }),
-}));
+const mockRedis = {
+   get: mockGet,
+   incr: mockIncr,
+   pexpire: mockPexpire,
+} as any;
 
 vi.mock("@core/stripe/constants", () => ({
    FREE_TIER_LIMITS: {
@@ -35,6 +33,7 @@ describe("isWithinFreeTier", () => {
       const result = await isWithinFreeTier(
          "org-1",
          "finance.transaction_created",
+         mockRedis,
       );
       expect(result).toBe(true);
    });
@@ -44,6 +43,7 @@ describe("isWithinFreeTier", () => {
       const result = await isWithinFreeTier(
          "org-1",
          "finance.transaction_created",
+         mockRedis,
       );
       expect(result).toBe(false);
    });
@@ -53,6 +53,7 @@ describe("isWithinFreeTier", () => {
       const result = await isWithinFreeTier(
          "org-1",
          "finance.transaction_created",
+         mockRedis,
       );
       expect(result).toBe(false);
    });
@@ -62,12 +63,25 @@ describe("isWithinFreeTier", () => {
       const result = await isWithinFreeTier(
          "org-1",
          "finance.transaction_created",
+         mockRedis,
       );
       expect(result).toBe(true);
    });
 
    it("returns true for non-metered events", async () => {
-      const result = await isWithinFreeTier("org-1", "dashboard.created");
+      const result = await isWithinFreeTier(
+         "org-1",
+         "dashboard.created",
+         mockRedis,
+      );
+      expect(result).toBe(true);
+   });
+
+   it("returns true when no redis provided", async () => {
+      const result = await isWithinFreeTier(
+         "org-1",
+         "finance.transaction_created",
+      );
       expect(result).toBe(true);
    });
 });
@@ -75,13 +89,13 @@ describe("isWithinFreeTier", () => {
 describe("incrementUsage", () => {
    it("increments the counter", async () => {
       mockIncr.mockResolvedValue(5);
-      await incrementUsage("org-1", "ai.chat_message");
+      await incrementUsage("org-1", "ai.chat_message", mockRedis);
       expect(mockIncr).toHaveBeenCalledWith("usage:org-1:ai.chat_message");
    });
 
    it("sets TTL on first increment", async () => {
       mockIncr.mockResolvedValue(1);
-      await incrementUsage("org-1", "ai.chat_message");
+      await incrementUsage("org-1", "ai.chat_message", mockRedis);
       expect(mockPexpire).toHaveBeenCalledWith(
          "usage:org-1:ai.chat_message",
          expect.any(Number),
@@ -90,8 +104,13 @@ describe("incrementUsage", () => {
 
    it("does not set TTL on subsequent increments", async () => {
       mockIncr.mockResolvedValue(2);
-      await incrementUsage("org-1", "ai.chat_message");
+      await incrementUsage("org-1", "ai.chat_message", mockRedis);
       expect(mockPexpire).not.toHaveBeenCalled();
+   });
+
+   it("no-ops when no redis provided", async () => {
+      await incrementUsage("org-1", "ai.chat_message");
+      expect(mockIncr).not.toHaveBeenCalled();
    });
 });
 
@@ -101,6 +120,7 @@ describe("getCurrentUsage", () => {
       const result = await getCurrentUsage(
          "org-1",
          "finance.transaction_created",
+         mockRedis,
       );
       expect(result).toEqual({
          used: 100,
@@ -114,6 +134,7 @@ describe("getCurrentUsage", () => {
       const result = await getCurrentUsage(
          "org-1",
          "finance.transaction_created",
+         mockRedis,
       );
       expect(result).toEqual({
          used: 600,
@@ -127,6 +148,7 @@ describe("getCurrentUsage", () => {
       const result = await getCurrentUsage(
          "org-1",
          "finance.transaction_created",
+         mockRedis,
       );
       expect(result).toEqual({
          used: 0,
@@ -137,7 +159,11 @@ describe("getCurrentUsage", () => {
 
    it("returns zero limit for non-metered events", async () => {
       mockGet.mockResolvedValue(null);
-      const result = await getCurrentUsage("org-1", "dashboard.created");
+      const result = await getCurrentUsage(
+         "org-1",
+         "dashboard.created",
+         mockRedis,
+      );
       expect(result).toEqual({
          used: 0,
          limit: 0,

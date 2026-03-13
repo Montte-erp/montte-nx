@@ -11,12 +11,6 @@ const { stripeClientMock, stripeConstructorMock } = vi.hoisted(() => ({
    stripeConstructorMock: vi.fn(),
 }));
 
-vi.mock("@core/environment/web/server", () => ({
-   env: {
-      STRIPE_SECRET_KEY: "sk_test_123",
-   },
-}));
-
 vi.mock("stripe", () => ({
    default: function MockStripe(...args: unknown[]) {
       stripeConstructorMock(...args);
@@ -24,16 +18,17 @@ vi.mock("stripe", () => ({
    },
 }));
 
+import { createStripeClient } from "../src/index";
+
 describe("stripe client", () => {
    beforeEach(() => {
       vi.clearAllMocks();
-      vi.resetModules();
    });
 
-   it("creates a Stripe instance with env configuration", async () => {
-      const { stripeClient } = await import("../src/index");
+   it("creates a Stripe instance with provided secret key", () => {
+      const client = createStripeClient("sk_test_123");
 
-      expect(stripeClient).toBe(stripeClientMock);
+      expect(client).toBe(stripeClientMock);
       expect(stripeConstructorMock).toHaveBeenCalledWith("sk_test_123", {
          apiVersion: "2026-02-25.clover",
       });

@@ -1,14 +1,8 @@
-import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
+import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { setupTestDb } from "../helpers/setup-test-db";
 import { bills } from "@core/database/schemas/bills";
 import { transactions } from "@core/database/schemas/transactions";
 import * as repo from "../../src/repositories/bank-accounts-repository";
-
-vi.mock("@core/database/client", () => ({
-   get db() {
-      return (globalThis as any).__TEST_DB__;
-   },
-}));
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -40,6 +34,7 @@ describe("bank-accounts-repository", () => {
       it("creates a bank account and returns it with correct fields", async () => {
          const teamId = randomTeamId();
          const account = await repo.createBankAccount(
+            testDb.db,
             teamId,
             validCreateInput(),
          );
@@ -61,16 +56,18 @@ describe("bank-accounts-repository", () => {
       it("lists active bank accounts only by default", async () => {
          const teamId = randomTeamId();
          await repo.createBankAccount(
+            testDb.db,
             teamId,
             validCreateInput({ name: "Active" }),
          );
          const archived = await repo.createBankAccount(
+            testDb.db,
             teamId,
             validCreateInput({ name: "Archived" }),
          );
-         await repo.archiveBankAccount(archived.id);
+         await repo.archiveBankAccount(testDb.db, archived.id);
 
-         const list = await repo.listBankAccounts(teamId);
+         const list = await repo.listBankAccounts(testDb.db, teamId);
          expect(list).toHaveLength(1);
          expect(list[0]!.name).toBe("Active");
       });
@@ -78,16 +75,18 @@ describe("bank-accounts-repository", () => {
       it("lists all bank accounts when includeArchived is true", async () => {
          const teamId = randomTeamId();
          await repo.createBankAccount(
+            testDb.db,
             teamId,
             validCreateInput({ name: "Conta A" }),
          );
          const b = await repo.createBankAccount(
+            testDb.db,
             teamId,
             validCreateInput({ name: "Conta B" }),
          );
-         await repo.archiveBankAccount(b.id);
+         await repo.archiveBankAccount(testDb.db, b.id);
 
-         const list = await repo.listBankAccounts(teamId, true);
+         const list = await repo.listBankAccounts(testDb.db, teamId, true);
          expect(list).toHaveLength(2);
       });
    });
@@ -96,11 +95,12 @@ describe("bank-accounts-repository", () => {
       it("gets a bank account by id", async () => {
          const teamId = randomTeamId();
          const created = await repo.createBankAccount(
+            testDb.db,
             teamId,
             validCreateInput(),
          );
 
-         const found = await repo.getBankAccount(created.id);
+         const found = await repo.getBankAccount(testDb.db, created.id);
          expect(found).toMatchObject({
             id: created.id,
             name: "Conta Corrente",
@@ -108,7 +108,10 @@ describe("bank-accounts-repository", () => {
       });
 
       it("returns null for non-existent id", async () => {
-         const found = await repo.getBankAccount(crypto.randomUUID());
+         const found = await repo.getBankAccount(
+            testDb.db,
+            crypto.randomUUID(),
+         );
          expect(found).toBeNull();
       });
    });
@@ -117,11 +120,12 @@ describe("bank-accounts-repository", () => {
       it("updates a bank account", async () => {
          const teamId = randomTeamId();
          const created = await repo.createBankAccount(
+            testDb.db,
             teamId,
             validCreateInput(),
          );
 
-         const updated = await repo.updateBankAccount(created.id, {
+         const updated = await repo.updateBankAccount(testDb.db, created.id, {
             name: "Poupança",
          });
 
@@ -134,11 +138,12 @@ describe("bank-accounts-repository", () => {
       it("archives a bank account", async () => {
          const teamId = randomTeamId();
          const created = await repo.createBankAccount(
+            testDb.db,
             teamId,
             validCreateInput(),
          );
 
-         const archived = await repo.archiveBankAccount(created.id);
+         const archived = await repo.archiveBankAccount(testDb.db, created.id);
          expect(archived.status).toBe("archived");
       });
    });
@@ -147,12 +152,16 @@ describe("bank-accounts-repository", () => {
       it("reactivates an archived bank account", async () => {
          const teamId = randomTeamId();
          const created = await repo.createBankAccount(
+            testDb.db,
             teamId,
             validCreateInput(),
          );
-         await repo.archiveBankAccount(created.id);
+         await repo.archiveBankAccount(testDb.db, created.id);
 
-         const reactivated = await repo.reactivateBankAccount(created.id);
+         const reactivated = await repo.reactivateBankAccount(
+            testDb.db,
+            created.id,
+         );
          expect(reactivated.status).toBe("active");
       });
    });
@@ -161,18 +170,20 @@ describe("bank-accounts-repository", () => {
       it("deletes a bank account without transactions", async () => {
          const teamId = randomTeamId();
          const created = await repo.createBankAccount(
+            testDb.db,
             teamId,
             validCreateInput(),
          );
 
-         await repo.deleteBankAccount(created.id);
-         const found = await repo.getBankAccount(created.id);
+         await repo.deleteBankAccount(testDb.db, created.id);
+         const found = await repo.getBankAccount(testDb.db, created.id);
          expect(found).toBeNull();
       });
 
       it("rejects deleting a bank account with transactions", async () => {
          const teamId = randomTeamId();
          const created = await repo.createBankAccount(
+            testDb.db,
             teamId,
             validCreateInput(),
          );
@@ -185,9 +196,9 @@ describe("bank-accounts-repository", () => {
             bankAccountId: created.id,
          });
 
-         await expect(repo.deleteBankAccount(created.id)).rejects.toThrow(
-            /lançamentos/,
-         );
+         await expect(
+            repo.deleteBankAccount(testDb.db, created.id),
+         ).rejects.toThrow(/lançamentos/);
       });
    });
 
@@ -195,10 +206,12 @@ describe("bank-accounts-repository", () => {
       it("computes balance correctly (income - expense - transferOut + transferIn)", async () => {
          const teamId = randomTeamId();
          const account = await repo.createBankAccount(
+            testDb.db,
             teamId,
             validCreateInput({ initialBalance: "500.00" }),
          );
          const otherAccount = await repo.createBankAccount(
+            testDb.db,
             teamId,
             validCreateInput({ name: "Outra Conta" }),
          );
@@ -238,7 +251,11 @@ describe("bank-accounts-repository", () => {
          });
 
          const { currentBalance, projectedBalance } =
-            await repo.computeBankAccountBalance(account.id, "500.00");
+            await repo.computeBankAccountBalance(
+               testDb.db,
+               account.id,
+               "500.00",
+            );
 
          expect(currentBalance).toBe("625.00");
          expect(projectedBalance).toBe("625.00");
@@ -247,6 +264,7 @@ describe("bank-accounts-repository", () => {
       it("includes pending bills in projected balance", async () => {
          const teamId = randomTeamId();
          const account = await repo.createBankAccount(
+            testDb.db,
             teamId,
             validCreateInput({ initialBalance: "1000.00" }),
          );
@@ -272,7 +290,11 @@ describe("bank-accounts-repository", () => {
          });
 
          const { currentBalance, projectedBalance } =
-            await repo.computeBankAccountBalance(account.id, "1000.00");
+            await repo.computeBankAccountBalance(
+               testDb.db,
+               account.id,
+               "1000.00",
+            );
 
          expect(currentBalance).toBe("1000.00");
          expect(projectedBalance).toBe("1150.00");
@@ -283,17 +305,22 @@ describe("bank-accounts-repository", () => {
       it("returns false when no transactions exist", async () => {
          const teamId = randomTeamId();
          const account = await repo.createBankAccount(
+            testDb.db,
             teamId,
             validCreateInput(),
          );
 
-         const result = await repo.bankAccountHasTransactions(account.id);
+         const result = await repo.bankAccountHasTransactions(
+            testDb.db,
+            account.id,
+         );
          expect(result).toBe(false);
       });
 
       it("returns true when transactions exist", async () => {
          const teamId = randomTeamId();
          const account = await repo.createBankAccount(
+            testDb.db,
             teamId,
             validCreateInput(),
          );
@@ -306,17 +333,22 @@ describe("bank-accounts-repository", () => {
             bankAccountId: account.id,
          });
 
-         const result = await repo.bankAccountHasTransactions(account.id);
+         const result = await repo.bankAccountHasTransactions(
+            testDb.db,
+            account.id,
+         );
          expect(result).toBe(true);
       });
 
       it("returns true when account is a transfer destination", async () => {
          const teamId = randomTeamId();
          const account = await repo.createBankAccount(
+            testDb.db,
             teamId,
             validCreateInput(),
          );
          const other = await repo.createBankAccount(
+            testDb.db,
             teamId,
             validCreateInput({ name: "Outra" }),
          );
@@ -330,7 +362,10 @@ describe("bank-accounts-repository", () => {
             destinationBankAccountId: account.id,
          });
 
-         const result = await repo.bankAccountHasTransactions(account.id);
+         const result = await repo.bankAccountHasTransactions(
+            testDb.db,
+            account.id,
+         );
          expect(result).toBe(true);
       });
    });

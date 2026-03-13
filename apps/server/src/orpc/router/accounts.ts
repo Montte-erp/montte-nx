@@ -25,6 +25,7 @@ export const list = sdkProcedure
    .input(z.object({ includeArchived: z.boolean().optional() }))
    .handler(async ({ context, input }) => {
       const accounts = await listBankAccountsWithBalance(
+         context.db,
          context.teamId!,
          input.includeArchived,
       );
@@ -35,20 +36,33 @@ export const get = sdkProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
       const account = await ensureBankAccountOwnership(
+         context.db,
          input.id,
          context.teamId!,
       );
       const { currentBalance, projectedBalance } =
-         await computeBankAccountBalance(account.id, account.initialBalance);
+         await computeBankAccountBalance(
+            context.db,
+            account.id,
+            account.initialBalance,
+         );
       return mapAccount({ ...account, currentBalance, projectedBalance });
    });
 
 export const create = sdkProcedure
    .input(CreateBankAccountSchema)
    .handler(async ({ context, input }) => {
-      const account = await createBankAccount(context.teamId!, input);
+      const account = await createBankAccount(
+         context.db,
+         context.teamId!,
+         input,
+      );
       const { currentBalance, projectedBalance } =
-         await computeBankAccountBalance(account.id, account.initialBalance);
+         await computeBankAccountBalance(
+            context.db,
+            account.id,
+            account.initialBalance,
+         );
       return mapAccount({ ...account, currentBalance, projectedBalance });
    });
 
@@ -56,17 +70,21 @@ export const update = sdkProcedure
    .input(z.object({ id: z.string().uuid() }).merge(UpdateBankAccountSchema))
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
-      await ensureBankAccountOwnership(id, context.teamId!);
-      const account = await updateBankAccount(id, data);
+      await ensureBankAccountOwnership(context.db, id, context.teamId!);
+      const account = await updateBankAccount(context.db, id, data);
       const { currentBalance, projectedBalance } =
-         await computeBankAccountBalance(account.id, account.initialBalance);
+         await computeBankAccountBalance(
+            context.db,
+            account.id,
+            account.initialBalance,
+         );
       return mapAccount({ ...account, currentBalance, projectedBalance });
    });
 
 export const remove = sdkProcedure
    .input(z.object({ id: z.string().uuid() }))
    .handler(async ({ context, input }) => {
-      await ensureBankAccountOwnership(input.id, context.teamId!);
-      await deleteBankAccount(input.id);
+      await ensureBankAccountOwnership(context.db, input.id, context.teamId!);
+      await deleteBankAccount(context.db, input.id);
       return { success: true as const };
    });

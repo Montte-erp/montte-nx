@@ -9,12 +9,6 @@ const { resendClientMock, resendConstructorMock } = vi.hoisted(() => ({
    resendConstructorMock: vi.fn(),
 }));
 
-vi.mock("@core/environment/web/server", () => ({
-   env: {
-      RESEND_API_KEY: "re_test_123",
-   },
-}));
-
 vi.mock("resend", () => ({
    Resend: function MockResend(...args: unknown[]) {
       resendConstructorMock(...args);
@@ -22,16 +16,17 @@ vi.mock("resend", () => ({
    },
 }));
 
+import { createResendClient } from "../src/utils";
+
 describe("resend client", () => {
    beforeEach(() => {
       vi.clearAllMocks();
-      vi.resetModules();
    });
 
-   it("creates a Resend instance with env configuration", async () => {
-      const { resendClient } = await import("../src/utils");
+   it("creates a Resend instance with provided API key", () => {
+      const client = createResendClient("re_test_123");
 
-      expect(resendClient).toBe(resendClientMock);
+      expect(client).toBe(resendClientMock);
       expect(resendConstructorMock).toHaveBeenCalledWith("re_test_123");
    });
 });

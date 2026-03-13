@@ -1,6 +1,6 @@
 import { AppError, propagateError } from "@core/logging/errors";
 import { and, desc, eq, sql } from "drizzle-orm";
-import { db } from "@core/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateWebhookEndpointInput,
    type NewWebhookDelivery,
@@ -16,8 +16,12 @@ export function generateWebhookSecret(): string {
    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export async function ensureWebhookOwnership(id: string, teamId: string) {
-   const endpoint = await getWebhookEndpoint(id);
+export async function ensureWebhookOwnership(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
+   const endpoint = await getWebhookEndpoint(db, id);
    if (!endpoint || endpoint.teamId !== teamId) {
       throw AppError.notFound("Webhook não encontrado.");
    }
@@ -25,6 +29,7 @@ export async function ensureWebhookOwnership(id: string, teamId: string) {
 }
 
 export async function createWebhookEndpoint(
+   db: DatabaseInstance,
    organizationId: string,
    teamId: string,
    data: CreateWebhookEndpointInput,
@@ -48,7 +53,10 @@ export async function createWebhookEndpoint(
    }
 }
 
-export async function listWebhookEndpoints(teamId: string) {
+export async function listWebhookEndpoints(
+   db: DatabaseInstance,
+   teamId: string,
+) {
    try {
       return await db
          .select()
@@ -61,7 +69,10 @@ export async function listWebhookEndpoints(teamId: string) {
    }
 }
 
-export async function getWebhookEndpoint(webhookId: string) {
+export async function getWebhookEndpoint(
+   db: DatabaseInstance,
+   webhookId: string,
+) {
    try {
       const [endpoint] = await db
          .select()
@@ -77,6 +88,7 @@ export async function getWebhookEndpoint(webhookId: string) {
 }
 
 export async function updateWebhookEndpoint(
+   db: DatabaseInstance,
    webhookId: string,
    data: UpdateWebhookEndpointInput,
 ) {
@@ -95,7 +107,10 @@ export async function updateWebhookEndpoint(
    }
 }
 
-export async function deleteWebhookEndpoint(webhookId: string) {
+export async function deleteWebhookEndpoint(
+   db: DatabaseInstance,
+   webhookId: string,
+) {
    try {
       await db
          .delete(webhookEndpoints)
@@ -106,7 +121,10 @@ export async function deleteWebhookEndpoint(webhookId: string) {
    }
 }
 
-export async function updateWebhookLastSuccess(webhookId: string) {
+export async function updateWebhookLastSuccess(
+   db: DatabaseInstance,
+   webhookId: string,
+) {
    try {
       await db
          .update(webhookEndpoints)
@@ -121,7 +139,10 @@ export async function updateWebhookLastSuccess(webhookId: string) {
    }
 }
 
-export async function incrementWebhookFailureCount(webhookId: string) {
+export async function incrementWebhookFailureCount(
+   db: DatabaseInstance,
+   webhookId: string,
+) {
    try {
       await db
          .update(webhookEndpoints)
@@ -137,6 +158,7 @@ export async function incrementWebhookFailureCount(webhookId: string) {
 }
 
 export async function findMatchingWebhooks(
+   db: DatabaseInstance,
    organizationId: string,
    eventName: string,
    teamId?: string,
@@ -172,7 +194,10 @@ function matchesPattern(eventName: string, pattern: string): boolean {
    return eventName === pattern;
 }
 
-export async function createWebhookDelivery(data: NewWebhookDelivery) {
+export async function createWebhookDelivery(
+   db: DatabaseInstance,
+   data: NewWebhookDelivery,
+) {
    try {
       const [delivery] = await db
          .insert(webhookDeliveries)
@@ -187,6 +212,7 @@ export async function createWebhookDelivery(data: NewWebhookDelivery) {
 }
 
 export async function updateWebhookDeliveryStatus(
+   db: DatabaseInstance,
    deliveryId: string,
    data: {
       status: string;
@@ -213,6 +239,7 @@ export async function updateWebhookDeliveryStatus(
 }
 
 export async function getWebhookDeliveries(
+   db: DatabaseInstance,
    webhookId: string,
    options: { offset?: number; limit?: number } = {},
 ) {

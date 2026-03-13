@@ -1,7 +1,7 @@
 import { AppError, propagateError } from "@core/logging/errors";
 import { and, eq, sql } from "drizzle-orm";
 import dayjs from "dayjs";
-import { db } from "@core/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
 import { creditCardStatementTotals } from "@core/database/schemas/credit-card-statement-totals";
 import { transactions } from "@core/database/schemas/transactions";
@@ -15,7 +15,7 @@ import {
 // Read
 // =============================================================================
 
-export async function getStatement(id: string) {
+export async function getStatement(db: DatabaseInstance, id: string) {
    try {
       const [row] = await db
          .select({
@@ -50,7 +50,10 @@ export async function getStatement(id: string) {
    }
 }
 
-export async function listStatements(creditCardId: string) {
+export async function listStatements(
+   db: DatabaseInstance,
+   creditCardId: string,
+) {
    try {
       return await db
          .select({
@@ -85,6 +88,7 @@ export async function listStatements(creditCardId: string) {
 // =============================================================================
 
 export async function getOrCreateStatement(
+   db: DatabaseInstance,
    creditCardId: string,
    statementPeriod: string,
 ) {
@@ -159,7 +163,11 @@ export async function getOrCreateStatement(
 // Pay Statement
 // =============================================================================
 
-export async function payStatement(statementId: string, paymentDate: string) {
+export async function payStatement(
+   db: DatabaseInstance,
+   statementId: string,
+   paymentDate: string,
+) {
    try {
       return await db.transaction(async (tx) => {
          // 1. Get statement with totals
@@ -258,7 +266,10 @@ export async function payStatement(statementId: string, paymentDate: string) {
 // Available Limit
 // =============================================================================
 
-export async function getAvailableLimit(creditCardId: string) {
+export async function getAvailableLimit(
+   db: DatabaseInstance,
+   creditCardId: string,
+) {
    try {
       const card = await db.query.creditCards.findFirst({
          where: { id: creditCardId },

@@ -1,5 +1,6 @@
-import { auth, getDevMagicLink } from "@core/authentication/server";
+import { getDevMagicLink } from "@core/authentication/server";
 import { createFileRoute } from "@tanstack/react-router";
+import { auth } from "@/integrations/singletons";
 
 function handleDevMagicLink(request: Request): Response | null {
    const url = new URL(request.url);

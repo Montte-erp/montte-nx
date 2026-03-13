@@ -1,4 +1,5 @@
 import { generatePresignedPutUrl } from "@core/files/client";
+import { minioClient } from "@/integrations/singletons";
 import { WebAppError } from "@core/logging/errors";
 import { getLogger } from "@core/logging/root";
 import { z } from "zod";
@@ -102,6 +103,7 @@ export const generateAvatarUploadUrl = protectedProcedure
          const fileName = `avatar-${userId}-${crypto.randomUUID()}.${input.fileExtension}`;
 
          const presignedUrl = await generatePresignedPutUrl(
+            minioClient,
             fileName,
             bucketName,
             300,

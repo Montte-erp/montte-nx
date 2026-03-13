@@ -1,6 +1,6 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { db } from "@core/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import {
    insights,
    createInsightSchema,
@@ -10,6 +10,7 @@ import {
 } from "../schemas/insights";
 
 export async function createInsight(
+   db: DatabaseInstance,
    organizationId: string,
    teamId: string,
    createdBy: string,
@@ -28,7 +29,11 @@ export async function createInsight(
    }
 }
 
-export async function listInsights(organizationId: string, type?: string) {
+export async function listInsights(
+   db: DatabaseInstance,
+   organizationId: string,
+   type?: string,
+) {
    try {
       const conditions = [eq(insights.organizationId, organizationId)];
       if (type) {
@@ -46,7 +51,11 @@ export async function listInsights(organizationId: string, type?: string) {
    }
 }
 
-export async function listInsightsByTeam(teamId: string, type?: string) {
+export async function listInsightsByTeam(
+   db: DatabaseInstance,
+   teamId: string,
+   type?: string,
+) {
    try {
       const conditions = [eq(insights.teamId, teamId)];
       if (type) {
@@ -64,7 +73,7 @@ export async function listInsightsByTeam(teamId: string, type?: string) {
    }
 }
 
-export async function getInsightById(insightId: string) {
+export async function getInsightById(db: DatabaseInstance, insightId: string) {
    try {
       const [insight] = await db
          .select()
@@ -77,7 +86,10 @@ export async function getInsightById(insightId: string) {
    }
 }
 
-export async function getInsightsByIds(insightIds: string[]) {
+export async function getInsightsByIds(
+   db: DatabaseInstance,
+   insightIds: string[],
+) {
    if (insightIds.length === 0) {
       return [];
    }
@@ -94,6 +106,7 @@ export async function getInsightsByIds(insightIds: string[]) {
 }
 
 export async function updateInsight(
+   db: DatabaseInstance,
    insightId: string,
    data: UpdateInsightInput,
 ) {
@@ -112,11 +125,12 @@ export async function updateInsight(
 }
 
 export async function ensureInsightOwnership(
+   db: DatabaseInstance,
    insightId: string,
    organizationId: string,
    teamId: string,
 ) {
-   const insight = await getInsightById(insightId);
+   const insight = await getInsightById(db, insightId);
    if (
       !insight ||
       insight.organizationId !== organizationId ||
@@ -127,7 +141,7 @@ export async function ensureInsightOwnership(
    return insight;
 }
 
-export async function deleteInsight(insightId: string) {
+export async function deleteInsight(db: DatabaseInstance, insightId: string) {
    try {
       await db.delete(insights).where(eq(insights.id, insightId));
    } catch (err) {

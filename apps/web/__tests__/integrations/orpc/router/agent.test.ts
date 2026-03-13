@@ -28,18 +28,12 @@ vi.mock("@core/posthog/server", () => ({
 }));
 
 vi.mock("@core/redis/connection", () => ({
-   getRedisConnection: vi.fn().mockReturnValue({
+   createRedis: vi.fn().mockReturnValue({
       get: vi.fn(),
       set: vi.fn(),
       incr: vi.fn(),
       expire: vi.fn(),
    }),
-   redis: {
-      get: vi.fn(),
-      set: vi.fn(),
-      incr: vi.fn(),
-      expire: vi.fn(),
-   },
 }));
 
 vi.mock("@packages/events/emit", () => ({

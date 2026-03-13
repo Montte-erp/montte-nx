@@ -9,6 +9,7 @@ import {
    type BudgetAlertJobData,
 } from "@packages/events/queues/budget-alerts";
 import { checkBudgetAlerts } from "../jobs/check-budget-alerts";
+import { db } from "../singletons";
 
 const SERVICE_NAME = "montte-worker";
 
@@ -27,7 +28,7 @@ export function startBudgetAlertsWorker(
             jobId: job.id,
             event: "started",
          });
-         await checkBudgetAlerts(job.data);
+         await checkBudgetAlerts(db, job.data);
       },
       {
          connection,

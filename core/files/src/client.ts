@@ -1,4 +1,3 @@
-import { env } from "@core/environment/web/server";
 import { getLogger } from "@core/logging/root";
 import { Client } from "minio";
 
@@ -32,54 +31,56 @@ const parseEndpoint = (endpointUrl: string) => {
    }
 };
 
-const { endPoint, port, useSSL } = parseEndpoint(env.MINIO_ENDPOINT);
-
-export const minioClient = new Client({
-   accessKey: env.MINIO_ACCESS_KEY,
-   endPoint,
-   port,
-   secretKey: env.MINIO_SECRET_KEY,
-   useSSL,
-});
-
 export type MinioClient = Client;
 
+export function createMinioClient(opts: {
+   endpoint: string;
+   accessKey?: string;
+   secretKey?: string;
+}): Client {
+   const { endPoint, port, useSSL } = parseEndpoint(opts.endpoint);
+   return new Client({
+      accessKey: opts.accessKey,
+      endPoint,
+      port,
+      secretKey: opts.secretKey,
+      useSSL,
+   });
+}
+
 export async function uploadFile(
+   client: Client,
    fileName: string,
    fileBuffer: Buffer,
    contentType: string,
    bucketName: string,
 ): Promise<string> {
-   const bucketExists = await minioClient.bucketExists(bucketName);
+   const bucketExists = await client.bucketExists(bucketName);
    if (!bucketExists) {
-      await minioClient.makeBucket(bucketName);
+      await client.makeBucket(bucketName);
    }
-   await minioClient.putObject(
-      bucketName,
-      fileName,
-      fileBuffer,
-      fileBuffer.length,
-      {
-         "Content-Type": contentType,
-      },
-   );
+   await client.putObject(bucketName, fileName, fileBuffer, fileBuffer.length, {
+      "Content-Type": contentType,
+   });
    return fileName;
 }
 
 export async function getFile(
+   client: Client,
    fileName: string,
    bucketName: string,
 ): Promise<NodeJS.ReadableStream> {
-   const stream = await minioClient.getObject(bucketName, fileName);
+   const stream = await client.getObject(bucketName, fileName);
    return stream;
 }
 
 export async function listFiles(
+   client: Client,
    bucketName: string,
    prefix: string,
 ): Promise<string[]> {
    const files: string[] = [];
-   const stream = minioClient.listObjectsV2(bucketName, prefix, true);
+   const stream = client.listObjectsV2(bucketName, prefix, true);
    for await (const obj of stream) {
       if (obj.name) files.push(obj.name.replace(prefix, ""));
    }
@@ -87,10 +88,11 @@ export async function listFiles(
 }
 
 export async function streamFileForProxy(
+   client: Client,
    fileName: string,
    bucketName: string,
 ): Promise<{ buffer: Buffer; contentType: string }> {
-   const stream = await minioClient.getObject(bucketName, fileName);
+   const stream = await client.getObject(bucketName, fileName);
    const chunks: Buffer[] = [];
    for await (const chunk of stream) {
       chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
@@ -98,7 +100,7 @@ export async function streamFileForProxy(
    const buffer = Buffer.concat(chunks);
    let contentType = "image/jpeg";
    try {
-      const stat = await minioClient.statObject(bucketName, fileName);
+      const stat = await client.statObject(bucketName, fileName);
       if (stat.metaData?.["content-type"]) {
          contentType = stat.metaData["content-type"];
       }
@@ -109,39 +111,43 @@ export async function streamFileForProxy(
 }
 
 export async function getFileInfo(
+   client: Client,
    fileName: string,
    bucketName: string,
 ): Promise<{ size: number; contentType: string }> {
-   const stat = await minioClient.statObject(bucketName, fileName);
+   const stat = await client.statObject(bucketName, fileName);
    return { contentType: stat.metaData["content-type"], size: stat.size };
 }
 
 export async function generatePresignedPutUrl(
+   client: Client,
    fileName: string,
    bucketName: string,
    expirySeconds = 300,
 ): Promise<string> {
-   const bucketExists = await minioClient.bucketExists(bucketName);
+   const bucketExists = await client.bucketExists(bucketName);
    if (!bucketExists) {
-      await minioClient.makeBucket(bucketName);
+      await client.makeBucket(bucketName);
    }
-   return minioClient.presignedPutObject(bucketName, fileName, expirySeconds);
+   return client.presignedPutObject(bucketName, fileName, expirySeconds);
 }
 
 export async function generatePresignedGetUrl(
+   client: Client,
    fileName: string,
    bucketName: string,
    expirySeconds = 3600,
 ): Promise<string> {
-   return minioClient.presignedGetObject(bucketName, fileName, expirySeconds);
+   return client.presignedGetObject(bucketName, fileName, expirySeconds);
 }
 
 export async function verifyFileExists(
+   client: Client,
    fileName: string,
    bucketName: string,
 ): Promise<{ exists: boolean; size: number; contentType: string } | null> {
    try {
-      const stat = await minioClient.statObject(bucketName, fileName);
+      const stat = await client.statObject(bucketName, fileName);
       return {
          contentType:
             stat.metaData?.["content-type"] ?? "application/octet-stream",
@@ -154,8 +160,9 @@ export async function verifyFileExists(
 }
 
 export async function deleteFile(
+   client: Client,
    fileName: string,
    bucketName: string,
 ): Promise<void> {
-   await minioClient.removeObject(bucketName, fileName);
+   await client.removeObject(bucketName, fileName);
 }

@@ -1,14 +1,15 @@
-import { env } from "@core/environment/web/server";
 import { PostHog } from "posthog-node";
 
 export type { PostHog };
 
-export const posthog = new PostHog(env.POSTHOG_KEY, {
-   flushAt: 20,
-   flushInterval: 10000,
-   host: env.POSTHOG_HOST,
-   enableExceptionAutocapture: true,
-});
+export function createPostHog(key: string, host: string): PostHog {
+   return new PostHog(key, {
+      flushAt: 20,
+      flushInterval: 10000,
+      host,
+      enableExceptionAutocapture: true,
+   });
+}
 
 export type IdentifyUserProps = {
    email?: string;
@@ -16,7 +17,11 @@ export type IdentifyUserProps = {
    [key: string]: unknown;
 };
 
-export function identifyUser(userId: string, props: IdentifyUserProps = {}) {
+export function identifyUser(
+   posthog: PostHog,
+   userId: string,
+   props: IdentifyUserProps = {},
+) {
    posthog.identify({
       distinctId: userId,
       properties: props,
@@ -29,7 +34,11 @@ export type SetGroupProps = {
    [key: string]: unknown;
 };
 
-export function setGroup(organizationId: string, props: SetGroupProps = {}) {
+export function setGroup(
+   posthog: PostHog,
+   organizationId: string,
+   props: SetGroupProps = {},
+) {
    posthog.groupIdentify({
       groupKey: organizationId,
       groupType: "organization",
@@ -47,7 +56,7 @@ export type CaptureErrorProps = {
    input?: unknown;
 };
 
-export function captureError(props: CaptureErrorProps) {
+export function captureError(posthog: PostHog, props: CaptureErrorProps) {
    const { userId, organizationId, errorId, path, code, message, input } =
       props;
    posthog.capture({
@@ -72,6 +81,7 @@ export type FeatureFlagContext = {
 };
 
 export async function isFeatureEnabled(
+   posthog: PostHog,
    flagKey: string,
    context: FeatureFlagContext,
 ): Promise<boolean> {
@@ -84,6 +94,7 @@ export async function isFeatureEnabled(
 }
 
 export async function getFeatureFlag(
+   posthog: PostHog,
    flagKey: string,
    context: FeatureFlagContext,
 ): Promise<string | boolean | undefined> {
@@ -95,6 +106,7 @@ export async function getFeatureFlag(
 }
 
 export async function getFeatureFlagPayload(
+   posthog: PostHog,
    flagKey: string,
    userId: string,
    matchValue?: string | boolean,
@@ -103,6 +115,7 @@ export async function getFeatureFlagPayload(
 }
 
 export async function getAllFeatureFlags(
+   posthog: PostHog,
    context: FeatureFlagContext,
 ): Promise<Record<string, string | boolean>> {
    return posthog.getAllFlags(context.userId, {
@@ -113,6 +126,7 @@ export async function getAllFeatureFlags(
 }
 
 export async function getAllFeatureFlagsAndPayloads(
+   posthog: PostHog,
    context: FeatureFlagContext,
 ) {
    const result = await posthog.getAllFlagsAndPayloads(context.userId, {
@@ -134,7 +148,10 @@ export type CaptureServerEventProps = {
    timestamp?: Date;
 };
 
-export function captureServerEvent(props: CaptureServerEventProps) {
+export function captureServerEvent(
+   posthog: PostHog,
+   props: CaptureServerEventProps,
+) {
    const { userId, event, properties, groups, timestamp } = props;
    const safeProperties = properties ?? {};
    posthog.capture({
@@ -146,6 +163,6 @@ export function captureServerEvent(props: CaptureServerEventProps) {
    });
 }
 
-export async function shutdownPosthog(): Promise<void> {
+export async function shutdownPosthog(posthog: PostHog): Promise<void> {
    await posthog.shutdown();
 }

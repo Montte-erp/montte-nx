@@ -1,5 +1,4 @@
 import { protectedProcedure } from "../server";
-import { posthog } from "@core/posthog/server";
 
 const FLAG_KEYS = new Set([
    "contacts",
@@ -9,16 +8,14 @@ const FLAG_KEYS = new Set([
    "data-management",
 ]);
 
-/**
- * Returns the set of early access feature flag keys the current user is enrolled in.
- * Uses posthog-node's getAllFlags — without a personalApiKey configured,
- * it skips local evaluation and calls /flags/?v=2 remotely, which has
- * access to $feature_enrollment person properties.
- */
 export const getEnrolledFeatures = protectedProcedure.handler(
    async ({ context }) => {
       try {
-         const allFlags = await posthog.getAllFlags(context.userId, {
+         if (!context.posthog) {
+            return { enrolled: [] as string[] };
+         }
+
+         const allFlags = await context.posthog.getAllFlags(context.userId, {
             groups: { organization: context.organizationId },
          });
 

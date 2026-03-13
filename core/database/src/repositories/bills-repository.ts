@@ -1,6 +1,6 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { and, count, eq, gte, isNull, lte, or, sql } from "drizzle-orm";
-import { db } from "@core/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateBillInput,
    type UpdateBillInput,
@@ -23,10 +23,11 @@ import { getCategory } from "@core/database/repositories/categories-repository";
 import { getContact } from "@core/database/repositories/contacts-repository";
 
 export async function ensureBillOwnership(
+   db: DatabaseInstance,
    id: string,
    teamId: string,
 ): Promise<Bill> {
-   const bill = await getBill(id);
+   const bill = await getBill(db, id);
    if (!bill || bill.teamId !== teamId) {
       throw AppError.notFound("Conta a pagar/receber não encontrada.");
    }
@@ -34,6 +35,7 @@ export async function ensureBillOwnership(
 }
 
 export async function validateBillReferences(
+   db: DatabaseInstance,
    teamId: string,
    refs: {
       bankAccountId?: string | null;
@@ -42,21 +44,21 @@ export async function validateBillReferences(
    },
 ): Promise<void> {
    if (refs.bankAccountId) {
-      const account = await getBankAccount(refs.bankAccountId);
+      const account = await getBankAccount(db, refs.bankAccountId);
       if (!account || account.teamId !== teamId) {
          throw AppError.validation("Conta bancária inválida.");
       }
    }
 
    if (refs.categoryId) {
-      const cat = await getCategory(refs.categoryId);
+      const cat = await getCategory(db, refs.categoryId);
       if (!cat || cat.teamId !== teamId) {
          throw AppError.validation("Categoria inválida.");
       }
    }
 
    if (refs.contactId) {
-      const contact = await getContact(refs.contactId);
+      const contact = await getContact(db, refs.contactId);
       if (!contact || contact.teamId !== teamId) {
          throw AppError.validation("Contato inválido.");
       }
@@ -64,6 +66,7 @@ export async function validateBillReferences(
 }
 
 export async function createBill(
+   db: DatabaseInstance,
    teamId: string,
    data: CreateBillInput,
 ): Promise<Bill> {
@@ -81,7 +84,10 @@ export async function createBill(
    }
 }
 
-export async function createBillsBatch(data: NewBill[]): Promise<Bill[]> {
+export async function createBillsBatch(
+   db: DatabaseInstance,
+   data: NewBill[],
+): Promise<Bill[]> {
    try {
       return await db.insert(bills).values(data).returning();
    } catch (err) {
@@ -91,6 +97,7 @@ export async function createBillsBatch(data: NewBill[]): Promise<Bill[]> {
 }
 
 export async function createRecurrenceSetting(
+   db: DatabaseInstance,
    teamId: string,
    data: CreateRecurrenceSettingInput,
 ): Promise<RecurrenceSetting> {
@@ -120,7 +127,10 @@ export interface ListBillsOptions {
    pageSize?: number;
 }
 
-export async function listBills(options: ListBillsOptions) {
+export async function listBills(
+   db: DatabaseInstance,
+   options: ListBillsOptions,
+) {
    try {
       const {
          teamId,
@@ -192,7 +202,10 @@ export async function listBills(options: ListBillsOptions) {
    }
 }
 
-export async function getBill(id: string): Promise<Bill | undefined> {
+export async function getBill(
+   db: DatabaseInstance,
+   id: string,
+): Promise<Bill | undefined> {
    try {
       const result = await db.query.bills.findFirst({
          where: { id },
@@ -206,6 +219,7 @@ export async function getBill(id: string): Promise<Bill | undefined> {
 }
 
 export async function updateBill(
+   db: DatabaseInstance,
    id: string,
    data: UpdateBillInput,
 ): Promise<Bill> {
@@ -224,7 +238,10 @@ export async function updateBill(
    }
 }
 
-export async function deleteBill(id: string): Promise<void> {
+export async function deleteBill(
+   db: DatabaseInstance,
+   id: string,
+): Promise<void> {
    try {
       await db.delete(bills).where(eq(bills.id, id));
    } catch (err) {
@@ -233,9 +250,9 @@ export async function deleteBill(id: string): Promise<void> {
    }
 }
 
-export async function getActiveRecurrenceSettings(): Promise<
-   RecurrenceSetting[]
-> {
+export async function getActiveRecurrenceSettings(
+   db: DatabaseInstance,
+): Promise<RecurrenceSetting[]> {
    try {
       const today = new Date().toISOString().substring(0, 10);
       return await db
@@ -254,6 +271,7 @@ export async function getActiveRecurrenceSettings(): Promise<
 }
 
 export async function getLastBillForRecurrenceGroup(
+   db: DatabaseInstance,
    recurrenceGroupId: string,
 ): Promise<Bill | undefined> {
    try {
@@ -269,6 +287,7 @@ export async function getLastBillForRecurrenceGroup(
 }
 
 export async function generateBillsForSubscription(
+   db: DatabaseInstance,
    subscription: ContactSubscription,
    variant: ServiceVariant,
    serviceName: string,
@@ -334,6 +353,7 @@ export async function generateBillsForSubscription(
 }
 
 export async function cancelPendingBillsForSubscription(
+   db: DatabaseInstance,
    subscriptionId: string,
 ): Promise<void> {
    try {

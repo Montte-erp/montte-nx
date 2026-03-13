@@ -1,15 +1,9 @@
-import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
+import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { setupTestDb } from "../helpers/setup-test-db";
 import { bills, recurrenceSettings } from "@core/database/schemas/bills";
 import { contacts } from "@core/database/schemas/contacts";
 import * as repo from "../../src/repositories/bills-repository";
 import { and, count, eq, desc } from "drizzle-orm";
-
-vi.mock("@core/database/client", () => ({
-   get db() {
-      return (globalThis as any).__TEST_DB__;
-   },
-}));
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -40,7 +34,11 @@ describe("bills-repository", () => {
       it("rejects amount <= 0", async () => {
          const teamId = randomTeamId();
          await expect(
-            repo.createBill(teamId, validCreateInput({ amount: "0" })),
+            repo.createBill(
+               testDb.db,
+               teamId,
+               validCreateInput({ amount: "0" }),
+            ),
          ).rejects.toThrow(/validation failed/);
       });
 
@@ -48,6 +46,7 @@ describe("bills-repository", () => {
          const teamId = randomTeamId();
          await expect(
             repo.createBill(
+               testDb.db,
                teamId,
                validCreateInput({ dueDate: "01/02/2026" }),
             ),
@@ -57,14 +56,14 @@ describe("bills-repository", () => {
       it("rejects name shorter than 2 characters", async () => {
          const teamId = randomTeamId();
          await expect(
-            repo.createBill(teamId, validCreateInput({ name: "A" })),
+            repo.createBill(testDb.db, teamId, validCreateInput({ name: "A" })),
          ).rejects.toThrow(/validation failed/);
       });
 
       it("rejects missing type", async () => {
          const teamId = randomTeamId();
          await expect(
-            repo.createBill(teamId, {
+            repo.createBill(testDb.db, teamId, {
                ...validCreateInput(),
                type: undefined,
             } as any),
@@ -75,7 +74,11 @@ describe("bills-repository", () => {
    describe("createBill", () => {
       it("creates a bill and returns it", async () => {
          const teamId = randomTeamId();
-         const bill = await repo.createBill(teamId, validCreateInput());
+         const bill = await repo.createBill(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
 
          expect(bill).toMatchObject({
             teamId,
@@ -95,6 +98,7 @@ describe("bills-repository", () => {
             .returning();
 
          const bill = await repo.createBill(
+            testDb.db,
             teamId,
             validCreateInput({ contactId: contact!.id }),
          );
@@ -106,7 +110,7 @@ describe("bills-repository", () => {
    describe("listBills (via direct query — RAW where not supported in PGlite)", () => {
       it("lists bills by teamId", async () => {
          const teamId = randomTeamId();
-         await repo.createBill(teamId, validCreateInput());
+         await repo.createBill(testDb.db, teamId, validCreateInput());
 
          const rows = await testDb.db
             .select()
@@ -117,8 +121,13 @@ describe("bills-repository", () => {
 
       it("filters by type", async () => {
          const teamId = randomTeamId();
-         await repo.createBill(teamId, validCreateInput({ type: "payable" }));
          await repo.createBill(
+            testDb.db,
+            teamId,
+            validCreateInput({ type: "payable" }),
+         );
+         await repo.createBill(
+            testDb.db,
             teamId,
             validCreateInput({ name: "Receita", type: "receivable" }),
          );
@@ -133,10 +142,12 @@ describe("bills-repository", () => {
       it("filters by status", async () => {
          const teamId = randomTeamId();
          await repo.createBill(
+            testDb.db,
             teamId,
             validCreateInput({ dueDate: "2099-01-01" }),
          );
          await repo.createBill(
+            testDb.db,
             teamId,
             validCreateInput({ name: "Pago", dueDate: "2099-02-01" }),
          );
@@ -152,7 +163,11 @@ describe("bills-repository", () => {
    describe("getBill (via direct query — relational with not supported in PGlite)", () => {
       it("returns bill by id", async () => {
          const teamId = randomTeamId();
-         const created = await repo.createBill(teamId, validCreateInput());
+         const created = await repo.createBill(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
 
          const [found] = await testDb.db
             .select()
@@ -174,9 +189,13 @@ describe("bills-repository", () => {
    describe("updateBill", () => {
       it("updates a bill", async () => {
          const teamId = randomTeamId();
-         const created = await repo.createBill(teamId, validCreateInput());
+         const created = await repo.createBill(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
 
-         const updated = await repo.updateBill(created.id, {
+         const updated = await repo.updateBill(testDb.db, created.id, {
             name: "Aluguel Atualizado",
          });
          expect(updated.name).toBe("Aluguel Atualizado");
@@ -186,9 +205,13 @@ describe("bills-repository", () => {
    describe("deleteBill", () => {
       it("deletes a bill", async () => {
          const teamId = randomTeamId();
-         const created = await repo.createBill(teamId, validCreateInput());
+         const created = await repo.createBill(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
 
-         await repo.deleteBill(created.id);
+         await repo.deleteBill(testDb.db, created.id);
          const rows = await testDb.db
             .select()
             .from(bills)
@@ -227,7 +250,7 @@ describe("bills-repository", () => {
             },
          ];
 
-         const result = await repo.createBillsBatch(batch);
+         const result = await repo.createBillsBatch(testDb.db, batch);
          expect(result).toHaveLength(3);
       });
    });
@@ -235,7 +258,7 @@ describe("bills-repository", () => {
    describe("recurrence", () => {
       it("creates a recurrence setting", async () => {
          const teamId = randomTeamId();
-         const setting = await repo.createRecurrenceSetting(teamId, {
+         const setting = await repo.createRecurrenceSetting(testDb.db, teamId, {
             frequency: "monthly",
             windowMonths: 3,
          });
@@ -250,7 +273,7 @@ describe("bills-repository", () => {
 
       it("gets active recurrence settings (via direct query)", async () => {
          const teamId = randomTeamId();
-         await repo.createRecurrenceSetting(teamId, {
+         await repo.createRecurrenceSetting(testDb.db, teamId, {
             frequency: "monthly",
             windowMonths: 3,
          });
@@ -264,7 +287,7 @@ describe("bills-repository", () => {
 
       it("gets last bill for recurrence group (via direct query)", async () => {
          const teamId = randomTeamId();
-         const setting = await repo.createRecurrenceSetting(teamId, {
+         const setting = await repo.createRecurrenceSetting(testDb.db, teamId, {
             frequency: "monthly",
             windowMonths: 3,
          });
@@ -289,7 +312,7 @@ describe("bills-repository", () => {
                recurrenceGroupId: setting.id,
             },
          ];
-         await repo.createBillsBatch(batch);
+         await repo.createBillsBatch(testDb.db, batch);
 
          const [last] = await testDb.db
             .select()
@@ -310,6 +333,7 @@ describe("bills-repository", () => {
             .returning();
 
          await repo.createBill(
+            testDb.db,
             teamId,
             validCreateInput({ contactId: contact!.id }),
          );

@@ -17,31 +17,31 @@ const idSchema = z.object({ id: z.string().uuid() });
 export const create = protectedProcedure
    .input(createCreditCardSchema)
    .handler(async ({ context, input }) => {
-      return createCreditCard(context.teamId, input);
+      return createCreditCard(context.db, context.teamId, input);
    });
 
 export const getAll = protectedProcedure.handler(async ({ context }) => {
-   return listCreditCards(context.teamId);
+   return listCreditCards(context.db, context.teamId);
 });
 
 export const getById = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      return ensureCreditCardOwnership(input.id, context.teamId);
+      return ensureCreditCardOwnership(context.db, input.id, context.teamId);
    });
 
 export const update = protectedProcedure
    .input(idSchema.merge(updateCreditCardSchema))
    .handler(async ({ context, input }) => {
-      await ensureCreditCardOwnership(input.id, context.teamId);
+      await ensureCreditCardOwnership(context.db, input.id, context.teamId);
       const { id, ...data } = input;
-      return updateCreditCard(id, data);
+      return updateCreditCard(context.db, id, data);
    });
 
 export const remove = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      await ensureCreditCardOwnership(input.id, context.teamId);
-      await deleteCreditCard(input.id);
+      await ensureCreditCardOwnership(context.db, input.id, context.teamId);
+      await deleteCreditCard(context.db, input.id);
       return { success: true };
    });

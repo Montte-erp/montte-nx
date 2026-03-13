@@ -1,10 +1,13 @@
+import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
-const clientSchema = z.object({
-   VITE_POSTHOG_HOST: z.string().url(),
-   VITE_POSTHOG_KEY: z.string(),
+export const env = createEnv({
+   clientPrefix: "VITE_",
+   client: {
+      VITE_POSTHOG_HOST: z.string().url(),
+      VITE_POSTHOG_KEY: z.string(),
+   },
+   runtimeEnv: import.meta.env,
 });
-
-export const env = clientSchema.parse(import.meta.env);
 
 export type WebClientEnv = typeof env;

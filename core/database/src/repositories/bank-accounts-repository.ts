@@ -1,7 +1,7 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { add, of, subtract, toDecimal } from "@f-o-t/money";
 import { and, eq, or, sql } from "drizzle-orm";
-import { db } from "@core/database/client";
+import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateBankAccountInput,
    type UpdateBankAccountInput,
@@ -13,6 +13,7 @@ import { bills } from "@core/database/schemas/bills";
 import { transactions } from "@core/database/schemas/transactions";
 
 export async function createBankAccount(
+   db: DatabaseInstance,
    teamId: string,
    data: CreateBankAccountInput,
 ) {
@@ -31,6 +32,7 @@ export async function createBankAccount(
 }
 
 export async function listBankAccounts(
+   db: DatabaseInstance,
    teamId: string,
    includeArchived = false,
 ) {
@@ -51,7 +53,7 @@ export async function listBankAccounts(
    }
 }
 
-export async function getBankAccount(id: string) {
+export async function getBankAccount(db: DatabaseInstance, id: string) {
    try {
       const account = await db.query.bankAccounts.findFirst({
          where: { id },
@@ -63,8 +65,12 @@ export async function getBankAccount(id: string) {
    }
 }
 
-export async function ensureBankAccountOwnership(id: string, teamId: string) {
-   const account = await getBankAccount(id);
+export async function ensureBankAccountOwnership(
+   db: DatabaseInstance,
+   id: string,
+   teamId: string,
+) {
+   const account = await getBankAccount(db, id);
    if (!account || account.teamId !== teamId) {
       throw AppError.notFound("Conta bancária não encontrada.");
    }
@@ -72,6 +78,7 @@ export async function ensureBankAccountOwnership(id: string, teamId: string) {
 }
 
 export async function updateBankAccount(
+   db: DatabaseInstance,
    id: string,
    data: UpdateBankAccountInput,
 ) {
@@ -90,7 +97,7 @@ export async function updateBankAccount(
    }
 }
 
-export async function archiveBankAccount(id: string) {
+export async function archiveBankAccount(db: DatabaseInstance, id: string) {
    try {
       const [updated] = await db
          .update(bankAccounts)
@@ -105,7 +112,7 @@ export async function archiveBankAccount(id: string) {
    }
 }
 
-export async function reactivateBankAccount(id: string) {
+export async function reactivateBankAccount(db: DatabaseInstance, id: string) {
    try {
       const [updated] = await db
          .update(bankAccounts)
@@ -120,9 +127,9 @@ export async function reactivateBankAccount(id: string) {
    }
 }
 
-export async function deleteBankAccount(id: string) {
+export async function deleteBankAccount(db: DatabaseInstance, id: string) {
    try {
-      const hasTransactions = await bankAccountHasTransactions(id);
+      const hasTransactions = await bankAccountHasTransactions(db, id);
       if (hasTransactions) {
          throw AppError.conflict(
             "Conta com lançamentos não pode ser excluída. Use arquivamento.",
@@ -136,6 +143,7 @@ export async function deleteBankAccount(id: string) {
 }
 
 export async function computeBankAccountBalance(
+   db: DatabaseInstance,
    accountId: string,
    initialBalance: string,
 ) {
@@ -198,16 +206,18 @@ export async function computeBankAccountBalance(
 }
 
 export async function listBankAccountsWithBalance(
+   db: DatabaseInstance,
    teamId: string,
    includeArchived = false,
 ) {
    try {
-      const accounts = await listBankAccounts(teamId, includeArchived);
+      const accounts = await listBankAccounts(db, teamId, includeArchived);
 
       return await Promise.all(
          accounts.map(async (account) => {
             const { currentBalance, projectedBalance } =
                await computeBankAccountBalance(
+                  db,
                   account.id,
                   account.initialBalance,
                );
@@ -220,7 +230,10 @@ export async function listBankAccountsWithBalance(
    }
 }
 
-export async function bankAccountHasTransactions(accountId: string) {
+export async function bankAccountHasTransactions(
+   db: DatabaseInstance,
+   accountId: string,
+) {
    try {
       const [row] = await db
          .select({ count: sql<number>`count(*)::int` })

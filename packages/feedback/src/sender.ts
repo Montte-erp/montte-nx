@@ -1,7 +1,6 @@
 import { Octokit } from "@octokit/rest";
-import { env } from "@core/environment/web/server";
 import { getLogger } from "@core/logging/root";
-import { posthog } from "@core/posthog/server";
+import type { PostHog } from "@core/posthog/server";
 
 import { discordAdapter } from "./adapters/discord";
 import { githubAdapter } from "./adapters/github";
@@ -10,47 +9,47 @@ import type { FeedbackAdapter, FeedbackMessage } from "./schemas";
 
 const logger = getLogger().child({ module: "feedback" });
 
-function createAdapters(): FeedbackAdapter[] {
-   const adapters: FeedbackAdapter[] = [posthogAdapter({ posthog })];
+export interface CreateFeedbackSenderOpts {
+   posthog: PostHog;
+   discordWebhookUrl?: string;
+   githubToken?: string;
+   githubOwner?: string;
+   githubRepo?: string;
+}
 
-   if (env.DISCORD_FEEDBACK_WEBHOOK_URL) {
-      adapters.push(
-         discordAdapter({ webhookUrl: env.DISCORD_FEEDBACK_WEBHOOK_URL }),
-      );
+export function createFeedbackSender(opts: CreateFeedbackSenderOpts) {
+   const adapters: FeedbackAdapter[] = [
+      posthogAdapter({ posthog: opts.posthog }),
+   ];
+
+   if (opts.discordWebhookUrl) {
+      adapters.push(discordAdapter({ webhookUrl: opts.discordWebhookUrl }));
    }
 
-   if (
-      env.GITHUB_FEEDBACK_TOKEN &&
-      env.GITHUB_FEEDBACK_OWNER &&
-      env.GITHUB_FEEDBACK_REPO
-   ) {
+   if (opts.githubToken && opts.githubOwner && opts.githubRepo) {
       adapters.push(
          githubAdapter({
-            octokit: new Octokit({ auth: env.GITHUB_FEEDBACK_TOKEN }),
-            owner: env.GITHUB_FEEDBACK_OWNER,
-            repo: env.GITHUB_FEEDBACK_REPO,
+            octokit: new Octokit({ auth: opts.githubToken }),
+            owner: opts.githubOwner,
+            repo: opts.githubRepo,
          }),
       );
    }
 
-   return adapters;
-}
+   return {
+      async send(message: FeedbackMessage): Promise<void> {
+         const results = await Promise.allSettled(
+            adapters.map((adapter) => adapter.send(message)),
+         );
 
-const adapters = createAdapters();
-
-export const feedbackSender = {
-   async send(message: FeedbackMessage): Promise<void> {
-      const results = await Promise.allSettled(
-         adapters.map((adapter) => adapter.send(message)),
-      );
-
-      for (const [index, result] of results.entries()) {
-         if (result.status === "rejected") {
-            logger.error(
-               { adapter: adapters[index]?.name, err: result.reason },
-               "Adapter failed",
-            );
+         for (const [index, result] of results.entries()) {
+            if (result.status === "rejected") {
+               logger.error(
+                  { adapter: adapters[index]?.name, err: result.reason },
+                  "Adapter failed",
+               );
+            }
          }
-      }
-   },
-};
+      },
+   };
+}

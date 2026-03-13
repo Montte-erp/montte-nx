@@ -11,13 +11,9 @@ import { initOtel, shutdownOtel } from "@core/logging/otel";
 import { initLogger } from "@core/logging/root";
 import { shutdownPosthog } from "@core/posthog/server";
 import { Elysia } from "elysia";
-import { auth } from "@core/authentication/server";
-import { db } from "@core/database/client";
-import { minioClient } from "@core/files/client";
-import { posthog } from "@core/posthog/server";
+import { auth, db, minioClient, posthog } from "./singletons";
 import sdkRouter from "./orpc/router";
 
-// Initialize OTel SDK for PostHog logs
 initOtel({
    serviceName: "montte-server",
    posthogKey: env.POSTHOG_KEY,
@@ -27,7 +23,6 @@ startHealthHeartbeat({ serviceName: "montte-server", posthog });
 
 const logger = initLogger({ name: "montte-server", level: "info" });
 
-// Initialize oRPC handler
 const orpcHandler = new RPCHandler(sdkRouter, {
    plugins: [
       new BatchHandlerPlugin(),
@@ -40,7 +35,6 @@ const orpcHandler = new RPCHandler(sdkRouter, {
    ],
 });
 
-// oRPC endpoint handler
 async function handleOrpcRequest({ request }: { request: Request }) {
    const context = {
       db,
@@ -91,10 +85,9 @@ const app = new Elysia({
 
 logger.info({ port: app.server?.port }, "Server started");
 
-// Graceful shutdown
 const shutdown = async (signal: string) => {
    logger.info({ signal }, "Received signal, shutting down");
-   await shutdownPosthog();
+   await shutdownPosthog(posthog);
    stopHealthHeartbeat();
    await shutdownOtel();
    process.exit(0);

@@ -1,8 +1,8 @@
-import { db } from "@core/database/client";
 import {
    getGoalsForAlertCheck,
    markAlertSent,
 } from "@core/database/repositories/budget-goals-repository";
+import type { DatabaseInstance } from "@core/database/client";
 import { teamMember, user, team } from "@core/database/schema";
 import { env } from "@core/environment/worker";
 import { createEmitFn } from "@packages/events/emit";
@@ -24,12 +24,13 @@ const fmt = (v: string | number) =>
    }).format(Number(v));
 
 export async function checkBudgetAlerts(
+   db: DatabaseInstance,
    job: BudgetAlertJobData,
 ): Promise<void> {
    try {
       const { month, year } = job;
 
-      const goals = await getGoalsForAlertCheck(month, year);
+      const goals = await getGoalsForAlertCheck(db, month, year);
 
       if (goals.length === 0) {
          logger.info({ month, year }, "No budget goals to alert");
@@ -96,7 +97,7 @@ export async function checkBudgetAlerts(
                });
             }
 
-            await markAlertSent(goal.id, goal.teamId);
+            await markAlertSent(db, goal.id, goal.teamId);
 
             // Emit finance event
             if (teamRow) {

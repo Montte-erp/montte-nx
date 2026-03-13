@@ -1,15 +1,9 @@
-import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
+import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { setupTestDb } from "../helpers/setup-test-db";
 import { transactions } from "@core/database/schemas/transactions";
 import { bills } from "@core/database/schemas/bills";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import * as repo from "../../src/repositories/contacts-repository";
-
-vi.mock("@core/database/client", () => ({
-   get db() {
-      return (globalThis as any).__TEST_DB__;
-   },
-}));
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -38,7 +32,11 @@ describe("contacts-repository", () => {
       it("rejects name shorter than 2 characters", async () => {
          const teamId = randomTeamId();
          await expect(
-            repo.createContact(teamId, validCreateInput({ name: "A" })),
+            repo.createContact(
+               testDb.db,
+               teamId,
+               validCreateInput({ name: "A" }),
+            ),
          ).rejects.toThrow();
       });
 
@@ -46,6 +44,7 @@ describe("contacts-repository", () => {
          const teamId = randomTeamId();
          await expect(
             repo.createContact(
+               testDb.db,
                teamId,
                validCreateInput({ name: "A".repeat(121) }),
             ),
@@ -56,6 +55,7 @@ describe("contacts-repository", () => {
          const teamId = randomTeamId();
          await expect(
             repo.createContact(
+               testDb.db,
                teamId,
                validCreateInput({ email: "not-an-email" }),
             ),
@@ -66,7 +66,11 @@ describe("contacts-repository", () => {
    describe("createContact", () => {
       it("creates a contact and returns it", async () => {
          const teamId = randomTeamId();
-         const contact = await repo.createContact(teamId, validCreateInput());
+         const contact = await repo.createContact(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
 
          expect(contact).toMatchObject({
             teamId,
@@ -81,14 +85,19 @@ describe("contacts-repository", () => {
    describe("listContacts", () => {
       it("lists active contacts only by default", async () => {
          const teamId = randomTeamId();
-         await repo.createContact(teamId, validCreateInput({ name: "Active" }));
+         await repo.createContact(
+            testDb.db,
+            teamId,
+            validCreateInput({ name: "Active" }),
+         );
          const archived = await repo.createContact(
+            testDb.db,
             teamId,
             validCreateInput({ name: "Archived" }),
          );
-         await repo.archiveContact(archived.id);
+         await repo.archiveContact(testDb.db, archived.id);
 
-         const list = await repo.listContacts(teamId);
+         const list = await repo.listContacts(testDb.db, teamId);
          expect(list).toHaveLength(1);
          expect(list[0]!.name).toBe("Active");
       });
@@ -96,31 +105,40 @@ describe("contacts-repository", () => {
       it("lists all contacts when includeArchived is true", async () => {
          const teamId = randomTeamId();
          await repo.createContact(
+            testDb.db,
             teamId,
             validCreateInput({ name: "Contact A" }),
          );
          const b = await repo.createContact(
+            testDb.db,
             teamId,
             validCreateInput({ name: "Contact B" }),
          );
-         await repo.archiveContact(b.id);
+         await repo.archiveContact(testDb.db, b.id);
 
-         const list = await repo.listContacts(teamId, undefined, true);
+         const list = await repo.listContacts(
+            testDb.db,
+            teamId,
+            undefined,
+            true,
+         );
          expect(list).toHaveLength(2);
       });
 
       it("filters by type", async () => {
          const teamId = randomTeamId();
          await repo.createContact(
+            testDb.db,
             teamId,
             validCreateInput({ name: "Cliente", type: "cliente" }),
          );
          await repo.createContact(
+            testDb.db,
             teamId,
             validCreateInput({ name: "Fornecedor", type: "fornecedor" }),
          );
 
-         const list = await repo.listContacts(teamId, "fornecedor");
+         const list = await repo.listContacts(testDb.db, teamId, "fornecedor");
          expect(list).toHaveLength(1);
          expect(list[0]!.name).toBe("Fornecedor");
       });
@@ -129,14 +147,18 @@ describe("contacts-repository", () => {
    describe("getContact", () => {
       it("returns contact by id", async () => {
          const teamId = randomTeamId();
-         const created = await repo.createContact(teamId, validCreateInput());
+         const created = await repo.createContact(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
 
-         const found = await repo.getContact(created.id);
+         const found = await repo.getContact(testDb.db, created.id);
          expect(found).toMatchObject({ id: created.id, name: "João Silva" });
       });
 
       it("returns null for non-existent id", async () => {
-         const found = await repo.getContact(crypto.randomUUID());
+         const found = await repo.getContact(testDb.db, crypto.randomUUID());
          expect(found).toBeNull();
       });
    });
@@ -144,9 +166,13 @@ describe("contacts-repository", () => {
    describe("updateContact", () => {
       it("updates a contact", async () => {
          const teamId = randomTeamId();
-         const created = await repo.createContact(teamId, validCreateInput());
+         const created = await repo.createContact(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
 
-         const updated = await repo.updateContact(created.id, {
+         const updated = await repo.updateContact(testDb.db, created.id, {
             name: "Maria Silva",
          });
 
@@ -158,9 +184,13 @@ describe("contacts-repository", () => {
    describe("archiveContact", () => {
       it("archives a contact", async () => {
          const teamId = randomTeamId();
-         const created = await repo.createContact(teamId, validCreateInput());
+         const created = await repo.createContact(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
 
-         const archived = await repo.archiveContact(created.id);
+         const archived = await repo.archiveContact(testDb.db, created.id);
          expect(archived.isArchived).toBe(true);
       });
    });
@@ -168,10 +198,17 @@ describe("contacts-repository", () => {
    describe("reactivateContact", () => {
       it("reactivates an archived contact", async () => {
          const teamId = randomTeamId();
-         const created = await repo.createContact(teamId, validCreateInput());
-         await repo.archiveContact(created.id);
+         const created = await repo.createContact(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
+         await repo.archiveContact(testDb.db, created.id);
 
-         const reactivated = await repo.reactivateContact(created.id);
+         const reactivated = await repo.reactivateContact(
+            testDb.db,
+            created.id,
+         );
          expect(reactivated.isArchived).toBe(false);
       });
    });
@@ -179,16 +216,24 @@ describe("contacts-repository", () => {
    describe("deleteContact", () => {
       it("deletes a contact without links", async () => {
          const teamId = randomTeamId();
-         const created = await repo.createContact(teamId, validCreateInput());
+         const created = await repo.createContact(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
 
-         await repo.deleteContact(created.id);
-         const found = await repo.getContact(created.id);
+         await repo.deleteContact(testDb.db, created.id);
+         const found = await repo.getContact(testDb.db, created.id);
          expect(found).toBeNull();
       });
 
       it("rejects deleting a contact with transactions", async () => {
          const teamId = randomTeamId();
-         const contact = await repo.createContact(teamId, validCreateInput());
+         const contact = await repo.createContact(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
 
          const [account] = await testDb.db
             .insert(bankAccounts)
@@ -209,14 +254,18 @@ describe("contacts-repository", () => {
             contactId: contact.id,
          });
 
-         await expect(repo.deleteContact(contact.id)).rejects.toThrow(
-            /lançamentos vinculados/,
-         );
+         await expect(
+            repo.deleteContact(testDb.db, contact.id),
+         ).rejects.toThrow(/lançamentos vinculados/);
       });
 
       it("rejects deleting a contact with bills", async () => {
          const teamId = randomTeamId();
-         const contact = await repo.createContact(teamId, validCreateInput());
+         const contact = await repo.createContact(
+            testDb.db,
+            teamId,
+            validCreateInput(),
+         );
 
          await testDb.db.insert(bills).values({
             teamId,
@@ -227,9 +276,9 @@ describe("contacts-repository", () => {
             contactId: contact.id,
          });
 
-         await expect(repo.deleteContact(contact.id)).rejects.toThrow(
-            /lançamentos vinculados/,
-         );
+         await expect(
+            repo.deleteContact(testDb.db, contact.id),
+         ).rejects.toThrow(/lançamentos vinculados/);
       });
    });
 });

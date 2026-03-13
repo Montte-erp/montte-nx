@@ -1,4 +1,4 @@
-import { getRedisConnection } from "@core/redis/connection";
+import type { Redis } from "@core/redis/connection";
 import { FREE_TIER_LIMITS } from "@core/stripe/constants";
 
 function usageKey(organizationId: string, eventName: string): string {
@@ -14,8 +14,8 @@ function msUntilEndOfMonth(): number {
 export async function isWithinFreeTier(
    organizationId: string,
    eventName: string,
+   redis?: Redis,
 ): Promise<boolean> {
-   const redis = getRedisConnection();
    if (!redis) return true;
 
    const limit = FREE_TIER_LIMITS[eventName];
@@ -30,8 +30,8 @@ export async function isWithinFreeTier(
 export async function incrementUsage(
    organizationId: string,
    eventName: string,
+   redis?: Redis,
 ): Promise<void> {
-   const redis = getRedisConnection();
    if (!redis) return;
 
    const key = usageKey(organizationId, eventName);
@@ -45,8 +45,8 @@ export async function incrementUsage(
 export async function getCurrentUsage(
    organizationId: string,
    eventName: string,
+   redis?: Redis,
 ): Promise<{ used: number; limit: number; withinFreeTier: boolean }> {
-   const redis = getRedisConnection();
    const limit = FREE_TIER_LIMITS[eventName] ?? 0;
 
    if (!redis) return { used: 0, limit, withinFreeTier: true };

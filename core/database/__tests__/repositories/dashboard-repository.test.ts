@@ -1,13 +1,7 @@
-import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
+import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { setupTestDb } from "../helpers/setup-test-db";
 import { user, organization, team } from "@core/database/schemas/auth";
 import * as repo from "../../src/repositories/dashboard-repository";
-
-vi.mock("@core/database/client", () => ({
-   get db() {
-      return (globalThis as any).__TEST_DB__;
-   },
-}));
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -64,6 +58,7 @@ describe("dashboard-repository", () => {
          const { organizationId, teamId, userId } = await seedParents();
          await expect(
             repo.createDashboard(
+               testDb.db,
                organizationId,
                teamId,
                userId,
@@ -76,6 +71,7 @@ describe("dashboard-repository", () => {
          const { organizationId, teamId, userId } = await seedParents();
          await expect(
             repo.createDashboard(
+               testDb.db,
                organizationId,
                teamId,
                userId,
@@ -88,6 +84,7 @@ describe("dashboard-repository", () => {
          const { organizationId, teamId, userId } = await seedParents();
          await expect(
             repo.createDashboard(
+               testDb.db,
                organizationId,
                teamId,
                userId,
@@ -103,6 +100,7 @@ describe("dashboard-repository", () => {
       it("creates with defaults", async () => {
          const { organizationId, teamId, userId } = await seedParents();
          const dashboard = await repo.createDashboard(
+            testDb.db,
             organizationId,
             teamId,
             userId,
@@ -124,6 +122,7 @@ describe("dashboard-repository", () => {
          const { organizationId, teamId, userId } = await seedParents();
          const insightId = crypto.randomUUID();
          const dashboard = await repo.createDashboard(
+            testDb.db,
             organizationId,
             teamId,
             userId,
@@ -145,19 +144,21 @@ describe("dashboard-repository", () => {
       it("lists for team", async () => {
          const { organizationId, teamId, userId } = await seedParents();
          await repo.createDashboard(
+            testDb.db,
             organizationId,
             teamId,
             userId,
             validInput({ name: "Dash A" }),
          );
          await repo.createDashboard(
+            testDb.db,
             organizationId,
             teamId,
             userId,
             validInput({ name: "Dash B" }),
          );
 
-         const list = await repo.listDashboardsByTeam(teamId);
+         const list = await repo.listDashboardsByTeam(testDb.db, teamId);
          expect(list).toHaveLength(2);
       });
 
@@ -165,19 +166,24 @@ describe("dashboard-repository", () => {
          const parentA = await seedParents();
          const parentB = await seedParents();
          await repo.createDashboard(
+            testDb.db,
             parentA.organizationId,
             parentA.teamId,
             parentA.userId,
             validInput({ name: "Team A" }),
          );
          await repo.createDashboard(
+            testDb.db,
             parentB.organizationId,
             parentB.teamId,
             parentB.userId,
             validInput({ name: "Team B" }),
          );
 
-         const listA = await repo.listDashboardsByTeam(parentA.teamId);
+         const listA = await repo.listDashboardsByTeam(
+            testDb.db,
+            parentA.teamId,
+         );
          expect(listA).toHaveLength(1);
          expect(listA[0]!.name).toBe("Team A");
       });
@@ -187,18 +193,22 @@ describe("dashboard-repository", () => {
       it("returns by id", async () => {
          const { organizationId, teamId, userId } = await seedParents();
          const created = await repo.createDashboard(
+            testDb.db,
             organizationId,
             teamId,
             userId,
             validInput(),
          );
 
-         const found = await repo.getDashboardById(created.id);
+         const found = await repo.getDashboardById(testDb.db, created.id);
          expect(found).toMatchObject({ id: created.id, name: "Meu Dashboard" });
       });
 
       it("returns null for nonexistent", async () => {
-         const found = await repo.getDashboardById(crypto.randomUUID());
+         const found = await repo.getDashboardById(
+            testDb.db,
+            crypto.randomUUID(),
+         );
          expect(found).toBeNull();
       });
    });
@@ -207,13 +217,14 @@ describe("dashboard-repository", () => {
       it("updates name and description", async () => {
          const { organizationId, teamId, userId } = await seedParents();
          const created = await repo.createDashboard(
+            testDb.db,
             organizationId,
             teamId,
             userId,
             validInput(),
          );
 
-         const updated = await repo.updateDashboard(created.id, {
+         const updated = await repo.updateDashboard(testDb.db, created.id, {
             name: "Novo Nome",
             description: "Nova descrição",
          });
@@ -228,6 +239,7 @@ describe("dashboard-repository", () => {
       it("replaces tiles array", async () => {
          const { organizationId, teamId, userId } = await seedParents();
          const created = await repo.createDashboard(
+            testDb.db,
             organizationId,
             teamId,
             userId,
@@ -235,9 +247,11 @@ describe("dashboard-repository", () => {
          );
 
          const insightId = crypto.randomUUID();
-         const updated = await repo.updateDashboardTiles(created.id, [
-            { insightId, size: "lg", order: 0 },
-         ]);
+         const updated = await repo.updateDashboardTiles(
+            testDb.db,
+            created.id,
+            [{ insightId, size: "lg", order: 0 }],
+         );
 
          expect(updated.tiles).toHaveLength(1);
          expect(updated.tiles[0]).toMatchObject({
@@ -252,14 +266,15 @@ describe("dashboard-repository", () => {
       it("deletes a dashboard", async () => {
          const { organizationId, teamId, userId } = await seedParents();
          const created = await repo.createDashboard(
+            testDb.db,
             organizationId,
             teamId,
             userId,
             validInput(),
          );
 
-         await repo.deleteDashboard(created.id);
-         const found = await repo.getDashboardById(created.id);
+         await repo.deleteDashboard(testDb.db, created.id);
+         const found = await repo.getDashboardById(testDb.db, created.id);
          expect(found).toBeNull();
       });
    });
@@ -268,25 +283,27 @@ describe("dashboard-repository", () => {
       it("sets default and unsets previous", async () => {
          const { organizationId, teamId, userId } = await seedParents();
          const dashA = await repo.createDashboard(
+            testDb.db,
             organizationId,
             teamId,
             userId,
             validInput({ name: "Dash A" }),
          );
          const dashB = await repo.createDashboard(
+            testDb.db,
             organizationId,
             teamId,
             userId,
             validInput({ name: "Dash B" }),
          );
 
-         await repo.setDashboardAsHome(dashA.id, teamId);
-         const homeA = await repo.getDashboardById(dashA.id);
+         await repo.setDashboardAsHome(testDb.db, dashA.id, teamId);
+         const homeA = await repo.getDashboardById(testDb.db, dashA.id);
          expect(homeA!.isDefault).toBe(true);
 
-         await repo.setDashboardAsHome(dashB.id, teamId);
-         const updatedA = await repo.getDashboardById(dashA.id);
-         const updatedB = await repo.getDashboardById(dashB.id);
+         await repo.setDashboardAsHome(testDb.db, dashB.id, teamId);
+         const updatedA = await repo.getDashboardById(testDb.db, dashA.id);
+         const updatedB = await repo.getDashboardById(testDb.db, dashB.id);
          expect(updatedA!.isDefault).toBe(false);
          expect(updatedB!.isDefault).toBe(true);
       });

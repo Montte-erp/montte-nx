@@ -1,7 +1,6 @@
 import { ORPCError, os } from "@orpc/server";
-import { auth } from "@core/authentication/server";
-import { db } from "@core/database/client";
 import type { PostHog } from "@core/posthog/server";
+import { auth, db } from "../singletons";
 import { checkDomainAllowed } from "../utils/sdk-auth";
 
 interface BaseContext {

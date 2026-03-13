@@ -3,7 +3,7 @@ import {
    featureFeedbackSchema,
    featureRequestSchema,
 } from "@packages/feedback/schemas";
-import { feedbackSender } from "@packages/feedback/sender";
+import { feedbackSender } from "@/integrations/singletons";
 import { authenticatedProcedure } from "../server";
 
 export const submitBugReport = authenticatedProcedure

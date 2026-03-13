@@ -86,7 +86,7 @@ export const create = protectedProcedure
          throw WebAppError.internal("Falha ao criar chave de API do webhook.");
       }
 
-      const endpoint = await createWebhookEndpoint(organizationId, teamId, {
+      const endpoint = await createWebhookEndpoint(db, organizationId, teamId, {
          url: input.url,
          description: input.description,
          eventPatterns: input.eventPatterns,
@@ -111,7 +111,7 @@ export const create = protectedProcedure
    });
 
 export const list = protectedProcedure.handler(async ({ context }) => {
-   const endpoints = await listWebhookEndpoints(context.teamId);
+   const endpoints = await listWebhookEndpoints(context.db, context.teamId);
 
    return endpoints.map((e) => ({
       ...e,
@@ -122,7 +122,11 @@ export const list = protectedProcedure.handler(async ({ context }) => {
 export const getById = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      const endpoint = await ensureWebhookOwnership(input.id, context.teamId);
+      const endpoint = await ensureWebhookOwnership(
+         context.db,
+         input.id,
+         context.teamId,
+      );
 
       return {
          ...endpoint,
@@ -135,14 +139,14 @@ export const update = protectedProcedure
    .handler(async ({ context, input }) => {
       const { db, posthog, userId, teamId } = context;
 
-      const endpoint = await ensureWebhookOwnership(input.id, teamId);
+      const endpoint = await ensureWebhookOwnership(db, input.id, teamId);
 
       if (input.eventPatterns) {
          await validateEventPatterns(input.eventPatterns, db);
       }
 
       const { id, ...updateData } = input;
-      const updated = await updateWebhookEndpoint(id, updateData);
+      const updated = await updateWebhookEndpoint(db, id, updateData);
 
       try {
          const changedFields = Object.keys(updateData).filter(
@@ -167,7 +171,7 @@ export const remove = protectedProcedure
    .handler(async ({ context, input }) => {
       const { auth, headers, db, posthog, userId, teamId } = context;
 
-      const endpoint = await ensureWebhookOwnership(input.id, teamId);
+      const endpoint = await ensureWebhookOwnership(db, input.id, teamId);
 
       if (endpoint.apiKeyId) {
          try {
@@ -183,7 +187,7 @@ export const remove = protectedProcedure
          }
       }
 
-      await deleteWebhookEndpoint(input.id);
+      await deleteWebhookEndpoint(db, input.id);
 
       try {
          await emitWebhookEndpointDeleted(
@@ -215,9 +219,9 @@ export const deliveries = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      await ensureWebhookOwnership(input.webhookId, context.teamId);
+      await ensureWebhookOwnership(context.db, input.webhookId, context.teamId);
 
-      const items = await getWebhookDeliveries(input.webhookId, {
+      const items = await getWebhookDeliveries(context.db, input.webhookId, {
          offset: (input.page - 1) * input.limit,
          limit: input.limit,
       });

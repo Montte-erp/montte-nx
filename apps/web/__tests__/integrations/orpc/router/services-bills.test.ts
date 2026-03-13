@@ -118,6 +118,7 @@ describe("generateBillsForSubscription", () => {
    it("skips hourly billing cycle", async () => {
       const variant = { ...baseVariant, billingCycle: "hourly" as const };
       await generateBillsForSubscription(
+         ctx.db,
          makeSubscription(),
          variant,
          "Consultoria",
@@ -129,7 +130,12 @@ describe("generateBillsForSubscription", () => {
 
    it("generates one bill for one_time cycle and persists it", async () => {
       const variant = { ...baseVariant, billingCycle: "one_time" as const };
-      await generateBillsForSubscription(makeSubscription(), variant, "Setup");
+      await generateBillsForSubscription(
+         ctx.db,
+         makeSubscription(),
+         variant,
+         "Setup",
+      );
 
       const rows = await ctx.db.query.bills.findMany();
       expect(rows).toHaveLength(1);
@@ -147,6 +153,7 @@ describe("generateBillsForSubscription", () => {
    it("generates one bill for annual cycle", async () => {
       const variant = { ...baseVariant, billingCycle: "annual" as const };
       await generateBillsForSubscription(
+         ctx.db,
          makeSubscription(),
          variant,
          "Licença",
@@ -162,7 +169,12 @@ describe("generateBillsForSubscription", () => {
          startDate: "2026-01-15",
          endDate: "2026-03-15",
       });
-      await generateBillsForSubscription(subscription, baseVariant, "Serviço");
+      await generateBillsForSubscription(
+         ctx.db,
+         subscription,
+         baseVariant,
+         "Serviço",
+      );
 
       const rows = await ctx.db.query.bills.findMany({
          orderBy: { dueDate: "asc" },
@@ -175,6 +187,7 @@ describe("generateBillsForSubscription", () => {
 
    it("generates monthly bills up to 2 years when no endDate", async () => {
       await generateBillsForSubscription(
+         ctx.db,
          makeSubscription(),
          baseVariant,
          "Serviço",
@@ -188,13 +201,18 @@ describe("generateBillsForSubscription", () => {
 describe("cancelPendingBillsForSubscription", () => {
    it("updates pending bills to cancelled in the database", async () => {
       const variant = { ...baseVariant, billingCycle: "one_time" as const };
-      await generateBillsForSubscription(makeSubscription(), variant, "Setup");
+      await generateBillsForSubscription(
+         ctx.db,
+         makeSubscription(),
+         variant,
+         "Setup",
+      );
 
       const beforeRows = await ctx.db.query.bills.findMany();
       expect(beforeRows).toHaveLength(1);
       expect(beforeRows[0]!.status).toBe("pending");
 
-      await cancelPendingBillsForSubscription(SUBSCRIPTION_ID);
+      await cancelPendingBillsForSubscription(ctx.db, SUBSCRIPTION_ID);
 
       const afterRows = await ctx.db.query.bills.findMany();
       expect(afterRows).toHaveLength(1);
@@ -206,7 +224,7 @@ describe("cancelPendingBillsForSubscription", () => {
          startDate: "2026-01-15",
          endDate: "2026-02-15",
       });
-      await generateBillsForSubscription(sub, baseVariant, "Serviço");
+      await generateBillsForSubscription(ctx.db, sub, baseVariant, "Serviço");
 
       const rows = await ctx.db.query.bills.findMany({
          orderBy: { dueDate: "asc" },
@@ -218,7 +236,7 @@ describe("cancelPendingBillsForSubscription", () => {
          .set({ status: "paid", paidAt: new Date() })
          .where(sql`id = ${rows[0]!.id}`);
 
-      await cancelPendingBillsForSubscription(SUBSCRIPTION_ID);
+      await cancelPendingBillsForSubscription(ctx.db, SUBSCRIPTION_ID);
 
       const afterRows = await ctx.db.query.bills.findMany({
          orderBy: { dueDate: "asc" },

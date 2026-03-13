@@ -25,7 +25,11 @@ export const query = protectedProcedure
 
 export const getDefaultDashboard = protectedProcedure.handler(
    async ({ context }) => {
-      return fetchDefaultDashboard(context.organizationId, context.teamId);
+      return fetchDefaultDashboard(
+         context.db,
+         context.organizationId,
+         context.teamId,
+      );
    },
 );
 
@@ -33,6 +37,7 @@ export const getDashboardInsights = protectedProcedure
    .input(z.object({ dashboardId: z.string().uuid() }))
    .handler(async ({ context, input }) => {
       const dashboard = await fetchDefaultDashboard(
+         context.db,
          context.organizationId,
          context.teamId,
       );
@@ -49,5 +54,5 @@ export const getDashboardInsights = protectedProcedure
          return [];
       }
 
-      return getInsightsByIds(insightIds);
+      return getInsightsByIds(context.db, insightIds);
    });

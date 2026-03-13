@@ -1,6 +1,7 @@
 import { getOrganizationMembers } from "@core/database/repositories/auth-repository";
 import { member, organization } from "@core/database/schemas/auth";
 import { generatePresignedPutUrl } from "@core/files/client";
+import { minioClient } from "@/integrations/singletons";
 import { WebAppError } from "@core/logging/errors";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -240,6 +241,7 @@ export const generateLogoUploadUrl = protectedProcedure
          const fileName = `org-${organizationId}-${crypto.randomUUID()}.${input.fileExtension}`;
 
          const presignedUrl = await generatePresignedPutUrl(
+            minioClient,
             fileName,
             bucketName,
             300,
