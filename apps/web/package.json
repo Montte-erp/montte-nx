@@ -69,6 +69,7 @@
       "drizzle-orm": "catalog:database",
       "lucide-react": "catalog:ui",
       "nitro": "3.0.0",
+      "posthog-js": "catalog:analytics-client",
       "react": "catalog:react",
       "react-dom": "catalog:react",
       "react-dropzone": "^15.0.0",

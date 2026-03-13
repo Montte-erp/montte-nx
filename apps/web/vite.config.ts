@@ -17,9 +17,6 @@ const config = defineConfig({
       },
       tsconfigPaths: true,
    },
-   ssr: {
-      external: ["posthog-js"],
-   },
    optimizeDeps: {
       include: ["react", "react-dom"],
    },
