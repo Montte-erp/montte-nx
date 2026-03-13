@@ -40,6 +40,7 @@
       },
       "typecheck": {
          "cache": true,
+         "dependsOn": ["^typecheck"],
          "inputs": ["default", "^default"],
          "outputs": ["{projectRoot}/.cache/tsbuildinfo.json"]
       },
@@ -84,7 +85,7 @@
       }
    },
    "sync": {
-      "disabledTaskSyncGenerators": ["@nx/js:typescript-sync"]
+      "applyChanges": true
    },
    "tui": {
       "enabled": true

@@ -24,5 +24,10 @@
          "@packages/ui/*": ["./src/*"]
       }
    },
-   "include": ["src"]
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../../core/utils"
+      }
+   ]
 }

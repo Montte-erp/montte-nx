@@ -22,6 +22,7 @@ export async function createInsight(
          .insert(insights)
          .values({ ...validated, organizationId, teamId, createdBy })
          .returning();
+      if (!insight) throw AppError.database("Failed to create insight");
       return insight;
    } catch (err) {
       propagateError(err);

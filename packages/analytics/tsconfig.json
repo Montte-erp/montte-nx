@@ -23,5 +23,16 @@
          "@packages/ui/*": ["../../packages/ui/src/*"]
       }
    },
-   "include": ["src"]
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../../core/utils"
+      },
+      {
+         "path": "../../core/logging"
+      },
+      {
+         "path": "../../core/database"
+      }
+   ]
 }

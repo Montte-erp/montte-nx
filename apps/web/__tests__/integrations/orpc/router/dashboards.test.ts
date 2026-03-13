@@ -217,7 +217,7 @@ describe("updateTiles", () => {
          { context: ctx },
       );
 
-      expect(result.tiles).toEqual(tiles);
+      expect(result!.tiles).toEqual(tiles);
    });
 
    it("updates metadata alongside tiles", async () => {
@@ -233,8 +233,8 @@ describe("updateTiles", () => {
          { context: ctx },
       );
 
-      expect(result.name).toBe("After");
-      expect(result.tiles).toEqual([]);
+      expect(result!.name).toBe("After");
+      expect(result!.tiles).toEqual([]);
    });
 
    it("rejects updateTiles from a different team", async () => {

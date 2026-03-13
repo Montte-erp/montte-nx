@@ -242,7 +242,7 @@ describe("update", () => {
          { context: ctx },
       );
 
-      expect(updated.name).toBe("Updated Name");
+      expect(updated!.name).toBe("Updated Name");
 
       const fromDb = await ctx.db.query.insights.findFirst({
          where: { id: created.id },

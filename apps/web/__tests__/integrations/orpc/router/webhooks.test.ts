@@ -295,8 +295,8 @@ describe("update", () => {
          { context: ctx },
       );
 
-      expect(updated.url).toBe("https://example.com/updated");
-      expect(updated.isActive).toBe(false);
+      expect(updated!.url).toBe("https://example.com/updated");
+      expect(updated!.isActive).toBe(false);
 
       const fromDb = await ctx.db.query.webhookEndpoints.findFirst({
          where: { id: created.endpoint.id },

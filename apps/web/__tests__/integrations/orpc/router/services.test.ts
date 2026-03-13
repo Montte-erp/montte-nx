@@ -157,7 +157,7 @@ describe("update", () => {
          { context: ctx },
       );
 
-      expect(updated.name).toBe("Atualizado");
+      expect(updated!.name).toBe("Atualizado");
 
       const fromDb = await ctx.db.query.services.findFirst({
          where: { id: created.id },
@@ -294,7 +294,7 @@ describe("variants", () => {
          { context: ctx },
       );
 
-      expect(updated.name).toBe("Atualizado");
+      expect(updated!.name).toBe("Atualizado");
    });
 
    it("removes a variant", async () => {

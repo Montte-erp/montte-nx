@@ -10,7 +10,7 @@ import {
 import { cn } from "@packages/ui/lib/utils";
 import { CheckIcon } from "lucide-react";
 import { Select as SelectPrimitive } from "radix-ui";
-import type { ComponentPropsWithoutRef } from "react";
+import type { ComponentPropsWithoutRef, NamedExoticComponent } from "react";
 import { createContext, memo, useContext, useEffect, useState } from "react";
 
 export type ModelOption = {
@@ -141,9 +141,15 @@ const ModelSelectorImpl = ({
 };
 
 export const ModelSelector = Object.assign(memo(ModelSelectorImpl), {
-   displayName: "ModelSelector",
+   displayName: "ModelSelector" as const,
    Root: ModelSelectorRoot,
    Trigger: ModelSelectorTrigger,
    Content: ModelSelectorContent,
    Item: ModelSelectorItem,
-});
+}) as NamedExoticComponent<ModelSelectorImplProps> & {
+   displayName: "ModelSelector";
+   Root: typeof ModelSelectorRoot;
+   Trigger: typeof ModelSelectorTrigger;
+   Content: typeof ModelSelectorContent;
+   Item: typeof ModelSelectorItem;
+};

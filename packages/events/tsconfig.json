@@ -23,5 +23,22 @@
          "@packages/ui/*": ["../../packages/ui/src/*"]
       }
    },
-   "include": ["src"]
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../../core/stripe"
+      },
+      {
+         "path": "../../core/redis"
+      },
+      {
+         "path": "../../core/posthog"
+      },
+      {
+         "path": "../../core/logging"
+      },
+      {
+         "path": "../../core/database"
+      }
+   ]
 }

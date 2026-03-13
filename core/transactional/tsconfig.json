@@ -18,5 +18,16 @@
          "@core/utils/*": ["../../core/utils/src/*"]
       }
    },
-   "include": ["src"]
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../utils"
+      },
+      {
+         "path": "../logging"
+      },
+      {
+         "path": "../environment"
+      }
+   ]
 }

@@ -45,7 +45,8 @@ export async function createWebhookEndpoint(
             signingSecret: generateWebhookSecret(),
          })
          .returning();
-
+      if (!endpoint)
+         throw AppError.database("Failed to create webhook endpoint");
       return endpoint;
    } catch (err) {
       propagateError(err);

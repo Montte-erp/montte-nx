@@ -17,5 +17,10 @@
          "@core/utils/*": ["./src/*"]
       }
    },
-   "include": ["src"]
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../logging"
+      }
+   ]
 }

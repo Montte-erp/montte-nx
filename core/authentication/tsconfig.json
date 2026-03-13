@@ -18,5 +18,28 @@
          "@core/utils/*": ["../../core/utils/src/*"]
       }
    },
-   "include": ["src"]
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../transactional"
+      },
+      {
+         "path": "../stripe"
+      },
+      {
+         "path": "../redis"
+      },
+      {
+         "path": "../posthog"
+      },
+      {
+         "path": "../logging"
+      },
+      {
+         "path": "../environment"
+      },
+      {
+         "path": "../database"
+      }
+   ]
 }

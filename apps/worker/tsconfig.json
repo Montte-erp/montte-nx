@@ -24,5 +24,31 @@
          "@packages/ui/*": ["../../packages/ui/src/*"]
       }
    },
-   "include": ["src"]
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../../packages/events"
+      },
+      {
+         "path": "../../packages/analytics"
+      },
+      {
+         "path": "../../core/transactional"
+      },
+      {
+         "path": "../../core/redis"
+      },
+      {
+         "path": "../../core/posthog"
+      },
+      {
+         "path": "../../core/logging"
+      },
+      {
+         "path": "../../core/environment"
+      },
+      {
+         "path": "../../core/database"
+      }
+   ]
 }

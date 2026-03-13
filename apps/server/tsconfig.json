@@ -25,5 +25,40 @@
          "@montte/cli/*": ["../../libraries/cli/src/*"]
       }
    },
-   "include": ["src"]
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../../core/redis"
+      },
+      {
+         "path": "../../packages/events"
+      },
+      {
+         "path": "../../libraries/cli"
+      },
+      {
+         "path": "../../core/transactional"
+      },
+      {
+         "path": "../../core/stripe"
+      },
+      {
+         "path": "../../core/posthog"
+      },
+      {
+         "path": "../../core/logging"
+      },
+      {
+         "path": "../../core/files"
+      },
+      {
+         "path": "../../core/environment"
+      },
+      {
+         "path": "../../core/database"
+      },
+      {
+         "path": "../../core/authentication"
+      }
+   ]
 }
