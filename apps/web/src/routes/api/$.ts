@@ -1,5 +1,4 @@
 import "@/polyfill";
-import "@/integrations/otel/init";
 
 import { SmartCoercionPlugin } from "@orpc/json-schema";
 import { onError } from "@orpc/server";

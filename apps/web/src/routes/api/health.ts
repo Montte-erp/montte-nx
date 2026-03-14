@@ -1,5 +1,3 @@
-import "@/integrations/otel/init";
-
 import { getLogger } from "@core/logging/root";
 import { createFileRoute } from "@tanstack/react-router";
 import { sql } from "drizzle-orm";
