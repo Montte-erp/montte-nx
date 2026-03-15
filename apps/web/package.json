@@ -77,7 +77,6 @@
       "recharts": "catalog:ui",
       "tailwind-merge": "catalog:ui",
       "tailwindcss": "catalog:ui",
-      "vite-tsconfig-paths": "catalog:vite",
       "zod": "catalog:validation"
    },
    "devDependencies": {
