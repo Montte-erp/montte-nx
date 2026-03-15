@@ -22,11 +22,9 @@ import type { RouterContext } from "../integrations/tanstack-query/root-provider
 
 export const Route = createRootRouteWithContext<RouterContext>()({
    loader: async ({ context }) => {
-      if (typeof window !== "undefined") {
-         await context.queryClient.prefetchQuery(
-            context.orpc.session.getSession.queryOptions(),
-         );
-      }
+      await context.queryClient
+         .ensureQueryData(context.orpc.session.getSession.queryOptions())
+         .catch(() => null);
    },
    head: () => ({
       meta: [
