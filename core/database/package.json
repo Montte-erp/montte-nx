@@ -9,28 +9,28 @@
    "type": "module",
    "exports": {
       "./client": {
-         "types": "./dist/src/client.d.ts",
-         "default": "./src/client.ts"
+         "types": "./dist/client.d.ts",
+         "default": "./dist/client.js"
       },
       "./repositories/*": {
-         "types": "./dist/src/repositories/*.d.ts",
-         "default": "./src/repositories/*.ts"
+         "types": "./dist/repositories/*.d.ts",
+         "default": "./dist/repositories/*.js"
       },
       "./schema": {
-         "types": "./dist/src/schema.d.ts",
-         "default": "./src/schema.ts"
+         "types": "./dist/schema.d.ts",
+         "default": "./dist/schema.js"
       },
       "./relations": {
-         "types": "./dist/src/relations.d.ts",
-         "default": "./src/relations.ts"
+         "types": "./dist/relations.d.ts",
+         "default": "./dist/relations.js"
       },
       "./helpers/*": {
-         "types": "./dist/src/helpers/*.d.ts",
-         "default": "./src/helpers/*.ts"
+         "types": "./dist/helpers/*.d.ts",
+         "default": "./dist/helpers/*.js"
       },
       "./schemas/*": {
-         "types": "./dist/src/schemas/*.d.ts",
-         "default": "./src/schemas/*.ts"
+         "types": "./dist/schemas/*.d.ts",
+         "default": "./dist/schemas/*.js"
       }
    },
    "scripts": {
@@ -69,6 +69,7 @@
       "@types/pg": "catalog:database",
       "dotenv-cli": "catalog:enviroment",
       "drizzle-kit": "catalog:database",
+      "drizzle-zod": "catalog:database",
       "shx": "catalog:enviroment",
       "typescript": "catalog:development"
    }

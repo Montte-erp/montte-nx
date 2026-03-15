@@ -190,7 +190,7 @@ describe("update", () => {
       expect(updated.name).toBe("Bradesco Black");
 
       const fromDb = await ctx.db.query.creditCards.findFirst({
-         where: { id: created.id },
+         where: (fields, { eq }) => eq(fields.id, created.id),
       });
       expect(fromDb!.name).toBe("Bradesco Black");
    });

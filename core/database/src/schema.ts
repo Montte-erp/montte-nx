@@ -20,3 +20,4 @@ export * from "@core/database/schemas/subscriptions";
 export * from "@core/database/schemas/tags";
 export * from "@core/database/schemas/transactions";
 export * from "@core/database/schemas/webhooks";
+export * from "@core/database/relations";

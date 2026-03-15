@@ -9,12 +9,12 @@
    "type": "module",
    "exports": {
       "./client": {
-         "types": "./dist/src/client.d.ts",
-         "default": "./src/client.ts"
+         "types": "./dist/client.d.ts",
+         "default": "./dist/client.js"
       },
       "./text-file-helper": {
-         "types": "./dist/src/text-file-helpers.d.ts",
-         "default": "./src/text-file-helpers.ts"
+         "types": "./dist/text-file-helpers.d.ts",
+         "default": "./dist/text-file-helpers.js"
       }
    },
    "scripts": {

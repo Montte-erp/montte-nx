@@ -245,7 +245,7 @@ describe("update", () => {
       expect(updated!.name).toBe("Updated Name");
 
       const fromDb = await ctx.db.query.insights.findFirst({
-         where: { id: created.id },
+         where: (fields, { eq }) => eq(fields.id, created.id),
       });
       expect(fromDb!.name).toBe("Updated Name");
    });

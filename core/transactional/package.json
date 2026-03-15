@@ -9,16 +9,16 @@
    "type": "module",
    "exports": {
       "./client": {
-         "types": "./dist/src/client.d.ts",
-         "default": "./src/client.tsx"
+         "types": "./dist/client.d.ts",
+         "default": "./dist/client.js"
       },
       "./utils": {
-         "types": "./dist/src/utils.d.ts",
-         "default": "./src/utils.ts"
+         "types": "./dist/utils.d.ts",
+         "default": "./dist/utils.js"
       },
       "./emails/*": {
-         "types": "./dist/src/emails/*.d.ts",
-         "default": "./src/emails/*.tsx"
+         "types": "./dist/emails/*.d.ts",
+         "default": "./dist/emails/*.js"
       }
    },
    "scripts": {

@@ -162,7 +162,8 @@ describe("getMemberTeams", () => {
       const userId = ctx.session!.user.id;
 
       const existing = await ctx.db.query.teamMember.findFirst({
-         where: { teamId, userId },
+         where: (fields, { and, eq }) =>
+            and(eq(fields.teamId, teamId), eq(fields.userId, userId)),
       });
       if (!existing) {
          await ctx.db.insert(teamMember).values({
@@ -222,7 +223,7 @@ describe("updateLogo", () => {
 
       const orgId = ctx.session!.session.activeOrganizationId!;
       const org = await ctx.db.query.organization.findFirst({
-         where: { id: orgId },
+         where: (fields, { eq }) => eq(fields.id, orgId),
       });
       expect(org!.logo).toBe(logoUrl);
    });

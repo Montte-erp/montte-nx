@@ -33,7 +33,7 @@ export async function createSubscription(
 export async function getSubscription(db: DatabaseInstance, id: string) {
    try {
       const subscription = await db.query.contactSubscriptions.findFirst({
-         where: { id },
+         where: (fields, { eq }) => eq(fields.id, id),
       });
       return subscription ?? null;
    } catch (err) {
@@ -106,7 +106,7 @@ export async function upsertSubscriptionByExternalId(
    const validated = validateInput(createSubscriptionSchema, data);
    try {
       const existing = await db.query.contactSubscriptions.findFirst({
-         where: { externalId },
+         where: (fields, { eq }) => eq(fields.externalId, externalId),
       });
 
       if (existing) {

@@ -1,5 +1,5 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { and, count, eq, gte, isNull, lte, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, isNull, lte, or, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateBillInput,
@@ -208,7 +208,7 @@ export async function getBill(
 ): Promise<Bill | undefined> {
    try {
       const result = await db.query.bills.findFirst({
-         where: { id },
+         where: (fields, { eq }) => eq(fields.id, id),
          with: { bankAccount: true, category: true, transaction: true },
       });
       return result ?? undefined;
@@ -276,8 +276,9 @@ export async function getLastBillForRecurrenceGroup(
 ): Promise<Bill | undefined> {
    try {
       const result = await db.query.bills.findFirst({
-         where: { recurrenceGroupId },
-         orderBy: { dueDate: "desc" },
+         where: (fields, { eq }) =>
+            eq(fields.recurrenceGroupId, recurrenceGroupId),
+         orderBy: (fields, { desc }) => [desc(fields.dueDate)],
       });
       return result ?? undefined;
    } catch (err) {

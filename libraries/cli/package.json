@@ -4,28 +4,27 @@
    "private": false,
    "description": "Montte CLI — manage your finances from the terminal",
    "bin": {
-      "montte": "./src/index.ts"
+      "montte": "./dist/index.js"
    },
    "files": [
-      "src"
+      "dist"
    ],
    "type": "module",
    "exports": {
       ".": {
-         "types": "./src/index.ts",
-         "bun": "./src/index.ts",
-         "import": "./src/index.ts"
+         "types": "./dist/index.d.ts",
+         "default": "./dist/index.js"
       },
       "./contract": {
-         "types": "./src/contract/index.ts",
-         "bun": "./src/contract/index.ts",
-         "import": "./src/contract/index.ts"
+         "types": "./dist/contract/index.d.ts",
+         "default": "./dist/contract/index.js"
       }
    },
    "publishConfig": {
       "access": "public"
    },
    "scripts": {
+      "build": "tsc --build",
       "test": "vitest run",
       "test:watch": "vitest",
       "typecheck": "tsgo"

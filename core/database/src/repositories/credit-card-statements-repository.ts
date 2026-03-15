@@ -94,12 +94,16 @@ export async function getOrCreateStatement(
 ) {
    try {
       const existing = await db.query.creditCardStatements.findFirst({
-         where: { creditCardId, statementPeriod },
+         where: (fields, { and, eq }) =>
+            and(
+               eq(fields.creditCardId, creditCardId),
+               eq(fields.statementPeriod, statementPeriod),
+            ),
       });
       if (existing) return existing;
 
       const card = await db.query.creditCards.findFirst({
-         where: { id: creditCardId },
+         where: (fields, { eq }) => eq(fields.id, creditCardId),
       });
       if (!card) throw AppError.notFound("Cartão de crédito não encontrado.");
 
@@ -124,7 +128,11 @@ export async function getOrCreateStatement(
       // Race condition: another process may have created it
       if (!statement) {
          const found = await db.query.creditCardStatements.findFirst({
-            where: { creditCardId, statementPeriod },
+            where: (fields, { and, eq }) =>
+               and(
+                  eq(fields.creditCardId, creditCardId),
+                  eq(fields.statementPeriod, statementPeriod),
+               ),
          });
          if (!found) throw AppError.database("Failed to create statement");
          return found;
@@ -204,7 +212,8 @@ export async function payStatement(
 
          // 2. Get credit card for account info
          const card = await tx.query.creditCards.findFirst({
-            where: { id: row.statement.creditCardId },
+            where: (fields, { eq }) =>
+               eq(fields.id, row.statement.creditCardId),
          });
          if (!card) throw AppError.notFound("Cartão não encontrado.");
 
@@ -272,7 +281,7 @@ export async function getAvailableLimit(
 ) {
    try {
       const card = await db.query.creditCards.findFirst({
-         where: { id: creditCardId },
+         where: (fields, { eq }) => eq(fields.id, creditCardId),
       });
       if (!card) throw AppError.notFound("Cartão não encontrado.");
 

@@ -9,7 +9,7 @@ import {
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-orm/zod";
+import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { organization, team } from "@core/database/schemas/auth";
 import { events } from "@core/database/schemas/events";

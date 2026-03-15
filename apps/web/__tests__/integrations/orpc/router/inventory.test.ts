@@ -135,7 +135,7 @@ describe("updateProduct", () => {
       expect(updated.name).toBe("Farinha Integral");
 
       const fromDb = await ctx.db.query.inventoryProducts.findFirst({
-         where: { id: created.id },
+         where: (fields, { eq }) => eq(fields.id, created.id),
       });
       expect(fromDb!.name).toBe("Farinha Integral");
    });
@@ -225,7 +225,7 @@ describe("registerMovement", () => {
       expect(movement.productId).toBe(product.id);
 
       const updated = await ctx.db.query.inventoryProducts.findFirst({
-         where: { id: product.id },
+         where: (fields, { eq }) => eq(fields.id, product.id),
       });
       expect(Number(updated!.currentStock)).toBe(10);
    });
@@ -257,7 +257,7 @@ describe("registerMovement", () => {
       expect(movement.type).toBe("sale");
 
       const updated = await ctx.db.query.inventoryProducts.findFirst({
-         where: { id: product.id },
+         where: (fields, { eq }) => eq(fields.id, product.id),
       });
       expect(Number(updated!.currentStock)).toBe(15);
    });
@@ -288,7 +288,7 @@ describe("registerMovement", () => {
       expect(movement.type).toBe("waste");
 
       const updated = await ctx.db.query.inventoryProducts.findFirst({
-         where: { id: product.id },
+         where: (fields, { eq }) => eq(fields.id, product.id),
       });
       expect(Number(updated!.currentStock)).toBe(7);
    });

@@ -92,7 +92,7 @@ export async function listServices(
 export async function getService(db: DatabaseInstance, id: string) {
    try {
       const service = await db.query.services.findFirst({
-         where: { id },
+         where: (fields, { eq }) => eq(fields.id, id),
       });
       return service ?? null;
    } catch (err) {
@@ -168,7 +168,7 @@ export async function listVariantsByService(
 export async function getVariant(db: DatabaseInstance, id: string) {
    try {
       const variant = await db.query.serviceVariants.findFirst({
-         where: { id },
+         where: (fields, { eq }) => eq(fields.id, id),
       });
       return variant ?? null;
    } catch (err) {

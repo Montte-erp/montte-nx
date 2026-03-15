@@ -140,7 +140,7 @@ describe("update", () => {
       expect(updated.name).toBe("Vendas");
 
       const fromDb = await ctx.db.query.tags.findFirst({
-         where: { id: created.id },
+         where: (fields, { eq }) => eq(fields.id, created.id),
       });
       expect(fromDb!.name).toBe("Vendas");
    });
@@ -243,7 +243,7 @@ describe("archive", () => {
       expect(result.isArchived).toBe(true);
 
       const fromDb = await ctx.db.query.tags.findFirst({
-         where: { id: created.id },
+         where: (fields, { eq }) => eq(fields.id, created.id),
       });
       expect(fromDb!.isArchived).toBe(true);
    });

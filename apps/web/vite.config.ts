@@ -4,8 +4,8 @@ import tailwindcss from "@tailwindcss/vite";
 import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
-import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
+import tsconfigPaths from "vite-tsconfig-paths";
 
 const require = createRequire(import.meta.url);
 
@@ -15,7 +15,6 @@ const config = defineConfig({
          "@": fileURLToPath(new URL("./src", import.meta.url)),
          tslib: require.resolve("tslib/tslib.es6.mjs"),
       },
-      tsconfigPaths: true,
    },
    optimizeDeps: {
       include: ["react", "react-dom"],
@@ -30,13 +29,9 @@ const config = defineConfig({
    },
 
    plugins: [
+      tsconfigPaths(),
       tanstackStart(),
-      nitro(),
-      viteReact({
-         babel: {
-            plugins: ["babel-plugin-react-compiler"],
-         },
-      }),
+      viteReact(),
       tailwindcss(),
       devtools(),
    ],

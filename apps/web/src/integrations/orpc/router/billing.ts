@@ -33,7 +33,7 @@ export const getInvoices = protectedProcedure
 
       // Get the user's stripe customer ID from the user table
       const userRecord = await db.query.user.findFirst({
-         where: { id: userId },
+         where: (fields, { eq }) => eq(fields.id, userId),
       });
 
       if (!userRecord?.stripeCustomerId) {
@@ -81,7 +81,7 @@ export const getUpcomingInvoice = protectedProcedure.handler(
       }
 
       const userRecord = await db.query.user.findFirst({
-         where: { id: userId },
+         where: (fields, { eq }) => eq(fields.id, userId),
       });
 
       if (!userRecord?.stripeCustomerId) {
@@ -271,7 +271,7 @@ export const getPaymentStatus = protectedProcedure.handler(
       }
 
       const userRecord = await db.query.user.findFirst({
-         where: { id: userId },
+         where: (fields, { eq }) => eq(fields.id, userId),
       });
 
       if (!userRecord?.stripeCustomerId) {

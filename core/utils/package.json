@@ -9,40 +9,40 @@
    "type": "module",
    "exports": {
       "./array": {
-         "types": "./dist/src/array.d.ts",
-         "default": "./src/array.ts"
+         "types": "./dist/array.d.ts",
+         "default": "./dist/array.js"
       },
       "./date": {
-         "types": "./dist/src/date.d.ts",
-         "default": "./src/date.ts"
+         "types": "./dist/date.d.ts",
+         "default": "./dist/date.js"
       },
       "./diff": {
-         "types": "./dist/src/diff.d.ts",
-         "default": "./src/diff.ts"
+         "types": "./dist/diff.d.ts",
+         "default": "./dist/diff.js"
       },
       "./file": {
-         "types": "./dist/src/file.d.ts",
-         "default": "./src/file.ts"
+         "types": "./dist/file.d.ts",
+         "default": "./dist/file.js"
       },
       "./number": {
-         "types": "./dist/src/numbers.d.ts",
-         "default": "./src/numbers.ts"
+         "types": "./dist/numbers.d.ts",
+         "default": "./dist/numbers.js"
       },
       "./object": {
-         "types": "./dist/src/object.d.ts",
-         "default": "./src/object.ts"
+         "types": "./dist/object.d.ts",
+         "default": "./dist/object.js"
       },
       "./permissions": {
-         "types": "./dist/src/permissions.d.ts",
-         "default": "./src/permissions.ts"
+         "types": "./dist/permissions.d.ts",
+         "default": "./dist/permissions.js"
       },
       "./sanitization": {
-         "types": "./dist/src/sanitization.d.ts",
-         "default": "./src/sanitization.ts"
+         "types": "./dist/sanitization.d.ts",
+         "default": "./dist/sanitization.js"
       },
       "./text": {
-         "types": "./dist/src/text.d.ts",
-         "default": "./src/text.ts"
+         "types": "./dist/text.d.ts",
+         "default": "./dist/text.js"
       }
    },
    "scripts": {

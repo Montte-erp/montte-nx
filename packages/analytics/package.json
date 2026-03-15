@@ -8,36 +8,36 @@
    "type": "module",
    "exports": {
       "./types": {
-         "types": "./dist/src/types.d.ts",
-         "default": "./src/types.ts"
+         "types": "./dist/types.d.ts",
+         "default": "./dist/types.js"
       },
       "./compute-kpi": {
-         "types": "./dist/src/compute-kpi.d.ts",
-         "default": "./src/compute-kpi.ts"
+         "types": "./dist/compute-kpi.d.ts",
+         "default": "./dist/compute-kpi.js"
       },
       "./compute-time-series": {
-         "types": "./dist/src/compute-time-series.d.ts",
-         "default": "./src/compute-time-series.ts"
+         "types": "./dist/compute-time-series.d.ts",
+         "default": "./dist/compute-time-series.js"
       },
       "./compute-breakdown": {
-         "types": "./dist/src/compute-breakdown.d.ts",
-         "default": "./src/compute-breakdown.ts"
+         "types": "./dist/compute-breakdown.d.ts",
+         "default": "./dist/compute-breakdown.js"
       },
       "./compute-insight": {
-         "types": "./dist/src/compute-insight.d.ts",
-         "default": "./src/compute-insight.ts"
+         "types": "./dist/compute-insight.d.ts",
+         "default": "./dist/compute-insight.js"
       },
       "./defaults": {
-         "types": "./dist/src/defaults.d.ts",
-         "default": "./src/defaults.ts"
+         "types": "./dist/defaults.d.ts",
+         "default": "./dist/defaults.js"
       },
       "./seed-defaults": {
-         "types": "./dist/src/seed-defaults.d.ts",
-         "default": "./src/seed-defaults.ts"
+         "types": "./dist/seed-defaults.d.ts",
+         "default": "./dist/seed-defaults.js"
       },
       "./date-ranges": {
-         "types": "./dist/src/date-ranges.d.ts",
-         "default": "./src/date-ranges.ts"
+         "types": "./dist/date-ranges.d.ts",
+         "default": "./dist/date-ranges.js"
       }
    },
    "scripts": {

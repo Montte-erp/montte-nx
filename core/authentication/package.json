@@ -9,20 +9,20 @@
    "type": "module",
    "exports": {
       "./client": {
-         "types": "./dist/src/client.d.ts",
-         "default": "./src/client.ts"
+         "types": "./dist/client.d.ts",
+         "default": "./dist/client.js"
       },
       "./server": {
-         "types": "./dist/src/server.d.ts",
-         "default": "./src/server.ts"
+         "types": "./dist/server.d.ts",
+         "default": "./dist/server.js"
       },
       "./api-key-config": {
-         "types": "./dist/src/api-key-config.d.ts",
-         "default": "./src/api-key-config.ts"
+         "types": "./dist/api-key-config.d.ts",
+         "default": "./dist/api-key-config.js"
       },
       "./cache": {
-         "types": "./dist/src/cache.d.ts",
-         "default": "./src/cache.ts"
+         "types": "./dist/cache.d.ts",
+         "default": "./dist/cache.js"
       }
    },
    "scripts": {
@@ -36,7 +36,7 @@
    },
    "dependencies": {
       "@better-auth/api-key": "catalog:auth",
-      "@better-auth/drizzle-adapter": "https://pkg.pr.new/better-auth/better-auth/@better-auth/drizzle-adapter@6913",
+      "@better-auth/drizzle-adapter": "catalog:auth",
       "@better-auth/stripe": "catalog:auth",
       "@core/database": "workspace:*",
       "@core/environment": "workspace:*",

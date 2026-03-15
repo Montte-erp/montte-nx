@@ -29,7 +29,7 @@ export async function createBudgetGoal(
    const validated = validateInput(createBudgetGoalSchema, data);
    try {
       const category = await db.query.categories.findFirst({
-         where: { id: validated.categoryId },
+         where: (fields, { eq }) => eq(fields.id, validated.categoryId),
       });
       if (!category) throw AppError.notFound("Categoria não encontrada.");
       if (category.type !== "expense") {

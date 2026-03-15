@@ -1,8 +1,7 @@
 import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
-import { pushSchema } from "drizzle-kit/api-postgres";
+import { pushSchema } from "drizzle-kit/api";
 import * as schema from "@core/database/schema";
-import { relations } from "@core/database/relations";
 import type { DatabaseInstance } from "@core/database/client";
 
 export async function setupTestDb() {
@@ -10,10 +9,9 @@ export async function setupTestDb() {
    const db = drizzle({
       client,
       schema,
-      relations,
    }) as unknown as DatabaseInstance;
 
-   const { apply } = await pushSchema(schema, db as any, "snake_case");
+   const { apply } = await pushSchema(schema, db as any, ["public"]);
    await apply();
 
    return {

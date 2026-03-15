@@ -9,7 +9,7 @@ import {
    sendMagicLinkEmail,
    sendOrganizationInvitation,
 } from "@core/transactional/client";
-import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
+import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth/minimal";
 import {
    admin,
@@ -103,7 +103,8 @@ export function createAuth(deps: CreateAuthDeps) {
 
                      if (member?.organizationId) {
                         const existingTeam = await db.query.team.findFirst({
-                           where: { organizationId: member.organizationId },
+                           where: (fields, { eq }) =>
+                              eq(fields.organizationId, member.organizationId),
                         });
 
                         return {
@@ -361,7 +362,11 @@ export function createAuth(deps: CreateAuthDeps) {
             subscription: {
                authorizeReference: async ({ user, referenceId }) => {
                   const membership = await db.query.member.findFirst({
-                     where: { organizationId: referenceId, userId: user.id },
+                     where: (fields, { and, eq }) =>
+                        and(
+                           eq(fields.organizationId, referenceId),
+                           eq(fields.userId, user.id),
+                        ),
                   });
                   if (!membership) return false;
                   return (

@@ -1,5 +1,5 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateTagInput,
@@ -40,13 +40,14 @@ export async function listTags(
    try {
       if (opts?.includeArchived) {
          return await db.query.tags.findMany({
-            where: { teamId },
-            orderBy: { name: "asc" },
+            where: (fields, { eq }) => eq(fields.teamId, teamId),
+            orderBy: (fields, { asc }) => [asc(fields.name)],
          });
       }
       return await db.query.tags.findMany({
-         where: { teamId, isArchived: false },
-         orderBy: { name: "asc" },
+         where: (fields, { and, eq }) =>
+            and(eq(fields.teamId, teamId), eq(fields.isArchived, false)),
+         orderBy: (fields, { asc }) => [asc(fields.name)],
       });
    } catch (err) {
       propagateError(err);
@@ -57,7 +58,7 @@ export async function listTags(
 export async function getTag(db: DatabaseInstance, id: string) {
    try {
       const tag = await db.query.tags.findFirst({
-         where: { id },
+         where: (fields, { eq }) => eq(fields.id, id),
       });
       return tag ?? null;
    } catch (err) {
@@ -119,7 +120,7 @@ export async function reactivateTag(db: DatabaseInstance, id: string) {
 export async function deleteTag(db: DatabaseInstance, id: string) {
    try {
       const existing = await db.query.tags.findFirst({
-         where: { id },
+         where: (fields, { eq }) => eq(fields.id, id),
       });
       if (!existing) throw AppError.notFound("Tag não encontrada.");
 

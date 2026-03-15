@@ -10,7 +10,7 @@ import {
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-orm/zod";
+import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { contacts, serviceSourceEnum } from "@core/database/schemas/contacts";
 import { serviceVariants } from "@core/database/schemas/services";

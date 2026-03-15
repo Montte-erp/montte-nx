@@ -1,1 +1,0 @@
-{"version":3,"file":"compute-insight.d.ts","sourceRoot":"","sources":["compute-insight.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,gBAAgB,EAAE,MAAM,uBAAuB,CAAC;AAC9D,OAAO,KAAK,EAAE,OAAO,EAAE,MAAM,iCAAiC,CAAC;AAO/D,wBAAsB,kBAAkB,CACrC,EAAE,EAAE,gBAAgB,EACpB,OAAO,EAAE,OAAO,GAChB,OAAO,CAAC,MAAM,CAAC,MAAM,EAAE,OAAO,CAAC,CAAC,CAgClC"}

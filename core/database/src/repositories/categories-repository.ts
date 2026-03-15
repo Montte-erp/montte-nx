@@ -1,5 +1,5 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -37,8 +37,9 @@ export async function createCategory(
       let type = validated.type;
 
       if (validated.parentId) {
+         const parentId = validated.parentId;
          const parent = await db.query.categories.findFirst({
-            where: { id: validated.parentId },
+            where: (fields, { eq }) => eq(fields.id, parentId),
          });
          if (!parent) throw AppError.notFound("Categoria pai não encontrada.");
          if (parent.level >= 3) {
@@ -98,26 +99,34 @@ export async function listCategories(
 ) {
    try {
       if (opts?.type) {
+         const type = opts.type;
          if (opts.includeArchived) {
             return await db.query.categories.findMany({
-               where: { teamId, type: opts.type },
-               orderBy: { name: "asc" },
+               where: (fields, { and, eq }) =>
+                  and(eq(fields.teamId, teamId), eq(fields.type, type)),
+               orderBy: (fields, { asc }) => [asc(fields.name)],
             });
          }
          return await db.query.categories.findMany({
-            where: { teamId, type: opts.type, isArchived: false },
-            orderBy: { name: "asc" },
+            where: (fields, { and, eq }) =>
+               and(
+                  eq(fields.teamId, teamId),
+                  eq(fields.type, type),
+                  eq(fields.isArchived, false),
+               ),
+            orderBy: (fields, { asc }) => [asc(fields.name)],
          });
       }
       if (opts?.includeArchived) {
          return await db.query.categories.findMany({
-            where: { teamId },
-            orderBy: { name: "asc" },
+            where: (fields, { eq }) => eq(fields.teamId, teamId),
+            orderBy: (fields, { asc }) => [asc(fields.name)],
          });
       }
       return await db.query.categories.findMany({
-         where: { teamId, isArchived: false },
-         orderBy: { name: "asc" },
+         where: (fields, { and, eq }) =>
+            and(eq(fields.teamId, teamId), eq(fields.isArchived, false)),
+         orderBy: (fields, { asc }) => [asc(fields.name)],
       });
    } catch (err) {
       propagateError(err);
@@ -140,7 +149,7 @@ export async function ensureCategoryOwnership(
 export async function getCategory(db: DatabaseInstance, id: string) {
    try {
       const category = await db.query.categories.findFirst({
-         where: { id },
+         where: (fields, { eq }) => eq(fields.id, id),
       });
       return category ?? null;
    } catch (err) {
@@ -157,7 +166,7 @@ export async function updateCategory(
    const validated = validateInput(updateCategorySchema, data);
    try {
       const existing = await db.query.categories.findFirst({
-         where: { id },
+         where: (fields, { eq }) => eq(fields.id, id),
       });
       if (!existing) throw AppError.notFound("Categoria não encontrada.");
       if (existing.isDefault) {
@@ -189,7 +198,7 @@ export async function updateCategory(
 export async function archiveCategory(db: DatabaseInstance, id: string) {
    try {
       const existing = await db.query.categories.findFirst({
-         where: { id },
+         where: (fields, { eq }) => eq(fields.id, id),
       });
       if (!existing) throw AppError.notFound("Categoria não encontrada.");
       if (existing.isDefault) {
@@ -204,7 +213,9 @@ export async function archiveCategory(db: DatabaseInstance, id: string) {
          .set({ isArchived: true, updatedAt: new Date() })
          .where(inArray(categories.id, allIds));
 
-      return await db.query.categories.findFirst({ where: { id } });
+      return await db.query.categories.findFirst({
+         where: (fields, { eq }) => eq(fields.id, id),
+      });
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to archive category");
@@ -229,7 +240,7 @@ export async function reactivateCategory(db: DatabaseInstance, id: string) {
 export async function deleteCategory(db: DatabaseInstance, id: string) {
    try {
       const existing = await db.query.categories.findFirst({
-         where: { id },
+         where: (fields, { eq }) => eq(fields.id, id),
       });
       if (!existing) throw AppError.notFound("Categoria não encontrada.");
       if (existing.isDefault) {

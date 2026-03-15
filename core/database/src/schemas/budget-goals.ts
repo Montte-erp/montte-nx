@@ -8,7 +8,7 @@ import {
    uniqueIndex,
    uuid,
 } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-orm/zod";
+import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { categories } from "@core/database/schemas/categories";
 

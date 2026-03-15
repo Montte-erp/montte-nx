@@ -33,12 +33,14 @@
          "auth": {
             "better-auth": "1.5.5",
             "@better-auth/api-key": "1.5.5",
+            "@better-auth/drizzle-adapter": "1.5.5",
             "@better-auth/stripe": "1.5.5"
          },
          "database": {
             "@types/pg": "^8.16.0",
-            "drizzle-kit": "1.0.0-beta.18-dc9676b",
-            "drizzle-orm": "1.0.0-beta.18-dc9676b",
+            "drizzle-kit": "0.31.9",
+            "drizzle-orm": "0.44.7",
+            "drizzle-zod": "0.8.3",
             "pg": "^8.18.0"
          },
          "development": {
@@ -132,6 +134,7 @@
             "embla-carousel-react": "^8.6.0",
             "color": "^5.0.3",
             "@types/color": "^4.2.0",
+            "qrcode.react": "^4.2.0",
             "@number-flow/react": "^0.5.11",
             "radix-ui": "^1.4.3",
             "@stepperize/react": "^6.0.0",
@@ -187,7 +190,6 @@
             "@f-o-t/markdown": "1.0.7",
             "@f-o-t/money": "1.2.6",
             "@f-o-t/ofx": "2.4.6",
-            "@f-o-t/qrcode": "1.0.1",
             "@f-o-t/spelling": "1.0.6",
             "@f-o-t/uom": "1.0.6"
          }
@@ -249,8 +251,7 @@
       "@tanstack/react-start": "^1.166.9",
       "@tanstack/router-cli": "^1.166.7",
       "@tanstack/router-plugin": "^1.166.8",
-      "drizzle-orm": "1.0.0-beta.18-dc9676b",
-      "nitro": "3.0.260311-beta",
+      "drizzle-orm": "catalog:database",
       "pino-opentelemetry-transport": "^3.0.0"
    },
    "devDependencies": {

@@ -9,20 +9,20 @@
    "type": "module",
    "exports": {
       ".": {
-         "types": "./dist/src/mastra/index.d.ts",
-         "default": "./src/mastra/index.ts"
+         "types": "./dist/mastra/index.d.ts",
+         "default": "./dist/mastra/index.js"
       },
       "./mastra": {
-         "types": "./dist/src/mastra/index.d.ts",
-         "default": "./src/mastra/index.ts"
+         "types": "./dist/mastra/index.d.ts",
+         "default": "./dist/mastra/index.js"
       },
       "./models": {
-         "types": "./dist/src/models.d.ts",
-         "default": "./src/models.ts"
+         "types": "./dist/models.d.ts",
+         "default": "./dist/models.js"
       },
       "./utils": {
-         "types": "./dist/src/utils.d.ts",
-         "default": "./src/utils.ts"
+         "types": "./dist/utils.d.ts",
+         "default": "./dist/utils.js"
       }
    },
    "scripts": {

@@ -222,7 +222,7 @@ describe("update", () => {
       expect(updated.name).toBe("Alimentação e Bebidas");
 
       const fromDb = await ctx.db.query.categories.findFirst({
-         where: { id: created.id },
+         where: (fields, { eq }) => eq(fields.id, created.id),
       });
       expect(fromDb!.name).toBe("Alimentação e Bebidas");
    });
@@ -409,7 +409,7 @@ describe("archive", () => {
       expect(result!.isArchived).toBe(true);
 
       const fromDb = await ctx.db.query.categories.findFirst({
-         where: { id: created.id },
+         where: (fields, { eq }) => eq(fields.id, created.id),
       });
       expect(fromDb!.isArchived).toBe(true);
    });

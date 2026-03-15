@@ -180,7 +180,7 @@ describe("update", () => {
       expect(updated.name).toBe("Bradesco PJ");
 
       const fromDb = await ctx.db.query.bankAccounts.findFirst({
-         where: { id: created.id },
+         where: (fields, { eq }) => eq(fields.id, created.id),
       });
       expect(fromDb!.name).toBe("Bradesco PJ");
    });

@@ -70,7 +70,7 @@ export async function getOrganizationById(
 ) {
    try {
       return await db.query.organization.findFirst({
-         where: { id: organizationId },
+         where: (fields, { eq }) => eq(fields.id, organizationId),
       });
    } catch (err) {
       propagateError(err);
@@ -84,7 +84,7 @@ export async function getOrganizationSlug(
 ) {
    try {
       return await db.query.organization.findFirst({
-         where: { id: organizationId },
+         where: (fields, { eq }) => eq(fields.id, organizationId),
          columns: { slug: true },
       });
    } catch (err) {
@@ -96,7 +96,7 @@ export async function getOrganizationSlug(
 export async function getTeamById(db: DatabaseInstance, teamId: string) {
    try {
       return await db.query.team.findFirst({
-         where: { id: teamId },
+         where: (fields, { eq }) => eq(fields.id, teamId),
       });
    } catch (err) {
       propagateError(err);
@@ -107,7 +107,7 @@ export async function getTeamById(db: DatabaseInstance, teamId: string) {
 export async function getTeamNameAndSlug(db: DatabaseInstance, teamId: string) {
    try {
       return await db.query.team.findFirst({
-         where: { id: teamId },
+         where: (fields, { eq }) => eq(fields.id, teamId),
          columns: { name: true, slug: true },
       });
    } catch (err) {
@@ -165,20 +165,20 @@ export async function getOrgAndTeamOnboardingFlags(
 ) {
    try {
       const org = await db.query.organization.findFirst({
-         where: { id: orgId },
+         where: (fields, { eq }) => eq(fields.id, orgId),
          columns: { id: true, slug: true, onboardingCompleted: true },
       });
 
       let targetTeam = activeTeamId
          ? await db.query.team.findFirst({
-              where: { id: activeTeamId },
+              where: (fields, { eq }) => eq(fields.id, activeTeamId),
               columns: { id: true, slug: true, onboardingCompleted: true },
            })
          : null;
 
       if (!targetTeam) {
          targetTeam = await db.query.team.findFirst({
-            where: { organizationId: orgId },
+            where: (fields, { eq }) => eq(fields.organizationId, orgId),
             columns: { id: true, slug: true, onboardingCompleted: true },
          });
       }

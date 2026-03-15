@@ -1,4 +1,3 @@
-import { generateQrCode } from "@f-o-t/qrcode";
 import {
    Avatar,
    AvatarFallback,
@@ -29,8 +28,9 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Loader2, ShieldCheck, User } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import type React from "react";
-import { Suspense, useCallback, useMemo, useState, useTransition } from "react";
+import { Suspense, useCallback, useState, useTransition } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -234,11 +234,6 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
       });
    };
 
-   const qrSrc = useMemo(() => {
-      if (!totpUri) return "";
-      return `data:image/png;base64,${btoa(String.fromCharCode(...generateQrCode(totpUri, { size: 180 })))}`;
-   }, [totpUri]);
-
    return (
       <section className="space-y-3">
          <div>
@@ -323,14 +318,17 @@ function TwoFactorSection({ twoFactorEnabled }: { twoFactorEnabled: boolean }) {
                      <p className="text-sm font-medium">
                         1. Escaneie o QR code com seu aplicativo autenticador
                      </p>
-                     <div className="p-4 bg-white rounded-lg inline-block">
-                        <img
-                           alt="QR Code"
-                           className="rounded"
-                           height={180}
-                           src={qrSrc}
-                           width={180}
-                        />
+                     <div className="space-y-2 rounded-lg border p-4 bg-muted/30">
+                        <div className="inline-flex rounded-lg bg-white p-3">
+                           <QRCodeSVG size={180} value={totpUri} />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                           Se o QR code não estiver disponível, copie a chave de
+                           configuração abaixo no seu aplicativo autenticador.
+                        </p>
+                        <code className="block break-all rounded border bg-background px-3 py-2 text-xs">
+                           {totpUri}
+                        </code>
                      </div>
                   </div>
                   <div className="space-y-1.5">

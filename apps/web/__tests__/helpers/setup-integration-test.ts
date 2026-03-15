@@ -2,10 +2,9 @@ import { PGlite } from "@electric-sql/pglite";
 import type { DatabaseInstance } from "@core/database/client";
 import * as schema from "@core/database/schema";
 import { session as sessionTable } from "@core/database/schemas/auth";
-import { relations } from "@core/database/relations";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
-import { pushSchema } from "drizzle-kit/api-postgres";
+import { pushSchema } from "drizzle-kit/api";
 import { vi } from "vitest";
 import { createTestAuth } from "./create-test-auth";
 import { testStore } from "./test-store";
@@ -22,18 +21,16 @@ export async function setupIntegrationDb(): Promise<DatabaseInstance> {
       drizzle as unknown as (opts: {
          client: PGlite;
          schema: typeof schema;
-         relations: typeof relations;
       }) => DatabaseInstance
    )({
       client,
       schema,
-      relations,
    });
 
    const { apply } = await pushSchema(
       schema,
       db as unknown as Parameters<typeof pushSchema>[1],
-      "snake_case",
+      ["public"],
    );
    await apply();
 

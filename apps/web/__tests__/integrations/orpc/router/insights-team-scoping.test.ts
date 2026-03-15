@@ -156,7 +156,7 @@ describe("Insights Team Scoping", () => {
       ).rejects.toThrow("Insight não encontrado.");
 
       const fromDb = await ctxTeamA.db.query.insights.findFirst({
-         where: { id: created.id },
+         where: (fields, { eq }) => eq(fields.id, created.id),
       });
       expect(fromDb!.name).toBe("Protected");
    });

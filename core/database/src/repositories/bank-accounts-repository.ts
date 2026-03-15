@@ -1,6 +1,6 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { add, of, subtract, toDecimal } from "@f-o-t/money";
-import { and, eq, or, sql } from "drizzle-orm";
+import { and, asc, eq, or, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateBankAccountInput,
@@ -39,13 +39,14 @@ export async function listBankAccounts(
    try {
       if (includeArchived) {
          return await db.query.bankAccounts.findMany({
-            where: { teamId },
-            orderBy: { name: "asc" },
+            where: (fields, { eq }) => eq(fields.teamId, teamId),
+            orderBy: (fields, { asc }) => [asc(fields.name)],
          });
       }
       return await db.query.bankAccounts.findMany({
-         where: { teamId, status: "active" },
-         orderBy: { name: "asc" },
+         where: (fields, { and, eq }) =>
+            and(eq(fields.teamId, teamId), eq(fields.status, "active")),
+         orderBy: (fields, { asc }) => [asc(fields.name)],
       });
    } catch (err) {
       propagateError(err);
@@ -56,7 +57,7 @@ export async function listBankAccounts(
 export async function getBankAccount(db: DatabaseInstance, id: string) {
    try {
       const account = await db.query.bankAccounts.findFirst({
-         where: { id },
+         where: (fields, { eq }) => eq(fields.id, id),
       });
       return account ?? null;
    } catch (err) {

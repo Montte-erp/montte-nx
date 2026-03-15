@@ -9,12 +9,12 @@
    "type": "module",
    "exports": {
       "./sender": {
-         "types": "./dist/src/sender.d.ts",
-         "default": "./src/sender.ts"
+         "types": "./dist/sender.d.ts",
+         "default": "./dist/sender.js"
       },
       "./schemas": {
-         "types": "./dist/src/schemas.d.ts",
-         "default": "./src/schemas.ts"
+         "types": "./dist/schemas.d.ts",
+         "default": "./dist/schemas.js"
       }
    },
    "scripts": {

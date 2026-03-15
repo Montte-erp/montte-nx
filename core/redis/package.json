@@ -9,8 +9,8 @@
    "type": "module",
    "exports": {
       "./connection": {
-         "types": "./dist/src/connection.d.ts",
-         "default": "./src/connection.ts"
+         "types": "./dist/connection.d.ts",
+         "default": "./dist/connection.js"
       }
    },
    "scripts": {

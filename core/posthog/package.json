@@ -9,8 +9,8 @@
    "type": "module",
    "exports": {
       "./server": {
-         "types": "./dist/src/server.d.ts",
-         "default": "./src/server.ts"
+         "types": "./dist/server.d.ts",
+         "default": "./dist/server.js"
       }
    },
    "scripts": {

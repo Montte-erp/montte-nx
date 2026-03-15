@@ -4,13 +4,14 @@ import { AppError, propagateError } from "@core/logging/errors";
 const logger = getLogger().child({ module: "db:auth" });
 
 import { createSlug, generateRandomSuffix } from "@core/utils/text";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    member,
    organization,
    team,
    teamMember,
+   user,
 } from "@core/database/schemas/auth";
 
 export async function findMemberByUserId(
@@ -19,7 +20,7 @@ export async function findMemberByUserId(
 ) {
    try {
       const result = await dbClient.query.member.findFirst({
-         where: { userId },
+         where: (fields, { eq }) => eq(fields.userId, userId),
       });
       return result;
    } catch (err) {
@@ -37,7 +38,11 @@ export async function findMemberByUserIdAndOrganizationId(
 ) {
    try {
       const result = await dbClient.query.member.findFirst({
-         where: { userId, organizationId },
+         where: (fields, { and, eq }) =>
+            and(
+               eq(fields.userId, userId),
+               eq(fields.organizationId, organizationId),
+            ),
       });
       return result;
    } catch (err) {
@@ -54,7 +59,7 @@ export async function findOrganizationById(
 ) {
    try {
       const result = await dbClient.query.organization.findFirst({
-         where: { id: organizationId },
+         where: (fields, { eq }) => eq(fields.id, organizationId),
       });
       if (!result) throw AppError.database("Organization not found");
       return result;
@@ -73,7 +78,12 @@ export async function isOrganizationOwner(
 ) {
    try {
       const result = await dbClient.query.member.findFirst({
-         where: { userId, organizationId, role: "owner" },
+         where: (fields, { and, eq }) =>
+            and(
+               eq(fields.userId, userId),
+               eq(fields.organizationId, organizationId),
+               eq(fields.role, "owner"),
+            ),
       });
       return !!result;
    } catch (err) {
@@ -89,12 +99,23 @@ export async function getOrganizationMembers(
    organizationId: string,
 ) {
    try {
-      const result = await dbClient.query.member.findMany({
-         where: { organizationId },
-         with: {
-            user: true,
-         },
-      });
+      const result = await dbClient
+         .select({
+            id: member.id,
+            organizationId: member.organizationId,
+            userId: member.userId,
+            role: member.role,
+            createdAt: member.createdAt,
+            user: {
+               id: user.id,
+               name: user.name,
+               email: user.email,
+               image: user.image,
+            },
+         })
+         .from(member)
+         .innerJoin(user, eq(member.userId, user.id))
+         .where(eq(member.organizationId, organizationId));
       return result;
    } catch (err) {
       propagateError(err);
@@ -210,7 +231,7 @@ export async function getOrganizationMembership(
 ) {
    try {
       const org = await dbClient.query.organization.findFirst({
-         where: { slug: organizationSlug },
+         where: (fields, { eq }) => eq(fields.slug, organizationSlug),
       });
 
       if (!org) {
@@ -218,7 +239,8 @@ export async function getOrganizationMembership(
       }
 
       const membership = await dbClient.query.member.findFirst({
-         where: { organizationId: org.id, userId },
+         where: (fields, { and, eq }) =>
+            and(eq(fields.organizationId, org.id), eq(fields.userId, userId)),
       });
 
       return { membership, organization: org };
@@ -237,7 +259,7 @@ export async function ensureDefaultProject(
 ) {
    try {
       const existingTeam = await dbClient.query.team.findFirst({
-         where: { organizationId },
+         where: (fields, { eq }) => eq(fields.organizationId, organizationId),
       });
 
       if (existingTeam) return existingTeam;

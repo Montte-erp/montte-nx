@@ -1,5 +1,5 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateCreditCardInput,
@@ -31,8 +31,8 @@ export async function createCreditCard(
 export async function listCreditCards(db: DatabaseInstance, teamId: string) {
    try {
       return await db.query.creditCards.findMany({
-         where: { teamId },
-         orderBy: { createdAt: "desc" },
+         where: (fields, { eq }) => eq(fields.teamId, teamId),
+         orderBy: (fields, { desc }) => [desc(fields.createdAt)],
       });
    } catch (err) {
       propagateError(err);
@@ -43,7 +43,7 @@ export async function listCreditCards(db: DatabaseInstance, teamId: string) {
 export async function getCreditCard(db: DatabaseInstance, id: string) {
    try {
       const card = await db.query.creditCards.findFirst({
-         where: { id },
+         where: (fields, { eq }) => eq(fields.id, id),
       });
       return card ?? null;
    } catch (err) {
@@ -106,7 +106,11 @@ export async function creditCardHasOpenStatements(
 ) {
    try {
       const statement = await db.query.creditCardStatements.findFirst({
-         where: { creditCardId, status: "open" },
+         where: (fields, { and, eq }) =>
+            and(
+               eq(fields.creditCardId, creditCardId),
+               eq(fields.status, "open"),
+            ),
       });
       return !!statement;
    } catch (err) {

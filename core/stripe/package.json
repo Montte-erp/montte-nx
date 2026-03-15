@@ -10,11 +10,11 @@
    "exports": {
       ".": {
          "types": "./dist/src/index.d.ts",
-         "default": "./src/index.ts"
+         "default": "./dist/index.js"
       },
       "./constants": {
          "types": "./dist/src/constants.d.ts",
-         "default": "./src/constants.ts"
+         "default": "./dist/constants.js"
       }
    },
    "scripts": {

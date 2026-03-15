@@ -219,7 +219,7 @@ describe("update", () => {
       expect(updated.name).toBe("Aluguel Atualizado");
 
       const fromDb = await ctx.db.query.bills.findFirst({
-         where: { id: (created as any).id },
+         where: (fields, { eq }) => eq(fields.id, (created as any).id),
       });
       expect(fromDb!.name).toBe("Aluguel Atualizado");
    });
@@ -453,7 +453,7 @@ describe("cancel", () => {
       expect(result.status).toBe("cancelled");
 
       const fromDb = await ctx.db.query.bills.findFirst({
-         where: { id: (created as any).id },
+         where: (fields, { eq }) => eq(fields.id, (created as any).id),
       });
       expect(fromDb!.status).toBe("cancelled");
    });

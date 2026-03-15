@@ -9,80 +9,80 @@
    "type": "module",
    "exports": {
       "./catalog": {
-         "types": "./dist/src/catalog.d.ts",
-         "default": "./src/catalog.ts"
+         "types": "./dist/catalog.d.ts",
+         "default": "./dist/catalog.js"
       },
       "./emit": {
-         "types": "./dist/src/emit.d.ts",
-         "default": "./src/emit.ts"
+         "types": "./dist/emit.d.ts",
+         "default": "./dist/emit.js"
       },
       "./utils": {
-         "types": "./dist/src/utils.d.ts",
-         "default": "./src/utils.ts"
+         "types": "./dist/utils.d.ts",
+         "default": "./dist/utils.js"
       },
       "./refresh-views": {
-         "types": "./dist/src/refresh-views.d.ts",
-         "default": "./src/refresh-views.ts"
+         "types": "./dist/refresh-views.d.ts",
+         "default": "./dist/refresh-views.js"
       },
       "./ai": {
-         "types": "./dist/src/ai.d.ts",
-         "default": "./src/ai.ts"
+         "types": "./dist/ai.d.ts",
+         "default": "./dist/ai.js"
       },
       "./finance": {
-         "types": "./dist/src/finance.d.ts",
-         "default": "./src/finance.ts"
+         "types": "./dist/finance.d.ts",
+         "default": "./dist/finance.js"
       },
       "./webhook": {
-         "types": "./dist/src/webhook.d.ts",
-         "default": "./src/webhook.ts"
+         "types": "./dist/webhook.d.ts",
+         "default": "./dist/webhook.js"
       },
       "./dashboard": {
-         "types": "./dist/src/dashboard.d.ts",
-         "default": "./src/dashboard.ts"
+         "types": "./dist/dashboard.d.ts",
+         "default": "./dist/dashboard.js"
       },
       "./insight": {
-         "types": "./dist/src/insight.d.ts",
-         "default": "./src/insight.ts"
+         "types": "./dist/insight.d.ts",
+         "default": "./dist/insight.js"
       },
       "./credits": {
-         "types": "./dist/src/credits.d.ts",
-         "default": "./src/credits.ts"
+         "types": "./dist/credits.d.ts",
+         "default": "./dist/credits.js"
       },
       "./reconcile": {
-         "types": "./dist/src/reconcile.d.ts",
-         "default": "./src/reconcile.ts"
+         "types": "./dist/reconcile.d.ts",
+         "default": "./dist/reconcile.js"
       },
       "./contact": {
-         "types": "./dist/src/contact.d.ts",
-         "default": "./src/contact.ts"
+         "types": "./dist/contact.d.ts",
+         "default": "./dist/contact.js"
       },
       "./inventory": {
-         "types": "./dist/src/inventory.d.ts",
-         "default": "./src/inventory.ts"
+         "types": "./dist/inventory.d.ts",
+         "default": "./dist/inventory.js"
       },
       "./service": {
-         "types": "./dist/src/service.d.ts",
-         "default": "./src/service.ts"
+         "types": "./dist/service.d.ts",
+         "default": "./dist/service.js"
       },
       "./nfe": {
-         "types": "./dist/src/nfe.d.ts",
-         "default": "./src/nfe.ts"
+         "types": "./dist/nfe.d.ts",
+         "default": "./dist/nfe.js"
       },
       "./document": {
-         "types": "./dist/src/document.d.ts",
-         "default": "./src/document.ts"
+         "types": "./dist/document.d.ts",
+         "default": "./dist/document.js"
       },
       "./queues/connection": {
-         "types": "./dist/src/queues/connection.d.ts",
-         "default": "./src/queues/connection.ts"
+         "types": "./dist/queues/connection.d.ts",
+         "default": "./dist/queues/connection.js"
       },
       "./queues/webhook-delivery": {
-         "types": "./dist/src/queues/webhook-delivery.d.ts",
-         "default": "./src/queues/webhook-delivery.ts"
+         "types": "./dist/queues/webhook-delivery.d.ts",
+         "default": "./dist/queues/webhook-delivery.js"
       },
       "./queues/budget-alerts": {
-         "types": "./dist/src/queues/budget-alerts.d.ts",
-         "default": "./src/queues/budget-alerts.ts"
+         "types": "./dist/queues/budget-alerts.d.ts",
+         "default": "./dist/queues/budget-alerts.js"
       }
    },
    "scripts": {

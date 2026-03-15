@@ -177,7 +177,7 @@ describe("generateBillsForSubscription", () => {
       );
 
       const rows = await ctx.db.query.bills.findMany({
-         orderBy: { dueDate: "asc" },
+         orderBy: (fields, { asc }) => [asc(fields.dueDate)],
       });
       expect(rows).toHaveLength(3);
       expect(rows[0]!.dueDate).toBe("2026-01-15");
@@ -227,7 +227,7 @@ describe("cancelPendingBillsForSubscription", () => {
       await generateBillsForSubscription(ctx.db, sub, baseVariant, "Serviço");
 
       const rows = await ctx.db.query.bills.findMany({
-         orderBy: { dueDate: "asc" },
+         orderBy: (fields, { asc }) => [asc(fields.dueDate)],
       });
       expect(rows).toHaveLength(2);
 
@@ -239,7 +239,7 @@ describe("cancelPendingBillsForSubscription", () => {
       await cancelPendingBillsForSubscription(ctx.db, SUBSCRIPTION_ID);
 
       const afterRows = await ctx.db.query.bills.findMany({
-         orderBy: { dueDate: "asc" },
+         orderBy: (fields, { asc }) => [asc(fields.dueDate)],
       });
       expect(afterRows[0]!.status).toBe("paid");
       expect(afterRows[1]!.status).toBe("cancelled");

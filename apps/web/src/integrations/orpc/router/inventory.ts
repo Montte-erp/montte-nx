@@ -13,10 +13,8 @@ import {
 import { createTransaction } from "@core/database/repositories/transactions-repository";
 import {
    createInventoryProductSchema,
-   inventorySettings,
    updateInventoryProductSchema,
 } from "@core/database/schemas/inventory";
-import { createInsertSchema } from "drizzle-orm/zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
@@ -54,10 +52,12 @@ const movementSchema = z.discriminatedUnion("type", [
    }),
 ]);
 
-const settingsSchema = createInsertSchema(inventorySettings).omit({
-   teamId: true,
-   createdAt: true,
-   updatedAt: true,
+const settingsSchema = z.object({
+   purchaseBankAccountId: z.string().uuid().nullable().optional(),
+   purchaseCategoryId: z.string().uuid().nullable().optional(),
+   purchaseCreditCardId: z.string().uuid().nullable().optional(),
+   saleCategoryId: z.string().uuid().nullable().optional(),
+   wasteCategoryId: z.string().uuid().nullable().optional(),
 });
 
 export const getProducts = protectedProcedure.handler(async ({ context }) => {

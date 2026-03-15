@@ -9,16 +9,16 @@
    "type": "module",
    "exports": {
       "./web": {
-         "types": "./dist/src/web.d.ts",
-         "default": "./src/web.ts"
+         "types": "./dist/web.d.ts",
+         "default": "./dist/web.js"
       },
       "./helpers": {
-         "types": "./dist/src/helpers.d.ts",
-         "default": "./src/helpers.ts"
+         "types": "./dist/helpers.d.ts",
+         "default": "./dist/helpers.js"
       },
       "./worker": {
-         "types": "./dist/src/worker.d.ts",
-         "default": "./src/worker.ts"
+         "types": "./dist/worker.d.ts",
+         "default": "./dist/worker.js"
       }
    },
    "scripts": {

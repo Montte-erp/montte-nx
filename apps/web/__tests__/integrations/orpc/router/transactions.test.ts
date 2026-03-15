@@ -366,7 +366,7 @@ describe("update", () => {
       expect(updated.name).toBe("Atualizado");
 
       const fromDb = await ctx.db.query.transactions.findFirst({
-         where: { id: created!.id },
+         where: (fields, { eq }) => eq(fields.id, created!.id),
       });
       expect(fromDb!.name).toBe("Atualizado");
    });

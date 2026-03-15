@@ -167,7 +167,7 @@ describe("update", () => {
       expect(updated.name).toBe("João Santos");
 
       const fromDb = await ctx.db.query.contacts.findFirst({
-         where: { id: created.id },
+         where: (fields, { eq }) => eq(fields.id, created.id),
       });
       expect(fromDb!.name).toBe("João Santos");
    });

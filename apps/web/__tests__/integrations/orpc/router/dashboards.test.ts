@@ -178,7 +178,7 @@ describe("update", () => {
       expect(updated.description).toBe("New desc");
 
       const fromDb = await ctx.db.query.dashboards.findFirst({
-         where: { id: created.id },
+         where: (fields, { eq }) => eq(fields.id, created.id),
       });
       expect(fromDb!.name).toBe("Updated");
    });
@@ -350,10 +350,10 @@ describe("setAsHome", () => {
       );
 
       const firstFromDb = await ctx.db.query.dashboards.findFirst({
-         where: { id: first.id },
+         where: (fields, { eq }) => eq(fields.id, first.id),
       });
       const secondFromDb = await ctx.db.query.dashboards.findFirst({
-         where: { id: second.id },
+         where: (fields, { eq }) => eq(fields.id, second.id),
       });
 
       expect(firstFromDb!.isDefault).toBe(false);

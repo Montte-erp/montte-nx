@@ -9,7 +9,7 @@ import {
    timestamp,
    uuid,
 } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-orm/zod";
+import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const bankAccountTypeEnum = pgEnum("bank_account_type", [

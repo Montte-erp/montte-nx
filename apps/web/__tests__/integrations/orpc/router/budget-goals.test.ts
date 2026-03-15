@@ -236,7 +236,7 @@ describe("update", () => {
       expect(updated.limitAmount).toBe("8000.00");
 
       const fromDb = await ctx.db.query.budgetGoals.findFirst({
-         where: { id: created.id },
+         where: (fields, { eq }) => eq(fields.id, created.id),
       });
       expect(fromDb!.limitAmount).toBe("8000.00");
    });

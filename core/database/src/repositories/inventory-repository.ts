@@ -63,7 +63,7 @@ export async function listInventoryProducts(
 export async function getInventoryProduct(db: DatabaseInstance, id: string) {
    try {
       const product = await db.query.inventoryProducts.findFirst({
-         where: { id },
+         where: (fields, { eq }) => eq(fields.id, id),
       });
       return product ?? null;
    } catch (err) {

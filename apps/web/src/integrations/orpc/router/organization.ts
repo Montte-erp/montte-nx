@@ -68,7 +68,7 @@ export const getActiveOrganization = protectedProcedure.handler(
          try {
             if (stripeClient) {
                const userRecord = await db.query.user.findFirst({
-                  where: { id: userId },
+                  where: (fields, { eq }) => eq(fields.id, userId),
                });
                if (userRecord?.stripeCustomerId) {
                   const paymentMethods = await stripeClient.paymentMethods.list(
@@ -193,11 +193,11 @@ export const getMemberTeams = protectedProcedure
       const { db, organizationId } = context;
 
       const teams = await db.query.team.findMany({
-         where: { organizationId },
+         where: (fields, { eq }) => eq(fields.organizationId, organizationId),
       });
 
       const teamMemberships = await db.query.teamMember.findMany({
-         where: { userId: input.userId },
+         where: (fields, { eq }) => eq(fields.userId, input.userId),
       });
 
       const memberTeamIds = new Set(teamMemberships.map((tm) => tm.teamId));

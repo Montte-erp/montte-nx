@@ -9,26 +9,27 @@
    "type": "module",
    "exports": {
       "./blocks/*": {
-         "types": "./dist/src/blocks/*.d.ts",
-         "default": "./src/blocks/*"
+         "types": "./dist/blocks/*.d.ts",
+         "default": "./dist/blocks/*.js"
       },
       "./components/*": {
-         "types": "./dist/src/components/*.d.ts",
-         "default": "./src/components/*"
+         "types": "./dist/components/*.d.ts",
+         "default": "./dist/components/*.js"
       },
-      "./globals.css": "./src/styles/globals.css",
+      "./globals.css": "./dist/styles/globals.css",
+      "./styles/globals.css": "./dist/styles/globals.css",
       "./hooks/*": {
-         "types": "./dist/src/hooks/*.d.ts",
-         "default": "./src/hooks/*"
+         "types": "./dist/hooks/*.d.ts",
+         "default": "./dist/hooks/*.js"
       },
       "./lib/*": {
-         "types": "./dist/src/lib/*.d.ts",
-         "default": "./src/lib/*"
+         "types": "./dist/lib/*.d.ts",
+         "default": "./dist/lib/*.js"
       },
       "./postcss.config": "./postcss.config.mjs"
    },
    "scripts": {
-      "build": "tsc --noEmit",
+      "build": "tsc --build && mkdir -p dist/styles && cp src/styles/globals.css dist/styles/globals.css",
       "check": "oxlint ./src",
       "typecheck": "tsgo"
    },

@@ -168,7 +168,7 @@ describe("create", () => {
       });
 
       const fromDb = await ctx.db.query.webhookEndpoints.findFirst({
-         where: { id: result.endpoint.id },
+         where: (fields, { eq }) => eq(fields.id, result.endpoint.id),
       });
       expect(result.endpoint.signingSecret).not.toBe(fromDb!.signingSecret);
       expect(result.endpoint.signingSecret.endsWith("...")).toBe(true);
@@ -299,7 +299,7 @@ describe("update", () => {
       expect(updated!.isActive).toBe(false);
 
       const fromDb = await ctx.db.query.webhookEndpoints.findFirst({
-         where: { id: created.endpoint.id },
+         where: (fields, { eq }) => eq(fields.id, created.endpoint.id),
       });
       expect(fromDb!.url).toBe("https://example.com/updated");
       expect(fromDb!.isActive).toBe(false);

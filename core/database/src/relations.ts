@@ -1,384 +1,433 @@
-import { defineRelations } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 
-import * as schema from "@core/database/schema";
+import {
+   account,
+   invitation,
+   member,
+   organization,
+   session,
+   team,
+   teamMember,
+   twoFactor,
+   user,
+} from "@core/database/schemas/auth";
+import { bankAccounts } from "@core/database/schemas/bank-accounts";
+import { bills, recurrenceSettings } from "@core/database/schemas/bills";
+import { budgetGoals } from "@core/database/schemas/budget-goals";
+import { categories } from "@core/database/schemas/categories";
+import { contacts } from "@core/database/schemas/contacts";
+import { creditCards } from "@core/database/schemas/credit-cards";
+import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
+import { dashboards } from "@core/database/schemas/dashboards";
+import { events } from "@core/database/schemas/events";
+import {
+   financialGoalMovements,
+   financialGoals,
+} from "@core/database/schemas/financial-goals";
+import { insights } from "@core/database/schemas/insights";
+import {
+   inventoryMovements,
+   inventoryProducts,
+} from "@core/database/schemas/inventory";
+import {
+   resources,
+   services,
+   serviceVariants,
+} from "@core/database/schemas/services";
+import { contactSubscriptions } from "@core/database/schemas/subscriptions";
+import { tags } from "@core/database/schemas/tags";
+import {
+   transactionItems,
+   transactions,
+   transactionTags,
+} from "@core/database/schemas/transactions";
+import {
+   webhookDeliveries,
+   webhookEndpoints,
+} from "@core/database/schemas/webhooks";
 
-export const relations = defineRelations(schema, (r) => ({
-   // -------------------------------------------------------------------------
-   // Auth
-   // -------------------------------------------------------------------------
-   user: {
-      sessions: r.many.session(),
-      accounts: r.many.account(),
-      teamMembers: r.many.teamMember(),
-      members: r.many.member(),
-      invitations: r.many.invitation(),
-      twoFactors: r.many.twoFactor(),
-   },
-
-   session: {
-      user: r.one.user({
-         from: r.session.userId,
-         to: r.user.id,
-      }),
-   },
-
-   account: {
-      user: r.one.user({
-         from: r.account.userId,
-         to: r.user.id,
-      }),
-   },
-
-   organization: {
-      teams: r.many.team(),
-      members: r.many.member(),
-      invitations: r.many.invitation(),
-   },
-
-   team: {
-      organization: r.one.organization({
-         from: r.team.organizationId,
-         to: r.organization.id,
-      }),
-      teamMembers: r.many.teamMember(),
-   },
-
-   teamMember: {
-      team: r.one.team({
-         from: r.teamMember.teamId,
-         to: r.team.id,
-      }),
-      user: r.one.user({
-         from: r.teamMember.userId,
-         to: r.user.id,
-      }),
-   },
-
-   member: {
-      organization: r.one.organization({
-         from: r.member.organizationId,
-         to: r.organization.id,
-      }),
-      user: r.one.user({
-         from: r.member.userId,
-         to: r.user.id,
-      }),
-   },
-
-   invitation: {
-      organization: r.one.organization({
-         from: r.invitation.organizationId,
-         to: r.organization.id,
-      }),
-      user: r.one.user({
-         from: r.invitation.inviterId,
-         to: r.user.id,
-      }),
-   },
-
-   twoFactor: {
-      user: r.one.user({
-         from: r.twoFactor.userId,
-         to: r.user.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // Bills
-   // -------------------------------------------------------------------------
-   bills: {
-      bankAccount: r.one.bankAccounts({
-         from: r.bills.bankAccountId,
-         to: r.bankAccounts.id,
-      }),
-      category: r.one.categories({
-         from: r.bills.categoryId,
-         to: r.categories.id,
-      }),
-      transaction: r.one.transactions({
-         from: r.bills.transactionId,
-         to: r.transactions.id,
-      }),
-      recurrenceSetting: r.one.recurrenceSettings({
-         from: r.bills.recurrenceGroupId,
-         to: r.recurrenceSettings.id,
-      }),
-   },
-
-   recurrenceSettings: {
-      bills: r.many.bills(),
-   },
-
-   // -------------------------------------------------------------------------
-   // Budget Goals
-   // -------------------------------------------------------------------------
-   budgetGoals: {
-      category: r.one.categories({
-         from: r.budgetGoals.categoryId,
-         to: r.categories.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // Categories
-   // -------------------------------------------------------------------------
-   categories: {
-      parent: r.one.categories({
-         from: r.categories.parentId,
-         to: r.categories.id,
-      }),
-      children: r.many.categories(),
-   },
-
-   // -------------------------------------------------------------------------
-   // Contacts
-   // -------------------------------------------------------------------------
-   contacts: {
-      transactions: r.many.transactions(),
-   },
-
-   // -------------------------------------------------------------------------
-   // Dashboards
-   // -------------------------------------------------------------------------
-   dashboards: {
-      organization: r.one.organization({
-         from: r.dashboards.organizationId,
-         to: r.organization.id,
-      }),
-      team: r.one.team({
-         from: r.dashboards.teamId,
-         to: r.team.id,
-      }),
-      createdByUser: r.one.user({
-         from: r.dashboards.createdBy,
-         to: r.user.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // Events
-   // -------------------------------------------------------------------------
-   events: {
-      organization: r.one.organization({
-         from: r.events.organizationId,
-         to: r.organization.id,
-      }),
-      user: r.one.user({
-         from: r.events.userId,
-         to: r.user.id,
-      }),
-      team: r.one.team({
-         from: r.events.teamId,
-         to: r.team.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // Insights
-   // -------------------------------------------------------------------------
-   insights: {
-      organization: r.one.organization({
-         from: r.insights.organizationId,
-         to: r.organization.id,
-      }),
-      team: r.one.team({
-         from: r.insights.teamId,
-         to: r.team.id,
-      }),
-      createdByUser: r.one.user({
-         from: r.insights.createdBy,
-         to: r.user.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // Inventory
-   // -------------------------------------------------------------------------
-   financialGoals: {
-      category: r.one.categories({
-         from: r.financialGoals.categoryId,
-         to: r.categories.id,
-      }),
-      movements: r.many.financialGoalMovements(),
-   },
-
-   financialGoalMovements: {
-      goal: r.one.financialGoals({
-         from: r.financialGoalMovements.goalId,
-         to: r.financialGoals.id,
-      }),
-      transaction: r.one.transactions({
-         from: r.financialGoalMovements.transactionId,
-         to: r.transactions.id,
-      }),
-   },
-
-   inventoryProducts: {
-      movements: r.many.inventoryMovements(),
-   },
-
-   inventoryMovements: {
-      product: r.one.inventoryProducts({
-         from: r.inventoryMovements.productId,
-         to: r.inventoryProducts.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // Services
-   // -------------------------------------------------------------------------
-   services: {
-      category: r.one.categories({
-         from: r.services.categoryId,
-         to: r.categories.id,
-      }),
-      tag: r.one.tags({
-         from: r.services.tagId,
-         to: r.tags.id,
-      }),
-      variants: r.many.serviceVariants(),
-      resources: r.many.resources(),
-   },
-
-   serviceVariants: {
-      service: r.one.services({
-         from: r.serviceVariants.serviceId,
-         to: r.services.id,
-      }),
-      subscriptions: r.many.contactSubscriptions(),
-   },
-
-   contactSubscriptions: {
-      contact: r.one.contacts({
-         from: r.contactSubscriptions.contactId,
-         to: r.contacts.id,
-      }),
-      variant: r.one.serviceVariants({
-         from: r.contactSubscriptions.variantId,
-         to: r.serviceVariants.id,
-      }),
-   },
-
-   resources: {
-      service: r.one.services({
-         from: r.resources.serviceId,
-         to: r.services.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // Bank Accounts
-   // -------------------------------------------------------------------------
-   bankAccounts: {
-      bills: r.many.bills(),
-      transactions: r.many.transactions({
-         from: r.bankAccounts.id,
-         to: r.transactions.bankAccountId,
-      }),
-      creditCards: r.many.creditCards(),
-   },
-
-   // -------------------------------------------------------------------------
-   // Credit Cards
-   // -------------------------------------------------------------------------
-   creditCards: {
-      bankAccount: r.one.bankAccounts({
-         from: r.creditCards.bankAccountId,
-         to: r.bankAccounts.id,
-      }),
-      statements: r.many.creditCardStatements(),
-   },
-
-   creditCardStatements: {
-      creditCard: r.one.creditCards({
-         from: r.creditCardStatements.creditCardId,
-         to: r.creditCards.id,
-      }),
-      bill: r.one.bills({
-         from: r.creditCardStatements.billId,
-         to: r.bills.id,
-      }),
-      paymentTransaction: r.one.transactions({
-         from: r.creditCardStatements.paymentTransactionId,
-         to: r.transactions.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // Transactions
-   // -------------------------------------------------------------------------
-   transactions: {
-      bankAccount: r.one.bankAccounts({
-         from: r.transactions.bankAccountId,
-         to: r.bankAccounts.id,
-         alias: "sourceAccount",
-      }),
-      destinationBankAccount: r.one.bankAccounts({
-         from: r.transactions.destinationBankAccountId,
-         to: r.bankAccounts.id,
-         alias: "destinationAccount",
-      }),
-      creditCard: r.one.creditCards({
-         from: r.transactions.creditCardId,
-         to: r.creditCards.id,
-      }),
-      category: r.one.categories({
-         from: r.transactions.categoryId,
-         to: r.categories.id,
-      }),
-      transactionTags: r.many.transactionTags(),
-      items: r.many.transactionItems(),
-      contact: r.one.contacts({
-         from: r.transactions.contactId,
-         to: r.contacts.id,
-      }),
-   },
-
-   transactionTags: {
-      transaction: r.one.transactions({
-         from: r.transactionTags.transactionId,
-         to: r.transactions.id,
-      }),
-      tag: r.one.tags({
-         from: r.transactionTags.tagId,
-         to: r.tags.id,
-      }),
-   },
-
-   transactionItems: {
-      transaction: r.one.transactions({
-         from: r.transactionItems.transactionId,
-         to: r.transactions.id,
-      }),
-      service: r.one.services({
-         from: r.transactionItems.serviceId,
-         to: r.services.id,
-      }),
-   },
-
-   // -------------------------------------------------------------------------
-   // Webhooks
-   // -------------------------------------------------------------------------
-   webhookEndpoints: {
-      organization: r.one.organization({
-         from: r.webhookEndpoints.organizationId,
-         to: r.organization.id,
-      }),
-      team: r.one.team({
-         from: r.webhookEndpoints.teamId,
-         to: r.team.id,
-      }),
-      deliveries: r.many.webhookDeliveries(),
-   },
-
-   webhookDeliveries: {
-      webhookEndpoint: r.one.webhookEndpoints({
-         from: r.webhookDeliveries.webhookEndpointId,
-         to: r.webhookEndpoints.id,
-      }),
-      event: r.one.events({
-         from: r.webhookDeliveries.eventId,
-         to: r.events.id,
-      }),
-   },
+export const userRelations = relations(user, ({ many }) => ({
+   sessions: many(session),
+   accounts: many(account),
+   teamMembers: many(teamMember),
+   members: many(member),
+   invitations: many(invitation),
+   twoFactors: many(twoFactor),
 }));
+
+export const sessionRelations = relations(session, ({ one }) => ({
+   user: one(user, {
+      fields: [session.userId],
+      references: [user.id],
+   }),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+   user: one(user, {
+      fields: [account.userId],
+      references: [user.id],
+   }),
+}));
+
+export const organizationRelations = relations(organization, ({ many }) => ({
+   teams: many(team),
+   members: many(member),
+   invitations: many(invitation),
+}));
+
+export const teamRelations = relations(team, ({ one, many }) => ({
+   organization: one(organization, {
+      fields: [team.organizationId],
+      references: [organization.id],
+   }),
+   teamMembers: many(teamMember),
+}));
+
+export const teamMemberRelations = relations(teamMember, ({ one }) => ({
+   team: one(team, {
+      fields: [teamMember.teamId],
+      references: [team.id],
+   }),
+   user: one(user, {
+      fields: [teamMember.userId],
+      references: [user.id],
+   }),
+}));
+
+export const memberRelations = relations(member, ({ one }) => ({
+   organization: one(organization, {
+      fields: [member.organizationId],
+      references: [organization.id],
+   }),
+   user: one(user, {
+      fields: [member.userId],
+      references: [user.id],
+   }),
+}));
+
+export const invitationRelations = relations(invitation, ({ one }) => ({
+   organization: one(organization, {
+      fields: [invitation.organizationId],
+      references: [organization.id],
+   }),
+   user: one(user, {
+      fields: [invitation.inviterId],
+      references: [user.id],
+   }),
+}));
+
+export const twoFactorRelations = relations(twoFactor, ({ one }) => ({
+   user: one(user, {
+      fields: [twoFactor.userId],
+      references: [user.id],
+   }),
+}));
+
+export const billsRelations = relations(bills, ({ one }) => ({
+   bankAccount: one(bankAccounts, {
+      fields: [bills.bankAccountId],
+      references: [bankAccounts.id],
+   }),
+   category: one(categories, {
+      fields: [bills.categoryId],
+      references: [categories.id],
+   }),
+   transaction: one(transactions, {
+      fields: [bills.transactionId],
+      references: [transactions.id],
+   }),
+   recurrenceSetting: one(recurrenceSettings, {
+      fields: [bills.recurrenceGroupId],
+      references: [recurrenceSettings.id],
+   }),
+   contact: one(contacts, {
+      fields: [bills.contactId],
+      references: [contacts.id],
+   }),
+}));
+
+export const recurrenceSettingsRelations = relations(
+   recurrenceSettings,
+   ({ many }) => ({
+      bills: many(bills),
+   }),
+);
+
+export const budgetGoalsRelations = relations(budgetGoals, ({ one }) => ({
+   category: one(categories, {
+      fields: [budgetGoals.categoryId],
+      references: [categories.id],
+   }),
+}));
+
+export const categoriesRelations = relations(categories, ({ one, many }) => ({
+   parent: one(categories, {
+      fields: [categories.parentId],
+      references: [categories.id],
+      relationName: "categoryHierarchy",
+   }),
+   children: many(categories, {
+      relationName: "categoryHierarchy",
+   }),
+}));
+
+export const contactsRelations = relations(contacts, ({ many }) => ({
+   transactions: many(transactions),
+   contactSubscriptions: many(contactSubscriptions),
+}));
+
+export const dashboardsRelations = relations(dashboards, ({ one }) => ({
+   organization: one(organization, {
+      fields: [dashboards.organizationId],
+      references: [organization.id],
+   }),
+   team: one(team, {
+      fields: [dashboards.teamId],
+      references: [team.id],
+   }),
+   createdByUser: one(user, {
+      fields: [dashboards.createdBy],
+      references: [user.id],
+   }),
+}));
+
+export const eventsRelations = relations(events, ({ one }) => ({
+   organization: one(organization, {
+      fields: [events.organizationId],
+      references: [organization.id],
+   }),
+   user: one(user, {
+      fields: [events.userId],
+      references: [user.id],
+   }),
+   team: one(team, {
+      fields: [events.teamId],
+      references: [team.id],
+   }),
+}));
+
+export const insightsRelations = relations(insights, ({ one }) => ({
+   organization: one(organization, {
+      fields: [insights.organizationId],
+      references: [organization.id],
+   }),
+   team: one(team, {
+      fields: [insights.teamId],
+      references: [team.id],
+   }),
+   createdByUser: one(user, {
+      fields: [insights.createdBy],
+      references: [user.id],
+   }),
+}));
+
+export const financialGoalsRelations = relations(
+   financialGoals,
+   ({ one, many }) => ({
+      category: one(categories, {
+         fields: [financialGoals.categoryId],
+         references: [categories.id],
+      }),
+      movements: many(financialGoalMovements),
+   }),
+);
+
+export const financialGoalMovementsRelations = relations(
+   financialGoalMovements,
+   ({ one }) => ({
+      goal: one(financialGoals, {
+         fields: [financialGoalMovements.goalId],
+         references: [financialGoals.id],
+      }),
+      transaction: one(transactions, {
+         fields: [financialGoalMovements.transactionId],
+         references: [transactions.id],
+      }),
+   }),
+);
+
+export const inventoryProductsRelations = relations(
+   inventoryProducts,
+   ({ many }) => ({
+      movements: many(inventoryMovements),
+   }),
+);
+
+export const inventoryMovementsRelations = relations(
+   inventoryMovements,
+   ({ one }) => ({
+      product: one(inventoryProducts, {
+         fields: [inventoryMovements.productId],
+         references: [inventoryProducts.id],
+      }),
+   }),
+);
+
+export const servicesRelations = relations(services, ({ one, many }) => ({
+   category: one(categories, {
+      fields: [services.categoryId],
+      references: [categories.id],
+   }),
+   tag: one(tags, {
+      fields: [services.tagId],
+      references: [tags.id],
+   }),
+   variants: many(serviceVariants),
+   resources: many(resources),
+}));
+
+export const serviceVariantsRelations = relations(
+   serviceVariants,
+   ({ one, many }) => ({
+      service: one(services, {
+         fields: [serviceVariants.serviceId],
+         references: [services.id],
+      }),
+      subscriptions: many(contactSubscriptions),
+   }),
+);
+
+export const contactSubscriptionsRelations = relations(
+   contactSubscriptions,
+   ({ one }) => ({
+      contact: one(contacts, {
+         fields: [contactSubscriptions.contactId],
+         references: [contacts.id],
+      }),
+      variant: one(serviceVariants, {
+         fields: [contactSubscriptions.variantId],
+         references: [serviceVariants.id],
+      }),
+   }),
+);
+
+export const resourcesRelations = relations(resources, ({ one }) => ({
+   service: one(services, {
+      fields: [resources.serviceId],
+      references: [services.id],
+   }),
+}));
+
+export const bankAccountsRelations = relations(bankAccounts, ({ many }) => ({
+   bills: many(bills),
+   transactions: many(transactions, {
+      relationName: "sourceAccount",
+   }),
+   destinationTransactions: many(transactions, {
+      relationName: "destinationAccount",
+   }),
+   creditCards: many(creditCards),
+}));
+
+export const creditCardsRelations = relations(creditCards, ({ one, many }) => ({
+   bankAccount: one(bankAccounts, {
+      fields: [creditCards.bankAccountId],
+      references: [bankAccounts.id],
+   }),
+   statements: many(creditCardStatements),
+}));
+
+export const creditCardStatementsRelations = relations(
+   creditCardStatements,
+   ({ one }) => ({
+      creditCard: one(creditCards, {
+         fields: [creditCardStatements.creditCardId],
+         references: [creditCards.id],
+      }),
+      bill: one(bills, {
+         fields: [creditCardStatements.billId],
+         references: [bills.id],
+      }),
+      paymentTransaction: one(transactions, {
+         fields: [creditCardStatements.paymentTransactionId],
+         references: [transactions.id],
+      }),
+   }),
+);
+
+export const transactionsRelations = relations(
+   transactions,
+   ({ one, many }) => ({
+      bankAccount: one(bankAccounts, {
+         fields: [transactions.bankAccountId],
+         references: [bankAccounts.id],
+         relationName: "sourceAccount",
+      }),
+      destinationBankAccount: one(bankAccounts, {
+         fields: [transactions.destinationBankAccountId],
+         references: [bankAccounts.id],
+         relationName: "destinationAccount",
+      }),
+      creditCard: one(creditCards, {
+         fields: [transactions.creditCardId],
+         references: [creditCards.id],
+      }),
+      category: one(categories, {
+         fields: [transactions.categoryId],
+         references: [categories.id],
+      }),
+      contact: one(contacts, {
+         fields: [transactions.contactId],
+         references: [contacts.id],
+      }),
+      transactionTags: many(transactionTags),
+      items: many(transactionItems),
+   }),
+);
+
+export const transactionTagsRelations = relations(
+   transactionTags,
+   ({ one }) => ({
+      transaction: one(transactions, {
+         fields: [transactionTags.transactionId],
+         references: [transactions.id],
+      }),
+      tag: one(tags, {
+         fields: [transactionTags.tagId],
+         references: [tags.id],
+      }),
+   }),
+);
+
+export const transactionItemsRelations = relations(
+   transactionItems,
+   ({ one }) => ({
+      transaction: one(transactions, {
+         fields: [transactionItems.transactionId],
+         references: [transactions.id],
+      }),
+      service: one(services, {
+         fields: [transactionItems.serviceId],
+         references: [services.id],
+      }),
+   }),
+);
+
+export const webhookEndpointsRelations = relations(
+   webhookEndpoints,
+   ({ one, many }) => ({
+      organization: one(organization, {
+         fields: [webhookEndpoints.organizationId],
+         references: [organization.id],
+      }),
+      team: one(team, {
+         fields: [webhookEndpoints.teamId],
+         references: [team.id],
+      }),
+      deliveries: many(webhookDeliveries),
+   }),
+);
+
+export const webhookDeliveriesRelations = relations(
+   webhookDeliveries,
+   ({ one }) => ({
+      webhookEndpoint: one(webhookEndpoints, {
+         fields: [webhookDeliveries.webhookEndpointId],
+         references: [webhookEndpoints.id],
+      }),
+      event: one(events, {
+         fields: [webhookDeliveries.eventId],
+         references: [events.id],
+      }),
+   }),
+);
