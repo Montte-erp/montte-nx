@@ -268,6 +268,7 @@
       "cac": "^6.7.14",
       "dotenv": "catalog:enviroment",
       "lefthook": "^2.1.4",
+      "nitro": "3.0.260311-beta",
       "nx": "22.5.4",
       "oxfmt": "^0.39.0",
       "oxlint": "^1.54.0",
