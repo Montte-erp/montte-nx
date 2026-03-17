@@ -41934,8 +41934,8 @@
     {
       "type": "frame",
       "id": "3rWB3",
-      "x": 1663,
-      "y": 2102,
+      "x": 3603,
+      "y": 1854,
       "name": "Modais de Contas Bancárias",
       "fill": "#f8fafc",
       "gap": 100,
@@ -62640,8 +62640,8 @@
     {
       "type": "frame",
       "id": "sWy2Q",
-      "x": 3500,
-      "y": 2100,
+      "x": -68,
+      "y": 1854,
       "name": "Contas Financeiras",
       "fill": "#f1f5f9",
       "gap": 200,
