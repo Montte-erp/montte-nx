@@ -16,6 +16,6 @@
       "restartPolicyMaxRetries": 10,
       "restartPolicyType": "ON_FAILURE",
       "runtime": "V2",
-      "sleepApplication": false
+      "sleepApplication": true
    }
 }
