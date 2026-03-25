@@ -335,7 +335,7 @@ export async function generateBillsForSubscription(
             d.setFullYear(d.getFullYear() + 2);
             return d;
          })();
-      while (cursor < limit) {
+      while (cursor <= limit) {
          billsToCreate.push(
             makeBill(new Date(cursor), formatMonthYear(cursor)),
          );

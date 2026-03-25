@@ -641,10 +641,13 @@ export function DataTable<TData, TValue>({
    function handleRowDragEnd(event: DragEndEvent) {
       const { active, over } = event;
       if (active && over && active.id !== over.id) {
+         const getId = getRowId
+            ? (row: TData) => getRowId(row)
+            : (_row: TData, index: number) => String(index);
          const oldIndex = data.findIndex(
-            (row) => getRowId?.(row) === active.id,
+            (row, i) => getId(row, i) === active.id,
          );
-         const newIndex = data.findIndex((row) => getRowId?.(row) === over.id);
+         const newIndex = data.findIndex((row, i) => getId(row, i) === over.id);
          if (oldIndex !== -1 && newIndex !== -1) {
             onRowOrderChange?.(arrayMove([...data], oldIndex, newIndex));
          }
@@ -901,13 +904,20 @@ export function DataTable<TData, TValue>({
       </div>
    );
 
-   const needsDndContext = reorderColumns || reorderRows;
-   const dndModifiers = reorderColumns
+   if (reorderColumns && reorderRows) {
+      console.warn(
+         "[DataTable] reorderColumns and reorderRows cannot both be enabled at the same time. Row reordering will be disabled.",
+      );
+   }
+   const activeReorderColumns = reorderColumns;
+   const activeReorderRows = reorderRows && !reorderColumns;
+   const needsDndContext = activeReorderColumns || activeReorderRows;
+   const dndModifiers = activeReorderColumns
       ? [restrictToHorizontalAxis]
-      : reorderRows
+      : activeReorderRows
         ? [restrictToVerticalAxis]
         : [];
-   const handleDragEnd = reorderColumns
+   const handleDragEnd = activeReorderColumns
       ? handleColumnDragEnd
       : handleRowDragEnd;
 
