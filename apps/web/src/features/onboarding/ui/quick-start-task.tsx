@@ -5,7 +5,7 @@ import type React from "react";
 import { useCallback } from "react";
 import { BankAccountForm } from "@/features/bank-accounts/ui/bank-accounts-form";
 import { CategoryForm } from "@/features/categories/ui/categories-form";
-import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
+import { TransactionDialogStack } from "@/features/transactions/ui/transaction-dialog-stack";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import type { TaskDefinition } from "../task-definitions";
 
@@ -44,7 +44,7 @@ export function QuickStartTask({
       } else if (task.id === "add_transaction") {
          openDialogStack({
             children: (
-               <TransactionCredenza
+               <TransactionDialogStack
                   mode="create"
                   onSuccess={closeDialogStack}
                />
