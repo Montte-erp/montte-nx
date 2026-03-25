@@ -1,6 +1,29 @@
 "use client";
 
 import {
+   closestCenter,
+   DndContext,
+   type DragEndEvent,
+   KeyboardSensor,
+   MouseSensor,
+   TouchSensor,
+   type UniqueIdentifier,
+   useSensor,
+   useSensors,
+} from "@dnd-kit/core";
+import {
+   restrictToHorizontalAxis,
+   restrictToVerticalAxis,
+} from "@dnd-kit/modifiers";
+import {
+   arrayMove,
+   horizontalListSortingStrategy,
+   SortableContext,
+   useSortable,
+   verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
    type ColumnDef,
    type ColumnFiltersState,
    flexRender,
@@ -15,36 +38,13 @@ import {
    type VisibilityState,
 } from "@tanstack/react-table";
 import {
-   DndContext,
-   KeyboardSensor,
-   MouseSensor,
-   TouchSensor,
-   closestCenter,
-   type DragEndEvent,
-   useSensor,
-   useSensors,
-   type UniqueIdentifier,
-} from "@dnd-kit/core";
-import {
-   restrictToHorizontalAxis,
-   restrictToVerticalAxis,
-} from "@dnd-kit/modifiers";
-import {
-   SortableContext,
-   useSortable,
-   horizontalListSortingStrategy,
-   verticalListSortingStrategy,
-   arrayMove,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import {
    ArrowDown,
    ArrowUp,
    ArrowUpDown,
    GripVertical,
    Settings2,
 } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "../lib/utils";
 import { Button } from "./button";
