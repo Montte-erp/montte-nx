@@ -143,33 +143,32 @@ export function ManageOrganizationForm({
                });
             }
             formApi.reset();
-         } catch (error) {
-            console.error(
-               `Failed to ${isEditMode ? "update" : "create"} organization:`,
-               error,
+         } catch {
+            toast.error(
+               `Failed to ${isEditMode ? "update" : "create"} organization`,
             );
          }
       },
    });
 
    return (
-      <form
-         className="h-full flex flex-col"
-         onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            startTransition(async () => {
-               await form.handleSubmit();
-            });
-         }}
-      >
-         <DialogStackContent index={0}>
-            <DialogStackHeader>
-               <DialogStackTitle>{modeTexts.title}</DialogStackTitle>
-               <DialogStackDescription>
-                  {modeTexts.description}
-               </DialogStackDescription>
-            </DialogStackHeader>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>{modeTexts.title}</DialogStackTitle>
+            <DialogStackDescription>
+               {modeTexts.description}
+            </DialogStackDescription>
+         </DialogStackHeader>
+         <form
+            className="h-full flex flex-col"
+            onSubmit={(e) => {
+               e.preventDefault();
+               e.stopPropagation();
+               startTransition(async () => {
+                  await form.handleSubmit();
+               });
+            }}
+         >
             <div className="flex-1 overflow-y-auto px-4 py-4">
                <div className="grid gap-4">
                   <form.Field name="logo">
@@ -325,7 +324,7 @@ export function ManageOrganizationForm({
                   )}
                </form.Subscribe>
             </div>
-         </DialogStackContent>
-      </form>
+         </form>
+      </DialogStackContent>
    );
 }

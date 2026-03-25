@@ -30,8 +30,6 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
    const { wantedItems, toggleItem: toggleWanted } = useFinanceNavPreferences();
    const { updateEnrollment, getFeatureStage, isEnrolled } = useEarlyAccess();
 
-   // Filter out early-access items that the user hasn't enrolled in yet.
-   // Those features are discoverable via the Feature Previews settings page instead.
    const visibleLabeledNavGroups = useMemo(
       () =>
          labeledNavGroups
@@ -115,7 +113,6 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
                   id={`section-${sectionId}`}
                   onCheckedChange={() => toggleSection(items, sectionState)}
                />
-               {/* biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is Radix */}
                <label
                   className="text-sm font-medium cursor-pointer select-none"
                   htmlFor={`section-${sectionId}`}
@@ -136,7 +133,6 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
                            id={`sidebar-config-${item.id}`}
                            onCheckedChange={() => handleToggle(item)}
                         />
-                        {/* biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is Radix */}
                         <label
                            className="flex items-center gap-2 text-sm cursor-pointer select-none flex-1"
                            htmlFor={`sidebar-config-${item.id}`}
@@ -170,7 +166,7 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
             <p className="text-sm text-muted-foreground mb-6">
                Selecione os itens que deseja ver na barra lateral.
             </p>
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
                {visibleLabeledNavGroups.map((group) =>
                   renderSection(group.id, group.label!, group.items),
                )}

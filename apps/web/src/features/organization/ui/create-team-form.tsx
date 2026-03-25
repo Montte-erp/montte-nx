@@ -186,7 +186,7 @@ const CreateTeamFormContent = () => {
             </form>
          </div>
 
-         <div className="border-t px-4 py-4">
+         <div className="border-t px-4 py-4 flex items-center justify-end gap-2">
             <Button onClick={closeCredenza} type="button" variant="outline">
                Cancelar
             </Button>
