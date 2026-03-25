@@ -1,9 +1,10 @@
 import { Badge } from "@packages/ui/components/badge";
 import {
-   CredenzaDescription,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import {
    Item,
    ItemActions,
@@ -103,13 +104,13 @@ export function SessionDetailsForm({
    }, [session, currentSessionId]);
 
    return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>Detalhes da Sessão</CredenzaTitle>
-            <CredenzaDescription>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>Detalhes da Sessão</DialogStackTitle>
+            <DialogStackDescription>
                Informações sobre esta sessão
-            </CredenzaDescription>
-         </CredenzaHeader>
+            </DialogStackDescription>
+         </DialogStackHeader>
          <ItemGroup>
             {sessionDetails.map((detail) => (
                <Item key={detail.title}>
@@ -134,10 +135,12 @@ export function SessionDetailsForm({
             ))}
          </ItemGroup>
          <Separator />
-         <CredenzaHeader>
-            <CredenzaTitle>Ações</CredenzaTitle>
-            <CredenzaDescription>Gerencie esta sessão</CredenzaDescription>
-         </CredenzaHeader>
+         <DialogStackHeader>
+            <DialogStackTitle>Ações</DialogStackTitle>
+            <DialogStackDescription>
+               Gerencie esta sessão
+            </DialogStackDescription>
+         </DialogStackHeader>
          <ItemGroup className="px-4">
             <Item
                aria-label="Encerrar Esta Sessão"
@@ -161,6 +164,6 @@ export function SessionDetailsForm({
                </ItemActions>
             </Item>
          </ItemGroup>
-      </>
+      </DialogStackContent>
    );
 }

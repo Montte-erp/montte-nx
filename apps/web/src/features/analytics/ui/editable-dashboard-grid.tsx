@@ -11,11 +11,11 @@ import {
    CardTitle,
 } from "@packages/ui/components/card";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import { DataTable } from "@packages/ui/components/data-table";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -144,14 +144,14 @@ function AddInsightCredenza({
    );
 
    return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>Adicionar insight</CredenzaTitle>
-            <CredenzaDescription>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>Adicionar insight</DialogStackTitle>
+            <DialogStackDescription>
                Selecione um insight para adicionar ao dashboard.
-            </CredenzaDescription>
-         </CredenzaHeader>
-         <CredenzaBody>
+            </DialogStackDescription>
+         </DialogStackHeader>
+         <div className="flex-1 overflow-y-auto px-4 py-4">
             {isLoading ? (
                <div className="flex flex-col gap-3">
                   {Array.from({ length: PAGE_SIZE }).map((_, i) => (
@@ -183,8 +183,8 @@ function AddInsightCredenza({
                   }}
                />
             )}
-         </CredenzaBody>
-      </>
+         </div>
+      </DialogStackContent>
    );
 }
 

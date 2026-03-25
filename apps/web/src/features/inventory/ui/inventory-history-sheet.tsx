@@ -1,9 +1,10 @@
 import { Badge } from "@packages/ui/components/badge";
 import {
-   CredenzaDescription,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
@@ -77,16 +78,16 @@ interface InventoryHistorySheetProps {
 
 export function InventoryHistorySheet({ product }: InventoryHistorySheetProps) {
    return (
-      <div className="space-y-4">
-         <CredenzaHeader>
-            <CredenzaTitle>Histórico de {product.name}</CredenzaTitle>
-            <CredenzaDescription>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>Histórico de {product.name}</DialogStackTitle>
+            <DialogStackDescription>
                Veja todas as movimentações deste produto.
-            </CredenzaDescription>
-         </CredenzaHeader>
+            </DialogStackDescription>
+         </DialogStackHeader>
          <Suspense
             fallback={
-               <div className="space-y-3">
+               <div className="flex flex-col gap-4">
                   {Array.from({ length: 4 }).map((_, i) => (
                      <Skeleton className="h-12 w-full" key={`skel-${i + 1}`} />
                   ))}
@@ -95,6 +96,6 @@ export function InventoryHistorySheet({ product }: InventoryHistorySheetProps) {
          >
             <HistoryList product={product} />
          </Suspense>
-      </div>
+      </DialogStackContent>
    );
 }

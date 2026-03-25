@@ -5,12 +5,11 @@ import {
 } from "@packages/ui/components/avatar";
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import {
    DropdownMenu,
    DropdownMenuContent,
@@ -237,35 +236,37 @@ function SidebarScopeSwitcherContent() {
          if (projectLimit !== null && teams.length >= projectLimit) {
             openCredenza({
                children: (
-                  <>
-                     <CredenzaHeader>
-                        <CredenzaTitle>Limite de espaços</CredenzaTitle>
-                        <CredenzaDescription>
+                  <DialogStackContent index={0}>
+                     <DialogStackHeader>
+                        <DialogStackTitle>Limite de espaços</DialogStackTitle>
+                        <DialogStackDescription>
                            Você está usando {projectCount} de {projectLimit}{" "}
                            espaços
-                        </CredenzaDescription>
-                     </CredenzaHeader>
-                     <CredenzaBody>
+                        </DialogStackDescription>
+                     </DialogStackHeader>
+                     <div className="flex-1 overflow-y-auto px-4 py-4">
                         <p className="text-sm text-muted-foreground">
                            Faça upgrade para o add-on Boost para criar espaços
                            ilimitados
                         </p>
-                     </CredenzaBody>
-                     <CredenzaFooter className="flex gap-2">
-                        <Button onClick={closeCredenza} variant="outline">
-                           Cancelar
-                        </Button>
-                        <Button asChild>
-                           <Link
-                              onClick={closeCredenza}
-                              params={{ slug, teamSlug }}
-                              to="/$slug/$teamSlug/billing"
-                           >
-                              Ver planos
-                           </Link>
-                        </Button>
-                     </CredenzaFooter>
-                  </>
+                     </div>
+                     <div className="border-t px-4 py-4">
+                        <div className="flex gap-2">
+                           <Button onClick={closeCredenza} variant="outline">
+                              Cancelar
+                           </Button>
+                           <Button asChild>
+                              <Link
+                                 onClick={closeCredenza}
+                                 params={{ slug, teamSlug }}
+                                 to="/$slug/$teamSlug/billing"
+                              >
+                                 Ver planos
+                              </Link>
+                           </Button>
+                        </div>
+                     </div>
+                  </DialogStackContent>
                ),
             });
             return;
