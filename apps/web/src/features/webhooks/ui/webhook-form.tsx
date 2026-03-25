@@ -1,9 +1,10 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaDescription,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import { Input } from "@packages/ui/components/input";
 import { Label } from "@packages/ui/components/label";
 import { MultiSelect } from "@packages/ui/components/multi-select";
@@ -125,19 +126,19 @@ export function WebhookForm({
    }
 
    return (
-      <div className="flex h-full flex-col">
-         <CredenzaHeader>
-            <CredenzaTitle>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>
                {mode === "create" ? "Criar webhook" : "Editar webhook"}
-            </CredenzaTitle>
-            <CredenzaDescription>
+            </DialogStackTitle>
+            <DialogStackDescription>
                Configure a URL e os eventos que serão entregues para este
                endpoint.
-            </CredenzaDescription>
-         </CredenzaHeader>
+            </DialogStackDescription>
+         </DialogStackHeader>
 
-         <div className="flex-1 overflow-y-auto space-y-6 py-6">
-            <div className="space-y-2 px-1">
+         <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
                <Label htmlFor="webhook-url">URL do endpoint</Label>
                <Input
                   id="webhook-url"
@@ -147,7 +148,7 @@ export function WebhookForm({
                />
             </div>
 
-            <div className="space-y-2 px-1">
+            <div className="flex flex-col gap-2">
                <Label htmlFor="webhook-description">Descrição</Label>
                <Textarea
                   id="webhook-description"
@@ -158,7 +159,7 @@ export function WebhookForm({
                />
             </div>
 
-            <div className="space-y-3 px-1">
+            <div className="flex flex-col gap-2">
                <div className="flex items-center justify-between">
                   <div>
                      <Label>Eventos</Label>
@@ -181,7 +182,7 @@ export function WebhookForm({
             </div>
 
             <div className="flex items-center justify-between rounded-lg border p-3 px-4">
-               <div className="space-y-1">
+               <div className="flex flex-col gap-2">
                   <Label className="flex items-center gap-2">
                      <Globe className="size-4 text-muted-foreground" />
                      Ativar endpoint
@@ -194,7 +195,7 @@ export function WebhookForm({
             </div>
          </div>
 
-         <div className="border-t pt-4 pb-2">
+         <div className="border-t px-4 py-4">
             <Button
                className="w-full"
                disabled={!isValid || isPending}
@@ -204,6 +205,6 @@ export function WebhookForm({
                {mode === "create" ? "Criar webhook" : "Salvar alterações"}
             </Button>
          </div>
-      </div>
+      </DialogStackContent>
    );
 }

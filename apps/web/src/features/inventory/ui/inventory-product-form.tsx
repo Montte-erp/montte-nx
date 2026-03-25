@@ -1,9 +1,10 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaDescription,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import { Input } from "@packages/ui/components/input";
 import { Label } from "@packages/ui/components/label";
 import { Textarea } from "@packages/ui/components/textarea";
@@ -79,17 +80,17 @@ export function InventoryProductForm({
    );
 
    return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>
                {mode === "create" ? "Novo produto" : "Editar produto"}
-            </CredenzaTitle>
-            <CredenzaDescription>
+            </DialogStackTitle>
+            <DialogStackDescription>
                Preencha as informações do produto.
-            </CredenzaDescription>
-         </CredenzaHeader>
-         <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="space-y-1.5">
+            </DialogStackDescription>
+         </DialogStackHeader>
+         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+            <div className="flex flex-col gap-2">
                <Label htmlFor="name">Nome do produto</Label>
                <Input
                   defaultValue={defaultValues?.name}
@@ -100,7 +101,7 @@ export function InventoryProductForm({
                />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="flex flex-col gap-2">
                <Label htmlFor="description">Descrição (opcional)</Label>
                <Textarea
                   defaultValue={defaultValues?.description ?? ""}
@@ -110,8 +111,8 @@ export function InventoryProductForm({
                />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-               <div className="space-y-1.5">
+            <div className="grid grid-cols-2 gap-4">
+               <div className="flex flex-col gap-2">
                   <Label htmlFor="baseUnit">Unidade base</Label>
                   <Input
                      defaultValue={defaultValues?.baseUnit ?? "un"}
@@ -121,7 +122,7 @@ export function InventoryProductForm({
                      required
                   />
                </div>
-               <div className="space-y-1.5">
+               <div className="flex flex-col gap-2">
                   <Label htmlFor="purchaseUnit">Unidade de compra</Label>
                   <Input
                      defaultValue={defaultValues?.purchaseUnit ?? "caixa"}
@@ -133,7 +134,7 @@ export function InventoryProductForm({
                </div>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="flex flex-col gap-2">
                <Label htmlFor="purchaseUnitFactor">
                   Fator de conversão (quantas unidades base por unidade de
                   compra)
@@ -152,7 +153,7 @@ export function InventoryProductForm({
                </p>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="flex flex-col gap-2">
                <Label htmlFor="sellingPrice">Preço de venda (opcional)</Label>
                <Input
                   defaultValue={defaultValues?.sellingPrice ?? ""}
@@ -170,6 +171,6 @@ export function InventoryProductForm({
                {mode === "create" ? "Criar produto" : "Salvar alterações"}
             </Button>
          </form>
-      </>
+      </DialogStackContent>
    );
 }

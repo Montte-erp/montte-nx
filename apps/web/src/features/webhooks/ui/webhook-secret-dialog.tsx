@@ -1,11 +1,10 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import { Input } from "@packages/ui/components/input";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
 import { AlertTriangle, Check, Copy } from "lucide-react";
@@ -25,15 +24,15 @@ export function WebhookSecretDialog({
    const copied = lastCopied === plaintextSecret;
 
    return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>Segredo do webhook criado</CredenzaTitle>
-            <CredenzaDescription>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>Segredo do webhook criado</DialogStackTitle>
+            <DialogStackDescription>
                Copie o segredo de assinatura do endpoint <strong>{url}</strong>.
                Ele só será exibido uma vez.
-            </CredenzaDescription>
-         </CredenzaHeader>
-         <CredenzaBody className="space-y-4">
+            </DialogStackDescription>
+         </DialogStackHeader>
+         <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
             <div className="flex items-center gap-2 rounded-lg border bg-muted/50 p-2">
                <Input
                   className="font-mono text-sm border-0 bg-transparent focus-visible:ring-0"
@@ -56,12 +55,12 @@ export function WebhookSecretDialog({
                   segurança para assinar eventos enviados pelo Montte.
                </p>
             </div>
-         </CredenzaBody>
-         <CredenzaFooter>
+         </div>
+         <div className="border-t px-4 py-4">
             <Button className="w-full" onClick={onClose}>
                Entendi, fechar
             </Button>
-         </CredenzaFooter>
-      </>
+         </div>
+      </DialogStackContent>
    );
 }
