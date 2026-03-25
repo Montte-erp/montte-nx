@@ -10,13 +10,11 @@ import {
 } from "@packages/ui/components/color-picker";
 import { Combobox } from "@packages/ui/components/combobox";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-   CredenzaClose,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import {
    Field,
    FieldError,
@@ -218,248 +216,257 @@ export function CategoryForm({
             form.handleSubmit();
          }}
       >
-         <CredenzaHeader>
-            <CredenzaTitle>
-               {isCreate ? "Nova Categoria" : "Editar Categoria"}
-            </CredenzaTitle>
-            <CredenzaDescription>
-               Contas totalizadoras somam subcontas. Os lançamentos só
-               consideram subcontas.
-            </CredenzaDescription>
-         </CredenzaHeader>
+         <DialogStackContent index={0}>
+            <DialogStackHeader>
+               <DialogStackTitle>
+                  {isCreate ? "Nova Categoria" : "Editar Categoria"}
+               </DialogStackTitle>
+               <DialogStackDescription>
+                  Contas totalizadoras somam subcontas. Os lançamentos só
+                  consideram subcontas.
+               </DialogStackDescription>
+            </DialogStackHeader>
 
-         <CredenzaBody>
-            <FieldGroup>
-               <Field>
-                  <FieldLabel>Tipo de Conta *</FieldLabel>
-                  <Select
-                     disabled={!isCreate}
-                     onValueChange={(v) => setAccountType(v as AccountType)}
-                     value={accountType}
-                  >
-                     <SelectTrigger>
-                        <SelectValue placeholder="Selecione..." />
-                     </SelectTrigger>
-                     <SelectContent>
-                        <SelectItem value="totalizadora">
-                           Totalizadora
-                        </SelectItem>
-                        <SelectItem value="subconta">Subconta</SelectItem>
-                     </SelectContent>
-                  </Select>
-               </Field>
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+               <FieldGroup>
+                  <Field>
+                     <FieldLabel>Tipo de Conta *</FieldLabel>
+                     <Select
+                        disabled={!isCreate}
+                        onValueChange={(v) => setAccountType(v as AccountType)}
+                        value={accountType}
+                     >
+                        <SelectTrigger>
+                           <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                           <SelectItem value="totalizadora">
+                              Totalizadora
+                           </SelectItem>
+                           <SelectItem value="subconta">Subconta</SelectItem>
+                        </SelectContent>
+                     </Select>
+                  </Field>
 
-               <form.Field name="name">
-                  {(field) => {
-                     const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
-                     return (
-                        <Field data-invalid={isInvalid}>
-                           <FieldLabel>Nome *</FieldLabel>
-                           <Input
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="Ex: Alimentação, Transporte"
-                              value={field.state.value}
-                           />
-                           {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                           )}
-                        </Field>
-                     );
-                  }}
-               </form.Field>
-
-               <>
-                  <form.Field name="type">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>Tipo</FieldLabel>
-                           <Select
-                              onValueChange={(v) =>
-                                 field.handleChange(v as "income" | "expense")
-                              }
-                              value={field.state.value}
-                           >
-                              <SelectTrigger>
-                                 <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                 <SelectItem value="expense">
-                                    Despesa
-                                 </SelectItem>
-                                 <SelectItem value="income">Receita</SelectItem>
-                              </SelectContent>
-                           </Select>
-                        </Field>
-                     )}
-                  </form.Field>
-
-                  <div className="grid grid-cols-[1fr_auto] gap-4">
-                     <form.Field name="icon">
-                        {(field) => (
-                           <Field>
-                              <FieldLabel>Ícone</FieldLabel>
-                              <Combobox
-                                 className="w-full"
-                                 emptyMessage="Ícone não encontrado."
-                                 onValueChange={(v) =>
-                                    field.handleChange(v || "")
+                  <form.Field name="name">
+                     {(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           !field.state.meta.isValid;
+                        return (
+                           <Field data-invalid={isInvalid}>
+                              <FieldLabel>Nome *</FieldLabel>
+                              <Input
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
                                  }
-                                 options={ICON_OPTIONS}
-                                 placeholder="Selecionar ícone..."
-                                 renderOption={(opt) => (
-                                    <IconOption
-                                       label={opt.label}
-                                       value={opt.value}
-                                    />
-                                 )}
-                                 renderSelected={(opt) => (
-                                    <IconOption
-                                       label={opt.label}
-                                       value={opt.value}
-                                    />
-                                 )}
-                                 searchPlaceholder="Buscar ícone..."
+                                 placeholder="Ex: Alimentação, Transporte"
                                  value={field.state.value}
                               />
+                              {isInvalid && (
+                                 <FieldError errors={field.state.meta.errors} />
+                              )}
+                           </Field>
+                        );
+                     }}
+                  </form.Field>
+
+                  <>
+                     <form.Field name="type">
+                        {(field) => (
+                           <Field>
+                              <FieldLabel>Tipo</FieldLabel>
+                              <Select
+                                 onValueChange={(v) =>
+                                    field.handleChange(
+                                       v as "income" | "expense",
+                                    )
+                                 }
+                                 value={field.state.value}
+                              >
+                                 <SelectTrigger>
+                                    <SelectValue />
+                                 </SelectTrigger>
+                                 <SelectContent>
+                                    <SelectItem value="expense">
+                                       Despesa
+                                    </SelectItem>
+                                    <SelectItem value="income">
+                                       Receita
+                                    </SelectItem>
+                                 </SelectContent>
+                              </Select>
                            </Field>
                         )}
                      </form.Field>
 
-                     <form.Field name="color">
-                        {(field) => {
-                           const isInvalid =
-                              field.state.meta.isTouched &&
-                              !field.state.meta.isValid;
-                           return (
-                              <Field data-invalid={isInvalid}>
-                                 <FieldLabel>Cor</FieldLabel>
-                                 <Popover>
-                                    <PopoverTrigger asChild>
-                                       <Button
-                                          aria-invalid={isInvalid || undefined}
-                                          className="w-full flex gap-2 justify-start"
-                                          type="button"
-                                          variant="outline"
-                                       >
-                                          <div
-                                             className="w-4 h-4 rounded border border-border shrink-0"
-                                             style={{
-                                                backgroundColor:
-                                                   field.state.value,
-                                             }}
-                                          />
-                                          {field.state.value}
-                                       </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                       align="start"
-                                       className="w-64 rounded-md border bg-background"
-                                    >
-                                       <div className="flex flex-col gap-4">
-                                          <div className="grid grid-cols-8 gap-1">
-                                             {PRESET_COLORS.map((color) => (
-                                                <button
-                                                   className="w-6 h-6 rounded-full border border-border transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                                   key={color}
-                                                   onClick={() =>
-                                                      field.handleChange(color)
-                                                   }
-                                                   style={{
-                                                      backgroundColor: color,
-                                                   }}
-                                                   type="button"
-                                                />
-                                             ))}
-                                          </div>
-                                          <ColorPicker
-                                             className="flex flex-col gap-4"
-                                             onChange={(rgba) => {
-                                                if (Array.isArray(rgba)) {
-                                                   field.handleChange(
-                                                      Color.rgb(
-                                                         rgba[0],
-                                                         rgba[1],
-                                                         rgba[2],
-                                                      ).hex(),
-                                                   );
-                                                }
-                                             }}
-                                             value={
-                                                field.state.value || "#000000"
-                                             }
-                                          >
-                                             <div className="h-24">
-                                                <ColorPickerSelection />
-                                             </div>
-                                             <div className="flex items-center gap-4">
-                                                <ColorPickerEyeDropper />
-                                                <div className="grid w-full gap-1">
-                                                   <ColorPickerHue />
-                                                   <ColorPickerAlpha />
-                                                </div>
-                                             </div>
-                                             <div className="flex items-center gap-2">
-                                                <ColorPickerOutput />
-                                                <ColorPickerFormat />
-                                             </div>
-                                          </ColorPicker>
-                                       </div>
-                                    </PopoverContent>
-                                 </Popover>
-                                 {isInvalid && (
-                                    <FieldError
-                                       errors={field.state.meta.errors}
-                                    />
-                                 )}
+                     <div className="grid grid-cols-[1fr_auto] gap-4">
+                        <form.Field name="icon">
+                           {(field) => (
+                              <Field>
+                                 <FieldLabel>Ícone</FieldLabel>
+                                 <Combobox
+                                    className="w-full"
+                                    emptyMessage="Ícone não encontrado."
+                                    onValueChange={(v) =>
+                                       field.handleChange(v || "")
+                                    }
+                                    options={ICON_OPTIONS}
+                                    placeholder="Selecionar ícone..."
+                                    renderOption={(opt) => (
+                                       <IconOption
+                                          label={opt.label}
+                                          value={opt.value}
+                                       />
+                                    )}
+                                    renderSelected={(opt) => (
+                                       <IconOption
+                                          label={opt.label}
+                                          value={opt.value}
+                                       />
+                                    )}
+                                    searchPlaceholder="Buscar ícone..."
+                                    value={field.state.value}
+                                 />
                               </Field>
-                           );
-                        }}
-                     </form.Field>
-                  </div>
-               </>
+                           )}
+                        </form.Field>
 
-               <form.Field name="notes">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel>Outras informações</FieldLabel>
-                        <Textarea
-                           onChange={(e) => field.handleChange(e.target.value)}
-                           placeholder=""
-                           rows={3}
-                           value={field.state.value}
-                        />
-                     </Field>
-                  )}
-               </form.Field>
-            </FieldGroup>
-         </CredenzaBody>
+                        <form.Field name="color">
+                           {(field) => {
+                              const isInvalid =
+                                 field.state.meta.isTouched &&
+                                 !field.state.meta.isValid;
+                              return (
+                                 <Field data-invalid={isInvalid}>
+                                    <FieldLabel>Cor</FieldLabel>
+                                    <Popover>
+                                       <PopoverTrigger asChild>
+                                          <Button
+                                             aria-invalid={
+                                                isInvalid || undefined
+                                             }
+                                             className="w-full flex gap-2 justify-start"
+                                             type="button"
+                                             variant="outline"
+                                          >
+                                             <div
+                                                className="w-4 h-4 rounded border border-border shrink-0"
+                                                style={{
+                                                   backgroundColor:
+                                                      field.state.value,
+                                                }}
+                                             />
+                                             {field.state.value}
+                                          </Button>
+                                       </PopoverTrigger>
+                                       <PopoverContent
+                                          align="start"
+                                          className="w-64 rounded-md border bg-background"
+                                       >
+                                          <div className="flex flex-col gap-4">
+                                             <div className="grid grid-cols-8 gap-1">
+                                                {PRESET_COLORS.map((color) => (
+                                                   <button
+                                                      className="w-6 h-6 rounded-full border border-border transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                      key={color}
+                                                      onClick={() =>
+                                                         field.handleChange(
+                                                            color,
+                                                         )
+                                                      }
+                                                      style={{
+                                                         backgroundColor: color,
+                                                      }}
+                                                      type="button"
+                                                   />
+                                                ))}
+                                             </div>
+                                             <ColorPicker
+                                                className="flex flex-col gap-4"
+                                                onChange={(rgba) => {
+                                                   if (Array.isArray(rgba)) {
+                                                      field.handleChange(
+                                                         Color.rgb(
+                                                            rgba[0],
+                                                            rgba[1],
+                                                            rgba[2],
+                                                         ).hex(),
+                                                      );
+                                                   }
+                                                }}
+                                                value={
+                                                   field.state.value ||
+                                                   "#000000"
+                                                }
+                                             >
+                                                <div className="h-24">
+                                                   <ColorPickerSelection />
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                   <ColorPickerEyeDropper />
+                                                   <div className="grid w-full gap-1">
+                                                      <ColorPickerHue />
+                                                      <ColorPickerAlpha />
+                                                   </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                   <ColorPickerOutput />
+                                                   <ColorPickerFormat />
+                                                </div>
+                                             </ColorPicker>
+                                          </div>
+                                       </PopoverContent>
+                                    </Popover>
+                                    {isInvalid && (
+                                       <FieldError
+                                          errors={field.state.meta.errors}
+                                       />
+                                    )}
+                                 </Field>
+                              );
+                           }}
+                        </form.Field>
+                     </div>
+                  </>
 
-         <CredenzaFooter className="flex gap-2">
-            <CredenzaClose asChild>
-               <Button type="button" variant="outline">
-                  Cancelar
-               </Button>
-            </CredenzaClose>
-            <form.Subscribe selector={(state) => state}>
-               {(state) => (
-                  <Button
-                     disabled={
-                        !state.canSubmit || state.isSubmitting || isPending
-                     }
-                     type="submit"
-                  >
-                     {(state.isSubmitting || isPending) && (
-                        <Spinner className="size-4 mr-2" />
+                  <form.Field name="notes">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel>Outras informações</FieldLabel>
+                           <Textarea
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                              placeholder=""
+                              rows={3}
+                              value={field.state.value}
+                           />
+                        </Field>
                      )}
-                     Salvar
-                  </Button>
-               )}
-            </form.Subscribe>
-         </CredenzaFooter>
+                  </form.Field>
+               </FieldGroup>
+            </div>
+
+            <div className="border-t px-4 py-4">
+               <form.Subscribe selector={(state) => state}>
+                  {(state) => (
+                     <Button
+                        disabled={
+                           !state.canSubmit || state.isSubmitting || isPending
+                        }
+                        type="submit"
+                     >
+                        {(state.isSubmitting || isPending) && (
+                           <Spinner className="size-4 mr-2" />
+                        )}
+                        Salvar
+                     </Button>
+                  )}
+               </form.Subscribe>
+            </div>
+         </DialogStackContent>
       </form>
    );
 }
