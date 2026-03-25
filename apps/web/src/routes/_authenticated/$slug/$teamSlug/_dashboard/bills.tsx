@@ -26,8 +26,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
    Check,
    FileText,
-   LayoutGrid,
-   LayoutList,
    MoreHorizontal,
    Pencil,
    Trash2,
@@ -43,19 +41,9 @@ import {
    computeDisplayStatus,
 } from "@/features/bills/ui/bills-columns";
 import { BillForm } from "@/features/bills/ui/bills-form";
-import {
-   useViewSwitch,
-   type ViewConfig,
-} from "@/features/view-switch/hooks/use-view-switch";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
-
-const BILL_VIEWS: [ViewConfig<"table" | "card">, ViewConfig<"table" | "card">] =
-   [
-      { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
-      { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
-   ];
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/bills",
@@ -145,10 +133,9 @@ function BillsSummary({ items }: BillsSummaryProps) {
 
 interface BillsListProps {
    type: "payable" | "receivable";
-   view: "table" | "card";
 }
 
-function BillsList({ type, view }: BillsListProps) {
+function BillsList({ type }: BillsListProps) {
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
@@ -316,7 +303,6 @@ function BillsList({ type, view }: BillsListProps) {
                   </>
                );
             }}
-            view={view}
          />
       </div>
    );
@@ -327,17 +313,11 @@ function BillsList({ type, view }: BillsListProps) {
 // =============================================================================
 
 function BillsPage() {
-   const { currentView, setView, views } = useViewSwitch(
-      "finance:bills:view",
-      BILL_VIEWS,
-   );
-
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
             description="Gerencie suas contas a pagar e a receber"
             title="Contas"
-            viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <Tabs defaultValue="payable">
             <TabsList>
@@ -346,12 +326,12 @@ function BillsPage() {
             </TabsList>
             <TabsContent className="mt-4" value="payable">
                <Suspense fallback={<BillsSkeleton />}>
-                  <BillsList type="payable" view={currentView} />
+                  <BillsList type="payable" />
                </Suspense>
             </TabsContent>
             <TabsContent className="mt-4" value="receivable">
                <Suspense fallback={<BillsSkeleton />}>
-                  <BillsList type="receivable" view={currentView} />
+                  <BillsList type="receivable" />
                </Suspense>
             </TabsContent>
          </Tabs>

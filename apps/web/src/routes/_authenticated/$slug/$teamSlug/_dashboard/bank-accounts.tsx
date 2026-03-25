@@ -10,14 +10,7 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-   Landmark,
-   LayoutGrid,
-   LayoutList,
-   Pencil,
-   Plus,
-   Trash2,
-} from "lucide-react";
+import { Landmark, Pencil, Plus, Trash2 } from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
@@ -26,10 +19,6 @@ import {
    buildBankAccountColumns,
 } from "@/features/bank-accounts/ui/bank-accounts-columns";
 import { BankAccountForm } from "@/features/bank-accounts/ui/bank-accounts-form";
-import {
-   useViewSwitch,
-   type ViewConfig,
-} from "@/features/view-switch/hooks/use-view-switch";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -44,14 +33,6 @@ export const Route = createFileRoute(
    },
    component: BankAccountsPage,
 });
-
-const BANK_ACCOUNT_VIEWS: [
-   ViewConfig<"table" | "card">,
-   ViewConfig<"table" | "card">,
-] = [
-   { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
-   { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
-];
 
 // =============================================================================
 // Skeleton
@@ -71,11 +52,7 @@ function BankAccountsSkeleton() {
 // List
 // =============================================================================
 
-interface BankAccountsListProps {
-   view: "table" | "card";
-}
-
-function BankAccountsList({ view }: BankAccountsListProps) {
+function BankAccountsList() {
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
@@ -168,7 +145,6 @@ function BankAccountsList({ view }: BankAccountsListProps) {
                </Button>
             </>
          )}
-         view={view}
       />
    );
 }
@@ -179,10 +155,6 @@ function BankAccountsList({ view }: BankAccountsListProps) {
 
 function BankAccountsPage() {
    const { openCredenza, closeCredenza } = useCredenza();
-   const { currentView, setView, views } = useViewSwitch(
-      "finance:bank-accounts:view",
-      BANK_ACCOUNT_VIEWS,
-   );
 
    function handleCreate() {
       openCredenza({
@@ -201,10 +173,9 @@ function BankAccountsPage() {
             }
             description="Gerencie suas contas bancárias e saldos"
             title="Contas Bancárias"
-            viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <Suspense fallback={<BankAccountsSkeleton />}>
-            <BankAccountsList view={currentView} />
+            <BankAccountsList />
          </Suspense>
       </main>
    );

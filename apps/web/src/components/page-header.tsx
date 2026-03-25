@@ -3,7 +3,6 @@ import {
    DropdownMenu,
    DropdownMenuContent,
    DropdownMenuItem,
-   DropdownMenuSeparator,
    DropdownMenuTrigger,
 } from "@packages/ui/components/dropdown-menu";
 import { Input } from "@packages/ui/components/input";
@@ -19,16 +18,9 @@ import {
    useState,
 } from "react";
 import { ContextPanelHeaderActions } from "@/features/context-panel/context-panel-header-actions";
-import type {
-   PageViewSwitchConfig,
-   PanelAction,
-} from "@/features/context-panel/context-panel-store";
+import type { PanelAction } from "@/features/context-panel/context-panel-store";
 import { contextPanelStore } from "@/features/context-panel/context-panel-store";
-import {
-   usePageActions,
-   usePageViewSwitch,
-} from "@/features/context-panel/use-context-panel";
-import { ViewSwitchDropdown } from "@/features/view-switch/ui/view-switch-dropdown";
+import { usePageActions } from "@/features/context-panel/use-context-panel";
 
 export interface PageHeaderProps {
    title: string;
@@ -41,8 +33,6 @@ export interface PageHeaderProps {
    actions?: ReactNode;
    /** Structured actions that move into the context panel info tab when the panel is open. */
    panelActions?: PanelAction[];
-   /** View switch config — shown as compact icon button in the header when panel is closed, shown as full labeled action in panel content when panel is open. */
-   panelViewSwitch?: PageViewSwitchConfig;
    className?: string;
 }
 
@@ -169,19 +159,16 @@ export function PageHeader({
    descriptionPlaceholder = "Adicionar descrição...",
    actions,
    panelActions,
-   panelViewSwitch,
    className,
 }: PageHeaderProps) {
    // Selector — only re-renders when isOpen changes, not on pageActions store updates
    const isOpen = useStore(contextPanelStore, (s) => s.isOpen);
-   // Register panel actions and view switch in the store so InfoContent can display them
+   // Register panel actions in the store so InfoContent can display them
    usePageActions(panelActions ?? null);
-   usePageViewSwitch(panelViewSwitch ?? null);
    const hasEditableDescription = editable && onDescriptionChange != null;
    const showDescription = description != null || hasEditableDescription;
 
-   const hasMobileOverflow =
-      !isOpen && ((panelActions?.length ?? 0) > 0 || panelViewSwitch);
+   const hasMobileOverflow = !isOpen && (panelActions?.length ?? 0) > 0;
 
    return (
       <header
@@ -206,21 +193,6 @@ export function PageHeader({
                      </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                     {panelViewSwitch?.options.map((v) => (
-                        <DropdownMenuItem
-                           key={v.id}
-                           onClick={() => panelViewSwitch.onViewChange(v.id)}
-                        >
-                           {v.icon}
-                           {v.label}
-                           {panelViewSwitch.currentView === v.id && (
-                              <Check className="size-3.5 ml-auto" />
-                           )}
-                        </DropdownMenuItem>
-                     ))}
-                     {panelViewSwitch && panelActions?.length ? (
-                        <DropdownMenuSeparator />
-                     ) : null}
                      {panelActions?.map((action) => (
                         <DropdownMenuItem
                            key={action.label}
@@ -270,13 +242,6 @@ export function PageHeader({
 
          {/* Desktop: actions */}
          <div className="hidden sm:flex items-center gap-2 shrink-0">
-            {!isOpen && panelViewSwitch && (
-               <ViewSwitchDropdown
-                  currentView={panelViewSwitch.currentView}
-                  onViewChange={panelViewSwitch.onViewChange}
-                  views={panelViewSwitch.options}
-               />
-            )}
             {!isOpen &&
                panelActions?.map((action) => (
                   <Button

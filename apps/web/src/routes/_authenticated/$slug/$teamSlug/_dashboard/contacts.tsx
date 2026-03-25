@@ -15,14 +15,7 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-   LayoutGrid,
-   LayoutList,
-   Pencil,
-   Plus,
-   Trash2,
-   Users,
-} from "lucide-react";
+import { Pencil, Plus, Trash2, Users } from "lucide-react";
 
 import { Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -37,10 +30,6 @@ import {
    type ContactRow,
 } from "@/features/contacts/ui/contacts-columns";
 import { ContactForm } from "@/features/contacts/ui/contacts-form";
-import {
-   useViewSwitch,
-   type ViewConfig,
-} from "@/features/view-switch/hooks/use-view-switch";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -53,14 +42,6 @@ export const Route = createFileRoute(
    },
    component: ContactsPage,
 });
-
-const CONTACT_VIEWS: [
-   ViewConfig<"table" | "card">,
-   ViewConfig<"table" | "card">,
-] = [
-   { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
-   { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
-];
 
 const CONTACTS_BANNER: EarlyAccessBannerTemplate = {
    badgeLabel: "Contatos",
@@ -107,11 +88,10 @@ const TYPE_FILTER_LABELS: Record<TypeFilter, string> = {
 // =============================================================================
 
 interface ContactsListProps {
-   view: "table" | "card";
    typeFilter: TypeFilter;
 }
 
-function ContactsList({ view, typeFilter }: ContactsListProps) {
+function ContactsList({ typeFilter }: ContactsListProps) {
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const {
@@ -234,7 +214,6 @@ function ContactsList({ view, typeFilter }: ContactsListProps) {
                </>
             )}
             rowSelection={rowSelection}
-            view={view}
          />
          <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
             <SelectionActionButton
@@ -255,10 +234,6 @@ function ContactsList({ view, typeFilter }: ContactsListProps) {
 
 function ContactsPage() {
    const { openCredenza, closeCredenza } = useCredenza();
-   const { currentView, setView, views } = useViewSwitch(
-      "finance:contacts:view",
-      CONTACT_VIEWS,
-   );
    const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
 
    const handleCreate = useCallback(() => {
@@ -278,7 +253,6 @@ function ContactsPage() {
             }
             description="Gerencie clientes e fornecedores"
             title="Contatos"
-            viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <EarlyAccessBanner template={CONTACTS_BANNER} />
 
@@ -296,7 +270,7 @@ function ContactsPage() {
          </div>
 
          <Suspense fallback={<ContactsSkeleton />}>
-            <ContactsList typeFilter={typeFilter} view={currentView} />
+            <ContactsList typeFilter={typeFilter} />
          </Suspense>
       </main>
    );

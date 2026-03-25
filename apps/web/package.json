@@ -92,7 +92,7 @@
       "@vitejs/plugin-react": "catalog:vite",
       "babel-plugin-react-compiler": "catalog:development",
       "jsdom": "catalog:testing",
-      "nitro": "^3.0.260311-beta",
+      "nitro": "3.0.260311-beta",
       "typescript": "catalog:development",
       "vite": "catalog:vite",
       "vitest": "catalog:testing",

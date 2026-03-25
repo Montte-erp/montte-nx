@@ -15,14 +15,7 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-   CreditCard,
-   LayoutGrid,
-   LayoutList,
-   Pencil,
-   Plus,
-   Trash2,
-} from "lucide-react";
+import { CreditCard, Pencil, Plus, Trash2 } from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
@@ -31,10 +24,6 @@ import {
    type CreditCardRow,
 } from "@/features/credit-cards/ui/credit-cards-columns";
 import { CreditCardForm } from "@/features/credit-cards/ui/credit-cards-form";
-import {
-   useViewSwitch,
-   type ViewConfig,
-} from "@/features/view-switch/hooks/use-view-switch";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -53,14 +42,6 @@ export const Route = createFileRoute(
    component: CreditCardsPage,
 });
 
-const CREDIT_CARD_VIEWS: [
-   ViewConfig<"table" | "card">,
-   ViewConfig<"table" | "card">,
-] = [
-   { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
-   { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
-];
-
 function CreditCardsSkeleton() {
    return (
       <div className="space-y-3">
@@ -71,11 +52,7 @@ function CreditCardsSkeleton() {
    );
 }
 
-interface CreditCardsListProps {
-   view: "table" | "card";
-}
-
-function CreditCardsList({ view }: CreditCardsListProps) {
+function CreditCardsList() {
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const {
@@ -197,7 +174,6 @@ function CreditCardsList({ view }: CreditCardsListProps) {
                </>
             )}
             rowSelection={rowSelection}
-            view={view}
          />
          <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
             <SelectionActionButton
@@ -214,10 +190,6 @@ function CreditCardsList({ view }: CreditCardsListProps) {
 
 function CreditCardsPage() {
    const { openCredenza, closeCredenza } = useCredenza();
-   const { currentView, setView, views } = useViewSwitch(
-      "finance:credit-cards:view",
-      CREDIT_CARD_VIEWS,
-   );
 
    function handleCreate() {
       openCredenza({
@@ -240,10 +212,9 @@ function CreditCardsPage() {
             }
             description="Gerencie seus cartões de crédito"
             title="Cartões de Crédito"
-            viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <Suspense fallback={<CreditCardsSkeleton />}>
-            <CreditCardsList view={currentView} />
+            <CreditCardsList />
          </Suspense>
       </main>
    );

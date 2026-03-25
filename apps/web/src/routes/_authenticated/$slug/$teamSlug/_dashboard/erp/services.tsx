@@ -23,8 +23,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
    Briefcase,
    Download,
-   LayoutGrid,
-   LayoutList,
    Pencil,
    Plus,
    Search,
@@ -46,21 +44,9 @@ import {
 } from "@/features/services/ui/services-columns";
 import { ServiceForm } from "@/features/services/ui/services-form";
 import { exportServicesCsv } from "@/features/services/utils/export-services-csv";
-import {
-   useViewSwitch,
-   type ViewConfig,
-} from "@/features/view-switch/hooks/use-view-switch";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
-
-const SERVICE_VIEWS: [
-   ViewConfig<"table" | "card">,
-   ViewConfig<"table" | "card">,
-] = [
-   { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
-   { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
-];
 
 const SERVICES_BANNER: EarlyAccessBannerTemplate = {
    badgeLabel: "Serviços",
@@ -180,13 +166,7 @@ function ServiceFilters({
 // List
 // =============================================================================
 
-function ServicesList({
-   view,
-   filters,
-}: {
-   view: "table" | "card";
-   filters: FiltersState;
-}) {
+function ServicesList({ filters }: { filters: FiltersState }) {
    const { data: servicesList } = useSuspenseQuery(
       orpc.services.getAll.queryOptions({}),
    );
@@ -296,7 +276,6 @@ function ServicesList({
                      </Button>
                   </>
                )}
-               view={view}
             />
          </TooltipProvider>
       </div>
@@ -309,10 +288,6 @@ function ServicesList({
 
 function ServicesPage() {
    const { openCredenza, closeCredenza } = useCredenza();
-   const { currentView, setView, views } = useViewSwitch(
-      "erp:services:view",
-      SERVICE_VIEWS,
-   );
 
    const [filters, setFilters] = useState<FiltersState>({
       search: "",
@@ -372,7 +347,6 @@ function ServicesPage() {
             }
             description="Gerencie o catálogo de serviços"
             title="Serviços"
-            viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <ServicesAnalyticsHeader />
          <EarlyAccessBanner template={SERVICES_BANNER} />
@@ -382,7 +356,7 @@ function ServicesPage() {
             onChange={setFilters}
          />
          <Suspense fallback={<ServicesSkeleton />}>
-            <ServicesList filters={filters} view={currentView} />
+            <ServicesList filters={filters} />
          </Suspense>
       </main>
    );

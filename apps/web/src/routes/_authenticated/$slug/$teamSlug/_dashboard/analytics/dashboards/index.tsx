@@ -15,26 +15,15 @@ import {
 } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import {
-   Home,
-   LayoutDashboard,
-   LayoutGrid,
-   LayoutList,
-   Plus,
-} from "lucide-react";
+import { Home, LayoutDashboard, Plus } from "lucide-react";
 import { Suspense, useMemo } from "react";
 import { PageHeader } from "@/components/page-header";
-import { DashboardListCard } from "@/features/analytics/ui/dashboard-list-card";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
 import { ContextPanelAction } from "@/features/context-panel/context-panel-info";
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
-import {
-   useViewSwitch,
-   type ViewConfig,
-} from "@/features/view-switch/hooks/use-view-switch";
 import { orpc } from "@/integrations/orpc/client";
 
 const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
@@ -73,18 +62,6 @@ interface DashboardRow {
 }
 
 // ---------------------------------------------------------------------------
-// View config
-// ---------------------------------------------------------------------------
-
-const DASHBOARD_VIEWS: [
-   ViewConfig<"card" | "table">,
-   ViewConfig<"card" | "table">,
-] = [
-   { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
-   { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
-];
-
-// ---------------------------------------------------------------------------
 // Skeleton
 // ---------------------------------------------------------------------------
 
@@ -102,11 +79,7 @@ function DashboardsPageSkeleton() {
 // List
 // ---------------------------------------------------------------------------
 
-interface DashboardsListProps {
-   view: "card" | "table";
-}
-
-function DashboardsList({ view }: DashboardsListProps) {
+function DashboardsList() {
    const { slug, teamSlug } = Route.useParams();
    const queryClient = useQueryClient();
 
@@ -212,49 +185,27 @@ function DashboardsList({ view }: DashboardsListProps) {
       );
    }
 
-   if (view === "table") {
-      return (
-         <DataTable
-            columns={columns}
-            data={dashboards as DashboardRow[]}
-            getRowId={(row) => row.id}
-            renderActions={({ row }) => {
-               const d = row.original;
-               if (d.isDefault) return null;
-               return (
-                  <Button
-                     disabled={setAsHomeMutation.isPending}
-                     onClick={() => setAsHomeMutation.mutate({ id: d.id })}
-                     size="icon"
-                     variant="ghost"
-                  >
-                     <Home className="size-4" />
-                     <span className="sr-only">Definir como Home</span>
-                  </Button>
-               );
-            }}
-         />
-      );
-   }
-
    return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-         {dashboards.map((dashboard) => (
-            <DashboardListCard
-               description={dashboard.description}
-               id={dashboard.id}
-               isDefault={dashboard.isDefault}
-               key={dashboard.id}
-               name={dashboard.name}
-               slug={slug}
-               teamSlug={teamSlug}
-               tileCount={
-                  Array.isArray(dashboard.tiles) ? dashboard.tiles.length : 0
-               }
-               updatedAt={dashboard.updatedAt.toString()}
-            />
-         ))}
-      </div>
+      <DataTable
+         columns={columns}
+         data={dashboards as DashboardRow[]}
+         getRowId={(row) => row.id}
+         renderActions={({ row }) => {
+            const d = row.original;
+            if (d.isDefault) return null;
+            return (
+               <Button
+                  disabled={setAsHomeMutation.isPending}
+                  onClick={() => setAsHomeMutation.mutate({ id: d.id })}
+                  size="icon"
+                  variant="ghost"
+               >
+                  <Home className="size-4" />
+                  <span className="sr-only">Definir como Home</span>
+               </Button>
+            );
+         }}
+      />
    );
 }
 
@@ -263,11 +214,6 @@ function DashboardsList({ view }: DashboardsListProps) {
 // ---------------------------------------------------------------------------
 
 function DashboardsPage() {
-   const { currentView, setView, views } = useViewSwitch(
-      "analytics:dashboards:view",
-      DASHBOARD_VIEWS,
-   );
-
    useContextPanelInfo(
       <ContextPanel>
          <ContextPanelHeader>
@@ -295,16 +241,11 @@ function DashboardsPage() {
                </Button>
             }
             description="Painéis personalizados com seus insights"
-            panelViewSwitch={{
-               options: views,
-               currentView,
-               onViewChange: setView,
-            }}
             title="Dashboards"
          />
          <EarlyAccessBanner template={ANALYTICS_BANNER} />
          <Suspense fallback={<DashboardsPageSkeleton />}>
-            <DashboardsList view={currentView} />
+            <DashboardsList />
          </Suspense>
       </main>
    );

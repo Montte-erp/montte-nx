@@ -1,8 +1,5 @@
 import type { ReactNode } from "react";
-import type {
-   PageViewSwitchConfig,
-   PanelAction,
-} from "@/features/context-panel/context-panel-store";
+import type { PanelAction } from "@/features/context-panel/context-panel-store";
 import { PageHeader } from "./page-header";
 
 interface DefaultHeaderProps {
@@ -11,8 +8,6 @@ interface DefaultHeaderProps {
    actions?: ReactNode;
    /** Secondary actions shown below the title (e.g., filter chips) */
    secondaryActions?: ReactNode;
-   /** View switch config — shown as compact icon button in header when panel is closed, shown as full labeled action in panel content when open. */
-   viewSwitch?: PageViewSwitchConfig;
    /** Structured actions that move into the context panel info tab as full-width items. */
    panelActions?: PanelAction[];
 }
@@ -22,7 +17,6 @@ export function DefaultHeader({
    description,
    actions,
    secondaryActions,
-   viewSwitch,
    panelActions,
 }: DefaultHeaderProps) {
    return (
@@ -31,7 +25,6 @@ export function DefaultHeader({
             actions={actions}
             description={description}
             panelActions={panelActions}
-            panelViewSwitch={viewSwitch}
             title={title}
          />
          {secondaryActions != null && (

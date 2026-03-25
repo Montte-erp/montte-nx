@@ -48,15 +48,6 @@ import { useCallback, useMemo, useRef, useState } from "react";
 
 import { cn } from "../lib/utils";
 import { Button } from "./button";
-import {
-   Card,
-   CardAction,
-   CardContent,
-   CardDescription,
-   CardFooter,
-   CardHeader,
-   CardTitle,
-} from "./card";
 import { Checkbox } from "./checkbox";
 import {
    DropdownMenu,
@@ -114,7 +105,6 @@ interface DataTableProps<TData, TValue> {
    getRowId?: (row: TData) => string;
    columnVisibilityKey?: string;
    renderActions?: (props: { row: Row<TData> }) => React.ReactNode;
-   view?: "table" | "card";
    reorderColumns?: boolean;
    reorderRows?: boolean;
    onRowOrderChange?: (data: TData[]) => void;
@@ -483,7 +473,6 @@ export function DataTable<TData, TValue>({
    getRowId,
    columnVisibilityKey,
    renderActions,
-   view = "table",
    reorderColumns = false,
    reorderRows = false,
    onRowOrderChange,
@@ -660,130 +649,6 @@ export function DataTable<TData, TValue>({
             onRowOrderChange?.(arrayMove([...data], oldIndex, newIndex));
          }
       }
-   }
-
-   // --- Card layout ---
-   if (view === "card") {
-      return (
-         <div className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-               <div className="flex items-center gap-2">
-                  {enableRowSelection && (
-                     <>
-                        <Checkbox
-                           aria-label="Selecionar todos"
-                           checked={
-                              table.getIsAllPageRowsSelected() ||
-                              (table.getIsSomePageRowsSelected() &&
-                                 "indeterminate")
-                           }
-                           onCheckedChange={(value) =>
-                              table.toggleAllPageRowsSelected(!!value)
-                           }
-                        />
-                        <span className="text-sm text-muted-foreground">
-                           Selecionar todos
-                        </span>
-                     </>
-                  )}
-               </div>
-               {columnVisibilityKey && (
-                  <ColumnVisibilityToggle
-                     columnVisibility={columnVisibility}
-                     onColumnVisibilityChange={handleColumnVisibilityChange}
-                     table={table}
-                  />
-               )}
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-               {table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => {
-                     const visibleCells = row
-                        .getVisibleCells()
-                        .filter((cell) => cell.column.id !== "__actions");
-                     const [primaryCell, secondaryCell, ...restCells] =
-                        visibleCells;
-
-                     return (
-                        <Card
-                           className={cn(
-                              "gap-4",
-                              row.getIsSelected() && "ring-2 ring-primary",
-                           )}
-                           key={row.id}
-                        >
-                           <CardHeader>
-                              {primaryCell && (
-                                 <CardTitle>
-                                    {flexRender(
-                                       primaryCell.column.columnDef.cell,
-                                       primaryCell.getContext(),
-                                    )}
-                                 </CardTitle>
-                              )}
-                              {secondaryCell && (
-                                 <CardDescription>
-                                    {flexRender(
-                                       secondaryCell.column.columnDef.cell,
-                                       secondaryCell.getContext(),
-                                    )}
-                                 </CardDescription>
-                              )}
-                              {enableRowSelection && (
-                                 <CardAction>
-                                    <Checkbox
-                                       aria-label="Selecionar"
-                                       checked={row.getIsSelected()}
-                                       onCheckedChange={(value) =>
-                                          row.toggleSelected(!!value)
-                                       }
-                                    />
-                                 </CardAction>
-                              )}
-                           </CardHeader>
-                           {restCells.length > 0 && (
-                              <CardContent className="grid grid-cols-2 gap-x-4 gap-y-3">
-                                 {restCells.map((cell) => {
-                                    const header = cell.column.columnDef.header;
-                                    const label =
-                                       typeof header === "string"
-                                          ? header
-                                          : null;
-                                    return (
-                                       <div className="min-w-0" key={cell.id}>
-                                          {label && (
-                                             <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
-                                                {label}
-                                             </p>
-                                          )}
-                                          <div className="text-sm truncate">
-                                             {flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext(),
-                                             )}
-                                          </div>
-                                       </div>
-                                    );
-                                 })}
-                              </CardContent>
-                           )}
-                           {renderActions && (
-                              <CardFooter className="justify-end gap-1">
-                                 {renderActions({ row })}
-                              </CardFooter>
-                           )}
-                        </Card>
-                     );
-                  })
-               ) : (
-                  <div className="col-span-full py-8 text-center text-muted-foreground">
-                     Nenhum resultado encontrado.
-                  </div>
-               )}
-            </div>
-            {pagination && <DataTablePagination {...pagination} />}
-         </div>
-      );
    }
 
    // --- Header cells ---
