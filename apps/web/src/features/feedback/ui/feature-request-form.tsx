@@ -1,10 +1,10 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import {
    Field,
    FieldError,
@@ -92,26 +92,26 @@ export function FeatureRequestForm({
 
    if (mutation.isSuccess) {
       return (
-         <CredenzaBody>
-            <div className="flex flex-col items-center gap-3 py-8 text-center">
+         <DialogStackContent index={0}>
+            <div className="flex flex-col items-center gap-4 px-4 py-4 text-center">
                <CheckCircle className="size-10 text-green-500" />
                <p className="text-sm font-medium">Obrigado pela sugestão!</p>
                <p className="text-xs text-muted-foreground">
                   Sua ideia foi registrada e será avaliada pela equipe.
                </p>
             </div>
-         </CredenzaBody>
+         </DialogStackContent>
       );
    }
 
    return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>{copy.title}</CredenzaTitle>
-            <CredenzaDescription>{copy.description}</CredenzaDescription>
-         </CredenzaHeader>
-         <CredenzaBody>
-            <form className="space-y-4" onSubmit={handleSubmit}>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>{copy.title}</DialogStackTitle>
+            <DialogStackDescription>{copy.description}</DialogStackDescription>
+         </DialogStackHeader>
+         <div className="flex-1 overflow-y-auto px-4 py-4">
+            <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
                <FieldGroup>
                   <form.Field name="feature">
                      {(field) => {
@@ -203,7 +203,7 @@ export function FeatureRequestForm({
                   )}
                </form.Subscribe>
             </form>
-         </CredenzaBody>
-      </>
+         </div>
+      </DialogStackContent>
    );
 }

@@ -1,11 +1,11 @@
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import { FeatureStageBadge } from "@packages/ui/components/feature-stage-badge";
 import { useMemo } from "react";
 import { useEarlyAccess } from "@/hooks/use-early-access";
@@ -159,14 +159,14 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
    };
 
    return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>Personalizar barra lateral</CredenzaTitle>
-            <CredenzaDescription>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>Personalizar barra lateral</DialogStackTitle>
+            <DialogStackDescription>
                Escolha quais itens exibir na navegação.
-            </CredenzaDescription>
-         </CredenzaHeader>
-         <CredenzaBody>
+            </DialogStackDescription>
+         </DialogStackHeader>
+         <div className="flex-1 overflow-y-auto px-4 py-4">
             <p className="text-sm text-muted-foreground mb-6">
                Selecione os itens que deseja ver na barra lateral.
             </p>
@@ -186,7 +186,7 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
                   Fechar
                </Button>
             </div>
-         </CredenzaBody>
-      </>
+         </div>
+      </DialogStackContent>
    );
 }

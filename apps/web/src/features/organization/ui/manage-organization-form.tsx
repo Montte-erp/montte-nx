@@ -1,11 +1,10 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import {
    Dropzone,
    DropzoneContent,
@@ -164,159 +163,169 @@ export function ManageOrganizationForm({
             });
          }}
       >
-         <CredenzaHeader>
-            <CredenzaTitle>{modeTexts.title}</CredenzaTitle>
-            <CredenzaDescription>{modeTexts.description}</CredenzaDescription>
-         </CredenzaHeader>
-         <CredenzaBody>
-            <div className="grid gap-4">
-               <form.Field name="logo">
-                  {(field) => {
-                     const currentLogoFile = field.state.value;
-                     const displayImage = fileUpload.filePreview;
+         <DialogStackContent index={0}>
+            <DialogStackHeader>
+               <DialogStackTitle>{modeTexts.title}</DialogStackTitle>
+               <DialogStackDescription>
+                  {modeTexts.description}
+               </DialogStackDescription>
+            </DialogStackHeader>
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+               <div className="grid gap-4">
+                  <form.Field name="logo">
+                     {(field) => {
+                        const currentLogoFile = field.state.value;
+                        const displayImage = fileUpload.filePreview;
 
-                     return (
-                        <Field
-                           data-invalid={
-                              field.state.meta.isTouched &&
-                              !field.state.meta.isValid
-                           }
-                        >
-                           <FieldLabel>Organization Logo</FieldLabel>
-                           <Dropzone
-                              accept={{
-                                 "image/*": [
-                                    ".png",
-                                    ".jpg",
-                                    ".jpeg",
-                                    ".gif",
-                                    ".webp",
-                                 ],
-                              }}
-                              className="h-44"
-                              disabled={fileUpload.isUploading}
-                              maxFiles={1}
-                              maxSize={5 * 1024 * 1024}
-                              onDrop={handleFileSelect}
-                              src={
-                                 currentLogoFile ? [currentLogoFile] : undefined
+                        return (
+                           <Field
+                              data-invalid={
+                                 field.state.meta.isTouched &&
+                                 !field.state.meta.isValid
                               }
                            >
-                              <DropzoneEmptyState>
-                                 <Building className="size-8 text-muted-foreground" />
-                              </DropzoneEmptyState>
-                              <DropzoneContent>
-                                 {displayImage && (
-                                    <img
-                                       alt="Logo preview"
-                                       className="h-full w-full object-contain rounded-md"
-                                       src={displayImage}
+                              <FieldLabel>Organization Logo</FieldLabel>
+                              <Dropzone
+                                 accept={{
+                                    "image/*": [
+                                       ".png",
+                                       ".jpg",
+                                       ".jpeg",
+                                       ".gif",
+                                       ".webp",
+                                    ],
+                                 }}
+                                 className="h-44"
+                                 disabled={fileUpload.isUploading}
+                                 maxFiles={1}
+                                 maxSize={5 * 1024 * 1024}
+                                 onDrop={handleFileSelect}
+                                 src={
+                                    currentLogoFile
+                                       ? [currentLogoFile]
+                                       : undefined
+                                 }
+                              >
+                                 <DropzoneEmptyState>
+                                    <Building className="size-8 text-muted-foreground" />
+                                 </DropzoneEmptyState>
+                                 <DropzoneContent>
+                                    {displayImage && (
+                                       <img
+                                          alt="Logo preview"
+                                          className="h-full w-full object-contain rounded-md"
+                                          src={displayImage}
+                                       />
+                                    )}
+                                 </DropzoneContent>
+                              </Dropzone>
+                              {currentLogoFile && (
+                                 <p className="text-sm text-muted-foreground">
+                                    Logo will be uploaded when you{" "}
+                                    {isEditMode ? "save" : "create"} the
+                                    organization
+                                 </p>
+                              )}
+                              {fileUpload.error && (
+                                 <p className="text-sm text-destructive">
+                                    {fileUpload.error}
+                                 </p>
+                              )}
+                              {field.state.meta.isTouched &&
+                                 !field.state.meta.isValid && (
+                                    <FieldError
+                                       errors={field.state.meta.errors}
                                     />
                                  )}
-                              </DropzoneContent>
-                           </Dropzone>
-                           {currentLogoFile && (
-                              <p className="text-sm text-muted-foreground">
-                                 Logo will be uploaded when you{" "}
-                                 {isEditMode ? "save" : "create"} the
-                                 organization
-                              </p>
-                           )}
-                           {fileUpload.error && (
-                              <p className="text-sm text-destructive">
-                                 {fileUpload.error}
-                              </p>
-                           )}
-                           {field.state.meta.isTouched &&
-                              !field.state.meta.isValid && (
+                           </Field>
+                        );
+                     }}
+                  </form.Field>
+
+                  <form.Field name="name">
+                     {(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           !field.state.meta.isValid;
+
+                        return (
+                           <Field data-invalid={isInvalid}>
+                              <FieldLabel htmlFor={field.name}>
+                                 Organization Name
+                              </FieldLabel>
+                              <Input
+                                 aria-invalid={isInvalid}
+                                 id={field.name}
+                                 name={field.name}
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                 }
+                                 value={field.state.value}
+                              />
+
+                              {isInvalid && (
                                  <FieldError errors={field.state.meta.errors} />
                               )}
-                        </Field>
-                     );
-                  }}
-               </form.Field>
+                           </Field>
+                        );
+                     }}
+                  </form.Field>
 
-               <form.Field name="name">
-                  {(field) => {
-                     const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
+                  <form.Field name="description">
+                     {(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           !field.state.meta.isValid;
 
-                     return (
-                        <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              Organization Name
-                           </FieldLabel>
-                           <Input
-                              aria-invalid={isInvalid}
-                              id={field.name}
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              value={field.state.value}
-                           />
+                        return (
+                           <Field data-invalid={isInvalid}>
+                              <FieldLabel htmlFor={field.name}>
+                                 Description
+                              </FieldLabel>
+                              <Textarea
+                                 aria-invalid={isInvalid}
+                                 className="w-full"
+                                 id={field.name}
+                                 name={field.name}
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                 }
+                                 rows={3}
+                                 value={field.state.value}
+                              />
 
-                           {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                           )}
-                        </Field>
-                     );
-                  }}
-               </form.Field>
-
-               <form.Field name="description">
-                  {(field) => {
-                     const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
-
-                     return (
-                        <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              Description
-                           </FieldLabel>
-                           <Textarea
-                              aria-invalid={isInvalid}
-                              className="w-full"
-                              id={field.name}
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              rows={3}
-                              value={field.state.value}
-                           />
-
-                           {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                           )}
-                        </Field>
-                     );
-                  }}
-               </form.Field>
+                              {isInvalid && (
+                                 <FieldError errors={field.state.meta.errors} />
+                              )}
+                           </Field>
+                        );
+                     }}
+                  </form.Field>
+               </div>
             </div>
-         </CredenzaBody>
 
-         <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(state) => (
-                  <Button
-                     className="w-full"
-                     disabled={
-                        !state.canSubmit || state.isSubmitting || isPending
-                     }
-                     type="submit"
-                  >
-                     {state.isSubmitting || isPending
-                        ? isEditMode
-                           ? "Saving..."
-                           : "Creating..."
-                        : modeTexts.title}
-                  </Button>
-               )}
-            </form.Subscribe>
-         </CredenzaFooter>
+            <div className="border-t px-4 py-4">
+               <form.Subscribe selector={(state) => state}>
+                  {(state) => (
+                     <Button
+                        className="w-full"
+                        disabled={
+                           !state.canSubmit || state.isSubmitting || isPending
+                        }
+                        type="submit"
+                     >
+                        {state.isSubmitting || isPending
+                           ? isEditMode
+                              ? "Saving..."
+                              : "Creating..."
+                           : modeTexts.title}
+                     </Button>
+                  )}
+               </form.Subscribe>
+            </div>
+         </DialogStackContent>
       </form>
    );
 }

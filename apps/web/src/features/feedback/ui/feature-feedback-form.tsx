@@ -1,10 +1,10 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import { Label } from "@packages/ui/components/label";
 import { Rating, RatingButton } from "@packages/ui/components/rating";
 import { Textarea } from "@packages/ui/components/textarea";
@@ -51,27 +51,29 @@ export function FeatureFeedbackForm({
 
    if (mutation.isSuccess) {
       return (
-         <CredenzaBody className="flex flex-col items-center gap-4 text-center">
-            <CheckCircle className="size-8 text-green-500" />
-            <p className="text-sm font-medium">Obrigado pelo feedback!</p>
-            <p className="text-xs text-muted-foreground">
-               Seu retorno nos ajuda a melhorar essa funcionalidade.
-            </p>
-         </CredenzaBody>
+         <DialogStackContent index={0}>
+            <div className="flex flex-col items-center gap-4 px-4 py-4 text-center">
+               <CheckCircle className="size-8 text-green-500" />
+               <p className="text-sm font-medium">Obrigado pelo feedback!</p>
+               <p className="text-xs text-muted-foreground">
+                  Seu retorno nos ajuda a melhorar essa funcionalidade.
+               </p>
+            </div>
+         </DialogStackContent>
       );
    }
 
    return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>Feedback: {featureName}</CredenzaTitle>
-            <CredenzaDescription>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>Feedback: {featureName}</DialogStackTitle>
+            <DialogStackDescription>
                Nos conte o que achou dessa funcionalidade.
-            </CredenzaDescription>
-         </CredenzaHeader>
-         <CredenzaBody>
-            <form className="space-y-4" onSubmit={handleSubmit}>
-               <div className="space-y-2">
+            </DialogStackDescription>
+         </DialogStackHeader>
+         <div className="flex-1 overflow-y-auto px-4 py-4">
+            <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+               <div className="flex flex-col gap-2">
                   <Label>Como está sendo a experiência?</Label>
                   <Rating onValueChange={setRating} value={rating}>
                      <RatingButton />
@@ -86,7 +88,7 @@ export function FeatureFeedbackForm({
                   </div>
                </div>
 
-               <div className="space-y-2">
+               <div className="flex flex-col gap-2">
                   <Label htmlFor="feature-improvement">
                      O que poderia melhorar?{" "}
                      <span className="text-muted-foreground">(opcional)</span>
@@ -112,7 +114,7 @@ export function FeatureFeedbackForm({
                   Enviar feedback
                </Button>
             </form>
-         </CredenzaBody>
-      </>
+         </div>
+      </DialogStackContent>
    );
 }

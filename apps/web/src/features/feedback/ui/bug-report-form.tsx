@@ -1,10 +1,10 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import {
    Field,
    FieldError,
@@ -71,26 +71,28 @@ export function BugReportForm({ onSuccess }: BugReportFormProps) {
 
    if (mutation.isSuccess) {
       return (
-         <CredenzaBody className="flex flex-col items-center gap-4  text-center">
-            <CheckCircle className="size-10 text-green-500" />
-            <p className="text-sm font-medium">Obrigado pelo relato!</p>
-            <p className="text-xs text-muted-foreground">
-               Vamos investigar e corrigir o mais rápido possível.
-            </p>
-         </CredenzaBody>
+         <DialogStackContent index={0}>
+            <div className="flex flex-col items-center gap-4 px-4 py-4 text-center">
+               <CheckCircle className="size-10 text-green-500" />
+               <p className="text-sm font-medium">Obrigado pelo relato!</p>
+               <p className="text-xs text-muted-foreground">
+                  Vamos investigar e corrigir o mais rápido possível.
+               </p>
+            </div>
+         </DialogStackContent>
       );
    }
 
    return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>Reportar Bug</CredenzaTitle>
-            <CredenzaDescription>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>Reportar Bug</DialogStackTitle>
+            <DialogStackDescription>
                Nos ajude a melhorar reportando problemas.
-            </CredenzaDescription>
-         </CredenzaHeader>
-         <CredenzaBody>
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            </DialogStackDescription>
+         </DialogStackHeader>
+         <div className="flex-1 overflow-y-auto px-4 py-4">
+            <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
                <FieldGroup>
                   <form.Field name="description">
                      {(field) => {
@@ -169,7 +171,7 @@ export function BugReportForm({ onSuccess }: BugReportFormProps) {
                   )}
                </form.Subscribe>
             </form>
-         </CredenzaBody>
-      </>
+         </div>
+      </DialogStackContent>
    );
 }

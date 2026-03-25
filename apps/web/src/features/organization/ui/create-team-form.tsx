@@ -1,12 +1,11 @@
 import { Alert, AlertDescription } from "@packages/ui/components/alert";
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { Skeleton } from "@packages/ui/components/skeleton";
@@ -24,20 +23,20 @@ import { authClient } from "@/integrations/better-auth/auth-client";
 
 function CreateTeamErrorFallback() {
    return (
-      <CredenzaBody>
+      <div className="flex-1 overflow-y-auto px-4 py-4">
          <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
                Erro ao carregar dados da organização. Tente novamente.
             </AlertDescription>
          </Alert>
-      </CredenzaBody>
+      </div>
    );
 }
 
 function CreateTeamSkeleton() {
    return (
-      <CredenzaBody>
+      <div className="flex-1 overflow-y-auto px-4 py-4">
          <div className="grid gap-4">
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-10 w-full" />
@@ -46,7 +45,7 @@ function CreateTeamSkeleton() {
             <Skeleton className="h-4 w-32" />
             <Skeleton className="h-20 w-full" />
          </div>
-      </CredenzaBody>
+      </div>
    );
 }
 
@@ -119,7 +118,7 @@ const CreateTeamFormContent = () => {
 
    return (
       <>
-         <CredenzaBody>
+         <div className="flex-1 overflow-y-auto px-4 py-4">
             <form
                className="grid gap-4"
                id="create-team-form"
@@ -185,9 +184,9 @@ const CreateTeamFormContent = () => {
                   }}
                </form.Field>
             </form>
-         </CredenzaBody>
+         </div>
 
-         <CredenzaFooter>
+         <div className="border-t px-4 py-4">
             <Button onClick={closeCredenza} type="button" variant="outline">
                Cancelar
             </Button>
@@ -210,25 +209,25 @@ const CreateTeamFormContent = () => {
                   </Button>
                )}
             </form.Subscribe>
-         </CredenzaFooter>
+         </div>
       </>
    );
 };
 
 export const CreateTeamForm: FC = () => {
    return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>Criar espaço</CredenzaTitle>
-            <CredenzaDescription>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>Criar espaço</DialogStackTitle>
+            <DialogStackDescription>
                Crie um novo espaço para organizar os membros da sua organização
-            </CredenzaDescription>
-         </CredenzaHeader>
+            </DialogStackDescription>
+         </DialogStackHeader>
          <ErrorBoundary FallbackComponent={CreateTeamErrorFallback}>
             <Suspense fallback={<CreateTeamSkeleton />}>
                <CreateTeamFormContent />
             </Suspense>
          </ErrorBoundary>
-      </>
+      </DialogStackContent>
    );
 };
