@@ -39,13 +39,13 @@ function HistoryList({ product }: { product: InventoryProductRow }) {
    }
 
    return (
-      <ul className="space-y-3">
+      <ul className="flex flex-col gap-4">
          {movements.map((m) => (
             <li
                className="flex items-start justify-between gap-3 py-2 border-b last:border-0"
                key={m.id}
             >
-               <div className="space-y-0.5">
+               <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
                      <Badge variant={TYPE_VARIANTS[m.type]}>
                         {TYPE_LABELS[m.type]}

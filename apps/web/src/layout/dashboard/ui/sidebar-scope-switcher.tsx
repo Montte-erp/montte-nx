@@ -125,7 +125,7 @@ function SidebarScopeSwitcherSkeleton() {
          <SidebarMenuItem>
             <SidebarMenuButton className="pointer-events-none" size="lg">
                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-muted" />
-               <div className="grid flex-1 gap-1">
+               <div className="grid flex-1 gap-2">
                   <Skeleton className="h-3.5 w-24" />
                   <Skeleton className="h-3 w-16" />
                </div>
@@ -363,7 +363,6 @@ function SidebarScopeSwitcherContent() {
                   side={isMobile ? "bottom" : "bottom"}
                   sideOffset={4}
                >
-                  {/* ── PROJECT ── */}
                   <>
                      <DropdownMenuLabel className="py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Espaço
@@ -426,7 +425,6 @@ function SidebarScopeSwitcherContent() {
 
                      <DropdownMenuSeparator />
 
-                     {/* ── ORGANIZATION ── */}
                      <DropdownMenuLabel className="py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Organização
                      </DropdownMenuLabel>
@@ -498,7 +496,6 @@ function SidebarScopeSwitcherContent() {
                      <DropdownMenuSeparator />
                   </>
 
-                  {/* ── ACCOUNT ── */}
                   <DropdownMenuLabel className="py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                      Conta
                   </DropdownMenuLabel>

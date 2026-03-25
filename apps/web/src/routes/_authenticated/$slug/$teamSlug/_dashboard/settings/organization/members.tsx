@@ -39,6 +39,7 @@ import {
    useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import dayjs from "dayjs";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Mail, Search, ShieldCheck, UserPlus } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
@@ -53,10 +54,6 @@ export const Route = createFileRoute(
 )({
    component: MembersPage,
 });
-
-// ============================================
-// Types
-// ============================================
 
 type MemberRow = {
    id: string;
@@ -75,10 +72,6 @@ type PendingInvite = {
    createdAt: Date;
 };
 
-// ============================================
-// Helpers
-// ============================================
-
 const ROLE_LABELS: Record<string, string> = {
    owner: "Proprietário",
    admin: "Administrador",
@@ -86,11 +79,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 function formatDate(date: Date | string): string {
-   return new Date(date).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-   });
+   return dayjs(date).format("DD MMM YYYY");
 }
 
 function getRoleBadgeVariant(
@@ -101,13 +90,9 @@ function getRoleBadgeVariant(
    return "outline";
 }
 
-// ============================================
-// Skeleton
-// ============================================
-
 function MembersSkeleton() {
    return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-4">
          <div className="flex items-center justify-between">
             <div>
                <Skeleton className="h-8 w-32" />
@@ -118,7 +103,7 @@ function MembersSkeleton() {
 
          <Skeleton className="h-9 w-full" />
 
-         <div className="space-y-1">
+         <div className="flex flex-col gap-2">
             <Skeleton className="h-12 w-full rounded-lg" />
             <Skeleton className="h-12 w-full rounded-lg" />
             <Skeleton className="h-12 w-full rounded-lg" />
@@ -127,13 +112,9 @@ function MembersSkeleton() {
    );
 }
 
-// ============================================
-// Error Fallback
-// ============================================
-
 function MembersErrorFallback({ resetErrorBoundary }: FallbackProps) {
    return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-4">
          <div>
             <h1 className="text-2xl font-semibold font-serif">Membros</h1>
             <p className="text-sm text-muted-foreground mt-1">
@@ -151,10 +132,6 @@ function MembersErrorFallback({ resetErrorBoundary }: FallbackProps) {
       </div>
    );
 }
-
-// ============================================
-// Invite Member Credenza Content
-// ============================================
 
 function InviteMemberCredenzaContent({
    organizationId,
@@ -283,10 +260,6 @@ function InviteMemberCredenzaContent({
    );
 }
 
-// ============================================
-// Pending Invites Section
-// ============================================
-
 function PendingInvitesSection({ organizationId }: { organizationId: string }) {
    const queryClient = useQueryClient();
 
@@ -330,7 +303,7 @@ function PendingInvitesSection({ organizationId }: { organizationId: string }) {
 
    if (isLoading) {
       return (
-         <section className="space-y-3">
+         <section className="flex flex-col gap-4">
             <div>
                <h2 className="text-lg font-medium">Convites pendentes</h2>
                <p className="text-sm text-muted-foreground mt-1">
@@ -343,7 +316,7 @@ function PendingInvitesSection({ organizationId }: { organizationId: string }) {
    }
 
    return (
-      <section className="space-y-3">
+      <section className="flex flex-col gap-4">
          <div>
             <h2 className="text-lg font-medium">Convites pendentes</h2>
             <p className="text-sm text-muted-foreground mt-1">
@@ -401,10 +374,6 @@ function PendingInvitesSection({ organizationId }: { organizationId: string }) {
    );
 }
 
-// ============================================
-// Main Content Component
-// ============================================
-
 function MembersContent() {
    const queryClient = useQueryClient();
    const { openCredenza, closeCredenza } = useCredenza();
@@ -425,7 +394,6 @@ function MembersContent() {
    const currentUserId = sessionData?.user?.id;
    const organizationId = activeOrg?.id ?? "";
 
-   // Filter members by search
    const filteredMembers = useMemo(() => {
       if (!searchFilter.trim()) return members;
       const query = searchFilter.toLowerCase();
@@ -436,7 +404,6 @@ function MembersContent() {
       );
    }, [members, searchFilter]);
 
-   // Mutations
    const updateRoleMutation = useMutation({
       mutationFn: async ({
          memberId,
@@ -484,7 +451,6 @@ function MembersContent() {
       });
    }
 
-   // Column definitions
    const columns: ColumnDef<MemberRow>[] = useMemo(
       () => [
          {
@@ -544,8 +510,7 @@ function MembersContent() {
    );
 
    return (
-      <div className="space-y-6">
-         {/* Header */}
+      <div className="flex flex-col gap-4">
          <div className="flex items-center justify-between">
             <div>
                <h1 className="text-2xl font-semibold font-serif">Membros</h1>
@@ -559,11 +524,9 @@ function MembersContent() {
             </Button>
          </div>
 
-         {/* Pending invites */}
          <PendingInvitesSection organizationId={organizationId} />
 
-         {/* Members data table */}
-         <section className="space-y-3">
+         <section className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
                <div>
                   <h2 className="text-lg font-medium">
@@ -577,7 +540,6 @@ function MembersContent() {
                </div>
             </div>
 
-            {/* Search */}
             <div className="relative max-w-sm">
                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground pointer-events-none" />
                <Input
@@ -622,10 +584,6 @@ function MembersContent() {
       </div>
    );
 }
-
-// ============================================
-// Page Component
-// ============================================
 
 function MembersPage() {
    return (

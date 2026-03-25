@@ -17,8 +17,11 @@ import {
    DialogStackTitle,
 } from "@packages/ui/components/dialog-stack";
 import { DataTable } from "@packages/ui/components/data-table";
-import { Skeleton } from "@packages/ui/components/skeleton";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+   useMutation,
+   useSuspenseQuery,
+   useQueryClient,
+} from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { BarChart3, CheckCircle2, Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -26,10 +29,6 @@ import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 import { DashboardGrid } from "./dashboard-grid";
 import { DashboardTile } from "./dashboard-tile";
-
-// =============================================================================
-// Types
-// =============================================================================
 
 interface EditableDashboardGridProps {
    dashboard: Dashboard;
@@ -41,19 +40,11 @@ interface EditableDashboardGridProps {
    onSaveError?: () => void;
 }
 
-// =============================================================================
-// Size helpers — PostHog-style: charts = half, numbers = quarter
-// =============================================================================
-
 function deriveTileSize(insight: Insight): DashboardTileType["size"] {
    const config = insight.config as Record<string, unknown> | undefined;
    const chartType = config?.chartType as string | undefined;
    return chartType === "number" ? "sm" : "md";
 }
-
-// =============================================================================
-// Add Insight Credenza
-// =============================================================================
 
 function makeInsightColumns(
    existingInsightIds: Set<string>,
@@ -127,7 +118,7 @@ function AddInsightCredenza({
    onAdd: (insight: Insight) => void;
 }) {
    const [currentPage, setCurrentPage] = useState(1);
-   const { data: insights, isLoading } = useQuery(
+   const { data: insights } = useSuspenseQuery(
       orpc.insights.list.queryOptions({}),
    );
 
@@ -152,17 +143,8 @@ function AddInsightCredenza({
             </DialogStackDescription>
          </DialogStackHeader>
          <div className="flex-1 overflow-y-auto px-4 py-4">
-            {isLoading ? (
-               <div className="flex flex-col gap-3">
-                  {Array.from({ length: PAGE_SIZE }).map((_, i) => (
-                     <Skeleton
-                        className="h-12 w-full"
-                        key={`skeleton-${i + 1}`}
-                     />
-                  ))}
-               </div>
-            ) : allInsights.length === 0 ? (
-               <div className="flex flex-col items-center justify-center gap-3 py-8 text-muted-foreground">
+            {allInsights.length === 0 ? (
+               <div className="flex flex-col items-center justify-center gap-4 py-8 text-muted-foreground">
                   <BarChart3 className="size-8" />
                   <p className="text-sm text-center">
                      Nenhum insight criado ainda. Crie insights na seção de
@@ -188,10 +170,6 @@ function AddInsightCredenza({
    );
 }
 
-// =============================================================================
-// Main Component
-// =============================================================================
-
 export function EditableDashboardGrid({
    dashboard,
    onOpenAddInsight: externalOnOpenAddInsight,
@@ -204,12 +182,10 @@ export function EditableDashboardGrid({
    const queryClient = useQueryClient();
    const { openCredenza, closeCredenza } = useCredenza();
 
-   // Local tile state for optimistic editing
    const [localTiles, setLocalTiles] = useState<DashboardTileType[]>(
       dashboard.tiles,
    );
 
-   // Sync local state when dashboard changes (e.g., after save/refetch)
    const dashboardTilesJson = JSON.stringify(dashboard.tiles);
    const [lastDashboardTiles, setLastDashboardTiles] =
       useState(dashboardTilesJson);
@@ -219,7 +195,6 @@ export function EditableDashboardGrid({
       setLocalTiles(dashboard.tiles);
    }
 
-   // Save tiles mutation
    const { mutate: saveMutate } = useMutation(
       orpc.dashboards.updateTiles.mutationOptions({
          onSuccess: () => {
@@ -235,7 +210,6 @@ export function EditableDashboardGrid({
       }),
    );
 
-   // Keep a ref to always call the latest onSaveComplete (avoids stale closure)
    const onSaveCompleteRef = useRef(onSaveComplete);
    useEffect(() => {
       onSaveCompleteRef.current = onSaveComplete;
@@ -246,7 +220,6 @@ export function EditableDashboardGrid({
       onSaveErrorRef.current = onSaveError;
    }, [onSaveError]);
 
-   // Tile operations
    const handleReorder = useCallback((reordered: DashboardTileType[]) => {
       setLocalTiles(reordered);
    }, []);
@@ -272,7 +245,6 @@ export function EditableDashboardGrid({
       setLocalTiles((prev) => {
          const source = prev.find((t) => t.insightId === insightId);
          if (!source) return prev;
-         // Add a duplicate right after the source tile
          const sourceIndex = prev.indexOf(source);
          const updated = [...prev];
          updated.splice(sourceIndex + 1, 0, {
@@ -326,7 +298,6 @@ export function EditableDashboardGrid({
       setLocalTiles(dashboard.tiles);
    }, [dashboard.tiles]);
 
-   // Expose add handler to parent (DashboardView header button)
    useEffect(() => {
       if (externalOnOpenAddInsight) {
          externalOnOpenAddInsight(handleOpenAddInsight);
