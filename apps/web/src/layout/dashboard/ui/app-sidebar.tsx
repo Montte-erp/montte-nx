@@ -30,7 +30,7 @@ import type * as React from "react";
 import { useState } from "react";
 import { BugReportForm } from "@/features/feedback/ui/bug-report-form";
 import { FeatureRequestForm } from "@/features/feedback/ui/feature-request-form";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { EarlyAccessSidebarBanner } from "./early-access-sidebar-banner";
 import { SidebarDefaultItems, SidebarNav } from "./sidebar-nav";
 import { SidebarScopeSwitcher } from "./sidebar-scope-switcher";
@@ -60,7 +60,7 @@ const DOCS_URL = "https://montte.co/docs";
 
 function SidebarFeedbackButton() {
    const [open, setOpen] = useState(false);
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
 
    return (
       <SidebarMenuItem>
@@ -88,9 +88,9 @@ function SidebarFeedbackButton() {
                      className="justify-start gap-3"
                      onClick={() => {
                         setOpen(false);
-                        openCredenza({
+                        openDialogStack({
                            children: (
-                              <BugReportForm onSuccess={closeCredenza} />
+                              <BugReportForm onSuccess={closeDialogStack} />
                            ),
                         });
                      }}
@@ -103,9 +103,11 @@ function SidebarFeedbackButton() {
                      className="justify-start gap-3"
                      onClick={() => {
                         setOpen(false);
-                        openCredenza({
+                        openDialogStack({
                            children: (
-                              <FeatureRequestForm onSuccess={closeCredenza} />
+                              <FeatureRequestForm
+                                 onSuccess={closeDialogStack}
+                              />
                            ),
                         });
                      }}

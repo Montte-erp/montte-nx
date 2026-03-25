@@ -25,7 +25,7 @@ import {
 import type { ColumnDef } from "@tanstack/react-table";
 import { BarChart3, CheckCircle2, Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 import { DashboardGrid } from "./dashboard-grid";
 import { DashboardTile } from "./dashboard-tile";
@@ -180,7 +180,7 @@ export function EditableDashboardGrid({
    onSaveError,
 }: EditableDashboardGridProps) {
    const queryClient = useQueryClient();
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
 
    const [localTiles, setLocalTiles] = useState<DashboardTileType[]>(
       dashboard.tiles,
@@ -266,15 +266,14 @@ export function EditableDashboardGrid({
                order: prev.length,
             },
          ]);
-         closeCredenza();
+         closeDialogStack();
       },
-      [closeCredenza],
+      [closeDialogStack],
    );
 
    const handleOpenAddInsight = useCallback(() => {
       const existingIds = new Set(localTiles.map((t) => t.insightId));
-      openCredenza({
-         className: "w-full sm:!max-w-2xl",
+      openDialogStack({
          children: (
             <AddInsightCredenza
                existingInsightIds={existingIds}
@@ -282,7 +281,7 @@ export function EditableDashboardGrid({
             />
          ),
       });
-   }, [localTiles, openCredenza, handleAddInsight]);
+   }, [localTiles, openDialogStack, handleAddInsight]);
 
    const handleSave = useCallback(() => {
       saveMutate(

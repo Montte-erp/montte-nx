@@ -45,7 +45,7 @@ import { Mail, Search, ShieldCheck, UserPlus } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -376,7 +376,7 @@ function PendingInvitesSection({ organizationId }: { organizationId: string }) {
 
 function MembersContent() {
    const queryClient = useQueryClient();
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const [searchFilter, setSearchFilter] = useState("");
 
    const { data: members } = useSuspenseQuery(
@@ -441,10 +441,10 @@ function MembersContent() {
    }
 
    function handleOpenInviteCredenza() {
-      openCredenza({
+      openDialogStack({
          children: (
             <InviteMemberCredenzaContent
-               onSuccess={closeCredenza}
+               onSuccess={closeDialogStack}
                organizationId={organizationId}
             />
          ),

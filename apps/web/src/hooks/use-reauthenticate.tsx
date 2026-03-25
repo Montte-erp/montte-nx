@@ -12,7 +12,7 @@ import { Loader2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
-import { closeCredenza, openCredenza } from "./use-credenza";
+import { closeDialogStack, openDialogStack } from "./use-dialog-stack";
 
 interface ReauthContentProps {
    onSuccess: () => void;
@@ -84,15 +84,15 @@ function ReauthContent({ onSuccess, onCancel }: ReauthContentProps) {
 export function useReauthenticate() {
    const reauthenticate = useCallback(
       (onSuccess: () => void, onCancel?: () => void) => {
-         openCredenza({
+         openDialogStack({
             children: (
                <ReauthContent
                   onCancel={() => {
-                     closeCredenza();
+                     closeDialogStack();
                      onCancel?.();
                   }}
                   onSuccess={() => {
-                     closeCredenza();
+                     closeDialogStack();
                      onSuccess();
                   }}
                />

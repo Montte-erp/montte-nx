@@ -53,7 +53,7 @@ import { ManageOrganizationForm } from "@/features/organization/ui/manage-organi
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 import { ThemeSwitcher } from "./theme-switcher";
@@ -139,7 +139,7 @@ function SidebarScopeSwitcherContent() {
    const { activeOrganization, projectLimit, projectCount } =
       useActiveOrganization();
    const { activeTeam, teams } = useActiveTeam();
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
    const { setActiveOrganization } = useSetActiveOrganization();
    const [isPending, startTransition] = useTransition();
@@ -234,7 +234,7 @@ function SidebarScopeSwitcherContent() {
          e?.stopPropagation();
 
          if (projectLimit !== null && teams.length >= projectLimit) {
-            openCredenza({
+            openDialogStack({
                children: (
                   <DialogStackContent index={0}>
                      <DialogStackHeader>
@@ -252,12 +252,12 @@ function SidebarScopeSwitcherContent() {
                      </div>
                      <div className="border-t px-4 py-4">
                         <div className="flex gap-2">
-                           <Button onClick={closeCredenza} variant="outline">
+                           <Button onClick={closeDialogStack} variant="outline">
                               Cancelar
                            </Button>
                            <Button asChild>
                               <Link
-                                 onClick={closeCredenza}
+                                 onClick={closeDialogStack}
                                  params={{ slug, teamSlug }}
                                  to="/$slug/$teamSlug/billing"
                               >
@@ -272,11 +272,11 @@ function SidebarScopeSwitcherContent() {
             return;
          }
 
-         openCredenza({ children: <CreateTeamForm /> });
+         openDialogStack({ children: <CreateTeamForm /> });
       },
       [
-         openCredenza,
-         closeCredenza,
+         openDialogStack,
+         closeDialogStack,
          projectLimit,
          projectCount,
          teams.length,
@@ -288,9 +288,9 @@ function SidebarScopeSwitcherContent() {
    const handleNewOrganization = useCallback(
       (e?: React.MouseEvent) => {
          e?.stopPropagation();
-         openCredenza({ children: <ManageOrganizationForm /> });
+         openDialogStack({ children: <ManageOrganizationForm /> });
       },
-      [openCredenza],
+      [openDialogStack],
    );
 
    const handleLogout = useCallback(async () => {

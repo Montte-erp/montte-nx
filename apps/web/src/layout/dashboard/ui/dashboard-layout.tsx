@@ -14,7 +14,7 @@ import { useApiErrorTracker } from "@/features/feedback/hooks/use-api-error-trac
 import { BugReportForm } from "@/features/feedback/ui/bug-report-form";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useActiveTeam } from "@/hooks/use-active-team";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { EarlyAccessProvider } from "@/hooks/use-early-access";
 import { useLastOrganization } from "@/hooks/use-last-organization";
 import { useSafeLocalStorage } from "@/hooks/use-local-storage";
@@ -25,23 +25,23 @@ import { AppSidebar } from "./app-sidebar";
 import { SidebarSubPanel } from "./sidebar-sub-panel";
 
 function AutoBugReporter() {
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const { shouldShowBugReport, dismiss } = useApiErrorTracker();
 
    useEffect(() => {
       if (shouldShowBugReport) {
-         openCredenza({
+         openDialogStack({
             children: (
                <BugReportForm
                   onSuccess={() => {
                      dismiss();
-                     closeCredenza();
+                     closeDialogStack();
                   }}
                />
             ),
          });
       }
-   }, [shouldShowBugReport, openCredenza, closeCredenza, dismiss]);
+   }, [shouldShowBugReport, openDialogStack, closeDialogStack, dismiss]);
 
    return null;
 }

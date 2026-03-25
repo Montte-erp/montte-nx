@@ -41,7 +41,7 @@ import {
 } from "lucide-react";
 import { useCallback } from "react";
 import { toast } from "sonner";
-import { BillFromTransactionCredenza } from "@/features/bills/ui/bill-from-transaction-credenza";
+import { BillFromTransactionDialogStack } from "@/features/bills/ui/bill-from-transaction-dialog-stack";
 import { BulkCategorizeForm } from "@/features/transactions/ui/bulk-categorize-form";
 import { BulkMoveAccountForm } from "@/features/transactions/ui/bulk-move-account-form";
 import { TransactionDialogStack } from "@/features/transactions/ui/transaction-dialog-stack";
@@ -52,7 +52,6 @@ import {
    type TransactionRow,
 } from "@/features/transactions/ui/transactions-columns";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -67,7 +66,6 @@ export function TransactionsList({
    onPageChange,
    onPageSizeChange,
 }: TransactionsListProps) {
-   const { openCredenza, closeCredenza } = useCredenza();
    const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
    const {
@@ -172,13 +170,13 @@ export function TransactionsList({
 
    const handleRecurring = useCallback(
       (tx: TransactionRow) => {
-         openCredenza({
+         openDialogStack({
             children: (
-               <BillFromTransactionCredenza
+               <BillFromTransactionDialogStack
                   bankAccountId={tx.bankAccountId}
                   categoryId={tx.categoryId}
                   mode="recurring"
-                  onSuccess={closeCredenza}
+                  onSuccess={closeDialogStack}
                   transactionAmount={tx.amount}
                   transactionDate={tx.date}
                   transactionId={tx.id}
@@ -188,7 +186,7 @@ export function TransactionsList({
             ),
          });
       },
-      [openCredenza, closeCredenza],
+      [openDialogStack, closeDialogStack],
    );
 
    const handleBulkDelete = useCallback(() => {
@@ -209,7 +207,7 @@ export function TransactionsList({
    }, [openAlertDialog, selectedCount, selectedIds, deleteMutation, onClear]);
 
    const handleBulkCategorize = useCallback(() => {
-      openCredenza({
+      openDialogStack({
          children: (
             <BulkCategorizeForm
                onApply={async (categoryId) => {
@@ -219,19 +217,19 @@ export function TransactionsList({
                      ),
                   );
                   onClear();
-                  closeCredenza();
+                  closeDialogStack();
                   toast.success(
                      `${selectedCount} ${selectedCount === 1 ? "lançamento categorizado" : "lançamentos categorizados"}.`,
                   );
                }}
-               onCancel={closeCredenza}
+               onCancel={closeDialogStack}
                selectedCount={selectedCount}
             />
          ),
       });
    }, [
-      openCredenza,
-      closeCredenza,
+      openDialogStack,
+      closeDialogStack,
       selectedCount,
       selectedIds,
       updateMutation,
@@ -239,7 +237,7 @@ export function TransactionsList({
    ]);
 
    const handleBulkMoveAccount = useCallback(() => {
-      openCredenza({
+      openDialogStack({
          children: (
             <BulkMoveAccountForm
                bankAccounts={bankAccounts}
@@ -254,19 +252,19 @@ export function TransactionsList({
                      ),
                   );
                   onClear();
-                  closeCredenza();
+                  closeDialogStack();
                   toast.success(
                      `${selectedCount} ${selectedCount === 1 ? "lançamento convertido" : "lançamentos convertidos"} em transferências.`,
                   );
                }}
-               onCancel={closeCredenza}
+               onCancel={closeDialogStack}
                selectedCount={selectedCount}
             />
          ),
       });
    }, [
-      openCredenza,
-      closeCredenza,
+      openDialogStack,
+      closeDialogStack,
       bankAccounts,
       selectedCount,
       selectedIds,

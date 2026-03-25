@@ -20,7 +20,7 @@ import {
 } from "@/features/bank-accounts/ui/bank-accounts-columns";
 import { BankAccountForm } from "@/features/bank-accounts/ui/bank-accounts-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
@@ -53,7 +53,7 @@ function BankAccountsSkeleton() {
 // =============================================================================
 
 function BankAccountsList() {
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
 
    const { data: accounts } = useSuspenseQuery(
@@ -73,17 +73,17 @@ function BankAccountsList() {
 
    const handleEdit = useCallback(
       (account: BankAccountRow) => {
-         openCredenza({
+         openDialogStack({
             children: (
                <BankAccountForm
                   account={account}
                   mode="edit"
-                  onSuccess={closeCredenza}
+                  onSuccess={closeDialogStack}
                />
             ),
          });
       },
-      [openCredenza, closeCredenza],
+      [openDialogStack, closeDialogStack],
    );
 
    const handleDelete = useCallback(
@@ -154,11 +154,13 @@ function BankAccountsList() {
 // =============================================================================
 
 function BankAccountsPage() {
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
 
    function handleCreate() {
-      openCredenza({
-         children: <BankAccountForm mode="create" onSuccess={closeCredenza} />,
+      openDialogStack({
+         children: (
+            <BankAccountForm mode="create" onSuccess={closeDialogStack} />
+         ),
       });
    }
 

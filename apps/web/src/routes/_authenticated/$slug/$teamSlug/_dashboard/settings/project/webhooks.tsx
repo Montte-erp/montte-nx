@@ -19,7 +19,7 @@ import {
    WebhooksTable,
 } from "@/features/webhooks/ui/webhooks-table";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
@@ -58,7 +58,7 @@ function WebhooksSkeleton() {
 
 function WebhooksContent() {
    const queryClient = useQueryClient();
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
 
    const { data: webhooks } = useSuspenseQuery(
@@ -83,18 +83,18 @@ function WebhooksContent() {
    );
 
    function handleCreateWebhook() {
-      openCredenza({
+      openDialogStack({
          children: (
             <WebhookForm
                eventCatalog={eventCatalog}
                mode="create"
                onSuccess={(result) => {
-                  closeCredenza();
+                  closeDialogStack();
                   if (result?.plaintextSecret && result.url) {
-                     openCredenza({
+                     openDialogStack({
                         children: (
                            <WebhookSecretDialog
-                              onClose={closeCredenza}
+                              onClose={closeDialogStack}
                               plaintextSecret={result.plaintextSecret}
                               url={result.url}
                            />
@@ -108,12 +108,12 @@ function WebhooksContent() {
    }
 
    function handleEditWebhook(webhook: WebhookEndpoint) {
-      openCredenza({
+      openDialogStack({
          children: (
             <WebhookForm
                eventCatalog={eventCatalog}
                mode="edit"
-               onSuccess={() => closeCredenza()}
+               onSuccess={() => closeDialogStack()}
                webhook={webhook}
             />
          ),

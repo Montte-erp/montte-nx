@@ -31,7 +31,7 @@ import {
 } from "@/features/contacts/ui/contacts-columns";
 import { ContactForm } from "@/features/contacts/ui/contacts-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
@@ -92,7 +92,7 @@ interface ContactsListProps {
 }
 
 function ContactsList({ typeFilter }: ContactsListProps) {
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
    const {
       rowSelection,
@@ -121,17 +121,17 @@ function ContactsList({ typeFilter }: ContactsListProps) {
 
    const handleEdit = useCallback(
       (contact: ContactRow) => {
-         openCredenza({
+         openDialogStack({
             children: (
                <ContactForm
                   contact={contact}
                   mode="edit"
-                  onSuccess={closeCredenza}
+                  onSuccess={closeDialogStack}
                />
             ),
          });
       },
-      [openCredenza, closeCredenza],
+      [openDialogStack, closeDialogStack],
    );
 
    const handleDelete = useCallback(
@@ -233,14 +233,14 @@ function ContactsList({ typeFilter }: ContactsListProps) {
 // =============================================================================
 
 function ContactsPage() {
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
 
    const handleCreate = useCallback(() => {
-      openCredenza({
-         children: <ContactForm mode="create" onSuccess={closeCredenza} />,
+      openDialogStack({
+         children: <ContactForm mode="create" onSuccess={closeDialogStack} />,
       });
-   }, [openCredenza, closeCredenza]);
+   }, [openDialogStack, closeDialogStack]);
 
    return (
       <main className="flex flex-col gap-4">
