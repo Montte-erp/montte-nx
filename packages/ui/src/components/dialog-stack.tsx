@@ -76,7 +76,13 @@ export const DialogStack = ({
             totalDialogs: 0,
             setTotalDialogs: () => {},
             isOpen: isOpen ?? false,
-            setIsOpen: (value) => setIsOpen(Boolean(value)),
+            setIsOpen: (value) => {
+               if (typeof value === "function") {
+                  setIsOpen(value(isOpen ?? false));
+               } else {
+                  setIsOpen(value);
+               }
+            },
             clickable,
          }}
       >
@@ -191,7 +197,7 @@ export const DialogStackBody = ({
    ...props
 }: DialogStackBodyProps) => {
    const context = useContext(DialogStackContext);
-   const [totalDialogs, setTotalDialogs] = useState(Children.count(children));
+   const totalDialogs = Children.count(children);
 
    if (!context) {
       throw new Error("DialogStackBody must be used within a DialogStack");
@@ -206,7 +212,7 @@ export const DialogStackBody = ({
          value={{
             ...context,
             totalDialogs,
-            setTotalDialogs,
+            setTotalDialogs: () => {},
          }}
       >
          <Portal.Root>

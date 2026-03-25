@@ -9,22 +9,38 @@ import type React from "react";
 const dialogStackStore = new Store({
    children: null as React.ReactNode | null,
    isOpen: false,
+   bodyClassName: undefined as string | undefined,
 });
 
-export const openDialogStack = ({ children }: { children: React.ReactNode }) =>
-   dialogStackStore.setState((state) => ({ ...state, children, isOpen: true }));
+export const openDialogStack = ({
+   children,
+   bodyClassName,
+}: {
+   children: React.ReactNode;
+   bodyClassName?: string;
+}) =>
+   dialogStackStore.setState((state) => ({
+      ...state,
+      children,
+      isOpen: true,
+      bodyClassName,
+   }));
 
 export const closeDialogStack = () =>
    dialogStackStore.setState((state) => ({
       ...state,
       children: null,
       isOpen: false,
+      bodyClassName: undefined,
    }));
 
 export const useDialogStack = () => ({ openDialogStack, closeDialogStack });
 
 export function GlobalDialogStack() {
-   const { children, isOpen } = useStore(dialogStackStore, (s) => s);
+   const { children, isOpen, bodyClassName } = useStore(
+      dialogStackStore,
+      (s) => s,
+   );
 
    return (
       <DialogStack
@@ -35,7 +51,7 @@ export function GlobalDialogStack() {
          open={isOpen}
       >
          <DialogStackOverlay />
-         <DialogStackBody>
+         <DialogStackBody className={bodyClassName}>
             {children as React.ReactElement<{ index?: number }>}
          </DialogStackBody>
       </DialogStack>

@@ -34,6 +34,7 @@ import { Switch } from "@packages/ui/components/switch";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { ChevronLeft, Plus } from "lucide-react";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
@@ -281,6 +282,9 @@ function NovoCartao({
    onSuccess: (id: string) => void;
    onBack: () => void;
 }) {
+   const { data: bankAccounts } = useSuspenseQuery(
+      orpc.bankAccounts.getAll.queryOptions({}),
+   );
    const mutation = useMutation(
       orpc.creditCards.create.mutationOptions({
          onSuccess: (data) => {
@@ -289,14 +293,25 @@ function NovoCartao({
          },
       }),
    );
+   const bankAccountIdSchema = z.string().uuid("Conta vinculada inválida.");
+   const daySchema = z
+      .number()
+      .int("Dia deve ser um número inteiro.")
+      .min(1, "Dia deve ser entre 1 e 31.")
+      .max(31, "Dia deve ser entre 1 e 31.");
    const form = useForm({
-      defaultValues: { name: "" },
+      defaultValues: {
+         name: "",
+         bankAccountId: "",
+         closingDay: 25,
+         dueDay: 5,
+      },
       onSubmit: ({ value }) =>
          mutation.mutate({
             name: value.name,
-            closingDay: 25,
-            dueDay: 5,
-            bankAccountId: "",
+            closingDay: value.closingDay,
+            dueDay: value.dueDay,
+            bankAccountId: value.bankAccountId,
          }),
    });
 
@@ -340,6 +355,73 @@ function NovoCartao({
                      </Field>
                   )}
                </form.Field>
+               <form.Field
+                  name="bankAccountId"
+                  validators={{ onBlur: bankAccountIdSchema }}
+               >
+                  {(field) => (
+                     <Field>
+                        <FieldLabel>
+                           Conta vinculada{" "}
+                           <span className="text-destructive">*</span>
+                        </FieldLabel>
+                        <Combobox
+                           className="w-full"
+                           emptyMessage="Nenhuma conta cadastrada."
+                           onValueChange={field.handleChange}
+                           options={bankAccounts.map((a) => ({
+                              value: a.id,
+                              label: a.name,
+                           }))}
+                           placeholder="Selecione a conta..."
+                           searchPlaceholder="Buscar conta..."
+                           value={field.state.value}
+                        />
+                        <FieldError errors={field.state.meta.errors} />
+                     </Field>
+                  )}
+               </form.Field>
+               <div className="grid grid-cols-2 gap-4">
+                  <form.Field
+                     name="closingDay"
+                     validators={{ onBlur: daySchema }}
+                  >
+                     {(field) => (
+                        <Field>
+                           <FieldLabel>Dia de fechamento</FieldLabel>
+                           <Input
+                              max={31}
+                              min={1}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(Number(e.target.value))
+                              }
+                              type="number"
+                              value={field.state.value}
+                           />
+                           <FieldError errors={field.state.meta.errors} />
+                        </Field>
+                     )}
+                  </form.Field>
+                  <form.Field name="dueDay" validators={{ onBlur: daySchema }}>
+                     {(field) => (
+                        <Field>
+                           <FieldLabel>Dia de vencimento</FieldLabel>
+                           <Input
+                              max={31}
+                              min={1}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(Number(e.target.value))
+                              }
+                              type="number"
+                              value={field.state.value}
+                           />
+                           <FieldError errors={field.state.meta.errors} />
+                        </Field>
+                     )}
+                  </form.Field>
+               </div>
             </FieldGroup>
             <DialogStackFooter>
                <form.Subscribe selector={(s) => ({ canSubmit: s.canSubmit })}>
@@ -705,7 +787,7 @@ function TransactionDialogStackContent({
       },
       onSubmit: ({ value }) => {
          const dateStr = value.date
-            ? value.date.toISOString().split("T")[0]
+            ? dayjs(value.date).format("YYYY-MM-DD")
             : "";
          const isTransfer = value.type === "transfer";
 
@@ -1433,9 +1515,10 @@ function TransactionDialogStackContent({
                                                       options={categories
                                                          .filter(
                                                             (cat) =>
-                                                               !cat.type ||
-                                                               cat.type ===
-                                                                  type,
+                                                               !cat.parentId &&
+                                                               (!cat.type ||
+                                                                  cat.type ===
+                                                                     type),
                                                          )
                                                          .map((cat) => ({
                                                             value: cat.id,
@@ -1922,13 +2005,15 @@ function TransactionDialogStackContent({
                   />
                )}
                {secondaryForm?.type === "creditCard" && (
-                  <NovoCartao
-                     onBack={() => setSecondaryForm(null)}
-                     onSuccess={(id) => {
-                        form.setFieldValue("creditCardId", id);
-                        setSecondaryForm(null);
-                     }}
-                  />
+                  <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+                     <NovoCartao
+                        onBack={() => setSecondaryForm(null)}
+                        onSuccess={(id) => {
+                           form.setFieldValue("creditCardId", id);
+                           setSecondaryForm(null);
+                        }}
+                     />
+                  </Suspense>
                )}
                {secondaryForm?.type === "contact" && (
                   <NovoContato

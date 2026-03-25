@@ -50,7 +50,7 @@ interface InsightEditDialogStackProps {
    insightId: string;
 }
 
-export function InsightEditDialogStack({
+function InsightEditDialogStackContent({
    insightId,
 }: InsightEditDialogStackProps) {
    const queryClient = useQueryClient();
@@ -205,5 +205,15 @@ export function InsightEditDialogStack({
             </Button>
          </div>
       </DialogStackContent>
+   );
+}
+
+export function InsightEditDialogStack({
+   insightId,
+}: InsightEditDialogStackProps) {
+   return (
+      <Suspense fallback={<InsightLoadingState />}>
+         <InsightEditDialogStackContent insightId={insightId} />
+      </Suspense>
    );
 }

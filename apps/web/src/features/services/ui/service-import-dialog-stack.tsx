@@ -48,7 +48,7 @@ const { Stepper, useStepper } = defineStepper(
 
 type ImportStepperMethods = ReturnType<typeof useStepper>;
 
-type ServiceField = "name" | "description" | "basePrice" | "category";
+type ServiceField = "name" | "description" | "basePrice";
 
 type ColumnMapping = Record<ServiceField, string>;
 
@@ -61,7 +61,6 @@ type MappedRow = {
    name: string;
    description: string;
    basePrice: string;
-   category: string;
 };
 
 type ValidatedRow = MappedRow & {
@@ -74,21 +73,14 @@ const FIELD_LABELS: Record<ServiceField, string> = {
    name: "Nome *",
    description: "Descrição",
    basePrice: "Preço padrão *",
-   category: "Categoria",
 };
 
-const SERVICE_FIELDS: ServiceField[] = [
-   "name",
-   "description",
-   "basePrice",
-   "category",
-];
+const SERVICE_FIELDS: ServiceField[] = ["name", "description", "basePrice"];
 
 const EMPTY_MAPPING: ColumnMapping = {
    name: "",
    description: "",
    basePrice: "",
-   category: "",
 };
 
 function parsePriceToCents(raw: string): number | null {
@@ -151,7 +143,6 @@ function guessMapping(headers: string[]): Partial<ColumnMapping> {
       name: ["nome", "name", "servico", "serviço", "titulo", "título"],
       description: ["descricao", "descrição", "description", "obs", "detalhe"],
       basePrice: ["preco", "preço", "price", "valor", "value", "preco_padrao"],
-      category: ["categoria", "category", "cat", "grupo"],
    };
 
    for (const [field, candidates] of Object.entries(patterns)) {
@@ -180,7 +171,6 @@ function applyMapping(
       name: get("name"),
       description: get("description"),
       basePrice: get("basePrice"),
-      category: get("category"),
    };
 }
 
@@ -474,7 +464,6 @@ function PreviewStep({ methods, rows }: PreviewStepProps) {
                            <TableHead className="text-xs">Nome</TableHead>
                            <TableHead className="text-xs">Descrição</TableHead>
                            <TableHead className="text-xs">Preço</TableHead>
-                           <TableHead className="text-xs">Categoria</TableHead>
                            <TableHead className="text-xs w-[80px]">
                               Status
                            </TableHead>
@@ -498,9 +487,6 @@ function PreviewStep({ methods, rows }: PreviewStepProps) {
                               </TableCell>
                               <TableCell className="text-xs">
                                  {row.basePrice || "—"}
-                              </TableCell>
-                              <TableCell className="text-xs">
-                                 {row.category || "—"}
                               </TableCell>
                               <TableCell className="text-xs">
                                  {row.isValid ? (
@@ -573,33 +559,32 @@ function ConfirmStep({ methods, rows, onClose }: ConfirmStepProps) {
    async function handleImport() {
       if (validRows.length === 0) return;
 
-      const payload = validRows.map((row) => ({
-         name: row.name.trim(),
-         description: row.description.trim() || null,
-         basePrice: row.priceCents ?? 0,
-      }));
-
       setIsImporting(true);
       try {
-         const results = await Promise.all(
-            payload.map((service) =>
+         const results = await Promise.allSettled(
+            validRows.map((row) =>
                createServiceMutation.mutateAsync({
-                  name: service.name,
-                  description: service.description,
-                  basePrice: String(service.basePrice),
+                  name: row.name.trim(),
+                  description: row.description.trim() || null,
+                  basePrice:
+                     row.priceCents != null
+                        ? String(row.priceCents / 100)
+                        : "0",
                }),
             ),
          );
-         toast.success(
-            `${results.length} serviço(s) importado(s) com sucesso.`,
-         );
-         onClose?.();
-      } catch (error: unknown) {
-         const message =
-            error instanceof Error
-               ? error.message
-               : "Erro ao importar serviços.";
-         toast.error(message);
+         const succeeded = results.filter(
+            (r) => r.status === "fulfilled",
+         ).length;
+         const failed = results.filter((r) => r.status === "rejected").length;
+         if (failed === 0) {
+            toast.success(`${succeeded} serviço(s) importado(s) com sucesso.`);
+         } else {
+            toast.warning(
+               `${succeeded} importado(s), ${failed} falhou. Tente novamente para os itens com erro.`,
+            );
+         }
+         if (succeeded > 0) onClose?.();
       } finally {
          setIsImporting(false);
       }
