@@ -217,7 +217,7 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                                     </div>
                                     <div className="flex items-center gap-4">
                                        <ColorPickerEyeDropper />
-                                       <div className="grid w-full gap-1">
+                                       <div className="grid w-full gap-2">
                                           <ColorPickerHue />
                                           <ColorPickerAlpha />
                                        </div>

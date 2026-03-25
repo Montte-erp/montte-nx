@@ -25,26 +25,19 @@ import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { Suspense } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import type { BillRow } from "./bills-columns";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 interface BillFormProps {
    bill: BillRow;
    onSuccess: () => void;
 }
 
-// ---------------------------------------------------------------------------
-// Inner component (reads suspense data)
-// ---------------------------------------------------------------------------
-
 function BillFormInner({ bill, onSuccess }: BillFormProps) {
-   const today = new Date().toISOString().substring(0, 10);
+   const today = dayjs().format("YYYY-MM-DD");
 
    const { data: accounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
@@ -111,7 +104,6 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
                <FieldGroup>
-                  {/* Type */}
                   <form.Field name="type">
                      {(field) => {
                         const isInvalid =
@@ -148,7 +140,6 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                      }}
                   </form.Field>
 
-                  {/* Name */}
                   <form.Field name="name">
                      {(field) => {
                         const isInvalid =
@@ -173,7 +164,6 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                      }}
                   </form.Field>
 
-                  {/* Amount */}
                   <form.Field name="amount">
                      {(field) => (
                         <Field>
@@ -198,7 +188,6 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                      )}
                   </form.Field>
 
-                  {/* Due Date */}
                   <form.Field name="dueDate">
                      {(field) => (
                         <Field>
@@ -206,7 +195,7 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                            <DatePicker
                               date={
                                  field.state.value
-                                    ? new Date(`${field.state.value}T00:00:00`)
+                                    ? dayjs(field.state.value).toDate()
                                     : undefined
                               }
                               onSelect={(d) =>
@@ -220,7 +209,6 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                      )}
                   </form.Field>
 
-                  {/* Bank Account */}
                   {accounts.length > 0 && (
                      <form.Field name="bankAccountId">
                         {(field) => (
@@ -246,7 +234,6 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                      </form.Field>
                   )}
 
-                  {/* Category */}
                   <form.Subscribe selector={(s) => s.values.type}>
                      {(billType) => {
                         const categoryType =
@@ -285,7 +272,6 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                      }}
                   </form.Subscribe>
 
-                  {/* Description */}
                   <form.Field name="description">
                      {(field) => (
                         <Field>
@@ -327,10 +313,6 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
       </form>
    );
 }
-
-// ---------------------------------------------------------------------------
-// Public export (with Suspense boundary)
-// ---------------------------------------------------------------------------
 
 export function BillForm(props: BillFormProps) {
    return (

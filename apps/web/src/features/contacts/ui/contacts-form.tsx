@@ -113,7 +113,6 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
                <FieldGroup>
-                  {/* Name */}
                   <form.Field name="name">
                      {(field) => {
                         const isInvalid =
@@ -138,7 +137,6 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                      }}
                   </form.Field>
 
-                  {/* Type */}
                   <form.Field name="type">
                      {(field) => (
                         <Field>
@@ -166,7 +164,6 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                      )}
                   </form.Field>
 
-                  {/* Document */}
                   <div className="grid grid-cols-3 gap-2">
                      <form.Field name="documentType">
                         {(field) => (
@@ -207,7 +204,6 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                      </form.Field>
                   </div>
 
-                  {/* Email */}
                   <form.Field name="email">
                      {(field) => (
                         <Field>
@@ -225,7 +221,6 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                      )}
                   </form.Field>
 
-                  {/* Phone */}
                   <form.Field name="phone">
                      {(field) => (
                         <Field>
@@ -242,7 +237,6 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                      )}
                   </form.Field>
 
-                  {/* Notes */}
                   <form.Field name="notes">
                      {(field) => (
                         <Field>

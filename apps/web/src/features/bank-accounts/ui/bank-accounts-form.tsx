@@ -41,6 +41,7 @@ import { cn } from "@packages/ui/lib/utils";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import Color from "color";
+import dayjs from "dayjs";
 import {
    CheckIcon,
    ChevronsUpDownIcon,
@@ -115,9 +116,8 @@ interface BankAccountFormProps {
 }
 
 function formatDateForInput(date: Date | string | null | undefined): string {
-   if (!date) return new Date().toISOString().split("T")[0];
-   const d = typeof date === "string" ? new Date(date) : date;
-   return d.toISOString().split("T")[0];
+   if (!date) return dayjs().format("YYYY-MM-DD");
+   return dayjs(date).format("YYYY-MM-DD");
 }
 
 export function BankAccountForm({
@@ -220,7 +220,6 @@ export function BankAccountForm({
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
                <FieldGroup>
-                  {/* Tipo de Conta */}
                   <form.Field name="type">
                      {(field) => {
                         const isInvalid =
@@ -302,7 +301,6 @@ export function BankAccountForm({
                      }}
                   </form.Field>
 
-                  {/* Banco + Apelido (side by side) */}
                   <form.Subscribe selector={(s) => s.values.type}>
                      {(type) =>
                         type !== "cash" ? (
@@ -362,7 +360,6 @@ export function BankAccountForm({
                      }
                   </form.Subscribe>
 
-                  {/* Agência + Conta (side by side) */}
                   <form.Subscribe selector={(s) => s.values.type}>
                      {(type) =>
                         type !== "cash" ? (
@@ -403,7 +400,6 @@ export function BankAccountForm({
                      }
                   </form.Subscribe>
 
-                  {/* Saldo Inicial + Data do Saldo (side by side) */}
                   {isCreate && (
                      <div className="grid grid-cols-2 gap-4">
                         <form.Field name="initialBalance">
@@ -451,7 +447,6 @@ export function BankAccountForm({
                      </div>
                   )}
 
-                  {/* Cor */}
                   <form.Field name="color">
                      {(field) => {
                         const isInvalid =
@@ -521,7 +516,6 @@ export function BankAccountForm({
                      }}
                   </form.Field>
 
-                  {/* Outras informações */}
                   <form.Field name="notes">
                      {(field) => (
                         <Field>
