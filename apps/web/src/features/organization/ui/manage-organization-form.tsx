@@ -20,7 +20,7 @@ import { useCallback, useMemo, useTransition } from "react";
 import { toast } from "sonner";
 import { useFileUpload } from "@/features/file-upload/lib/use-file-upload";
 import { useSetActiveOrganization } from "@/features/organization/hooks/use-set-active-organization";
-import { useCredenza } from "@/hooks/use-credenza";
+import { closeDialogStack } from "@/hooks/use-dialog-stack";
 import { authClient } from "@/integrations/better-auth/auth-client";
 
 type Organization = {
@@ -37,7 +37,6 @@ type ManageOrganizationFormProps = {
 export function ManageOrganizationForm({
    organization,
 }: ManageOrganizationFormProps) {
-   const { closeCredenza } = useCredenza();
    const isEditMode = !!organization;
    const [isPending, startTransition] = useTransition();
 
@@ -90,9 +89,9 @@ export function ManageOrganizationForm({
             });
          }
          fileUpload.clearFile();
-         closeCredenza();
+         closeDialogStack();
       },
-      [closeCredenza, fileUpload, setActiveOrganization],
+      [fileUpload, setActiveOrganization],
    );
 
    const updateOrganization = useCallback(
@@ -111,9 +110,9 @@ export function ManageOrganizationForm({
          }
          toast.success("Organization updated successfully");
          fileUpload.clearFile();
-         closeCredenza();
+         closeDialogStack();
       },
-      [closeCredenza, fileUpload],
+      [fileUpload],
    );
 
    const handleFileSelect = (acceptedFiles: File[]) => {

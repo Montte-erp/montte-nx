@@ -18,7 +18,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
-import { useCredenza } from "@/hooks/use-credenza";
+import { closeDialogStack } from "@/hooks/use-dialog-stack";
 import { authClient } from "@/integrations/better-auth/auth-client";
 
 function CreateTeamErrorFallback() {
@@ -50,7 +50,6 @@ function CreateTeamSkeleton() {
 }
 
 const CreateTeamFormContent = () => {
-   const { closeCredenza } = useCredenza();
    const { activeOrganization } = useActiveOrganization();
    const [isPending, startTransition] = useTransition();
 
@@ -71,9 +70,9 @@ const CreateTeamFormContent = () => {
             return;
          }
          toast.success("Espaço criado com sucesso");
-         closeCredenza();
+         closeDialogStack();
       },
-      [closeCredenza],
+      [],
    );
 
    const schema = z.object({
@@ -187,7 +186,7 @@ const CreateTeamFormContent = () => {
          </div>
 
          <div className="border-t px-4 py-4 flex items-center justify-end gap-2">
-            <Button onClick={closeCredenza} type="button" variant="outline">
+            <Button onClick={closeDialogStack} type="button" variant="outline">
                Cancelar
             </Button>
             <form.Subscribe selector={(state) => state}>

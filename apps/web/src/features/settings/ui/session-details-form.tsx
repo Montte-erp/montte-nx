@@ -21,7 +21,7 @@ import { ArrowRight, CheckCircle2, Monitor, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
+import { closeDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
 interface SessionDetailsFormProps {
@@ -41,14 +41,13 @@ export function SessionDetailsForm({
    currentSessionId,
 }: SessionDetailsFormProps) {
    const queryClient = useQueryClient();
-   const { closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
    const revokeSessionMutation = useMutation(
       orpc.session.revokeSessionByToken.mutationOptions({
          onSuccess: () => {
             toast.success("Sessão encerrada");
-            closeCredenza();
+            closeDialogStack();
             queryClient.invalidateQueries({
                queryKey: orpc.session.listSessions.queryKey({}),
             });
