@@ -47,8 +47,12 @@ import {
    HelpCircle,
    Loader2,
 } from "lucide-react";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import { Suspense, useState, useTransition } from "react";
 import { toast } from "sonner";
+
+dayjs.extend(customParseFormat);
 import { orpc } from "@/integrations/orpc/client";
 
 const { Stepper, useStepper } = defineStepper(
@@ -144,15 +148,14 @@ function parseTipo(tipo: string): "income" | "expense" | "transfer" {
 
 function normalizeDate(d: string): string {
    if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
-      const [day, month, year] = d.split("/");
-      return `${year}-${month}-${day}`;
+      return dayjs(d, "DD/MM/YYYY").format("YYYY-MM-DD");
    }
    return d;
 }
 
 function normalizeOfxDate(raw: string): string {
    if (/^\d{8}$/.test(raw)) {
-      return `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
+      return dayjs(raw, "YYYYMMDD").format("YYYY-MM-DD");
    }
    return raw;
 }

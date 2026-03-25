@@ -204,7 +204,7 @@ function StepIndicator({ methods }: { methods: ImportStepperMethods }) {
    const currentIndex = methods.lookup.getIndex(methods.state.current.data.id);
 
    return (
-      <div className="flex items-center gap-1.5 mb-1">
+      <div className="flex items-center gap-2 mb-1">
          {steps.map((step, idx) => (
             <div
                className={[

@@ -365,11 +365,14 @@ function ExportForm({
 
          <div className="border-t px-4 py-4">
             <div className="flex gap-2">
-               <button className="flex-1" onClick={onClose} type="button">
-                  <Button className="w-full" variant="outline">
-                     Cancelar
-                  </Button>
-               </button>
+               <Button
+                  className="flex-1"
+                  onClick={onClose}
+                  type="button"
+                  variant="outline"
+               >
+                  Cancelar
+               </Button>
                <Button
                   className="flex-1"
                   disabled={!canDownload || isPending}
