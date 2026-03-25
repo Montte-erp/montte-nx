@@ -89,87 +89,98 @@ export function InventoryProductForm({
                Preencha as informações do produto.
             </DialogStackDescription>
          </DialogStackHeader>
-         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-2">
-               <Label htmlFor="name">Nome do produto</Label>
-               <Input
-                  defaultValue={defaultValues?.name}
-                  id="name"
-                  name="name"
-                  placeholder="Ex: Picolé Morango"
-                  required
-               />
-            </div>
+         <form className="h-full flex flex-col" onSubmit={handleSubmit}>
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+               <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
+                     <Label htmlFor="name">Nome do produto</Label>
+                     <Input
+                        defaultValue={defaultValues?.name}
+                        id="name"
+                        name="name"
+                        placeholder="Ex: Picolé Morango"
+                        required
+                     />
+                  </div>
 
-            <div className="flex flex-col gap-2">
-               <Label htmlFor="description">Descrição (opcional)</Label>
-               <Textarea
-                  defaultValue={defaultValues?.description ?? ""}
-                  id="description"
-                  name="description"
-                  rows={2}
-               />
-            </div>
+                  <div className="flex flex-col gap-2">
+                     <Label htmlFor="description">Descrição (opcional)</Label>
+                     <Textarea
+                        defaultValue={defaultValues?.description ?? ""}
+                        id="description"
+                        name="description"
+                        rows={2}
+                     />
+                  </div>
 
-            <div className="grid grid-cols-2 gap-4">
-               <div className="flex flex-col gap-2">
-                  <Label htmlFor="baseUnit">Unidade base</Label>
-                  <Input
-                     defaultValue={defaultValues?.baseUnit ?? "un"}
-                     id="baseUnit"
-                     name="baseUnit"
-                     placeholder="un, g, mL"
-                     required
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                     <div className="flex flex-col gap-2">
+                        <Label htmlFor="baseUnit">Unidade base</Label>
+                        <Input
+                           defaultValue={defaultValues?.baseUnit ?? "un"}
+                           id="baseUnit"
+                           name="baseUnit"
+                           placeholder="un, g, mL"
+                           required
+                        />
+                     </div>
+                     <div className="flex flex-col gap-2">
+                        <Label htmlFor="purchaseUnit">Unidade de compra</Label>
+                        <Input
+                           defaultValue={defaultValues?.purchaseUnit ?? "caixa"}
+                           id="purchaseUnit"
+                           name="purchaseUnit"
+                           placeholder="caixa, kg, L"
+                           required
+                        />
+                     </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                     <Label htmlFor="purchaseUnitFactor">
+                        Fator de conversão (quantas unidades base por unidade de
+                        compra)
+                     </Label>
+                     <Input
+                        defaultValue={defaultValues?.purchaseUnitFactor ?? "1"}
+                        id="purchaseUnitFactor"
+                        min="0.0001"
+                        name="purchaseUnitFactor"
+                        placeholder="Ex: 12 (1 caixa = 12 un)"
+                        step="any"
+                        type="number"
+                     />
+                     <p className="text-xs text-muted-foreground">
+                        Para unidades padrão (kg→g, L→mL), a conversão é
+                        automática.
+                     </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                     <Label htmlFor="sellingPrice">
+                        Preço de venda (opcional)
+                     </Label>
+                     <Input
+                        defaultValue={defaultValues?.sellingPrice ?? ""}
+                        id="sellingPrice"
+                        min="0"
+                        name="sellingPrice"
+                        placeholder="0.00"
+                        step="0.01"
+                        type="number"
+                     />
+                  </div>
                </div>
-               <div className="flex flex-col gap-2">
-                  <Label htmlFor="purchaseUnit">Unidade de compra</Label>
-                  <Input
-                     defaultValue={defaultValues?.purchaseUnit ?? "caixa"}
-                     id="purchaseUnit"
-                     name="purchaseUnit"
-                     placeholder="caixa, kg, L"
-                     required
-                  />
-               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-               <Label htmlFor="purchaseUnitFactor">
-                  Fator de conversão (quantas unidades base por unidade de
-                  compra)
-               </Label>
-               <Input
-                  defaultValue={defaultValues?.purchaseUnitFactor ?? "1"}
-                  id="purchaseUnitFactor"
-                  min="0.0001"
-                  name="purchaseUnitFactor"
-                  placeholder="Ex: 12 (1 caixa = 12 un)"
-                  step="any"
-                  type="number"
-               />
-               <p className="text-xs text-muted-foreground">
-                  Para unidades padrão (kg→g, L→mL), a conversão é automática.
-               </p>
+            <div className="border-t px-4 py-4">
+               <Button className="w-full" disabled={isPending} type="submit">
+                  {isPending && (
+                     <Loader2 className="size-4 mr-2 animate-spin" />
+                  )}
+                  {mode === "create" ? "Criar produto" : "Salvar alterações"}
+               </Button>
             </div>
-
-            <div className="flex flex-col gap-2">
-               <Label htmlFor="sellingPrice">Preço de venda (opcional)</Label>
-               <Input
-                  defaultValue={defaultValues?.sellingPrice ?? ""}
-                  id="sellingPrice"
-                  min="0"
-                  name="sellingPrice"
-                  placeholder="0.00"
-                  step="0.01"
-                  type="number"
-               />
-            </div>
-
-            <Button className="w-full" disabled={isPending} type="submit">
-               {isPending && <Loader2 className="size-4 mr-2 animate-spin" />}
-               {mode === "create" ? "Criar produto" : "Salvar alterações"}
-            </Button>
          </form>
       </DialogStackContent>
    );

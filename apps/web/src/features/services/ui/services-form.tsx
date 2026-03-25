@@ -19,16 +19,12 @@ import { Separator } from "@packages/ui/components/separator";
 import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import type { ServiceRow } from "./services-columns";
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
 
 type BillingCycle = "hourly" | "monthly" | "annual" | "one_time";
 
@@ -46,10 +42,6 @@ const BILLING_CYCLE_OPTIONS: BillingCycle[] = [
    "one_time",
 ];
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 interface VariantFormValue {
    name: string;
    basePrice: string;
@@ -62,19 +54,15 @@ interface ServiceFormProps {
    onSuccess: () => void;
 }
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
 export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
    const isCreate = mode === "create";
    const [isPending, startTransition] = useTransition();
 
-   const { data: categories } = useQuery(
+   const { data: categories } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
 
-   const { data: tags } = useQuery(orpc.tags.getAll.queryOptions({}));
+   const { data: tags } = useSuspenseQuery(orpc.tags.getAll.queryOptions({}));
 
    const { data: existingVariants } = useQuery(
       orpc.services.getVariants.queryOptions({
@@ -187,7 +175,6 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
             </DialogStackHeader>
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
-               {/* ── Row 1: Nome + Preço ── */}
                <div className="grid grid-cols-2 gap-4">
                   <form.Field name="name">
                      {(field) => {
@@ -228,7 +215,6 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                   </form.Field>
                </div>
 
-               {/* ── Row 2: Categoria + Tag ── */}
                <div className="grid grid-cols-2 gap-4">
                   <form.Field name="categoryId">
                      {(field) => (
@@ -294,7 +280,6 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
 
                <Separator />
 
-               {/* ── Variantes ── */}
                <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                      <span className="text-sm font-medium">Variantes</span>
@@ -320,7 +305,6 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                      </form.Field>
                   </div>
 
-                  {/* Existing variants (edit mode) */}
                   {!isCreate &&
                      existingVariants &&
                      existingVariants.length > 0 && (
@@ -344,13 +328,12 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                         </div>
                      )}
 
-                  {/* New variants */}
                   <form.Field mode="array" name="variants">
                      {(arrayField) => (
                         <div className="flex flex-col gap-2">
                            {arrayField.state.value.map((_, index) => (
                               <div
-                                 className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end p-3 border rounded-md bg-muted/30"
+                                 className="grid grid-cols-[1fr_1fr_1fr_auto] gap-4 items-end p-3 border rounded-md bg-muted/30"
                                  key={`variant-${index + 1}`}
                               >
                                  <form.Field name={`variants[${index}].name`}>
