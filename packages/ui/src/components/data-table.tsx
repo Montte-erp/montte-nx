@@ -577,6 +577,17 @@ export function DataTable<TData, TValue>({
       ),
    );
 
+   useEffect(() => {
+      setColumnOrder((prev) => {
+         const newIds = allColumns.map(
+            (c) => (c as { accessorKey?: string }).accessorKey ?? c.id ?? "",
+         );
+         const kept = prev.filter((id) => newIds.includes(id));
+         const added = newIds.filter((id) => !prev.includes(id));
+         return [...kept, ...added];
+      });
+   }, [allColumns]);
+
    const table = useReactTable({
       columns: allColumns,
       data,
@@ -807,11 +818,26 @@ export function DataTable<TData, TValue>({
       );
    };
 
+   const activeReorderRows = reorderRows && !reorderColumns;
+
+   useEffect(() => {
+      if (reorderColumns && reorderRows) {
+         console.warn(
+            "[DataTable] reorderColumns and reorderRows cannot both be enabled at the same time. Row reordering will be disabled.",
+         );
+      }
+      if (groupBy && reorderRows) {
+         console.warn(
+            "[DataTable] groupBy and reorderRows cannot both be enabled at the same time. Row reordering will be disabled.",
+         );
+      }
+   }, [reorderColumns, reorderRows, groupBy]);
+
    // --- Single row ---
    const renderRow = (
       row: ReturnType<typeof table.getRowModel>["rows"][number],
    ) => {
-      if (reorderRows) {
+      if (activeReorderRows) {
          return (
             <SortableRow
                key={row.id}
@@ -874,7 +900,7 @@ export function DataTable<TData, TValue>({
          ]);
       }
 
-      if (reorderRows) {
+      if (activeReorderRows) {
          return (
             <SortableContext
                items={rowIds}
@@ -904,13 +930,7 @@ export function DataTable<TData, TValue>({
       </div>
    );
 
-   if (reorderColumns && reorderRows) {
-      console.warn(
-         "[DataTable] reorderColumns and reorderRows cannot both be enabled at the same time. Row reordering will be disabled.",
-      );
-   }
    const activeReorderColumns = reorderColumns;
-   const activeReorderRows = reorderRows && !reorderColumns;
    const needsDndContext = activeReorderColumns || activeReorderRows;
    const dndModifiers = activeReorderColumns
       ? [restrictToHorizontalAxis]
