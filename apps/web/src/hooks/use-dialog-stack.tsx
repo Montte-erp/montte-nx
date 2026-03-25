@@ -51,9 +51,11 @@ export function GlobalDialogStack() {
          open={isOpen}
       >
          <DialogStackOverlay />
-         <DialogStackBody className={bodyClassName}>
-            {children as React.ReactElement<{ index?: number }>}
-         </DialogStackBody>
+         {children && (
+            <DialogStackBody className={bodyClassName}>
+               {children as React.ReactElement<{ index?: number }>}
+            </DialogStackBody>
+         )}
       </DialogStack>
    );
 }

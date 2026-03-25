@@ -11,6 +11,7 @@ import {
    FieldLabel,
 } from "@packages/ui/components/field";
 import {
+   DialogStackContext,
    DialogStackContent,
    DialogStackDescription,
    DialogStackFooter,
@@ -36,7 +37,7 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { ChevronLeft, Plus } from "lucide-react";
-import { Suspense, useState } from "react";
+import { Suspense, useContext, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useAccountType } from "@/hooks/use-account-type";
@@ -58,6 +59,7 @@ type PaymentMethod =
 
 const amountSchema = z
    .string()
+   .min(1, "Campo obrigatório.")
    .refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0, {
       message: "Valor deve ser maior que zero.",
    });
@@ -704,6 +706,7 @@ function TransactionDialogStackContent({
    const isCreate = mode === "create";
    const { isBusiness } = useAccountType();
    const [secondaryForm, setSecondaryForm] = useState<SecondaryForm>(null);
+   const { setActiveIndex } = useContext(DialogStackContext);
 
    const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
@@ -2001,6 +2004,7 @@ function TransactionDialogStackContent({
                      onSuccess={(id) => {
                         form.setFieldValue("bankAccountId", id);
                         setSecondaryForm(null);
+                        setActiveIndex(0);
                      }}
                   />
                )}
@@ -2011,6 +2015,7 @@ function TransactionDialogStackContent({
                         onSuccess={(id) => {
                            form.setFieldValue("creditCardId", id);
                            setSecondaryForm(null);
+                           setActiveIndex(0);
                         }}
                      />
                   </Suspense>
@@ -2021,6 +2026,7 @@ function TransactionDialogStackContent({
                      onSuccess={(id) => {
                         form.setFieldValue("contactId", id);
                         setSecondaryForm(null);
+                        setActiveIndex(0);
                      }}
                   />
                )}
@@ -2030,6 +2036,7 @@ function TransactionDialogStackContent({
                      onSuccess={(id) => {
                         form.setFieldValue("categoryId", id);
                         setSecondaryForm(null);
+                        setActiveIndex(0);
                      }}
                      transactionType={secondaryForm.transactionType}
                   />
@@ -2043,6 +2050,7 @@ function TransactionDialogStackContent({
                            id,
                         ]);
                         setSecondaryForm(null);
+                        setActiveIndex(0);
                      }}
                   />
                )}

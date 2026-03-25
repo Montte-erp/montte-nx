@@ -17,6 +17,7 @@ import {
    createContext,
    useCallback,
    useContext,
+   useEffect,
    useState,
 } from "react";
 import { cn } from "@packages/ui/lib/utils";
@@ -31,7 +32,7 @@ type DialogStackContextType = {
    clickable: boolean;
 };
 
-const DialogStackContext = createContext<DialogStackContextType>({
+export const DialogStackContext = createContext<DialogStackContextType>({
    activeIndex: 0,
    setActiveIndex: () => {},
    totalDialogs: 0,
@@ -67,6 +68,10 @@ export const DialogStack = ({
       prop: open,
       onChange: onOpenChange,
    });
+
+   useEffect(() => {
+      if (!isOpen) setActiveIndex(0);
+   }, [isOpen]);
 
    return (
       <DialogStackContext.Provider
