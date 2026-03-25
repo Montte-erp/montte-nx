@@ -23,6 +23,7 @@ import {
 import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { Suspense } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
@@ -54,7 +55,7 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
       }),
    );
 
-   const today = new Date().toISOString().substring(0, 10);
+   const today = dayjs().format("YYYY-MM-DD");
    const defaultBankAccountId = bill.bankAccount?.id ?? "";
 
    const form = useForm({

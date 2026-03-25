@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { Button } from "@packages/ui/components/button";
 import {
    DialogStackContent,
@@ -53,9 +54,7 @@ interface BillFromTransactionDialogStackProps {
 }
 
 function addMonths(dateStr: string, months: number): string {
-   const d = new Date(`${dateStr}T00:00:00`);
-   d.setMonth(d.getMonth() + months);
-   return d.toISOString().substring(0, 10);
+   return dayjs(dateStr).add(months, "month").format("YYYY-MM-DD");
 }
 
 function deriveBillType(

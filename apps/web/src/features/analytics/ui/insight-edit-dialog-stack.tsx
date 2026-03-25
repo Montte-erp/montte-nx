@@ -14,7 +14,11 @@ import {
 } from "@packages/ui/components/dialog-stack";
 import { Input } from "@packages/ui/components/input";
 import { cn } from "@packages/ui/lib/utils";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+   useMutation,
+   useSuspenseQuery,
+   useQueryClient,
+} from "@tanstack/react-query";
 import { BarChart3, Hash, Loader2, TrendingUp } from "lucide-react";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
@@ -51,7 +55,7 @@ export function InsightEditDialogStack({
 }: InsightEditDialogStackProps) {
    const queryClient = useQueryClient();
 
-   const { data: insight, isLoading } = useQuery(
+   const { data: insight } = useSuspenseQuery(
       orpc.insights.getById.queryOptions({ input: { id: insightId } }),
    );
 
@@ -100,22 +104,6 @@ export function InsightEditDialogStack({
       });
    }, [insightId, name, config, updateMutation]);
 
-   if (isLoading) {
-      return (
-         <DialogStackContent index={0}>
-            <DialogStackHeader>
-               <DialogStackTitle>Configurar insight</DialogStackTitle>
-               <DialogStackDescription>
-                  Ajuste as configurações do insight.
-               </DialogStackDescription>
-            </DialogStackHeader>
-            <div className="flex-1 overflow-y-auto px-4 py-4 h-[500px] flex items-center justify-center">
-               <InsightLoadingState />
-            </div>
-         </DialogStackContent>
-      );
-   }
-
    return (
       <DialogStackContent index={0}>
          <DialogStackHeader className="pb-3">
@@ -127,7 +115,7 @@ export function InsightEditDialogStack({
             </DialogStackDescription>
          </DialogStackHeader>
 
-         <div className="flex-1 overflow-y-auto px-4 py-4 p-0 overflow-hidden">
+         <div className="flex-1 p-0 overflow-hidden">
             <div className="flex h-[500px]">
                <aside className="w-[220px] shrink-0 border-r flex flex-col overflow-y-auto">
                   <div className="p-3 flex flex-col gap-4">
