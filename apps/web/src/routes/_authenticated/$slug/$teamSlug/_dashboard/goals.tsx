@@ -21,8 +21,6 @@ import {
    ChevronLeft,
    ChevronRight,
    Copy,
-   LayoutGrid,
-   LayoutList,
    Loader2,
    MoreHorizontal,
    Pencil,
@@ -35,8 +33,6 @@ import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import { BudgetGoalCredenza } from "@/features/budget-goals/ui/budget-goal-credenza";
 import { buildBudgetGoalColumns } from "@/features/budget-goals/ui/budget-goals-columns";
-import type { ViewConfig } from "@/features/view-switch/hooks/use-view-switch";
-import { useViewSwitch } from "@/features/view-switch/hooks/use-view-switch";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -57,14 +53,6 @@ export const Route = createFileRoute(
    },
    component: GoalsPage,
 });
-
-const GOAL_VIEWS = [
-   { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
-   { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
-] as const satisfies [
-   ViewConfig<"table" | "card">,
-   ViewConfig<"table" | "card">,
-];
 
 // =============================================================================
 // Summary
@@ -204,10 +192,9 @@ function MonthNavigation({
 interface GoalsListProps {
    month: number;
    year: number;
-   view: "table" | "card";
 }
 
-function GoalsList({ month, year, view }: GoalsListProps) {
+function GoalsList({ month, year }: GoalsListProps) {
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
@@ -309,7 +296,6 @@ function GoalsList({ month, year, view }: GoalsListProps) {
                   </DropdownMenuContent>
                </DropdownMenu>
             )}
-            view={view}
          />
       </div>
    );
@@ -324,10 +310,6 @@ function GoalsPage() {
       month: new Date().getMonth() + 1,
       year: new Date().getFullYear(),
    });
-   const { currentView, setView, views } = useViewSwitch(
-      "finance:goals:view",
-      GOAL_VIEWS,
-   );
    const { openCredenza, closeCredenza } = useCredenza();
 
    const copyMutation = useMutation(
@@ -389,7 +371,6 @@ function GoalsPage() {
             }
             description="Defina limites de gasto mensais por categoria"
             title="Metas"
-            viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <MonthNavigation
             month={monthYear.month}
@@ -397,11 +378,7 @@ function GoalsPage() {
             year={monthYear.year}
          />
          <Suspense fallback={<GoalsSkeleton />}>
-            <GoalsList
-               month={monthYear.month}
-               view={currentView}
-               year={monthYear.year}
-            />
+            <GoalsList month={monthYear.month} year={monthYear.year} />
          </Suspense>
       </main>
    );

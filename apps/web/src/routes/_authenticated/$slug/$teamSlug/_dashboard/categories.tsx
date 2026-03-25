@@ -19,8 +19,6 @@ import {
    Archive,
    Download,
    FolderOpen,
-   LayoutGrid,
-   LayoutList,
    Pencil,
    Plus,
    Trash2,
@@ -40,10 +38,6 @@ import {
 } from "@/features/categories/ui/category-filter-bar";
 import { CategoryImportCredenza } from "@/features/categories/ui/category-import-credenza";
 import { exportCategoriesCsv } from "@/features/categories/utils/export-categories-csv";
-import {
-   useViewSwitch,
-   type ViewConfig,
-} from "@/features/view-switch/hooks/use-view-switch";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -58,14 +52,6 @@ export const Route = createFileRoute(
    },
    component: CategoriesPage,
 });
-
-const CATEGORY_VIEWS: [
-   ViewConfig<"table" | "card">,
-   ViewConfig<"table" | "card">,
-] = [
-   { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
-   { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
-];
 
 // =============================================================================
 // Skeleton
@@ -86,12 +72,11 @@ function CategoriesSkeleton() {
 // =============================================================================
 
 interface CategoriesListProps {
-   view: "table" | "card";
    filters: CategoryFilters;
    onFiltersChange: (filters: CategoryFilters) => void;
 }
 
-function CategoriesList({ view, filters }: CategoriesListProps) {
+function CategoriesList({ filters }: CategoriesListProps) {
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const {
@@ -256,7 +241,6 @@ function CategoriesList({ view, filters }: CategoriesListProps) {
                );
             }}
             rowSelection={rowSelection}
-            view={view}
          />
          <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
             <SelectionActionButton
@@ -277,10 +261,6 @@ function CategoriesList({ view, filters }: CategoriesListProps) {
 
 function CategoriesPage() {
    const { openCredenza, closeCredenza } = useCredenza();
-   const { currentView, setView, views } = useViewSwitch(
-      "finance:categories:view",
-      CATEGORY_VIEWS,
-   );
 
    const [filters, setFilters] = useState<CategoryFilters>({
       search: "",
@@ -332,15 +312,10 @@ function CategoriesPage() {
             }
             description="Gerencie as categorias das suas transações"
             title="Categorias"
-            viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <CategoryFilterBar filters={filters} onFiltersChange={setFilters} />
          <Suspense fallback={<CategoriesSkeleton />}>
-            <CategoriesList
-               filters={filters}
-               onFiltersChange={setFilters}
-               view={currentView}
-            />
+            <CategoriesList filters={filters} onFiltersChange={setFilters} />
          </Suspense>
       </main>
    );

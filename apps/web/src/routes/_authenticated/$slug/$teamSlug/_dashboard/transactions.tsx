@@ -1,6 +1,6 @@
 import { Button } from "@packages/ui/components/button";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Download, LayoutGrid, LayoutList, Plus, Upload } from "lucide-react";
+import { Download, Plus, Upload } from "lucide-react";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { DefaultHeader } from "@/components/default-header";
 import type { PanelAction } from "@/features/context-panel/context-panel-store";
@@ -16,8 +16,6 @@ import { TransactionImportCredenza } from "@/features/transactions/ui/transactio
 import { TransactionPrerequisitesBlocker } from "@/features/transactions/ui/transaction-prerequisites-blocker";
 import { TransactionsList } from "@/features/transactions/ui/transactions-list";
 import { TransactionsSkeleton } from "@/features/transactions/ui/transactions-skeleton";
-import type { ViewConfig } from "@/features/view-switch/hooks/use-view-switch";
-import { useViewSwitch } from "@/features/view-switch/hooks/use-view-switch";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -52,24 +50,12 @@ export const Route = createFileRoute(
    component: TransactionsPage,
 });
 
-const TRANSACTION_VIEWS: [
-   ViewConfig<"table" | "card">,
-   ViewConfig<"table" | "card">,
-] = [
-   { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
-   { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
-];
-
 function TransactionsPage() {
    const { openCredenza, closeCredenza } = useCredenza();
    const navigate = useNavigate();
    const { slug, teamSlug } = Route.useParams();
    const { hasBankAccounts } = useTransactionPrerequisites();
    const [filters, setFilters] = useState<TransactionFilters>(DEFAULT_FILTERS);
-   const { currentView, setView, views } = useViewSwitch(
-      "finance:transactions:view",
-      TRANSACTION_VIEWS,
-   );
 
    const handleCreate = useCallback(() => {
       if (!hasBankAccounts) {
@@ -146,7 +132,6 @@ function TransactionsPage() {
             description="Gerencie suas receitas, despesas e transferências"
             panelActions={panelActions}
             title="Lançamentos"
-            viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <TransactionFilterBar filters={filters} onFiltersChange={setFilters} />
          <Suspense fallback={<TransactionsSkeleton />}>
@@ -156,7 +141,6 @@ function TransactionsPage() {
                onPageSizeChange={(pageSize) =>
                   setFilters((f) => ({ ...f, pageSize, page: 1 }))
                }
-               view={currentView}
             />
          </Suspense>
       </main>

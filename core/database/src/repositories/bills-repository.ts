@@ -328,14 +328,14 @@ export async function generateBillsForSubscription(
       billsToCreate.push(makeBill(start, formatMonthYear(start)));
    } else if (billingCycle === "monthly") {
       const cursor = new Date(start);
-      const limit =
-         end ??
-         (() => {
-            const d = new Date(start);
-            d.setFullYear(d.getFullYear() + 2);
-            return d;
-         })();
-      while (cursor <= limit) {
+      const twoYearLimit = (() => {
+         const d = new Date(start);
+         d.setFullYear(d.getFullYear() + 2);
+         return d;
+      })();
+      const limit = end ?? twoYearLimit;
+      const inclusive = end !== null;
+      while (inclusive ? cursor <= limit : cursor < limit) {
          billsToCreate.push(
             makeBill(new Date(cursor), formatMonthYear(cursor)),
          );

@@ -10,24 +10,12 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-   Archive,
-   LayoutGrid,
-   LayoutList,
-   Pencil,
-   Plus,
-   Tag,
-   Trash2,
-} from "lucide-react";
+import { Archive, Pencil, Plus, Tag, Trash2 } from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import { buildTagColumns, type TagRow } from "@/features/tags/ui/tags-columns";
 import { TagForm } from "@/features/tags/ui/tags-form";
-import {
-   useViewSwitch,
-   type ViewConfig,
-} from "@/features/view-switch/hooks/use-view-switch";
 import { useAccountType } from "@/hooks/use-account-type";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
@@ -41,12 +29,6 @@ export const Route = createFileRoute(
    },
    component: TagsPage,
 });
-
-const TAG_VIEWS: [ViewConfig<"table" | "card">, ViewConfig<"table" | "card">] =
-   [
-      { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
-      { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
-   ];
 
 // =============================================================================
 // Skeleton
@@ -66,11 +48,7 @@ function TagsSkeleton() {
 // List
 // =============================================================================
 
-interface TagsListProps {
-   view: "table" | "card";
-}
-
-function TagsList({ view }: TagsListProps) {
+function TagsList() {
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const { isBusiness } = useAccountType();
@@ -190,7 +168,6 @@ function TagsList({ view }: TagsListProps) {
                </Button>
             </>
          )}
-         view={view}
       />
    );
 }
@@ -202,10 +179,6 @@ function TagsList({ view }: TagsListProps) {
 function TagsPage() {
    const { openCredenza, closeCredenza } = useCredenza();
    const { isBusiness } = useAccountType();
-   const { currentView, setView, views } = useViewSwitch(
-      "finance:tags:view",
-      TAG_VIEWS,
-   );
 
    const handleCreate = useCallback(() => {
       openCredenza({
@@ -228,10 +201,9 @@ function TagsPage() {
                   : "Gerencie suas tags para categorizar transações"
             }
             title={isBusiness ? "Centros de Custo" : "Tags"}
-            viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <Suspense fallback={<TagsSkeleton />}>
-            <TagsList view={currentView} />
+            <TagsList />
          </Suspense>
       </main>
    );

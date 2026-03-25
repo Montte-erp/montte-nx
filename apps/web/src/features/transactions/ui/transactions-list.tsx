@@ -59,14 +59,12 @@ interface TransactionsListProps {
    filters: TransactionFilters;
    onPageChange: (page: number) => void;
    onPageSizeChange: (size: number) => void;
-   view: "table" | "card";
 }
 
 export function TransactionsList({
    filters,
    onPageChange,
    onPageSizeChange,
-   view,
 }: TransactionsListProps) {
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
@@ -362,7 +360,6 @@ export function TransactionsList({
                );
             }}
             rowSelection={rowSelection}
-            view={view}
          />
          <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
             <SelectionActionButton

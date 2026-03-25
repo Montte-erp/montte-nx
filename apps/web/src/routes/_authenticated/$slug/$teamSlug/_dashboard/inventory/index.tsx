@@ -20,8 +20,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
    Archive,
    History,
-   LayoutGrid,
-   LayoutList,
    MoreHorizontal,
    Package,
    PackagePlus,
@@ -42,10 +40,6 @@ import {
    type InventoryProductRow,
 } from "@/features/inventory/ui/inventory-product-columns";
 import { InventoryProductForm } from "@/features/inventory/ui/inventory-product-form";
-import {
-   useViewSwitch,
-   type ViewConfig,
-} from "@/features/view-switch/hooks/use-view-switch";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
@@ -74,14 +68,6 @@ const INVENTORY_BANNER: EarlyAccessBannerTemplate = {
    ],
 };
 
-const INVENTORY_VIEWS: [
-   ViewConfig<"table" | "card">,
-   ViewConfig<"table" | "card">,
-] = [
-   { id: "table", label: "Tabela", icon: <LayoutList className="size-4" /> },
-   { id: "card", label: "Cards", icon: <LayoutGrid className="size-4" /> },
-];
-
 // =============================================================================
 // Skeleton
 // =============================================================================
@@ -100,7 +86,7 @@ function InventorySkeleton() {
 // List
 // =============================================================================
 
-function InventoryList({ view }: { view: "table" | "card" }) {
+function InventoryList() {
    const { data: products } = useSuspenseQuery(
       orpc.inventory.getProducts.queryOptions({}),
    );
@@ -232,7 +218,6 @@ function InventoryList({ view }: { view: "table" | "card" }) {
                </DropdownMenu>
             </>
          )}
-         view={view}
       />
    );
 }
@@ -243,10 +228,6 @@ function InventoryList({ view }: { view: "table" | "card" }) {
 
 function InventoryPage() {
    const { openCredenza, closeCredenza } = useCredenza();
-   const { currentView, setView, views } = useViewSwitch(
-      "inventory:products:view",
-      INVENTORY_VIEWS,
-   );
 
    const handleCreate = useCallback(() => {
       openCredenza({
@@ -267,11 +248,10 @@ function InventoryPage() {
             }
             description="Controle de estoque e movimentações"
             title="Estoque"
-            viewSwitch={{ options: views, currentView, onViewChange: setView }}
          />
          <EarlyAccessBanner template={INVENTORY_BANNER} />
          <Suspense fallback={<InventorySkeleton />}>
-            <InventoryList view={currentView} />
+            <InventoryList />
          </Suspense>
       </main>
    );
