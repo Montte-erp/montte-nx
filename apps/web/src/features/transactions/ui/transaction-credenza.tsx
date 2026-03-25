@@ -1,3 +1,4 @@
+import type { Attachment } from "@core/database/schemas/transactions";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import type { ComboboxOption } from "@packages/ui/components/combobox";
@@ -365,7 +366,7 @@ function TransactionFormContent({
                : null,
             categoryId: isTransfer ? null : value.categoryId || null,
             subcategoryId: isTransfer ? null : value.subcategoryId || null,
-            attachmentUrl: null as string | null,
+            attachments: [] as Attachment[],
             tagIds: value.tagIds,
             description: value.description || null,
             contactId: value.contactId,

@@ -5,6 +5,7 @@ import {
    date,
    index,
    integer,
+   jsonb,
    numeric,
    pgEnum,
    pgTable,
@@ -20,6 +21,15 @@ import { creditCards } from "@core/database/schemas/credit-cards";
 import { services } from "@core/database/schemas/services";
 import { tags } from "@core/database/schemas/tags";
 import { z } from "zod";
+
+export const attachmentSchema = z.object({
+   url: z.string().url(),
+   filename: z.string().min(1),
+   size: z.number().int().positive(),
+   mimeType: z.string().optional(),
+});
+
+export type Attachment = z.infer<typeof attachmentSchema>;
 
 export const paymentMethodEnum = pgEnum("payment_method", [
    "pix",
@@ -64,7 +74,7 @@ export const transactions = pgTable(
       categoryId: uuid("category_id").references(() => categories.id, {
          onDelete: "set null",
       }),
-      attachmentUrl: text("attachment_url"),
+      attachments: jsonb("attachments").$type<Attachment[]>(),
       paymentMethod: paymentMethodEnum("payment_method"),
       isInstallment: boolean("is_installment").default(false).notNull(),
       installmentCount: integer("installment_count"),
@@ -162,7 +172,7 @@ const baseTransactionSchema = createInsertSchema(transactions).pick({
    creditCardId: true,
    contactId: true,
    paymentMethod: true,
-   attachmentUrl: true,
+   attachments: true,
    isInstallment: true,
    installmentCount: true,
    installmentNumber: true,
@@ -195,7 +205,7 @@ export const createTransactionSchema = baseTransactionSchema
       creditCardId: z.string().uuid().nullable().optional(),
       categoryId: z.string().uuid().nullable().optional(),
       contactId: z.string().uuid().nullable().optional(),
-      attachmentUrl: z.string().nullable().optional(),
+      attachments: z.array(attachmentSchema).nullable().optional(),
    })
    .superRefine((data, ctx) => {
       if (data.type === "transfer") {
@@ -269,7 +279,7 @@ export const updateTransactionSchema = baseTransactionSchema
       creditCardId: z.string().uuid().nullable().optional(),
       categoryId: z.string().uuid().nullable().optional(),
       contactId: z.string().uuid().nullable().optional(),
-      attachmentUrl: z.string().nullable().optional(),
+      attachments: z.array(attachmentSchema).nullable().optional(),
    })
    .partial();
 

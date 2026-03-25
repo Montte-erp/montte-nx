@@ -92,7 +92,7 @@ describe("TransactionSchema", () => {
          categoryId: null,
          contactId: null,
          paymentMethod: null,
-         attachmentUrl: null,
+         attachments: null,
          createdAt: now,
          updatedAt: now,
       });

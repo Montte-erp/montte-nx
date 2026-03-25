@@ -1,6 +1,5 @@
 import { sql } from "drizzle-orm";
 import {
-   bigint,
    date,
    decimal,
    integer,
@@ -161,7 +160,7 @@ export const currentMonthStorageCost = pgMaterializedView(
    "current_month_storage_cost",
    {
       organizationId: uuid("organization_id").notNull(),
-      currentBytes: bigint("current_bytes", { mode: "bigint" }).notNull(),
+      currentBytes: integer("current_bytes").notNull(),
       monthToDateCost: decimal("month_to_date_cost", {
          precision: 10,
          scale: 6,
@@ -172,11 +171,20 @@ export const currentMonthStorageCost = pgMaterializedView(
       }).notNull(),
    },
 ).as(sql`
+   WITH attachment_sizes AS (
+      SELECT
+         t.team_id AS organization_id,
+         (jsonb_array_elements(t.attachments)->>'size')::bigint AS size_bytes,
+         t.created_at
+      FROM transactions t
+      WHERE t.attachments IS NOT NULL
+         AND jsonb_array_length(t.attachments) > 0
+   )
    SELECT
       organization_id,
-      COALESCE(SUM(size), 0)::bigint AS current_bytes,
+      COALESCE(SUM(size_bytes), 0)::bigint AS current_bytes,
       COALESCE(SUM(
-         (size / 1073741824.0) *
+         (size_bytes / 1073741824.0) *
          GREATEST(
             EXTRACT(EPOCH FROM (
                NOW() - GREATEST(created_at, DATE_TRUNC('month', CURRENT_DATE))
@@ -185,7 +193,7 @@ export const currentMonthStorageCost = pgMaterializedView(
          EXTRACT(DAY FROM (DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month - 1 day'))
          * 1.50
       ), 0) AS month_to_date_cost,
-      COALESCE(SUM(size / 1073741824.0) * 1.50, 0) AS projected_cost
-   FROM assets
+      COALESCE(SUM(size_bytes / 1073741824.0) * 1.50, 0) AS projected_cost
+   FROM attachment_sizes
    GROUP BY organization_id
 `);

@@ -4,6 +4,13 @@ const uuid = z.string().uuid();
 const numericString = z.string().regex(/^-?\d+(\.\d{1,2})?$/);
 const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
+export const attachmentSchema = z.object({
+   url: z.string().url(),
+   filename: z.string().min(1),
+   size: z.number().int().positive(),
+   mimeType: z.string().optional(),
+});
+
 export const bankAccountTypeEnum = z.enum([
    "checking",
    "savings",
@@ -75,7 +82,7 @@ export const TransactionSchema = z.object({
    categoryId: uuid.nullable(),
    contactId: uuid.nullable(),
    paymentMethod: paymentMethodEnum.nullable(),
-   attachmentUrl: z.string().nullable(),
+   attachments: z.array(attachmentSchema).nullable(),
    createdAt: z.string(),
    updatedAt: z.string(),
 });
@@ -92,7 +99,7 @@ export const CreateTransactionSchema = z.object({
    categoryId: uuid.nullable().optional(),
    contactId: uuid.nullable().optional(),
    paymentMethod: paymentMethodEnum.nullable().optional(),
-   attachmentUrl: z.string().nullable().optional(),
+   attachments: z.array(attachmentSchema).nullable().optional(),
    tagIds: z.array(uuid).optional(),
 });
 

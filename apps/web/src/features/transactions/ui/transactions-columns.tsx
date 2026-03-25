@@ -1,4 +1,5 @@
 import { format, of } from "@f-o-t/money";
+import type { Attachment } from "@core/database/schemas/transactions";
 import { Badge } from "@packages/ui/components/badge";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -15,7 +16,7 @@ export type TransactionRow = {
    destinationBankAccountId: string | null;
    categoryId: string | null;
    subcategoryId: string | null;
-   attachmentUrl: string | null;
+   attachments: Attachment[] | null;
    tagIds?: string[];
    contactId: string | null;
    contactName?: string | null;

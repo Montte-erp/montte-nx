@@ -1,4 +1,3 @@
-export * from "@core/database/schemas/assets";
 export * from "@core/database/schemas/auth";
 export * from "@core/database/schemas/bank-accounts";
 export * from "@core/database/schemas/bills";

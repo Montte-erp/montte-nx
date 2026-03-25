@@ -282,7 +282,6 @@ export const pay = protectedProcedure
             date,
             bankAccountId: resolvedBankAccountId,
             categoryId: bill.categoryId ?? null,
-            attachmentUrl: bill.attachmentUrl ?? null,
          },
          [],
       );

@@ -1,3 +1,4 @@
+import type { Attachment } from "@core/database/schemas/transactions";
 import { evaluateConditionGroup } from "@f-o-t/condition-evaluator";
 import { generateFromObjects, parseOrThrow } from "@f-o-t/csv";
 import { getTransactions, parseOrThrow as parseOfx } from "@f-o-t/ofx";
@@ -1216,7 +1217,7 @@ function ConfirmStep({
                categoryId: resolvedCategoryId,
                subcategoryId: null as string | null,
                tagIds: [] as string[],
-               attachmentUrl: null as string | null,
+               attachments: [] as Attachment[],
                paymentMethod: (row.forma_pagamento || null) as
                   | "pix"
                   | "credit_card"
