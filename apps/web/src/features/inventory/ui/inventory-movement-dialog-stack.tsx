@@ -119,8 +119,11 @@ export function InventoryMovementDialogStack({
             </TabsList>
 
             <TabsContent value="purchase">
-               <form className="space-y-4 pt-2" onSubmit={handlePurchase}>
-                  <div className="space-y-1.5">
+               <form
+                  className="flex flex-col gap-4 pt-2"
+                  onSubmit={handlePurchase}
+               >
+                  <div className="flex flex-col gap-2">
                      <Label>Quantidade ({product.purchaseUnit})</Label>
                      <Input
                         min="0.001"
@@ -131,7 +134,7 @@ export function InventoryMovementDialogStack({
                         type="number"
                      />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label>Custo total (R$)</Label>
                      <Input
                         min="0.01"
@@ -142,7 +145,7 @@ export function InventoryMovementDialogStack({
                         type="number"
                      />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label>Data</Label>
                      <Input
                         defaultValue={today}
@@ -151,7 +154,7 @@ export function InventoryMovementDialogStack({
                         type="date"
                      />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label>Observações (opcional)</Label>
                      <Input
                         name="notes"
@@ -172,8 +175,8 @@ export function InventoryMovementDialogStack({
             </TabsContent>
 
             <TabsContent value="sale">
-               <form className="space-y-4 pt-2" onSubmit={handleSale}>
-                  <div className="space-y-1.5">
+               <form className="flex flex-col gap-4 pt-2" onSubmit={handleSale}>
+                  <div className="flex flex-col gap-2">
                      <Label>Quantidade ({product.baseUnit})</Label>
                      <Input
                         min="0.001"
@@ -184,7 +187,7 @@ export function InventoryMovementDialogStack({
                         type="number"
                      />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label>Preço por {product.baseUnit} (R$)</Label>
                      <Input
                         defaultValue={product.sellingPrice ?? ""}
@@ -195,7 +198,7 @@ export function InventoryMovementDialogStack({
                         type="number"
                      />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label>Data</Label>
                      <Input
                         defaultValue={today}
@@ -204,7 +207,7 @@ export function InventoryMovementDialogStack({
                         type="date"
                      />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label>Observações (opcional)</Label>
                      <Input name="notes" />
                   </div>
@@ -222,8 +225,11 @@ export function InventoryMovementDialogStack({
             </TabsContent>
 
             <TabsContent value="waste">
-               <form className="space-y-4 pt-2" onSubmit={handleWaste}>
-                  <div className="space-y-1.5">
+               <form
+                  className="flex flex-col gap-4 pt-2"
+                  onSubmit={handleWaste}
+               >
+                  <div className="flex flex-col gap-2">
                      <Label>Quantidade ({product.baseUnit})</Label>
                      <Input
                         min="0.001"
@@ -234,7 +240,7 @@ export function InventoryMovementDialogStack({
                         type="number"
                      />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label>Data</Label>
                      <Input
                         defaultValue={today}
@@ -243,7 +249,7 @@ export function InventoryMovementDialogStack({
                         type="date"
                      />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label>Observações (opcional)</Label>
                      <Input name="notes" placeholder="Ex: Vencido" />
                   </div>
