@@ -1,4 +1,4 @@
-name: Biome Check
+name: Check
 
 on:
    pull_request:

@@ -1,7 +1,0 @@
-{
-   "extends": "//",
-   "files": {
-      "includes": ["**", "!**/*.css"]
-   },
-   "root": false
-}
