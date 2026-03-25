@@ -13,6 +13,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
 import { GlobalCredenza } from "@/hooks/use-credenza";
+import { GlobalDialogStack } from "@/hooks/use-dialog-stack";
 import {
    PostHogWrapper,
    PosthogRouterTracker,
@@ -85,6 +86,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   <Toaster richColors />
                   <GlobalCredenza />
                   <GlobalAlertDialog />
+                  <GlobalDialogStack />
                   <ClientOnly>
                      <TanStackDevtools
                         config={{
