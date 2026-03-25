@@ -5,7 +5,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { DefaultHeader } from "@/components/default-header";
 import type { PanelAction } from "@/features/context-panel/context-panel-store";
 import { useTransactionPrerequisites } from "@/features/transactions/hooks/use-transaction-prerequisites";
-import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
+import { TransactionDialogStack } from "@/features/transactions/ui/transaction-dialog-stack";
 import { TransactionExportCredenza } from "@/features/transactions/ui/transaction-export-credenza";
 import {
    DEFAULT_FILTERS,
@@ -17,6 +17,7 @@ import { TransactionPrerequisitesBlocker } from "@/features/transactions/ui/tran
 import { TransactionsList } from "@/features/transactions/ui/transactions-list";
 import { TransactionsSkeleton } from "@/features/transactions/ui/transactions-skeleton";
 import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
@@ -52,6 +53,7 @@ export const Route = createFileRoute(
 
 function TransactionsPage() {
    const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const navigate = useNavigate();
    const { slug, teamSlug } = Route.useParams();
    const { hasBankAccounts } = useTransactionPrerequisites();
@@ -74,12 +76,24 @@ function TransactionsPage() {
          });
          return;
       }
-      openCredenza({
+      openDialogStack({
          children: (
-            <TransactionCredenza mode="create" onSuccess={closeCredenza} />
+            <TransactionDialogStack
+               mode="create"
+               onSuccess={closeDialogStack}
+            />
          ),
       });
-   }, [hasBankAccounts, openCredenza, closeCredenza, navigate, slug, teamSlug]);
+   }, [
+      hasBankAccounts,
+      openCredenza,
+      closeCredenza,
+      openDialogStack,
+      closeDialogStack,
+      navigate,
+      slug,
+      teamSlug,
+   ]);
 
    useEffect(() => {
       const handler = (e: Event) => {

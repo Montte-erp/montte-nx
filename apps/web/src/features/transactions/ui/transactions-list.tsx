@@ -44,7 +44,7 @@ import { toast } from "sonner";
 import { BillFromTransactionCredenza } from "@/features/bills/ui/bill-from-transaction-credenza";
 import { BulkCategorizeForm } from "@/features/transactions/ui/bulk-categorize-form";
 import { BulkMoveAccountForm } from "@/features/transactions/ui/bulk-move-account-form";
-import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
+import { TransactionDialogStack } from "@/features/transactions/ui/transaction-dialog-stack";
 import type { TransactionFilters } from "@/features/transactions/ui/transaction-filter-bar";
 import {
    buildTransactionColumns,
@@ -53,6 +53,7 @@ import {
 } from "@/features/transactions/ui/transactions-columns";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
 interface TransactionsListProps {
@@ -67,6 +68,7 @@ export function TransactionsList({
    onPageSizeChange,
 }: TransactionsListProps) {
    const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
    const {
       rowSelection,
@@ -138,17 +140,17 @@ export function TransactionsList({
 
    const handleEdit = useCallback(
       (transaction: TransactionRow) => {
-         openCredenza({
+         openDialogStack({
             children: (
-               <TransactionCredenza
+               <TransactionDialogStack
                   mode="edit"
-                  onSuccess={closeCredenza}
+                  onSuccess={closeDialogStack}
                   transaction={transaction}
                />
             ),
          });
       },
-      [openCredenza, closeCredenza],
+      [openDialogStack, closeDialogStack],
    );
 
    const handleDelete = useCallback(
