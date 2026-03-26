@@ -18,7 +18,7 @@ import { buildTagColumns, type TagRow } from "@/features/tags/ui/tags-columns";
 import { TagForm } from "@/features/tags/ui/tags-form";
 import { useAccountType } from "@/hooks/use-account-type";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
@@ -49,7 +49,7 @@ function TagsSkeleton() {
 // =============================================================================
 
 function TagsList() {
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
    const { isBusiness } = useAccountType();
 
@@ -83,13 +83,13 @@ function TagsList() {
 
    const handleEdit = useCallback(
       (tag: TagRow) => {
-         openCredenza({
+         openDialogStack({
             children: (
-               <TagForm mode="edit" onSuccess={closeCredenza} tag={tag} />
+               <TagForm mode="edit" onSuccess={closeDialogStack} tag={tag} />
             ),
          });
       },
-      [openCredenza, closeCredenza],
+      [openDialogStack, closeDialogStack],
    );
 
    const handleDelete = useCallback(
@@ -177,14 +177,14 @@ function TagsList() {
 // =============================================================================
 
 function TagsPage() {
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const { isBusiness } = useAccountType();
 
    const handleCreate = useCallback(() => {
-      openCredenza({
-         children: <TagForm mode="create" onSuccess={closeCredenza} />,
+      openDialogStack({
+         children: <TagForm mode="create" onSuccess={closeDialogStack} />,
       });
-   }, [openCredenza, closeCredenza]);
+   }, [openDialogStack, closeDialogStack]);
 
    return (
       <main className="flex flex-col gap-4">

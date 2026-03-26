@@ -1,9 +1,10 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaDescription,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import { Input } from "@packages/ui/components/input";
 import { Label } from "@packages/ui/components/label";
 import {
@@ -13,21 +14,22 @@ import {
    TabsTrigger,
 } from "@packages/ui/components/tabs";
 import { useMutation } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { Loader2 } from "lucide-react";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import type { InventoryProductRow } from "./inventory-product-columns";
 
-interface InventoryMovementCredenzaProps {
+interface InventoryMovementDialogStackProps {
    product: InventoryProductRow;
    onSuccess: () => void;
 }
 
-export function InventoryMovementCredenza({
+export function InventoryMovementDialogStack({
    product,
    onSuccess,
-}: InventoryMovementCredenzaProps) {
+}: InventoryMovementDialogStackProps) {
    const mutation = useMutation(
       orpc.inventory.registerMovement.mutationOptions({
          onSuccess: () => {
@@ -38,7 +40,7 @@ export function InventoryMovementCredenza({
       }),
    );
 
-   const today = new Date().toISOString().split("T")[0];
+   const today = dayjs().format("YYYY-MM-DD");
 
    const handlePurchase = useCallback(
       (e: React.FormEvent<HTMLFormElement>) => {
@@ -96,13 +98,13 @@ export function InventoryMovementCredenza({
    );
 
    return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>Movimentação de estoque</CredenzaTitle>
-            <CredenzaDescription>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>Movimentação de estoque</DialogStackTitle>
+            <DialogStackDescription>
                Registre entradas e saídas do produto.
-            </CredenzaDescription>
-         </CredenzaHeader>
+            </DialogStackDescription>
+         </DialogStackHeader>
          <Tabs defaultValue="purchase">
             <TabsList className="w-full">
                <TabsTrigger className="flex-1" value="purchase">
@@ -117,8 +119,11 @@ export function InventoryMovementCredenza({
             </TabsList>
 
             <TabsContent value="purchase">
-               <form className="space-y-4 pt-2" onSubmit={handlePurchase}>
-                  <div className="space-y-1.5">
+               <form
+                  className="flex flex-col gap-4 pt-2"
+                  onSubmit={handlePurchase}
+               >
+                  <div className="flex flex-col gap-2">
                      <Label>Quantidade ({product.purchaseUnit})</Label>
                      <Input
                         min="0.001"
@@ -129,7 +134,7 @@ export function InventoryMovementCredenza({
                         type="number"
                      />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label>Custo total (R$)</Label>
                      <Input
                         min="0.01"
@@ -140,7 +145,7 @@ export function InventoryMovementCredenza({
                         type="number"
                      />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label>Data</Label>
                      <Input
                         defaultValue={today}
@@ -149,7 +154,7 @@ export function InventoryMovementCredenza({
                         type="date"
                      />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label>Observações (opcional)</Label>
                      <Input
                         name="notes"
@@ -170,8 +175,8 @@ export function InventoryMovementCredenza({
             </TabsContent>
 
             <TabsContent value="sale">
-               <form className="space-y-4 pt-2" onSubmit={handleSale}>
-                  <div className="space-y-1.5">
+               <form className="flex flex-col gap-4 pt-2" onSubmit={handleSale}>
+                  <div className="flex flex-col gap-2">
                      <Label>Quantidade ({product.baseUnit})</Label>
                      <Input
                         min="0.001"
@@ -182,7 +187,7 @@ export function InventoryMovementCredenza({
                         type="number"
                      />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label>Preço por {product.baseUnit} (R$)</Label>
                      <Input
                         defaultValue={product.sellingPrice ?? ""}
@@ -193,7 +198,7 @@ export function InventoryMovementCredenza({
                         type="number"
                      />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label>Data</Label>
                      <Input
                         defaultValue={today}
@@ -202,7 +207,7 @@ export function InventoryMovementCredenza({
                         type="date"
                      />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label>Observações (opcional)</Label>
                      <Input name="notes" />
                   </div>
@@ -220,8 +225,11 @@ export function InventoryMovementCredenza({
             </TabsContent>
 
             <TabsContent value="waste">
-               <form className="space-y-4 pt-2" onSubmit={handleWaste}>
-                  <div className="space-y-1.5">
+               <form
+                  className="flex flex-col gap-4 pt-2"
+                  onSubmit={handleWaste}
+               >
+                  <div className="flex flex-col gap-2">
                      <Label>Quantidade ({product.baseUnit})</Label>
                      <Input
                         min="0.001"
@@ -232,7 +240,7 @@ export function InventoryMovementCredenza({
                         type="number"
                      />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label>Data</Label>
                      <Input
                         defaultValue={today}
@@ -241,7 +249,7 @@ export function InventoryMovementCredenza({
                         type="date"
                      />
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="flex flex-col gap-2">
                      <Label>Observações (opcional)</Label>
                      <Input name="notes" placeholder="Ex: Vencido" />
                   </div>
@@ -259,6 +267,6 @@ export function InventoryMovementCredenza({
                </form>
             </TabsContent>
          </Tabs>
-      </>
+      </DialogStackContent>
    );
 }

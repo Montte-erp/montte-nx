@@ -1,11 +1,10 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import {
    Field,
    FieldError,
@@ -100,177 +99,182 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
             form.handleSubmit();
          }}
       >
-         <CredenzaHeader>
-            <CredenzaTitle>
-               {isCreate ? "Novo Contato" : "Editar Contato"}
-            </CredenzaTitle>
-            <CredenzaDescription>
-               {isCreate
-                  ? "Cadastre um cliente ou fornecedor."
-                  : "Atualize as informações do contato."}
-            </CredenzaDescription>
-         </CredenzaHeader>
+         <DialogStackContent index={0}>
+            <DialogStackHeader>
+               <DialogStackTitle>
+                  {isCreate ? "Novo Contato" : "Editar Contato"}
+               </DialogStackTitle>
+               <DialogStackDescription>
+                  {isCreate
+                     ? "Cadastre um cliente ou fornecedor."
+                     : "Atualize as informações do contato."}
+               </DialogStackDescription>
+            </DialogStackHeader>
 
-         <CredenzaBody className="space-y-4">
-            <FieldGroup>
-               {/* Name */}
-               <form.Field name="name">
-                  {(field) => {
-                     const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
-                     return (
-                        <Field data-invalid={isInvalid}>
-                           <FieldLabel>Nome *</FieldLabel>
-                           <Input
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="Ex: Empresa XYZ"
-                              value={field.state.value}
-                           />
-                           {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                           )}
-                        </Field>
-                     );
-                  }}
-               </form.Field>
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+               <FieldGroup>
+                  <form.Field name="name">
+                     {(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           !field.state.meta.isValid;
+                        return (
+                           <Field data-invalid={isInvalid}>
+                              <FieldLabel>Nome *</FieldLabel>
+                              <Input
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                 }
+                                 placeholder="Ex: Empresa XYZ"
+                                 value={field.state.value}
+                              />
+                              {isInvalid && (
+                                 <FieldError errors={field.state.meta.errors} />
+                              )}
+                           </Field>
+                        );
+                     }}
+                  </form.Field>
 
-               {/* Type */}
-               <form.Field name="type">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel>Tipo *</FieldLabel>
-                        <Select
-                           onValueChange={(v) =>
-                              field.handleChange(v as ContactRow["type"])
-                           }
-                           value={field.state.value}
-                        >
-                           <SelectTrigger>
-                              <SelectValue placeholder="Selecione o tipo" />
-                           </SelectTrigger>
-                           <SelectContent>
-                              <SelectItem value="cliente">Cliente</SelectItem>
-                              <SelectItem value="fornecedor">
-                                 Fornecedor
-                              </SelectItem>
-                              <SelectItem value="ambos">Ambos</SelectItem>
-                           </SelectContent>
-                        </Select>
-                     </Field>
-                  )}
-               </form.Field>
-
-               {/* Document */}
-               <div className="grid grid-cols-3 gap-2">
-                  <form.Field name="documentType">
+                  <form.Field name="type">
                      {(field) => (
                         <Field>
-                           <FieldLabel>Tipo Doc.</FieldLabel>
+                           <FieldLabel>Tipo *</FieldLabel>
                            <Select
                               onValueChange={(v) =>
-                                 field.handleChange(v as "" | "cpf" | "cnpj")
+                                 field.handleChange(v as ContactRow["type"])
                               }
                               value={field.state.value}
                            >
                               <SelectTrigger>
-                                 <SelectValue placeholder="—" />
+                                 <SelectValue placeholder="Selecione o tipo" />
                               </SelectTrigger>
                               <SelectContent>
-                                 <SelectItem value="cpf">CPF</SelectItem>
-                                 <SelectItem value="cnpj">CNPJ</SelectItem>
+                                 <SelectItem value="cliente">
+                                    Cliente
+                                 </SelectItem>
+                                 <SelectItem value="fornecedor">
+                                    Fornecedor
+                                 </SelectItem>
+                                 <SelectItem value="ambos">Ambos</SelectItem>
                               </SelectContent>
                            </Select>
                         </Field>
                      )}
                   </form.Field>
 
-                  <form.Field name="document">
+                  <div className="grid grid-cols-3 gap-2">
+                     <form.Field name="documentType">
+                        {(field) => (
+                           <Field>
+                              <FieldLabel>Tipo Doc.</FieldLabel>
+                              <Select
+                                 onValueChange={(v) =>
+                                    field.handleChange(v as "" | "cpf" | "cnpj")
+                                 }
+                                 value={field.state.value}
+                              >
+                                 <SelectTrigger>
+                                    <SelectValue placeholder="—" />
+                                 </SelectTrigger>
+                                 <SelectContent>
+                                    <SelectItem value="cpf">CPF</SelectItem>
+                                    <SelectItem value="cnpj">CNPJ</SelectItem>
+                                 </SelectContent>
+                              </Select>
+                           </Field>
+                        )}
+                     </form.Field>
+
+                     <form.Field name="document">
+                        {(field) => (
+                           <Field className="col-span-2">
+                              <FieldLabel>Número</FieldLabel>
+                              <Input
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                 }
+                                 placeholder="000.000.000-00"
+                                 value={field.state.value}
+                              />
+                           </Field>
+                        )}
+                     </form.Field>
+                  </div>
+
+                  <form.Field name="email">
                      {(field) => (
-                        <Field className="col-span-2">
-                           <FieldLabel>Número</FieldLabel>
+                        <Field>
+                           <FieldLabel>Email</FieldLabel>
                            <Input
                               onBlur={field.handleBlur}
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
                               }
-                              placeholder="000.000.000-00"
+                              placeholder="contato@empresa.com"
+                              type="email"
                               value={field.state.value}
                            />
                         </Field>
                      )}
                   </form.Field>
-               </div>
 
-               {/* Email */}
-               <form.Field name="email">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel>Email</FieldLabel>
-                        <Input
-                           onBlur={field.handleBlur}
-                           onChange={(e) => field.handleChange(e.target.value)}
-                           placeholder="contato@empresa.com"
-                           type="email"
-                           value={field.state.value}
-                        />
-                     </Field>
-                  )}
-               </form.Field>
-
-               {/* Phone */}
-               <form.Field name="phone">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel>Telefone</FieldLabel>
-                        <Input
-                           onBlur={field.handleBlur}
-                           onChange={(e) => field.handleChange(e.target.value)}
-                           placeholder="(11) 99999-9999"
-                           value={field.state.value}
-                        />
-                     </Field>
-                  )}
-               </form.Field>
-
-               {/* Notes */}
-               <form.Field name="notes">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel>Observações</FieldLabel>
-                        <Textarea
-                           onBlur={field.handleBlur}
-                           onChange={(e) => field.handleChange(e.target.value)}
-                           placeholder="Informações adicionais..."
-                           rows={3}
-                           value={field.state.value}
-                        />
-                     </Field>
-                  )}
-               </form.Field>
-            </FieldGroup>
-         </CredenzaBody>
-
-         <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(state) => (
-                  <Button
-                     className="w-full"
-                     disabled={
-                        !state.canSubmit || state.isSubmitting || isPending
-                     }
-                     type="submit"
-                  >
-                     {(state.isSubmitting || isPending) && (
-                        <Spinner className="size-4 mr-2" />
+                  <form.Field name="phone">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel>Telefone</FieldLabel>
+                           <Input
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                              placeholder="(11) 99999-9999"
+                              value={field.state.value}
+                           />
+                        </Field>
                      )}
-                     {isCreate ? "Criar contato" : "Salvar alterações"}
-                  </Button>
-               )}
-            </form.Subscribe>
-         </CredenzaFooter>
+                  </form.Field>
+
+                  <form.Field name="notes">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel>Observações</FieldLabel>
+                           <Textarea
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                              placeholder="Informações adicionais..."
+                              rows={3}
+                              value={field.state.value}
+                           />
+                        </Field>
+                     )}
+                  </form.Field>
+               </FieldGroup>
+            </div>
+
+            <div className="border-t px-4 py-4">
+               <form.Subscribe selector={(state) => state}>
+                  {(state) => (
+                     <Button
+                        className="w-full"
+                        disabled={
+                           !state.canSubmit || state.isSubmitting || isPending
+                        }
+                        type="submit"
+                     >
+                        {(state.isSubmitting || isPending) && (
+                           <Spinner className="size-4 mr-2" />
+                        )}
+                        {isCreate ? "Criar contato" : "Salvar alterações"}
+                     </Button>
+                  )}
+               </form.Subscribe>
+            </div>
+         </DialogStackContent>
       </form>
    );
 }

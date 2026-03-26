@@ -35,9 +35,9 @@ import {
 } from "lucide-react";
 import { Suspense, useRef } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
-import { InsightEditCredenza } from "./insight-edit-credenza";
+import { InsightEditDialogStack } from "./insight-edit-dialog-stack";
 import { InsightPreview } from "./insight-preview";
 
 export type TileSize = "sm" | "md" | "lg" | "full";
@@ -296,7 +296,7 @@ export function DashboardTile({
    globalDateRange,
 }: DashboardTileProps) {
    const queryClient = useQueryClient();
-   const { openCredenza } = useCredenza();
+   const { openDialogStack } = useDialogStack();
    const {
       attributes,
       listeners,
@@ -400,13 +400,12 @@ export function DashboardTile({
                            {insightId && (
                               <DropdownMenuItem
                                  onClick={() =>
-                                    openCredenza({
+                                    openDialogStack({
                                        children: (
-                                          <InsightEditCredenza
+                                          <InsightEditDialogStack
                                              insightId={insightId}
                                           />
                                        ),
-                                       className: "sm:max-w-4xl",
                                     })
                                  }
                               >

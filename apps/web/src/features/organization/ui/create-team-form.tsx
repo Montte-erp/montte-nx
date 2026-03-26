@@ -1,12 +1,11 @@
 import { Alert, AlertDescription } from "@packages/ui/components/alert";
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { Skeleton } from "@packages/ui/components/skeleton";
@@ -19,25 +18,25 @@ import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
-import { useCredenza } from "@/hooks/use-credenza";
+import { closeDialogStack } from "@/hooks/use-dialog-stack";
 import { authClient } from "@/integrations/better-auth/auth-client";
 
 function CreateTeamErrorFallback() {
    return (
-      <CredenzaBody>
+      <div className="flex-1 overflow-y-auto px-4 py-4">
          <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
                Erro ao carregar dados da organização. Tente novamente.
             </AlertDescription>
          </Alert>
-      </CredenzaBody>
+      </div>
    );
 }
 
 function CreateTeamSkeleton() {
    return (
-      <CredenzaBody>
+      <div className="flex-1 overflow-y-auto px-4 py-4">
          <div className="grid gap-4">
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-10 w-full" />
@@ -46,12 +45,11 @@ function CreateTeamSkeleton() {
             <Skeleton className="h-4 w-32" />
             <Skeleton className="h-20 w-full" />
          </div>
-      </CredenzaBody>
+      </div>
    );
 }
 
 const CreateTeamFormContent = () => {
-   const { closeCredenza } = useCredenza();
    const { activeOrganization } = useActiveOrganization();
    const [isPending, startTransition] = useTransition();
 
@@ -72,9 +70,9 @@ const CreateTeamFormContent = () => {
             return;
          }
          toast.success("Espaço criado com sucesso");
-         closeCredenza();
+         closeDialogStack();
       },
-      [closeCredenza],
+      [],
    );
 
    const schema = z.object({
@@ -119,7 +117,7 @@ const CreateTeamFormContent = () => {
 
    return (
       <>
-         <CredenzaBody>
+         <div className="flex-1 overflow-y-auto px-4 py-4">
             <form
                className="grid gap-4"
                id="create-team-form"
@@ -185,10 +183,10 @@ const CreateTeamFormContent = () => {
                   }}
                </form.Field>
             </form>
-         </CredenzaBody>
+         </div>
 
-         <CredenzaFooter>
-            <Button onClick={closeCredenza} type="button" variant="outline">
+         <div className="border-t px-4 py-4 flex items-center justify-end gap-2">
+            <Button onClick={closeDialogStack} type="button" variant="outline">
                Cancelar
             </Button>
             <form.Subscribe selector={(state) => state}>
@@ -210,25 +208,25 @@ const CreateTeamFormContent = () => {
                   </Button>
                )}
             </form.Subscribe>
-         </CredenzaFooter>
+         </div>
       </>
    );
 };
 
 export const CreateTeamForm: FC = () => {
    return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>Criar espaço</CredenzaTitle>
-            <CredenzaDescription>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>Criar espaço</DialogStackTitle>
+            <DialogStackDescription>
                Crie um novo espaço para organizar os membros da sua organização
-            </CredenzaDescription>
-         </CredenzaHeader>
+            </DialogStackDescription>
+         </DialogStackHeader>
          <ErrorBoundary FallbackComponent={CreateTeamErrorFallback}>
             <Suspense fallback={<CreateTeamSkeleton />}>
                <CreateTeamFormContent />
             </Suspense>
          </ErrorBoundary>
-      </>
+      </DialogStackContent>
    );
 };

@@ -1,9 +1,10 @@
 import { Badge } from "@packages/ui/components/badge";
 import {
-   CredenzaDescription,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import {
    Item,
    ItemActions,
@@ -20,7 +21,7 @@ import { ArrowRight, CheckCircle2, Monitor, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
+import { closeDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
 interface SessionDetailsFormProps {
@@ -40,14 +41,13 @@ export function SessionDetailsForm({
    currentSessionId,
 }: SessionDetailsFormProps) {
    const queryClient = useQueryClient();
-   const { closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
 
    const revokeSessionMutation = useMutation(
       orpc.session.revokeSessionByToken.mutationOptions({
          onSuccess: () => {
             toast.success("Sessão encerrada");
-            closeCredenza();
+            closeDialogStack();
             queryClient.invalidateQueries({
                queryKey: orpc.session.listSessions.queryKey({}),
             });
@@ -103,13 +103,13 @@ export function SessionDetailsForm({
    }, [session, currentSessionId]);
 
    return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>Detalhes da Sessão</CredenzaTitle>
-            <CredenzaDescription>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>Detalhes da Sessão</DialogStackTitle>
+            <DialogStackDescription>
                Informações sobre esta sessão
-            </CredenzaDescription>
-         </CredenzaHeader>
+            </DialogStackDescription>
+         </DialogStackHeader>
          <ItemGroup>
             {sessionDetails.map((detail) => (
                <Item key={detail.title}>
@@ -134,10 +134,12 @@ export function SessionDetailsForm({
             ))}
          </ItemGroup>
          <Separator />
-         <CredenzaHeader>
-            <CredenzaTitle>Ações</CredenzaTitle>
-            <CredenzaDescription>Gerencie esta sessão</CredenzaDescription>
-         </CredenzaHeader>
+         <DialogStackHeader>
+            <DialogStackTitle>Ações</DialogStackTitle>
+            <DialogStackDescription>
+               Gerencie esta sessão
+            </DialogStackDescription>
+         </DialogStackHeader>
          <ItemGroup className="px-4">
             <Item
                aria-label="Encerrar Esta Sessão"
@@ -161,6 +163,6 @@ export function SessionDetailsForm({
                </ItemActions>
             </Item>
          </ItemGroup>
-      </>
+      </DialogStackContent>
    );
 }

@@ -1,11 +1,11 @@
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import { FeatureStageBadge } from "@packages/ui/components/feature-stage-badge";
 import { useMemo } from "react";
 import { useEarlyAccess } from "@/hooks/use-early-access";
@@ -30,8 +30,6 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
    const { wantedItems, toggleItem: toggleWanted } = useFinanceNavPreferences();
    const { updateEnrollment, getFeatureStage, isEnrolled } = useEarlyAccess();
 
-   // Filter out early-access items that the user hasn't enrolled in yet.
-   // Those features are discoverable via the Feature Previews settings page instead.
    const visibleLabeledNavGroups = useMemo(
       () =>
          labeledNavGroups
@@ -115,7 +113,6 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
                   id={`section-${sectionId}`}
                   onCheckedChange={() => toggleSection(items, sectionState)}
                />
-               {/* biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is Radix */}
                <label
                   className="text-sm font-medium cursor-pointer select-none"
                   htmlFor={`section-${sectionId}`}
@@ -136,7 +133,6 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
                            id={`sidebar-config-${item.id}`}
                            onCheckedChange={() => handleToggle(item)}
                         />
-                        {/* biome-ignore lint/a11y/noLabelWithoutControl: Checkbox is Radix */}
                         <label
                            className="flex items-center gap-2 text-sm cursor-pointer select-none flex-1"
                            htmlFor={`sidebar-config-${item.id}`}
@@ -159,18 +155,18 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
    };
 
    return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>Personalizar barra lateral</CredenzaTitle>
-            <CredenzaDescription>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>Personalizar barra lateral</DialogStackTitle>
+            <DialogStackDescription>
                Escolha quais itens exibir na navegação.
-            </CredenzaDescription>
-         </CredenzaHeader>
-         <CredenzaBody>
+            </DialogStackDescription>
+         </DialogStackHeader>
+         <div className="flex-1 overflow-y-auto px-4 py-4">
             <p className="text-sm text-muted-foreground mb-6">
                Selecione os itens que deseja ver na barra lateral.
             </p>
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
                {visibleLabeledNavGroups.map((group) =>
                   renderSection(group.id, group.label!, group.items),
                )}
@@ -186,7 +182,7 @@ export function SidebarNavConfigForm({ onClose }: { onClose: () => void }) {
                   Fechar
                </Button>
             </div>
-         </CredenzaBody>
-      </>
+         </div>
+      </DialogStackContent>
    );
 }

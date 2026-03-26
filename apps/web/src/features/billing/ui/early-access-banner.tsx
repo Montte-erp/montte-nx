@@ -9,7 +9,7 @@ import type { LucideIcon } from "lucide-react";
 import { FlaskConical } from "lucide-react";
 import { FeatureFeedbackForm } from "@/features/feedback/ui/feature-feedback-form";
 import { FeatureRequestForm } from "@/features/feedback/ui/feature-request-form";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 
 const STAGE_ICON_COLOR: Record<FeatureStage, string> = {
    alpha: "text-chart-1",
@@ -33,7 +33,7 @@ export type EarlyAccessBannerProps = {
 };
 
 export function EarlyAccessBanner({ template }: EarlyAccessBannerProps) {
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const Icon = template.icon ?? FlaskConical;
    const stage = template.stage ?? "beta";
    const iconColor = STAGE_ICON_COLOR[stage];
@@ -41,20 +41,20 @@ export function EarlyAccessBanner({ template }: EarlyAccessBannerProps) {
 
    const handleCtaClick = () => {
       if (template.form === "request") {
-         openCredenza({
+         openDialogStack({
             children: (
                <FeatureRequestForm
                   context="integration"
-                  onSuccess={closeCredenza}
+                  onSuccess={closeDialogStack}
                />
             ),
          });
       } else {
-         openCredenza({
+         openDialogStack({
             children: (
                <FeatureFeedbackForm
                   featureName={template.badgeLabel}
-                  onSuccess={closeCredenza}
+                  onSuccess={closeDialogStack}
                />
             ),
          });

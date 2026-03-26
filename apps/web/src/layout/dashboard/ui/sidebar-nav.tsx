@@ -20,7 +20,7 @@ import {
 import { ChevronRight, Search, Settings2 } from "lucide-react";
 import { useCallback } from "react";
 import { useAccountType } from "@/hooks/use-account-type";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 import { useFinanceNavPreferences } from "@/layout/dashboard/hooks/use-finance-nav-preferences";
 import type { SubSidebarSection } from "@/layout/dashboard/hooks/use-sidebar-nav";
@@ -318,13 +318,13 @@ export function SidebarNav() {
       handleMainItemClick,
       isItemActive,
    } = useNavHandlers();
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
 
    const handleConfigure = useCallback(() => {
-      openCredenza({
-         children: <SidebarNavConfigForm onClose={closeCredenza} />,
+      openDialogStack({
+         children: <SidebarNavConfigForm onClose={closeDialogStack} />,
       });
-   }, [openCredenza, closeCredenza]);
+   }, [openDialogStack, closeDialogStack]);
 
    return (
       <>

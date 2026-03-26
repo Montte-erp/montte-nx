@@ -2,12 +2,11 @@ import { format, of } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import {
    Field,
    FieldError,
@@ -26,6 +25,7 @@ import {
 import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
@@ -53,7 +53,7 @@ export function SubscriptionForm({
       }),
    );
 
-   const today = new Date().toISOString().split("T")[0];
+   const today = dayjs().format("YYYY-MM-DD");
 
    const form = useForm({
       defaultValues: {
@@ -113,87 +113,47 @@ export function SubscriptionForm({
 
    return (
       <form className="h-full flex flex-col" onSubmit={handleSubmit}>
-         <CredenzaHeader>
-            <CredenzaTitle>Nova Assinatura</CredenzaTitle>
-            <CredenzaDescription>
-               Crie uma assinatura recorrente para o serviço.
-            </CredenzaDescription>
-         </CredenzaHeader>
+         <DialogStackContent index={0}>
+            <DialogStackHeader>
+               <DialogStackTitle>Nova Assinatura</DialogStackTitle>
+               <DialogStackDescription>
+                  Crie uma assinatura recorrente para o serviço.
+               </DialogStackDescription>
+            </DialogStackHeader>
 
-         <CredenzaBody className="space-y-4">
-            <FieldGroup>
-               <form.Field name="serviceId">
-                  {(field) => {
-                     const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
-                     return (
-                        <Field data-invalid={isInvalid}>
-                           <FieldLabel>Serviço *</FieldLabel>
-                           <Select
-                              onValueChange={(v) => {
-                                 field.handleChange(v);
-                                 setSelectedServiceId(v);
-                                 form.setFieldValue("variantId", "");
-                                 setSelectedVariantId("");
-                              }}
-                              value={field.state.value}
-                           >
-                              <SelectTrigger>
-                                 <SelectValue placeholder="Selecione o serviço" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                 {servicesList
-                                    .filter((s) => s.isActive)
-                                    .map((service) => (
-                                       <SelectItem
-                                          key={service.id}
-                                          value={service.id}
-                                       >
-                                          {service.name}
-                                       </SelectItem>
-                                    ))}
-                              </SelectContent>
-                           </Select>
-                           {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                           )}
-                        </Field>
-                     );
-                  }}
-               </form.Field>
-
-               {selectedServiceId && (
-                  <form.Field name="variantId">
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+               <FieldGroup>
+                  <form.Field name="serviceId">
                      {(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
                            !field.state.meta.isValid;
                         return (
                            <Field data-invalid={isInvalid}>
-                              <FieldLabel>Variante *</FieldLabel>
+                              <FieldLabel>Serviço *</FieldLabel>
                               <Select
                                  onValueChange={(v) => {
                                     field.handleChange(v);
-                                    setSelectedVariantId(v);
+                                    setSelectedServiceId(v);
+                                    form.setFieldValue("variantId", "");
+                                    setSelectedVariantId("");
                                  }}
                                  value={field.state.value}
                               >
                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecione a variante" />
+                                    <SelectValue placeholder="Selecione o serviço" />
                                  </SelectTrigger>
                                  <SelectContent>
-                                    {variants.map((variant) => (
-                                       <SelectItem
-                                          key={variant.id}
-                                          value={variant.id}
-                                       >
-                                          {variant.name} —{" "}
-                                          {format(
-                                             of(variant.basePrice, "BRL"),
-                                             "pt-BR",
-                                          )}
-                                       </SelectItem>
-                                    ))}
+                                    {servicesList
+                                       .filter((s) => s.isActive)
+                                       .map((service) => (
+                                          <SelectItem
+                                             key={service.id}
+                                             value={service.id}
+                                          >
+                                             {service.name}
+                                          </SelectItem>
+                                       ))}
                                  </SelectContent>
                               </Select>
                               {isInvalid && (
@@ -203,15 +163,80 @@ export function SubscriptionForm({
                         );
                      }}
                   </form.Field>
-               )}
 
-               <form.Field name="startDate">
-                  {(field) => {
-                     const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
-                     return (
-                        <Field data-invalid={isInvalid}>
-                           <FieldLabel>Data de início *</FieldLabel>
+                  {selectedServiceId && (
+                     <form.Field name="variantId">
+                        {(field) => {
+                           const isInvalid =
+                              field.state.meta.isTouched &&
+                              !field.state.meta.isValid;
+                           return (
+                              <Field data-invalid={isInvalid}>
+                                 <FieldLabel>Variante *</FieldLabel>
+                                 <Select
+                                    onValueChange={(v) => {
+                                       field.handleChange(v);
+                                       setSelectedVariantId(v);
+                                    }}
+                                    value={field.state.value}
+                                 >
+                                    <SelectTrigger>
+                                       <SelectValue placeholder="Selecione a variante" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                       {variants.map((variant) => (
+                                          <SelectItem
+                                             key={variant.id}
+                                             value={variant.id}
+                                          >
+                                             {variant.name} —{" "}
+                                             {format(
+                                                of(variant.basePrice, "BRL"),
+                                                "pt-BR",
+                                             )}
+                                          </SelectItem>
+                                       ))}
+                                    </SelectContent>
+                                 </Select>
+                                 {isInvalid && (
+                                    <FieldError
+                                       errors={field.state.meta.errors}
+                                    />
+                                 )}
+                              </Field>
+                           );
+                        }}
+                     </form.Field>
+                  )}
+
+                  <form.Field name="startDate">
+                     {(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           !field.state.meta.isValid;
+                        return (
+                           <Field data-invalid={isInvalid}>
+                              <FieldLabel>Data de início *</FieldLabel>
+                              <Input
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                 }
+                                 type="date"
+                                 value={field.state.value}
+                              />
+                              {isInvalid && (
+                                 <FieldError errors={field.state.meta.errors} />
+                              )}
+                           </Field>
+                        );
+                     }}
+                  </form.Field>
+
+                  <form.Field name="endDate">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel>Data de término</FieldLabel>
                            <Input
                               onBlur={field.handleBlur}
                               onChange={(e) =>
@@ -220,107 +245,93 @@ export function SubscriptionForm({
                               type="date"
                               value={field.state.value}
                            />
-                           {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                           )}
                         </Field>
-                     );
-                  }}
-               </form.Field>
-
-               <form.Field name="endDate">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel>Data de término</FieldLabel>
-                        <Input
-                           onBlur={field.handleBlur}
-                           onChange={(e) => field.handleChange(e.target.value)}
-                           type="date"
-                           value={field.state.value}
-                        />
-                     </Field>
-                  )}
-               </form.Field>
-
-               <form.Field name="negotiatedPrice">
-                  {(field) => {
-                     const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
-                     return (
-                        <Field data-invalid={isInvalid}>
-                           <div className="flex items-center gap-2">
-                              <FieldLabel>Preço negociado *</FieldLabel>
-                              {discountPercent !== null && (
-                                 <Badge variant="secondary">
-                                    {discountPercent}% de desconto
-                                 </Badge>
-                              )}
-                           </div>
-                           <MoneyInput
-                              onBlur={field.handleBlur}
-                              onChange={(v) => {
-                                 const val = String(v ?? 0);
-                                 field.handleChange(val);
-                                 setNegotiatedPrice(val);
-                              }}
-                              value={Number(field.state.value)}
-                           />
-                           {selectedVariant && (
-                              <p className="text-xs text-muted-foreground">
-                                 Preço base:{" "}
-                                 {format(
-                                    of(selectedVariant.basePrice, "BRL"),
-                                    "pt-BR",
-                                 )}
-                              </p>
-                           )}
-                           {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                           )}
-                        </Field>
-                     );
-                  }}
-               </form.Field>
-
-               <form.Field name="notes">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel>Observações</FieldLabel>
-                        <Input
-                           onBlur={field.handleBlur}
-                           onChange={(e) => field.handleChange(e.target.value)}
-                           placeholder="Ex: Desconto especial aprovado"
-                           value={field.state.value}
-                        />
-                     </Field>
-                  )}
-               </form.Field>
-            </FieldGroup>
-         </CredenzaBody>
-
-         <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(state) => (
-                  <Button
-                     className="w-full"
-                     disabled={
-                        !state.canSubmit ||
-                        state.isSubmitting ||
-                        isPending ||
-                        createMutation.isPending
-                     }
-                     type="submit"
-                  >
-                     {(state.isSubmitting ||
-                        isPending ||
-                        createMutation.isPending) && (
-                        <Spinner className="size-4 mr-2" />
                      )}
-                     Criar assinatura
-                  </Button>
-               )}
-            </form.Subscribe>
-         </CredenzaFooter>
+                  </form.Field>
+
+                  <form.Field name="negotiatedPrice">
+                     {(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           !field.state.meta.isValid;
+                        return (
+                           <Field data-invalid={isInvalid}>
+                              <div className="flex items-center gap-2">
+                                 <FieldLabel>Preço negociado *</FieldLabel>
+                                 {discountPercent !== null && (
+                                    <Badge variant="secondary">
+                                       {discountPercent}% de desconto
+                                    </Badge>
+                                 )}
+                              </div>
+                              <MoneyInput
+                                 onBlur={field.handleBlur}
+                                 onChange={(v) => {
+                                    const val = String(v ?? 0);
+                                    field.handleChange(val);
+                                    setNegotiatedPrice(val);
+                                 }}
+                                 value={Number(field.state.value)}
+                              />
+                              {selectedVariant && (
+                                 <p className="text-xs text-muted-foreground">
+                                    Preço base:{" "}
+                                    {format(
+                                       of(selectedVariant.basePrice, "BRL"),
+                                       "pt-BR",
+                                    )}
+                                 </p>
+                              )}
+                              {isInvalid && (
+                                 <FieldError errors={field.state.meta.errors} />
+                              )}
+                           </Field>
+                        );
+                     }}
+                  </form.Field>
+
+                  <form.Field name="notes">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel>Observações</FieldLabel>
+                           <Input
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                              placeholder="Ex: Desconto especial aprovado"
+                              value={field.state.value}
+                           />
+                        </Field>
+                     )}
+                  </form.Field>
+               </FieldGroup>
+            </div>
+
+            <div className="border-t px-4 py-4">
+               <form.Subscribe selector={(state) => state}>
+                  {(state) => (
+                     <Button
+                        className="w-full"
+                        disabled={
+                           !state.canSubmit ||
+                           state.isSubmitting ||
+                           isPending ||
+                           createMutation.isPending
+                        }
+                        type="submit"
+                     >
+                        {(state.isSubmitting ||
+                           isPending ||
+                           createMutation.isPending) && (
+                           <Spinner className="size-4 mr-2" />
+                        )}
+                        Criar assinatura
+                     </Button>
+                  )}
+               </form.Subscribe>
+            </div>
+         </DialogStackContent>
       </form>
    );
 }

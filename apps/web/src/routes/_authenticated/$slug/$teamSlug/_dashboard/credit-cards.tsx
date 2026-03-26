@@ -25,7 +25,7 @@ import {
 } from "@/features/credit-cards/ui/credit-cards-columns";
 import { CreditCardForm } from "@/features/credit-cards/ui/credit-cards-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
@@ -53,7 +53,7 @@ function CreditCardsSkeleton() {
 }
 
 function CreditCardsList() {
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
    const {
       rowSelection,
@@ -80,19 +80,19 @@ function CreditCardsList() {
 
    const handleEdit = useCallback(
       (card: CreditCardRow) => {
-         openCredenza({
+         openDialogStack({
             children: (
                <Suspense fallback={null}>
                   <CreditCardForm
                      card={card}
                      mode="edit"
-                     onSuccess={closeCredenza}
+                     onSuccess={closeDialogStack}
                   />
                </Suspense>
             ),
          });
       },
-      [openCredenza, closeCredenza],
+      [openDialogStack, closeDialogStack],
    );
 
    const handleDelete = useCallback(
@@ -189,13 +189,13 @@ function CreditCardsList() {
 }
 
 function CreditCardsPage() {
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
 
    function handleCreate() {
-      openCredenza({
+      openDialogStack({
          children: (
             <Suspense fallback={null}>
-               <CreditCardForm mode="create" onSuccess={closeCredenza} />
+               <CreditCardForm mode="create" onSuccess={closeDialogStack} />
             </Suspense>
          ),
       });

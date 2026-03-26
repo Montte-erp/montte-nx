@@ -36,7 +36,7 @@ import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
-import { ServiceImportCredenza } from "@/features/services/ui/service-import-credenza";
+import { ServiceImportDialogStack } from "@/features/services/ui/service-import-dialog-stack";
 import { ServicesAnalyticsHeader } from "@/features/services/ui/services-analytics-header";
 import {
    buildServiceColumns,
@@ -45,7 +45,7 @@ import {
 import { ServiceForm } from "@/features/services/ui/services-form";
 import { exportServicesCsv } from "@/features/services/utils/export-services-csv";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
 const SERVICES_BANNER: EarlyAccessBannerTemplate = {
@@ -171,7 +171,7 @@ function ServicesList({ filters }: { filters: FiltersState }) {
       orpc.services.getAll.queryOptions({}),
    );
 
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
 
    const deleteMutation = useMutation(
@@ -199,18 +199,17 @@ function ServicesList({ filters }: { filters: FiltersState }) {
 
    const handleEdit = useCallback(
       (row: ServiceRow) => {
-         openCredenza({
+         openDialogStack({
             children: (
                <ServiceForm
                   mode="edit"
-                  onSuccess={closeCredenza}
+                  onSuccess={closeDialogStack}
                   service={row}
                />
             ),
-            className: "w-full",
          });
       },
-      [openCredenza, closeCredenza],
+      [openDialogStack, closeDialogStack],
    );
 
    const handleDelete = useCallback(
@@ -287,7 +286,7 @@ function ServicesList({ filters }: { filters: FiltersState }) {
 // =============================================================================
 
 function ServicesPage() {
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
 
    const [filters, setFilters] = useState<FiltersState>({
       search: "",
@@ -305,17 +304,16 @@ function ServicesPage() {
    );
 
    const handleCreate = useCallback(() => {
-      openCredenza({
-         children: <ServiceForm mode="create" onSuccess={closeCredenza} />,
-         className: "w-full",
+      openDialogStack({
+         children: <ServiceForm mode="create" onSuccess={closeDialogStack} />,
       });
-   }, [openCredenza, closeCredenza]);
+   }, [openDialogStack, closeDialogStack]);
 
    const handleImport = useCallback(() => {
-      openCredenza({
-         children: <ServiceImportCredenza />,
+      openDialogStack({
+         children: <ServiceImportDialogStack />,
       });
-   }, [openCredenza]);
+   }, [openDialogStack]);
 
    const handleExport = useCallback(() => {
       if (servicesList && servicesList.length > 0) {

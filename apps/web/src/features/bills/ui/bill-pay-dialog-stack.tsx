@@ -1,11 +1,10 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import { DatePicker } from "@packages/ui/components/date-picker";
 import {
    Field,
@@ -24,17 +23,18 @@ import {
 import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { Suspense } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import type { BillRow } from "./bills-columns";
 
-interface BillPayCredenzaProps {
+interface BillPayDialogStackProps {
    bill: BillRow;
    onSuccess: () => void;
 }
 
-function BillPayCredenzaInner({ bill, onSuccess }: BillPayCredenzaProps) {
+function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
    const { data: accounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
    );
@@ -55,7 +55,7 @@ function BillPayCredenzaInner({ bill, onSuccess }: BillPayCredenzaProps) {
       }),
    );
 
-   const today = new Date().toISOString().substring(0, 10);
+   const today = dayjs().format("YYYY-MM-DD");
    const defaultBankAccountId = bill.bankAccount?.id ?? "";
 
    const form = useForm({
@@ -82,12 +82,12 @@ function BillPayCredenzaInner({ bill, onSuccess }: BillPayCredenzaProps) {
    const isPayable = bill.type === "payable";
 
    return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>{title}</CredenzaTitle>
-            <CredenzaDescription>{bill.name}</CredenzaDescription>
-         </CredenzaHeader>
-         <CredenzaBody>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>{title}</DialogStackTitle>
+            <DialogStackDescription>{bill.name}</DialogStackDescription>
+         </DialogStackHeader>
+         <div className="flex-1 overflow-y-auto px-4 py-4">
             <form
                id="bill-pay-form"
                onSubmit={(e) => {
@@ -231,8 +231,8 @@ function BillPayCredenzaInner({ bill, onSuccess }: BillPayCredenzaProps) {
                   )}
                </FieldGroup>
             </form>
-         </CredenzaBody>
-         <CredenzaFooter>
+         </div>
+         <div className="border-t px-4 py-4">
             <form.Subscribe selector={(state) => state}>
                {(state) => (
                   <Button
@@ -247,15 +247,15 @@ function BillPayCredenzaInner({ bill, onSuccess }: BillPayCredenzaProps) {
                   </Button>
                )}
             </form.Subscribe>
-         </CredenzaFooter>
-      </>
+         </div>
+      </DialogStackContent>
    );
 }
 
-export function BillPayCredenza(props: BillPayCredenzaProps) {
+export function BillPayDialogStack(props: BillPayDialogStackProps) {
    return (
       <Suspense fallback={null}>
-         <BillPayCredenzaInner {...props} />
+         <BillPayDialogStackInner {...props} />
       </Suspense>
    );
 }

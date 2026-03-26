@@ -1,11 +1,11 @@
+import dayjs from "dayjs";
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import {
    Field,
    FieldError,
@@ -29,10 +29,6 @@ import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import { BillInstallmentPreview } from "./bill-installment-preview";
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
 const FREQUENCY_OPTIONS = [
    { value: "daily", label: "Diária" },
    { value: "weekly", label: "Semanal" },
@@ -42,14 +38,10 @@ const FREQUENCY_OPTIONS = [
    { value: "yearly", label: "Anual" },
 ] as const;
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 type ActionMode = "installment" | "recurring";
 type Frequency = "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
 
-interface BillFromTransactionCredenzaProps {
+interface BillFromTransactionDialogStackProps {
    transactionId: string;
    transactionName: string;
    transactionAmount: string;
@@ -61,14 +53,8 @@ interface BillFromTransactionCredenzaProps {
    onSuccess: () => void;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function addMonths(dateStr: string, months: number): string {
-   const d = new Date(`${dateStr}T00:00:00`);
-   d.setMonth(d.getMonth() + months);
-   return d.toISOString().substring(0, 10);
+   return dayjs(dateStr).add(months, "month").format("YYYY-MM-DD");
 }
 
 function deriveBillType(
@@ -90,11 +76,7 @@ function buildInstallmentItems(amount: string, count: number, dueDate: string) {
    }));
 }
 
-// ---------------------------------------------------------------------------
-// Inner component
-// ---------------------------------------------------------------------------
-
-function BillFromTransactionCredenzaInner({
+function BillFromTransactionDialogStackInner({
    transactionId,
    transactionName,
    transactionAmount,
@@ -104,10 +86,9 @@ function BillFromTransactionCredenzaInner({
    categoryId,
    mode,
    onSuccess,
-}: BillFromTransactionCredenzaProps) {
+}: BillFromTransactionDialogStackProps) {
    const billType = deriveBillType(transactionType);
 
-   // First due date = transactionDate + 1 month
    const firstDueDate = addMonths(transactionDate, 1);
 
    const createFromTransactionMutation = useMutation(
@@ -162,7 +143,6 @@ function BillFromTransactionCredenzaInner({
       },
    });
 
-   // Live installment preview items
    const formValues = useStore(
       form.baseStore as never,
       (state: any) => state.values,
@@ -182,13 +162,13 @@ function BillFromTransactionCredenzaInner({
          : "Criar Transação Recorrente";
 
    return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>{title}</CredenzaTitle>
-            <CredenzaDescription>{transactionName}</CredenzaDescription>
-         </CredenzaHeader>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>{title}</DialogStackTitle>
+            <DialogStackDescription>{transactionName}</DialogStackDescription>
+         </DialogStackHeader>
 
-         <CredenzaBody>
+         <div className="flex-1 overflow-y-auto px-4 py-4">
             <form
                id="bill-from-transaction-form"
                onSubmit={(e) => {
@@ -198,7 +178,6 @@ function BillFromTransactionCredenzaInner({
                }}
             >
                <FieldGroup>
-                  {/* Name */}
                   <form.Field name="name">
                      {(field) => {
                         const isInvalid =
@@ -222,7 +201,6 @@ function BillFromTransactionCredenzaInner({
                      }}
                   </form.Field>
 
-                  {/* Installment mode fields */}
                   {mode === "installment" && (
                      <>
                         <form.Field name="installmentCount">
@@ -252,7 +230,6 @@ function BillFromTransactionCredenzaInner({
                      </>
                   )}
 
-                  {/* Recurring mode fields */}
                   {mode === "recurring" && (
                      <>
                         <form.Field name="frequency">
@@ -310,9 +287,9 @@ function BillFromTransactionCredenzaInner({
                   )}
                </FieldGroup>
             </form>
-         </CredenzaBody>
+         </div>
 
-         <CredenzaFooter>
+         <div className="border-t px-4 py-4">
             <form.Subscribe selector={(state) => state}>
                {(state) => (
                   <Button
@@ -332,21 +309,17 @@ function BillFromTransactionCredenzaInner({
                   </Button>
                )}
             </form.Subscribe>
-         </CredenzaFooter>
-      </>
+         </div>
+      </DialogStackContent>
    );
 }
 
-// ---------------------------------------------------------------------------
-// Public export (with Suspense boundary)
-// ---------------------------------------------------------------------------
-
-export function BillFromTransactionCredenza(
-   props: BillFromTransactionCredenzaProps,
+export function BillFromTransactionDialogStack(
+   props: BillFromTransactionDialogStackProps,
 ) {
    return (
       <Suspense fallback={null}>
-         <BillFromTransactionCredenzaInner {...props} />
+         <BillFromTransactionDialogStackInner {...props} />
       </Suspense>
    );
 }

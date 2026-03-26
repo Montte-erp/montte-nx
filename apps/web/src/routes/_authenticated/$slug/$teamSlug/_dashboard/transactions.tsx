@@ -5,18 +5,18 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { DefaultHeader } from "@/components/default-header";
 import type { PanelAction } from "@/features/context-panel/context-panel-store";
 import { useTransactionPrerequisites } from "@/features/transactions/hooks/use-transaction-prerequisites";
-import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
-import { TransactionExportCredenza } from "@/features/transactions/ui/transaction-export-credenza";
+import { TransactionDialogStack } from "@/features/transactions/ui/transaction-dialog-stack";
+import { TransactionExportDialogStack } from "@/features/transactions/ui/transaction-export-dialog-stack";
 import {
    DEFAULT_FILTERS,
    TransactionFilterBar,
    type TransactionFilters,
 } from "@/features/transactions/ui/transaction-filter-bar";
-import { TransactionImportCredenza } from "@/features/transactions/ui/transaction-import-credenza";
+import { TransactionImportDialogStack } from "@/features/transactions/ui/transaction-import-dialog-stack";
 import { TransactionPrerequisitesBlocker } from "@/features/transactions/ui/transaction-prerequisites-blocker";
 import { TransactionsList } from "@/features/transactions/ui/transactions-list";
 import { TransactionsSkeleton } from "@/features/transactions/ui/transactions-skeleton";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
@@ -51,7 +51,7 @@ export const Route = createFileRoute(
 });
 
 function TransactionsPage() {
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const navigate = useNavigate();
    const { slug, teamSlug } = Route.useParams();
    const { hasBankAccounts } = useTransactionPrerequisites();
@@ -59,11 +59,11 @@ function TransactionsPage() {
 
    const handleCreate = useCallback(() => {
       if (!hasBankAccounts) {
-         openCredenza({
+         openDialogStack({
             children: (
                <TransactionPrerequisitesBlocker
                   onAction={() => {
-                     closeCredenza();
+                     closeDialogStack();
                      navigate({
                         to: "/$slug/$teamSlug/bank-accounts",
                         params: { slug, teamSlug },
@@ -74,12 +74,22 @@ function TransactionsPage() {
          });
          return;
       }
-      openCredenza({
+      openDialogStack({
          children: (
-            <TransactionCredenza mode="create" onSuccess={closeCredenza} />
+            <TransactionDialogStack
+               mode="create"
+               onSuccess={closeDialogStack}
+            />
          ),
       });
-   }, [hasBankAccounts, openCredenza, closeCredenza, navigate, slug, teamSlug]);
+   }, [
+      hasBankAccounts,
+      openDialogStack,
+      closeDialogStack,
+      navigate,
+      slug,
+      teamSlug,
+   ]);
 
    useEffect(() => {
       const handler = (e: Event) => {
@@ -97,21 +107,22 @@ function TransactionsPage() {
          icon: Upload,
          label: "Importar",
          onClick: () =>
-            openCredenza({
-               className: "max-w-4xl",
-
-               children: <TransactionImportCredenza />,
+            openDialogStack({
+               children: (
+                  <TransactionImportDialogStack onClose={closeDialogStack} />
+               ),
             }),
       },
       {
          icon: Download,
          label: "Exportar",
          onClick: () =>
-            openCredenza({
+            openDialogStack({
                children: (
-                  <TransactionExportCredenza
+                  <TransactionExportDialogStack
                      dateFrom={filters.dateFrom}
                      dateTo={filters.dateTo}
+                     onClose={closeDialogStack}
                   />
                ),
             }),

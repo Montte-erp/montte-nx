@@ -1,11 +1,10 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { MoneyInput } from "@packages/ui/components/money-input";
@@ -20,16 +19,12 @@ import { Separator } from "@packages/ui/components/separator";
 import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import type { ServiceRow } from "./services-columns";
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
 
 type BillingCycle = "hourly" | "monthly" | "annual" | "one_time";
 
@@ -47,10 +42,6 @@ const BILLING_CYCLE_OPTIONS: BillingCycle[] = [
    "one_time",
 ];
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 interface VariantFormValue {
    name: string;
    basePrice: string;
@@ -63,19 +54,15 @@ interface ServiceFormProps {
    onSuccess: () => void;
 }
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
 export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
    const isCreate = mode === "create";
    const [isPending, startTransition] = useTransition();
 
-   const { data: categories } = useQuery(
+   const { data: categories } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
 
-   const { data: tags } = useQuery(orpc.tags.getAll.queryOptions({}));
+   const { data: tags } = useSuspenseQuery(orpc.tags.getAll.queryOptions({}));
 
    const { data: existingVariants } = useQuery(
       orpc.services.getVariants.queryOptions({
@@ -175,290 +162,300 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
 
    return (
       <form className="h-full w-full flex flex-col" onSubmit={handleSubmit}>
-         <CredenzaHeader>
-            <CredenzaTitle>
-               {isCreate ? "Novo Serviço" : "Editar Serviço"}
-            </CredenzaTitle>
-            <CredenzaDescription>
-               {isCreate
-                  ? "Preencha as informações do serviço e adicione variantes de preço."
-                  : "Atualize as informações do serviço."}
-            </CredenzaDescription>
-         </CredenzaHeader>
+         <DialogStackContent index={0}>
+            <DialogStackHeader>
+               <DialogStackTitle>
+                  {isCreate ? "Novo Serviço" : "Editar Serviço"}
+               </DialogStackTitle>
+               <DialogStackDescription>
+                  {isCreate
+                     ? "Preencha as informações do serviço e adicione variantes de preço."
+                     : "Atualize as informações do serviço."}
+               </DialogStackDescription>
+            </DialogStackHeader>
 
-         <CredenzaBody className="space-y-6">
-            {/* ── Row 1: Nome + Preço ── */}
-            <div className="grid grid-cols-2 gap-4">
-               <form.Field name="name">
-                  {(field) => {
-                     const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
-                     return (
-                        <Field data-invalid={isInvalid}>
-                           <FieldLabel>Nome *</FieldLabel>
-                           <Input
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="Ex: Consultoria Mensal"
-                              value={field.state.value}
-                           />
-                           {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                           )}
-                        </Field>
-                     );
-                  }}
-               </form.Field>
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+               <div className="grid grid-cols-2 gap-4">
+                  <form.Field name="name">
+                     {(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           !field.state.meta.isValid;
+                        return (
+                           <Field data-invalid={isInvalid}>
+                              <FieldLabel>Nome *</FieldLabel>
+                              <Input
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                 }
+                                 placeholder="Ex: Consultoria Mensal"
+                                 value={field.state.value}
+                              />
+                              {isInvalid && (
+                                 <FieldError errors={field.state.meta.errors} />
+                              )}
+                           </Field>
+                        );
+                     }}
+                  </form.Field>
 
-               <form.Field name="basePrice">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel>Preço padrão *</FieldLabel>
-                        <MoneyInput
-                           onChange={(v) => field.handleChange(String(v ?? 0))}
-                           value={Number(field.state.value)}
-                        />
-                     </Field>
-                  )}
-               </form.Field>
-            </div>
-
-            {/* ── Row 2: Categoria + Tag ── */}
-            <div className="grid grid-cols-2 gap-4">
-               <form.Field name="categoryId">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel>Categoria</FieldLabel>
-                        <Select
-                           onValueChange={(v) => field.handleChange(v)}
-                           value={field.state.value}
-                        >
-                           <SelectTrigger>
-                              <SelectValue placeholder="Selecione uma categoria" />
-                           </SelectTrigger>
-                           <SelectContent>
-                              {categories?.map((cat) => (
-                                 <SelectItem key={cat.id} value={cat.id}>
-                                    {cat.name}
-                                 </SelectItem>
-                              ))}
-                           </SelectContent>
-                        </Select>
-                     </Field>
-                  )}
-               </form.Field>
-
-               <form.Field name="tagId">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel>Tag</FieldLabel>
-                        <Select
-                           onValueChange={(v) => field.handleChange(v)}
-                           value={field.state.value}
-                        >
-                           <SelectTrigger>
-                              <SelectValue placeholder="Selecione uma tag" />
-                           </SelectTrigger>
-                           <SelectContent>
-                              {tags?.map((tag) => (
-                                 <SelectItem key={tag.id} value={tag.id}>
-                                    {tag.name}
-                                 </SelectItem>
-                              ))}
-                           </SelectContent>
-                        </Select>
-                     </Field>
-                  )}
-               </form.Field>
-            </div>
-
-            <form.Field name="description">
-               {(field) => (
-                  <Field>
-                     <FieldLabel>Descrição</FieldLabel>
-                     <Textarea
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="Opcional"
-                        rows={1}
-                        value={field.state.value}
-                     />
-                  </Field>
-               )}
-            </form.Field>
-
-            <Separator />
-
-            {/* ── Variantes ── */}
-            <div className="space-y-3">
-               <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Variantes</span>
-                  <form.Field mode="array" name="variants">
+                  <form.Field name="basePrice">
                      {(field) => (
-                        <Button
-                           className="h-7 text-xs"
-                           onClick={() =>
-                              field.pushValue({
-                                 name: "",
-                                 basePrice: form.getFieldValue("basePrice"),
-                                 billingCycle: "monthly",
-                              })
-                           }
-                           size="sm"
-                           type="button"
-                           variant="outline"
-                        >
-                           <PlusCircle className="size-3.5 mr-1" />
-                           Adicionar
-                        </Button>
+                        <Field>
+                           <FieldLabel>Preço padrão *</FieldLabel>
+                           <MoneyInput
+                              onChange={(v) =>
+                                 field.handleChange(String(v ?? 0))
+                              }
+                              value={Number(field.state.value)}
+                           />
+                        </Field>
                      )}
                   </form.Field>
                </div>
 
-               {/* Existing variants (edit mode) */}
-               {!isCreate &&
-                  existingVariants &&
-                  existingVariants.length > 0 && (
-                     <div className="space-y-1.5">
-                        <span className="text-xs text-muted-foreground">
-                           Variantes existentes
-                        </span>
-                        {existingVariants.map((v) => (
-                           <div
-                              className="flex items-center justify-between p-2 border rounded-md text-sm"
-                              key={v.id}
+               <div className="grid grid-cols-2 gap-4">
+                  <form.Field name="categoryId">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel>Categoria</FieldLabel>
+                           <Select
+                              onValueChange={(v) => field.handleChange(v)}
+                              value={field.state.value}
                            >
-                              <span>{v.name}</span>
-                              <span className="text-muted-foreground text-xs">
-                                 {BILLING_CYCLE_LABELS[
-                                    v.billingCycle as BillingCycle
-                                 ] ?? v.billingCycle}
-                              </span>
-                           </div>
-                        ))}
-                     </div>
-                  )}
+                              <SelectTrigger>
+                                 <SelectValue placeholder="Selecione uma categoria" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 {categories?.map((cat) => (
+                                    <SelectItem key={cat.id} value={cat.id}>
+                                       {cat.name}
+                                    </SelectItem>
+                                 ))}
+                              </SelectContent>
+                           </Select>
+                        </Field>
+                     )}
+                  </form.Field>
 
-               {/* New variants */}
-               <form.Field mode="array" name="variants">
-                  {(arrayField) => (
-                     <div className="space-y-3">
-                        {arrayField.state.value.map((_, index) => (
-                           <div
-                              className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end p-3 border rounded-md bg-muted/30"
-                              key={`variant-${index + 1}`}
+                  <form.Field name="tagId">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel>Tag</FieldLabel>
+                           <Select
+                              onValueChange={(v) => field.handleChange(v)}
+                              value={field.state.value}
                            >
-                              <form.Field name={`variants[${index}].name`}>
-                                 {(field) => (
-                                    <Field>
-                                       <FieldLabel>Nome</FieldLabel>
-                                       <Input
-                                          onBlur={field.handleBlur}
-                                          onChange={(e) =>
-                                             field.handleChange(e.target.value)
-                                          }
-                                          placeholder="Ex: Mensal"
-                                          value={field.state.value as string}
-                                       />
-                                    </Field>
-                                 )}
-                              </form.Field>
+                              <SelectTrigger>
+                                 <SelectValue placeholder="Selecione uma tag" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 {tags?.map((tag) => (
+                                    <SelectItem key={tag.id} value={tag.id}>
+                                       {tag.name}
+                                    </SelectItem>
+                                 ))}
+                              </SelectContent>
+                           </Select>
+                        </Field>
+                     )}
+                  </form.Field>
+               </div>
 
-                              <form.Field name={`variants[${index}].basePrice`}>
-                                 {(field) => (
-                                    <Field>
-                                       <FieldLabel>Preço</FieldLabel>
-                                       <MoneyInput
-                                          onChange={(v) =>
-                                             field.handleChange(String(v ?? 0))
-                                          }
-                                          value={Number(
-                                             field.state.value as string,
-                                          )}
-                                       />
-                                    </Field>
-                                 )}
-                              </form.Field>
-
-                              <form.Field
-                                 name={`variants[${index}].billingCycle`}
-                              >
-                                 {(field) => (
-                                    <Field>
-                                       <FieldLabel>Ciclo</FieldLabel>
-                                       <Select
-                                          onValueChange={(v) =>
-                                             field.handleChange(
-                                                v as BillingCycle,
-                                             )
-                                          }
-                                          value={field.state.value as string}
-                                       >
-                                          <SelectTrigger>
-                                             <SelectValue placeholder="Ciclo" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                             {BILLING_CYCLE_OPTIONS.map(
-                                                (cycle) => (
-                                                   <SelectItem
-                                                      key={cycle}
-                                                      value={cycle}
-                                                   >
-                                                      {
-                                                         BILLING_CYCLE_LABELS[
-                                                            cycle
-                                                         ]
-                                                      }
-                                                   </SelectItem>
-                                                ),
-                                             )}
-                                          </SelectContent>
-                                       </Select>
-                                    </Field>
-                                 )}
-                              </form.Field>
-
-                              <Button
-                                 aria-label="Remover variante"
-                                 className="h-9 w-9"
-                                 onClick={() => arrayField.removeValue(index)}
-                                 size="icon"
-                                 type="button"
-                                 variant="ghost"
-                              >
-                                 <Trash2 className="size-4 text-destructive" />
-                              </Button>
-                           </div>
-                        ))}
-                     </div>
+               <form.Field name="description">
+                  {(field) => (
+                     <Field>
+                        <FieldLabel>Descrição</FieldLabel>
+                        <Textarea
+                           onBlur={field.handleBlur}
+                           onChange={(e) => field.handleChange(e.target.value)}
+                           placeholder="Opcional"
+                           rows={1}
+                           value={field.state.value}
+                        />
+                     </Field>
                   )}
                </form.Field>
-            </div>
-         </CredenzaBody>
 
-         <CredenzaFooter>
-            <form.Subscribe selector={(state) => state}>
-               {(state) => (
-                  <Button
-                     className="w-full"
-                     disabled={
-                        !state.canSubmit ||
-                        state.isSubmitting ||
-                        isPending ||
-                        mutationsPending
-                     }
-                     type="submit"
-                  >
-                     {(state.isSubmitting || isPending || mutationsPending) && (
-                        <Spinner className="size-4 mr-2" />
+               <Separator />
+
+               <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                     <span className="text-sm font-medium">Variantes</span>
+                     <form.Field mode="array" name="variants">
+                        {(field) => (
+                           <Button
+                              className="h-7 text-xs"
+                              onClick={() =>
+                                 field.pushValue({
+                                    name: "",
+                                    basePrice: form.getFieldValue("basePrice"),
+                                    billingCycle: "monthly",
+                                 })
+                              }
+                              size="sm"
+                              type="button"
+                              variant="outline"
+                           >
+                              <PlusCircle className="size-3.5 mr-1" />
+                              Adicionar
+                           </Button>
+                        )}
+                     </form.Field>
+                  </div>
+
+                  {!isCreate &&
+                     existingVariants &&
+                     existingVariants.length > 0 && (
+                        <div className="flex flex-col gap-2">
+                           <span className="text-xs text-muted-foreground">
+                              Variantes existentes
+                           </span>
+                           {existingVariants.map((v) => (
+                              <div
+                                 className="flex items-center justify-between p-2 border rounded-md text-sm"
+                                 key={v.id}
+                              >
+                                 <span>{v.name}</span>
+                                 <span className="text-muted-foreground text-xs">
+                                    {BILLING_CYCLE_LABELS[
+                                       v.billingCycle as BillingCycle
+                                    ] ?? v.billingCycle}
+                                 </span>
+                              </div>
+                           ))}
+                        </div>
                      )}
-                     {isCreate ? "Criar serviço" : "Salvar alterações"}
-                  </Button>
-               )}
-            </form.Subscribe>
-         </CredenzaFooter>
+
+                  <form.Field mode="array" name="variants">
+                     {(arrayField) => (
+                        <div className="flex flex-col gap-2">
+                           {arrayField.state.value.map((_, index) => (
+                              <div
+                                 className="grid grid-cols-[1fr_1fr_1fr_auto] gap-4 items-end p-3 border rounded-md bg-muted/30"
+                                 key={`variant-${index + 1}`}
+                              >
+                                 <form.Field name={`variants[${index}].name`}>
+                                    {(field) => (
+                                       <Field>
+                                          <FieldLabel>Nome</FieldLabel>
+                                          <Input
+                                             onBlur={field.handleBlur}
+                                             onChange={(e) =>
+                                                field.handleChange(
+                                                   e.target.value,
+                                                )
+                                             }
+                                             placeholder="Ex: Mensal"
+                                             value={field.state.value as string}
+                                          />
+                                       </Field>
+                                    )}
+                                 </form.Field>
+
+                                 <form.Field
+                                    name={`variants[${index}].basePrice`}
+                                 >
+                                    {(field) => (
+                                       <Field>
+                                          <FieldLabel>Preço</FieldLabel>
+                                          <MoneyInput
+                                             onChange={(v) =>
+                                                field.handleChange(
+                                                   String(v ?? 0),
+                                                )
+                                             }
+                                             value={Number(
+                                                field.state.value as string,
+                                             )}
+                                          />
+                                       </Field>
+                                    )}
+                                 </form.Field>
+
+                                 <form.Field
+                                    name={`variants[${index}].billingCycle`}
+                                 >
+                                    {(field) => (
+                                       <Field>
+                                          <FieldLabel>Ciclo</FieldLabel>
+                                          <Select
+                                             onValueChange={(v) =>
+                                                field.handleChange(
+                                                   v as BillingCycle,
+                                                )
+                                             }
+                                             value={field.state.value as string}
+                                          >
+                                             <SelectTrigger>
+                                                <SelectValue placeholder="Ciclo" />
+                                             </SelectTrigger>
+                                             <SelectContent>
+                                                {BILLING_CYCLE_OPTIONS.map(
+                                                   (cycle) => (
+                                                      <SelectItem
+                                                         key={cycle}
+                                                         value={cycle}
+                                                      >
+                                                         {
+                                                            BILLING_CYCLE_LABELS[
+                                                               cycle
+                                                            ]
+                                                         }
+                                                      </SelectItem>
+                                                   ),
+                                                )}
+                                             </SelectContent>
+                                          </Select>
+                                       </Field>
+                                    )}
+                                 </form.Field>
+
+                                 <Button
+                                    aria-label="Remover variante"
+                                    className="h-9 w-9"
+                                    onClick={() =>
+                                       arrayField.removeValue(index)
+                                    }
+                                    size="icon"
+                                    type="button"
+                                    variant="ghost"
+                                 >
+                                    <Trash2 className="size-4 text-destructive" />
+                                 </Button>
+                              </div>
+                           ))}
+                        </div>
+                     )}
+                  </form.Field>
+               </div>
+            </div>
+
+            <div className="border-t px-4 py-4">
+               <form.Subscribe selector={(state) => state}>
+                  {(state) => (
+                     <Button
+                        className="w-full"
+                        disabled={
+                           !state.canSubmit ||
+                           state.isSubmitting ||
+                           isPending ||
+                           mutationsPending
+                        }
+                        type="submit"
+                     >
+                        {(state.isSubmitting ||
+                           isPending ||
+                           mutationsPending) && (
+                           <Spinner className="size-4 mr-2" />
+                        )}
+                        {isCreate ? "Criar serviço" : "Salvar alterações"}
+                     </Button>
+                  )}
+               </form.Subscribe>
+            </div>
+         </DialogStackContent>
       </form>
    );
 }

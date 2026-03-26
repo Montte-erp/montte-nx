@@ -34,7 +34,7 @@ import {
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
-import { BillPayCredenza } from "@/features/bills/ui/bill-pay-credenza";
+import { BillPayDialogStack } from "@/features/bills/ui/bill-pay-dialog-stack";
 import {
    type BillRow,
    buildBillsColumns,
@@ -42,7 +42,7 @@ import {
 } from "@/features/bills/ui/bills-columns";
 import { BillForm } from "@/features/bills/ui/bills-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
@@ -136,7 +136,7 @@ interface BillsListProps {
 }
 
 function BillsList({ type }: BillsListProps) {
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
 
    const { data } = useSuspenseQuery(
@@ -169,20 +169,22 @@ function BillsList({ type }: BillsListProps) {
 
    const handlePay = useCallback(
       (bill: BillRow) => {
-         openCredenza({
-            children: <BillPayCredenza bill={bill} onSuccess={closeCredenza} />,
+         openDialogStack({
+            children: (
+               <BillPayDialogStack bill={bill} onSuccess={closeDialogStack} />
+            ),
          });
       },
-      [openCredenza, closeCredenza],
+      [openDialogStack, closeDialogStack],
    );
 
    const handleEdit = useCallback(
       (bill: BillRow) => {
-         openCredenza({
-            children: <BillForm bill={bill} onSuccess={closeCredenza} />,
+         openDialogStack({
+            children: <BillForm bill={bill} onSuccess={closeDialogStack} />,
          });
       },
-      [openCredenza, closeCredenza],
+      [openDialogStack, closeDialogStack],
    );
 
    const handleCancel = useCallback(

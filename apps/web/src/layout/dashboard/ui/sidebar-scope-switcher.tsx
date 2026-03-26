@@ -5,12 +5,11 @@ import {
 } from "@packages/ui/components/avatar";
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import {
    DropdownMenu,
    DropdownMenuContent,
@@ -54,7 +53,7 @@ import { ManageOrganizationForm } from "@/features/organization/ui/manage-organi
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 import { ThemeSwitcher } from "./theme-switcher";
@@ -126,7 +125,7 @@ function SidebarScopeSwitcherSkeleton() {
          <SidebarMenuItem>
             <SidebarMenuButton className="pointer-events-none" size="lg">
                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-muted" />
-               <div className="grid flex-1 gap-1">
+               <div className="grid flex-1 gap-2">
                   <Skeleton className="h-3.5 w-24" />
                   <Skeleton className="h-3 w-16" />
                </div>
@@ -140,7 +139,7 @@ function SidebarScopeSwitcherContent() {
    const { activeOrganization, projectLimit, projectCount } =
       useActiveOrganization();
    const { activeTeam, teams } = useActiveTeam();
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
    const { setActiveOrganization } = useSetActiveOrganization();
    const [isPending, startTransition] = useTransition();
@@ -235,47 +234,49 @@ function SidebarScopeSwitcherContent() {
          e?.stopPropagation();
 
          if (projectLimit !== null && teams.length >= projectLimit) {
-            openCredenza({
+            openDialogStack({
                children: (
-                  <>
-                     <CredenzaHeader>
-                        <CredenzaTitle>Limite de espaços</CredenzaTitle>
-                        <CredenzaDescription>
+                  <DialogStackContent index={0}>
+                     <DialogStackHeader>
+                        <DialogStackTitle>Limite de espaços</DialogStackTitle>
+                        <DialogStackDescription>
                            Você está usando {projectCount} de {projectLimit}{" "}
                            espaços
-                        </CredenzaDescription>
-                     </CredenzaHeader>
-                     <CredenzaBody>
+                        </DialogStackDescription>
+                     </DialogStackHeader>
+                     <div className="flex-1 overflow-y-auto px-4 py-4">
                         <p className="text-sm text-muted-foreground">
                            Faça upgrade para o add-on Boost para criar espaços
                            ilimitados
                         </p>
-                     </CredenzaBody>
-                     <CredenzaFooter className="flex gap-2">
-                        <Button onClick={closeCredenza} variant="outline">
-                           Cancelar
-                        </Button>
-                        <Button asChild>
-                           <Link
-                              onClick={closeCredenza}
-                              params={{ slug, teamSlug }}
-                              to="/$slug/$teamSlug/billing"
-                           >
-                              Ver planos
-                           </Link>
-                        </Button>
-                     </CredenzaFooter>
-                  </>
+                     </div>
+                     <div className="border-t px-4 py-4">
+                        <div className="flex gap-2">
+                           <Button onClick={closeDialogStack} variant="outline">
+                              Cancelar
+                           </Button>
+                           <Button asChild>
+                              <Link
+                                 onClick={closeDialogStack}
+                                 params={{ slug, teamSlug }}
+                                 to="/$slug/$teamSlug/billing"
+                              >
+                                 Ver planos
+                              </Link>
+                           </Button>
+                        </div>
+                     </div>
+                  </DialogStackContent>
                ),
             });
             return;
          }
 
-         openCredenza({ children: <CreateTeamForm /> });
+         openDialogStack({ children: <CreateTeamForm /> });
       },
       [
-         openCredenza,
-         closeCredenza,
+         openDialogStack,
+         closeDialogStack,
          projectLimit,
          projectCount,
          teams.length,
@@ -287,9 +288,9 @@ function SidebarScopeSwitcherContent() {
    const handleNewOrganization = useCallback(
       (e?: React.MouseEvent) => {
          e?.stopPropagation();
-         openCredenza({ children: <ManageOrganizationForm /> });
+         openDialogStack({ children: <ManageOrganizationForm /> });
       },
-      [openCredenza],
+      [openDialogStack],
    );
 
    const handleLogout = useCallback(async () => {
@@ -362,7 +363,6 @@ function SidebarScopeSwitcherContent() {
                   side={isMobile ? "bottom" : "bottom"}
                   sideOffset={4}
                >
-                  {/* ── PROJECT ── */}
                   <>
                      <DropdownMenuLabel className="py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Espaço
@@ -425,7 +425,6 @@ function SidebarScopeSwitcherContent() {
 
                      <DropdownMenuSeparator />
 
-                     {/* ── ORGANIZATION ── */}
                      <DropdownMenuLabel className="py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Organização
                      </DropdownMenuLabel>
@@ -497,7 +496,6 @@ function SidebarScopeSwitcherContent() {
                      <DropdownMenuSeparator />
                   </>
 
-                  {/* ── ACCOUNT ── */}
                   <DropdownMenuLabel className="py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                      Conta
                   </DropdownMenuLabel>

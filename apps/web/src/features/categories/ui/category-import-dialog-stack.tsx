@@ -1,11 +1,10 @@
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import {
    Select,
    SelectContent,
@@ -184,13 +183,13 @@ function applyMapping(
    return Array.from(categoryMap.values());
 }
 
-interface CategoryImportCredenzaProps {
+interface CategoryImportDialogStackProps {
    onSuccess: () => void;
 }
 
-export function CategoryImportCredenza({
+export function CategoryImportDialogStack({
    onSuccess,
-}: CategoryImportCredenzaProps) {
+}: CategoryImportDialogStackProps) {
    const [step, setStep] = useState<Step>("upload");
    const [headers, setHeaders] = useState<string[]>([]);
    const [rows, setRows] = useState<ParsedRow[]>([]);
@@ -244,10 +243,10 @@ export function CategoryImportCredenza({
    }, [mapped, importMutation]);
 
    return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>Importar Categorias</CredenzaTitle>
-            <CredenzaDescription>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>Importar Categorias</DialogStackTitle>
+            <DialogStackDescription>
                {step === "upload" &&
                   "Faça upload de um arquivo CSV com suas categorias."}
                {step === "mapping" &&
@@ -255,10 +254,10 @@ export function CategoryImportCredenza({
                {step === "preview" &&
                   "Revise as categorias que serão importadas."}
                {step === "confirm" && "Confirme a importação."}
-            </CredenzaDescription>
-         </CredenzaHeader>
+            </DialogStackDescription>
+         </DialogStackHeader>
 
-         <CredenzaBody>
+         <div className="flex-1 overflow-y-auto px-4 py-4">
             {step === "upload" && (
                <label className="flex flex-col items-center gap-4 rounded-lg border-2 border-dashed p-8 cursor-pointer hover:border-primary transition-colors">
                   <Upload className="size-8 text-muted-foreground" />
@@ -354,9 +353,9 @@ export function CategoryImportCredenza({
                   )}
                </div>
             )}
-         </CredenzaBody>
+         </div>
 
-         <CredenzaFooter>
+         <div className="border-t px-4 py-4">
             {step === "mapping" && (
                <div className="flex gap-2 w-full">
                   <Button
@@ -392,7 +391,7 @@ export function CategoryImportCredenza({
                   </Button>
                </div>
             )}
-         </CredenzaFooter>
-      </>
+         </div>
+      </DialogStackContent>
    );
 }

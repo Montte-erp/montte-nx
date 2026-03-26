@@ -11,7 +11,7 @@ import {
 } from "@packages/ui/components/tooltip";
 import { Bug, ExternalLink, Lightbulb, MessageSquarePlus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { useApiErrorTracker } from "../hooks/use-api-error-tracker";
 import { BugReportForm } from "./bug-report-form";
 import { FeatureRequestForm } from "./feature-request-form";
@@ -20,27 +20,27 @@ const DOCS_URL = "https://docs.montte.co";
 
 export function FeedbackFab() {
    const [open, setOpen] = useState(false);
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const { shouldShowBugReport, dismiss } = useApiErrorTracker();
 
    const openBugReport = useCallback(() => {
       setOpen(false);
-      openCredenza({
+      openDialogStack({
          children: (
             <BugReportForm
                onSuccess={() => {
                   dismiss();
-                  closeCredenza();
+                  closeDialogStack();
                }}
             />
          ),
       });
-   }, [openCredenza, closeCredenza, dismiss]);
+   }, [openDialogStack, closeDialogStack, dismiss]);
 
    const openFeatureRequest = () => {
       setOpen(false);
-      openCredenza({
-         children: <FeatureRequestForm onSuccess={closeCredenza} />,
+      openDialogStack({
+         children: <FeatureRequestForm onSuccess={closeDialogStack} />,
       });
    };
 

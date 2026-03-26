@@ -36,10 +36,10 @@ import {
    CategoryFilterBar,
    type CategoryFilters,
 } from "@/features/categories/ui/category-filter-bar";
-import { CategoryImportCredenza } from "@/features/categories/ui/category-import-credenza";
+import { CategoryImportDialogStack } from "@/features/categories/ui/category-import-dialog-stack";
 import { exportCategoriesCsv } from "@/features/categories/utils/export-categories-csv";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
@@ -77,7 +77,7 @@ interface CategoriesListProps {
 }
 
 function CategoriesList({ filters }: CategoriesListProps) {
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
    const {
       rowSelection,
@@ -119,7 +119,7 @@ function CategoriesList({ filters }: CategoriesListProps) {
 
    const handleEdit = useCallback(
       (category: CategoryRow) => {
-         openCredenza({
+         openDialogStack({
             children: (
                <CategoryForm
                   category={{
@@ -131,12 +131,12 @@ function CategoriesList({ filters }: CategoriesListProps) {
                      type: category.type,
                   }}
                   mode="edit"
-                  onSuccess={closeCredenza}
+                  onSuccess={closeDialogStack}
                />
             ),
          });
       },
-      [openCredenza, closeCredenza],
+      [openDialogStack, closeDialogStack],
    );
 
    const handleDelete = useCallback(
@@ -260,7 +260,7 @@ function CategoriesList({ filters }: CategoriesListProps) {
 // =============================================================================
 
 function CategoriesPage() {
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
 
    const [filters, setFilters] = useState<CategoryFilters>({
       search: "",
@@ -270,16 +270,16 @@ function CategoriesPage() {
    });
 
    const handleCreate = useCallback(() => {
-      openCredenza({
-         children: <CategoryForm mode="create" onSuccess={closeCredenza} />,
+      openDialogStack({
+         children: <CategoryForm mode="create" onSuccess={closeDialogStack} />,
       });
-   }, [openCredenza, closeCredenza]);
+   }, [openDialogStack, closeDialogStack]);
 
    const handleImport = useCallback(() => {
-      openCredenza({
-         children: <CategoryImportCredenza onSuccess={closeCredenza} />,
+      openDialogStack({
+         children: <CategoryImportDialogStack onSuccess={closeDialogStack} />,
       });
-   }, [openCredenza, closeCredenza]);
+   }, [openDialogStack, closeDialogStack]);
 
    const handleExport = useCallback(async () => {
       try {

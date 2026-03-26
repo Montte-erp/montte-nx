@@ -7,12 +7,11 @@ import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Card, CardContent } from "@packages/ui/components/card";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
    Empty,
@@ -40,12 +39,13 @@ import {
    useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import dayjs from "dayjs";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Mail, Search, ShieldCheck, UserPlus } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -54,10 +54,6 @@ export const Route = createFileRoute(
 )({
    component: MembersPage,
 });
-
-// ============================================
-// Types
-// ============================================
 
 type MemberRow = {
    id: string;
@@ -76,10 +72,6 @@ type PendingInvite = {
    createdAt: Date;
 };
 
-// ============================================
-// Helpers
-// ============================================
-
 const ROLE_LABELS: Record<string, string> = {
    owner: "Proprietário",
    admin: "Administrador",
@@ -87,11 +79,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 function formatDate(date: Date | string): string {
-   return new Date(date).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-   });
+   return dayjs(date).format("DD MMM YYYY");
 }
 
 function getRoleBadgeVariant(
@@ -102,13 +90,9 @@ function getRoleBadgeVariant(
    return "outline";
 }
 
-// ============================================
-// Skeleton
-// ============================================
-
 function MembersSkeleton() {
    return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-4">
          <div className="flex items-center justify-between">
             <div>
                <Skeleton className="h-8 w-32" />
@@ -119,7 +103,7 @@ function MembersSkeleton() {
 
          <Skeleton className="h-9 w-full" />
 
-         <div className="space-y-1">
+         <div className="flex flex-col gap-2">
             <Skeleton className="h-12 w-full rounded-lg" />
             <Skeleton className="h-12 w-full rounded-lg" />
             <Skeleton className="h-12 w-full rounded-lg" />
@@ -128,13 +112,9 @@ function MembersSkeleton() {
    );
 }
 
-// ============================================
-// Error Fallback
-// ============================================
-
 function MembersErrorFallback({ resetErrorBoundary }: FallbackProps) {
    return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-4">
          <div>
             <h1 className="text-2xl font-semibold font-serif">Membros</h1>
             <p className="text-sm text-muted-foreground mt-1">
@@ -152,10 +132,6 @@ function MembersErrorFallback({ resetErrorBoundary }: FallbackProps) {
       </div>
    );
 }
-
-// ============================================
-// Invite Member Credenza Content
-// ============================================
 
 function InviteMemberCredenzaContent({
    organizationId,
@@ -195,76 +171,78 @@ function InviteMemberCredenzaContent({
    const isValid = email.trim().length > 0 && email.includes("@");
 
    return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>Convidar novo membro</CredenzaTitle>
-            <CredenzaDescription>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>Convidar novo membro</DialogStackTitle>
+            <DialogStackDescription>
                Adicione um novo membro à organização enviando um convite por
                e-mail.
-            </CredenzaDescription>
-         </CredenzaHeader>
+            </DialogStackDescription>
+         </DialogStackHeader>
 
-         <CredenzaBody className="space-y-4">
-            <div className="flex gap-2 items-end">
-               <div className="flex-1 space-y-2">
-                  <Label htmlFor="invite-email">E-mail</Label>
-                  <Input
-                     autoComplete="email"
-                     id="invite-email"
-                     onChange={(e) => setEmail(e.target.value)}
-                     onKeyDown={(e) => {
-                        if (
-                           e.key === "Enter" &&
-                           isValid &&
-                           !inviteMutation.isPending
-                        ) {
-                           inviteMutation.mutate();
-                        }
-                     }}
-                     placeholder="usuario@empresa.com"
-                     type="email"
-                     value={email}
-                  />
-               </div>
-               <div className="w-36 space-y-2 shrink-0">
-                  <Label htmlFor="invite-role">Função</Label>
-                  <Select
-                     onValueChange={(v) => setRole(v as "member" | "admin")}
-                     value={role}
-                  >
-                     <SelectTrigger className="w-full" id="invite-role">
-                        <SelectValue />
-                     </SelectTrigger>
-                     <SelectContent>
-                        <SelectItem value="member">Membro</SelectItem>
-                        <SelectItem value="admin">Administrador</SelectItem>
-                     </SelectContent>
-                  </Select>
-               </div>
-            </div>
-
-            <Card className="bg-muted border-0">
-               <CardContent className="pt-4 pb-4">
-                  <div className="flex gap-3">
-                     <div className="mt-0.5">
-                        <Mail className="size-4 text-muted-foreground" />
-                     </div>
-                     <div className="space-y-1">
-                        <p className="text-sm font-medium">
-                           Como funciona o convite
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                           Um e-mail será enviado com um link de convite. O
-                           destinatário poderá criar uma conta ou fazer login
-                           para aceitar o convite.
-                        </p>
-                     </div>
+         <div className="flex-1 overflow-y-auto px-4 py-4">
+            <div className="flex flex-col gap-4">
+               <div className="flex gap-2 items-end">
+                  <div className="flex-1 flex flex-col gap-2">
+                     <Label htmlFor="invite-email">E-mail</Label>
+                     <Input
+                        autoComplete="email"
+                        id="invite-email"
+                        onChange={(e) => setEmail(e.target.value)}
+                        onKeyDown={(e) => {
+                           if (
+                              e.key === "Enter" &&
+                              isValid &&
+                              !inviteMutation.isPending
+                           ) {
+                              inviteMutation.mutate();
+                           }
+                        }}
+                        placeholder="usuario@empresa.com"
+                        type="email"
+                        value={email}
+                     />
                   </div>
-               </CardContent>
-            </Card>
-         </CredenzaBody>
+                  <div className="w-36 flex flex-col gap-2 shrink-0">
+                     <Label htmlFor="invite-role">Função</Label>
+                     <Select
+                        onValueChange={(v) => setRole(v as "member" | "admin")}
+                        value={role}
+                     >
+                        <SelectTrigger className="w-full" id="invite-role">
+                           <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                           <SelectItem value="member">Membro</SelectItem>
+                           <SelectItem value="admin">Administrador</SelectItem>
+                        </SelectContent>
+                     </Select>
+                  </div>
+               </div>
 
-         <CredenzaFooter>
+               <Card className="bg-muted border-0">
+                  <CardContent className="pt-4 pb-4">
+                     <div className="flex gap-3">
+                        <div className="mt-0.5">
+                           <Mail className="size-4 text-muted-foreground" />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                           <p className="text-sm font-medium">
+                              Como funciona o convite
+                           </p>
+                           <p className="text-xs text-muted-foreground">
+                              Um e-mail será enviado com um link de convite. O
+                              destinatário poderá criar uma conta ou fazer login
+                              para aceitar o convite.
+                           </p>
+                        </div>
+                     </div>
+                  </CardContent>
+               </Card>
+            </div>
+         </div>
+
+         <div className="border-t px-4 py-4">
             <Button
                className="w-full"
                disabled={!isValid || inviteMutation.isPending}
@@ -277,14 +255,10 @@ function InviteMemberCredenzaContent({
                )}
                Enviar convite
             </Button>
-         </CredenzaFooter>
-      </>
+         </div>
+      </DialogStackContent>
    );
 }
-
-// ============================================
-// Pending Invites Section
-// ============================================
 
 function PendingInvitesSection({ organizationId }: { organizationId: string }) {
    const queryClient = useQueryClient();
@@ -329,7 +303,7 @@ function PendingInvitesSection({ organizationId }: { organizationId: string }) {
 
    if (isLoading) {
       return (
-         <section className="space-y-3">
+         <section className="flex flex-col gap-4">
             <div>
                <h2 className="text-lg font-medium">Convites pendentes</h2>
                <p className="text-sm text-muted-foreground mt-1">
@@ -342,7 +316,7 @@ function PendingInvitesSection({ organizationId }: { organizationId: string }) {
    }
 
    return (
-      <section className="space-y-3">
+      <section className="flex flex-col gap-4">
          <div>
             <h2 className="text-lg font-medium">Convites pendentes</h2>
             <p className="text-sm text-muted-foreground mt-1">
@@ -400,13 +374,9 @@ function PendingInvitesSection({ organizationId }: { organizationId: string }) {
    );
 }
 
-// ============================================
-// Main Content Component
-// ============================================
-
 function MembersContent() {
    const queryClient = useQueryClient();
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
    const [searchFilter, setSearchFilter] = useState("");
 
    const { data: members } = useSuspenseQuery(
@@ -424,7 +394,6 @@ function MembersContent() {
    const currentUserId = sessionData?.user?.id;
    const organizationId = activeOrg?.id ?? "";
 
-   // Filter members by search
    const filteredMembers = useMemo(() => {
       if (!searchFilter.trim()) return members;
       const query = searchFilter.toLowerCase();
@@ -435,7 +404,6 @@ function MembersContent() {
       );
    }, [members, searchFilter]);
 
-   // Mutations
    const updateRoleMutation = useMutation({
       mutationFn: async ({
          memberId,
@@ -473,17 +441,16 @@ function MembersContent() {
    }
 
    function handleOpenInviteCredenza() {
-      openCredenza({
+      openDialogStack({
          children: (
             <InviteMemberCredenzaContent
-               onSuccess={closeCredenza}
+               onSuccess={closeDialogStack}
                organizationId={organizationId}
             />
          ),
       });
    }
 
-   // Column definitions
    const columns: ColumnDef<MemberRow>[] = useMemo(
       () => [
          {
@@ -543,8 +510,7 @@ function MembersContent() {
    );
 
    return (
-      <div className="space-y-6">
-         {/* Header */}
+      <div className="flex flex-col gap-4">
          <div className="flex items-center justify-between">
             <div>
                <h1 className="text-2xl font-semibold font-serif">Membros</h1>
@@ -558,11 +524,9 @@ function MembersContent() {
             </Button>
          </div>
 
-         {/* Pending invites */}
          <PendingInvitesSection organizationId={organizationId} />
 
-         {/* Members data table */}
-         <section className="space-y-3">
+         <section className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
                <div>
                   <h2 className="text-lg font-medium">
@@ -576,7 +540,6 @@ function MembersContent() {
                </div>
             </div>
 
-            {/* Search */}
             <div className="relative max-w-sm">
                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground pointer-events-none" />
                <Input
@@ -621,10 +584,6 @@ function MembersContent() {
       </div>
    );
 }
-
-// ============================================
-// Page Component
-// ============================================
 
 function MembersPage() {
    return (

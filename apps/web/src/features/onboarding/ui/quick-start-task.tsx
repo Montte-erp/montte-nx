@@ -5,8 +5,8 @@ import type React from "react";
 import { useCallback } from "react";
 import { BankAccountForm } from "@/features/bank-accounts/ui/bank-accounts-form";
 import { CategoryForm } from "@/features/categories/ui/categories-form";
-import { TransactionCredenza } from "@/features/transactions/ui/transaction-credenza";
-import { useCredenza } from "@/hooks/use-credenza";
+import { TransactionDialogStack } from "@/features/transactions/ui/transaction-dialog-stack";
+import { useDialogStack } from "@/hooks/use-dialog-stack";
 import type { TaskDefinition } from "../task-definitions";
 
 interface QuickStartTaskProps {
@@ -24,30 +24,35 @@ export function QuickStartTask({
    isAutoDetected,
    onComplete,
 }: QuickStartTaskProps) {
-   const { openCredenza, closeCredenza } = useCredenza();
+   const { openDialogStack, closeDialogStack } = useDialogStack();
 
    const handleClick = useCallback(() => {
       if (isLocked || isCompleted) return;
 
       if (task.id === "connect_bank_account") {
-         openCredenza({
+         openDialogStack({
             children: (
-               <BankAccountForm mode="create" onSuccess={closeCredenza} />
+               <BankAccountForm mode="create" onSuccess={closeDialogStack} />
             ),
          });
       } else if (task.id === "create_category") {
-         openCredenza({
-            children: <CategoryForm mode="create" onSuccess={closeCredenza} />,
+         openDialogStack({
+            children: (
+               <CategoryForm mode="create" onSuccess={closeDialogStack} />
+            ),
          });
       } else if (task.id === "add_transaction") {
-         openCredenza({
+         openDialogStack({
             children: (
-               <TransactionCredenza mode="create" onSuccess={closeCredenza} />
+               <TransactionDialogStack
+                  mode="create"
+                  onSuccess={closeDialogStack}
+               />
             ),
          });
       }
       // explore tasks (create_insight) have no action
-   }, [isLocked, isCompleted, task.id, openCredenza, closeCredenza]);
+   }, [isLocked, isCompleted, task.id, openDialogStack, closeDialogStack]);
 
    const handleKeyDown = useCallback(
       (e: React.KeyboardEvent) => {

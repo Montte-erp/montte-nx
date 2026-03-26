@@ -11,13 +11,11 @@ import {
 } from "@packages/ui/components/choicebox";
 import { Combobox } from "@packages/ui/components/combobox";
 import {
-   CredenzaBody,
-   CredenzaClose,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import { DatePicker } from "@packages/ui/components/date-picker";
 import { Field, FieldGroup, FieldLabel } from "@packages/ui/components/field";
 import { Spinner } from "@packages/ui/components/spinner";
@@ -27,13 +25,10 @@ import { Suspense, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface TransactionExportCredenzaProps {
-   dateFrom?: string; // YYYY-MM-DD
-   dateTo?: string; // YYYY-MM-DD
+interface TransactionExportDialogStackProps {
+   dateFrom?: string;
+   dateTo?: string;
+   onClose?: () => void;
 }
 
 type ExportFormat = "csv" | "ofx";
@@ -45,32 +40,22 @@ type BankAccountType =
    | "payment"
    | "cash";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+import dayjs from "dayjs";
 
 function getCurrentMonthRange(): { from: string; to: string } {
-   const now = new Date();
-   const year = now.getFullYear();
-   const month = String(now.getMonth() + 1).padStart(2, "0");
-   const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+   const now = dayjs();
    return {
-      from: `${year}-${month}-01`,
-      to: `${year}-${month}-${String(lastDay).padStart(2, "0")}`,
+      from: now.startOf("month").format("YYYY-MM-DD"),
+      to: now.endOf("month").format("YYYY-MM-DD"),
    };
 }
 
 function parseDateString(dateStr: string): Date {
-   // YYYY-MM-DD — parse at noon to avoid timezone shift
-   const [year, month, day] = dateStr.split("-").map(Number);
-   return new Date(year, month - 1, day, 12, 0, 0);
+   return dayjs(dateStr).hour(12).minute(0).second(0).toDate();
 }
 
 function toDateString(date: Date): string {
-   const y = date.getFullYear();
-   const m = String(date.getMonth() + 1).padStart(2, "0");
-   const d = String(date.getDate()).padStart(2, "0");
-   return `${y}-${m}-${d}`;
+   return dayjs(date).format("YYYY-MM-DD");
 }
 
 function triggerDownload(blob: Blob, filename: string): void {
@@ -90,11 +75,11 @@ function mapAccountTypeToOFX(
    return "CHECKING";
 }
 
-// ---------------------------------------------------------------------------
-// Inner component (has access to suspense data)
-// ---------------------------------------------------------------------------
-
-function ExportForm({ dateFrom, dateTo }: TransactionExportCredenzaProps) {
+function ExportForm({
+   dateFrom,
+   dateTo,
+   onClose,
+}: TransactionExportDialogStackProps) {
    const defaultRange = getCurrentMonthRange();
 
    const [format, setFormat] = useState<ExportFormat>("csv");
@@ -220,7 +205,6 @@ function ExportForm({ dateFrom, dateTo }: TransactionExportCredenzaProps) {
                triggerDownload(blob, `transacoes_${from}_${to}.csv`);
                toast.success("Exportação CSV concluída.");
             } else {
-               // OFX — only export transactions from selected account
                if (!selectedAccount) {
                   toast.error("Selecione uma conta para exportar OFX.");
                   return;
@@ -281,17 +265,16 @@ function ExportForm({ dateFrom, dateTo }: TransactionExportCredenzaProps) {
    }
 
    return (
-      <>
-         <CredenzaHeader>
-            <CredenzaTitle>Exportar Lançamentos</CredenzaTitle>
-            <CredenzaDescription>
+      <DialogStackContent index={0}>
+         <DialogStackHeader>
+            <DialogStackTitle>Exportar Lançamentos</DialogStackTitle>
+            <DialogStackDescription>
                Selecione o formato e o período para exportar.
-            </CredenzaDescription>
-         </CredenzaHeader>
+            </DialogStackDescription>
+         </DialogStackHeader>
 
-         <CredenzaBody>
+         <div className="flex-1 overflow-y-auto px-4 py-4">
             <FieldGroup>
-               {/* Format selector */}
                <Field>
                   <FieldLabel>Formato</FieldLabel>
                   <Choicebox
@@ -326,7 +309,6 @@ function ExportForm({ dateFrom, dateTo }: TransactionExportCredenzaProps) {
                   </Choicebox>
                </Field>
 
-               {/* Date range */}
                <div className="grid grid-cols-2 gap-4">
                   <Field>
                      <FieldLabel>Data inicial</FieldLabel>
@@ -353,7 +335,6 @@ function ExportForm({ dateFrom, dateTo }: TransactionExportCredenzaProps) {
                   </Field>
                </div>
 
-               {/* OFX account selector */}
                {format === "ofx" ? (
                   <Field>
                      <FieldLabel>Conta</FieldLabel>
@@ -369,69 +350,72 @@ function ExportForm({ dateFrom, dateTo }: TransactionExportCredenzaProps) {
                   </Field>
                ) : null}
 
-               {/* Export summary */}
                <div className="rounded-lg border bg-muted/20 p-3">
                   <p className="text-xs text-muted-foreground">
                      {format === "csv" ? "CSV" : "OFX"} &middot;{" "}
-                     {periodFrom.toLocaleDateString("pt-BR")} até{" "}
-                     {periodTo.toLocaleDateString("pt-BR")}
+                     {dayjs(periodFrom).format("DD/MM/YYYY")} até{" "}
+                     {dayjs(periodTo).format("DD/MM/YYYY")}
                      {format === "ofx" && selectedAccount
                         ? ` · ${selectedAccount.name}`
                         : null}
                   </p>
                </div>
             </FieldGroup>
-         </CredenzaBody>
+         </div>
 
-         <CredenzaFooter className="flex gap-2">
-            <CredenzaClose asChild>
-               <Button className="flex-1" variant="outline">
+         <div className="border-t px-4 py-4">
+            <div className="flex gap-2">
+               <Button
+                  className="flex-1"
+                  onClick={onClose}
+                  type="button"
+                  variant="outline"
+               >
                   Cancelar
                </Button>
-            </CredenzaClose>
-            <Button
-               className="flex-1"
-               disabled={!canDownload || isPending}
-               onClick={handleDownload}
-               type="button"
-            >
-               {isPending ? (
-                  <Spinner className="size-4 mr-2" />
-               ) : (
-                  <Download className="size-4 mr-2" />
-               )}
-               Baixar
-            </Button>
-         </CredenzaFooter>
-      </>
+               <Button
+                  className="flex-1"
+                  disabled={!canDownload || isPending}
+                  onClick={handleDownload}
+                  type="button"
+               >
+                  {isPending ? (
+                     <Spinner className="size-4 mr-2" />
+                  ) : (
+                     <Download className="size-4 mr-2" />
+                  )}
+                  Baixar
+               </Button>
+            </div>
+         </div>
+      </DialogStackContent>
    );
 }
 
-// ---------------------------------------------------------------------------
-// Public export
-// ---------------------------------------------------------------------------
-
-export function TransactionExportCredenza({
+export function TransactionExportDialogStack({
    dateFrom,
    dateTo,
-}: TransactionExportCredenzaProps) {
+   onClose,
+}: TransactionExportDialogStackProps) {
    return (
       <Suspense
          fallback={
-            <>
-               <CredenzaHeader>
-                  <CredenzaTitle>Exportar Lançamentos</CredenzaTitle>
-                  <CredenzaDescription>
+            <DialogStackContent index={0}>
+               <DialogStackHeader>
+                  <DialogStackTitle>Exportar Lançamentos</DialogStackTitle>
+                  <DialogStackDescription>
                      Selecione o formato e o período para exportar.
-                  </CredenzaDescription>
-               </CredenzaHeader>
-               <CredenzaBody className="flex items-center justify-center py-8">
-                  <Spinner className="size-6" />
-               </CredenzaBody>
-            </>
+                  </DialogStackDescription>
+               </DialogStackHeader>
+               <div className="flex-1 overflow-y-auto px-4 py-4">
+                  <div className="flex items-center justify-center py-8">
+                     <Spinner className="size-6" />
+                  </div>
+               </div>
+            </DialogStackContent>
          }
       >
-         <ExportForm dateFrom={dateFrom} dateTo={dateTo} />
+         <ExportForm dateFrom={dateFrom} dateTo={dateTo} onClose={onClose} />
       </Suspense>
    );
 }

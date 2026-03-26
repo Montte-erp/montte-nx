@@ -7,22 +7,25 @@ import type {
 import { insightConfigSchema } from "@packages/analytics/types";
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   DialogStackContent,
+   DialogStackDescription,
+   DialogStackHeader,
+   DialogStackTitle,
+} from "@packages/ui/components/dialog-stack";
 import { Input } from "@packages/ui/components/input";
 import { cn } from "@packages/ui/lib/utils";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+   useMutation,
+   useSuspenseQuery,
+   useQueryClient,
+} from "@tanstack/react-query";
 import { BarChart3, Hash, Loader2, TrendingUp } from "lucide-react";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
 import type { InsightType } from "@/features/analytics/hooks/use-insight-config";
 import { useInsightConfig } from "@/features/analytics/hooks/use-insight-config";
-import { closeCredenza } from "@/hooks/use-credenza";
+import { closeDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 import { BreakdownQueryBuilder } from "./breakdown-query-builder";
 import {
@@ -43,14 +46,16 @@ const TYPE_ITEMS: {
    { value: "breakdown", label: "Distribuição", icon: BarChart3 },
 ];
 
-interface InsightEditCredenzaProps {
+interface InsightEditDialogStackProps {
    insightId: string;
 }
 
-export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
+function InsightEditDialogStackContent({
+   insightId,
+}: InsightEditDialogStackProps) {
    const queryClient = useQueryClient();
 
-   const { data: insight, isLoading } = useQuery(
+   const { data: insight } = useSuspenseQuery(
       orpc.insights.getById.queryOptions({ input: { id: insightId } }),
    );
 
@@ -81,7 +86,7 @@ export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
                   input: { id: insightId },
                }).queryKey,
             });
-            closeCredenza();
+            closeDialogStack();
          },
          onError: () => toast.error("Erro ao atualizar insight"),
       }),
@@ -99,39 +104,21 @@ export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
       });
    }, [insightId, name, config, updateMutation]);
 
-   if (isLoading) {
-      return (
-         <>
-            <CredenzaHeader>
-               <CredenzaTitle>Configurar insight</CredenzaTitle>
-               <CredenzaDescription>
-                  Ajuste as configurações do insight.
-               </CredenzaDescription>
-            </CredenzaHeader>
-            <CredenzaBody className="h-[500px] flex items-center justify-center">
-               <InsightLoadingState />
-            </CredenzaBody>
-         </>
-      );
-   }
-
    return (
-      <>
-         <CredenzaHeader className="pb-3">
-            <CredenzaTitle className="text-base">
+      <DialogStackContent index={0}>
+         <DialogStackHeader className="pb-3">
+            <DialogStackTitle className="text-base">
                {insight?.name ?? "Configurar insight"}
-            </CredenzaTitle>
-            <CredenzaDescription>
+            </DialogStackTitle>
+            <DialogStackDescription>
                Ajuste as configurações do insight.
-            </CredenzaDescription>
-         </CredenzaHeader>
+            </DialogStackDescription>
+         </DialogStackHeader>
 
-         <CredenzaBody className="p-0 overflow-hidden">
+         <div className="flex-1 p-0 overflow-hidden">
             <div className="flex h-[500px]">
-               {/* ── Left sidebar ── */}
                <aside className="w-[220px] shrink-0 border-r flex flex-col overflow-y-auto">
-                  <div className="p-3 flex flex-col gap-3">
-                     {/* Name */}
+                  <div className="p-3 flex flex-col gap-4">
                      <Input
                         className="h-8 text-sm"
                         onChange={(e) => setName(e.target.value)}
@@ -141,8 +128,7 @@ export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
 
                      <div className="border-t" />
 
-                     {/* Type selector */}
-                     <div className="flex flex-col gap-0.5">
+                     <div className="flex flex-col gap-2">
                         <span className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wider px-1 mb-0.5">
                            Tipo
                         </span>
@@ -170,7 +156,6 @@ export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
 
                      <div className="border-t" />
 
-                     {/* Config builder */}
                      <div className="[&_.space-y-4]:space-y-3 [&_label]:text-[10px]">
                         {type === "kpi" && (
                            <KpiQueryBuilder
@@ -194,7 +179,6 @@ export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
                   </div>
                </aside>
 
-               {/* ── Right preview ── */}
                <div className="flex-1 min-w-0 overflow-y-auto bg-muted/20 p-4">
                   <ErrorBoundary
                      fallbackRender={({ error }) => (
@@ -207,10 +191,10 @@ export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
                   </ErrorBoundary>
                </div>
             </div>
-         </CredenzaBody>
+         </div>
 
-         <CredenzaFooter>
-            <Button onClick={closeCredenza} variant="outline">
+         <div className="border-t px-4 py-4">
+            <Button onClick={closeDialogStack} variant="outline">
                Cancelar
             </Button>
             <Button disabled={updateMutation.isPending} onClick={handleSave}>
@@ -219,7 +203,17 @@ export function InsightEditCredenza({ insightId }: InsightEditCredenzaProps) {
                )}
                Salvar
             </Button>
-         </CredenzaFooter>
-      </>
+         </div>
+      </DialogStackContent>
+   );
+}
+
+export function InsightEditDialogStack({
+   insightId,
+}: InsightEditDialogStackProps) {
+   return (
+      <Suspense fallback={<InsightLoadingState />}>
+         <InsightEditDialogStackContent insightId={insightId} />
+      </Suspense>
    );
 }
