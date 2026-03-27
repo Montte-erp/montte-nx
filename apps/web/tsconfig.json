@@ -70,7 +70,7 @@
          "path": "../../packages/events"
       },
       {
-         "path": "../../packages/agents"
+         "path": "../../core/agents"
       },
       {
          "path": "../../core/database"

@@ -91,5 +91,6 @@
       "enabled": true
    },
    "useDaemonProcess": true,
-   "parallel": 8
+   "parallel": 8,
+   "analytics": true
 }
