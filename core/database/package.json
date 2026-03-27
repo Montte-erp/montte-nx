@@ -70,7 +70,6 @@
       "dotenv-cli": "catalog:environment",
       "drizzle-kit": "catalog:database",
       "drizzle-zod": "catalog:database",
-      "shx": "catalog:environment",
       "typescript": "catalog:development"
    }
 }

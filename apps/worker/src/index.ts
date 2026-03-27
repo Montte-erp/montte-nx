@@ -1,4 +1,4 @@
-import { env } from "@core/environment/worker";
+import { env } from "@core/environment/web";
 import {
    startHealthHeartbeat,
    stopHealthHeartbeat,

@@ -73,6 +73,7 @@
       "dependencies": {
         "@ai-sdk/react": "catalog:assistant-ui",
         "@assistant-ui/react-ai-sdk": "catalog:assistant-ui",
+        "@core/agents": "workspace:*",
         "@core/authentication": "workspace:*",
         "@core/database": "workspace:*",
         "@core/environment": "workspace:*",
@@ -100,7 +101,6 @@
         "@orpc/server": "catalog:orpc",
         "@orpc/tanstack-query": "catalog:orpc",
         "@orpc/zod": "catalog:orpc",
-        "@packages/agents": "workspace:*",
         "@packages/analytics": "workspace:*",
         "@packages/events": "workspace:*",
         "@packages/feedback": "workspace:*",
@@ -176,6 +176,30 @@
       "devDependencies": {
         "@tooling/typescript": "workspace:*",
         "@types/node-cron": "catalog:workers",
+        "typescript": "catalog:development",
+      },
+    },
+    "core/agents": {
+      "name": "@core/agents",
+      "version": "0.25.1",
+      "dependencies": {
+        "@core/database": "workspace:*",
+        "@core/environment": "workspace:*",
+        "@core/logging": "workspace:*",
+        "@core/utils": "workspace:*",
+        "@mastra/ai-sdk": "catalog:mastra",
+        "@mastra/core": "catalog:mastra",
+        "@mastra/memory": "catalog:mastra",
+        "@mastra/observability": "catalog:mastra",
+        "@mastra/pg": "catalog:mastra",
+        "@mastra/posthog": "catalog:mastra",
+        "ai": "catalog:mastra",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
+        "dotenv-cli": "catalog:enviroment",
+        "shx": "catalog:enviroment",
         "typescript": "catalog:development",
       },
     },
@@ -366,30 +390,6 @@
         "vitest": "^3.2.4",
       },
     },
-    "packages/agents": {
-      "name": "@packages/agents",
-      "version": "0.25.1",
-      "dependencies": {
-        "@core/database": "workspace:*",
-        "@core/environment": "workspace:*",
-        "@core/logging": "workspace:*",
-        "@core/utils": "workspace:*",
-        "@mastra/ai-sdk": "catalog:mastra",
-        "@mastra/core": "catalog:mastra",
-        "@mastra/memory": "catalog:mastra",
-        "@mastra/observability": "catalog:mastra",
-        "@mastra/pg": "catalog:mastra",
-        "@mastra/posthog": "catalog:mastra",
-        "ai": "catalog:mastra",
-        "zod": "catalog:validation",
-      },
-      "devDependencies": {
-        "@tooling/typescript": "workspace:*",
-        "dotenv-cli": "catalog:enviroment",
-        "shx": "catalog:enviroment",
-        "typescript": "catalog:development",
-      },
-    },
     "packages/analytics": {
       "name": "@packages/analytics",
       "version": "0.1.0",
@@ -506,6 +506,7 @@
         "@number-flow/react": "catalog:ui",
         "@tailwindcss/postcss": "catalog:ui",
         "@tailwindcss/typography": "catalog:ui",
+        "@tooling/css": "workspace:*",
         "@tooling/typescript": "workspace:*",
         "@types/color": "catalog:ui",
         "@types/lodash": "^4.17.23",
@@ -516,6 +517,17 @@
         "tailwindcss": "catalog:ui",
         "typescript": "catalog:development",
       },
+    },
+    "tooling/boundary": {
+      "name": "@tooling/boundary",
+      "version": "0.0.0",
+      "bin": {
+        "check-boundaries": "./check-boundaries.ts",
+      },
+    },
+    "tooling/css": {
+      "name": "@tooling/css",
+      "version": "0.0.0",
     },
     "tooling/oxc": {
       "name": "@tooling/oxc",
@@ -989,6 +1001,8 @@
     "@chevrotain/types": ["@chevrotain/types@10.5.0", "", {}, "sha512-f1MAia0x/pAVPWH/T73BJVyO2XU5tI4/iE7cnxb7tqdNTNhQI3Uq3XkqcoteTmD4t1aM0LbHCJOhgIDn07kl2A=="],
 
     "@chevrotain/utils": ["@chevrotain/utils@10.5.0", "", {}, "sha512-hBzuU5+JjB2cqNZyszkDHZgOSrUUT8V3dhgRl8Q9Gp6dAj/H5+KILGjbhDpc3Iy9qmqlm/akuOI2ut9VUtzJxQ=="],
+
+    "@core/agents": ["@core/agents@workspace:core/agents"],
 
     "@core/authentication": ["@core/authentication@workspace:core/authentication"],
 
@@ -1507,8 +1521,6 @@
     "@oxlint/binding-win32-ia32-msvc": ["@oxlint/binding-win32-ia32-msvc@1.54.0", "", { "os": "win32", "cpu": "ia32" }, "sha512-GXos7N5oZIcIE8hlXgtUkI+y3frIqwiztx9p4+ZrpNgASbnIsxxy8bgLJqXE2SGCAdmtjBO1mdKhGTtVrb1jbg=="],
 
     "@oxlint/binding-win32-x64-msvc": ["@oxlint/binding-win32-x64-msvc@1.54.0", "", { "os": "win32", "cpu": "x64" }, "sha512-DVxSELcI72lmcODuVpO8uXkwuYPiA0hKMhBwNa8fO4+sIVxFvxugf/z6qrL+4PM8RjGWjdl8O/QqzuRWj9b5bA=="],
-
-    "@packages/agents": ["@packages/agents@workspace:packages/agents"],
 
     "@packages/analytics": ["@packages/analytics@workspace:packages/analytics"],
 
@@ -2031,6 +2043,10 @@
     "@tokenizer/inflate": ["@tokenizer/inflate@0.4.1", "", { "dependencies": { "debug": "^4.4.3", "token-types": "^6.1.1" } }, "sha512-2mAv+8pkG6GIZiF1kNg1jAjh27IDxEPKwdGul3snfztFerfPGI1LjDezZp3i7BElXompqEtPmoPx6c2wgtWsOA=="],
 
     "@tokenizer/token": ["@tokenizer/token@0.3.0", "", {}, "sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A=="],
+
+    "@tooling/boundary": ["@tooling/boundary@workspace:tooling/boundary"],
+
+    "@tooling/css": ["@tooling/css@workspace:tooling/css"],
 
     "@tooling/oxc": ["@tooling/oxc@workspace:tooling/oxc"],
 

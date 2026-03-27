@@ -3,13 +3,13 @@ import {
    createRequestContext,
    mastra,
    type RequestContext,
-} from "@packages/agents";
+} from "@core/agents";
 import {
    AVAILABLE_MODELS,
    DEFAULT_CONTENT_MODEL_ID,
    type ModelId,
    getModelPreset,
-} from "@packages/agents/models";
+} from "@core/agents/models";
 import { emitAiChatMessage } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
 import { z } from "zod";

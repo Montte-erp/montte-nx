@@ -15,6 +15,7 @@
    "dependencies": {
       "@ai-sdk/react": "catalog:assistant-ui",
       "@assistant-ui/react-ai-sdk": "catalog:assistant-ui",
+      "@core/agents": "workspace:*",
       "@core/authentication": "workspace:*",
       "@core/database": "workspace:*",
       "@core/environment": "workspace:*",
@@ -42,7 +43,6 @@
       "@orpc/server": "catalog:orpc",
       "@orpc/tanstack-query": "catalog:orpc",
       "@orpc/zod": "catalog:orpc",
-      "@packages/agents": "workspace:*",
       "@packages/analytics": "workspace:*",
       "@packages/events": "workspace:*",
       "@packages/feedback": "workspace:*",
@@ -85,6 +85,7 @@
       "@tanstack/devtools-vite": "catalog:tanstack",
       "@testing-library/dom": "catalog:testing",
       "@testing-library/react": "catalog:testing",
+      "@tooling/css": "workspace:*",
       "@types/color": "catalog:ui",
       "@types/node": "^22.10.2",
       "@types/react": "catalog:react",

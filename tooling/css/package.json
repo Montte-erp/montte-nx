@@ -1,0 +1,16 @@
+{
+   "name": "@tooling/css",
+   "version": "0.0.0",
+   "private": true,
+   "type": "module",
+   "exports": {
+      "./globals.css": "./src/styles/globals.css",
+      "./postcss.config": "./postcss.config.mjs"
+   },
+   "dependencies": {
+      "@tailwindcss/typography": "catalog:ui",
+      "tailwind-scrollbar-hide": "^4.0.0",
+      "tailwindcss": "catalog:ui",
+      "tw-animate-css": "catalog:ui"
+   }
+}

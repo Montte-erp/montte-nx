@@ -1,7 +1,7 @@
 import { env } from "@core/environment/web";
 import { Toaster } from "@packages/ui/components/sonner";
 import { ThemeProvider } from "@packages/ui/lib/theme-provider";
-import appCss from "@packages/ui/styles/globals.css?url";
+import appCss from "@tooling/css/globals.css?url";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import {
    ClientOnly,

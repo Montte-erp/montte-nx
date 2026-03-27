@@ -9,8 +9,8 @@ import {
    ThreadPrimitive,
    useAui,
 } from "@assistant-ui/react";
-import type { ModelId } from "@packages/agents/models";
-import { AVAILABLE_MODELS } from "@packages/agents/models";
+import type { ModelId } from "@core/agents/models";
+import { AVAILABLE_MODELS } from "@core/agents/models";
 import {
    ComposerAddAttachment,
    ComposerAttachments,

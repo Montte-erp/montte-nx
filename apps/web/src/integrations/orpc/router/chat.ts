@@ -1,6 +1,6 @@
 import { toAISdkV5Messages } from "@mastra/ai-sdk/ui";
 import { ORPCError } from "@orpc/server";
-import { mastra } from "@packages/agents";
+import { mastra } from "@core/agents";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
