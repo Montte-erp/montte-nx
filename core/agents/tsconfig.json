@@ -16,11 +16,7 @@
          "@core/stripe": ["../stripe/src/index.ts"],
          "@core/stripe/*": ["../stripe/src/*"],
          "@core/transactional/*": ["../transactional/src/*"],
-         "@core/utils/*": ["../utils/src/*"],
-         "@packages/analytics/*": ["../../packages/analytics/src/*"],
-         "@packages/events/*": ["../../packages/events/src/*"],
-         "@packages/feedback/*": ["../../packages/feedback/src/*"],
-         "@packages/ui/*": ["../../packages/ui/src/*"]
+         "@core/utils/*": ["../utils/src/*"]
       }
    },
    "include": ["src"],

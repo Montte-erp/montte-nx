@@ -28,7 +28,8 @@
    "scripts": {
       "build": "tsc --build",
       "check": "oxlint ./src",
-      "dev": "dotenv -e .env -- bunx mastra dev",
+      "env:run": "dotenv -e ../database/.env.local --",
+      "dev": "bun run env:run bunx mastra dev",
       "typecheck": "tsgo"
    },
    "dependencies": {

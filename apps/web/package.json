@@ -85,6 +85,7 @@
       "@tanstack/devtools-vite": "catalog:tanstack",
       "@testing-library/dom": "catalog:testing",
       "@testing-library/react": "catalog:testing",
+      "@tooling/css": "workspace:*",
       "@types/color": "catalog:ui",
       "@types/node": "^22.10.2",
       "@types/react": "catalog:react",

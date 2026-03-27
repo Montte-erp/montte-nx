@@ -506,6 +506,7 @@
         "@number-flow/react": "catalog:ui",
         "@tailwindcss/postcss": "catalog:ui",
         "@tailwindcss/typography": "catalog:ui",
+        "@tooling/css": "workspace:*",
         "@tooling/typescript": "workspace:*",
         "@types/color": "catalog:ui",
         "@types/lodash": "^4.17.23",
@@ -516,6 +517,17 @@
         "tailwindcss": "catalog:ui",
         "typescript": "catalog:development",
       },
+    },
+    "tooling/boundary": {
+      "name": "@tooling/boundary",
+      "version": "0.0.0",
+      "bin": {
+        "check-boundaries": "./check-boundaries.ts",
+      },
+    },
+    "tooling/css": {
+      "name": "@tooling/css",
+      "version": "0.0.0",
     },
     "tooling/oxc": {
       "name": "@tooling/oxc",
@@ -2031,6 +2043,10 @@
     "@tokenizer/inflate": ["@tokenizer/inflate@0.4.1", "", { "dependencies": { "debug": "^4.4.3", "token-types": "^6.1.1" } }, "sha512-2mAv+8pkG6GIZiF1kNg1jAjh27IDxEPKwdGul3snfztFerfPGI1LjDezZp3i7BElXompqEtPmoPx6c2wgtWsOA=="],
 
     "@tokenizer/token": ["@tokenizer/token@0.3.0", "", {}, "sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A=="],
+
+    "@tooling/boundary": ["@tooling/boundary@workspace:tooling/boundary"],
+
+    "@tooling/css": ["@tooling/css@workspace:tooling/css"],
 
     "@tooling/oxc": ["@tooling/oxc@workspace:tooling/oxc"],
 
