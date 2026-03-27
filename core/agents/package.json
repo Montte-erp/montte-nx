@@ -1,5 +1,5 @@
 {
-   "name": "@packages/agents",
+   "name": "@core/agents",
    "version": "0.25.1",
    "private": true,
    "license": "Apache-2.0",

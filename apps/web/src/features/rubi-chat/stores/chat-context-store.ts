@@ -1,5 +1,5 @@
-import type { ModelId } from "@packages/agents/models";
-import { DEFAULT_CONTENT_MODEL_ID } from "@packages/agents/models";
+import type { ModelId } from "@core/agents/models";
+import { DEFAULT_CONTENT_MODEL_ID } from "@core/agents/models";
 import { Store } from "@tanstack/react-store";
 
 interface ChatContextState {

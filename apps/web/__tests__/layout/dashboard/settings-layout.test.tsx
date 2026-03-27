@@ -37,7 +37,7 @@ vi.mock("@core/posthog/server", () => ({
    identifyUser: vi.fn(),
    setGroup: vi.fn(),
 }));
-vi.mock("@packages/agents", () => ({
+vi.mock("@core/agents", () => ({
    mastra: { getAgent: vi.fn() },
    createRequestContext: vi.fn(),
 }));

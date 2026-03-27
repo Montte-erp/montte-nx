@@ -1,0 +1,41 @@
+{
+   "extends": "@tooling/typescript/tsconfig.package.json",
+   "compilerOptions": {
+      "paths": {
+         "@core/agents": ["./src/mastra/index.ts"],
+         "@core/agents/*": ["./src/*"],
+         "@core/authentication/*": ["../authentication/src/*"],
+         "@core/database": ["../database/src/index.ts"],
+         "@core/database/*": ["../database/src/*"],
+         "@core/environment/*": ["../environment/src/*"],
+         "@core/files/*": ["../files/src/*"],
+         "@core/logging": ["../logging/src/logger.ts"],
+         "@core/logging/*": ["../logging/src/*"],
+         "@core/posthog/*": ["../posthog/src/*"],
+         "@core/redis/*": ["../redis/src/*"],
+         "@core/stripe": ["../stripe/src/index.ts"],
+         "@core/stripe/*": ["../stripe/src/*"],
+         "@core/transactional/*": ["../transactional/src/*"],
+         "@core/utils/*": ["../utils/src/*"],
+         "@packages/analytics/*": ["../../packages/analytics/src/*"],
+         "@packages/events/*": ["../../packages/events/src/*"],
+         "@packages/feedback/*": ["../../packages/feedback/src/*"],
+         "@packages/ui/*": ["../../packages/ui/src/*"]
+      }
+   },
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../utils"
+      },
+      {
+         "path": "../logging"
+      },
+      {
+         "path": "../environment"
+      },
+      {
+         "path": "../database"
+      }
+   ]
+}

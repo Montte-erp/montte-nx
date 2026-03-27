@@ -1,8 +1,4 @@
-import {
-   createRequestContext,
-   handleChatStream,
-   mastra,
-} from "@packages/agents";
+import { createRequestContext, handleChatStream, mastra } from "@core/agents";
 import { emitAiChatMessage } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
 import { getLogger } from "@core/logging/root";
