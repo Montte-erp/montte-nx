@@ -299,7 +299,7 @@ const colors = {
    yellow: chalk.yellow,
 };
 
-const DATABASE_PACKAGE_DIR = path.join(process.cwd(), "core", "database");
+const DATABASE_PACKAGE_DIR = path.join(process.cwd(), "apps", "web");
 
 function toSeedEntry(pricing: EventPricing) {
    return {

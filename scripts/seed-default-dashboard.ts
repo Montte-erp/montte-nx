@@ -18,7 +18,7 @@ const colors = {
    gray: chalk.gray,
 };
 
-const DATABASE_PACKAGE_DIR = path.join(process.cwd(), "core", "database");
+const DATABASE_PACKAGE_DIR = path.join(process.cwd(), "apps", "web");
 
 function getEnvFilePath(env: string) {
    const possibleFiles = [
