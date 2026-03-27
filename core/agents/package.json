@@ -28,7 +28,7 @@
    "scripts": {
       "build": "tsc --build",
       "check": "oxlint ./src",
-      "env:run": "dotenv -e ../database/.env.local --",
+      "env:run": "dotenv -e ../../apps/web/.env --",
       "dev": "bun run env:run bunx mastra dev",
       "typecheck": "tsgo"
    },
@@ -49,7 +49,6 @@
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
       "dotenv-cli": "catalog:enviroment",
-      "shx": "catalog:enviroment",
       "typescript": "catalog:development"
    }
 }
