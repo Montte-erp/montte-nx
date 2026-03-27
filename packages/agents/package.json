@@ -47,8 +47,8 @@
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
-      "dotenv-cli": "catalog:enviroment",
-      "shx": "catalog:enviroment",
+      "dotenv-cli": "catalog:environment",
+      "shx": "catalog:environment",
       "typescript": "catalog:development"
    }
 }

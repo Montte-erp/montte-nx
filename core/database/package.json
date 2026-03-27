@@ -67,10 +67,10 @@
       "@electric-sql/pglite": "^0.3.15",
       "@tooling/typescript": "workspace:*",
       "@types/pg": "catalog:database",
-      "dotenv-cli": "catalog:enviroment",
+      "dotenv-cli": "catalog:environment",
       "drizzle-kit": "catalog:database",
       "drizzle-zod": "catalog:database",
-      "shx": "catalog:enviroment",
+      "shx": "catalog:environment",
       "typescript": "catalog:development"
    }
 }
