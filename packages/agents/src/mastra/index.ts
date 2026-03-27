@@ -28,7 +28,8 @@ export type CustomRequestContext = {
 
 const mastraStorage = new PostgresStore({
    id: "mastra-storage",
-   connectionString: serverEnv.PG_VECTOR_URL,
+   connectionString: serverEnv.DATABASE_URL,
+   schemaName: "mastra",
 });
 
 const observability = new Observability({

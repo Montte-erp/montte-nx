@@ -9,7 +9,6 @@ export const env = createEnv({
    },
    server: {
       DATABASE_URL: z.url(),
-      PG_VECTOR_URL: z.url().optional(),
       REDIS_URL: z.url().optional().default("redis://localhost:6379"),
 
       BETTER_AUTH_SECRET: z.string().min(32),

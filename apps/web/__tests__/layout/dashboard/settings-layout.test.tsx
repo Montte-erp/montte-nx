@@ -14,7 +14,6 @@ vi.mock("@core/environment/web", () => ({
       ARCJET_ENV: "development",
       POSTHOG_KEY: "test",
       POSTHOG_HOST: "http://localhost",
-      PG_VECTOR_URL: "postgres://localhost/test",
       BETTER_AUTH_SECRET: "test",
       BETTER_AUTH_URL: "http://localhost:3000",
       RESEND_API_KEY: "test",

@@ -23,7 +23,7 @@ services:
          retries: 3
 
    contentta-db:
-      image: docker.io/postgres:15
+      image: docker.io/pgvector/pgvector:pg16
       command: postgres -c wal_level=logical
       environment:
          POSTGRES_USER: postgres
@@ -53,19 +53,7 @@ services:
          timeout: 5s
          retries: 5
 
-   pgvector:
-      image: docker.io/pgvector/pgvector:pg16
-      environment:
-         POSTGRES_USER: postgres
-         POSTGRES_PASSWORD: password
-         POSTGRES_DB: montte_vectors
-      volumes:
-         - pgvector_data:/var/lib/postgresql/data
-      ports:
-         - "8000:5432"
-
 volumes:
    montte_pgdata:
    miniodata:
    redis_data:
-   pgvector_data:
