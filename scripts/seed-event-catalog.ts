@@ -299,7 +299,7 @@ const colors = {
    yellow: chalk.yellow,
 };
 
-const DATABASE_PACKAGE_DIR = path.join(process.cwd(), "core", "database");
+const DATABASE_PACKAGE_DIR = path.join(process.cwd(), "apps", "web");
 
 function toSeedEntry(pricing: EventPricing) {
    return {
@@ -329,7 +329,7 @@ function getEnvFilePath(env: string) {
       }
    }
 
-   throw new Error(`No environment file found for ${env} in core/database`);
+   throw new Error(`No environment file found for ${env} in apps/web`);
 }
 
 function loadEnv(env: string) {

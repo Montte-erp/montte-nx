@@ -18,7 +18,7 @@ const colors = {
    gray: chalk.gray,
 };
 
-const DATABASE_PACKAGE_DIR = path.join(process.cwd(), "core", "database");
+const DATABASE_PACKAGE_DIR = path.join(process.cwd(), "apps", "web");
 
 function getEnvFilePath(env: string) {
    const possibleFiles = [
@@ -36,7 +36,7 @@ function getEnvFilePath(env: string) {
       }
    }
 
-   throw new Error(`No environment file found for ${env} in core/database`);
+   throw new Error(`No environment file found for ${env} in apps/web`);
 }
 
 function loadEnv(env: string) {

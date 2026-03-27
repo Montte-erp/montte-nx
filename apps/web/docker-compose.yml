@@ -22,8 +22,8 @@ services:
          timeout: 20s
          retries: 3
 
-   contentta-db:
-      image: docker.io/pgvector/pgvector:pg16
+   montte-db:
+      image: docker.io/pgvector/pgvector:pg15
       command: postgres -c wal_level=logical
       environment:
          POSTGRES_USER: postgres

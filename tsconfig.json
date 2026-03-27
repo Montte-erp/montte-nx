@@ -19,9 +19,6 @@
          "path": "./core/environment"
       },
       {
-         "path": "./packages/agents"
-      },
-      {
          "path": "./packages/events"
       },
       {
@@ -43,12 +40,6 @@
          "path": "./packages/ui"
       },
       {
-         "path": "./apps/server"
-      },
-      {
-         "path": "./apps/worker"
-      },
-      {
          "path": "./core/files"
       },
       {
@@ -58,7 +49,7 @@
          "path": "./core/utils"
       },
       {
-         "path": "./apps/web"
+         "path": "./core/agents"
       }
    ]
 }

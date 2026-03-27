@@ -601,7 +601,7 @@ Use the `orpc-testing` skill when writing new oRPC procedure tests.
 
 All scripts go in root `scripts/` directory. NEVER in `packages/*/` or `apps/*/`.
 
-Required patterns: `commander` CLI with `run` + `check` commands, `--env` flag, `--dry-run` flag, `chalk` for colored output, env loaded from `core/database/.env*`.
+Required patterns: `commander` CLI with `run` + `check` commands, `--env` flag, `--dry-run` flag, `chalk` for colored output, env loaded from `apps/web/.env*`.
 
 See existing scripts in `scripts/` for the standard template.
 
@@ -612,7 +612,7 @@ See existing scripts in `scripts/` for the standard template.
 - SCREAMING_SNAKE_CASE naming
 - Validated with Zod in `core/environment/src/{server,worker}.ts`
 - Client-side: `VITE_` prefix
-- Env files in `core/database/` (`.env`, `.env.local`, `.env.production`)
+- Env files in `apps/web/` (`.env`, `.env.local`, `.env.production`)
 
 ---
 

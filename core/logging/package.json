@@ -54,16 +54,16 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "@opentelemetry/api-logs": "^0.213.0",
-      "@opentelemetry/exporter-logs-otlp-http": "^0.213.0",
-      "@opentelemetry/resources": "^2.6.0",
-      "@opentelemetry/sdk-logs": "^0.213.0",
-      "@opentelemetry/sdk-node": "^0.213.0",
+      "@opentelemetry/api-logs": "catalog:telemetry",
+      "@opentelemetry/exporter-logs-otlp-http": "catalog:telemetry",
+      "@opentelemetry/resources": "catalog:telemetry",
+      "@opentelemetry/sdk-logs": "catalog:telemetry",
+      "@opentelemetry/sdk-node": "catalog:telemetry",
       "@orpc/experimental-pino": "catalog:orpc",
       "@orpc/otel": "catalog:orpc",
       "@orpc/server": "catalog:orpc",
       "pino": "catalog:logging",
-      "pino-opentelemetry-transport": "^3.0.0",
+      "pino-opentelemetry-transport": "catalog:telemetry",
       "posthog-node": "catalog:analytics-client",
       "zod": "catalog:validation"
    },
