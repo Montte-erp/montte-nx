@@ -16,8 +16,6 @@
          "types": "./dist/components/*.d.ts",
          "default": "./dist/components/*.js"
       },
-      "./globals.css": "./dist/styles/globals.css",
-      "./styles/globals.css": "./dist/styles/globals.css",
       "./hooks/*": {
          "types": "./dist/hooks/*.d.ts",
          "default": "./dist/hooks/*.js"
@@ -93,6 +91,7 @@
       "@number-flow/react": "catalog:ui",
       "@tailwindcss/postcss": "catalog:ui",
       "@tailwindcss/typography": "catalog:ui",
+      "@tooling/css": "workspace:*",
       "@tooling/typescript": "workspace:*",
       "@types/color": "catalog:ui",
       "@types/lodash": "^4.17.23",

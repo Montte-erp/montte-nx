@@ -1,5 +1,5 @@
 {
-   "name": "@packages/agents",
+   "name": "@core/agents",
    "version": "0.25.1",
    "private": true,
    "license": "Apache-2.0",
@@ -28,7 +28,8 @@
    "scripts": {
       "build": "tsc --build",
       "check": "oxlint ./src",
-      "dev": "dotenv -e .env -- bunx mastra dev",
+      "env:run": "dotenv -e ../../apps/web/.env --",
+      "dev": "bun run env:run bunx mastra dev",
       "typecheck": "tsgo"
    },
    "dependencies": {
@@ -48,7 +49,6 @@
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
       "dotenv-cli": "catalog:enviroment",
-      "shx": "catalog:enviroment",
       "typescript": "catalog:development"
    }
 }

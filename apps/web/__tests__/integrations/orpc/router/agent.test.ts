@@ -41,14 +41,14 @@ vi.mock("@packages/events/emit", () => ({
    emitEvent: vi.fn(),
 }));
 
-vi.mock("@packages/agents", () => ({
+vi.mock("@core/agents", () => ({
    mastra: {
       getAgent: vi.fn(),
    },
    createRequestContext: vi.fn().mockReturnValue({}),
 }));
 
-vi.mock("@packages/agents/models", () => ({
+vi.mock("@core/agents/models", () => ({
    AVAILABLE_MODELS: {},
    DEFAULT_CONTENT_MODEL_ID: "test-content-model",
    getModelPreset: vi.fn().mockReturnValue({
@@ -62,7 +62,7 @@ vi.mock("@packages/agents/models", () => ({
 
 vi.mock("@packages/events/ai");
 
-import { mastra } from "@packages/agents";
+import { mastra } from "@core/agents";
 import { emitAiChatMessage } from "@packages/events/ai";
 
 import {

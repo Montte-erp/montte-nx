@@ -4,7 +4,7 @@ import {
 } from "@core/database/repositories/budget-goals-repository";
 import type { DatabaseInstance } from "@core/database/client";
 import { teamMember, user, team } from "@core/database/schema";
-import { env } from "@core/environment/worker";
+import { env } from "@core/environment/web";
 import { createEmitFn } from "@packages/events/emit";
 import { emitFinanceBudgetAlertTriggered } from "@packages/events/finance";
 import { getLogger } from "@core/logging/root";

@@ -207,6 +207,7 @@
       "auth:generate": "nx run authentication:auth-schema-generate",
       "build": "nx run-many -t build --parallel=3",
       "check": "oxlint .",
+      "check-boundaries": "bun run tooling/boundary/check-boundaries.ts",
       "clean": "bun run scripts/clean.ts clean",
       "clean:cache": "bun run scripts/clean.ts cache",
       "db:push": "nx run core/database:db-push-local",
