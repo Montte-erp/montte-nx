@@ -36,7 +36,7 @@ function getEnvFilePath(env: string) {
       }
    }
 
-   throw new Error(`No environment file found for ${env} in core/database`);
+   throw new Error(`No environment file found for ${env} in apps/web`);
 }
 
 function loadEnv(env: string) {
