@@ -11,7 +11,6 @@ import {
 import { Switch } from "@packages/ui/components/switch";
 import { Search, X } from "lucide-react";
 import { useDebouncedValue } from "foxact/use-debounced-value";
-import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface CategoryFilters {
@@ -33,7 +32,7 @@ export function CategoryFilterBar({
    const [searchInput, setSearchInput] = useState(filters.search);
    const debouncedSearch = useDebouncedValue(searchInput, 350);
 
-   const stableOnFiltersChange = useStableHandler(onFiltersChange);
+   const stableOnFiltersChange = useCallback(onFiltersChange, [onFiltersChange]);
    const filtersRef = useRef(filters);
    useEffect(() => {
       filtersRef.current = filters;

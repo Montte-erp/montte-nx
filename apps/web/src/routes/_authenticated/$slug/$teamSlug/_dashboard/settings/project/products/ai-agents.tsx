@@ -13,9 +13,8 @@ import { Switch } from "@packages/ui/components/switch";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
 import { Loader2 } from "lucide-react";
-import { Suspense } from "react";
+import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import type { Inputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
@@ -78,11 +77,11 @@ function AiAgentsSettingsForm() {
       },
    });
 
-   const handleSubmit = useStableHandler((e: React.FormEvent) => {
+   const handleSubmit = useCallback((e: React.FormEvent) => {
       e.preventDefault();
       e.stopPropagation();
       form.handleSubmit();
-   });
+   }, [form]);
 
    return (
       <div className="flex flex-col gap-4 max-w-lg">
