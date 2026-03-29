@@ -16,6 +16,8 @@ import {
    Users,
 } from "lucide-react";
 
+type FeatureStage = "alpha" | "beta" | "concept" | "general-availability";
+
 export type SettingsNavItemDef = {
    id: string;
    title: string;
@@ -24,7 +26,7 @@ export type SettingsNavItemDef = {
    external?: boolean;
    danger?: boolean;
    earlyAccessFlag?: string;
-   earlyAccessStage?: "alpha" | "beta" | "concept" | "general-availability";
+   stage?: FeatureStage;
    children?: SettingsNavItemDef[];
 };
 
@@ -64,18 +66,21 @@ export const settingsNavSections: SettingsNavSection[] = [
                   title: "Estoque",
                   href: "/$slug/$teamSlug/settings/project/products/estoque",
                   icon: Package,
+                  stage: "beta",
                },
                {
                   id: "module-contatos",
                   title: "Contatos",
                   href: "/$slug/$teamSlug/settings/project/products/contatos",
                   icon: Contact2,
+                  stage: "beta",
                },
                {
                   id: "module-assistente-ia",
                   title: "Assistente IA",
                   href: "/$slug/$teamSlug/settings/project/products/ai-agents",
                   icon: Sparkles,
+                  stage: "alpha",
                },
             ],
          },

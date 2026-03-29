@@ -1,5 +1,6 @@
 import * as accountRouter from "./account";
 import * as agentRouter from "./agent";
+import * as agentSettingsRouter from "./agent-settings";
 import * as analyticsRouter from "./analytics";
 import * as bankAccountsRouter from "./bank-accounts";
 import * as billingRouter from "./billing";
@@ -7,11 +8,13 @@ import * as billsRouter from "./bills";
 import * as budgetGoalsRouter from "./budget-goals";
 import * as categoriesRouter from "./categories";
 import * as chatRouter from "./chat";
+import * as contactSettingsRouter from "./contact-settings";
 import * as contactsRouter from "./contacts";
 import * as creditCardsRouter from "./credit-cards";
 import * as dashboardsRouter from "./dashboards";
 import * as earlyAccessRouter from "./early-access";
 import * as feedbackRouter from "./feedback";
+import * as financialSettingsRouter from "./financial-settings";
 import * as insightsRouter from "./insights";
 import * as inventoryRouter from "./inventory";
 import * as onboardingRouter from "./onboarding";
@@ -25,6 +28,7 @@ import * as transactionsRouter from "./transactions";
 export default {
    account: accountRouter,
    agent: agentRouter,
+   agentSettings: agentSettingsRouter,
    analytics: analyticsRouter,
    bankAccounts: bankAccountsRouter,
    bills: billsRouter,
@@ -32,11 +36,13 @@ export default {
    budgetGoals: budgetGoalsRouter,
    creditCards: creditCardsRouter,
    categories: categoriesRouter,
+   contactSettings: contactSettingsRouter,
    contacts: contactsRouter,
    chat: chatRouter,
    dashboards: dashboardsRouter,
    earlyAccess: earlyAccessRouter,
    feedback: feedbackRouter,
+   financialSettings: financialSettingsRouter,
    insights: insightsRouter,
    inventory: inventoryRouter,
    onboarding: onboardingRouter,
