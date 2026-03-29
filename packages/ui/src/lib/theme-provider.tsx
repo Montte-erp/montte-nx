@@ -1,5 +1,6 @@
 import { ScriptOnce } from "@tanstack/react-router";
 import { invariant } from "foxact/invariant";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
 import * as React from "react";
 
 function FunctionOnce<T = unknown>({
@@ -33,23 +34,22 @@ export interface ThemeProviderProps {
    attribute?: "class" | "data-theme";
 }
 
-const initialState: UseThemeProps = {
-   resolvedTheme: "light",
-   setTheme: () => null,
-   theme: "system",
-};
+const [useThemeStorage] = createLocalStorageState<Theme>(
+   "montte:theme",
+   "system",
+);
+
 const ThemeProviderContext = React.createContext<UseThemeProps | null>(null);
 
 export function ThemeProvider({
    children,
    defaultTheme = "system",
-   storageKey = "conar.theme",
+   storageKey = "montte:theme",
    enableSystem = true,
    attribute = "class",
 }: ThemeProviderProps) {
-   const [theme, setTheme] = React.useState<Theme>(
-      () => (localStorage.getItem(storageKey) as Theme) || defaultTheme,
-   );
+   const [storedTheme, setStoredTheme] = useThemeStorage();
+   const theme = storedTheme ?? defaultTheme;
    const [resolvedTheme, setResolvedTheme] =
       React.useState<ResolvedTheme>("light");
 
@@ -97,17 +97,14 @@ export function ThemeProvider({
    const value = React.useMemo(
       () => ({
          resolvedTheme,
-         setTheme: (theme: Theme) => {
-            if (!theme || theme.trim() === "") {
-               theme = "system";
-            }
-
-            localStorage.setItem(storageKey, theme);
-            setTheme(theme);
+         setTheme: (newTheme: Theme) => {
+            setStoredTheme(
+               !newTheme || newTheme.trim() === "" ? "system" : newTheme,
+            );
          },
          theme,
       }),
-      [theme, resolvedTheme, storageKey],
+      [theme, resolvedTheme, setStoredTheme],
    );
 
    return (

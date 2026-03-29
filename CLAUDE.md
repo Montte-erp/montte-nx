@@ -578,15 +578,33 @@ import { AlertDialog } from "@packages/ui/components/alert-dialog";
 
 **Never use `@uidotdev/usehooks` for hooks that access browser APIs** — they crash on the server. `foxact` replaces all of them.
 
-### Storage
+### Storage — per-component (dynamic key)
 
 ```typescript
 import { useLocalStorage } from "foxact/use-local-storage";
 import { useSessionStorage } from "foxact/use-session-storage";
 
-const [value, setValue] = useLocalStorage<string>("my-key", "default");
-const [session, setSession] = useSessionStorage<boolean>("flag", false);
+const [value, setValue] = useLocalStorage<string>("montte:my-key", "default");
+const [session, setSession] = useSessionStorage<boolean>("montte:flag", false);
 ```
+
+Use when the key is dynamic (e.g. `\`montte:col-vis:${tableId}\``) or the state is local to one component.
+
+### Storage — shared across components (fixed key)
+
+```typescript
+import { createLocalStorageState } from "foxact/create-local-storage-state";
+
+// Define once at module level — key must be fixed
+const [useThemeStorage] = createLocalStorageState<Theme>("montte:theme", "system");
+
+// In any component — reactive, syncs across tabs
+const [theme, setTheme] = useThemeStorage();
+```
+
+Use when multiple components need to read/write the same localStorage value reactively. The state syncs across browser tabs automatically via `useSyncExternalStore`.
+
+**All localStorage keys must be prefixed with `montte:`** (e.g. `montte:sidebar-collapsed`, `montte:theme`).
 
 ### Media Queries & Responsive
 
@@ -668,21 +686,72 @@ import { openInNewTab } from "foxact/open-new-tab";
 openInNewTab(url);
 ```
 
+### noop
+
+```typescript
+import { noop } from "foxact/noop";
+
+// ✅ Replace: someCallback ?? (() => {})
+const stableHandler = useStableHandler(someCallback ?? noop);
+
+// ✅ Replace: default values in createContext({})
+const Ctx = createContext<{ onClose: () => void }>({ onClose: noop });
+```
+
+Use anywhere a stable empty function reference is needed. Never create inline `() => {}` as a default/fallback — they create new function instances every render.
+
+### invariant
+
+```typescript
+import { invariant } from "foxact/invariant";
+
+// ✅ Replace the context guard pattern:
+// if (!context) throw new Error("useX must be used within Provider")
+// return context
+
+invariant(context, "useX must be used within Provider");
+return context; // TypeScript narrows to non-null after invariant
+```
+
+Use in every `useContext` consumer that requires a provider. Always create the context with `null` default so the invariant is meaningful:
+
+```typescript
+// ✅ Correct
+const MyContext = createContext<MyContextType | null>(null);
+
+// ❌ Wrong — invariant can never fire
+const MyContext = createContext<MyContextType>(defaultValue);
+```
+
+### mergeRefs
+
+```typescript
+import { mergeRefs } from "foxact/merge-refs";
+
+// ✅ Replace manual ref merge callbacks:
+// ref={(node) => { internalRef.current = node; if (typeof forwardedRef === 'function') forwardedRef(node); else if (forwardedRef) forwardedRef.current = node; }}
+<input ref={mergeRefs(internalRef, forwardedRef)} />
+```
+
 ### Rules
 
 ```typescript
 // ❌ Never use these — SSR-unsafe or replaced by foxact
 import { useMediaQuery, useLocalStorage } from "@uidotdev/usehooks";
-useLayoutEffect(...);          // use foxact/use-isomorphic-layout-effect
-window.open(url, "_blank");    // use foxact/open-new-tab
-const ref = useRef(new Foo()); // use foxact/use-singleton
-const ref = useRef(fn);        // use foxact/use-stable-handler
-ref.current = fn;              // use foxact/use-stable-handler
+useLayoutEffect(...);            // use foxact/use-isomorphic-layout-effect
+window.open(url, "_blank");      // use foxact/open-new-tab
+const ref = useRef(new Foo());   // use foxact/use-singleton
+const ref = useRef(fn);          // use foxact/use-stable-handler
+ref.current = fn;                // use foxact/use-stable-handler
+() => {}  // as default/fallback  // use foxact/noop
+if (!ctx) throw new Error(...)   // use foxact/invariant
+localStorage.getItem/setItem     // use foxact/use-local-storage or create-local-storage-state
 
 // ✅ Safe to use directly from @uidotdev/usehooks (no browser APIs during render)
 import { useCopyToClipboard } from "@uidotdev/usehooks"; // event-handler only
 
 // ❌ Never add typeof window === 'undefined' guards — this is a Vite SPA, window is always defined
+// ❌ All localStorage keys must use montte: prefix — e.g. "montte:sidebar-collapsed"
 ```
 
 ---
