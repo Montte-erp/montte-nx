@@ -12,7 +12,6 @@ import * as contactSettingsRouter from "./contact-settings";
 import * as contactsRouter from "./contacts";
 import * as creditCardsRouter from "./credit-cards";
 import * as dashboardsRouter from "./dashboards";
-import * as earlyAccessRouter from "./early-access";
 import * as financialSettingsRouter from "./financial-settings";
 import * as insightsRouter from "./insights";
 import * as inventoryRouter from "./inventory";
@@ -39,7 +38,6 @@ export default {
    contacts: contactsRouter,
    chat: chatRouter,
    dashboards: dashboardsRouter,
-   earlyAccess: earlyAccessRouter,
    financialSettings: financialSettingsRouter,
    insights: insightsRouter,
    inventory: inventoryRouter,
