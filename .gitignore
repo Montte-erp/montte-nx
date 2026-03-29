@@ -6,6 +6,7 @@
 apps/worker/worker
 .claude/**
 .mastra
+apps/web/.tanstack
 .output
 mastra.db**
 node_modules
