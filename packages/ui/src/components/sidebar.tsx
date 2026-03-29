@@ -148,7 +148,7 @@ function SidebarManagerIsolated({
    onOpenChange?: (open: boolean) => void;
    style?: React.CSSProperties;
 }) {
-   const isMobile = useMediaQuery("(max-width: 767px)");
+   const isMobile = useMediaQuery("(max-width: 767px)", false);
    const [_openMobile, _setOpenMobile] = React.useState(false);
    const [_open, _setOpen] = React.useState(defaultOpen);
    const manager = useSidebarManager();
@@ -313,7 +313,7 @@ function SidebarProvider({
    open?: boolean;
    onOpenChange?: (open: boolean) => void;
 }) {
-   const isMobile = useMediaQuery("(max-width: 767px)");
+   const isMobile = useMediaQuery("(max-width: 767px)", false);
    const [openMobile, setOpenMobile] = React.useState(false);
 
    const [_open, _setOpen] = React.useState(defaultOpen);

@@ -29,7 +29,6 @@ export interface UseThemeProps {
 export interface ThemeProviderProps {
    children: React.ReactNode;
    defaultTheme?: Theme;
-   storageKey?: string;
    enableSystem?: boolean;
    attribute?: "class" | "data-theme";
 }
@@ -44,7 +43,6 @@ const ThemeProviderContext = React.createContext<UseThemeProps | null>(null);
 export function ThemeProvider({
    children,
    defaultTheme = "system",
-   storageKey = "montte:theme",
    enableSystem = true,
    attribute = "class",
 }: ThemeProviderProps) {
@@ -109,7 +107,9 @@ export function ThemeProvider({
 
    return (
       <ThemeProviderContext value={value}>
-         <FunctionOnce param={{ attribute, enableSystem, storageKey }}>
+         <FunctionOnce
+            param={{ attribute, enableSystem, storageKey: "montte:theme" }}
+         >
             {({ storageKey, enableSystem, attribute }) => {
                const theme: string | null = localStorage.getItem(storageKey);
                const root = document.documentElement;

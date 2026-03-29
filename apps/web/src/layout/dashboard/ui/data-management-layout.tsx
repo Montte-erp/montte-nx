@@ -28,7 +28,7 @@ interface DataManagementLayoutProps {
 }
 
 export function DataManagementLayout({ children }: DataManagementLayoutProps) {
-   const isMobile = useMediaQuery("(max-width: 767px)");
+   const isMobile = useMediaQuery("(max-width: 767px)", false);
    const { pathname } = useLocation();
    const { activeOrganization } = useActiveOrganization();
    const { teamSlug } = useParams({

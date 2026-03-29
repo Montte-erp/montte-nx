@@ -22,7 +22,7 @@ interface SettingsLayoutProps {
 }
 
 export function SettingsLayout({ children }: SettingsLayoutProps) {
-   const isMobile = useMediaQuery("(max-width: 767px)");
+   const isMobile = useMediaQuery("(max-width: 767px)", false);
    const { pathname } = useLocation();
    const { teamSlug } = useParams({
       from: "/_authenticated/$slug/$teamSlug/_dashboard",
