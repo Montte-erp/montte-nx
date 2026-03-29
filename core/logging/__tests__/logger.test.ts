@@ -16,15 +16,15 @@ vi.mock("pino", () => {
 });
 
 const pino = (await import("pino")).default;
-const { createOtelLogger, createSafeLogger } = await import("../src/logger");
+const { createLogger, createSafeLogger } = await import("../src/logger");
 
-describe("createOtelLogger", () => {
+describe("createLogger", () => {
    beforeEach(() => {
       vi.clearAllMocks();
    });
 
    it("creates a pino logger with given name and level", () => {
-      createOtelLogger({ name: "test-service", level: "debug" });
+      createLogger({ name: "test-service", level: "debug" });
       expect(pino).toHaveBeenCalledWith(
          expect.objectContaining({
             name: "test-service",
@@ -34,7 +34,7 @@ describe("createOtelLogger", () => {
    });
 
    it("defaults level to info", () => {
-      createOtelLogger({ name: "test-service" });
+      createLogger({ name: "test-service" });
       expect(pino).toHaveBeenCalledWith(
          expect.objectContaining({
             level: "info",
@@ -43,7 +43,7 @@ describe("createOtelLogger", () => {
    });
 
    it("includes OTel transport when enableOtel is true", () => {
-      createOtelLogger({ name: "test-service", enableOtel: true });
+      createLogger({ name: "test-service", enableOtel: true });
       const callArgs = vi.mocked(pino).mock.calls[0][0] as {
          transport: { targets: Array<{ target: string }> };
       };
@@ -54,7 +54,7 @@ describe("createOtelLogger", () => {
    });
 
    it("does not include OTel transport by default", () => {
-      createOtelLogger({ name: "test-service" });
+      createLogger({ name: "test-service" });
       const callArgs = vi.mocked(pino).mock.calls[0][0] as {
          transport: { targets: Array<{ target: string }> };
       };

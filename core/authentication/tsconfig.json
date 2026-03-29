@@ -1,6 +1,9 @@
 {
    "extends": "@tooling/typescript/core.json",
    "compilerOptions": {
+      "declaration": false,
+      "declarationMap": false,
+      "composite": false,
       "jsx": "react-jsx",
       "paths": {
          "@core/authentication/*": ["./src/*"],

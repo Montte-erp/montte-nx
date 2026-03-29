@@ -3,7 +3,7 @@ import type { Logger, LoggerConfig } from "@core/logging/types";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
-export function createOtelLogger(config: LoggerConfig): Logger {
+export function createLogger(config: LoggerConfig): Logger {
    const { name, level = "info", enableOtel } = config;
 
    // Build transport targets
@@ -47,7 +47,7 @@ export function createOtelLogger(config: LoggerConfig): Logger {
 
 export function createSafeLogger(config: LoggerConfig): Logger {
    try {
-      return createOtelLogger(config);
+      return createLogger(config);
    } catch {
       return pino({ name: config.name, level: config.level || "info" });
    }
