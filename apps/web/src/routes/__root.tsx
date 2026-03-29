@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
+import { GlobalSurveyModal } from "@/hooks/use-survey-modal";
 import { GlobalDialogStack } from "@/hooks/use-dialog-stack";
 import { PostHogWrapper } from "@/integrations/posthog/client";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
@@ -68,6 +69,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   {children}
                   <Toaster richColors />
                   <GlobalAlertDialog />
+                  <GlobalSurveyModal />
                   <GlobalDialogStack />
                   <ClientOnly>
                      <TanStackDevtools

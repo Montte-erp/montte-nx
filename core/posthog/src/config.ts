@@ -47,6 +47,14 @@ export const POSTHOG_SURVEYS = {
     id: "019d3b2f-ba55-0000-c8b0-25a1ce21c7f8",
     flagKey: "dados",
   },
+  suggestIntegration: {
+    id: "019d3b8e-c77a-0000-fb14-82f93cfb23bd",
+    flagKey: null,
+  },
+  monthlySatisfaction: {
+    id: "019d3c06-06d2-0000-4ed8-26677cdabed3",
+    flagKey: null,
+  },
 } as const satisfies Record<string, PostHogSurveyEntry>;
 
 export type PostHogSurveyKey = keyof typeof POSTHOG_SURVEYS;

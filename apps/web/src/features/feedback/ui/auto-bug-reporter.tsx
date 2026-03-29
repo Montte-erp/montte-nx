@@ -1,23 +1,18 @@
 import { POSTHOG_SURVEYS } from "@core/posthog/config";
-import posthog, { DisplaySurveyType } from "posthog-js";
+import { useSurveyModal } from "@/hooks/use-survey-modal";
 import { useEffect } from "react";
 import { useApiErrorTracker } from "../hooks/use-api-error-tracker";
 
 export function AutoBugReporter() {
    const { shouldShowBugReport, dismiss } = useApiErrorTracker();
+   const { openSurveyModal } = useSurveyModal();
 
    useEffect(() => {
       if (shouldShowBugReport) {
-         posthog.onSurveysLoaded(() => {
-            posthog.displaySurvey(POSTHOG_SURVEYS.bugReport.id, {
-               displayType: DisplaySurveyType.Popover,
-               ignoreConditions: true,
-               ignoreDelay: true,
-            });
-         });
+         openSurveyModal(POSTHOG_SURVEYS.bugReport.id);
          dismiss();
       }
-   }, [shouldShowBugReport, dismiss]);
+   }, [shouldShowBugReport, dismiss, openSurveyModal]);
 
    return null;
 }

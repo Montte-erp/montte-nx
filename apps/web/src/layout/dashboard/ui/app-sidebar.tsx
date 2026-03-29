@@ -1,3 +1,9 @@
+import { Button } from "@packages/ui/components/button";
+import {
+   Popover,
+   PopoverContent,
+   PopoverTrigger,
+} from "@packages/ui/components/popover";
 import { Separator } from "@packages/ui/components/separator";
 import {
    Sidebar,
@@ -9,10 +15,11 @@ import {
    useSidebar,
 } from "@packages/ui/components/sidebar";
 import { Link, useParams } from "@tanstack/react-router";
-import { MessageSquarePlus, PanelLeftClose, Settings } from "lucide-react";
+import { Bug, MessageSquarePlus, PanelLeftClose, Settings, Sparkles } from "lucide-react";
 import type * as React from "react";
+import { useState } from "react";
 import { POSTHOG_SURVEYS } from "@core/posthog/config";
-import posthog, { DisplaySurveyType } from "posthog-js";
+import { useSurveyModal } from "@/hooks/use-survey-modal";
 import { EarlyAccessSidebarBanner } from "./early-access-sidebar-banner";
 import { SidebarDefaultItems, SidebarNav } from "./sidebar-nav";
 import { SidebarScopeSwitcher } from "./sidebar-scope-switcher";
@@ -40,21 +47,42 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
 
 function SidebarFeedbackButton() {
+   const { openSurveyModal } = useSurveyModal();
+   const [open, setOpen] = useState(false);
+
+   const handleSelect = (surveyId: string) => {
+      setOpen(false);
+      openSurveyModal(surveyId);
+   };
+
    return (
       <SidebarMenuItem>
-         <SidebarMenuButton
-            onClick={() =>
-               posthog.displaySurvey(POSTHOG_SURVEYS.featureRequest.id, {
-                  displayType: DisplaySurveyType.Popover,
-                  ignoreConditions: true,
-                  ignoreDelay: true,
-               })
-            }
-            tooltip="Feedback"
-         >
-            <MessageSquarePlus className="size-4" />
-            <span>Feedback</span>
-         </SidebarMenuButton>
+         <Popover onOpenChange={setOpen} open={open}>
+            <PopoverTrigger asChild>
+               <SidebarMenuButton tooltip="Feedback">
+                  <MessageSquarePlus className="size-4" />
+                  <span>Feedback</span>
+               </SidebarMenuButton>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-auto p-1" side="right">
+               <Button
+                  className="w-full justify-start gap-2"
+                  onClick={() => handleSelect(POSTHOG_SURVEYS.featureRequest.id)}
+                  variant="ghost"
+               >
+                  <Sparkles className="size-4" />
+                  Sugestão de funcionalidade
+               </Button>
+               <Button
+                  className="w-full justify-start gap-2"
+                  onClick={() => handleSelect(POSTHOG_SURVEYS.bugReport.id)}
+                  variant="ghost"
+               >
+                  <Bug className="size-4" />
+                  Reportar bug
+               </Button>
+            </PopoverContent>
+         </Popover>
       </SidebarMenuItem>
    );
 }

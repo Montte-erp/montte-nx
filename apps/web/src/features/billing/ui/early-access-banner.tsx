@@ -7,7 +7,7 @@ import {
 import { cn } from "@packages/ui/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import { FlaskConical } from "lucide-react";
-import posthog, { DisplaySurveyType } from "posthog-js";
+import { useSurveyModal } from "@/hooks/use-survey-modal";
 
 const STAGE_ICON_COLOR: Record<FeatureStage, string> = {
    alpha: "text-chart-1",
@@ -24,6 +24,8 @@ export type EarlyAccessBannerTemplate = {
    stage: FeatureStage;
    icon?: LucideIcon;
    surveyId?: string;
+   surveyTitle?: string;
+   surveyDescription?: string;
 };
 
 export type EarlyAccessBannerProps = {
@@ -31,6 +33,7 @@ export type EarlyAccessBannerProps = {
 };
 
 export function EarlyAccessBanner({ template }: EarlyAccessBannerProps) {
+   const { openSurveyModal } = useSurveyModal();
    const Icon = template.icon ?? FlaskConical;
    const stage = template.stage ?? "beta";
    const iconColor = STAGE_ICON_COLOR[stage];
@@ -53,10 +56,9 @@ export function EarlyAccessBanner({ template }: EarlyAccessBannerProps) {
                   <Button
                      className="h-auto p-0 text-foreground underline underline-offset-4 hover:text-primary"
                      onClick={() =>
-                        posthog.displaySurvey(template.surveyId!, {
-                           displayType: DisplaySurveyType.Popover,
-                           ignoreConditions: true,
-                           ignoreDelay: true,
+                        openSurveyModal(template.surveyId!, {
+                           title: template.surveyTitle,
+                           description: template.surveyDescription,
                         })
                      }
                      type="button"

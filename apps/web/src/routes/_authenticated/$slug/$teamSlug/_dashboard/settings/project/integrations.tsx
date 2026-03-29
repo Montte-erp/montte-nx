@@ -18,7 +18,7 @@ const INTEGRATIONS_BANNER: EarlyAccessBannerTemplate = {
    ctaLabel: "Sugerir integração",
    stage: "concept",
    icon: Plug,
-   surveyId: POSTHOG_SURVEYS.featureRequest.id,
+   surveyId: POSTHOG_SURVEYS.suggestIntegration.id,
    bullets: [
       "Quais meios de pagamento você utiliza?",
       "Há alguma plataforma de e-commerce ou marketplace que precisa se conectar?",

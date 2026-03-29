@@ -1,18 +1,17 @@
 // @vitest-environment jsdom
-import { render } from "@testing-library/react";
-import posthog from "posthog-js";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, render } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
-vi.mock("posthog-js", () => {
-   const renderSurvey = vi.fn();
-   return { default: { renderSurvey, init: vi.fn() } };
-});
+const mockOpenSurveyModal = vi.fn();
+const mockDismiss = vi.fn();
 
 vi.mock("@core/posthog/config", () => ({
    POSTHOG_SURVEYS: { bugReport: { id: "survey-123", flagKey: null } },
 }));
 
-const mockDismiss = vi.fn();
+vi.mock("@/hooks/use-survey-modal", () => ({
+   useSurveyModal: () => ({ openSurveyModal: mockOpenSurveyModal }),
+}));
 
 vi.mock("@/features/feedback/hooks/use-api-error-tracker", () => ({
    useApiErrorTracker: vi.fn(),
@@ -21,35 +20,30 @@ vi.mock("@/features/feedback/hooks/use-api-error-tracker", () => ({
 import { useApiErrorTracker } from "@/features/feedback/hooks/use-api-error-tracker";
 import { AutoBugReporter } from "@/features/feedback/ui/auto-bug-reporter";
 
-beforeEach(() => {
-   vi.mocked(posthog.renderSurvey).mockReset();
-   mockDismiss.mockReset();
-});
-
 describe("AutoBugReporter", () => {
-   it("does not call renderSurvey when shouldShowBugReport is false", () => {
+   it("does not call openSurveyModal when shouldShowBugReport is false", async () => {
       vi.mocked(useApiErrorTracker).mockReturnValue({
          shouldShowBugReport: false,
          dismiss: mockDismiss,
-         trackError: vi.fn(),
+         reset: vi.fn(),
       });
 
-      render(<AutoBugReporter />);
+      await act(async () => { render(<AutoBugReporter />); });
 
-      expect(posthog.renderSurvey).not.toHaveBeenCalled();
+      expect(mockOpenSurveyModal).not.toHaveBeenCalled();
       expect(mockDismiss).not.toHaveBeenCalled();
    });
 
-   it("calls renderSurvey and dismiss when shouldShowBugReport is true", () => {
+   it("calls openSurveyModal with survey id and dismiss when shouldShowBugReport is true", async () => {
       vi.mocked(useApiErrorTracker).mockReturnValue({
          shouldShowBugReport: true,
          dismiss: mockDismiss,
-         trackError: vi.fn(),
+         reset: vi.fn(),
       });
 
-      render(<AutoBugReporter />);
+      await act(async () => { render(<AutoBugReporter />); });
 
-      expect(posthog.renderSurvey).toHaveBeenCalledWith("survey-123", "body");
+      expect(mockOpenSurveyModal).toHaveBeenCalledWith("survey-123");
       expect(mockDismiss).toHaveBeenCalled();
    });
 });
