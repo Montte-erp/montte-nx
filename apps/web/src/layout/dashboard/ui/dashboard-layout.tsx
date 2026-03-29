@@ -11,6 +11,7 @@ import type * as React from "react";
 import { useEffect } from "react";
 import { useSingleton } from "foxact/use-singleton";
 import { GlobalContextPanel } from "@/features/context-panel/context-panel";
+import { AutoBugReporter } from "@/features/feedback/ui/auto-bug-reporter";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { EarlyAccessProvider } from "@/hooks/use-early-access";
@@ -118,6 +119,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         {children}
                      </main>
                   </div>
+                  <AutoBugReporter />
                </SidebarInset>
                <GlobalContextPanel />
             </SidebarProvider>
