@@ -5,13 +5,6 @@ import {
 } from "@packages/ui/components/avatar";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
-import { Card, CardContent } from "@packages/ui/components/card";
-import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
 import { DataTable } from "@packages/ui/components/data-table";
 import {
    Empty,
@@ -21,16 +14,7 @@ import {
    EmptyTitle,
 } from "@packages/ui/components/empty";
 import { Input } from "@packages/ui/components/input";
-import { Label } from "@packages/ui/components/label";
-import {
-   Select,
-   SelectContent,
-   SelectItem,
-   SelectTrigger,
-   SelectValue,
-} from "@packages/ui/components/select";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import { Spinner } from "@packages/ui/components/spinner";
 import { getInitials } from "@core/utils/text";
 import {
    useMutation,
@@ -38,6 +22,7 @@ import {
    useQueryClient,
    useSuspenseQuery,
 } from "@tanstack/react-query";
+import { InviteMemberForm } from "./-members/invite-member-form";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -130,133 +115,6 @@ function MembersErrorFallback({ resetErrorBoundary }: FallbackProps) {
             </Button>
          </div>
       </div>
-   );
-}
-
-function InviteMemberCredenzaContent({
-   organizationId,
-   onSuccess,
-}: {
-   organizationId: string;
-   onSuccess: () => void;
-}) {
-   const [email, setEmail] = useState("");
-   const [role, setRole] = useState<"member" | "admin">("member");
-   const queryClient = useQueryClient();
-
-   const inviteMutation = useMutation({
-      mutationFn: async () => {
-         const result = await authClient.organization.inviteMember({
-            email,
-            role,
-            organizationId,
-         });
-         if (result.error) {
-            throw new Error(result.error.message ?? "Erro ao enviar convite");
-         }
-         return result.data;
-      },
-      onSuccess: () => {
-         queryClient.invalidateQueries({
-            queryKey: ["pending-invites"],
-         });
-         toast.success("Convite enviado com sucesso");
-         onSuccess();
-      },
-      onError: (error) => {
-         toast.error(error.message);
-      },
-   });
-
-   const isValid = email.trim().length > 0 && email.includes("@");
-
-   return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Convidar novo membro</DialogStackTitle>
-            <DialogStackDescription>
-               Adicione um novo membro à organização enviando um convite por
-               e-mail.
-            </DialogStackDescription>
-         </DialogStackHeader>
-
-         <div className="flex-1 overflow-y-auto px-4 py-4">
-            <div className="flex flex-col gap-4">
-               <div className="flex gap-2 items-end">
-                  <div className="flex-1 flex flex-col gap-2">
-                     <Label htmlFor="invite-email">E-mail</Label>
-                     <Input
-                        autoComplete="email"
-                        id="invite-email"
-                        onChange={(e) => setEmail(e.target.value)}
-                        onKeyDown={(e) => {
-                           if (
-                              e.key === "Enter" &&
-                              isValid &&
-                              !inviteMutation.isPending
-                           ) {
-                              inviteMutation.mutate();
-                           }
-                        }}
-                        placeholder="usuario@empresa.com"
-                        type="email"
-                        value={email}
-                     />
-                  </div>
-                  <div className="w-36 flex flex-col gap-2 shrink-0">
-                     <Label htmlFor="invite-role">Função</Label>
-                     <Select
-                        onValueChange={(v) => setRole(v as "member" | "admin")}
-                        value={role}
-                     >
-                        <SelectTrigger className="w-full" id="invite-role">
-                           <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                           <SelectItem value="member">Membro</SelectItem>
-                           <SelectItem value="admin">Administrador</SelectItem>
-                        </SelectContent>
-                     </Select>
-                  </div>
-               </div>
-
-               <Card className="bg-muted border-0">
-                  <CardContent className="pt-4 pb-4">
-                     <div className="flex gap-3">
-                        <div className="mt-0.5">
-                           <Mail className="size-4 text-muted-foreground" />
-                        </div>
-                        <div className="flex flex-col gap-2">
-                           <p className="text-sm font-medium">
-                              Como funciona o convite
-                           </p>
-                           <p className="text-xs text-muted-foreground">
-                              Um e-mail será enviado com um link de convite. O
-                              destinatário poderá criar uma conta ou fazer login
-                              para aceitar o convite.
-                           </p>
-                        </div>
-                     </div>
-                  </CardContent>
-               </Card>
-            </div>
-         </div>
-
-         <div className="border-t px-4 py-4">
-            <Button
-               className="w-full"
-               disabled={!isValid || inviteMutation.isPending}
-               onClick={() => inviteMutation.mutate()}
-            >
-               {inviteMutation.isPending ? (
-                  <Spinner className="size-4 mr-2" />
-               ) : (
-                  <Mail className="size-4 mr-2" />
-               )}
-               Enviar convite
-            </Button>
-         </div>
-      </DialogStackContent>
    );
 }
 
@@ -443,7 +301,7 @@ function MembersContent() {
    function handleOpenInviteCredenza() {
       openDialogStack({
          children: (
-            <InviteMemberCredenzaContent
+            <InviteMemberForm
                onSuccess={closeDialogStack}
                organizationId={organizationId}
             />
