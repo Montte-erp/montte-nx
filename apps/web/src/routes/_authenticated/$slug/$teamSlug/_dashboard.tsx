@@ -19,14 +19,9 @@ export const Route = createFileRoute(
       }
    },
    loader: async ({ context }) => {
-      const [session] = await Promise.all([
-         context.queryClient.fetchQuery(
-            context.orpc.session.getSession.queryOptions(),
-         ),
-         context.queryClient.prefetchQuery(
-            context.orpc.earlyAccess.getEnrolledFeatures.queryOptions(),
-         ),
-      ]);
+      const session = await context.queryClient.fetchQuery(
+         context.orpc.session.getSession.queryOptions(),
+      );
 
       if (session?.user?.id) {
          posthog.identify(session.user.id, {
