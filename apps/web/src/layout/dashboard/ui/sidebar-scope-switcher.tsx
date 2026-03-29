@@ -47,9 +47,9 @@ import {
 import { Suspense, useCallback, useTransition } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
-import { useSetActiveOrganization } from "@/features/organization/hooks/use-set-active-organization";
-import { CreateTeamForm } from "@/features/organization/ui/create-team-form";
-import { ManageOrganizationForm } from "@/features/organization/ui/manage-organization-form";
+import { CreateTeamForm } from "./-sidebar-scope-switcher/create-team-form";
+import { ManageOrganizationForm } from "./-sidebar-scope-switcher/manage-organization-form";
+import { useSetActiveOrganization } from "./-sidebar-scope-switcher/use-set-active-organization";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";

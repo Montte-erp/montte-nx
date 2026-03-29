@@ -364,12 +364,17 @@ routes/_authenticated/$slug/$teamSlug/_dashboard/home/
 
 ### Feature folder (shared across routes)
 
+Feature folders are **flat** — no `hooks/`, `ui/`, or `utils/` subfolders. All files live directly in `features/[name]/`:
+
 ```
 features/[name]/
-├── hooks/     use-[feature]-context.tsx, use-[feature]-[action].ts
-├── ui/        [feature]-[action]-credenza.tsx, [feature]-section.tsx
-└── utils/     (when needed)
+├── constants.ts          shared keys, enums, config
+├── use-[feature].ts      hooks
+├── [feature]-form.tsx    components
+└── [feature]-columns.tsx columns/utils
 ```
+
+**Rule:** Never create `ui/`, `hooks/`, or `utils/` subdirectories inside a feature folder. If a component or hook is only used by a single route, colocate it in a `-[name]/` private folder next to that route instead.
 
 Features (shared): access-control, analytics, bank-accounts, billing, bills, budget-goals, categories, contacts, credit-cards, feedback, file-upload, inventory, organization, rubi-chat, search, services, settings, tags, transactions, webhooks
 
