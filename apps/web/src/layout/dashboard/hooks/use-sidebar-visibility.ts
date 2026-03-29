@@ -1,23 +1,26 @@
 import { createLocalStorageState } from "foxact/create-local-storage-state";
+import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
 
 const [useHiddenItems] = createLocalStorageState<string[]>(
-   "sidebar:hidden-items",
+   "montte:sidebar:hidden-items",
    [],
 );
 
 export function useSidebarVisibility() {
    const [hiddenItems, setHiddenItems] = useHiddenItems();
 
-   const isVisible = (itemId: string) => !hiddenItems.includes(itemId);
+   const isVisible = useStableHandler(
+      (itemId: string) => !(hiddenItems ?? []).includes(itemId),
+   );
 
-   const toggleItem = (itemId: string) => {
+   const toggleItem = useStableHandler((itemId: string) => {
       setHiddenItems((prev) => {
          const current = prev ?? [];
          return current.includes(itemId)
             ? current.filter((id) => id !== itemId)
             : [...current, itemId];
       });
-   };
+   });
 
    return { hiddenItems, isVisible, toggleItem };
 }
