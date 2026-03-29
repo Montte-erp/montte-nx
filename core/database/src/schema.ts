@@ -17,6 +17,7 @@ export * from "@core/database/schemas/insights";
 export * from "@core/database/schemas/inventory";
 export * from "@core/database/schemas/services";
 export * from "@core/database/schemas/subscriptions";
+export * from "@core/database/schemas/financial";
 export * from "@core/database/schemas/tags";
 export * from "@core/database/schemas/transactions";
 export * from "@core/database/schemas/webhooks";
