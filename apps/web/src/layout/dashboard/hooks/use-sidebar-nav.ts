@@ -6,7 +6,6 @@ export type SubSidebarSection = "dashboards" | "insights" | "data-management";
 const PINNED_STORAGE_KEY = "montte:sidebar-pinned";
 
 function loadPinnedItems(): string[] {
-   if (typeof window === "undefined") return [];
    try {
       const stored = localStorage.getItem(PINNED_STORAGE_KEY);
       return stored ? JSON.parse(stored) : [];
@@ -19,7 +18,6 @@ function savePinnedItems(items: string[]) {
    try {
       localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify(items));
    } catch {
-      // silently fail
    }
 }
 

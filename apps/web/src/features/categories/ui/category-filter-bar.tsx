@@ -10,7 +10,8 @@ import {
 } from "@packages/ui/components/select";
 import { Switch } from "@packages/ui/components/switch";
 import { Search, X } from "lucide-react";
-import { useCallback, useRef } from "react";
+import { useDebouncedValue } from "foxact/use-debounced-value";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface CategoryFilters {
    search: string;
@@ -28,17 +29,17 @@ export function CategoryFilterBar({
    filters,
    onFiltersChange,
 }: CategoryFilterBarProps) {
-   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+   const [searchInput, setSearchInput] = useState(filters.search);
+   const debouncedSearch = useDebouncedValue(searchInput, 350);
 
-   const handleSearchChange = useCallback(
-      (value: string) => {
-         clearTimeout(timerRef.current);
-         timerRef.current = setTimeout(() => {
-            onFiltersChange({ ...filters, search: value, page: 1 });
-         }, 350);
-      },
-      [filters, onFiltersChange],
-   );
+   const isMounted = useRef(false);
+   useEffect(() => {
+      if (!isMounted.current) {
+         isMounted.current = true;
+         return;
+      }
+      onFiltersChange({ ...filters, search: debouncedSearch, page: 1 });
+   }, [debouncedSearch]);
 
    const hasActiveFilters =
       filters.search || filters.type || filters.includeArchived;
@@ -58,8 +59,8 @@ export function CategoryFilterBar({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
                className="pl-9"
-               defaultValue={filters.search}
-               onChange={(e) => handleSearchChange(e.target.value)}
+               value={searchInput}
+               onChange={(e) => setSearchInput(e.target.value)}
                placeholder="Buscar por nome ou palavra-chave..."
             />
          </div>

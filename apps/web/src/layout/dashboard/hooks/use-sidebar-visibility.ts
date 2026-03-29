@@ -3,7 +3,6 @@ import { Store, useStore } from "@tanstack/react-store";
 const STORAGE_KEY = "sidebar:hidden-items";
 
 function loadHiddenItems(): string[] {
-   if (typeof window === "undefined") return [];
    try {
       const stored = localStorage.getItem(STORAGE_KEY);
       return stored ? (JSON.parse(stored) as string[]) : [];
@@ -16,7 +15,6 @@ function saveHiddenItems(items: string[]) {
    try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
    } catch {
-      // silently fail
    }
 }
 
