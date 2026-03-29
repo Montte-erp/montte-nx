@@ -1,6 +1,7 @@
 import {
    boolean,
    pgTable,
+   text,
    timestamp,
    uuid,
    varchar,
@@ -8,7 +9,7 @@ import {
 
 export const agentSettings = pgTable("agent_settings", {
    teamId: uuid("team_id").primaryKey(),
-   modelId: varchar("model_id", { length: 255 })
+   modelId: text("model_id")
       .notNull()
       .default("openrouter/moonshotai/kimi-k2.5"),
    language: varchar("language", { length: 10 }).notNull().default("pt-BR"),
