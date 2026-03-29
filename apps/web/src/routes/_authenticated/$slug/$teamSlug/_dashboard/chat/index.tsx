@@ -51,7 +51,6 @@ function ChatIndexPageContent({ teamId }: { teamId: string }) {
    const createThread = useMutation(orpc.chat.createThread.mutationOptions({}));
    const stableCreateThread = useStableHandler(createThread.mutateAsync);
 
-   // Transport lazily creates a thread on the first message send
    const transport = useMemo(
       () =>
          new AssistantChatTransport({
@@ -79,7 +78,6 @@ function ChatIndexPageContent({ teamId }: { teamId: string }) {
       onFinish: () => {
          if (threadIdRef.current && !hasNavigated.current) {
             hasNavigated.current = true;
-            // Invalidate so $threadId.tsx fetches fresh data after navigation
             queryClient.invalidateQueries();
             navigate({
                to: "/$slug/$teamSlug/chat/$threadId",
