@@ -116,10 +116,11 @@ function NavItem({
                               params: { slug, teamSlug },
                            }).pathname;
                         const earlyStage =
-                           child.earlyAccessFlag &&
+                           child.stage ??
+                           (child.earlyAccessFlag &&
                            isEnrolled(child.earlyAccessFlag)
                               ? getFeatureStage(child.earlyAccessFlag)
-                              : null;
+                              : null);
                         return (
                            <SidebarMenuSubItem key={child.id}>
                               <SidebarMenuSubButton
@@ -133,14 +134,16 @@ function NavItem({
                                     to={child.href}
                                  >
                                     <span>{child.title}</span>
-                                    {earlyStage && (
-                                       <FeatureStageBadge
-                                          aria-hidden="true"
-                                          className="ml-auto text-[10px] px-1 py-0"
-                                          showIcon={false}
-                                          stage={earlyStage}
-                                       />
-                                    )}
+                                    {earlyStage &&
+                                       earlyStage !==
+                                          "general-availability" && (
+                                          <FeatureStageBadge
+                                             aria-hidden="true"
+                                             className="ml-auto text-[10px] px-1 py-0"
+                                             showIcon={false}
+                                             stage={earlyStage}
+                                          />
+                                       )}
                                  </Link>
                               </SidebarMenuSubButton>
                            </SidebarMenuSubItem>

@@ -25,6 +25,7 @@ export type SettingsNavItemDef = {
    danger?: boolean;
    earlyAccessFlag?: string;
    earlyAccessStage?: "alpha" | "beta" | "concept" | "general-availability";
+   stage?: "alpha" | "beta" | "concept" | "general-availability";
    children?: SettingsNavItemDef[];
 };
 
@@ -58,24 +59,28 @@ export const settingsNavSections: SettingsNavSection[] = [
                   title: "Financeiro",
                   href: "/$slug/$teamSlug/settings/project/products/financeiro",
                   icon: DollarSign,
+                  stage: "general-availability",
                },
                {
                   id: "module-estoque",
                   title: "Estoque",
                   href: "/$slug/$teamSlug/settings/project/products/estoque",
                   icon: Package,
+                  stage: "beta",
                },
                {
                   id: "module-contatos",
                   title: "Contatos",
                   href: "/$slug/$teamSlug/settings/project/products/contatos",
                   icon: Contact2,
+                  stage: "beta",
                },
                {
                   id: "module-assistente-ia",
                   title: "Assistente IA",
                   href: "/$slug/$teamSlug/settings/project/products/ai-agents",
                   icon: Sparkles,
+                  stage: "alpha",
                },
             ],
          },
