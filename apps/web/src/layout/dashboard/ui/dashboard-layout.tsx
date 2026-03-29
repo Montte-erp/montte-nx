@@ -8,7 +8,8 @@ import { cn } from "@packages/ui/lib/utils";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useLocation } from "@tanstack/react-router";
 import type * as React from "react";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
+import { useSingleton } from "foxact/use-singleton";
 import { GlobalContextPanel } from "@/features/context-panel/context-panel";
 import { useApiErrorTracker } from "@/features/feedback/hooks/use-api-error-tracker";
 import { BugReportForm } from "@/features/feedback/ui/bug-report-form";
@@ -17,7 +18,7 @@ import { useActiveTeam } from "@/hooks/use-active-team";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { EarlyAccessProvider } from "@/hooks/use-early-access";
 import { useLastOrganization } from "@/hooks/use-last-organization";
-import { useSafeLocalStorage } from "@/hooks/use-local-storage";
+import { useLocalStorage } from "foxact/use-local-storage";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 import { identifyClient, setClientGroup } from "@/integrations/posthog/client";
@@ -51,10 +52,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
    const { activeTeam, teams } = useActiveTeam();
    const { setLastSlug } = useLastOrganization();
    const queryClient = useQueryClient();
-   const setTeamForOrgRef = useRef(new Set<string>());
+   const setTeamForOrgRef = useSingleton(() => new Set<string>());
    const { pathname } = useLocation();
 
-   const [sidebarCollapsed, setSidebarCollapsed] = useSafeLocalStorage<boolean>(
+   const [sidebarCollapsed, setSidebarCollapsed] = useLocalStorage<boolean>(
       "montte:sidebar-collapsed",
       false,
    );
@@ -63,16 +64,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       setSidebarCollapsed(!open);
    };
 
-   // Fetch session for PostHog client-side identification
    const { data: session } = useSuspenseQuery(
       orpc.session.getSession.queryOptions({}),
    );
 
-   // Disable scroll on main when in settings
    const isSettingsPage = pathname.includes("/settings");
    const isChatPage = pathname.includes("/chat");
-
-   // ── Existing effects ─────────────────────────────────────────────────────
 
    useEffect(() => {
       if (activeOrganization?.slug) {
@@ -101,7 +98,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       void setDefaultTeam();
    }, [activeOrganization?.id, activeTeam, queryClient, teams]);
 
-   // ── PostHog client-side identification ──────────────────────────────────
    useEffect(() => {
       if (session?.user?.id) {
          identifyClient(session.user.id, {

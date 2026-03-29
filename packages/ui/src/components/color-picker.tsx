@@ -1,6 +1,7 @@
 "use client";
 
 import Color from "color";
+import { invariant } from "foxact/invariant";
 import { PipetteIcon } from "lucide-react";
 import { Slider } from "radix-ui";
 import {
@@ -46,11 +47,10 @@ const ColorPickerContext = createContext<ColorPickerContextValue | undefined>(
 export const useColorPicker = () => {
    const context = useContext(ColorPickerContext);
 
-   if (!context) {
-      throw new Error(
-         "useColorPicker must be used within a ColorPickerProvider",
-      );
-   }
+   invariant(
+      context,
+      "useColorPicker must be used within a ColorPickerProvider",
+   );
 
    return context;
 };

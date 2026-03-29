@@ -50,8 +50,8 @@ vi.mock("@/hooks/use-last-organization", () => ({
    }),
 }));
 
-vi.mock("@/hooks/use-local-storage", () => ({
-   useSafeLocalStorage: () => [false, vi.fn()],
+vi.mock("foxact/use-local-storage", () => ({
+   useLocalStorage: vi.fn().mockReturnValue([false, vi.fn()]),
 }));
 
 vi.mock("@/hooks/use-early-access", () => ({

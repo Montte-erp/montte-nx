@@ -1,43 +1,26 @@
-import { Store, useStore } from "@tanstack/react-store";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
+import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
 
-const STORAGE_KEY = "sidebar:hidden-items";
-
-function loadHiddenItems(): string[] {
-   if (typeof window === "undefined") return [];
-   try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? (JSON.parse(stored) as string[]) : [];
-   } catch {
-      return [];
-   }
-}
-
-function saveHiddenItems(items: string[]) {
-   try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-   } catch {
-      // silently fail
-   }
-}
-
-const sidebarVisibilityStore = new Store<{ hiddenItems: string[] }>({
-   hiddenItems: loadHiddenItems(),
-});
+const [useHiddenItems] = createLocalStorageState<string[]>(
+   "montte:sidebar:hidden-items",
+   [],
+);
 
 export function useSidebarVisibility() {
-   const { hiddenItems } = useStore(sidebarVisibilityStore, (s) => s);
+   const [hiddenItems, setHiddenItems] = useHiddenItems();
 
-   const isVisible = (itemId: string) => !hiddenItems.includes(itemId);
+   const isVisible = useStableHandler(
+      (itemId: string) => !(hiddenItems ?? []).includes(itemId),
+   );
 
-   const toggleItem = (itemId: string) => {
-      sidebarVisibilityStore.setState((state) => {
-         const next = state.hiddenItems.includes(itemId)
-            ? state.hiddenItems.filter((id) => id !== itemId)
-            : [...state.hiddenItems, itemId];
-         saveHiddenItems(next);
-         return { hiddenItems: next };
+   const toggleItem = useStableHandler((itemId: string) => {
+      setHiddenItems((prev) => {
+         const current = prev ?? [];
+         return current.includes(itemId)
+            ? current.filter((id) => id !== itemId)
+            : [...current, itemId];
       });
-   };
+   });
 
    return { hiddenItems, isVisible, toggleItem };
 }

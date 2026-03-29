@@ -6,7 +6,7 @@ import {
 } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { Spinner } from "@packages/ui/components/spinner";
-import { useDebounce } from "@packages/ui/hooks/use-debounce";
+import { useDebouncedValue } from "foxact/use-debounced-value";
 import dayjs from "dayjs";
 import { Building2, CheckCircle2, MapPin } from "lucide-react";
 import {
@@ -59,7 +59,7 @@ export const CnpjStep = forwardRef<StepHandle, CnpjStepProps>(function CnpjStep(
    const [isFetching, setIsFetching] = useState(false);
    const [isSubmitting, setIsSubmitting] = useState(false);
 
-   const debouncedDigits = useDebounce(rawValue, 400);
+   const debouncedDigits = useDebouncedValue(rawValue, 400);
 
    const canContinue = cnpjData !== null;
    const isPending = isFetching || isSubmitting;

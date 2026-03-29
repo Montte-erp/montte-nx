@@ -1,3 +1,4 @@
+import { invariant } from "foxact/invariant";
 import { UploadIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { createContext, useContext } from "react";
@@ -91,9 +92,7 @@ export const Dropzone = ({
 };
 const useDropzoneContext = () => {
    const context = useContext(DropzoneContext);
-   if (!context) {
-      throw new Error("useDropzoneContext must be used within a Dropzone");
-   }
+   invariant(context, "useDropzoneContext must be used within a Dropzone");
    return context;
 };
 export type DropzoneContentProps = { children?: ReactNode; className?: string };

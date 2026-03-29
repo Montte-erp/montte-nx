@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@packages/ui/lib/utils";
+import { invariant } from "foxact/invariant";
 import { type LucideProps, StarIcon } from "lucide-react";
 import { useControllableState } from "radix-ui/internal";
 import type { KeyboardEvent, MouseEvent, ReactElement, ReactNode } from "react";
@@ -33,9 +34,7 @@ const RatingContext = createContext<RatingContextValue | null>(null);
 
 const useRating = () => {
    const context = useContext(RatingContext);
-   if (!context) {
-      throw new Error("useRating must be used within a Rating component");
-   }
+   invariant(context, "useRating must be used within a Rating component");
    return context;
 };
 

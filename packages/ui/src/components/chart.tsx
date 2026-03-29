@@ -6,6 +6,7 @@
 "use client";
 
 import { cn } from "@packages/ui/lib/utils";
+import { invariant } from "foxact/invariant";
 import * as React from "react";
 import * as RechartsPrimitive from "recharts";
 import type {
@@ -36,9 +37,7 @@ const ChartContext = React.createContext<ChartContextProps | null>(null);
 function useChart() {
    const context = React.useContext(ChartContext);
 
-   if (!context) {
-      throw new Error("useChart must be used within a <ChartContainer />");
-   }
+   invariant(context, "useChart must be used within a <ChartContainer />");
 
    return context;
 }

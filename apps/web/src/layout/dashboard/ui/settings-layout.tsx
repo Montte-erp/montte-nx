@@ -8,7 +8,7 @@ import {
    SidebarManager,
    SidebarProvider,
 } from "@packages/ui/components/sidebar";
-import { useIsMobile } from "@packages/ui/hooks/use-mobile";
+import { useMediaQuery } from "foxact/use-media-query";
 import { Link, useLocation, useParams } from "@tanstack/react-router";
 import { ChevronLeft, Search } from "lucide-react";
 import type * as React from "react";
@@ -22,7 +22,7 @@ interface SettingsLayoutProps {
 }
 
 export function SettingsLayout({ children }: SettingsLayoutProps) {
-   const isMobile = useIsMobile();
+   const isMobile = useMediaQuery("(max-width: 767px)", false);
    const { pathname } = useLocation();
    const { teamSlug } = useParams({
       from: "/_authenticated/$slug/$teamSlug/_dashboard",

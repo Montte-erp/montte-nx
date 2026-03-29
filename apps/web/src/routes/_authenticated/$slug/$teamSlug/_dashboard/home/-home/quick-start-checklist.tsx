@@ -10,7 +10,7 @@ import { Progress } from "@packages/ui/components/progress";
 import { useParams } from "@tanstack/react-router";
 import { ChevronDown, ChevronUp, Rocket, X } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { useSafeLocalStorage } from "@/hooks/use-local-storage";
+import { useLocalStorage } from "foxact/use-local-storage";
 import { useCompleteTask } from "./use-complete-task";
 import { useOnboardingStatus } from "./use-onboarding-status";
 import {
@@ -31,7 +31,7 @@ export function QuickStartChecklist() {
       from: "/_authenticated/$slug/$teamSlug/_dashboard",
    });
    const [isCollapsed, setIsCollapsed] = useState(false);
-   const [hiddenBySlug, setHiddenBySlug] = useSafeLocalStorage<
+   const [hiddenBySlug, setHiddenBySlug] = useLocalStorage<
       Record<string, boolean>
    >(CHECKLIST_HIDDEN_STORAGE_KEY, {});
    const isHidden = (slug && hiddenBySlug[slug]) === true;

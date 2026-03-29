@@ -12,6 +12,7 @@ import {
    RadioGroupItem,
 } from "@packages/ui/components/radio-group";
 import { cn } from "@packages/ui/lib/utils";
+import { invariant } from "foxact/invariant";
 import {
    type ComponentProps,
    createContext,
@@ -37,11 +38,10 @@ const ChoiceboxItemContext = createContext<ChoiceboxItemContextValue | null>(
 const useChoiceboxItemContext = () => {
    const context = useContext(ChoiceboxItemContext);
 
-   if (!context) {
-      throw new Error(
-         "useChoiceboxItemContext must be used within a ChoiceboxItem",
-      );
-   }
+   invariant(
+      context,
+      "useChoiceboxItemContext must be used within a ChoiceboxItem",
+   );
 
    return context;
 };

@@ -11,7 +11,9 @@ import {
 } from "@packages/ui/components/select";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Search, X } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useDebouncedValue } from "foxact/use-debounced-value";
+import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { orpc } from "@/integrations/orpc/client";
 import { TransactionFilterPopover } from "./transaction-filter-popover";
 
@@ -139,16 +141,30 @@ export function TransactionFilterBar({
       orpc.creditCards.getAll.queryOptions({}),
    );
 
-   // Debounced search via timeout ref
-   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
    const [searchInput, setSearchInput] = useState(filters.search);
+   const debouncedSearch = useDebouncedValue(searchInput, 350);
+
+   const stableOnFiltersChange = useStableHandler(onFiltersChange);
+   const filtersRef = useRef(filters);
+   useEffect(() => {
+      filtersRef.current = filters;
+   });
+
+   const isMounted = useRef(false);
+   useEffect(() => {
+      if (!isMounted.current) {
+         isMounted.current = true;
+         return;
+      }
+      stableOnFiltersChange({
+         ...filtersRef.current,
+         search: debouncedSearch,
+         page: 1,
+      });
+   }, [debouncedSearch, stableOnFiltersChange]);
 
    const handleSearchChange = (value: string) => {
       setSearchInput(value);
-      if (searchTimer.current) clearTimeout(searchTimer.current);
-      searchTimer.current = setTimeout(() => {
-         onFiltersChange({ ...filters, search: value, page: 1 });
-      }, 350);
    };
 
    const hasDateFilter = !!(filters.dateFrom || filters.dateTo);

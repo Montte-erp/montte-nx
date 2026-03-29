@@ -4,7 +4,7 @@ import type {
    KpiConfig,
    TimeSeriesConfig,
 } from "@packages/analytics/types";
-import { useDebounce } from "@uidotdev/usehooks";
+import { useDebouncedValue } from "foxact/use-debounced-value";
 import { useCallback, useEffect, useState } from "react";
 
 export type InsightType = "kpi" | "time_series" | "breakdown";
@@ -47,7 +47,7 @@ export function useInsightConfig(initialType: InsightType = "kpi") {
    const [pendingUpdates, setPendingUpdates] = useState<Partial<InsightConfig>>(
       {},
    );
-   const debouncedUpdates = useDebounce(pendingUpdates, 500);
+   const debouncedUpdates = useDebouncedValue(pendingUpdates, 500);
 
    useEffect(() => {
       if (Object.keys(debouncedUpdates).length > 0) {

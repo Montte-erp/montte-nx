@@ -1,10 +1,9 @@
-import { useIsomorphicLayoutEffect } from "@dnd-kit/utilities";
+import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useSafeLocalStorage } from "@/hooks/use-local-storage";
+import { useLocalStorage } from "foxact/use-local-storage";
+import { PENDING_INVITATION_KEY } from "@/routes/callback/organization/invitation/$invitationId";
 import { orpc } from "@/integrations/orpc/client";
-
-const PENDING_INVITATION_KEY = "montte_pending_invitation_id";
 
 export const Route = createFileRoute("/auth/callback")({
    loader: ({ context }) => {
@@ -16,7 +15,7 @@ export const Route = createFileRoute("/auth/callback")({
 });
 
 function AuthCallbackPage() {
-   const [pendingInvitation, setPendingInvitation] = useSafeLocalStorage<
+   const [pendingInvitation, setPendingInvitation] = useLocalStorage<
       string | null
    >(PENDING_INVITATION_KEY, null);
    const router = useRouter();

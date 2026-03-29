@@ -24,7 +24,9 @@ import {
 } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { BarChart3, CheckCircle2, Plus } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
+import { noop } from "foxact/noop";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 import { DashboardGrid } from "./dashboard-grid";
@@ -210,15 +212,8 @@ export function EditableDashboardGrid({
       }),
    );
 
-   const onSaveCompleteRef = useRef(onSaveComplete);
-   useEffect(() => {
-      onSaveCompleteRef.current = onSaveComplete;
-   }, [onSaveComplete]);
-
-   const onSaveErrorRef = useRef(onSaveError);
-   useEffect(() => {
-      onSaveErrorRef.current = onSaveError;
-   }, [onSaveError]);
+   const stableOnSaveComplete = useStableHandler(onSaveComplete ?? noop);
+   const stableOnSaveError = useStableHandler(onSaveError ?? noop);
 
    const handleReorder = useCallback((reordered: DashboardTileType[]) => {
       setLocalTiles(reordered);
@@ -287,8 +282,8 @@ export function EditableDashboardGrid({
       saveMutate(
          { id: dashboard.id, tiles: localTiles },
          {
-            onSuccess: () => onSaveCompleteRef.current?.(),
-            onError: () => onSaveErrorRef.current?.(),
+            onSuccess: () => stableOnSaveComplete(),
+            onError: () => stableOnSaveError(),
          },
       );
    }, [saveMutate, dashboard.id, localTiles]);

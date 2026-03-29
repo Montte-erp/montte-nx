@@ -1,6 +1,7 @@
 "use client";
 
 import { useControllableState } from "@radix-ui/react-use-controllable-state";
+import { invariant } from "foxact/invariant";
 import { Portal } from "radix-ui";
 import type {
    ButtonHTMLAttributes,
@@ -21,6 +22,7 @@ import {
    useState,
 } from "react";
 import { cn } from "@packages/ui/lib/utils";
+import { noop } from "foxact/noop";
 
 type DialogStackContextType = {
    activeIndex: number;
@@ -34,11 +36,11 @@ type DialogStackContextType = {
 
 export const DialogStackContext = createContext<DialogStackContextType>({
    activeIndex: 0,
-   setActiveIndex: () => {},
+   setActiveIndex: noop,
    totalDialogs: 0,
-   setTotalDialogs: () => {},
+   setTotalDialogs: noop,
    isOpen: false,
-   setIsOpen: () => {},
+   setIsOpen: noop,
    clickable: false,
 });
 
@@ -112,9 +114,7 @@ export const DialogStackTrigger = ({
 }: DialogStackTriggerProps) => {
    const context = useContext(DialogStackContext);
 
-   if (!context) {
-      throw new Error("DialogStackTrigger must be used within a DialogStack");
-   }
+   invariant(context, "DialogStackTrigger must be used within a DialogStack");
 
    const handleClick: MouseEventHandler<HTMLButtonElement> = (e) => {
       context.setIsOpen(true);
@@ -162,9 +162,7 @@ export const DialogStackOverlay = ({
 }: DialogStackOverlayProps) => {
    const context = useContext(DialogStackContext);
 
-   if (!context) {
-      throw new Error("DialogStackOverlay must be used within a DialogStack");
-   }
+   invariant(context, "DialogStackOverlay must be used within a DialogStack");
 
    const handleClick = useCallback(() => {
       context.setIsOpen(false);
@@ -204,9 +202,7 @@ export const DialogStackBody = ({
    const context = useContext(DialogStackContext);
    const totalDialogs = Children.count(children);
 
-   if (!context) {
-      throw new Error("DialogStackBody must be used within a DialogStack");
-   }
+   invariant(context, "DialogStackBody must be used within a DialogStack");
 
    if (!context.isOpen) {
       return null;
@@ -217,7 +213,7 @@ export const DialogStackBody = ({
          value={{
             ...context,
             totalDialogs,
-            setTotalDialogs: () => {},
+            setTotalDialogs: noop,
          }}
       >
          <Portal.Root>
@@ -262,9 +258,7 @@ export const DialogStackContent = ({
 }: DialogStackContentProps) => {
    const context = useContext(DialogStackContext);
 
-   if (!context) {
-      throw new Error("DialogStackContent must be used within a DialogStack");
-   }
+   invariant(context, "DialogStackContent must be used within a DialogStack");
 
    if (!context.isOpen) {
       return null;
@@ -390,9 +384,7 @@ export const DialogStackNext = ({
 }: DialogStackNextProps) => {
    const context = useContext(DialogStackContext);
 
-   if (!context) {
-      throw new Error("DialogStackNext must be used within a DialogStack");
-   }
+   invariant(context, "DialogStackNext must be used within a DialogStack");
 
    const handleNext = () => {
       if (context.activeIndex < context.totalDialogs - 1) {
@@ -445,9 +437,7 @@ export const DialogStackPrevious = ({
 }: DialogStackPreviousProps) => {
    const context = useContext(DialogStackContext);
 
-   if (!context) {
-      throw new Error("DialogStackPrevious must be used within a DialogStack");
-   }
+   invariant(context, "DialogStackPrevious must be used within a DialogStack");
 
    const handlePrevious = () => {
       if (context.activeIndex > 0) {

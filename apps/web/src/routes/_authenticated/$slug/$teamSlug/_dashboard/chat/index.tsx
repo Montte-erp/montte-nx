@@ -9,6 +9,7 @@ import {
    useNavigate,
    useParams,
 } from "@tanstack/react-router";
+import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
 import { useMemo, useRef } from "react";
 import { chatContextStore } from "@/features/rubi-chat/stores/chat-context-store";
 import { Thread } from "@/features/rubi-chat/ui/thread";
@@ -48,17 +49,15 @@ function ChatIndexPageContent({ teamId }: { teamId: string }) {
    const threadIdRef = useRef<string | undefined>(undefined);
    const hasNavigated = useRef(false);
    const createThread = useMutation(orpc.chat.createThread.mutationOptions({}));
-   const createThreadRef = useRef(createThread.mutateAsync);
-   createThreadRef.current = createThread.mutateAsync;
+   const stableCreateThread = useStableHandler(createThread.mutateAsync);
 
-   // Transport lazily creates a thread on the first message send
    const transport = useMemo(
       () =>
          new AssistantChatTransport({
             api: "/api/chat",
             body: async () => {
                if (!threadIdRef.current) {
-                  const thread = await createThreadRef.current({ teamId });
+                  const thread = await stableCreateThread({ teamId });
                   threadIdRef.current = thread.id;
                }
                const { mode, model, thinkingBudget } = chatContextStore.state;
@@ -79,7 +78,6 @@ function ChatIndexPageContent({ teamId }: { teamId: string }) {
       onFinish: () => {
          if (threadIdRef.current && !hasNavigated.current) {
             hasNavigated.current = true;
-            // Invalidate so $threadId.tsx fetches fresh data after navigation
             queryClient.invalidateQueries();
             navigate({
                to: "/$slug/$teamSlug/chat/$threadId",

@@ -61,6 +61,7 @@
       "dedent": "1.0.0",
       "embla-carousel-autoplay": "catalog:ui",
       "embla-carousel-react": "catalog:ui",
+      "foxact": "catalog:ui",
       "input-otp": "catalog:ui",
       "lodash": "^4.17.23",
       "lowlight": "^3.3.0",

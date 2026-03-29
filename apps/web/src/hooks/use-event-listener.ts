@@ -1,5 +1,6 @@
 import type { RefObject } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
+import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
 
 export function useEventListener<K extends keyof WindowEventMap>(
    eventName: K,
@@ -16,8 +17,7 @@ export function useEventListener<K extends keyof WindowEventMap>(
       typeof document !== "undefined" ? document : (null as Document | null);
    const defaultTarget = target ?? resolved;
 
-   const handlerRef = useRef(handler);
-   handlerRef.current = handler;
+   const stableHandler = useStableHandler(handler);
 
    useEffect(() => {
       const el =
@@ -27,7 +27,6 @@ export function useEventListener<K extends keyof WindowEventMap>(
               ? defaultTarget.current
               : defaultTarget;
       if (!el) return;
-      const stableHandler = (e: WindowEventMap[K]) => handlerRef.current(e);
       el.addEventListener(eventName, stableHandler as EventListener, options);
       return () =>
          el.removeEventListener(
@@ -35,5 +34,5 @@ export function useEventListener<K extends keyof WindowEventMap>(
             stableHandler as EventListener,
             options,
          );
-   }, [eventName, defaultTarget, options]);
+   }, [eventName, defaultTarget, options, stableHandler]);
 }
