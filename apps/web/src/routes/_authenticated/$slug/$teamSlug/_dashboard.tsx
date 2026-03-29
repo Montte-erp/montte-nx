@@ -33,6 +33,20 @@ export const Route = createFileRoute(
          }
       }
    },
+   onEnter: async ({ context }) => {
+      const userId = context.session.user.id
+      const organizationId = context.session.session?.activeOrganizationId;
+      if (userId) {
+         posthog.identify(userId, {
+            email: userId ?? undefined,
+            name: userId ?? undefined,
+         });
+         if (organizationId) {
+            posthog.group("organization", organizationId);
+         }
+      }
+
+   },
    component: DashboardLayoutRoute,
 });
 
