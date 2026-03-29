@@ -1,4 +1,4 @@
-import { useIsomorphicLayoutEffect } from "@dnd-kit/utilities";
+import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useSafeLocalStorage } from "@/hooks/use-local-storage";
