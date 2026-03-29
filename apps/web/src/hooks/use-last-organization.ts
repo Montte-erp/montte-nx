@@ -1,9 +1,9 @@
-import { useSafeLocalStorage } from "@/hooks/use-local-storage";
+import { useLocalStorage } from "foxact/use-local-storage";
 
 const STORAGE_KEY = "montte:last-organization-slug";
 
 export function useLastOrganization() {
-   const [lastSlug, setLastSlug] = useSafeLocalStorage<string | null>(
+   const [lastSlug, setLastSlug] = useLocalStorage<string | null>(
       STORAGE_KEY,
       null,
    );

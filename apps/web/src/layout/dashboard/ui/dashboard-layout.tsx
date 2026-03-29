@@ -17,7 +17,7 @@ import { useActiveTeam } from "@/hooks/use-active-team";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { EarlyAccessProvider } from "@/hooks/use-early-access";
 import { useLastOrganization } from "@/hooks/use-last-organization";
-import { useSafeLocalStorage } from "@/hooks/use-local-storage";
+import { useLocalStorage } from "foxact/use-local-storage";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 import { identifyClient, setClientGroup } from "@/integrations/posthog/client";
@@ -54,7 +54,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
    const setTeamForOrgRef = useRef(new Set<string>());
    const { pathname } = useLocation();
 
-   const [sidebarCollapsed, setSidebarCollapsed] = useSafeLocalStorage<boolean>(
+   const [sidebarCollapsed, setSidebarCollapsed] = useLocalStorage<boolean>(
       "montte:sidebar-collapsed",
       false,
    );

@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useSafeLocalStorage } from "@/hooks/use-local-storage";
+import { useLocalStorage } from "foxact/use-local-storage";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -19,7 +19,7 @@ function AcceptInvitationPage() {
    const { invitationId } = Route.useParams();
    const router = useRouter();
    const queryClient = useQueryClient();
-   const [, setPendingInvitation] = useSafeLocalStorage<string | null>(
+   const [, setPendingInvitation] = useLocalStorage<string | null>(
       PENDING_INVITATION_KEY,
       null,
    );
