@@ -183,6 +183,25 @@ describe("upsertSettings", () => {
       expect(updated.tone).toBe("technical");
    });
 
+   it("preserves unrelated fields on partial update", async () => {
+      await call(
+         agentRouter.upsertSettings,
+         { tone: "casual" },
+         { context: ctx },
+      );
+      await call(
+         agentRouter.upsertSettings,
+         { language: "en-US" },
+         { context: ctx },
+      );
+
+      const result = await call(agentRouter.getSettings, undefined, {
+         context: ctx,
+      });
+      expect(result?.tone).toBe("casual");
+      expect(result?.language).toBe("en-US");
+   });
+
    it("does not leak settings between teams", async () => {
       await call(
          agentRouter.upsertSettings,

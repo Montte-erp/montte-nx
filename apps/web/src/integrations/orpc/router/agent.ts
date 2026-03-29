@@ -212,13 +212,5 @@ export const getSettings = protectedProcedure.handler(async ({ context }) => {
 export const upsertSettings = protectedProcedure
    .input(agentSettingsSchema.partial())
    .handler(async ({ context, input }) => {
-      return upsertAgentSettings(context.db, context.teamId, {
-         modelId: input.modelId ?? "openrouter/moonshotai/kimi-k2.5",
-         language: input.language ?? "pt-BR",
-         tone: input.tone ?? "formal",
-         dataSourceTransactions: input.dataSourceTransactions ?? true,
-         dataSourceContacts: input.dataSourceContacts ?? true,
-         dataSourceInventory: input.dataSourceInventory ?? true,
-         dataSourceServices: input.dataSourceServices ?? true,
-      });
+      return upsertAgentSettings(context.db, context.teamId, input);
    });

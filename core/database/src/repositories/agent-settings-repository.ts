@@ -19,9 +19,11 @@ export async function getAgentSettings(db: DatabaseInstance, teamId: string) {
 export async function upsertAgentSettings(
    db: DatabaseInstance,
    teamId: string,
-   data: Omit<
-      typeof agentSettings.$inferInsert,
-      "teamId" | "createdAt" | "updatedAt"
+   data: Partial<
+      Omit<
+         typeof agentSettings.$inferInsert,
+         "teamId" | "createdAt" | "updatedAt"
+      >
    >,
 ) {
    try {
