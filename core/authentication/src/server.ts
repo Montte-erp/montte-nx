@@ -80,6 +80,7 @@ export interface CreateAuthDeps {
    };
 }
 
+// @ts-ignore -- better-auth return type references unexported internal types
 export function createAuth(deps: CreateAuthDeps) {
    const { db, redis, posthog, stripeClient, resendClient, env } = deps;
 

@@ -123,7 +123,7 @@ describe("financial-goals-repository", () => {
             teamId,
             validGoalInput({ name: "Complete", targetAmount: "100.00" }),
          );
-         const incompleteGoal = await repo.createFinancialGoal(
+         await repo.createFinancialGoal(
             testDb.db,
             teamId,
             validGoalInput({ name: "Incomplete", targetAmount: "5000.00" }),

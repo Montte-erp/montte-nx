@@ -47,7 +47,10 @@ export function QuickStartChecklist() {
       [status?.project?.onboardingProducts],
    );
 
-   const tasksMap = (status?.project?.tasks ?? {}) as Record<string, boolean>;
+   const tasksMap = useMemo(
+      () => (status?.project?.tasks ?? {}) as Record<string, boolean>,
+      [status?.project?.tasks],
+   );
 
    const isTaskCompleted = useCallback(
       (taskId: string): boolean => {

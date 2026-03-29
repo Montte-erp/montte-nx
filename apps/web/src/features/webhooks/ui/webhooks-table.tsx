@@ -154,7 +154,7 @@ export function WebhooksTable({
             ),
          },
       ],
-      [onDelete, onEdit],
+      [onEdit],
    );
 
    if (isLoading) {

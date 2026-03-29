@@ -403,10 +403,7 @@ const AssistantMessage: FC = () => {
                         "data-network": DataNetworkRenderer,
                         "data-tool-network": DataNetworkRenderer,
                      },
-                     Fallback: ({ name }) => {
-                        console.log("[data-renderer] unmapped:", name);
-                        return null;
-                     },
+                     Fallback: () => null,
                   },
                   tools: {
                      Fallback: ToolFallback,

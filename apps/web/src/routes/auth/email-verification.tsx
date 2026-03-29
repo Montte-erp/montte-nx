@@ -76,7 +76,7 @@ function EmailVerificationPage() {
             },
          );
       },
-      [email, router.navigate],
+      [email, router],
    );
 
    const form = useForm({

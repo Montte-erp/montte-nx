@@ -103,9 +103,11 @@ function AccessControlContent({ teamId }: { teamId: string }) {
       orpc.team.getMembers.queryOptions({ input: { teamId } }),
    );
 
-   const teamMemberIds = new Set(teamMembers.map((m) => m.id));
+   const teamMemberIds = useMemo(
+      () => new Set(teamMembers.map((m) => m.id)),
+      [teamMembers],
+   );
 
-   // Combine data
    const members: MemberRow[] = useMemo(
       () =>
          orgMembers.map((m) => ({
@@ -242,7 +244,11 @@ function AccessControlContent({ teamId }: { teamId: string }) {
             },
          },
       ],
-      [addMemberMutation.isPending, removeMemberMutation.isPending],
+      [
+         addMemberMutation.isPending,
+         removeMemberMutation.isPending,
+         handleToggleAccess,
+      ],
    );
 
    const membersWithAccess = members.filter((m) => m.hasAccess);

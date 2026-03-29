@@ -2,7 +2,6 @@ import { Input } from "@packages/ui/components/input";
 import { cn } from "@packages/ui/lib/utils";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import {
-   ClipboardList,
    FileText,
    LayoutDashboard,
    Lightbulb,
@@ -13,16 +12,10 @@ import {
    type KeyboardEvent,
    useCallback,
    useEffect,
-   useMemo,
    useRef,
    useState,
 } from "react";
-import { useEarlyAccess } from "@/hooks/use-early-access";
-import {
-   type SearchResultItem,
-   type SearchResultType,
-   useSearch,
-} from "../hooks/use-search";
+import { type SearchResultItem, useSearch } from "../hooks/use-search";
 
 // ── Icon mapping ─────────────────────────────────────────────────────────────
 
@@ -30,7 +23,6 @@ const ICON_MAP: Record<string, typeof Search> = {
    FileText,
    LayoutDashboard,
    Lightbulb,
-   ClipboardList,
    Search,
 };
 
@@ -63,11 +55,6 @@ function getQuickActions(): QuickAction[] {
          icon: Lightbulb,
          route: "/$slug/$teamSlug/analytics/insights/new",
       },
-      {
-         label: "Novo formulario",
-         icon: ClipboardList,
-         route: "/$slug/$teamSlug/forms",
-      },
    ];
 }
 
@@ -80,38 +67,13 @@ export function SearchPage() {
    const navigate = useNavigate();
    const inputRef = useRef<HTMLInputElement>(null);
    const [selectedIndex, setSelectedIndex] = useState(-1);
-   const { isEnrolled } = useEarlyAccess();
-
-   const EARLY_ACCESS_SEARCH_MAP: Record<string, SearchResultType> = {
-      "forms-beta": "form",
-   };
-
-   const hiddenSearchTypes = useMemo(() => {
-      const hidden = new Set<SearchResultType>();
-      for (const [flagKey, resultType] of Object.entries(
-         EARLY_ACCESS_SEARCH_MAP,
-      )) {
-         if (!isEnrolled(flagKey)) {
-            hidden.add(resultType);
-         }
-      }
-      return hidden;
-   }, [isEnrolled]);
 
    const { query, setQuery, results, hasResults, hasQuery } = useSearch(
       slug,
       teamSlug,
-      { hiddenTypes: hiddenSearchTypes },
    );
 
-   const quickActions = useMemo(() => {
-      const actions = getQuickActions();
-      return actions.filter((a) => {
-         if (a.route.includes("/forms") && !isEnrolled("forms-beta"))
-            return false;
-         return true;
-      });
-   }, [isEnrolled]);
+   const quickActions = getQuickActions();
 
    // Auto-focus the input on mount
    useEffect(() => {

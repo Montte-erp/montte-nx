@@ -206,7 +206,7 @@ export function BillingSpend() {
          })),
       ];
       return cols;
-   }, [allDates.join(",")]);
+   }, [allDates]);
 
    return (
       <div className="space-y-4">

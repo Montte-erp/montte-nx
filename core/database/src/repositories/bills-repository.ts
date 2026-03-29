@@ -1,5 +1,5 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { and, count, desc, eq, gte, isNull, lte, or, sql } from "drizzle-orm";
+import { and, count, eq, gte, isNull, lte, or, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateBillInput,

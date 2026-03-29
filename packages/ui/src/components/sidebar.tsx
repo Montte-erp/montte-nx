@@ -192,7 +192,7 @@ function SidebarManagerIsolated({
 
    const toggleSidebar = React.useCallback(
       () => (isMobile ? setOpenMobile((o) => !o) : setOpen((o) => !o)),
-      [isMobile, setOpen],
+      [isMobile, setOpen, setOpenMobile],
    );
 
    const state = open ? "expanded" : "collapsed";

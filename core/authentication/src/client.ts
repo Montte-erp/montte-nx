@@ -24,6 +24,7 @@ export interface AuthClientOptions {
    onError?: (error: AuthClientError) => void;
 }
 
+// @ts-ignore -- better-auth return type references unexported internal types
 export const createAuthClient = ({
    apiBaseUrl,
    onSuccess,

@@ -201,7 +201,7 @@ export function BillingUsage() {
          })),
       ];
       return cols;
-   }, [allDates.join(",")]);
+   }, [allDates]);
 
    if (isLoading && !data) {
       return <UsageSkeleton />;

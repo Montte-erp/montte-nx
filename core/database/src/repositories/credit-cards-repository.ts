@@ -1,5 +1,5 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateCreditCardInput,
