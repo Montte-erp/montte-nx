@@ -51,11 +51,11 @@ const MODELS = [
 
 function AiAgentsSettingsForm() {
    const { data: settings } = useSuspenseQuery(
-      orpc.agent.getSettings.queryOptions({}),
+      orpc.agentSettings.getSettings.queryOptions({}),
    );
 
    const mutation = useMutation(
-      orpc.agent.upsertSettings.mutationOptions({
+      orpc.agentSettings.upsertSettings.mutationOptions({
          onSuccess: () => toast.success("Configurações salvas."),
          onError: (e) => toast.error(e.message),
       }),
@@ -65,9 +65,9 @@ function AiAgentsSettingsForm() {
       defaultValues: {
          modelId: settings?.modelId ?? "openrouter/moonshotai/kimi-k2.5",
          language: (settings?.language ??
-            "pt-BR") as Inputs["agent"]["upsertSettings"]["language"],
+            "pt-BR") as Inputs["agentSettings"]["upsertSettings"]["language"],
          tone: (settings?.tone ??
-            "formal") as Inputs["agent"]["upsertSettings"]["tone"],
+            "formal") as Inputs["agentSettings"]["upsertSettings"]["tone"],
          dataSourceTransactions: settings?.dataSourceTransactions ?? true,
          dataSourceContacts: settings?.dataSourceContacts ?? true,
          dataSourceInventory: settings?.dataSourceInventory ?? true,

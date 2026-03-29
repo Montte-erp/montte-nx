@@ -10,22 +10,10 @@ import {
    type ModelId,
    getModelPreset,
 } from "@core/agents/models";
-import { agentSettings } from "@core/database/schemas/agents";
-import {
-   getAgentSettings,
-   upsertAgentSettings,
-} from "@core/database/repositories/agent-settings-repository";
 import { emitAiChatMessage } from "@packages/events/ai";
 import { createEmitFn } from "@packages/events/emit";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
-
-const agentSettingsSchema = createInsertSchema(agentSettings).omit({
-   teamId: true,
-   createdAt: true,
-   updatedAt: true,
-});
 
 type ChatChunk =
    | { type: "text"; text: string }
@@ -204,13 +192,3 @@ function getRequestLanguage(headers: Headers): string | undefined {
    const [primary] = raw.split(",");
    return primary?.trim() || undefined;
 }
-
-export const getSettings = protectedProcedure.handler(async ({ context }) => {
-   return getAgentSettings(context.db, context.teamId);
-});
-
-export const upsertSettings = protectedProcedure
-   .input(agentSettingsSchema.partial())
-   .handler(async ({ context, input }) => {
-      return upsertAgentSettings(context.db, context.teamId, input);
-   });

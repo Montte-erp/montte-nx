@@ -72,6 +72,7 @@ import {
 } from "../../../helpers/setup-integration-test";
 import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import * as agentRouter from "@/integrations/orpc/router/agent";
+import * as agentSettingsRouter from "@/integrations/orpc/router/agent-settings";
 
 let ctx: ORPCContextWithAuth;
 let ctx2: ORPCContextWithAuth;
@@ -121,12 +122,14 @@ afterAll(async () => {
 beforeEach(async () => {
    vi.clearAllMocks();
    vi.mocked(emitAiChatMessage).mockResolvedValue(undefined);
-   await ctx.db.execute(sql`DELETE FROM agent_settings`);
+   await ctx.db.execute(
+      sql`DELETE FROM agent_settings WHERE team_id IN (${ctx.session!.session.activeTeamId}, ${ctx2.session!.session.activeTeamId})`,
+   );
 });
 
 describe("getSettings", () => {
    it("returns null when no settings exist", async () => {
-      const result = await call(agentRouter.getSettings, undefined, {
+      const result = await call(agentSettingsRouter.getSettings, undefined, {
          context: ctx,
       });
 
@@ -135,7 +138,7 @@ describe("getSettings", () => {
 
    it("returns settings after upsert", async () => {
       await call(
-         agentRouter.upsertSettings,
+         agentSettingsRouter.upsertSettings,
          {
             modelId: "openrouter/anthropic/claude-sonnet-4-5",
             language: "en-US",
@@ -143,7 +146,7 @@ describe("getSettings", () => {
          { context: ctx },
       );
 
-      const result = await call(agentRouter.getSettings, undefined, {
+      const result = await call(agentSettingsRouter.getSettings, undefined, {
          context: ctx,
       });
 
@@ -156,7 +159,7 @@ describe("getSettings", () => {
 describe("upsertSettings", () => {
    it("creates settings and returns them with the calling team's id", async () => {
       const result = await call(
-         agentRouter.upsertSettings,
+         agentSettingsRouter.upsertSettings,
          {},
          { context: ctx },
       );
@@ -169,13 +172,13 @@ describe("upsertSettings", () => {
 
    it("updates existing settings on second call", async () => {
       await call(
-         agentRouter.upsertSettings,
+         agentSettingsRouter.upsertSettings,
          { tone: "casual" },
          { context: ctx },
       );
 
       const updated = await call(
-         agentRouter.upsertSettings,
+         agentSettingsRouter.upsertSettings,
          { tone: "technical" },
          { context: ctx },
       );
@@ -185,17 +188,17 @@ describe("upsertSettings", () => {
 
    it("preserves unrelated fields on partial update", async () => {
       await call(
-         agentRouter.upsertSettings,
+         agentSettingsRouter.upsertSettings,
          { tone: "casual" },
          { context: ctx },
       );
       await call(
-         agentRouter.upsertSettings,
+         agentSettingsRouter.upsertSettings,
          { language: "en-US" },
          { context: ctx },
       );
 
-      const result = await call(agentRouter.getSettings, undefined, {
+      const result = await call(agentSettingsRouter.getSettings, undefined, {
          context: ctx,
       });
       expect(result?.tone).toBe("casual");
@@ -204,14 +207,18 @@ describe("upsertSettings", () => {
 
    it("does not leak settings between teams", async () => {
       await call(
-         agentRouter.upsertSettings,
+         agentSettingsRouter.upsertSettings,
          { tone: "casual" },
          { context: ctx },
       );
 
-      const otherTeamResult = await call(agentRouter.getSettings, undefined, {
-         context: ctx2,
-      });
+      const otherTeamResult = await call(
+         agentSettingsRouter.getSettings,
+         undefined,
+         {
+            context: ctx2,
+         },
+      );
 
       expect(otherTeamResult).toBeNull();
    });
