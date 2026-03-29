@@ -67,7 +67,7 @@
       "color": "catalog:ui",
       "drizzle-orm": "catalog:database",
       "drizzle-zod": "catalog:database",
-      "foxact": "^0.3.0",
+      "foxact": "catalog:ui",
       "lucide-react": "catalog:ui",
       "posthog-js": "catalog:analytics-client",
       "qrcode.react": "catalog:ui",
