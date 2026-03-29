@@ -25,6 +25,7 @@ import {
 import type { ColumnDef } from "@tanstack/react-table";
 import { BarChart3, CheckCircle2, Plus } from "lucide-react";
 import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
+import { noop } from "foxact/noop";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
@@ -211,8 +212,8 @@ export function EditableDashboardGrid({
       }),
    );
 
-   const stableOnSaveComplete = useStableHandler(onSaveComplete ?? (() => {}));
-   const stableOnSaveError = useStableHandler(onSaveError ?? (() => {}));
+   const stableOnSaveComplete = useStableHandler(onSaveComplete ?? noop);
+   const stableOnSaveError = useStableHandler(onSaveError ?? noop);
 
    const handleReorder = useCallback((reordered: DashboardTileType[]) => {
       setLocalTiles(reordered);

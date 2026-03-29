@@ -21,6 +21,7 @@ import {
    useState,
 } from "react";
 import { cn } from "@packages/ui/lib/utils";
+import { noop } from "foxact/noop";
 
 type DialogStackContextType = {
    activeIndex: number;
@@ -34,11 +35,11 @@ type DialogStackContextType = {
 
 export const DialogStackContext = createContext<DialogStackContextType>({
    activeIndex: 0,
-   setActiveIndex: () => {},
+   setActiveIndex: noop,
    totalDialogs: 0,
-   setTotalDialogs: () => {},
+   setTotalDialogs: noop,
    isOpen: false,
-   setIsOpen: () => {},
+   setIsOpen: noop,
    clickable: false,
 });
 
@@ -217,7 +218,7 @@ export const DialogStackBody = ({
          value={{
             ...context,
             totalDialogs,
-            setTotalDialogs: () => {},
+            setTotalDialogs: noop,
          }}
       >
          <Portal.Root>
