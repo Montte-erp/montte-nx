@@ -19,6 +19,7 @@ import {
    DrawerTrigger,
 } from "@packages/ui/components/drawer";
 import { cn } from "@packages/ui/lib/utils";
+import { invariant } from "foxact/invariant";
 import { useMediaQuery } from "foxact/use-media-query";
 import { createContext, useContext } from "react";
 
@@ -42,11 +43,10 @@ const CredenzaContext = createContext<{ isDesktop: boolean }>({
 
 const useCredenzaContext = () => {
    const context = useContext(CredenzaContext);
-   if (!context) {
-      throw new Error(
-         "Credenza components cannot be rendered outside the Credenza Context",
-      );
-   }
+   invariant(
+      context,
+      "Credenza components cannot be rendered outside the Credenza Context",
+   );
    return context;
 };
 

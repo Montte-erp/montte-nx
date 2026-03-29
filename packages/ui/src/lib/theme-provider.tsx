@@ -1,4 +1,5 @@
 import { ScriptOnce } from "@tanstack/react-router";
+import { invariant } from "foxact/invariant";
 import * as React from "react";
 
 function FunctionOnce<T = unknown>({
@@ -139,8 +140,10 @@ export function ThemeProvider({
 export function useTheme() {
    const context = React.useContext(ThemeProviderContext);
 
-   if (context === undefined)
-      throw new Error("useTheme must be used within a ThemeProvider");
+   invariant(
+      context !== undefined,
+      "useTheme must be used within a ThemeProvider",
+   );
 
    return context;
 }

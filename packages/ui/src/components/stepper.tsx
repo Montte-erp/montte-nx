@@ -1,6 +1,7 @@
 import { Button } from "@packages/ui/components/button";
 import { cn } from "@packages/ui/lib/utils";
 import * as Stepperize from "@stepperize/react";
+import { invariant } from "foxact/invariant";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Slot as SlotPrimitive } from "radix-ui";
 import * as React from "react";
@@ -9,9 +10,7 @@ const StepperContext = React.createContext<Stepper.ConfigProps | null>(null);
 
 const useStepperProvider = (): Stepper.ConfigProps => {
    const context = React.useContext(StepperContext);
-   if (!context) {
-      throw new Error("useStepper must be used within a StepperProvider.");
-   }
+   invariant(context, "useStepper must be used within a StepperProvider.");
    return context;
 };
 

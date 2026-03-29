@@ -19,6 +19,7 @@ import {
 } from "@packages/ui/components/tooltip";
 import { useEventListener } from "@packages/ui/hooks/use-event-listener";
 import { cn } from "@packages/ui/lib/utils";
+import { invariant } from "foxact/invariant";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { useMediaQuery } from "foxact/use-media-query";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -47,9 +48,7 @@ const SidebarContext = React.createContext<SidebarContextProps | null>(null);
 
 function useSidebar() {
    const context = React.useContext(SidebarContext);
-   if (!context) {
-      throw new Error("useSidebar must be used within a SidebarProvider.");
-   }
+   invariant(context, "useSidebar must be used within a SidebarProvider.");
 
    return context;
 }
@@ -67,11 +66,10 @@ const SidebarManagerContext =
 
 function useSidebarManager() {
    const context = React.useContext(SidebarManagerContext);
-   if (!context) {
-      throw new Error(
-         "useSidebarManager must be used within a SidebarManagerProvider.",
-      );
-   }
+   invariant(
+      context,
+      "useSidebarManager must be used within a SidebarManagerProvider.",
+   );
    return context;
 }
 
