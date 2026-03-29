@@ -7,9 +7,7 @@ import {
 import { cn } from "@packages/ui/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import { FlaskConical } from "lucide-react";
-import { FeatureFeedbackForm } from "@/features/feedback/ui/feature-feedback-form";
-import { FeatureRequestForm } from "@/features/feedback/ui/feature-request-form";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import posthog from "posthog-js";
 
 const STAGE_ICON_COLOR: Record<FeatureStage, string> = {
    alpha: "text-chart-1",
@@ -25,7 +23,7 @@ export type EarlyAccessBannerTemplate = {
    bullets: string[];
    stage: FeatureStage;
    icon?: LucideIcon;
-   form?: "feedback" | "request";
+   surveyId?: string;
 };
 
 export type EarlyAccessBannerProps = {
@@ -33,33 +31,10 @@ export type EarlyAccessBannerProps = {
 };
 
 export function EarlyAccessBanner({ template }: EarlyAccessBannerProps) {
-   const { openDialogStack, closeDialogStack } = useDialogStack();
    const Icon = template.icon ?? FlaskConical;
    const stage = template.stage ?? "beta";
    const iconColor = STAGE_ICON_COLOR[stage];
    const badgeClassName = STAGE_CONFIG[stage].className;
-
-   const handleCtaClick = () => {
-      if (template.form === "request") {
-         openDialogStack({
-            children: (
-               <FeatureRequestForm
-                  context="integration"
-                  onSuccess={closeDialogStack}
-               />
-            ),
-         });
-      } else {
-         openDialogStack({
-            children: (
-               <FeatureFeedbackForm
-                  featureName={template.badgeLabel}
-                  onSuccess={closeDialogStack}
-               />
-            ),
-         });
-      }
-   };
 
    return (
       <div className="rounded-lg border bg-card p-4 flex gap-4">
@@ -74,14 +49,16 @@ export function EarlyAccessBanner({ template }: EarlyAccessBannerProps) {
             </div>
             <p className="text-sm text-muted-foreground">
                {template.message}{" "}
-               <Button
-                  className="h-auto p-0 text-foreground underline underline-offset-4 hover:text-primary"
-                  onClick={handleCtaClick}
-                  type="button"
-                  variant="link"
-               >
-                  {template.ctaLabel}
-               </Button>
+               {template.surveyId && (
+                  <Button
+                     className="h-auto p-0 text-foreground underline underline-offset-4 hover:text-primary"
+                     onClick={() => posthog.renderSurvey(template.surveyId!, "body")}
+                     type="button"
+                     variant="link"
+                  >
+                     {template.ctaLabel}
+                  </Button>
+               )}
             </p>
             <ul className="space-y-1.5 text-sm text-muted-foreground list-disc list-inside">
                {template.bullets.map((bullet, index) => (
