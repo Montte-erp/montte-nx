@@ -1,7 +1,8 @@
 "use client";
 
 import { Check, Copy } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
+import { useClipboard } from "foxact/use-clipboard";
 import { cn } from "../lib/utils";
 
 interface CodeBlockProps {
@@ -11,13 +12,8 @@ interface CodeBlockProps {
 }
 
 export function CodeBlock({ code, language, className }: CodeBlockProps) {
-   const [copied, setCopied] = useState(false);
-
-   const handleCopy = useCallback(async () => {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-   }, [code]);
+   const { copied, copy } = useClipboard({ timeout: 2000 });
+   const handleCopy = useCallback(() => copy(code), [code, copy]);
 
    return (
       <div

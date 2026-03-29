@@ -11,7 +11,8 @@ import {
 import { Button } from "@packages/ui/components/button";
 import { cn } from "@packages/ui/lib/utils";
 import { CheckIcon, CopyIcon } from "lucide-react";
-import { type FC, memo, useState } from "react";
+import { useClipboard } from "foxact/use-clipboard";
+import { type FC, memo } from "react";
 import remarkGfm from "remark-gfm";
 
 const MarkdownTextImpl = () => {
@@ -27,7 +28,9 @@ const MarkdownTextImpl = () => {
 export const MarkdownText = memo(MarkdownTextImpl);
 
 const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
-   const { isCopied, copyToClipboard } = useCopyToClipboard();
+   const { copied: isCopied, copy: copyToClipboard } = useClipboard({
+      timeout: 3000,
+   });
    const onCopy = () => {
       if (!code || isCopied) return;
       copyToClipboard(code);
@@ -49,25 +52,6 @@ const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
          </Button>
       </div>
    );
-};
-
-const useCopyToClipboard = ({
-   copiedDuration = 3000,
-}: {
-   copiedDuration?: number;
-} = {}) => {
-   const [isCopied, setIsCopied] = useState<boolean>(false);
-
-   const copyToClipboard = (value: string) => {
-      if (!value) return;
-
-      navigator.clipboard.writeText(value).then(() => {
-         setIsCopied(true);
-         setTimeout(() => setIsCopied(false), copiedDuration);
-      });
-   };
-
-   return { isCopied, copyToClipboard };
 };
 
 const defaultComponents = memoizeMarkdownComponents({
