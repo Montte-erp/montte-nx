@@ -1,6 +1,5 @@
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
-import { FieldDescription } from "@packages/ui/components/field";
 import { Separator } from "@packages/ui/components/separator";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { KeyRound, Sparkles } from "lucide-react";
@@ -8,6 +7,8 @@ import { useEffect, useState, useTransition } from "react";
 import { z } from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
+import { GoogleIcon } from "../-auth/google-icon";
+import { TermsAndPrivacyText } from "../-auth/terms-and-privacy-text";
 
 const signInSearchSchema = z.object({
    redirect: z.string().optional(),
@@ -30,27 +31,6 @@ export const Route = createFileRoute("/auth/sign-in/")({
    component: SignInPage,
 });
 
-const GoogleIcon = () => (
-   <svg aria-hidden="true" className="size-4" viewBox="0 0 24 24">
-      <path
-         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-         fill="#4285F4"
-      />
-      <path
-         d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-         fill="#34A853"
-      />
-      <path
-         d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-         fill="#FBBC05"
-      />
-      <path
-         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-         fill="#EA4335"
-      />
-   </svg>
-);
-
 export function SignInPage() {
    const [lastMethod, setLastMethod] = useState<string | null>(null);
    const [isPending, startTransition] = useTransition();
@@ -66,37 +46,6 @@ export function SignInPage() {
             callbackURL: "/auth/callback",
          });
       });
-   };
-
-   const TermsAndPrivacyText = () => {
-      const text =
-         "Ao continuar, voce concorda com nossos {split} e {split}.".split(
-            "{split}",
-         );
-
-      return (
-         <>
-            <span>{text[0]}</span>
-            <a
-               className="underline text-muted-foreground hover:text-primary"
-               href="https://montte.co/terms-of-service"
-               rel="noopener noreferrer"
-               target="_blank"
-            >
-               Termos de Servico
-            </a>
-            <span>{text[1]}</span>
-            <a
-               className="underline text-muted-foreground hover:text-primary"
-               href="https://montte.co/privacy-policy"
-               rel="noopener noreferrer"
-               target="_blank"
-            >
-               Politica de Privacidade
-            </a>
-            <span>{text[2]}</span>
-         </>
-      );
    };
 
    return (
@@ -193,9 +142,7 @@ export function SignInPage() {
                   Criar conta
                </Link>
             </div>
-            <FieldDescription className="text-center">
-               <TermsAndPrivacyText />
-            </FieldDescription>
+            <TermsAndPrivacyText />
          </div>
       </section>
    );

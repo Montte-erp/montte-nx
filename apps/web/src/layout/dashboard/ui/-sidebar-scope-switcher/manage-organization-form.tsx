@@ -19,7 +19,7 @@ import { Building } from "lucide-react";
 import { useCallback, useMemo, useTransition } from "react";
 import { toast } from "sonner";
 import { useFileUpload } from "@/features/file-upload/lib/use-file-upload";
-import { useSetActiveOrganization } from "@/features/organization/hooks/use-set-active-organization";
+import { useSetActiveOrganization } from "./use-set-active-organization";
 import { closeDialogStack } from "@/hooks/use-dialog-stack";
 import { authClient } from "@/integrations/better-auth/auth-client";
 

@@ -2,7 +2,7 @@ import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useLocalStorage } from "foxact/use-local-storage";
-import { PENDING_INVITATION_KEY } from "@/routes/callback/organization/invitation/$invitationId";
+import { PENDING_INVITATION_KEY } from "@/features/organization/constants";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute("/auth/callback")({

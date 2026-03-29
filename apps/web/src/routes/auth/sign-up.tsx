@@ -1,7 +1,6 @@
 import { Button } from "@packages/ui/components/button";
 import {
    Field,
-   FieldDescription,
    FieldError,
    FieldGroup,
    FieldLabel,
@@ -11,10 +10,13 @@ import { PasswordInput } from "@packages/ui/components/password-input";
 import { defineStepper } from "@packages/ui/components/stepper";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { type FormEvent, useCallback } from "react";
+import { Loader2 } from "lucide-react";
+import { type FormEvent, useCallback, useTransition } from "react";
 import { toast } from "sonner";
 import z from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
+import { PasswordStrengthCard } from "./-auth/password-strength-card";
+import { TermsAndPrivacyText } from "./-auth/terms-and-privacy-text";
 
 const steps = [
    { id: "basic-info", title: "basic-info" },
@@ -29,6 +31,7 @@ export const Route = createFileRoute("/auth/sign-up")({
 
 function SignUpPage() {
    const router = useRouter();
+   const [isPending, startTransition] = useTransition();
    const schema = z
       .object({
          confirmPassword: z.string(),
@@ -92,9 +95,11 @@ function SignUpPage() {
       (e: FormEvent) => {
          e.preventDefault();
          e.stopPropagation();
-         form.handleSubmit();
+         startTransition(async () => {
+            await form.handleSubmit();
+         });
       },
-      [form],
+      [form, startTransition],
    );
 
    function BasicInfoStep() {
@@ -193,6 +198,9 @@ function SignUpPage() {
                   }}
                </form.Field>
             </FieldGroup>
+            <form.Subscribe selector={(state) => state.values.password}>
+               {(password) => <PasswordStrengthCard password={password} />}
+            </form.Subscribe>
             <FieldGroup>
                <form.Field name="confirmPassword">
                   {(field) => {
@@ -226,37 +234,6 @@ function SignUpPage() {
          </>
       );
    }
-
-   const TermsAndPrivacyText = () => {
-      const text =
-         "Ao continuar, voce concorda com nossos {split} e {split}.".split(
-            "{split}",
-         );
-
-      return (
-         <>
-            <span>{text[0]}</span>
-            <a
-               className="underline text-muted-foreground hover:text-primary"
-               href="https://montte.co/terms-of-service"
-               rel="noopener noreferrer"
-               target="_blank"
-            >
-               Termos de Servico
-            </a>
-            <span>{text[1]}</span>
-            <a
-               className="underline text-muted-foreground hover:text-primary"
-               href="https://montte.co/privacy-policy"
-               rel="noopener noreferrer"
-               target="_blank"
-            >
-               Politica de Privacidade
-            </a>
-            <span>{text[2]}</span>
-         </>
-      );
-   };
 
    return (
       <Stepper.Provider>
@@ -301,12 +278,18 @@ function SignUpPage() {
                                     className="h-11"
                                     disabled={
                                        !formState.canSubmit ||
-                                       formState.isSubmitting
+                                       formState.isSubmitting ||
+                                       isPending
                                     }
                                     type="submit"
                                     variant="default"
                                  >
-                                    Enviar
+                                    <span className="flex items-center gap-2">
+                                       {isPending && (
+                                          <Loader2 className="size-4 animate-spin" />
+                                       )}
+                                       Enviar
+                                    </span>
                                  </Button>
                               )}
                            </form.Subscribe>
@@ -344,9 +327,7 @@ function SignUpPage() {
                         Entre aqui
                      </Link>
                   </div>
-                  <FieldDescription className="text-center">
-                     <TermsAndPrivacyText />
-                  </FieldDescription>
+                  <TermsAndPrivacyText />
                </div>
             </section>
          )}
