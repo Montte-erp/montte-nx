@@ -47,7 +47,7 @@ export function InviteMemberForm({
          }
          queryClient.invalidateQueries({ queryKey: ["pending-invites"] });
          toast.success("Convite enviado com sucesso!");
-         onSuccess?.();
+         onSuccess();
       });
    };
 
@@ -101,7 +101,7 @@ export function InviteMemberForm({
 
                <Card className="bg-muted border-0">
                   <CardContent className="pt-4 pb-4">
-                     <div className="flex gap-3">
+                     <div className="flex gap-4">
                         <div className="mt-0.5">
                            <Mail className="size-4 text-muted-foreground" />
                         </div>
