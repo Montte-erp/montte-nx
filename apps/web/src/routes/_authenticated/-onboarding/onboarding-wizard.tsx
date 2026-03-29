@@ -2,6 +2,7 @@ import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Spinner } from "@packages/ui/components/spinner";
 import { defineStepper } from "@packages/ui/components/stepper";
+import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
    useCallback,
@@ -11,11 +12,20 @@ import {
    useState,
    useTransition,
 } from "react";
-import type { Session } from "@/integrations/better-auth/auth-client";
-import { type AccountType, AccountTypeStep } from "./account-type-step";
+import { toast } from "sonner";
+import {
+   authClient,
+   type Session,
+} from "@/integrations/better-auth/auth-client";
+import { orpc } from "@/integrations/orpc/client";
+import type { Inputs } from "@/integrations/orpc/client";
+import { CnpjStep } from "./cnpj-step";
+
+type CnpjData = NonNullable<
+   Inputs["onboarding"]["createWorkspace"]["cnpjData"]
+>;
 import { ProfileStep } from "./profile-step";
 import type { StepHandle, StepState } from "./step-handle";
-import { WorkspaceStep } from "./workspace-step";
 
 type Organization = {
    id: string;
@@ -45,19 +55,13 @@ export function OnboardingWizard({
    const steps = useMemo(() => {
       const s: { id: string; title: string }[] = [];
       if (needsProfile) s.push({ id: "profile", title: "Perfil" });
-      if (needsWorkspace)
-         s.push({ id: "account-type", title: "Tipo de Conta" });
-      if (needsWorkspace) s.push({ id: "workspace", title: "Workspace" });
+      if (needsWorkspace) s.push({ id: "cnpj", title: "Empresa" });
       return s;
    }, [needsProfile, needsWorkspace]);
 
    const { Stepper } = useMemo(() => defineStepper(...steps), [steps]);
 
-   const [workspaceSlug, setWorkspaceSlug] = useState<string | null>(
-      activeOrg?.slug ?? null,
-   );
-   const [selectedAccountType, setSelectedAccountType] =
-      useState<AccountType>("personal");
+   const [cnpjData, setCnpjData] = useState<CnpjData | null>(null);
 
    const stepRef = useRef<StepHandle>(null);
    const [, startTransition] = useTransition();
@@ -65,6 +69,10 @@ export function OnboardingWizard({
       canContinue: true,
       isPending: false,
    });
+
+   const createWorkspace = useMutation(
+      orpc.onboarding.createWorkspace.mutationOptions(),
+   );
 
    const handleStepStateChange = useCallback((state: StepState) => {
       setStepState(state);
@@ -75,33 +83,45 @@ export function OnboardingWizard({
          if (needsWorkspace) {
             next();
          } else if (activeOrg) {
-            // Onboarding flags were already fixed by the route loader.
-            // Navigate to the org and let the routing chain pick the active team.
             navigate({ to: "/$slug", params: { slug: activeOrg.slug } });
          }
       },
       [needsWorkspace, navigate, activeOrg],
    );
 
-   const handleAccountTypeComplete = useCallback(
-      (accountType: AccountType, next: () => void) => {
-         setSelectedAccountType(accountType);
-         next();
+   const handleCnpjComplete = useCallback(
+      async (data: CnpjData) => {
+         setCnpjData(data);
+         const workspaceName = data.nome_fantasia || data.razao_social;
+
+         try {
+            const result = await createWorkspace.mutateAsync({
+               workspaceName,
+               cnpj: data.cnpj,
+               cnpjData: data,
+            });
+
+            await authClient.organization.setActive({
+               organizationId: result.orgId,
+            });
+
+            await authClient.organization.setActiveTeam({
+               teamId: result.teamId,
+            });
+
+            navigate({
+               to: "/$slug/$teamSlug/home",
+               params: { slug: result.orgSlug, teamSlug: result.teamSlug },
+            });
+         } catch (error) {
+            toast.error(
+               error instanceof Error ? error.message : "Erro ao criar espaço.",
+            );
+         }
       },
-      [],
+      [createWorkspace, navigate],
    );
 
-   const handleWorkspaceComplete = useCallback(
-      ({ orgSlug, teamSlug }: { orgSlug: string; teamSlug: string }) => {
-         navigate({
-            to: "/$slug/$teamSlug/home",
-            params: { slug: orgSlug, teamSlug },
-         });
-      },
-      [navigate],
-   );
-
-   // If there's nothing to do, navigate away after render.
    useEffect(() => {
       if (steps.length === 0) {
          navigate({ to: "/" });
@@ -120,6 +140,7 @@ export function OnboardingWizard({
          {({ methods }) => {
             const isFirstStep = methods.state.isFirst;
             const isLastStep = methods.state.isLast;
+            const isCreating = createWorkspace.isPending;
 
             const handleContinue = () => {
                startTransition(async () => {
@@ -133,7 +154,6 @@ export function OnboardingWizard({
 
             return (
                <>
-                  {/* Header: step indicators + logo */}
                   <header className="shrink-0 border-b p-4">
                      <div className="mx-auto flex w-full items-center gap-4">
                         <Stepper.Navigation className="flex-1">
@@ -152,13 +172,14 @@ export function OnboardingWizard({
                               variant="outline"
                            >
                               app.montte.co
-                              {workspaceSlug ? `/${workspaceSlug}` : ""}
+                              {cnpjData
+                                 ? `/${(cnpjData.nome_fantasia || cnpjData.razao_social).toLowerCase().replace(/\s+/g, "-").slice(0, 20)}`
+                                 : ""}
                            </Badge>
                         </div>
                      </div>
                   </header>
 
-                  {/* Main: step content */}
                   <main className="flex flex-1 items-center justify-center overflow-y-auto px-4 py-8">
                      <div
                         className="w-full animate-in fade-in slide-in-from-bottom-2 duration-200"
@@ -177,23 +198,9 @@ export function OnboardingWizard({
                                  ref={stepRef}
                               />
                            ),
-                           "account-type": () => (
-                              <AccountTypeStep
-                                 onNext={(accountType) =>
-                                    handleAccountTypeComplete(
-                                       accountType,
-                                       methods.navigation.next,
-                                    )
-                                 }
-                                 onStateChange={handleStepStateChange}
-                                 ref={stepRef}
-                              />
-                           ),
-                           workspace: () => (
-                              <WorkspaceStep
-                                 accountType={selectedAccountType}
-                                 onNext={handleWorkspaceComplete}
-                                 onSlugChange={setWorkspaceSlug}
+                           cnpj: () => (
+                              <CnpjStep
+                                 onNext={handleCnpjComplete}
                                  onStateChange={handleStepStateChange}
                                  ref={stepRef}
                               />
@@ -202,13 +209,12 @@ export function OnboardingWizard({
                      </div>
                   </main>
 
-                  {/* Footer: back / continue */}
                   <footer className="shrink-0 px-4 py-4">
                      <div className="mx-auto flex w-full gap-3">
                         {!isFirstStep && (
                            <Button
                               className="h-11"
-                              disabled={stepState.isPending}
+                              disabled={stepState.isPending || isCreating}
                               onClick={handleBack}
                               type="button"
                               variant="outline"
@@ -219,12 +225,14 @@ export function OnboardingWizard({
                         <Button
                            className="h-11 flex-1"
                            disabled={
-                              stepState.isPending || !stepState.canContinue
+                              stepState.isPending ||
+                              !stepState.canContinue ||
+                              isCreating
                            }
                            onClick={handleContinue}
                            type="button"
                         >
-                           {stepState.isPending ? (
+                           {stepState.isPending || isCreating ? (
                               <Spinner className="size-4" />
                            ) : isLastStep ? (
                               "Concluir"

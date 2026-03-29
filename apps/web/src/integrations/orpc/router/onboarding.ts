@@ -23,6 +23,7 @@ import { createSlug } from "@core/utils/text";
 
 const logger = getLogger().child({ module: "router:onboarding" });
 
+import { cnpjDataSchema } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog } from "posthog-node";
 import { z } from "zod";
@@ -70,7 +71,6 @@ async function runOnboardingCompletion({
    userId,
    workspaceName,
    slug,
-   accountType,
 }: {
    db: DatabaseInstance;
    organizationId: string;
@@ -78,7 +78,6 @@ async function runOnboardingCompletion({
    userId: string;
    workspaceName: string;
    slug: string;
-   accountType: "personal" | "business";
 }) {
    logger.info("Inserting teamMember");
    await insertTeamMember(db, teamId, userId);
@@ -86,7 +85,6 @@ async function runOnboardingCompletion({
    logger.info("Updating team");
    await markTeamOnboardingComplete(db, teamId, {
       slug,
-      accountType,
       onboardingProducts: ["finance"],
    });
 
@@ -133,7 +131,12 @@ export const createWorkspace = authenticatedProcedure
          workspaceName: z
             .string()
             .min(2, "O nome deve ter no mínimo 2 caracteres."),
-         accountType: z.enum(["personal", "business"]).default("personal"),
+         cnpj: z
+            .string()
+            .regex(/^\d{14}$/)
+            .nullable()
+            .optional(),
+         cnpjData: cnpjDataSchema.nullable().optional(),
       }),
    )
    .handler(async ({ context, input }) => {
@@ -142,12 +145,7 @@ export const createWorkspace = authenticatedProcedure
       const slug = createSlug(input.workspaceName);
 
       logger.info(
-         {
-            userId,
-            workspaceName: input.workspaceName,
-            slug,
-            accountType: input.accountType,
-         },
+         { userId, workspaceName: input.workspaceName, slug, cnpj: input.cnpj },
          "Starting workspace creation",
       );
 
@@ -169,9 +167,7 @@ export const createWorkspace = authenticatedProcedure
          body: { organizationId: org.id },
       });
 
-      const accountTypeLabel =
-         input.accountType === "business" ? "Empresarial" : "Pessoal";
-      const teamName = `${input.workspaceName} - ${accountTypeLabel}`;
+      const teamName = `${input.workspaceName} - Empresarial`;
       const teamSlug = createSlug(teamName);
 
       const createdTeam = await auth.api.createTeam({
@@ -180,7 +176,8 @@ export const createWorkspace = authenticatedProcedure
             name: teamName,
             organizationId: org.id,
             slug: teamSlug,
-            accountType: input.accountType,
+            cnpj: input.cnpj ?? undefined,
+            cnpjData: input.cnpjData ?? undefined,
          },
       });
 
@@ -199,12 +196,30 @@ export const createWorkspace = authenticatedProcedure
          userId,
          workspaceName: teamName,
          slug,
-         accountType: input.accountType,
       });
 
-      if (input.accountType === "business" && posthog) {
+      if (posthog) {
          try {
             await enrollInAllFeatures(posthog, userId, org.id);
+
+            if (input.cnpjData) {
+               const d = input.cnpjData;
+               posthog.groupIdentify({
+                  groupType: "organization",
+                  groupKey: org.id,
+                  properties: {
+                     cnpj: d.cnpj,
+                     razao_social: d.razao_social,
+                     nome_fantasia: d.nome_fantasia,
+                     cnae_fiscal_descricao: d.cnae_fiscal_descricao,
+                     porte: d.porte,
+                     municipio: d.municipio,
+                     uf: d.uf,
+                     natureza_juridica: d.natureza_juridica,
+                     data_inicio_atividade: d.data_inicio_atividade,
+                  },
+               });
+            }
          } catch (enrollError) {
             logger.error(
                { err: enrollError, step: "enrollInAllFeatures" },
@@ -280,9 +295,6 @@ export const getOnboardingStatus = protectedProcedure.handler(
             onboardingProducts: currentTeam.onboardingProducts ?? null,
             tasks: Object.keys(tasks).length > 0 ? tasks : null,
             name: currentTeam.name,
-            accountType:
-               (currentTeam.accountType as "personal" | "business") ??
-               "personal",
          },
       };
    },
@@ -318,7 +330,6 @@ export const fixOnboarding = authenticatedProcedure
       if (!targetTeam.onboardingCompleted) {
          await markTeamOnboardingComplete(db, targetTeam.id, {
             slug: targetTeam.slug ?? "",
-            accountType: "personal",
             onboardingProducts: ["finance"],
          });
       }
@@ -354,7 +365,6 @@ export const completeOnboarding = protectedProcedure
          userId,
          workspaceName: teamRecord?.name ?? "Workspace",
          slug: teamRecord?.slug ?? teamId,
-         accountType: "personal",
       });
 
       const org = await getOrganizationSlug(db, organizationId);

@@ -5,7 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { DashboardView } from "@/features/analytics/ui/dashboard-view";
-import { QuickStartChecklist } from "@/features/onboarding/ui/quick-start-checklist";
+import { QuickStartChecklist } from "./-home/quick-start-checklist";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(

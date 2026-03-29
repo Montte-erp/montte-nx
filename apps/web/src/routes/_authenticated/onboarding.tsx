@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { OnboardingWizard } from "@/features/onboarding/ui/onboarding-wizard";
+import { OnboardingWizard } from "./-onboarding/onboarding-wizard";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
    beforeLoad: async ({ context }) => {
@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
          session = await context.queryClient.fetchQuery(
             context.orpc.session.getSession.queryOptions({}),
          );
-      } catch (_error) {
+      } catch {
          throw redirect({ to: "/auth/sign-in" });
       }
 

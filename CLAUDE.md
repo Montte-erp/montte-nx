@@ -59,7 +59,7 @@ montte-nx/
 ├── apps/
 │   ├── web/             # React/Vite SPA — main dashboard + oRPC routers
 │   ├── server/          # Elysia API server for SDK consumers
-│   └── worker/          # BullMQ background job processor (plain Bun process)
+│   └── worker/          # BullMQ background job processor (plain Bun process) — queues + processors in apps/worker/src/
 ├── packages/
 │   ├── agents/          # Mastra AI agents (planning, research, editing)
 │   ├── analytics/       # Analytics engine
@@ -129,6 +129,39 @@ const mutation = useMutation(
 - NEVER dynamically import hooks (`await import("@tanstack/react-query")` breaks React rules)
 
 **Global cache invalidation:** `apps/web/src/integrations/tanstack-query/root-provider.tsx` configures a `MutationCache` with a global `onSuccess` that calls `queryClient.invalidateQueries()` (no filter) after **every** successful mutation. This invalidates all active queries automatically — per-mutation `invalidateQueries` calls are only needed when you need to invalidate queries that belong to a different component tree or before the mutation resolves. Do NOT report missing per-mutation invalidations as bugs.
+
+---
+
+## Type Inference from oRPC Router
+
+Never define manual TypeScript interfaces for data that flows through the router. Use `Inputs` and `Outputs` exported from `apps/web/src/integrations/orpc/client.ts` to infer types on the frontend.
+
+```typescript
+import type { Inputs, Outputs } from "@/integrations/orpc/client";
+
+// Infer input type of a specific field
+type CnpjData = NonNullable<Inputs["onboarding"]["createWorkspace"]["cnpjData"]>;
+
+// Infer output type of a procedure
+type WorkspaceResult = Outputs["onboarding"]["createWorkspace"];
+```
+
+**Zod schemas belong in the backend** (routers or core packages like `@core/authentication/server`). The frontend never imports Zod schemas or core backend packages — it only imports the inferred TypeScript types via `Inputs`/`Outputs`.
+
+```typescript
+// ✅ Backend — define schema once
+export const cnpjDataSchema = z.object({ ... });
+export type CnpjData = z.infer<typeof cnpjDataSchema>;
+
+// ✅ Router — use schema for input validation
+.input(z.object({ cnpjData: cnpjDataSchema.nullable().optional() }))
+
+// ✅ Frontend — infer from router, never import backend
+type CnpjData = NonNullable<Inputs["onboarding"]["createWorkspace"]["cnpjData"]>;
+
+// ❌ Never import backend schemas or types into frontend components
+import { cnpjDataSchema } from "@core/authentication/server";
+```
 
 ---
 
@@ -250,30 +283,23 @@ const posthog = getPosthogConfig(env);
 
 ---
 
-## Package Exports
+## Dependency Catalogs (Bun Workspaces)
 
-Packages use explicit `package.json` exports. Always match the export path exactly:
+Version pinning uses named catalogs in the root `package.json`. When adding a dependency that belongs to an existing catalog, use `catalog:<name>` instead of a version string.
 
-```typescript
-// Core packages use @core/* prefix
-import { db } from "@core/database/client";
-import { bankAccounts } from "@core/database/schemas/bank-accounts";
-import { createBankAccount } from "@core/database/repositories/bank-accounts-repository";
-import { auth } from "@core/authentication/server";
-import { env } from "@core/environment/server";
-import { redis } from "@core/redis/connection";
-import { posthog } from "@core/posthog/server";
-import { stripeClient } from "@core/stripe";
-import { resendClient } from "@core/transactional/utils";
-import { minioClient } from "@core/files/client";
-import { AppError } from "@core/logging/errors";
+```json
+// ✅ Reference a catalog
+"@orpc/server": "catalog:orpc",
+"react": "catalog:react",
+"drizzle-orm": "catalog:database"
 
-// Feature packages use @packages/* prefix
-import { emitEvent } from "@packages/events/emit";
-import { Button } from "@packages/ui/components/button";
+// ❌ Don't pin directly if a catalog exists
+"@orpc/server": "^1.13.13"
 ```
 
-Common patterns: `.` (root), `./client`, `./server`, `./schemas/*`, `./repositories/*`, `./components/*`
+**Available catalogs:** `analytics-client`, `assistant-ui`, `astro`, `auth`, `database`, `development`, `dnd`, `environment`, `files`, `fot`, `logging`, `mastra`, `orpc`, `payments`, `react`, `search-providers`, `server`, `tanstack`, `telemetry`, `testing`, `transactional`, `ui`, `validation`, `vite`, `workers`
+
+Internal packages use `workspace:*`: `"@core/database": "workspace:*"`, `"@packages/ui": "workspace:*"`
 
 ---
 
@@ -306,7 +332,37 @@ const result = await agent.generate("Summarize this month's transactions", {
 
 ---
 
-## Feature Folder Structure (in apps/web/src/features/)
+## Component Colocation Strategy
+
+**Rule:** If a component, hook, or utility is only used by a single route, colocate it next to that route file in a `-[name]/` private folder. The `features/` folder is reserved for code shared across multiple routes.
+
+### Route-colocated private folders
+
+Use a `-` prefix so TanStack Router ignores the folder as a route segment:
+
+```
+routes/_authenticated/
+├── onboarding.tsx
+└── -onboarding/              # only used by onboarding.tsx
+    ├── onboarding-wizard.tsx
+    ├── cnpj-step.tsx
+    ├── profile-step.tsx
+    └── step-handle.ts
+
+routes/_authenticated/$slug/$teamSlug/_dashboard/home/
+├── index.tsx
+└── -home/                    # only used by home/index.tsx
+    ├── quick-start-checklist.tsx
+    ├── quick-start-task.tsx
+    ├── task-definitions.ts
+    ├── use-complete-task.ts
+    └── use-onboarding-status.ts
+```
+
+- Hooks flatten into the same `-[name]/` folder — no `hooks/` subfolder
+- Import using relative paths: `import { Foo } from "./-onboarding/foo"`
+
+### Feature folder (shared across routes)
 
 ```
 features/[name]/
@@ -315,7 +371,7 @@ features/[name]/
 └── utils/     (when needed)
 ```
 
-Features: access-control, analytics, bank-accounts, billing, bills, budget-goals, categories, contacts, credit-cards, feedback, file-upload, inventory, onboarding, organization, rubi-chat, search, services, settings, tags, transactions, webhooks
+Features (shared): access-control, analytics, bank-accounts, billing, bills, budget-goals, categories, contacts, credit-cards, feedback, file-upload, inventory, organization, rubi-chat, search, services, settings, tags, transactions, webhooks
 
 ---
 
@@ -416,17 +472,10 @@ Field types: `"string"` (TEXT), `"boolean"` (BOOLEAN), `"number"` (INTEGER), `"s
 - **Mutations** (write operations) → use `authClient` directly. Never wrap these in oRPC.
 
 ```typescript
-// ✅ Mutations — authClient only
+// ✅ Mutations — authClient only (organization.*, team.*, user.*)
 authClient.organization.create({ name, slug });
-authClient.organization.update({ data: { name }, organizationId });
-authClient.organization.delete({ organizationId });
 authClient.organization.inviteMember({ email, role, organizationId });
 authClient.organization.removeMember({ memberIdOrEmail, organizationId });
-authClient.organization.updateMemberRole({ memberId, role, organizationId });
-authClient.organization.cancelInvitation({ invitationId });
-authClient.organization.setActive({ organizationId });
-authClient.organization.createTeam({ name, organizationId });
-authClient.organization.setActiveTeam({ teamId });
 
 // ✅ Queries — always oRPC (even for Better Auth data)
 orpc.organization.getMembers.queryOptions({});
@@ -595,6 +644,38 @@ await db.insert(member).values(memberData);
 
 Use the `orpc-testing` skill when writing new oRPC procedure tests.
 
+**Gotcha — `vite-tsconfig-paths` and self-referencing core packages:**
+
+Four core packages use `@core/<name>/*` path aliases internally within their own source files: `authentication`, `database`, `files`, and `logging`. When `vite-tsconfig-paths` is configured with a `projects` list in a vitest config, it only resolves paths for files within those listed projects. If a transitive dependency file lives inside one of these self-referencing packages, Vite falls back to Node package resolution and fails with "Cannot find package '@core/…'".
+
+**Fix:** Every `vitest.config.ts` in the monorepo must include the tsconfigs of all four self-referencing packages in its `projects` list (excluding itself):
+
+```typescript
+// From core/* packages (e.g., core/redis/vitest.config.ts)
+viteTsConfigPaths({
+   projects: [
+      "./tsconfig.test.json",
+      "../authentication/tsconfig.json", // self-referencing
+      "../database/tsconfig.json",       // self-referencing
+      "../files/tsconfig.json",          // self-referencing
+      "../logging/tsconfig.json",        // self-referencing
+   ],
+})
+
+// From packages/* or apps/* (e.g., packages/events/vitest.config.ts)
+viteTsConfigPaths({
+   projects: [
+      "./tsconfig.test.json",
+      "../../core/authentication/tsconfig.json",
+      "../../core/database/tsconfig.json",
+      "../../core/files/tsconfig.json",
+      "../../core/logging/tsconfig.json",
+   ],
+})
+```
+
+If a new core package starts using `@core/<name>/*` self-references, add its tsconfig to all vitest configs in the monorepo.
+
 ---
 
 ## Scripts
@@ -629,50 +710,3 @@ Procedures in `apps/web/src/integrations/orpc/router/onboarding.ts`.
 
 100% usage-based billing via Stripe meter events. No fixed plans or credit pools. Each billable event has a free tier (enforced via Redis counters with monthly TTL). Usage above the free tier is reported to Stripe as meter events and billed automatically. Optional addon subscriptions (Boost, Scale, Enterprise) unlock additional features. Redis tracks real-time usage; materialized views reconcile hourly (worker cron).
 
----
-
-## Billing Page — Early Access Feature Cards
-
-`apps/web/src/features/billing/ui/billing-overview.tsx`
-
-The billing overview renders product cards driven by two config objects. **Adding a new early access feature = one entry in the right config.**
-
-### Event-based categories (usage from API)
-
-```typescript
-// EARLY_ACCESS_CATEGORY_GATES: Record<categoryKey, { flag, fallbackStage }>
-// Category must also exist in CATEGORY_CONFIG.
-// When enrolled → card visible + stage badge shown.
-// When not enrolled → card hidden entirely.
-nfe:      { flag: "nfe", fallbackStage: "alpha" },
-document: { flag: "document-signing", fallbackStage: "alpha" },
-```
-
-### Coming soon categories (no enroll CTA)
-
-```typescript
-// COMING_SOON_CATEGORIES are rendered as "Em breve".
-// Current values:
-new Set(["nfe", "document"]);
-```
-
-### Stage resolution
-
-Stage is resolved from PostHog's early access feature config at runtime (`features.find(f => f.flagKey === key)?.stage`), falling back to `fallbackStage` in the local config. No manual sync needed — PostHog is the source of truth.
-
-### Flag keys (from billing-overview.tsx)
-
-| Feature              | Flag key            | Stage |
-| -------------------- | ------------------- | ----- |
-| NF-e                 | `nfe`               | alpha |
-| Assinatura Digital   | `document-signing`  | alpha |
-
-### Other early-access flag keys (from sidebar-nav-items.ts + early-access.ts)
-
-| Feature        | Flag key             | Where used |
-| -------------- | -------------------- | ---------- |
-| Contatos       | `contacts`           | Sidebar gating, onboarding enrollment |
-| Estoque        | `inventory`          | Sidebar gating, onboarding enrollment |
-| Serviços       | `services`           | Sidebar gating, onboarding enrollment |
-| Dashboards     | `advanced-analytics` | Sidebar gating, onboarding enrollment |
-| Dados          | `data-management`    | Sidebar gating, onboarding enrollment |

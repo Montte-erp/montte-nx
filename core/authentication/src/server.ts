@@ -12,7 +12,6 @@ import {
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth/minimal";
 import {
-   admin,
    emailOTP,
    lastLoginMethod,
    magicLink,
@@ -22,13 +21,33 @@ import {
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import type Stripe from "stripe";
 import { z } from "zod";
-import { createBetterAuthStorage } from "@core/authentication/cache";
 import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog } from "@core/posthog/server";
 import type { Redis } from "@core/redis/connection";
 import type { ResendClient } from "@core/transactional/utils";
 
 const logger = getLogger().child({ module: "auth" });
+
+export const cnpjDataSchema = z.object({
+   cnpj: z.string(),
+   razao_social: z.string(),
+   nome_fantasia: z.string().nullable(),
+   cnae_fiscal: z.number(),
+   cnae_fiscal_descricao: z.string().nullable(),
+   cnaes_secundarios: z.array(
+      z.object({ codigo: z.number(), descricao: z.string() }),
+   ),
+   porte: z.string().nullable(),
+   natureza_juridica: z.string().nullable(),
+   municipio: z.string(),
+   uf: z.string(),
+   data_inicio_atividade: z.string(),
+   descricao_situacao_cadastral: z.string(),
+   qsa: z.array(z.unknown()),
+   regime_tributario: z.array(z.unknown()),
+});
+
+export type CnpjData = z.infer<typeof cnpjDataSchema>;
 
 export const ORGANIZATION_LIMIT = 3;
 
@@ -84,7 +103,18 @@ export function createAuth(deps: CreateAuthDeps) {
          database: { generateId: "uuid" },
       },
 
-      secondaryStorage: createBetterAuthStorage(redis),
+      secondaryStorage: {
+         get: (key) => redis.get(`better-auth:${key}`),
+         set: async (key, value, ttl) => {
+            const prefixed = `better-auth:${key}`;
+            if (ttl !== undefined && ttl > 0) {
+               await redis.set(prefixed, value, "EX", ttl);
+            } else {
+               await redis.set(prefixed, value);
+            }
+         },
+         delete: (key) => redis.del(`better-auth:${key}`).then(() => undefined),
+      },
 
       database: drizzleAdapter(db, {
          provider: "pg",
@@ -173,8 +203,6 @@ export function createAuth(deps: CreateAuthDeps) {
       },
 
       plugins: [
-         admin(),
-
          magicLink({
             expiresIn: 60 * 15,
             async sendMagicLink({ email, url }) {
@@ -287,16 +315,26 @@ export function createAuth(deps: CreateAuthDeps) {
                            input: z.record(z.string(), z.boolean()).nullable(),
                         },
                      },
-                     accountType: {
-                        defaultValue: "personal",
+                     cnpj: {
+                        defaultValue: null,
                         input: true,
                         required: false,
                         type: "string",
                         validator: {
                            input: z
-                              .enum(["personal", "business"])
+                              .string()
+                              .regex(/^\d{14}$/, "CNPJ deve conter 14 dígitos")
                               .nullable()
                               .optional(),
+                        },
+                     },
+                     cnpjData: {
+                        defaultValue: null,
+                        input: true,
+                        required: false,
+                        type: "json",
+                        validator: {
+                           input: cnpjDataSchema.nullable().optional(),
                         },
                      },
                   },
@@ -346,13 +384,8 @@ export function createAuth(deps: CreateAuthDeps) {
          apiKey({
             enableSessionForAPIKeys: true,
             enableMetadata: true,
-            defaultPrefix: "cta_",
+            defaultPrefix: "mntt_",
             apiKeyHeaders: ["sdk-api-key", "x-api-key"],
-            rateLimit: {
-               enabled: true,
-               timeWindow: 1000 * 60,
-               maxRequests: 100,
-            },
          }),
 
          stripePlugin({

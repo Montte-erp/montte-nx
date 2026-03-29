@@ -8,7 +8,13 @@ export default defineConfig({
    },
    plugins: [
       viteTsConfigPaths({
-         projects: ["./tsconfig.json"],
+         projects: [
+            "./tsconfig.json",
+            "../../core/authentication/tsconfig.json",
+            "../../core/database/tsconfig.json",
+            "../../core/files/tsconfig.json",
+            "../../core/logging/tsconfig.json",
+         ],
       }),
    ],
    resolve: {

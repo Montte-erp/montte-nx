@@ -94,7 +94,7 @@ function ForgotPasswordPage() {
             },
          );
       },
-      [router.navigate],
+      [router],
    );
 
    const form = useForm({

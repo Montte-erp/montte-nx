@@ -15,18 +15,9 @@
       "./server": {
          "types": "./dist/server.d.ts",
          "default": "./dist/server.js"
-      },
-      "./api-key-config": {
-         "types": "./dist/api-key-config.d.ts",
-         "default": "./dist/api-key-config.js"
-      },
-      "./cache": {
-         "types": "./dist/cache.d.ts",
-         "default": "./dist/cache.js"
       }
    },
    "scripts": {
-      "auth-schema-generate": "npx auth generate --config ./src/cli-config.ts --output ../database/src/schemas/auth.ts",
       "build": "tsc --build",
       "check": "oxlint ./src",
       "format": "oxfmt --write ./src",
