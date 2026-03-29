@@ -24,7 +24,6 @@
          "@core/agents/*": ["../../core/agents/src/*"],
          "@packages/analytics/*": ["../../packages/analytics/src/*"],
          "@packages/events/*": ["../../packages/events/src/*"],
-         "@packages/feedback/*": ["../../packages/feedback/src/*"],
          "@packages/ui/*": ["../../packages/ui/src/*"]
       }
    },
@@ -33,10 +32,7 @@
       {
          "path": "../../core/transactional"
       },
-      {
-         "path": "../../packages/feedback"
-      },
-      {
+{
          "path": "../../packages/analytics"
       },
       {
