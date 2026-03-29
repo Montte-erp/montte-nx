@@ -1,4 +1,4 @@
-import { useIsomorphicLayoutEffect } from "@dnd-kit/utilities";
+import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { useState } from "react";
 
 /**

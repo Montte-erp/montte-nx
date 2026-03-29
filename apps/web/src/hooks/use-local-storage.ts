@@ -1,4 +1,4 @@
-import { useIsomorphicLayoutEffect } from "@dnd-kit/utilities";
+import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { useCallback, useState } from "react";
 
 type SetValue<T> = (value: T | ((prev: T) => T)) => void;

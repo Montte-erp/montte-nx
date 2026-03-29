@@ -1,4 +1,4 @@
-import { useIsomorphicLayoutEffect } from "@dnd-kit/utilities";
+import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { useSafeMediaQuery } from "@packages/ui/hooks/use-media-query";
 import { useState } from "react";
 
