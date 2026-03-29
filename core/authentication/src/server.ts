@@ -21,7 +21,6 @@ import {
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import type Stripe from "stripe";
 import { z } from "zod";
-import { createBetterAuthStorage } from "@core/authentication/cache";
 import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog } from "@core/posthog/server";
 import type { Redis } from "@core/redis/connection";
@@ -79,9 +78,7 @@ export interface CreateAuthDeps {
    };
 }
 
-export function createAuth(
-   deps: CreateAuthDeps,
-): ReturnType<typeof betterAuth> {
+export function createAuth(deps: CreateAuthDeps) {
    const { db, redis, posthog, stripeClient, resendClient, env } = deps;
 
    return betterAuth({
@@ -106,7 +103,18 @@ export function createAuth(
          database: { generateId: "uuid" },
       },
 
-      secondaryStorage: createBetterAuthStorage(redis),
+      secondaryStorage: {
+         get: (key) => redis.get(`better-auth:${key}`),
+         set: async (key, value, ttl) => {
+            const prefixed = `better-auth:${key}`;
+            if (ttl !== undefined && ttl > 0) {
+               await redis.set(prefixed, value, "EX", ttl);
+            } else {
+               await redis.set(prefixed, value);
+            }
+         },
+         delete: (key) => redis.del(`better-auth:${key}`).then(() => undefined),
+      },
 
       database: drizzleAdapter(db, {
          provider: "pg",
@@ -376,13 +384,8 @@ export function createAuth(
          apiKey({
             enableSessionForAPIKeys: true,
             enableMetadata: true,
-            defaultPrefix: "cta_",
+            defaultPrefix: "mntt_",
             apiKeyHeaders: ["sdk-api-key", "x-api-key"],
-            rateLimit: {
-               enabled: true,
-               timeWindow: 1000 * 60,
-               maxRequests: 100,
-            },
          }),
 
          stripePlugin({
