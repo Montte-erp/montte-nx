@@ -11,6 +11,14 @@
       "./server": {
          "types": "./dist/server.d.ts",
          "default": "./dist/server.js"
+      },
+      "./surveys": {
+         "types": "./dist/surveys.d.ts",
+         "default": "./dist/surveys.js"
+      },
+      "./feature-flags": {
+         "types": "./dist/feature-flags.d.ts",
+         "default": "./dist/feature-flags.js"
       }
    },
    "scripts": {
