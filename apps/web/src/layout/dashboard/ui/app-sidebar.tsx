@@ -11,6 +11,7 @@ import {
 import { Link, useParams } from "@tanstack/react-router";
 import { MessageSquarePlus, PanelLeftClose, Settings } from "lucide-react";
 import type * as React from "react";
+import { POSTHOG_SURVEYS } from "@core/posthog/config";
 import posthog from "posthog-js";
 import { EarlyAccessSidebarBanner } from "./early-access-sidebar-banner";
 import { SidebarDefaultItems, SidebarNav } from "./sidebar-nav";
@@ -42,7 +43,7 @@ function SidebarFeedbackButton() {
    return (
       <SidebarMenuItem>
          <SidebarMenuButton
-            onClick={() => posthog.capture("feedback_button_clicked")}
+            onClick={() => posthog.renderSurvey(POSTHOG_SURVEYS.featureRequest.id, "body")}
             tooltip="Feedback"
          >
             <MessageSquarePlus className="size-4" />
