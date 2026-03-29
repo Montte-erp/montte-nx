@@ -35,7 +35,7 @@ export function PasswordStrengthCard({ password }: { password: string }) {
 
    return (
       <div className="rounded-md border bg-muted/40 p-3 flex flex-col gap-2">
-         <div className="flex gap-1">
+         <div className="flex gap-2">
             {Array.from({ length: 4 }, (_, i) => (
                <div
                   key={`strength-bar-${i + 1}`}
