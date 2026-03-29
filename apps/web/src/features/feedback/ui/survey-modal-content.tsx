@@ -34,6 +34,10 @@ const SURVEY_META: Record<string, { title: string; description: string }> = {
       title: "Sugerir integração",
       description: "Conte-nos quais ferramentas você usa e qual integração faria mais diferença na sua operação.",
    },
+   "Satisfação Mensal": {
+      title: "Como está sendo sua experiência?",
+      description: "Leva menos de 1 minuto. Sua opinião nos ajuda a construir um produto melhor para você.",
+   },
 };
 
 type Responses = Record<string, string | string[] | number | null>;
