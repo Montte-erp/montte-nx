@@ -44,7 +44,8 @@ import {
    GripVertical,
    Settings2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
 
 import { cn } from "../lib/utils";
 import { Button } from "./button";
@@ -492,8 +493,9 @@ export function DataTable<TData, TValue>({
       ? controlledRowSelection
       : internalRowSelection;
 
-   const onRowSelectionChangeRef = useRef(onRowSelectionChange);
-   onRowSelectionChangeRef.current = onRowSelectionChange;
+   const stableOnRowSelectionChange = useStableHandler(
+      (value: RowSelectionState) => onRowSelectionChange?.(value),
+   );
 
    const handleRowSelectionChange = useCallback(
       (
@@ -506,19 +508,19 @@ export function DataTable<TData, TValue>({
                typeof updaterOrValue === "function"
                   ? updaterOrValue(prev)
                   : updaterOrValue;
-            onRowSelectionChangeRef.current?.(resolve(controlledRowSelection));
+            stableOnRowSelectionChange(resolve(controlledRowSelection));
          } else {
             setInternalRowSelection((prev) => {
                const next =
                   typeof updaterOrValue === "function"
                      ? updaterOrValue(prev)
                      : updaterOrValue;
-               onRowSelectionChangeRef.current?.(next);
+               stableOnRowSelectionChange(next);
                return next;
             });
          }
       },
-      [isControlled, controlledRowSelection],
+      [isControlled, controlledRowSelection, stableOnRowSelectionChange],
    );
 
    const handleColumnVisibilityChange = useCallback(
