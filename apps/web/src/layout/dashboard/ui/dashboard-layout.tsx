@@ -11,11 +11,8 @@ import type * as React from "react";
 import { useEffect } from "react";
 import { useSingleton } from "foxact/use-singleton";
 import { GlobalContextPanel } from "@/features/context-panel/context-panel";
-import { useApiErrorTracker } from "@/features/feedback/hooks/use-api-error-tracker";
-import { BugReportForm } from "@/features/feedback/ui/bug-report-form";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useActiveTeam } from "@/hooks/use-active-team";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { EarlyAccessProvider } from "@/hooks/use-early-access";
 import { useLastOrganization } from "@/hooks/use-last-organization";
 import { useLocalStorage } from "foxact/use-local-storage";
@@ -25,27 +22,6 @@ import { usePostHogIdentity } from "../-dashboard/use-posthog-identity";
 import { AppSidebar } from "./app-sidebar";
 import { SidebarSubPanel } from "./sidebar-sub-panel";
 
-function AutoBugReporter() {
-   const { openDialogStack, closeDialogStack } = useDialogStack();
-   const { shouldShowBugReport, dismiss } = useApiErrorTracker();
-
-   useEffect(() => {
-      if (shouldShowBugReport) {
-         openDialogStack({
-            children: (
-               <BugReportForm
-                  onSuccess={() => {
-                     dismiss();
-                     closeDialogStack();
-                  }}
-               />
-            ),
-         });
-      }
-   }, [shouldShowBugReport, openDialogStack, closeDialogStack, dismiss]);
-
-   return null;
-}
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
    const { activeOrganization } = useActiveOrganization();
@@ -142,7 +118,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         {children}
                      </main>
                   </div>
-                  <AutoBugReporter />
                </SidebarInset>
                <GlobalContextPanel />
             </SidebarProvider>
