@@ -1,4 +1,4 @@
-import { useIsMobile } from "@packages/ui/hooks/use-mobile";
+import { useMediaQuery } from "foxact/use-media-query";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { DataManagementMobileNav } from "@/layout/dashboard/ui/data-management-mobile-nav";
 
@@ -9,7 +9,7 @@ export const Route = createFileRoute(
 });
 
 function DataManagementIndexRoute() {
-   const isMobile = useIsMobile();
+   const isMobile = useMediaQuery("(max-width: 767px)");
    const { slug, teamSlug } = Route.useParams();
 
    if (!isMobile) {

@@ -18,8 +18,8 @@ import {
    DrawerTitle,
    DrawerTrigger,
 } from "@packages/ui/components/drawer";
-import { useIsMobile } from "@packages/ui/hooks/use-mobile";
 import { cn } from "@packages/ui/lib/utils";
+import { useMediaQuery } from "foxact/use-media-query";
 import { createContext, useContext } from "react";
 
 interface BaseProps {
@@ -51,7 +51,7 @@ const useCredenzaContext = () => {
 };
 
 const Credenza = ({ children, ...props }: RootCredenzaProps) => {
-   const isMobile = useIsMobile();
+   const isMobile = useMediaQuery("(max-width: 767px)");
    const isDesktop = !isMobile;
    const CredenzaComponent = isDesktop ? Dialog : Drawer;
 

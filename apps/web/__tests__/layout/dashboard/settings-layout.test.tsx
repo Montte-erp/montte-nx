@@ -64,8 +64,8 @@ vi.mock("@core/transactional/utils", () => ({
 
 import { SettingsLayout } from "@/layout/dashboard/ui/settings-layout";
 
-vi.mock("@packages/ui/hooks/use-mobile", () => ({
-   useIsMobile: () => false,
+vi.mock("foxact/use-media-query", () => ({
+   useMediaQuery: () => false,
 }));
 
 vi.mock("@packages/ui/components/sidebar", () => ({

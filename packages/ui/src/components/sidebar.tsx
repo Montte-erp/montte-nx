@@ -18,9 +18,9 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import { useEventListener } from "@packages/ui/hooks/use-event-listener";
-import { useIsMobile } from "@packages/ui/hooks/use-mobile";
 import { cn } from "@packages/ui/lib/utils";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
+import { useMediaQuery } from "foxact/use-media-query";
 import { cva, type VariantProps } from "class-variance-authority";
 import { ChevronLeft, ChevronRight, MenuIcon } from "lucide-react";
 import { Slot as SlotPrimitive } from "radix-ui";
@@ -150,7 +150,7 @@ function SidebarManagerIsolated({
    onOpenChange?: (open: boolean) => void;
    style?: React.CSSProperties;
 }) {
-   const isMobile = useIsMobile();
+   const isMobile = useMediaQuery("(max-width: 767px)");
    const [_openMobile, _setOpenMobile] = React.useState(false);
    const [_open, _setOpen] = React.useState(defaultOpen);
    const manager = useSidebarManager();
@@ -315,7 +315,7 @@ function SidebarProvider({
    open?: boolean;
    onOpenChange?: (open: boolean) => void;
 }) {
-   const isMobile = useIsMobile();
+   const isMobile = useMediaQuery("(max-width: 767px)");
    const [openMobile, setOpenMobile] = React.useState(false);
 
    const [_open, _setOpen] = React.useState(defaultOpen);

@@ -1,5 +1,5 @@
 import { Button } from "@packages/ui/components/button";
-import { useIsMobile } from "@packages/ui/hooks/use-mobile";
+import { useMediaQuery } from "foxact/use-media-query";
 import { Link, useLocation, useParams } from "@tanstack/react-router";
 import { ChevronLeft, Database } from "lucide-react";
 import type * as React from "react";
@@ -28,7 +28,7 @@ interface DataManagementLayoutProps {
 }
 
 export function DataManagementLayout({ children }: DataManagementLayoutProps) {
-   const isMobile = useIsMobile();
+   const isMobile = useMediaQuery("(max-width: 767px)");
    const { pathname } = useLocation();
    const { activeOrganization } = useActiveOrganization();
    const { teamSlug } = useParams({
