@@ -6,8 +6,7 @@ import { useEffect, useState } from "react";
 import { useLocalStorage } from "foxact/use-local-storage";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
-
-export const PENDING_INVITATION_KEY = "montte:pending-invitation-id";
+import { PENDING_INVITATION_KEY } from "@/features/organization/constants";
 
 export const Route = createFileRoute(
    "/callback/organization/invitation/$invitationId",
