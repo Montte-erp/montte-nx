@@ -7,7 +7,7 @@ import {
 import { cn } from "@packages/ui/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import { FlaskConical } from "lucide-react";
-import posthog from "posthog-js";
+import posthog, { DisplaySurveyType } from "posthog-js";
 
 const STAGE_ICON_COLOR: Record<FeatureStage, string> = {
    alpha: "text-chart-1",
@@ -52,7 +52,13 @@ export function EarlyAccessBanner({ template }: EarlyAccessBannerProps) {
                {template.surveyId && (
                   <Button
                      className="h-auto p-0 text-foreground underline underline-offset-4 hover:text-primary"
-                     onClick={() => posthog.renderSurvey(template.surveyId!, "body")}
+                     onClick={() =>
+                        posthog.displaySurvey(template.surveyId!, {
+                           displayType: DisplaySurveyType.Popover,
+                           ignoreConditions: true,
+                           ignoreDelay: true,
+                        })
+                     }
                      type="button"
                      variant="link"
                   >
