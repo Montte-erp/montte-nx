@@ -1,7 +1,6 @@
 import { Button } from "@packages/ui/components/button";
 import {
    Field,
-   FieldDescription,
    FieldError,
    FieldGroup,
    FieldLabel,
@@ -15,6 +14,7 @@ import { type FormEvent, useCallback } from "react";
 import { toast } from "sonner";
 import z from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
+import { TermsAndPrivacyText } from "./-auth/terms-and-privacy-text";
 
 const steps = [
    { id: "basic-info", title: "basic-info" },
@@ -227,37 +227,6 @@ function SignUpPage() {
       );
    }
 
-   const TermsAndPrivacyText = () => {
-      const text =
-         "Ao continuar, voce concorda com nossos {split} e {split}.".split(
-            "{split}",
-         );
-
-      return (
-         <>
-            <span>{text[0]}</span>
-            <a
-               className="underline text-muted-foreground hover:text-primary"
-               href="https://montte.co/terms-of-service"
-               rel="noopener noreferrer"
-               target="_blank"
-            >
-               Termos de Servico
-            </a>
-            <span>{text[1]}</span>
-            <a
-               className="underline text-muted-foreground hover:text-primary"
-               href="https://montte.co/privacy-policy"
-               rel="noopener noreferrer"
-               target="_blank"
-            >
-               Politica de Privacidade
-            </a>
-            <span>{text[2]}</span>
-         </>
-      );
-   };
-
    return (
       <Stepper.Provider>
          {({ methods }) => (
@@ -344,9 +313,7 @@ function SignUpPage() {
                         Entre aqui
                      </Link>
                   </div>
-                  <FieldDescription className="text-center">
-                     <TermsAndPrivacyText />
-                  </FieldDescription>
+                  <TermsAndPrivacyText />
                </div>
             </section>
          )}
