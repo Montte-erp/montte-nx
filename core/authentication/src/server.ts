@@ -79,8 +79,9 @@ export interface CreateAuthDeps {
    };
 }
 
-// @ts-ignore -- better-auth return type references unexported internal types
-export function createAuth(deps: CreateAuthDeps) {
+export function createAuth(
+   deps: CreateAuthDeps,
+): ReturnType<typeof betterAuth> {
    const { db, redis, posthog, stripeClient, resendClient, env } = deps;
 
    return betterAuth({

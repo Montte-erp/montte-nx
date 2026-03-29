@@ -6,6 +6,7 @@ import {
 } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { Spinner } from "@packages/ui/components/spinner";
+import { useDebounce } from "@packages/ui/hooks/use-debounce";
 import dayjs from "dayjs";
 import { Building2, CheckCircle2, MapPin } from "lucide-react";
 import {
@@ -13,7 +14,6 @@ import {
    useCallback,
    useEffect,
    useImperativeHandle,
-   useRef,
    useState,
 } from "react";
 import type { Inputs } from "@/integrations/orpc/client";
@@ -45,7 +45,7 @@ async function fetchCnpj(cnpj: string): Promise<CnpjData> {
 }
 
 interface CnpjStepProps {
-   onNext: (data: CnpjData) => void;
+   onNext: (data: CnpjData) => Promise<void>;
    onStateChange: (state: StepState) => void;
 }
 
@@ -57,53 +57,69 @@ export const CnpjStep = forwardRef<StepHandle, CnpjStepProps>(function CnpjStep(
    const [cnpjData, setCnpjData] = useState<CnpjData | null>(null);
    const [error, setError] = useState<string | null>(null);
    const [isFetching, setIsFetching] = useState(false);
-   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+   const [isSubmitting, setIsSubmitting] = useState(false);
+
+   const debouncedDigits = useDebounce(rawValue, 400);
 
    const canContinue = cnpjData !== null;
+   const isPending = isFetching || isSubmitting;
 
    useImperativeHandle(
       ref,
       () => ({
          submit: async () => {
-            if (!cnpjData) return false;
-            onNext(cnpjData);
-            return true;
+            if (!cnpjData || isSubmitting) return false;
+            setIsSubmitting(true);
+            try {
+               await onNext(cnpjData);
+               return true;
+            } finally {
+               setIsSubmitting(false);
+            }
          },
          canContinue,
-         isPending: isFetching,
+         isPending,
       }),
-      [cnpjData, canContinue, isFetching, onNext],
+      [cnpjData, canContinue, isPending, isSubmitting, onNext],
    );
 
    useEffect(() => {
-      onStateChange({ canContinue, isPending: isFetching });
-   }, [canContinue, isFetching, onStateChange]);
+      onStateChange({ canContinue, isPending });
+   }, [canContinue, isPending, onStateChange]);
+
+   useEffect(() => {
+      if (debouncedDigits.length !== 14) return;
+
+      let cancelled = false;
+      setIsFetching(true);
+
+      fetchCnpj(debouncedDigits)
+         .then((data) => {
+            if (cancelled) return;
+            if (data.descricao_situacao_cadastral !== "ATIVA") {
+               setError("Este CNPJ não está ativo na Receita Federal.");
+               return;
+            }
+            setCnpjData(data);
+         })
+         .catch(() => {
+            if (!cancelled) setError("CNPJ não encontrado ou inválido.");
+         })
+         .finally(() => {
+            if (!cancelled) setIsFetching(false);
+         });
+
+      return () => {
+         cancelled = true;
+         setIsFetching(false);
+      };
+   }, [debouncedDigits]);
 
    const handleChange = useCallback((value: string) => {
       const digits = value.replace(/\D/g, "").slice(0, 14);
       setRawValue(digits);
       setCnpjData(null);
       setError(null);
-
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-
-      if (digits.length === 14) {
-         debounceRef.current = setTimeout(async () => {
-            setIsFetching(true);
-            try {
-               const data = await fetchCnpj(digits);
-               if (data.descricao_situacao_cadastral !== "ATIVA") {
-                  setError("Este CNPJ não está ativo na Receita Federal.");
-                  return;
-               }
-               setCnpjData(data);
-            } catch {
-               setError("CNPJ não encontrado ou inválido.");
-            } finally {
-               setIsFetching(false);
-            }
-         }, 400);
-      }
    }, []);
 
    const displayName =
