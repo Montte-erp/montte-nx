@@ -14,12 +14,11 @@ import {
 import { Rating, RatingButton } from "@packages/ui/components/rating";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
-import { useMutation } from "@tanstack/react-query";
 import { CheckCircle, Loader2 } from "lucide-react";
-import { type FormEvent, useCallback } from "react";
+import posthog from "posthog-js";
+import { type FormEvent, useCallback, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { orpc } from "@/integrations/orpc/client";
 
 const COPY = {
    feature: {
@@ -53,17 +52,8 @@ export function FeatureRequestForm({
       priority: z.number(),
    });
 
-   const mutation = useMutation(
-      orpc.feedback.submitFeatureRequest.mutationOptions({
-         onSuccess: () => {
-            toast.success("Obrigado pela sugestão! Será avaliada pela equipe.");
-            setTimeout(onSuccess, 1500);
-         },
-         onError: (error) => {
-            toast.error(error.message ?? "Erro ao enviar sugestão.");
-         },
-      }),
-   );
+   const [isSuccess, setIsSuccess] = useState(false);
+   const [isPending, startTransition] = useTransition();
 
    const form = useForm({
       defaultValues: {
@@ -72,10 +62,16 @@ export function FeatureRequestForm({
          priority: 0,
       },
       onSubmit: async ({ value }) => {
-         await mutation.mutateAsync({
-            feature: value.feature,
-            problem: value.problem || undefined,
-            priority: value.priority,
+         startTransition(async () => {
+            posthog.capture("feature_request_submitted", {
+               feature: value.feature,
+               problem: value.problem || undefined,
+               priority: value.priority,
+               context,
+            });
+            toast.success("Obrigado pela sugestão! Será avaliada pela equipe.");
+            setIsSuccess(true);
+            setTimeout(onSuccess, 1500);
          });
       },
       validators: { onBlur: featureRequestSchema },
@@ -90,7 +86,7 @@ export function FeatureRequestForm({
       [form],
    );
 
-   if (mutation.isSuccess) {
+   if (isSuccess) {
       return (
          <DialogStackContent index={0}>
             <div className="flex flex-col items-center gap-4 px-4 py-4 text-center">
@@ -191,11 +187,11 @@ export function FeatureRequestForm({
                   {(canSubmit) => (
                      <Button
                         className="w-full"
-                        disabled={!canSubmit || mutation.isPending}
+                        disabled={!canSubmit || isPending}
                         size="lg"
                         type="submit"
                      >
-                        {mutation.isPending && (
+                        {isPending && (
                            <Loader2 className="mr-2 size-4 animate-spin" />
                         )}
                         Enviar sugestão

@@ -6,7 +6,6 @@ import { createStripeClient } from "@core/stripe";
 import { createMinioClient } from "@core/files/client";
 import { createResendClient } from "@core/transactional/utils";
 import { createAuth } from "@core/authentication/server";
-import { createFeedbackSender } from "@packages/feedback/sender";
 
 export const db = createDb({ databaseUrl: env.DATABASE_URL });
 export const redis = createRedis(env.REDIS_URL);
@@ -25,11 +24,4 @@ export const auth = createAuth({
    stripeClient,
    resendClient,
    env,
-});
-export const feedbackSender = createFeedbackSender({
-   posthog,
-   discordWebhookUrl: env.DISCORD_FEEDBACK_WEBHOOK_URL,
-   githubToken: env.GITHUB_FEEDBACK_TOKEN,
-   githubOwner: env.GITHUB_FEEDBACK_OWNER,
-   githubRepo: env.GITHUB_FEEDBACK_REPO,
 });

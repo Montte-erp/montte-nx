@@ -8,11 +8,10 @@ import {
 import { Label } from "@packages/ui/components/label";
 import { Rating, RatingButton } from "@packages/ui/components/rating";
 import { Textarea } from "@packages/ui/components/textarea";
-import { useMutation } from "@tanstack/react-query";
 import { CheckCircle, Loader2 } from "lucide-react";
-import { useState } from "react";
+import posthog from "posthog-js";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { orpc } from "@/integrations/orpc/client";
 
 type FeatureFeedbackFormProps = {
    featureName: string;
@@ -25,31 +24,26 @@ export function FeatureFeedbackForm({
 }: FeatureFeedbackFormProps) {
    const [rating, setRating] = useState(0);
    const [improvement, setImprovement] = useState("");
+   const [isSuccess, setIsSuccess] = useState(false);
+   const [isPending, startTransition] = useTransition();
 
-   const mutation = useMutation(
-      orpc.feedback.submitFeatureFeedback.mutationOptions({
-         onSuccess: () => {
-            toast.success("Obrigado pelo feedback!");
-            setTimeout(onSuccess, 1500);
-         },
-         onError: (error) => {
-            toast.error(error.message ?? "Erro ao enviar feedback.");
-         },
-      }),
-   );
-
-   const handleSubmit = async (e: React.FormEvent) => {
+   const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       if (rating === 0) return;
 
-      await mutation.mutateAsync({
-         rating,
-         improvement: improvement || undefined,
-         featureName,
+      startTransition(async () => {
+         posthog.capture("feature_feedback_submitted", {
+            rating,
+            improvement: improvement || undefined,
+            featureName,
+         });
+         toast.success("Obrigado pelo feedback!");
+         setIsSuccess(true);
+         setTimeout(onSuccess, 1500);
       });
    };
 
-   if (mutation.isSuccess) {
+   if (isSuccess) {
       return (
          <DialogStackContent index={0}>
             <div className="flex flex-col items-center gap-4 px-4 py-4 text-center">
@@ -104,11 +98,11 @@ export function FeatureFeedbackForm({
 
                <Button
                   className="w-full"
-                  disabled={rating === 0 || mutation.isPending}
+                  disabled={rating === 0 || isPending}
                   size="lg"
                   type="submit"
                >
-                  {mutation.isPending && (
+                  {isPending && (
                      <Loader2 className="mr-2 size-4 animate-spin" />
                   )}
                   Enviar feedback

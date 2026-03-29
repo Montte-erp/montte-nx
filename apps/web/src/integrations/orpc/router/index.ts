@@ -13,7 +13,6 @@ import * as contactsRouter from "./contacts";
 import * as creditCardsRouter from "./credit-cards";
 import * as dashboardsRouter from "./dashboards";
 import * as earlyAccessRouter from "./early-access";
-import * as feedbackRouter from "./feedback";
 import * as financialSettingsRouter from "./financial-settings";
 import * as insightsRouter from "./insights";
 import * as inventoryRouter from "./inventory";
@@ -41,7 +40,6 @@ export default {
    chat: chatRouter,
    dashboards: dashboardsRouter,
    earlyAccess: earlyAccessRouter,
-   feedback: feedbackRouter,
    financialSettings: financialSettingsRouter,
    insights: insightsRouter,
    inventory: inventoryRouter,

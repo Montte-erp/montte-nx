@@ -20,12 +20,11 @@ import {
 } from "@packages/ui/components/select";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
-import { useMutation } from "@tanstack/react-query";
 import { CheckCircle, Loader2 } from "lucide-react";
-import { type FormEvent, useCallback } from "react";
+import posthog from "posthog-js";
+import { type FormEvent, useCallback, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { orpc } from "@/integrations/orpc/client";
 
 type BugReportFormProps = {
    onSuccess: () => void;
@@ -37,24 +36,20 @@ export function BugReportForm({ onSuccess }: BugReportFormProps) {
       severity: z.string(),
    });
 
-   const mutation = useMutation(
-      orpc.feedback.submitBugReport.mutationOptions({
-         onSuccess: () => {
-            toast.success("Obrigado pelo relato! Vamos investigar.");
-            setTimeout(onSuccess, 1500);
-         },
-         onError: (error) => {
-            toast.error(error.message ?? "Erro ao enviar relato.");
-         },
-      }),
-   );
+   const [isSuccess, setIsSuccess] = useState(false);
+   const [isPending, startTransition] = useTransition();
 
    const form = useForm({
       defaultValues: { description: "", severity: "" },
       onSubmit: async ({ value }) => {
-         await mutation.mutateAsync({
-            description: value.description,
-            severity: value.severity || undefined,
+         startTransition(async () => {
+            posthog.capture("bug_report_submitted", {
+               description: value.description,
+               severity: value.severity || undefined,
+            });
+            toast.success("Obrigado pelo relato! Vamos investigar.");
+            setIsSuccess(true);
+            setTimeout(onSuccess, 1500);
          });
       },
       validators: { onBlur: bugReportSchema },
@@ -69,7 +64,7 @@ export function BugReportForm({ onSuccess }: BugReportFormProps) {
       [form],
    );
 
-   if (mutation.isSuccess) {
+   if (isSuccess) {
       return (
          <DialogStackContent index={0}>
             <div className="flex flex-col items-center gap-4 px-4 py-4 text-center">
@@ -160,10 +155,10 @@ export function BugReportForm({ onSuccess }: BugReportFormProps) {
                   {(canSubmit) => (
                      <Button
                         className="w-full"
-                        disabled={!canSubmit || mutation.isPending}
+                        disabled={!canSubmit || isPending}
                         type="submit"
                      >
-                        {mutation.isPending && (
+                        {isPending && (
                            <Loader2 className="mr-2 size-4 animate-spin" />
                         )}
                         Enviar relato
