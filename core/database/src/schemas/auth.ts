@@ -24,10 +24,6 @@ export const user = pgTable("user", {
       .defaultNow()
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
-   role: text("role"),
-   banned: boolean("banned").default(false),
-   banReason: text("ban_reason"),
-   banExpires: timestamp("ban_expires"),
    twoFactorEnabled: boolean("two_factor_enabled").default(false),
    stripeCustomerId: text("stripe_customer_id"),
    telemetryConsent: boolean("telemetry_consent").default(false).notNull(),
@@ -50,7 +46,6 @@ export const session = pgTable(
       userId: uuid("user_id")
          .notNull()
          .references(() => user.id, { onDelete: "cascade" }),
-      impersonatedBy: text("impersonated_by"),
       activeOrganizationId: text("active_organization_id"),
       activeTeamId: text("active_team_id"),
    },
@@ -121,7 +116,6 @@ export const team = pgTable(
       onboardingCompleted: boolean("onboarding_completed").default(false),
       onboardingProducts: jsonb("onboarding_products"),
       onboardingTasks: jsonb("onboarding_tasks"),
-      accountType: text("account_type").default("business"),
       cnpj: text("cnpj"),
       cnpjData: jsonb("cnpj_data"),
    },
@@ -229,8 +223,8 @@ export const apikey = pgTable(
       lastRefillAt: timestamp("last_refill_at"),
       enabled: boolean("enabled").default(true),
       rateLimitEnabled: boolean("rate_limit_enabled").default(true),
-      rateLimitTimeWindow: integer("rate_limit_time_window").default(60000),
-      rateLimitMax: integer("rate_limit_max").default(100),
+      rateLimitTimeWindow: integer("rate_limit_time_window").default(86400000),
+      rateLimitMax: integer("rate_limit_max").default(10),
       requestCount: integer("request_count").default(0),
       remaining: integer("remaining"),
       lastRequest: timestamp("last_request"),
