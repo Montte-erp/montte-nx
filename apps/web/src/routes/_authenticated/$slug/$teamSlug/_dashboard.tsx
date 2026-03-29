@@ -18,21 +18,6 @@ export const Route = createFileRoute(
          throw redirect({ to: "/onboarding" });
       }
    },
-   loader: async ({ context }) => {
-      const session = await context.queryClient.fetchQuery(
-         context.orpc.session.getSession.queryOptions(),
-      );
-
-      if (session?.user?.id) {
-         posthog.identify(session.user.id, {
-            email: session.user.email ?? undefined,
-            name: session.user.name ?? undefined,
-         });
-         if (session.session?.activeOrganizationId) {
-            posthog.group("organization", session.session.activeOrganizationId);
-         }
-      }
-   },
    onEnter: async ({ context }) => {
       const userId = context.session.user.id
       const organizationId = context.session.session?.activeOrganizationId;
