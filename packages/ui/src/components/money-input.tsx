@@ -9,6 +9,7 @@ import {
 } from "@packages/ui/components/input-group";
 import * as React from "react";
 import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
+import { mergeRefs } from "foxact/merge-refs";
 
 interface MoneyInputProps extends Omit<
    React.InputHTMLAttributes<HTMLInputElement>,
@@ -202,14 +203,7 @@ export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
                onKeyDown={handleKeyDown}
                onPaste={handlePaste}
                placeholder={placeholder}
-               ref={(node) => {
-                  inputRef.current = node;
-                  if (typeof ref === "function") {
-                     ref(node);
-                  } else if (ref) {
-                     ref.current = node;
-                  }
-               }}
+               ref={mergeRefs(inputRef, ref)}
                type="text"
                value={displayValue}
                {...props}

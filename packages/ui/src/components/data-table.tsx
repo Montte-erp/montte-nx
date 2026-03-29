@@ -46,6 +46,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
+import { useLocalStorage } from "foxact/use-local-storage";
 
 import { cn } from "../lib/utils";
 import { Button } from "./button";
@@ -118,28 +119,6 @@ interface DataTableProps<TData, TValue> {
 // =============================================================================
 
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
-
-function readVisibilityFromStorage(key: string | undefined): VisibilityState {
-   if (!key) return {};
-   try {
-      const stored = localStorage.getItem(`dt-col-vis:${key}`);
-      return stored ? JSON.parse(stored) : {};
-   } catch {
-      return {};
-   }
-}
-
-function writeVisibilityToStorage(
-   key: string | undefined,
-   state: VisibilityState,
-) {
-   if (!key) return;
-   try {
-      localStorage.setItem(`dt-col-vis:${key}`, JSON.stringify(state));
-   } catch {
-      // ignore quota errors
-   }
-}
 
 function getPageNumbers(currentPage: number, totalPages: number): number[] {
    if (totalPages <= 5)
@@ -482,9 +461,13 @@ export function DataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
    const [sorting, setSorting] = useState<SortingState>([]);
    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
-      () => readVisibilityFromStorage(columnVisibilityKey),
-   );
+   const [columnVisibility, setColumnVisibility] =
+      useLocalStorage<VisibilityState>(
+         columnVisibilityKey
+            ? `dt-col-vis:${columnVisibilityKey}`
+            : "dt-col-vis:__noop__",
+         {},
+      );
    const [internalRowSelection, setInternalRowSelection] =
       useState<RowSelectionState>({});
 
@@ -532,13 +515,12 @@ export function DataTable<TData, TValue>({
          setColumnVisibility((prev) => {
             const next =
                typeof updaterOrValue === "function"
-                  ? updaterOrValue(prev)
+                  ? updaterOrValue(prev ?? {})
                   : updaterOrValue;
-            writeVisibilityToStorage(columnVisibilityKey, next);
             return next;
          });
       },
-      [columnVisibilityKey],
+      [],
    );
 
    const hasActionsColumn = !!renderActions || !!columnVisibilityKey;
