@@ -1,11 +1,18 @@
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { usePostHog } from "posthog-js/react";
-import { useCallback, useEffect } from "react";
+import { type ReactNode, useCallback, useEffect } from "react";
 import type {
    EarlyAccessFeature,
    EarlyAccessStage,
 } from "@/integrations/posthog/client";
 import { normalizeEarlyAccessStage } from "@/integrations/posthog/client";
+
+const ALL_STAGES: EarlyAccessStage[] = [
+   "concept",
+   "alpha",
+   "beta",
+   "general-availability",
+];
 
 const [useFeatures] = createLocalStorageState<EarlyAccessFeature[]>(
    "montte:early-access-features",
@@ -22,11 +29,9 @@ const [useDismissedFlags] = createLocalStorageState<string[]>(
    [],
 );
 
-export function useEarlyAccess() {
+export function EarlyAccessProvider({ children }: { children: ReactNode }) {
    const posthog = usePostHog();
-   const [features, setFeatures] = useFeatures();
-   const [enrolledKeys, setEnrolledKeys] = useEnrolledKeys();
-   const [dismissedFlags, setDismissedFlags] = useDismissedFlags();
+   const [, setFeatures] = useFeatures();
 
    useEffect(() => {
       posthog.getEarlyAccessFeatures(
@@ -42,8 +47,18 @@ export function useEarlyAccess() {
             );
          },
          true,
+         ALL_STAGES,
       );
    }, [posthog, setFeatures]);
+
+   return <>{children}</>;
+}
+
+export function useEarlyAccess() {
+   const posthog = usePostHog();
+   const [features] = useFeatures();
+   const [enrolledKeys, setEnrolledKeys] = useEnrolledKeys();
+   const [dismissedFlags, setDismissedFlags] = useDismissedFlags();
 
    const isEnrolled = useCallback(
       (flagKey: string) => enrolledKeys.includes(flagKey),
@@ -58,11 +73,12 @@ export function useEarlyAccess() {
 
    const updateEnrollment = useCallback(
       (flagKey: string, enrolled: boolean) => {
-         setEnrolledKeys((prev) =>
-            enrolled
-               ? [...new Set([...prev, flagKey])]
-               : prev.filter((k) => k !== flagKey),
-         );
+         setEnrolledKeys((prev) => {
+            const keys = prev ?? [];
+            return enrolled
+               ? [...new Set([...keys, flagKey])]
+               : keys.filter((k) => k !== flagKey);
+         });
          posthog.updateEarlyAccessFeatureEnrollment(flagKey, enrolled);
       },
       [posthog, setEnrolledKeys],
