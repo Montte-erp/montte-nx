@@ -58,7 +58,7 @@ export function WebhooksTable({
    webhooks,
    isLoading,
    onEdit,
-   onDelete,
+   onDelete: _onDelete,
 }: WebhooksTableProps) {
    const columns = useMemo<ColumnDef<WebhookEndpoint>[]>(
       () => [

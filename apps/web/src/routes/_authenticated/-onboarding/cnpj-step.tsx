@@ -158,7 +158,7 @@ export const CnpjStep = forwardRef<StepHandle, CnpjStepProps>(function CnpjStep(
                      <Spinner className="absolute right-3 top-1/2 size-4 -translate-y-1/2" />
                   )}
                </div>
-               {error && <FieldError errors={[error]} />}
+               {error && <FieldError errors={[{ message: error }]} />}
             </Field>
          </FieldGroup>
 

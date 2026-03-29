@@ -176,8 +176,8 @@ export const createWorkspace = authenticatedProcedure
             name: teamName,
             organizationId: org.id,
             slug: teamSlug,
-            cnpj: input.cnpj ?? null,
-            cnpjData: input.cnpjData ?? null,
+            cnpj: input.cnpj ?? undefined,
+            cnpjData: input.cnpjData ?? undefined,
          },
       });
 
