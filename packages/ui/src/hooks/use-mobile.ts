@@ -1,5 +1,5 @@
-import { useSafeMediaQuery } from "@packages/ui/hooks/use-media-query";
+import { useMediaQuery } from "foxact/use-media-query";
 
 export function useIsMobile() {
-   return useSafeMediaQuery("(max-width: 767px)");
+   return useMediaQuery("(max-width: 767px)");
 }

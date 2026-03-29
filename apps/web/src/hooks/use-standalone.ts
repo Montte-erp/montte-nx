@@ -1,10 +1,10 @@
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
-import { useSafeMediaQuery } from "@packages/ui/hooks/use-media-query";
+import { useMediaQuery } from "foxact/use-media-query";
 import { useState } from "react";
 
 export function useIsStandalone() {
-   const isStandaloneMedia = useSafeMediaQuery("(display-mode: standalone)");
-   const isWindowControlsOverlay = useSafeMediaQuery(
+   const isStandaloneMedia = useMediaQuery("(display-mode: standalone)");
+   const isWindowControlsOverlay = useMediaQuery(
       "(display-mode: window-controls-overlay)",
    );
    const [isIOSStandalone, setIsIOSStandalone] = useState(false);
