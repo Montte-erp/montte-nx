@@ -7,6 +7,7 @@ import * as billsRouter from "./bills";
 import * as budgetGoalsRouter from "./budget-goals";
 import * as categoriesRouter from "./categories";
 import * as chatRouter from "./chat";
+import * as contactSettingsRouter from "./contact-settings";
 import * as contactsRouter from "./contacts";
 import * as creditCardsRouter from "./credit-cards";
 import * as dashboardsRouter from "./dashboards";
@@ -33,6 +34,7 @@ export default {
    budgetGoals: budgetGoalsRouter,
    creditCards: creditCardsRouter,
    categories: categoriesRouter,
+   contactSettings: contactSettingsRouter,
    contacts: contactsRouter,
    chat: chatRouter,
    dashboards: dashboardsRouter,
