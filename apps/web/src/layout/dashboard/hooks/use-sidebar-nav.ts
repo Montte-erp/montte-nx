@@ -17,8 +17,7 @@ function loadPinnedItems(): string[] {
 function savePinnedItems(items: string[]) {
    try {
       localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify(items));
-   } catch {
-   }
+   } catch {}
 }
 
 interface SidebarNavState {

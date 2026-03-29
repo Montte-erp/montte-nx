@@ -14,8 +14,7 @@ function loadHiddenItems(): string[] {
 function saveHiddenItems(items: string[]) {
    try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-   } catch {
-   }
+   } catch {}
 }
 
 const sidebarVisibilityStore = new Store<{ hiddenItems: string[] }>({

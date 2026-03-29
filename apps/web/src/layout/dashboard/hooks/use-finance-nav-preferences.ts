@@ -14,8 +14,7 @@ function loadWantedItems(): string[] {
 function saveWantedItems(items: string[]) {
    try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-   } catch {
-   }
+   } catch {}
 }
 
 const financeNavPrefsStore = new Store<{ wantedItems: string[] }>({

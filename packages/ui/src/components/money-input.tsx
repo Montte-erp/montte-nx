@@ -8,6 +8,7 @@ import {
    InputGroupText,
 } from "@packages/ui/components/input-group";
 import * as React from "react";
+import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
 
 interface MoneyInputProps extends Omit<
    React.InputHTMLAttributes<HTMLInputElement>,
@@ -19,31 +20,6 @@ interface MoneyInputProps extends Omit<
    className?: string;
    valueInCents?: boolean;
    debounceMs?: number;
-}
-
-function useDebouncedCallback<T extends unknown[]>(
-   callback: (...args: T) => void,
-   delay: number,
-): (...args: T) => void {
-   const timeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined);
-   const callbackRef = React.useRef(callback);
-
-   React.useEffect(() => {
-      callbackRef.current = callback;
-   }, [callback]);
-
-   return React.useCallback(
-      (...args: T) => {
-         if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-         }
-
-         timeoutRef.current = setTimeout(() => {
-            callbackRef.current(...args);
-         }, delay);
-      },
-      [delay],
-   );
 }
 
 const MAX_CENTS = 999999999999;
@@ -77,11 +53,23 @@ export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
       const inputRef = React.useRef<HTMLInputElement | null>(null);
       const isInternalChange = React.useRef(false);
 
-      const debouncedOnChange = useDebouncedCallback<[number | undefined]>(
+      const stableOnChange = useStableHandler((value: number | undefined) => {
+         onChange?.(value);
+      });
+      const debounceTimerRef = React.useRef<NodeJS.Timeout | undefined>(
+         undefined,
+      );
+
+      const debouncedOnChange = React.useCallback(
          (value: number | undefined) => {
-            onChange?.(value);
+            if (debounceTimerRef.current)
+               clearTimeout(debounceTimerRef.current);
+            debounceTimerRef.current = setTimeout(
+               () => stableOnChange(value),
+               debounceMs,
+            );
          },
-         debounceMs,
+         [debounceMs, stableOnChange],
       );
 
       const emitChange = React.useCallback(
