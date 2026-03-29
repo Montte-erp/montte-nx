@@ -12,7 +12,6 @@ import {
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth/minimal";
 import {
-   admin,
    emailOTP,
    lastLoginMethod,
    magicLink,
@@ -195,8 +194,6 @@ export function createAuth(deps: CreateAuthDeps) {
       },
 
       plugins: [
-         admin(),
-
          magicLink({
             expiresIn: 60 * 15,
             async sendMagicLink({ email, url }) {

@@ -1,7 +1,6 @@
 import { apiKey } from "@better-auth/api-key";
 import { stripeClient } from "@better-auth/stripe/client";
 import {
-   adminClient,
    emailOTPClient,
    inferAdditionalFields,
    lastLoginMethodClient,
@@ -52,7 +51,6 @@ export const createAuthClient = ({
          }),
          magicLinkClient(),
          emailOTPClient(),
-         adminClient(),
          organizationClient({
             teams: {
                enabled: true,
