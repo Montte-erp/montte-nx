@@ -14,7 +14,6 @@ import { GlobalContextPanel } from "@/features/context-panel/context-panel";
 import { AutoBugReporter } from "@/features/feedback/ui/auto-bug-reporter";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useActiveTeam } from "@/hooks/use-active-team";
-import { EarlyAccessProvider } from "@/hooks/use-early-access";
 import { useLastOrganization } from "@/hooks/use-last-organization";
 import { useLocalStorage } from "foxact/use-local-storage";
 import { authClient } from "@/integrations/better-auth/auth-client";
@@ -71,8 +70,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
    }, [activeOrganization?.id, activeTeam, queryClient, teams]);
 
    return (
-      <EarlyAccessProvider>
-         <SidebarManagerProvider>
+      <SidebarManagerProvider>
             <SidebarProvider
                className="h-svh"
                onOpenChange={handleSidebarChange}
@@ -110,6 +108,5 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                <GlobalContextPanel />
             </SidebarProvider>
          </SidebarManagerProvider>
-      </EarlyAccessProvider>
    );
 }

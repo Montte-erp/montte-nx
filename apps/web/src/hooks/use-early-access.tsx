@@ -1,15 +1,16 @@
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { usePostHog } from "posthog-js/react";
-import { type ReactNode, useCallback, useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import type {
    EarlyAccessFeature,
    EarlyAccessStage,
 } from "@/integrations/posthog/client";
 import { normalizeEarlyAccessStage } from "@/integrations/posthog/client";
 
-const [useFeatures, setFeaturesInStorage] = createLocalStorageState<
-   EarlyAccessFeature[]
->("montte:early-access-features", []);
+const [useFeatures] = createLocalStorageState<EarlyAccessFeature[]>(
+   "montte:early-access-features",
+   [],
+);
 
 const [useEnrolledKeys] = createLocalStorageState<string[]>(
    "montte:early-access-enrolled",
@@ -21,13 +22,16 @@ const [useDismissedFlags] = createLocalStorageState<string[]>(
    [],
 );
 
-export function EarlyAccessProvider({ children }: { children: ReactNode }) {
+export function useEarlyAccess() {
    const posthog = usePostHog();
+   const [features, setFeatures] = useFeatures();
+   const [enrolledKeys, setEnrolledKeys] = useEnrolledKeys();
+   const [dismissedFlags, setDismissedFlags] = useDismissedFlags();
 
    useEffect(() => {
       posthog.getEarlyAccessFeatures(
          (raw) => {
-            setFeaturesInStorage(
+            setFeatures(
                raw.map((f) => ({
                   flagKey: f.flagKey,
                   name: f.name,
@@ -39,16 +43,7 @@ export function EarlyAccessProvider({ children }: { children: ReactNode }) {
          },
          true,
       );
-   }, [posthog]);
-
-   return <>{children}</>;
-}
-
-export function useEarlyAccess() {
-   const posthog = usePostHog();
-   const [features] = useFeatures();
-   const [enrolledKeys, setEnrolledKeys] = useEnrolledKeys();
-   const [dismissedFlags, setDismissedFlags] = useDismissedFlags();
+   }, [posthog, setFeatures]);
 
    const isEnrolled = useCallback(
       (flagKey: string) => enrolledKeys.includes(flagKey),
