@@ -9,14 +9,12 @@ import {
    useState,
 } from "react";
 import { orpc } from "@/integrations/orpc/client";
+import { usePostHog } from "posthog-js/react";
 import type {
    EarlyAccessFeature,
    EarlyAccessStage,
 } from "@/integrations/posthog/client";
-import {
-   normalizeEarlyAccessStage,
-   usePostHog,
-} from "@/integrations/posthog/client";
+import { normalizeEarlyAccessStage } from "@/integrations/posthog/client";
 
 type EarlyAccessContextValue = {
    features: EarlyAccessFeature[];

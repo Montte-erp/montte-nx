@@ -21,7 +21,7 @@ import { useLastOrganization } from "@/hooks/use-last-organization";
 import { useLocalStorage } from "foxact/use-local-storage";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
-import { identifyClient, setClientGroup } from "@/integrations/posthog/client";
+import { usePostHogIdentity } from "../-dashboard/use-posthog-identity";
 import { AppSidebar } from "./app-sidebar";
 import { SidebarSubPanel } from "./sidebar-sub-panel";
 
@@ -98,27 +98,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       void setDefaultTeam();
    }, [activeOrganization?.id, activeTeam, queryClient, teams]);
 
-   useEffect(() => {
-      if (session?.user?.id) {
-         identifyClient(session.user.id, {
-            email: session.user.email,
-            name: session.user.name,
-         });
-      }
-      if (activeOrganization?.id) {
-         setClientGroup("organization", activeOrganization.id, {
-            name: activeOrganization.name,
-            slug: activeOrganization.slug,
-         });
-      }
-   }, [
-      session?.user?.id,
-      session?.user?.email,
-      session?.user?.name,
-      activeOrganization?.id,
-      activeOrganization?.name,
-      activeOrganization?.slug,
-   ]);
+   usePostHogIdentity({
+      userId: session?.user?.id,
+      email: session?.user?.email,
+      name: session?.user?.name,
+      organizationId: activeOrganization?.id,
+      organizationName: activeOrganization?.name,
+      organizationSlug: activeOrganization?.slug,
+   });
 
    return (
       <EarlyAccessProvider>
