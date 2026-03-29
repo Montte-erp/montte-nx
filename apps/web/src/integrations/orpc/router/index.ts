@@ -16,13 +16,11 @@ import * as insightsRouter from "./insights";
 import * as inventoryRouter from "./inventory";
 import * as onboardingRouter from "./onboarding";
 import * as organizationRouter from "./organization";
-import * as searchRouter from "./search";
 import * as servicesRouter from "./services";
 import * as sessionRouter from "./session";
 import * as tagsRouter from "./tags";
 import * as teamRouter from "./team";
 import * as transactionsRouter from "./transactions";
-import * as webhooksRouter from "./webhooks";
 
 export default {
    account: accountRouter,
@@ -42,12 +40,10 @@ export default {
    insights: insightsRouter,
    inventory: inventoryRouter,
    onboarding: onboardingRouter,
-   search: searchRouter,
    services: servicesRouter,
    session: sessionRouter,
    tags: tagsRouter,
    team: teamRouter,
    transactions: transactionsRouter,
    organization: organizationRouter,
-   webhooks: webhooksRouter,
 };

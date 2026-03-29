@@ -17,7 +17,7 @@ import {
    useParams,
    useRouter,
 } from "@tanstack/react-router";
-import { ChevronRight, Search, Settings2 } from "lucide-react";
+import { ChevronRight, Settings2 } from "lucide-react";
 import { useCallback } from "react";
 import { useAccountType } from "@/hooks/use-account-type";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
@@ -206,24 +206,10 @@ export function SidebarDefaultItems() {
 
    const resolvedSlug = slug || pathname.split("/")[1] || "";
 
-   const handleSearch = useCallback(() => {
-      navigate({
-         to: "/$slug/$teamSlug/search",
-         params: { slug: resolvedSlug, teamSlug: teamSlug ?? "" },
-      });
-   }, [navigate, resolvedSlug, teamSlug]);
-
    return (
       <SidebarGroup className="py-0">
          <SidebarGroupContent>
             <SidebarMenu>
-               <SidebarMenuItem>
-                  <SidebarMenuButton onClick={handleSearch} tooltip="Pesquisar">
-                     <Search />
-                     <span>Pesquisar</span>
-                  </SidebarMenuButton>
-               </SidebarMenuItem>
-
                {visibleMainItems.map((item) => (
                   <NavItem
                      isActive={isItemActive(item)}

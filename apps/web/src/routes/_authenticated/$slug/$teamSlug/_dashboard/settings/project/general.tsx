@@ -1,28 +1,28 @@
-import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
+import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import {
    Item,
    ItemContent,
    ItemDescription,
    ItemGroup,
-   ItemMedia,
    ItemSeparator,
    ItemTitle,
 } from "@packages/ui/components/item";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import { TooltipProvider } from "@packages/ui/components/tooltip";
-import {
-   useMutation,
-   useQueryClient,
-   useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useForm } from "@tanstack/react-form";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Calendar, Globe, Hash, Loader2, Settings2, X } from "lucide-react";
-import { Suspense, useState } from "react";
+import dayjs from "dayjs";
+import "dayjs/locale/pt-br";
+import { Calendar, Hash, Loader2, Settings2 } from "lucide-react";
+import { Suspense, useCallback, useTransition } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
+import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
+
+dayjs.locale("pt-br");
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general",
@@ -30,59 +30,41 @@ export const Route = createFileRoute(
    component: ProjectGeneralPage,
 });
 
-// TODO: Add team.updateName procedure when Better Auth supports it
-
-// ============================================
-// Skeleton
-// ============================================
-
 function ProjectGeneralSkeleton() {
    return (
-      <div className="space-y-6">
-         <div className="space-y-3">
+      <div className="flex flex-col gap-6">
+         <div className="flex flex-col gap-2">
             <Skeleton className="h-6 w-1/3" />
             <Skeleton className="h-4 w-2/3" />
-            <div className="space-y-1">
+            <div className="flex flex-col gap-1">
                <Skeleton className="h-16 w-full rounded-lg" />
                <Skeleton className="h-16 w-full rounded-lg" />
             </div>
          </div>
-
-         <div className="space-y-3">
+         <div className="flex flex-col gap-2">
             <Skeleton className="h-6 w-1/3" />
             <Skeleton className="h-4 w-2/3" />
-            <Skeleton className="h-10 w-full rounded-lg" />
-            <Skeleton className="h-10 w-full rounded-lg" />
-         </div>
-
-         <div className="space-y-3">
-            <Skeleton className="h-6 w-2/3" />
-            <Skeleton className="h-4 w-full" />
             <Skeleton className="h-16 w-full rounded-lg" />
          </div>
       </div>
    );
 }
 
-// ============================================
-// Error Fallback
-// ============================================
-
 function ProjectGeneralErrorFallback({
    error: _error,
    resetErrorBoundary,
 }: FallbackProps) {
    return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-6">
          <div>
             <h1 className="text-2xl font-semibold font-serif">Geral</h1>
             <p className="text-sm text-muted-foreground mt-1">
-               Gerencie o nome, slug e configurações padrão do projeto.
+               Gerencie as configurações do espaço.
             </p>
          </div>
          <div className="flex flex-col items-center justify-center py-12 text-center">
             <p className="text-sm text-muted-foreground mb-4">
-               Não foi possível carregar as configurações do projeto
+               Não foi possível carregar as configurações do espaço
             </p>
             <Button onClick={resetErrorBoundary} variant="outline">
                Tentar novamente
@@ -92,12 +74,7 @@ function ProjectGeneralErrorFallback({
    );
 }
 
-// ============================================
-// Main Content Component
-// ============================================
-
 function ProjectGeneralContent() {
-   const queryClient = useQueryClient();
    const { currentTeam } = Route.useRouteContext();
    const teamId = currentTeam.id;
 
@@ -105,220 +82,142 @@ function ProjectGeneralContent() {
       orpc.team.get.queryOptions({ input: { teamId } }),
    );
 
-   const [newDomain, setNewDomain] = useState("");
+   const [isPending, startTransition] = useTransition();
 
-   // ── Mutations ──────────────────────────────────────────────────────
+   const form = useForm({
+      defaultValues: { name: teamData.name },
+      onSubmit: async ({ value }) => {
+         const { error } = await authClient.organization.updateTeam({
+            teamId,
+            data: { name: value.name },
+         });
+         if (error) {
+            toast.error("Não foi possível atualizar o nome do espaço.");
+            return;
+         }
+         toast.success("Nome atualizado!");
+      },
+   });
 
-   const updateDomainsMutation = useMutation(
-      orpc.team.updateAllowedDomains.mutationOptions({
-         onSuccess: () => {
-            queryClient.invalidateQueries({
-               queryKey: orpc.team.get.queryOptions({ input: { teamId } })
-                  .queryKey,
-            });
-         },
-         onError: () => {
-            toast.error("Não foi possível atualizar os domínios permitidos.");
-         },
-      }),
+   const handleSubmit = useCallback(
+      (e: React.FormEvent) => {
+         e.preventDefault();
+         e.stopPropagation();
+         startTransition(async () => {
+            await form.handleSubmit();
+         });
+      },
+      [form],
    );
 
-   // ── Handlers ───────────────────────────────────────────────────────
-
-   const handleAddDomain = () => {
-      const domain = newDomain.trim().toLowerCase();
-      if (!domain) return;
-
-      const domainPattern =
-         /^(\*\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/;
-      if (!domainPattern.test(domain)) {
-         toast.error(
-            "Domínio inválido. Use formatos como exemplo.com ou *.exemplo.com",
-         );
-         return;
-      }
-
-      const currentDomains = teamData.allowedDomains ?? [];
-      if (currentDomains.includes(domain)) {
-         toast.error("Este domínio já está na lista.");
-         return;
-      }
-
-      const updatedDomains = [...currentDomains, domain];
-      setNewDomain("");
-      updateDomainsMutation.mutate({
-         teamId,
-         allowedDomains: updatedDomains,
-      });
-   };
-
-   const handleRemoveDomain = (domainToRemove: string) => {
-      const currentDomains = teamData.allowedDomains ?? [];
-      const updatedDomains = currentDomains.filter((d) => d !== domainToRemove);
-      updateDomainsMutation.mutate({
-         teamId,
-         allowedDomains: updatedDomains,
-      });
-   };
-
-   const handleDomainKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") {
-         e.preventDefault();
-         handleAddDomain();
-      }
-   };
-
-   // ── Render ─────────────────────────────────────────────────────────
-
-   const allowedDomains = teamData.allowedDomains ?? [];
-
    const formattedCreatedAt = teamData.createdAt
-      ? new Date(teamData.createdAt).toLocaleDateString("pt-BR", {
-           day: "numeric",
-           month: "long",
-           year: "numeric",
-        })
+      ? dayjs(teamData.createdAt).format("D [de] MMMM [de] YYYY")
       : "-";
 
    return (
-      <TooltipProvider>
-         <div className="space-y-6">
+      <div className="flex flex-col gap-6">
+         <div>
+            <h1 className="text-2xl font-semibold font-serif">Geral</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+               Gerencie as configurações do espaço.
+            </p>
+         </div>
+
+         <section className="flex flex-col gap-4">
             <div>
-               <h1 className="text-2xl font-semibold font-serif">Geral</h1>
+               <h2 className="text-lg font-medium">Configurações do Espaço</h2>
                <p className="text-sm text-muted-foreground mt-1">
-                  Gerencie o nome, slug e configurações padrão do projeto.
+                  Gerencie o nome e identificador do espaço
                </p>
             </div>
 
-            {/* ── Project Settings ─────────────────────────────────── */}
-            <section className="space-y-3">
-               <div>
-                  <h2 className="text-lg font-medium">
-                     Configurações do Projeto
-                  </h2>
-                  <p className="text-sm text-muted-foreground mt-1">
-                     Gerencie o nome, slug e configurações padrão do projeto
-                  </p>
-               </div>
-               <ItemGroup>
-                  {/* Project Name */}
-                  <Item variant="muted">
-                     <ItemMedia variant="icon">
-                        <Settings2 className="size-4" />
-                     </ItemMedia>
-                     <ItemContent className="min-w-0">
-                        <ItemTitle>Nome do Projeto</ItemTitle>
-                        <ItemDescription className="truncate">
-                           {teamData.name}
-                        </ItemDescription>
-                     </ItemContent>
-                  </Item>
+            <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+               <form.Field name="name">
+                  {(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid;
+                     return (
+                        <Field data-invalid={isInvalid}>
+                           <FieldLabel htmlFor={field.name}>
+                              Nome do Espaço
+                           </FieldLabel>
+                           <Input
+                              aria-invalid={isInvalid}
+                              id={field.name}
+                              name={field.name}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                              value={field.state.value}
+                           />
+                           {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                           )}
+                        </Field>
+                     );
+                  }}
+               </form.Field>
 
-                  <ItemSeparator />
+               <form.Subscribe selector={(state) => state}>
+                  {(state) => (
+                     <Button
+                        className="self-start"
+                        disabled={!state.canSubmit || isPending}
+                        type="submit"
+                     >
+                        {isPending && (
+                           <Loader2 className="size-4 mr-2 animate-spin" />
+                        )}
+                        Salvar
+                     </Button>
+                  )}
+               </form.Subscribe>
+            </form>
 
-                  {/* Team ID */}
-                  <Item variant="muted">
-                     <ItemMedia variant="icon">
-                        <Hash className="size-4" />
-                     </ItemMedia>
-                     <ItemContent className="min-w-0">
-                        <ItemTitle>ID do Projeto</ItemTitle>
-                        <ItemDescription className="truncate font-mono">
-                           {teamId}
-                        </ItemDescription>
-                     </ItemContent>
-                  </Item>
-               </ItemGroup>
-            </section>
+            <ItemGroup>
+               <Item variant="muted">
+                  <Settings2 className="size-4 text-muted-foreground" />
+                  <ItemContent className="min-w-0">
+                     <ItemTitle>Nome atual</ItemTitle>
+                     <ItemDescription className="truncate">
+                        {teamData.name}
+                     </ItemDescription>
+                  </ItemContent>
+               </Item>
+               <ItemSeparator />
+               <Item variant="muted">
+                  <Hash className="size-4 text-muted-foreground" />
+                  <ItemContent className="min-w-0">
+                     <ItemTitle>ID do Espaço</ItemTitle>
+                     <ItemDescription className="truncate font-mono">
+                        {teamId}
+                     </ItemDescription>
+                  </ItemContent>
+               </Item>
+            </ItemGroup>
+         </section>
 
-            {/* ── Allowed Domains ──────────────────────────────────── */}
-            <section className="space-y-3">
-               <div>
-                  <h2 className="text-lg font-medium">Domínios Permitidos</h2>
-                  <p className="text-sm text-muted-foreground mt-1">
-                     Restrinja quais domínios têm acesso às integrações do
-                     projeto. Deixe vazio para permitir todos os domínios.
-                  </p>
-               </div>
-
-               {allowedDomains.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                     {allowedDomains.map((domain) => (
-                        <Badge
-                           className="gap-1 pr-1"
-                           key={domain}
-                           variant="secondary"
-                        >
-                           <Globe className="size-3" />
-                           {domain}
-                           <button
-                              className="ml-1 rounded-sm hover:bg-muted-foreground/20 p-0.5"
-                              disabled={updateDomainsMutation.isPending}
-                              onClick={() => handleRemoveDomain(domain)}
-                              type="button"
-                           >
-                              <X className="size-3" />
-                           </button>
-                        </Badge>
-                     ))}
-                  </div>
-               ) : (
-                  <p className="text-sm text-muted-foreground italic">
-                     Todos os domínios são permitidos.
-                  </p>
-               )}
-
-               <div className="flex gap-2">
-                  <Input
-                     disabled={updateDomainsMutation.isPending}
-                     onChange={(e) => setNewDomain(e.target.value)}
-                     onKeyDown={handleDomainKeyDown}
-                     placeholder="exemplo.com ou *.exemplo.com"
-                     value={newDomain}
-                  />
-                  <Button
-                     disabled={
-                        !newDomain.trim() || updateDomainsMutation.isPending
-                     }
-                     onClick={handleAddDomain}
-                  >
-                     {updateDomainsMutation.isPending ? (
-                        <Loader2 className="size-4 animate-spin" />
-                     ) : (
-                        "Adicionar"
-                     )}
-                  </Button>
-               </div>
-            </section>
-
-            {/* ── Project Summary ──────────────────────────────────── */}
-            <section className="space-y-3">
-               <div>
-                  <h2 className="text-lg font-medium">Resumo do Projeto</h2>
-                  <p className="text-sm text-muted-foreground mt-1">
-                     Visão geral do projeto
-                  </p>
-               </div>
-               <ItemGroup>
-                  <Item variant="muted">
-                     <ItemMedia variant="icon">
-                        <Calendar className="size-4" />
-                     </ItemMedia>
-                     <ItemContent>
-                        <ItemTitle>Criado em</ItemTitle>
-                        <ItemDescription>{formattedCreatedAt}</ItemDescription>
-                     </ItemContent>
-                  </Item>
-               </ItemGroup>
-            </section>
-         </div>
-      </TooltipProvider>
+         <section className="flex flex-col gap-4">
+            <div>
+               <h2 className="text-lg font-medium">Resumo do Espaço</h2>
+               <p className="text-sm text-muted-foreground mt-1">
+                  Visão geral do espaço
+               </p>
+            </div>
+            <ItemGroup>
+               <Item variant="muted">
+                  <Calendar className="size-4 text-muted-foreground" />
+                  <ItemContent>
+                     <ItemTitle>Criado em</ItemTitle>
+                     <ItemDescription>{formattedCreatedAt}</ItemDescription>
+                  </ItemContent>
+               </Item>
+            </ItemGroup>
+         </section>
+      </div>
    );
 }
-
-// ============================================
-// Page Component
-// ============================================
 
 function ProjectGeneralPage() {
    return (

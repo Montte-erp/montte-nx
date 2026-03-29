@@ -213,7 +213,7 @@
    },
    "type": "module",
    "scripts": {
-      "auth:generate": "nx run authentication:auth-schema-generate",
+      "auth:generate": "nx run @core/authentication:auth-schema-generate",
       "build": "nx run-many -t build --parallel=3",
       "check": "oxlint .",
       "check-boundaries": "bun run tooling/boundary/check-boundaries.ts",

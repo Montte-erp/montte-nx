@@ -6,20 +6,14 @@ import {
    CreditCard,
    DollarSign,
    FlaskConical,
-   Globe,
-   Lock,
    Network,
    Package,
    Palette,
-   ScrollText,
    Settings2,
    Shield,
-   ShieldCheck,
    Sparkles,
    User,
-   UserCog,
    Users,
-   Webhook,
 } from "lucide-react";
 
 export type SettingsNavItemDef = {
@@ -52,12 +46,6 @@ export const settingsNavSections: SettingsNavSection[] = [
             title: "Geral",
             href: "/$slug/$teamSlug/settings/project/general",
             icon: Settings2,
-         },
-         {
-            id: "project-webhooks",
-            title: "Webhooks",
-            href: "/$slug/$teamSlug/settings/project/webhooks",
-            icon: Webhook,
          },
          {
             id: "project-modules",
@@ -98,18 +86,6 @@ export const settingsNavSections: SettingsNavSection[] = [
             icon: Network,
          },
          {
-            id: "project-access-control",
-            title: "Controle de acesso",
-            href: "/$slug/$teamSlug/settings/project/access-control",
-            icon: ShieldCheck,
-         },
-         {
-            id: "project-activity-logs",
-            title: "Registro de atividades",
-            href: "/$slug/$teamSlug/settings/project/activity-logs",
-            icon: ScrollText,
-         },
-         {
             id: "project-danger-zone",
             title: "Zona de perigo",
             href: "/$slug/$teamSlug/settings/project/danger-zone",
@@ -134,24 +110,6 @@ export const settingsNavSections: SettingsNavSection[] = [
             title: "Membros",
             href: "/$slug/$teamSlug/settings/organization/members",
             icon: Users,
-         },
-         {
-            id: "org-roles",
-            title: "Funções",
-            href: "/$slug/$teamSlug/settings/organization/roles",
-            icon: UserCog,
-         },
-         {
-            id: "org-authentication",
-            title: "Domínios de auth & SSO",
-            href: "/$slug/$teamSlug/settings/organization/authentication",
-            icon: Globe,
-         },
-         {
-            id: "org-security",
-            title: "Segurança",
-            href: "/$slug/$teamSlug/settings/organization/security",
-            icon: Lock,
          },
          {
             id: "org-billing",

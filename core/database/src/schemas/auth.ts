@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
    pgTable,
    text,
@@ -24,10 +24,6 @@ export const user = pgTable("user", {
       .defaultNow()
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
-   role: text("role"),
-   banned: boolean("banned").default(false),
-   banReason: text("ban_reason"),
-   banExpires: timestamp("ban_expires"),
    twoFactorEnabled: boolean("two_factor_enabled").default(false),
    stripeCustomerId: text("stripe_customer_id"),
    telemetryConsent: boolean("telemetry_consent").default(false).notNull(),
@@ -50,7 +46,6 @@ export const session = pgTable(
       userId: uuid("user_id")
          .notNull()
          .references(() => user.id, { onDelete: "cascade" }),
-      impersonatedBy: text("impersonated_by"),
       activeOrganizationId: text("active_organization_id"),
       activeTeamId: text("active_team_id"),
    },
@@ -121,7 +116,6 @@ export const team = pgTable(
       onboardingCompleted: boolean("onboarding_completed").default(false),
       onboardingProducts: jsonb("onboarding_products"),
       onboardingTasks: jsonb("onboarding_tasks"),
-      accountType: text("account_type").default("business"),
       cnpj: text("cnpj"),
       cnpjData: jsonb("cnpj_data"),
    },
@@ -229,8 +223,8 @@ export const apikey = pgTable(
       lastRefillAt: timestamp("last_refill_at"),
       enabled: boolean("enabled").default(true),
       rateLimitEnabled: boolean("rate_limit_enabled").default(true),
-      rateLimitTimeWindow: integer("rate_limit_time_window").default(60000),
-      rateLimitMax: integer("rate_limit_max").default(100),
+      rateLimitTimeWindow: integer("rate_limit_time_window").default(86400000),
+      rateLimitMax: integer("rate_limit_max").default(10),
       requestCount: integer("request_count").default(0),
       remaining: integer("remaining"),
       lastRequest: timestamp("last_request"),
@@ -268,3 +262,80 @@ export const subscription = pgTable("subscription", {
    billingInterval: text("billing_interval"),
    stripeScheduleId: text("stripe_schedule_id"),
 });
+
+export const userRelations = relations(user, ({ many }) => ({
+   sessions: many(session),
+   accounts: many(account),
+   teamMembers: many(teamMember),
+   members: many(member),
+   invitations: many(invitation),
+   twoFactors: many(twoFactor),
+}));
+
+export const sessionRelations = relations(session, ({ one }) => ({
+   user: one(user, {
+      fields: [session.userId],
+      references: [user.id],
+   }),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+   user: one(user, {
+      fields: [account.userId],
+      references: [user.id],
+   }),
+}));
+
+export const organizationRelations = relations(organization, ({ many }) => ({
+   teams: many(team),
+   members: many(member),
+   invitations: many(invitation),
+}));
+
+export const teamRelations = relations(team, ({ one, many }) => ({
+   organization: one(organization, {
+      fields: [team.organizationId],
+      references: [organization.id],
+   }),
+   teamMembers: many(teamMember),
+}));
+
+export const teamMemberRelations = relations(teamMember, ({ one }) => ({
+   team: one(team, {
+      fields: [teamMember.teamId],
+      references: [team.id],
+   }),
+   user: one(user, {
+      fields: [teamMember.userId],
+      references: [user.id],
+   }),
+}));
+
+export const memberRelations = relations(member, ({ one }) => ({
+   organization: one(organization, {
+      fields: [member.organizationId],
+      references: [organization.id],
+   }),
+   user: one(user, {
+      fields: [member.userId],
+      references: [user.id],
+   }),
+}));
+
+export const invitationRelations = relations(invitation, ({ one }) => ({
+   organization: one(organization, {
+      fields: [invitation.organizationId],
+      references: [organization.id],
+   }),
+   user: one(user, {
+      fields: [invitation.inviterId],
+      references: [user.id],
+   }),
+}));
+
+export const twoFactorRelations = relations(twoFactor, ({ one }) => ({
+   user: one(user, {
+      fields: [twoFactor.userId],
+      references: [user.id],
+   }),
+}));

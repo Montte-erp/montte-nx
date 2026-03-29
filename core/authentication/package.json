@@ -23,7 +23,8 @@
       "format": "oxfmt --write ./src",
       "format:check": "oxfmt --check ./src",
       "test": "vitest run --passWithNoTests",
-      "typecheck": "tsgo"
+      "typecheck": "tsgo",
+      "auth-schema-generate": "dotenv -e ../../apps/web/.env.local -- npx auth generate --config ./src/cli-config.ts --output ../database/src/schemas/auth.ts"
    },
    "dependencies": {
       "@better-auth/api-key": "catalog:auth",
@@ -42,6 +43,7 @@
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
+      "dotenv-cli": "catalog:environment",
       "typescript": "catalog:development"
    }
 }
