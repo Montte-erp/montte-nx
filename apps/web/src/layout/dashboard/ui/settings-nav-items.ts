@@ -15,7 +15,7 @@ import {
    User,
    Users,
 } from "lucide-react";
-import type { FeatureFlagKey } from "@core/posthog/feature-flags";
+import type { FeatureFlagKey } from "@core/posthog/config";
 
 export type SettingsNavItemDef = {
    id: string;
