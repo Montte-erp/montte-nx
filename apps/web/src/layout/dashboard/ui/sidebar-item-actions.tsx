@@ -7,7 +7,7 @@ import {
 } from "@packages/ui/components/dropdown-menu";
 import { SidebarMenuAction } from "@packages/ui/components/sidebar";
 import { useNavigate, useParams, useRouter } from "@tanstack/react-router";
-import { openInNewTab } from "foxact/open-in-new-tab";
+import { openInNewTab } from "foxact/open-new-tab";
 import { ExternalLink, MoreHorizontal, Pin, Plus } from "lucide-react";
 import { togglePinnedItem, useSidebarNav } from "../hooks/use-sidebar-nav";
 import type { NavItemDef } from "./sidebar-nav-items";
