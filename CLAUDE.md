@@ -644,6 +644,38 @@ await db.insert(member).values(memberData);
 
 Use the `orpc-testing` skill when writing new oRPC procedure tests.
 
+**Gotcha — `vite-tsconfig-paths` and self-referencing core packages:**
+
+Four core packages use `@core/<name>/*` path aliases internally within their own source files: `authentication`, `database`, `files`, and `logging`. When `vite-tsconfig-paths` is configured with a `projects` list in a vitest config, it only resolves paths for files within those listed projects. If a transitive dependency file lives inside one of these self-referencing packages, Vite falls back to Node package resolution and fails with "Cannot find package '@core/…'".
+
+**Fix:** Every `vitest.config.ts` in the monorepo must include the tsconfigs of all four self-referencing packages in its `projects` list (excluding itself):
+
+```typescript
+// From core/* packages (e.g., core/redis/vitest.config.ts)
+viteTsConfigPaths({
+   projects: [
+      "./tsconfig.test.json",
+      "../authentication/tsconfig.json", // self-referencing
+      "../database/tsconfig.json",       // self-referencing
+      "../files/tsconfig.json",          // self-referencing
+      "../logging/tsconfig.json",        // self-referencing
+   ],
+})
+
+// From packages/* or apps/* (e.g., packages/events/vitest.config.ts)
+viteTsConfigPaths({
+   projects: [
+      "./tsconfig.test.json",
+      "../../core/authentication/tsconfig.json",
+      "../../core/database/tsconfig.json",
+      "../../core/files/tsconfig.json",
+      "../../core/logging/tsconfig.json",
+   ],
+})
+```
+
+If a new core package starts using `@core/<name>/*` self-references, add its tsconfig to all vitest configs in the monorepo.
+
 ---
 
 ## Scripts

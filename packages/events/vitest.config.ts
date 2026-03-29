@@ -6,7 +6,10 @@ export default defineConfig({
       viteTsConfigPaths({
          projects: [
             "./tsconfig.test.json",
+            "../../core/authentication/tsconfig.json",
             "../../core/database/tsconfig.json",
+            "../../core/files/tsconfig.json",
+            "../../core/logging/tsconfig.json",
          ],
       }),
    ],
