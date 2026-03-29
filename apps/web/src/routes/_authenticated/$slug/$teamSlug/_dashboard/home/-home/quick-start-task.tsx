@@ -7,7 +7,7 @@ import { BankAccountForm } from "@/features/bank-accounts/ui/bank-accounts-form"
 import { CategoryForm } from "@/features/categories/ui/categories-form";
 import { TransactionDialogStack } from "@/features/transactions/ui/transaction-dialog-stack";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
-import type { TaskDefinition } from "../task-definitions";
+import type { TaskDefinition } from "./task-definitions";
 
 interface QuickStartTaskProps {
    task: TaskDefinition;
@@ -51,7 +51,6 @@ export function QuickStartTask({
             ),
          });
       }
-      // explore tasks (create_insight) have no action
    }, [isLocked, isCompleted, task.id, openDialogStack, closeDialogStack]);
 
    const handleKeyDown = useCallback(
@@ -88,14 +87,12 @@ export function QuickStartTask({
          role="button"
          tabIndex={isLocked ? -1 : 0}
       >
-         {/* Checkbox / checkmark / lock indicator */}
          <div className="mt-0.5 shrink-0">
             {isLocked ? (
                <Lock className="size-4 text-muted-foreground" />
             ) : isCompleted ? (
                <CheckCircle2 className="size-4 text-primary" />
             ) : isAutoDetected ? (
-               /* Auto-detected tasks show an empty circle until completed */
                <div className="size-4 rounded-full border-2 border-muted-foreground/40" />
             ) : (
                <Checkbox
@@ -106,7 +103,6 @@ export function QuickStartTask({
             )}
          </div>
 
-         {/* Task text */}
          <div className="min-w-0 flex-1">
             <p
                className={cn(

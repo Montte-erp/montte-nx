@@ -105,7 +105,6 @@ export function ThemeProvider({
          setTheme: (theme: Theme) => {
             // Validate theme to prevent empty strings
             if (!theme || theme.trim() === "") {
-               console.warn("Invalid theme provided, defaulting to system");
                theme = "system";
             }
 

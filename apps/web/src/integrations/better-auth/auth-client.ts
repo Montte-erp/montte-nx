@@ -48,7 +48,6 @@ function handleAuthError(error: AuthClientError) {
    // For now, just show toast. Error modal can be added later
    if (shouldShowErrorModal(path, code)) {
       // TODO: Show error modal
-      console.error("Auth error (repeated):", { path, code, message });
    }
 
    toast.error(message, {

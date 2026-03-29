@@ -131,19 +131,6 @@ function LogoSection({
    currentLogo: string | null;
    organizationName: string;
 }) {
-   // DEBUG: Check what's available in orpc.organization
-   console.log("[DEBUG] orpc keys:", Object.keys(orpc));
-   console.log("[DEBUG] orpc.organization:", orpc.organization);
-   console.log(
-      "[DEBUG] orpc.organization keys:",
-      Object.keys(orpc.organization),
-   );
-   console.log(
-      "[DEBUG] orpc.organization.generateLogoUploadUrl:",
-      orpc.organization.generateLogoUploadUrl,
-   );
-   console.log("[DEBUG] Type:", typeof orpc.organization.generateLogoUploadUrl);
-
    const queryClient = useQueryClient();
    const fileUpload = useFileUpload({
       acceptedTypes: ["image/*"],
@@ -153,53 +140,28 @@ function LogoSection({
 
    const saveMutation = useMutation({
       mutationFn: async () => {
-         console.log("[Logo Upload] Starting mutation...");
-
          if (!fileUpload.selectedFile) {
             throw new Error("No file selected");
          }
 
-         // Get file extension and content type
          const fileExtension =
             fileUpload.selectedFile.name.split(".").pop() ?? "png";
          const contentType = fileUpload.selectedFile.type;
 
-         console.log("[Logo Upload] File details:", {
-            name: fileUpload.selectedFile.name,
-            size: fileUpload.selectedFile.size,
-            type: contentType,
-            extension: fileExtension,
-         });
-
-         // Generate presigned URL for MinIO upload
-         console.log("[Logo Upload] Requesting presigned URL...");
          const uploadData = await orpc.organization.generateLogoUploadUrl.call({
             fileExtension,
             contentType,
          });
-         console.log("[Logo Upload] Got presigned URL:", {
-            presignedUrl: `${uploadData.presignedUrl.substring(0, 100)}...`,
-            publicUrl: uploadData.publicUrl,
-         });
 
-         // Upload file to MinIO
-         console.log("[Logo Upload] Uploading to MinIO...");
          await presignedUpload.uploadToPresignedUrl(
             uploadData.presignedUrl,
             fileUpload.selectedFile,
             contentType,
          );
-         console.log("[Logo Upload] MinIO upload complete");
 
-         // Update organization with logo path
-         console.log(
-            "[Logo Upload] Updating organization with logo URL:",
-            uploadData.publicUrl,
-         );
          await orpc.organization.updateLogo.call({
             logoUrl: uploadData.publicUrl,
          });
-         console.log("[Logo Upload] Organization updated successfully");
       },
       onSuccess: () => {
          toast.success("Logo atualizado com sucesso!");
@@ -209,12 +171,7 @@ function LogoSection({
                .queryKey,
          });
       },
-      onError: (error) => {
-         console.error("[Logo Upload] Failed:", {
-            error,
-            message: error instanceof Error ? error.message : "Unknown error",
-            stack: error instanceof Error ? error.stack : undefined,
-         });
+      onError: () => {
          toast.error("Erro ao atualizar logo");
       },
    });

@@ -48,8 +48,7 @@ export function createLogger(config: LoggerConfig): Logger {
 export function createSafeLogger(config: LoggerConfig): Logger {
    try {
       return createLogger(config);
-   } catch (error) {
-      console.warn("[Logging] Failed to create logger, using fallback:", error);
+   } catch {
       return pino({ name: config.name, level: config.level || "info" });
    }
 }

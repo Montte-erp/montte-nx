@@ -105,7 +105,7 @@ function TagsList() {
             },
          });
       },
-      [openAlertDialog, deleteMutation],
+      [openAlertDialog, deleteMutation, isBusiness, entityName],
    );
 
    const handleArchive = useCallback(

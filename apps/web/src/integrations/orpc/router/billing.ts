@@ -60,7 +60,7 @@ export const getInvoices = protectedProcedure
             invoicePdf: invoice.invoice_pdf ?? null,
             hostedInvoiceUrl: invoice.hosted_invoice_url ?? null,
          }));
-      } catch (_error) {
+      } catch {
          throw new ORPCError("INTERNAL_SERVER_ERROR", {
             message: "Failed to fetch invoices",
          });
@@ -105,7 +105,7 @@ export const getUpcomingInvoice = protectedProcedure.handler(
                quantity: line.quantity,
             })),
          };
-      } catch (_error) {
+      } catch {
          // If no upcoming invoice exists (e.g., canceled subscription), return null
          return null;
       }
@@ -157,7 +157,7 @@ export const getCurrentUsage = protectedProcedure.handler(
             storageProjected;
 
          return { monthToDate, projected, byCategory };
-      } catch (_error) {
+      } catch {
          throw new ORPCError("INTERNAL_SERVER_ERROR", {
             message: "Failed to fetch current usage",
          });
@@ -184,7 +184,7 @@ export const getStorageUsage = protectedProcedure.handler(
             monthToDateCost: Number(row?.monthToDateCost ?? 0),
             projectedCost: Number(row?.projectedCost ?? 0),
          };
-      } catch (_error) {
+      } catch {
          throw new ORPCError("INTERNAL_SERVER_ERROR", {
             message: "Failed to fetch storage usage",
          });
@@ -252,7 +252,7 @@ export const getCategoryUsage = protectedProcedure
                freeTierLimit: catalog?.freeTierLimit ?? 0,
             };
          });
-      } catch (_error) {
+      } catch {
          throw new ORPCError("INTERNAL_SERVER_ERROR", {
             message: "Failed to fetch category usage",
          });
@@ -285,7 +285,7 @@ export const getPaymentStatus = protectedProcedure.handler(
             limit: 1,
          });
          return { hasPaymentMethod: paymentMethods.data.length > 0 };
-      } catch (_error) {
+      } catch {
          return { hasPaymentMethod: false };
       }
    },
@@ -356,7 +356,7 @@ export const getDailyUsage = protectedProcedure
                countByCategory: Object.fromEntries(data.countByCategory),
             }))
             .sort((a, b) => a.date.localeCompare(b.date));
-      } catch (_error) {
+      } catch {
          throw new ORPCError("INTERNAL_SERVER_ERROR", {
             message: "Failed to fetch daily usage",
          });

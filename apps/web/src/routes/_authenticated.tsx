@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_authenticated")({
          session = await context.queryClient.fetchQuery(
             context.orpc.session.getSession.queryOptions({}),
          );
-      } catch (_error) {
+      } catch {
          // If session fetch fails, redirect to sign in
          throw redirect({
             to: "/auth/sign-in",

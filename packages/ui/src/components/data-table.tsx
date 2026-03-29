@@ -822,14 +822,8 @@ export function DataTable<TData, TValue>({
 
    useEffect(() => {
       if (reorderColumns && reorderRows) {
-         console.warn(
-            "[DataTable] reorderColumns and reorderRows cannot both be enabled at the same time. Row reordering will be disabled.",
-         );
       }
       if (groupBy && reorderRows) {
-         console.warn(
-            "[DataTable] groupBy and reorderRows cannot both be enabled at the same time. Row reordering will be disabled.",
-         );
       }
    }, [reorderColumns, reorderRows, groupBy]);
 

@@ -3,7 +3,7 @@ import { setupTestDb } from "../helpers/setup-test-db";
 import { bills, recurrenceSettings } from "@core/database/schemas/bills";
 import { contacts } from "@core/database/schemas/contacts";
 import * as repo from "../../src/repositories/bills-repository";
-import { and, count, eq, desc } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 

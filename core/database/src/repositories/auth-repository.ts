@@ -4,7 +4,7 @@ import { AppError, propagateError } from "@core/logging/errors";
 const logger = getLogger().child({ module: "db:auth" });
 
 import { createSlug, generateRandomSuffix } from "@core/utils/text";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    member,

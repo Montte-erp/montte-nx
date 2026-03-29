@@ -47,9 +47,14 @@ vi.mock("@core/database/client", () => ({
 vi.mock("@core/redis/connection", () => ({
    redis: {},
 }));
-vi.mock("@core/authentication/server", () => ({
-   auth: { api: {} },
-}));
+vi.mock("@core/authentication/server", async () => {
+   const { z } = await import("zod");
+   return {
+      auth: { api: {} },
+      cnpjDataSchema: z.object({}).passthrough(),
+      ORGANIZATION_LIMIT: 3,
+   };
+});
 vi.mock("@core/stripe", () => ({
    stripeClient: {},
 }));

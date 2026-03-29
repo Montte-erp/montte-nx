@@ -38,7 +38,8 @@
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
       "@types/bun": "latest",
+      "@vitest/coverage-v8": "catalog:testing",
       "typescript": "catalog:development",
-      "vitest": "^3.2.4"
+      "vitest": "catalog:testing"
    }
 }

@@ -33,7 +33,7 @@ interface WebhooksTableProps {
    webhooks: WebhookEndpoint[];
    isLoading?: boolean;
    onEdit: (webhook: WebhookEndpoint) => void;
-   onDelete: (webhook: WebhookEndpoint) => void;
+   onDelete?: (webhook: WebhookEndpoint) => void;
 }
 
 function formatTimestamp(value?: Date | string | null) {
@@ -154,7 +154,7 @@ export function WebhooksTable({
             ),
          },
       ],
-      [onDelete, onEdit],
+      [onEdit],
    );
 
    if (isLoading) {
