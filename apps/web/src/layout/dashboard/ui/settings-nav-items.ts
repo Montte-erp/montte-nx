@@ -16,6 +16,8 @@ import {
    Users,
 } from "lucide-react";
 
+type FeatureStage = "alpha" | "beta" | "concept" | "general-availability";
+
 export type SettingsNavItemDef = {
    id: string;
    title: string;
@@ -24,8 +26,7 @@ export type SettingsNavItemDef = {
    external?: boolean;
    danger?: boolean;
    earlyAccessFlag?: string;
-   earlyAccessStage?: "alpha" | "beta" | "concept" | "general-availability";
-   stage?: "alpha" | "beta" | "concept" | "general-availability";
+   stage?: FeatureStage;
    children?: SettingsNavItemDef[];
 };
 
@@ -59,7 +60,6 @@ export const settingsNavSections: SettingsNavSection[] = [
                   title: "Financeiro",
                   href: "/$slug/$teamSlug/settings/project/products/financeiro",
                   icon: DollarSign,
-                  stage: "general-availability",
                },
                {
                   id: "module-estoque",
