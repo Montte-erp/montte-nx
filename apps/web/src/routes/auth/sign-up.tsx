@@ -284,10 +284,12 @@ function SignUpPage() {
                                     type="submit"
                                     variant="default"
                                  >
-                                    {isPending && (
-                                       <Loader2 className="size-4 mr-2 animate-spin" />
-                                    )}
-                                    Enviar
+                                    <span className="flex items-center gap-2">
+                                       {isPending && (
+                                          <Loader2 className="size-4 animate-spin" />
+                                       )}
+                                       Enviar
+                                    </span>
                                  </Button>
                               )}
                            </form.Subscribe>
