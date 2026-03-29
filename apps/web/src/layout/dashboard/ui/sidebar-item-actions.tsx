@@ -7,6 +7,7 @@ import {
 } from "@packages/ui/components/dropdown-menu";
 import { SidebarMenuAction } from "@packages/ui/components/sidebar";
 import { useNavigate, useParams, useRouter } from "@tanstack/react-router";
+import { openInNewTab } from "foxact/open-in-new-tab";
 import { ExternalLink, MoreHorizontal, Pin, Plus } from "lucide-react";
 import { togglePinnedItem, useSidebarNav } from "../hooks/use-sidebar-nav";
 import type { NavItemDef } from "./sidebar-nav-items";
@@ -20,12 +21,10 @@ function QuickCreateButton({ item }: { item: NavItemDef }) {
 
    if (!item.quickAction) return null;
 
-   // For sub-menu items (dashboards/insights), delegate to SubSidebarNewMenu
    if (item.quickAction.target === "sub-menu" && item.subPanel) {
       return <SubSidebarNewMenu section={item.subPanel} />;
    }
 
-   // For sheet items, dispatch a custom event for the page to handle
    if (item.quickAction.target === "sheet") {
       const handleCreate = () => {
          window.dispatchEvent(
@@ -41,7 +40,6 @@ function QuickCreateButton({ item }: { item: NavItemDef }) {
       );
    }
 
-   // For navigate items, go to the create route
    const handleCreate = () => {
       return navigate({
          to: `${item.route}/new`,
@@ -69,7 +67,7 @@ function MoreMenu({ item }: { item: NavItemDef }) {
          to: item.route,
          params: { slug, teamSlug },
       });
-      window.open(href, "_blank");
+      openInNewTab(href);
    };
 
    const handleTogglePin = () => {
