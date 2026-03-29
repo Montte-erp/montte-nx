@@ -13,7 +13,6 @@ import {
 import {
    Link,
    useLocation,
-   useNavigate,
    useParams,
    useRouter,
 } from "@tanstack/react-router";
@@ -192,7 +191,6 @@ export function SidebarDefaultItems() {
       isItemActive,
    } = useNavHandlers();
    const { pathname } = useLocation();
-   const navigate = useNavigate();
    const { isEnrolled } = useEarlyAccess();
    const { isVisible } = useSidebarVisibility();
 
