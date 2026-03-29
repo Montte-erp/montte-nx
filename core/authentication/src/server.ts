@@ -157,13 +157,6 @@ export function createAuth(deps: CreateAuthDeps) {
                },
             },
          },
-         user: {
-            create: {
-               after: async (_user) => {
-                  // Organization creation handled by onboarding flow.
-               },
-            },
-         },
       },
 
       emailAndPassword: {
@@ -192,7 +185,6 @@ export function createAuth(deps: CreateAuthDeps) {
          changeEmail: {
             enabled: true,
          },
-         additionalFields: {},
       },
 
       plugins: [
