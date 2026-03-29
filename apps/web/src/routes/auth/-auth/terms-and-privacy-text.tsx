@@ -1,32 +1,27 @@
 import { FieldDescription } from "@packages/ui/components/field";
 
 export function TermsAndPrivacyText() {
-   const text =
-      "Ao continuar, voce concorda com nossos {split} e {split}.".split(
-         "{split}",
-      );
-
    return (
       <FieldDescription className="text-center">
-         <span>{text[0]}</span>
+         <span>Ao continuar, você concorda com nossos </span>
          <a
             className="underline text-muted-foreground hover:text-primary"
             href="https://montte.co/terms-of-service"
             rel="noopener noreferrer"
             target="_blank"
          >
-            Termos de Servico
+            Termos de Serviço
          </a>
-         <span>{text[1]}</span>
+         <span> e </span>
          <a
             className="underline text-muted-foreground hover:text-primary"
             href="https://montte.co/privacy-policy"
             rel="noopener noreferrer"
             target="_blank"
          >
-            Politica de Privacidade
+            Política de Privacidade
          </a>
-         <span>{text[2]}</span>
+         <span>.</span>
       </FieldDescription>
    );
 }
