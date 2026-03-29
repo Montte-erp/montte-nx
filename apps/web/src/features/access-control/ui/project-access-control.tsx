@@ -17,7 +17,7 @@ import {
 } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Search, ShieldCheck } from "lucide-react";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -164,28 +164,31 @@ function AccessControlContent({ teamId }: { teamId: string }) {
       }),
    );
 
-   function handleToggleAccess(member: MemberRow) {
-      if (member.hasAccess) {
-         openAlertDialog({
-            title: "Remover acesso",
-            description: `Tem certeza que deseja remover o acesso de ${member.name} a este projeto?`,
-            actionLabel: "Remover",
-            cancelLabel: "Cancelar",
-            variant: "destructive",
-            onAction: async () => {
-               await removeMemberMutation.mutateAsync({
-                  teamId,
-                  userId: member.id,
-               });
-            },
-         });
-      } else {
-         addMemberMutation.mutate({
-            teamId,
-            userId: member.id,
-         });
-      }
-   }
+   const handleToggleAccess = useCallback(
+      (member: MemberRow) => {
+         if (member.hasAccess) {
+            openAlertDialog({
+               title: "Remover acesso",
+               description: `Tem certeza que deseja remover o acesso de ${member.name} a este projeto?`,
+               actionLabel: "Remover",
+               cancelLabel: "Cancelar",
+               variant: "destructive",
+               onAction: async () => {
+                  await removeMemberMutation.mutateAsync({
+                     teamId,
+                     userId: member.id,
+                  });
+               },
+            });
+         } else {
+            addMemberMutation.mutate({
+               teamId,
+               userId: member.id,
+            });
+         }
+      },
+      [openAlertDialog, removeMemberMutation, addMemberMutation, teamId],
+   );
 
    const columns: ColumnDef<MemberRow>[] = useMemo(
       () => [

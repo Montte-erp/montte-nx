@@ -300,7 +300,7 @@ export const ColorPickerEyeDropper = ({
          setSaturation(s ?? 1);
          setLightness(l ?? 1);
          setAlpha(100);
-      } catch (error) {}
+      } catch {}
    };
 
    return (

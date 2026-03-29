@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
          session = await context.queryClient.fetchQuery(
             context.orpc.session.getSession.queryOptions({}),
          );
-      } catch (_error) {
+      } catch {
          throw redirect({ to: "/auth/sign-in" });
       }
 
