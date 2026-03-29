@@ -1,7 +1,6 @@
 import { ScriptOnce } from "@tanstack/react-router";
 import * as React from "react";
 
-// FunctionOnce utility for TanStack Router integration
 function FunctionOnce<T = unknown>({
    children,
    param,
@@ -16,7 +15,6 @@ function FunctionOnce<T = unknown>({
    );
 }
 
-// Modern theme types
 export type ResolvedTheme = "dark" | "light";
 export type Theme = ResolvedTheme | "system";
 
@@ -34,7 +32,6 @@ export interface ThemeProviderProps {
    attribute?: "class" | "data-theme";
 }
 
-const isBrowser = typeof window !== "undefined";
 const initialState: UseThemeProps = {
    resolvedTheme: "light",
    setTheme: () => null,
@@ -50,10 +47,7 @@ export function ThemeProvider({
    attribute = "class",
 }: ThemeProviderProps) {
    const [theme, setTheme] = React.useState<Theme>(
-      () =>
-         (isBrowser
-            ? (localStorage.getItem(storageKey) as Theme)
-            : defaultTheme) || defaultTheme,
+      () => (localStorage.getItem(storageKey) as Theme) || defaultTheme,
    );
    const [resolvedTheme, setResolvedTheme] =
       React.useState<ResolvedTheme>("light");
@@ -103,7 +97,6 @@ export function ThemeProvider({
       () => ({
          resolvedTheme,
          setTheme: (theme: Theme) => {
-            // Validate theme to prevent empty strings
             if (!theme || theme.trim() === "") {
                theme = "system";
             }
