@@ -192,14 +192,7 @@ export function createAuth(deps: CreateAuthDeps) {
          changeEmail: {
             enabled: true,
          },
-         additionalFields: {
-            telemetryConsent: {
-               defaultValue: false,
-               input: true,
-               required: true,
-               type: "boolean",
-            },
-         },
+         additionalFields: {},
       },
 
       plugins: [

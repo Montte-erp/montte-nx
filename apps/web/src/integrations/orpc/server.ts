@@ -129,7 +129,6 @@ const withTelemetry = withErrorHandling.use(
       const userId = context.session?.user?.id;
       const userEmail = context.session?.user?.email;
       const userName = context.session?.user?.name;
-      const hasConsent = context.session?.user?.telemetryConsent;
       const organizationId = context.organizationId;
       const teamId = context.teamId;
 
@@ -149,7 +148,7 @@ const withTelemetry = withErrorHandling.use(
          attributes: otelIdentity,
       });
 
-      if (userId && hasConsent && context.posthog) {
+      if (userId && context.posthog) {
          identifyUser(context.posthog, userId, {
             email: userEmail,
             name: userName,
@@ -188,7 +187,7 @@ const withTelemetry = withErrorHandling.use(
             },
          });
 
-         if (userId && hasConsent && context.posthog) {
+         if (userId && context.posthog) {
             try {
                const rootPath = path[0];
 
