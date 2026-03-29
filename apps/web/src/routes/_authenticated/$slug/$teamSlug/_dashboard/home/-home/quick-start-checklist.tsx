@@ -11,24 +11,19 @@ import { useParams } from "@tanstack/react-router";
 import { ChevronDown, ChevronUp, Rocket, X } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useSafeLocalStorage } from "@/hooks/use-local-storage";
-import { useCompleteTask } from "../hooks/use-complete-task";
-import { useOnboardingStatus } from "../hooks/use-onboarding-status";
+import { useCompleteTask } from "./use-complete-task";
+import { useOnboardingStatus } from "./use-onboarding-status";
 import {
    getProductLabel,
    getTasksForProducts,
    type ProductId,
    SDK_INSTALL_TASK_IDS,
    type TaskDefinition,
-} from "../task-definitions";
+} from "./task-definitions";
 import { QuickStartTask } from "./quick-start-task";
 
 const CHECKLIST_HIDDEN_STORAGE_KEY = "montte:checklist_hidden";
 
-/**
- * Quick Start checklist card for the home page.
- * Shows onboarding tasks grouped by product with progress tracking.
- * Only renders when onboarding is completed and tasks remain.
- */
 export function QuickStartChecklist() {
    const { data: status } = useOnboardingStatus();
    const completeTaskMutation = useCompleteTask();
@@ -54,12 +49,10 @@ export function QuickStartChecklist() {
 
    const tasksMap = (status?.project?.tasks ?? {}) as Record<string, boolean>;
 
-   // Check if an SDK install task is completed - treat as linked
    const isTaskCompleted = useCallback(
       (taskId: string): boolean => {
          if (tasksMap[taskId]) return true;
 
-         // SDK tasks are linked: completing one completes the other
          if (
             SDK_INSTALL_TASK_IDS.includes(
                taskId as (typeof SDK_INSTALL_TASK_IDS)[number],
@@ -81,7 +74,6 @@ export function QuickStartChecklist() {
       [isTaskCompleted],
    );
 
-   // Split tasks into core (setup + onboarding) and explore
    const coreTasks = useMemo(
       () => tasks.filter((t) => t.type === "setup" || t.type === "onboarding"),
       [tasks],
@@ -105,7 +97,6 @@ export function QuickStartChecklist() {
          ? Math.round((completedAllCount / tasks.length) * 100)
          : 0;
 
-   // Group tasks by product for display
    const groupedTasks = useMemo(() => {
       const displayTasks = allCoreDone ? exploreTasks : coreTasks;
       const groups = new Map<ProductId, TaskDefinition[]>();
@@ -132,7 +123,6 @@ export function QuickStartChecklist() {
       }
    }, [slug, setHiddenBySlug]);
 
-   // Determine visibility
    if (!status?.project?.onboardingCompleted) return null;
    if (isHidden) return null;
    if (allDone) return null;
@@ -153,7 +143,6 @@ export function QuickStartChecklist() {
                      : `Complete as tarefas abaixo para comecar a usar o Montte. ${completedAllCount} de ${tasks.length} concluidas.`}
                </CardDescription>
 
-               {/* Progress bar */}
                <div className="flex items-center gap-3 pt-1">
                   <Progress className="flex-1" value={progressPercent} />
                   <span className="text-xs font-medium text-muted-foreground tabular-nums">
@@ -162,7 +151,6 @@ export function QuickStartChecklist() {
                </div>
             </div>
 
-            {/* Collapse & hide buttons */}
             <div className="flex items-center gap-1 shrink-0">
                <Button
                   className="size-8"

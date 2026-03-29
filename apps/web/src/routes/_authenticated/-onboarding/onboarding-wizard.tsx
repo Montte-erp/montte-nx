@@ -18,7 +18,12 @@ import {
    type Session,
 } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
-import { type CnpjData, CnpjStep } from "./cnpj-step";
+import type { Inputs } from "@/integrations/orpc/client";
+import { CnpjStep } from "./cnpj-step";
+
+type CnpjData = NonNullable<
+   Inputs["onboarding"]["createWorkspace"]["cnpjData"]
+>;
 import { ProfileStep } from "./profile-step";
 import type { StepHandle, StepState } from "./step-handle";
 

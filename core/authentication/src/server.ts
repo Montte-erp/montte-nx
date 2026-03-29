@@ -30,6 +30,27 @@ import type { ResendClient } from "@core/transactional/utils";
 
 const logger = getLogger().child({ module: "auth" });
 
+export const cnpjDataSchema = z.object({
+   cnpj: z.string(),
+   razao_social: z.string(),
+   nome_fantasia: z.string().nullable(),
+   cnae_fiscal: z.number(),
+   cnae_fiscal_descricao: z.string().nullable(),
+   cnaes_secundarios: z.array(
+      z.object({ codigo: z.number(), descricao: z.string() }),
+   ),
+   porte: z.string().nullable(),
+   natureza_juridica: z.string().nullable(),
+   municipio: z.string(),
+   uf: z.string(),
+   data_inicio_atividade: z.string(),
+   descricao_situacao_cadastral: z.string(),
+   qsa: z.array(z.unknown()),
+   regime_tributario: z.array(z.unknown()),
+});
+
+export type CnpjData = z.infer<typeof cnpjDataSchema>;
+
 export const ORGANIZATION_LIMIT = 3;
 
 const devMagicLinkStore = new Map<string, string>();
@@ -306,10 +327,7 @@ export function createAuth(deps: CreateAuthDeps) {
                         required: false,
                         type: "json",
                         validator: {
-                           input: z
-                              .record(z.string(), z.unknown())
-                              .nullable()
-                              .optional(),
+                           input: cnpjDataSchema.nullable().optional(),
                         },
                      },
                   },

@@ -16,25 +16,12 @@ import {
    useRef,
    useState,
 } from "react";
+import type { Inputs } from "@/integrations/orpc/client";
 import type { StepHandle, StepState } from "./step-handle";
 
-export interface CnpjData {
-   cnpj: string;
-   razao_social: string;
-   nome_fantasia: string | null;
-   cnae_fiscal: number;
-   cnae_fiscal_descricao: string | null;
-   cnaes_secundarios: { codigo: number; descricao: string }[];
-   porte: string | null;
-   natureza_juridica: string | null;
-   municipio: string;
-   uf: string;
-   data_inicio_atividade: string;
-   descricao_situacao_cadastral: string;
-   qsa: unknown[];
-   regime_tributario: unknown[];
-   [key: string]: unknown;
-}
+type CnpjData = NonNullable<
+   Inputs["onboarding"]["createWorkspace"]["cnpjData"]
+>;
 
 const PORTE_MAP: Record<string, string> = {
    ME: "Microempresa",

@@ -23,6 +23,7 @@ import { createSlug } from "@core/utils/text";
 
 const logger = getLogger().child({ module: "router:onboarding" });
 
+import { cnpjDataSchema } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog } from "posthog-node";
 import { z } from "zod";
@@ -135,7 +136,7 @@ export const createWorkspace = authenticatedProcedure
             .regex(/^\d{14}$/)
             .nullable()
             .optional(),
-         cnpjData: z.record(z.string(), z.unknown()).nullable().optional(),
+         cnpjData: cnpjDataSchema.nullable().optional(),
       }),
    )
    .handler(async ({ context, input }) => {
@@ -202,12 +203,12 @@ export const createWorkspace = authenticatedProcedure
             await enrollInAllFeatures(posthog, userId, org.id);
 
             if (input.cnpjData) {
-               const d = input.cnpjData as Record<string, unknown>;
+               const d = input.cnpjData;
                posthog.groupIdentify({
                   groupType: "organization",
                   groupKey: org.id,
                   properties: {
-                     cnpj: input.cnpj,
+                     cnpj: d.cnpj,
                      razao_social: d.razao_social,
                      nome_fantasia: d.nome_fantasia,
                      cnae_fiscal_descricao: d.cnae_fiscal_descricao,
