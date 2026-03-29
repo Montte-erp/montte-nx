@@ -1,7 +1,6 @@
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { setupTestDb } from "../helpers/setup-test-db";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
-import { categories } from "@core/database/schemas/categories";
 import { tags } from "@core/database/schemas/tags";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import * as repo from "../../src/repositories/transactions-repository";
@@ -26,17 +25,6 @@ async function createTestBankAccount(teamId: string, name = "Conta Teste") {
       .values({ teamId, name, type: "checking", initialBalance: "1000.00" })
       .returning();
    return account!;
-}
-
-async function createTestCategory(
-   teamId: string,
-   type: "income" | "expense" = "expense",
-) {
-   const [category] = await testDb.db
-      .insert(categories)
-      .values({ teamId, name: `Cat-${crypto.randomUUID().slice(0, 8)}`, type })
-      .returning();
-   return category!;
 }
 
 async function createTestCreditCard(teamId: string, bankAccountId: string) {

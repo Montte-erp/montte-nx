@@ -27,7 +27,7 @@
       "./postcss.config": "./postcss.config.mjs"
    },
    "scripts": {
-      "build": "tsc --build && mkdir -p dist/styles && cp src/styles/globals.css dist/styles/globals.css",
+      "build": "tsc --build",
       "check": "oxlint ./src",
       "typecheck": "tsgo"
    },

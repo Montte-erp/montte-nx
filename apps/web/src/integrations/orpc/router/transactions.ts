@@ -175,7 +175,7 @@ export const importBulk = protectedProcedure
    .handler(async ({ context, input }) => {
       let imported = 0;
       for (const t of input.transactions) {
-         const { tagIds, items, ...data } = t;
+         const { tagIds, items: _items, ...data } = t;
          await validateTransactionReferences(context.db, context.teamId, {
             bankAccountId: data.bankAccountId,
             destinationBankAccountId: data.destinationBankAccountId,

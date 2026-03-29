@@ -1,11 +1,18 @@
+import { apiKey } from "@better-auth/api-key";
+import { stripeClient } from "@better-auth/stripe/client";
 import {
-   type AuthClientError,
-   createAuthClient as createBetterAuthClient,
-} from "@core/authentication/client";
+   emailOTPClient,
+   inferAdditionalFields,
+   lastLoginMethodClient,
+   magicLinkClient,
+   organizationClient,
+   twoFactorClient,
+} from "better-auth/client/plugins";
+import { createAuthClient as createBetterAuthClient } from "better-auth/react";
+import type { AuthInstance } from "@core/authentication/server";
 import { toast } from "sonner";
 import { invalidateAllQueries } from "./query-bridge";
 
-// Error tracking for showing error modal after repeated errors
 const ERROR_THRESHOLD = 3;
 const ERROR_WINDOW_MS = 60 * 1000;
 
@@ -40,36 +47,35 @@ function shouldShowErrorModal(path: string, code: string): boolean {
    return false;
 }
 
-function handleAuthError(error: AuthClientError) {
-   const path = "auth";
-   const code = `HTTP_${error.status}`;
-   const message = error.message || error.statusText;
-
-   // For now, just show toast. Error modal can be added later
-   if (shouldShowErrorModal(path, code)) {
-      // TODO: Show error modal
-      console.error("Auth error (repeated):", { path, code, message });
-   }
-
-   toast.error(message, {
-      description: `${path} (${code})`,
-   });
-}
-
 export const authClient = createBetterAuthClient({
-   // Empty string allows Better Auth to infer base URL from current origin
-   apiBaseUrl: "",
-   onError: handleAuthError,
-   onSuccess: () => {
-      // Invalidate all queries after any successful Better Auth operation
-      // This ensures cache stays fresh after org/team/user updates
-      invalidateAllQueries();
+   baseURL: "",
+   fetchOptions: {
+      onError: (context) => {
+         const path = "auth";
+         const code = `HTTP_${context.response.status}`;
+         const message = context.error?.message || context.response.statusText;
+         if (shouldShowErrorModal(path, code)) {
+            // TODO: Show error modal
+         }
+         toast.error(message, { description: `${path} (${code})` });
+      },
+      onSuccess: () => {
+         invalidateAllQueries();
+      },
    },
+   plugins: [
+      inferAdditionalFields<AuthInstance>(),
+      stripeClient({ subscription: true }),
+      magicLinkClient(),
+      emailOTPClient(),
+      organizationClient({ teams: { enabled: true } }),
+      apiKey(),
+      twoFactorClient(),
+      lastLoginMethodClient(),
+   ],
 });
 
-// Re-export useful hooks and functions from Better Auth
 export const { useSession, signIn, signUp, signOut } = authClient;
 
-// Type exports for session inference
 export type Session = typeof authClient.$Infer.Session;
 export type User = typeof authClient.$Infer.Session.user;

@@ -1,10 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { printJson, printTable, printRecord } from "../src/output";
 
 let logSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
    logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+});
+
+afterEach(() => {
+   logSpy.mockRestore();
 });
 
 describe("printJson", () => {

@@ -61,9 +61,6 @@
          "path": "../../core/environment"
       },
       {
-         "path": "../../core/authentication"
-      },
-      {
          "path": "../../packages/ui"
       },
       {

@@ -55,7 +55,7 @@ export const clearPageViewSwitch = () =>
    contextPanelStore.setState((s) => ({ ...s, pageViewSwitch: null }));
 
 export const useContextPanelInfo = (content: React.ReactNode) => {
-   // biome-ignore lint/correctness/useExhaustiveDependencies: content is intentionally stable on mount
+   // oxlint-ignore exhaustive-deps
    useEffect(() => {
       setInfoContent(content);
       return () => clearInfoContent();

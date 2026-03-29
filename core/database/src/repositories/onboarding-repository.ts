@@ -29,7 +29,6 @@ export async function markTeamOnboardingComplete(
    teamId: string,
    data: {
       slug: string;
-      accountType: string;
       onboardingProducts: string[];
    },
 ) {
@@ -38,7 +37,6 @@ export async function markTeamOnboardingComplete(
          .update(team)
          .set({
             slug: data.slug,
-            accountType: data.accountType,
             onboardingProducts: data.onboardingProducts,
             onboardingCompleted: true,
          })

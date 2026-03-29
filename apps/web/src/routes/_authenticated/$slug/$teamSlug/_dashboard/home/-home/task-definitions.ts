@@ -1,16 +1,3 @@
-/**
- * Static task definitions for the Quick Start checklist.
- *
- * Each task belongs to a product (finance) and has a type
- * that determines its lifecycle:
- *   - setup: core configuration tasks
- *   - onboarding: first-use tasks
- *   - explore: optional exploration tasks (shown in "continue exploring" state)
- *
- * Tasks with `autoDetect: true` are automatically completed by the backend
- * when the corresponding resource exists. Manual tasks use a clickable checkbox.
- */
-
 export type TaskType = "setup" | "onboarding" | "explore";
 export type ProductId = "finance";
 
@@ -26,7 +13,6 @@ export interface TaskDefinition {
 }
 
 export const TASK_DEFINITIONS: TaskDefinition[] = [
-   // ── Finance tasks ───────────────────────────────────────────────────
    {
       id: "connect_bank_account",
       title: "Conecte uma conta bancária",
@@ -70,9 +56,6 @@ export const TASK_DEFINITIONS: TaskDefinition[] = [
    },
 ];
 
-/**
- * Returns the task definitions filtered for the given selected products.
- */
 export function getTasksForProducts(
    selectedProducts: string[] | null,
 ): TaskDefinition[] {
@@ -82,9 +65,6 @@ export function getTasksForProducts(
    return TASK_DEFINITIONS;
 }
 
-/**
- * Returns a display label (in Portuguese) for each product.
- */
 export function getProductLabel(product: ProductId): string {
    switch (product) {
       case "finance":
@@ -92,5 +72,4 @@ export function getProductLabel(product: ProductId): string {
    }
 }
 
-// No SDK install de-duplication needed for finance
 export const SDK_INSTALL_TASK_IDS: readonly string[] = [];

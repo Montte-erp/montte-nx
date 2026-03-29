@@ -1,6 +1,6 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
 import { add, of, subtract, toDecimal } from "@f-o-t/money";
-import { and, asc, eq, or, sql } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateBankAccountInput,

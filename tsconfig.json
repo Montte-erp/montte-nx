@@ -4,9 +4,6 @@
    "exclude": [".worktrees", "node_modules", "dist"],
    "references": [
       {
-         "path": "./core/authentication"
-      },
-      {
          "path": "./core/transactional"
       },
       {

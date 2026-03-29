@@ -32,10 +32,10 @@
             "astro": "5.17.2"
          },
          "auth": {
-            "better-auth": "1.5.5",
-            "@better-auth/api-key": "1.5.5",
-            "@better-auth/drizzle-adapter": "1.5.5",
-            "@better-auth/stripe": "1.5.5"
+            "better-auth": "1.5.6",
+            "@better-auth/api-key": "1.5.6",
+            "@better-auth/drizzle-adapter": "1.5.6",
+            "@better-auth/stripe": "1.5.6"
          },
          "database": {
             "@types/pg": "^8.16.0",
