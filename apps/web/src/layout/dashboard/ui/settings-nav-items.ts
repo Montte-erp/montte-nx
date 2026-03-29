@@ -15,8 +15,7 @@ import {
    User,
    Users,
 } from "lucide-react";
-
-type FeatureStage = "alpha" | "beta" | "concept" | "general-availability";
+import type { FeatureFlagKey } from "@core/posthog/feature-flags";
 
 export type SettingsNavItemDef = {
    id: string;
@@ -25,8 +24,7 @@ export type SettingsNavItemDef = {
    icon?: LucideIcon;
    external?: boolean;
    danger?: boolean;
-   earlyAccessFlag?: string;
-   stage?: FeatureStage;
+   earlyAccessFlag?: FeatureFlagKey;
    children?: SettingsNavItemDef[];
 };
 
@@ -66,21 +64,21 @@ export const settingsNavSections: SettingsNavSection[] = [
                   title: "Estoque",
                   href: "/$slug/$teamSlug/settings/project/products/estoque",
                   icon: Package,
-                  stage: "beta",
+                  earlyAccessFlag: "produtos-estoque",
                },
                {
                   id: "module-contatos",
                   title: "Contatos",
                   href: "/$slug/$teamSlug/settings/project/products/contatos",
                   icon: Contact2,
-                  stage: "beta",
+                  earlyAccessFlag: "contatos",
                },
                {
                   id: "module-assistente-ia",
                   title: "Assistente IA",
                   href: "/$slug/$teamSlug/settings/project/products/ai-agents",
                   icon: Sparkles,
-                  stage: "alpha",
+                  earlyAccessFlag: "analises-avancadas",
                },
             ],
          },

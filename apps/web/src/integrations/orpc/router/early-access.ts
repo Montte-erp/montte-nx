@@ -1,12 +1,8 @@
+import { FEATURE_FLAG_KEYS } from "@core/posthog/feature-flags";
+import type { FeatureFlagKey } from "@core/posthog/feature-flags";
 import { protectedProcedure } from "../server";
 
-const FLAG_KEYS = new Set([
-   "contacts",
-   "inventory",
-   "services",
-   "advanced-analytics",
-   "data-management",
-]);
+const FLAG_KEYS = new Set<string>(FEATURE_FLAG_KEYS as readonly FeatureFlagKey[]);
 
 export const getEnrolledFeatures = protectedProcedure.handler(
    async ({ context }) => {

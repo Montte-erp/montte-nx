@@ -11,7 +11,7 @@ export type EarlyAccessStage =
 export type EarlyAccessFeature = {
    name: string;
    description: string;
-   stage: EarlyAccessStage;
+   stage: EarlyAccessStage | null;
    documentationUrl: string | null;
    flagKey: string | null;
 };

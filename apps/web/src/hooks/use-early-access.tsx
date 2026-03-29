@@ -15,6 +15,7 @@ import type {
    EarlyAccessStage,
 } from "@/integrations/posthog/client";
 import { normalizeEarlyAccessStage } from "@/integrations/posthog/client";
+import type { FeatureFlagKey } from "@core/posthog/feature-flags";
 
 type EarlyAccessContextValue = {
    features: EarlyAccessFeature[];
@@ -25,52 +26,50 @@ type EarlyAccessContextValue = {
    dismissBanner: () => void;
 };
 
-const STATIC_FEATURES: EarlyAccessFeature[] = [
+const STATIC_FEATURES: Array<{
+   flagKey: FeatureFlagKey;
+   name: string;
+   description: string;
+   documentationUrl: string | null;
+}> = [
    {
-      flagKey: "contacts",
+      flagKey: "contatos",
       name: "Contatos",
       description:
          "Cadastro de clientes e fornecedores, vinculação com transações e cobranças.",
-      stage: "alpha",
       documentationUrl: null,
    },
    {
-      flagKey: "inventory",
+      flagKey: "produtos-estoque",
       name: "Produtos (Estoque)",
       description:
          "Cadastre e gerencie o catálogo de produtos da sua empresa — controle de estoque, preços, variantes e categorias.",
-      stage: "concept",
       documentationUrl: null,
    },
    {
-      flagKey: "services",
+      flagKey: "gestao-de-servicos",
       name: "Gestão de Serviços",
       description:
          "Gestão completa de serviços: planos, assinaturas, descontos negociados e faturamento recorrente.",
-      stage: "concept",
       documentationUrl: null,
    },
    {
-      flagKey: "advanced-analytics",
+      flagKey: "analises-avancadas",
       name: "Análises Avançadas",
       description:
          "Acesse dados avançados, dashboards personalizados e insights inteligentes em um só lugar. Tome decisões mais rápidas com uma visão completa do seu negócio.",
-      stage: "beta",
       documentationUrl: null,
    },
    {
-      flagKey: "data-management",
+      flagKey: "dados",
       name: "Dados",
       description:
          "Pipeline de dados para captura de eventos externos via webhooks e SDKs, configuração de destinos e gerenciamento de schema — infraestrutura para integrações com sistemas externos.",
-      stage: "concept",
       documentationUrl: null,
    },
 ];
 
-const STATIC_FLAG_KEYS = new Set(
-   STATIC_FEATURES.map((f) => f.flagKey).filter((k): k is string => k !== null),
-);
+const STATIC_FLAG_KEYS = new Set(STATIC_FEATURES.map((f) => f.flagKey));
 
 const EarlyAccessContext = createContext<EarlyAccessContextValue | null>(null);
 
@@ -112,14 +111,22 @@ export function EarlyAccessProvider({ children }: { children: ReactNode }) {
       const posthogByKey = new Map(
          posthogFeatures.filter((f) => f.flagKey).map((f) => [f.flagKey, f]),
       );
-      const merged = STATIC_FEATURES.map((f) =>
-         f.flagKey && posthogByKey.has(f.flagKey)
-            ? (posthogByKey.get(f.flagKey) as EarlyAccessFeature)
-            : f,
-      );
+
+      const merged = STATIC_FEATURES.map((f) => {
+         const fromPosthog = posthogByKey.get(f.flagKey);
+         return {
+            flagKey: f.flagKey,
+            name: fromPosthog?.name ?? f.name,
+            description: fromPosthog?.description ?? f.description,
+            documentationUrl: fromPosthog?.documentationUrl ?? f.documentationUrl,
+            stage: fromPosthog?.stage ?? null,
+         } satisfies EarlyAccessFeature;
+      });
+
       const extra = posthogFeatures.filter(
-         (f) => f.flagKey && !STATIC_FLAG_KEYS.has(f.flagKey),
+         (f) => f.flagKey && !STATIC_FLAG_KEYS.has(f.flagKey as FeatureFlagKey),
       );
+
       return [...merged, ...extra];
    }, [posthogFeatures]);
 

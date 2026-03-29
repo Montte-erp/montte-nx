@@ -115,12 +115,9 @@ function NavItem({
                               to: child.href,
                               params: { slug, teamSlug },
                            }).pathname;
-                        const earlyStage =
-                           child.stage ??
-                           (child.earlyAccessFlag &&
-                           isEnrolled(child.earlyAccessFlag)
-                              ? getFeatureStage(child.earlyAccessFlag)
-                              : null);
+                        const earlyStage = child.earlyAccessFlag
+                           ? getFeatureStage(child.earlyAccessFlag)
+                           : null;
                         return (
                            <SidebarMenuSubItem key={child.id}>
                               <SidebarMenuSubButton
