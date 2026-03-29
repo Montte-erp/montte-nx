@@ -1,5 +1,4 @@
 import { Button } from "@packages/ui/components/button";
-import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import {
    Item,
@@ -9,14 +8,14 @@ import {
    ItemSeparator,
    ItemTitle,
 } from "@packages/ui/components/item";
+import { Separator } from "@packages/ui/components/separator";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import { useForm } from "@tanstack/react-form";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
-import { Calendar, Hash, Loader2, Settings2 } from "lucide-react";
-import { Suspense, useCallback, useTransition } from "react";
+import { Hash, Loader2, Settings2 } from "lucide-react";
+import { Suspense, useState, useTransition } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
 import { authClient } from "@/integrations/better-auth/auth-client";
@@ -32,19 +31,23 @@ export const Route = createFileRoute(
 
 function ProjectGeneralSkeleton() {
    return (
-      <div className="flex flex-col gap-6">
-         <div className="flex flex-col gap-2">
-            <Skeleton className="h-6 w-1/3" />
-            <Skeleton className="h-4 w-2/3" />
-            <div className="flex flex-col gap-1">
-               <Skeleton className="h-16 w-full rounded-lg" />
-               <Skeleton className="h-16 w-full rounded-lg" />
-            </div>
+      <div className="space-y-8">
+         <div>
+            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-4 w-64 mt-1" />
          </div>
-         <div className="flex flex-col gap-2">
-            <Skeleton className="h-6 w-1/3" />
-            <Skeleton className="h-4 w-2/3" />
-            <Skeleton className="h-16 w-full rounded-lg" />
+         <div className="space-y-3">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-10 w-80" />
+            <Skeleton className="h-8 w-48" />
+         </div>
+         <Skeleton className="h-px w-full" />
+         <div className="space-y-3">
+            <Skeleton className="h-6 w-40" />
+            <div className="space-y-2">
+               <Skeleton className="h-14 w-full" />
+               <Skeleton className="h-14 w-full" />
+            </div>
          </div>
       </div>
    );
@@ -55,7 +58,7 @@ function ProjectGeneralErrorFallback({
    resetErrorBoundary,
 }: FallbackProps) {
    return (
-      <div className="flex flex-col gap-6">
+      <div className="space-y-6">
          <div>
             <h1 className="text-2xl font-semibold font-serif">Geral</h1>
             <p className="text-sm text-muted-foreground mt-1">
@@ -74,6 +77,98 @@ function ProjectGeneralErrorFallback({
    );
 }
 
+function DisplayNameSection({
+   teamId,
+   currentName,
+}: {
+   teamId: string;
+   currentName: string;
+}) {
+   const [name, setName] = useState(currentName);
+   const [isPending, startTransition] = useTransition();
+
+   const hasChanged = name.trim() !== currentName && name.trim().length > 0;
+
+   function handleRename() {
+      if (!hasChanged) return;
+      startTransition(async () => {
+         const { error } = await authClient.organization.updateTeam({
+            teamId,
+            data: { name },
+         });
+         if (error) {
+            toast.error("Não foi possível atualizar o nome do espaço.");
+            return;
+         }
+         toast.success("Nome atualizado!");
+      });
+   }
+
+   return (
+      <section className="space-y-3">
+         <div>
+            <h2 className="text-lg font-medium">Nome de exibição</h2>
+            <p className="text-sm text-muted-foreground">
+               O nome público do espaço. Visível para todos os membros.
+            </p>
+         </div>
+         <div className="max-w-md space-y-3">
+            <Input
+               onChange={(e) => setName(e.target.value)}
+               placeholder="Nome do espaço"
+               value={name}
+            />
+            <Button disabled={!hasChanged || isPending} onClick={handleRename}>
+               {isPending && <Loader2 className="size-4 mr-2 animate-spin" />}
+               Renomear espaço
+            </Button>
+         </div>
+      </section>
+   );
+}
+
+function SpaceDetailsSection({
+   teamId,
+   createdAt,
+}: {
+   teamId: string;
+   createdAt: Date | string | null;
+}) {
+   const formattedCreatedAt = createdAt
+      ? dayjs(createdAt).format("D [de] MMMM [de] YYYY")
+      : "-";
+
+   return (
+      <section className="space-y-3">
+         <div>
+            <h2 className="text-lg font-medium">Detalhes do espaço</h2>
+            <p className="text-sm text-muted-foreground">
+               Informações gerais sobre o espaço.
+            </p>
+         </div>
+         <ItemGroup>
+            <Item variant="muted">
+               <Settings2 className="size-4 text-muted-foreground" />
+               <ItemContent className="min-w-0">
+                  <ItemTitle>ID do Espaço</ItemTitle>
+                  <ItemDescription className="truncate font-mono">
+                     {teamId}
+                  </ItemDescription>
+               </ItemContent>
+            </Item>
+            <ItemSeparator />
+            <Item variant="muted">
+               <Hash className="size-4 text-muted-foreground" />
+               <ItemContent className="min-w-0">
+                  <ItemTitle>Criado em</ItemTitle>
+                  <ItemDescription>{formattedCreatedAt}</ItemDescription>
+               </ItemContent>
+            </Item>
+         </ItemGroup>
+      </section>
+   );
+}
+
 function ProjectGeneralContent() {
    const { currentTeam } = Route.useRouteContext();
    const teamId = currentTeam.id;
@@ -82,40 +177,8 @@ function ProjectGeneralContent() {
       orpc.team.get.queryOptions({ input: { teamId } }),
    );
 
-   const [isPending, startTransition] = useTransition();
-
-   const form = useForm({
-      defaultValues: { name: teamData.name },
-      onSubmit: async ({ value }) => {
-         const { error } = await authClient.organization.updateTeam({
-            teamId,
-            data: { name: value.name },
-         });
-         if (error) {
-            toast.error("Não foi possível atualizar o nome do espaço.");
-            return;
-         }
-         toast.success("Nome atualizado!");
-      },
-   });
-
-   const handleSubmit = useCallback(
-      (e: React.FormEvent) => {
-         e.preventDefault();
-         e.stopPropagation();
-         startTransition(async () => {
-            await form.handleSubmit();
-         });
-      },
-      [form],
-   );
-
-   const formattedCreatedAt = teamData.createdAt
-      ? dayjs(teamData.createdAt).format("D [de] MMMM [de] YYYY")
-      : "-";
-
    return (
-      <div className="flex flex-col gap-6">
+      <div className="space-y-8">
          <div>
             <h1 className="text-2xl font-semibold font-serif">Geral</h1>
             <p className="text-sm text-muted-foreground mt-1">
@@ -123,98 +186,11 @@ function ProjectGeneralContent() {
             </p>
          </div>
 
-         <section className="flex flex-col gap-4">
-            <div>
-               <h2 className="text-lg font-medium">Configurações do Espaço</h2>
-               <p className="text-sm text-muted-foreground mt-1">
-                  Gerencie o nome e identificador do espaço
-               </p>
-            </div>
+         <DisplayNameSection currentName={teamData.name} teamId={teamId} />
 
-            <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-               <form.Field name="name">
-                  {(field) => {
-                     const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
-                     return (
-                        <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>
-                              Nome do Espaço
-                           </FieldLabel>
-                           <Input
-                              aria-invalid={isInvalid}
-                              id={field.name}
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              value={field.state.value}
-                           />
-                           {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                           )}
-                        </Field>
-                     );
-                  }}
-               </form.Field>
+         <Separator />
 
-               <form.Subscribe selector={(state) => state}>
-                  {(state) => (
-                     <Button
-                        className="self-start"
-                        disabled={!state.canSubmit || isPending}
-                        type="submit"
-                     >
-                        {isPending && (
-                           <Loader2 className="size-4 mr-2 animate-spin" />
-                        )}
-                        Salvar
-                     </Button>
-                  )}
-               </form.Subscribe>
-            </form>
-
-            <ItemGroup>
-               <Item variant="muted">
-                  <Settings2 className="size-4 text-muted-foreground" />
-                  <ItemContent className="min-w-0">
-                     <ItemTitle>Nome atual</ItemTitle>
-                     <ItemDescription className="truncate">
-                        {teamData.name}
-                     </ItemDescription>
-                  </ItemContent>
-               </Item>
-               <ItemSeparator />
-               <Item variant="muted">
-                  <Hash className="size-4 text-muted-foreground" />
-                  <ItemContent className="min-w-0">
-                     <ItemTitle>ID do Espaço</ItemTitle>
-                     <ItemDescription className="truncate font-mono">
-                        {teamId}
-                     </ItemDescription>
-                  </ItemContent>
-               </Item>
-            </ItemGroup>
-         </section>
-
-         <section className="flex flex-col gap-4">
-            <div>
-               <h2 className="text-lg font-medium">Resumo do Espaço</h2>
-               <p className="text-sm text-muted-foreground mt-1">
-                  Visão geral do espaço
-               </p>
-            </div>
-            <ItemGroup>
-               <Item variant="muted">
-                  <Calendar className="size-4 text-muted-foreground" />
-                  <ItemContent>
-                     <ItemTitle>Criado em</ItemTitle>
-                     <ItemDescription>{formattedCreatedAt}</ItemDescription>
-                  </ItemContent>
-               </Item>
-            </ItemGroup>
-         </section>
+         <SpaceDetailsSection createdAt={teamData.createdAt} teamId={teamId} />
       </div>
    );
 }
