@@ -287,14 +287,27 @@ export function createAuth(deps: CreateAuthDeps) {
                            input: z.record(z.string(), z.boolean()).nullable(),
                         },
                      },
-                     accountType: {
-                        defaultValue: "personal",
+                     cnpj: {
+                        defaultValue: null,
                         input: true,
                         required: false,
                         type: "string",
                         validator: {
                            input: z
-                              .enum(["personal", "business"])
+                              .string()
+                              .regex(/^\d{14}$/, "CNPJ deve conter 14 dígitos")
+                              .nullable()
+                              .optional(),
+                        },
+                     },
+                     cnpjData: {
+                        defaultValue: null,
+                        input: true,
+                        required: false,
+                        type: "json",
+                        validator: {
+                           input: z
+                              .record(z.string(), z.unknown())
                               .nullable()
                               .optional(),
                         },

@@ -121,7 +121,9 @@ export const team = pgTable(
       onboardingCompleted: boolean("onboarding_completed").default(false),
       onboardingProducts: jsonb("onboarding_products"),
       onboardingTasks: jsonb("onboarding_tasks"),
-      accountType: text("account_type").default("personal"),
+      accountType: text("account_type").default("business"),
+      cnpj: text("cnpj"),
+      cnpjData: jsonb("cnpj_data"),
    },
    (table) => [index("team_organizationId_idx").on(table.organizationId)],
 );
