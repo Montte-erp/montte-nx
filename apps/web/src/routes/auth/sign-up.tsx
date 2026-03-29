@@ -14,6 +14,7 @@ import { type FormEvent, useCallback } from "react";
 import { toast } from "sonner";
 import z from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
+import { PasswordStrengthCard } from "./-auth/password-strength-card";
 import { TermsAndPrivacyText } from "./-auth/terms-and-privacy-text";
 
 const steps = [
@@ -193,6 +194,9 @@ function SignUpPage() {
                   }}
                </form.Field>
             </FieldGroup>
+            <form.Subscribe selector={(state) => state.values.password}>
+               {(password) => <PasswordStrengthCard password={password} />}
+            </form.Subscribe>
             <FieldGroup>
                <form.Field name="confirmPassword">
                   {(field) => {
