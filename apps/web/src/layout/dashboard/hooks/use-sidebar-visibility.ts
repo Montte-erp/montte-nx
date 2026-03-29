@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
 
@@ -9,8 +10,9 @@ const [useHiddenItems] = createLocalStorageState<string[]>(
 export function useSidebarVisibility() {
    const [hiddenItems, setHiddenItems] = useHiddenItems();
 
-   const isVisible = useStableHandler(
+   const isVisible = useCallback(
       (itemId: string) => !(hiddenItems ?? []).includes(itemId),
+      [hiddenItems],
    );
 
    const toggleItem = useStableHandler((itemId: string) => {

@@ -886,172 +886,82 @@ git commit -m "fix(settings): address typecheck errors from settings refactor"
 
 ---
 
----
-
-### Task 10: Replace DB-backed telemetry consent with PostHog native opt-out
-
-**Context:** Currently `telemetryConsent` is stored as a Better Auth `additionalFields` on the `user` table, and `PostHogWrapper` reads it via `opt_out_capturing_by_default: !hasConsent`. The goal is to remove the DB field entirely and use PostHog's own `posthog.opt_out_capturing()` / `posthog.opt_in_capturing()` / `posthog.has_opted_out_capturing()` APIs (which persist to localStorage).
-
-**Files:**
-- Modify: `core/authentication/src/server.ts` — remove `telemetryConsent` from `additionalFields`
-- Modify: `apps/web/src/integrations/posthog/client.tsx` — remove `hasConsent` prop from `PostHogWrapper`, remove `opt_out_capturing_by_default`
-- Modify: wherever `PostHogWrapper` is rendered (find with `grep -rn "PostHogWrapper" apps/web/src/`) — remove `hasConsent` prop
-- Modify: `apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/customization.tsx` — replace mutation with PostHog hook calls
-
-**Step 1: Find all `PostHogWrapper` usages**
-
-```bash
-grep -rn "PostHogWrapper\|hasConsent" apps/web/src/ | head -20
-```
-
-**Step 2: Remove `telemetryConsent` from Better Auth additionalFields**
-
-In `core/authentication/src/server.ts`, remove:
-```typescript
-telemetryConsent: {
-   defaultValue: false,
-   input: true,
-   required: true,
-   type: "boolean",
-},
-```
-
-**Step 3: Simplify `PostHogWrapper` — remove `hasConsent` prop**
-
-In `apps/web/src/integrations/posthog/client.tsx`, remove the `hasConsent` parameter and `opt_out_capturing_by_default` from the options. PostHog will default to opted-in; the user's stored preference in localStorage takes over on next load.
-
-```typescript
-export function PostHogWrapper({
-   children,
-   env,
-}: {
-   children: React.ReactNode;
-   env: PosthogEnv;
-}) {
-   return (
-      <PostHogProvider
-         apiKey={env.VITE_POSTHOG_KEY}
-         options={{
-            ...getReactPosthogConfig(env),
-            disable_session_recording: !isClientProduction,
-            persistence: "localStorage",
-         }}
-      >
-         {children}
-      </PostHogProvider>
-   );
-}
-```
-
-**Step 4: Update `customization.tsx` to use PostHog hook**
-
-Replace the `updateConsentMutation` + `session` query with `usePostHog()`:
-
-```typescript
-import { usePostHog } from "@/integrations/posthog/client";
-
-function PreferencesSectionContent() {
-   const posthog = usePostHog();
-   const hasConsent = !posthog.has_opted_out_capturing();
-   const [isPending, setIsPending] = useState(false);
-
-   function handleConsentChange(checked: boolean) {
-      setIsPending(true);
-      if (checked) {
-         posthog.opt_in_capturing();
-      } else {
-         posthog.opt_out_capturing();
-      }
-      setIsPending(false);
-   }
-   // ... rest of the component unchanged
-}
-```
-
-Remove: `useSuspenseQuery(orpc.session.getSession...)`, `useMutation(...)`, `authClient` import (if only used for consent).
-
-**Step 5: Remove `hasConsent` prop from wherever `PostHogWrapper` is called**
-
-From the grep in Step 1, update all call sites.
-
-**Step 6: Run typecheck**
-
-```bash
-bun run typecheck 2>&1 | grep -E "telemetry|hasConsent|PostHogWrapper" | head -20
-```
-
-Fix any errors (likely just the removed prop references).
-
-**Step 7: Commit**
-
-```bash
-git add core/authentication/src/server.ts \
-        apps/web/src/integrations/posthog/client.tsx \
-        apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/settings/customization.tsx
-git commit -m "feat(telemetry): replace DB-backed consent with PostHog native opt-out/opt-in"
-```
-
----
-
----
-
 ## Hook Patterns — Required Reading Before Writing Any Hook or Callback
 
-### foxact hooks (preferred over React built-ins or @uidotdev/usehooks)
+`foxact` is the standard hook library. These rules are **mandatory** — not optional.
 
-The project uses `foxact` for SSR-safe, performance-optimized hooks. These are **not optional** — use them instead of the React primitives they replace.
+### Quick reference
 
-| Need | Use | Import |
-|------|-----|--------|
-| Stable callback reference | `useStableHandler` | `foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired` |
-| localStorage read/write | `useLocalStorage` | `foxact/use-local-storage` |
-| Media query | `useMediaQuery` | `foxact/use-media-query` |
-| Browser API in effect (SSR-safe) | `useIsomorphicLayoutEffect` | `foxact/use-isomorphic-layout-effect` |
+| Need | foxact import |
+|------|--------------|
+| Stable callback (replaces `useCallback`) | `foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired` |
+| Per-component localStorage | `foxact/use-local-storage` |
+| Per-component sessionStorage | `foxact/use-session-storage` |
+| Shared localStorage (cross-component, reactive) | `foxact/create-local-storage-state` |
+| Media query / breakpoint | `foxact/use-media-query` |
+| SSR-safe layout effect | `foxact/use-isomorphic-layout-effect` |
+| Lazy singleton ref (replaces `useRef(new Foo())`) | `foxact/use-singleton` |
+| Clipboard | `foxact/use-clipboard` |
+| Empty stable function | `foxact/noop` |
+| Context guard | `foxact/invariant` |
+| Merge refs | `foxact/merge-refs` |
+| Open new tab | `foxact/open-new-tab` |
+| Debounce a value | `foxact/use-debounced-value` |
 
-**`useStableHandler` instead of `useCallback`:** For event handlers and callbacks passed to child components or used as effect dependencies, use `useStableHandler` — it returns a stable reference that always calls the latest version of the function without needing a deps array.
+### Rules that override CLAUDE.md SSR-safe wrappers
 
-```typescript
-// ❌ useCallback — stale closure risk, deps array burden
-const handleChange = useCallback((v: string) => {
-   mutation.mutate({ tone: v });
-}, [mutation]);
-
-// ✅ useStableHandler — always fresh, no deps
-import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
-const handleChange = useStableHandler((v: string) => {
-   mutation.mutate({ tone: v });
-});
-```
-
-**`useLocalStorage` for persistent UI state:** If any settings page needs to remember UI state across page reloads (e.g., which section is expanded), use foxact's `useLocalStorage` — it is SSR-safe and avoids hydration flicker.
+The `useSafeLocalStorage` / `useSafeMediaQuery` wrappers in `apps/web/src/hooks/` are **superseded** — use foxact directly.
 
 ```typescript
+// ❌ Old wrappers — do not use
+import { useSafeLocalStorage } from "@/hooks/use-local-storage";
+import { useSafeMediaQuery } from "@packages/ui/hooks/use-media-query";
+import { useIsMobile } from "@packages/ui/hooks/use-mobile";
+
+// ✅ foxact directly
 import { useLocalStorage } from "foxact/use-local-storage";
-const [expanded, setExpanded] = useLocalStorage<boolean>("agent-settings:expanded", true);
+import { useMediaQuery } from "foxact/use-media-query";
+const isMobile = useMediaQuery("(max-width: 767px)");
 ```
 
-**`useIsomorphicLayoutEffect` for browser API access:** When a `useEffect` reads from `window`, `navigator`, or `document`, replace `useEffect` with `useIsomorphicLayoutEffect` to avoid SSR mismatches.
+### localStorage key prefix
+
+**All keys must be prefixed with `montte:`** — e.g. `"montte:agent-settings:expanded"`, `"montte:sidebar-collapsed"`.
+
+### `useStableHandler` instead of `useCallback`
 
 ```typescript
-import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
-useIsomorphicLayoutEffect(() => {
-   setIsOptedOut(posthog.has_opted_out_capturing());
-}, []);
+import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
+
+// ❌ Never
+const handleChange = useCallback((v: string) => mutation.mutate({ tone: v }), [mutation]);
+
+// ✅ Always
+const handleChange = useStableHandler((v: string) => mutation.mutate({ tone: v }));
 ```
 
-### React hook rules (project-specific reminders)
+### Banned patterns
 
-- **`useSuspenseQuery` always** — never `useQuery` unless polling/optional. Data is guaranteed defined.
-- **No `useMutation` wrapping `authClient`** — call authClient directly inside `onSubmit` or event handlers.
-- **`useTransition` for async non-form actions** — e.g. toggle buttons that call authClient. Use `isPending` from `useTransition` for the loading state.
-- **No dynamic `import()` of hooks** — all hook imports must be static at the top of the file.
-- **`useIsMobile()` for breakpoints** — import from `@packages/ui/hooks/use-mobile`, never inline `useMediaQuery("(max-width: 767px)")`.
+```typescript
+// ❌ SSR-unsafe or replaced
+import { useMediaQuery, useLocalStorage } from "@uidotdev/usehooks";
+useLayoutEffect(...)               // → foxact/use-isomorphic-layout-effect
+window.open(url, "_blank")         // → foxact/open-new-tab
+const ref = useRef(new Foo())      // → foxact/use-singleton
+const ref = useRef(fn)             // → foxact/use-stable-handler
+ref.current = fn                   // → foxact/use-stable-handler
+() => {}  // as default/fallback    // → foxact/noop
+if (!ctx) throw new Error(...)     // → foxact/invariant
+localStorage.getItem/setItem       // → foxact/use-local-storage or create-local-storage-state
+typeof window === 'undefined'      // Never — this is a Vite SPA, window is always defined
+```
 
 ### Where these apply in this plan
 
-- **Task 5 (ai-agents.tsx):** Use `useStableHandler` for the `onValueChange` callbacks on Select/Switch fields instead of inline arrow functions or `useCallback`.
-- **Task 6 (estoque.tsx):** Same — `useStableHandler` for any callbacks extracted outside `form.Field` render props.
-- **Task 10 (customization.tsx):** Use `useIsomorphicLayoutEffect` to read `posthog.has_opted_out_capturing()` on mount (browser API). Use `useStableHandler` for `handleConsentChange`.
+- **Task 5 (ai-agents.tsx):** `useStableHandler` for `onValueChange` on Select/Switch fields. `useIsomorphicLayoutEffect` if reading any browser API on mount.
+- **Task 6 (estoque.tsx):** `useStableHandler` for any callbacks extracted outside `form.Field` render props. Remove existing `useCallback`.
+- **Tasks 7–8 (financeiro, contatos):** Same callback pattern throughout.
+- **Shared localStorage state** (e.g. remembering which accordion section is open): `createLocalStorageState` with `montte:` prefix.
 
 ---
 
