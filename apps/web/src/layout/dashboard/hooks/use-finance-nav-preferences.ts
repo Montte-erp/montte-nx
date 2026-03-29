@@ -8,7 +8,7 @@ const [useWantedItems] = createLocalStorageState<string[]>(
 export function useFinanceNavPreferences() {
    const [wantedItems, setWantedItems] = useWantedItems();
 
-   const isWanted = (itemId: string) => wantedItems.includes(itemId);
+   const isWanted = (itemId: string) => (wantedItems ?? []).includes(itemId);
 
    const toggleItem = (itemId: string) => {
       setWantedItems((prev) => {

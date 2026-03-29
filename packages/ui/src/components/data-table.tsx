@@ -46,7 +46,6 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
-import { useLocalStorage } from "foxact/use-local-storage";
 
 import { cn } from "../lib/utils";
 import { Button } from "./button";
@@ -105,7 +104,8 @@ interface DataTableProps<TData, TValue> {
    rowSelection?: RowSelectionState;
    onRowSelectionChange?: (selection: RowSelectionState) => void;
    getRowId?: (row: TData) => string;
-   columnVisibilityKey?: string;
+   columnVisibility?: VisibilityState;
+   onColumnVisibilityChange?: (visibility: VisibilityState) => void;
    renderActions?: (props: { row: Row<TData> }) => React.ReactNode;
    reorderColumns?: boolean;
    reorderRows?: boolean;
@@ -451,7 +451,8 @@ export function DataTable<TData, TValue>({
    rowSelection: controlledRowSelection,
    onRowSelectionChange,
    getRowId,
-   columnVisibilityKey,
+   columnVisibility = {},
+   onColumnVisibilityChange,
    renderActions,
    reorderColumns = false,
    reorderRows = false,
@@ -461,13 +462,6 @@ export function DataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
    const [sorting, setSorting] = useState<SortingState>([]);
    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-   const [columnVisibility, setColumnVisibility] =
-      useLocalStorage<VisibilityState>(
-         columnVisibilityKey
-            ? `dt-col-vis:${columnVisibilityKey}`
-            : "dt-col-vis:__noop__",
-         {},
-      );
    const [internalRowSelection, setInternalRowSelection] =
       useState<RowSelectionState>({});
 
@@ -506,24 +500,22 @@ export function DataTable<TData, TValue>({
       [isControlled, controlledRowSelection, stableOnRowSelectionChange],
    );
 
-   const handleColumnVisibilityChange = useCallback(
+   const stableOnColumnVisibilityChange = useStableHandler(
       (
          updaterOrValue:
             | VisibilityState
             | ((old: VisibilityState) => VisibilityState),
       ) => {
-         setColumnVisibility((prev) => {
-            const next =
-               typeof updaterOrValue === "function"
-                  ? updaterOrValue(prev ?? {})
-                  : updaterOrValue;
-            return next;
-         });
+         if (!onColumnVisibilityChange) return;
+         const next =
+            typeof updaterOrValue === "function"
+               ? updaterOrValue(columnVisibility)
+               : updaterOrValue;
+         onColumnVisibilityChange(next);
       },
-      [],
    );
 
-   const hasActionsColumn = !!renderActions || !!columnVisibilityKey;
+   const hasActionsColumn = !!renderActions || !!onColumnVisibilityChange;
 
    const allColumns = useMemo(() => {
       const base: ColumnDef<TData, TValue>[] = [
@@ -535,7 +527,7 @@ export function DataTable<TData, TValue>({
       if (!hasActionsColumn) return base;
       const actionsCol: ColumnDef<TData, unknown> = {
          id: "__actions",
-         header: columnVisibilityKey ? () => null : undefined,
+         header: onColumnVisibilityChange ? () => null : undefined,
          cell: renderActions
             ? ({ row }) => (
                  <div className="flex items-center justify-end gap-1">
@@ -550,7 +542,7 @@ export function DataTable<TData, TValue>({
    }, [
       columns,
       hasActionsColumn,
-      columnVisibilityKey,
+      onColumnVisibilityChange,
       renderActions,
       reorderRows,
    ]);
@@ -583,7 +575,7 @@ export function DataTable<TData, TValue>({
          : (_row, index) => String(index),
       getSortedRowModel: getSortedRowModel(),
       onColumnFiltersChange: setColumnFilters,
-      onColumnVisibilityChange: handleColumnVisibilityChange,
+      onColumnVisibilityChange: stableOnColumnVisibilityChange,
       onRowSelectionChange: handleRowSelectionChange,
       onSortingChange: setSorting,
       onColumnOrderChange: reorderColumns ? setColumnOrder : undefined,
@@ -672,12 +664,12 @@ export function DataTable<TData, TValue>({
          if (header.column.id === "__actions") {
             return (
                <TableHead className="w-0" key={header.id}>
-                  {columnVisibilityKey ? (
+                  {onColumnVisibilityChange ? (
                      <div className="flex items-center justify-end">
                         <ColumnVisibilityToggle
                            columnVisibility={columnVisibility}
                            onColumnVisibilityChange={
-                              handleColumnVisibilityChange
+                              stableOnColumnVisibilityChange
                            }
                            table={table}
                         />
