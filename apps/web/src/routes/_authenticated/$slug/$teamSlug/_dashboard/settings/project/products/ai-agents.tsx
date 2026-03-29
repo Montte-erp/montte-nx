@@ -17,23 +17,13 @@ import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-w
 import { Loader2 } from "lucide-react";
 import { Suspense } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
+import type { Inputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents",
 )({
    component: AiAgentsSettingsPage,
-});
-
-const agentSettingsSchema = z.object({
-   modelId: z.string().min(1),
-   language: z.enum(["pt-BR", "en-US", "es-ES"]),
-   tone: z.enum(["formal", "casual", "technical"]),
-   dataSourceTransactions: z.boolean(),
-   dataSourceContacts: z.boolean(),
-   dataSourceInventory: z.boolean(),
-   dataSourceServices: z.boolean(),
 });
 
 const MODELS = [
@@ -74,23 +64,16 @@ function AiAgentsSettingsForm() {
    const form = useForm({
       defaultValues: {
          modelId: settings?.modelId ?? "openrouter/moonshotai/kimi-k2.5",
-         language: (settings?.language ?? "pt-BR") as
-            | "pt-BR"
-            | "en-US"
-            | "es-ES",
-         tone: (settings?.tone ?? "formal") as
-            | "formal"
-            | "casual"
-            | "technical",
+         language: (settings?.language ??
+            "pt-BR") as Inputs["agent"]["upsertSettings"]["language"],
+         tone: (settings?.tone ??
+            "formal") as Inputs["agent"]["upsertSettings"]["tone"],
          dataSourceTransactions: settings?.dataSourceTransactions ?? true,
          dataSourceContacts: settings?.dataSourceContacts ?? true,
          dataSourceInventory: settings?.dataSourceInventory ?? true,
          dataSourceServices: settings?.dataSourceServices ?? true,
       },
-      validators: {
-         onBlur: agentSettingsSchema,
-      },
-      onSubmit: async ({ value }) => {
+      onSubmit: ({ value }) => {
          mutation.mutate(value);
       },
    });
