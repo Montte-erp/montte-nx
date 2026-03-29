@@ -232,7 +232,7 @@ function EstoqueSettingsPage() {
    return (
       <Suspense
          fallback={
-            <div className="space-y-4 max-w-lg">
+            <div className="flex flex-col gap-4 max-w-lg">
                {Array.from({ length: 5 }).map((_, i) => (
                   <Skeleton className="h-10 w-full" key={`skel-${i + 1}`} />
                ))}
