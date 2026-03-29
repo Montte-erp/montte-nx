@@ -10,7 +10,8 @@ import { PasswordInput } from "@packages/ui/components/password-input";
 import { defineStepper } from "@packages/ui/components/stepper";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { type FormEvent, useCallback } from "react";
+import { Loader2 } from "lucide-react";
+import { type FormEvent, useCallback, useTransition } from "react";
 import { toast } from "sonner";
 import z from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/auth/sign-up")({
 
 function SignUpPage() {
    const router = useRouter();
+   const [isPending, startTransition] = useTransition();
    const schema = z
       .object({
          confirmPassword: z.string(),
@@ -93,9 +95,11 @@ function SignUpPage() {
       (e: FormEvent) => {
          e.preventDefault();
          e.stopPropagation();
-         form.handleSubmit();
+         startTransition(async () => {
+            await form.handleSubmit();
+         });
       },
-      [form],
+      [form, startTransition],
    );
 
    function BasicInfoStep() {
@@ -274,11 +278,15 @@ function SignUpPage() {
                                     className="h-11"
                                     disabled={
                                        !formState.canSubmit ||
-                                       formState.isSubmitting
+                                       formState.isSubmitting ||
+                                       isPending
                                     }
                                     type="submit"
                                     variant="default"
                                  >
+                                    {isPending && (
+                                       <Loader2 className="size-4 mr-2 animate-spin" />
+                                    )}
                                     Enviar
                                  </Button>
                               )}
