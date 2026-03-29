@@ -16,9 +16,9 @@ import {
    SelectValue,
 } from "@packages/ui/components/select";
 import { Spinner } from "@packages/ui/components/spinner";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Mail } from "lucide-react";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/integrations/better-auth/auth-client";
 
@@ -32,30 +32,24 @@ export function InviteMemberForm({
    const [email, setEmail] = useState("");
    const [role, setRole] = useState<"member" | "admin">("member");
    const queryClient = useQueryClient();
+   const [isPending, startTransition] = useTransition();
 
-   const inviteMutation = useMutation({
-      mutationFn: async () => {
+   const handleInvite = () => {
+      startTransition(async () => {
          const result = await authClient.organization.inviteMember({
             email,
             role,
             organizationId,
          });
          if (result.error) {
-            throw new Error(result.error.message ?? "Erro ao enviar convite");
+            toast.error(result.error.message ?? "Erro ao enviar convite.");
+            return;
          }
-         return result.data;
-      },
-      onSuccess: () => {
-         queryClient.invalidateQueries({
-            queryKey: ["pending-invites"],
-         });
-         toast.success("Convite enviado com sucesso");
-         onSuccess();
-      },
-      onError: (error) => {
-         toast.error(error.message);
-      },
-   });
+         queryClient.invalidateQueries({ queryKey: ["pending-invites"] });
+         toast.success("Convite enviado com sucesso!");
+         onSuccess?.();
+      });
+   };
 
    const isValid = email.trim().length > 0 && email.includes("@");
 
@@ -79,12 +73,8 @@ export function InviteMemberForm({
                         id="invite-email"
                         onChange={(e) => setEmail(e.target.value)}
                         onKeyDown={(e) => {
-                           if (
-                              e.key === "Enter" &&
-                              isValid &&
-                              !inviteMutation.isPending
-                           ) {
-                              inviteMutation.mutate();
+                           if (e.key === "Enter" && isValid && !isPending) {
+                              handleInvite();
                            }
                         }}
                         placeholder="usuario@empresa.com"
@@ -134,10 +124,10 @@ export function InviteMemberForm({
          <div className="border-t px-4 py-4">
             <Button
                className="w-full"
-               disabled={!isValid || inviteMutation.isPending}
-               onClick={() => inviteMutation.mutate()}
+               disabled={!isValid || isPending}
+               onClick={handleInvite}
             >
-               {inviteMutation.isPending ? (
+               {isPending ? (
                   <Spinner className="size-4 mr-2" />
                ) : (
                   <Mail className="size-4 mr-2" />
