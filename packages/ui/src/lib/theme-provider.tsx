@@ -38,7 +38,7 @@ const initialState: UseThemeProps = {
    setTheme: () => null,
    theme: "system",
 };
-const ThemeProviderContext = React.createContext<UseThemeProps>(initialState);
+const ThemeProviderContext = React.createContext<UseThemeProps | null>(null);
 
 export function ThemeProvider({
    children,
@@ -140,10 +140,7 @@ export function ThemeProvider({
 export function useTheme() {
    const context = React.useContext(ThemeProviderContext);
 
-   invariant(
-      context !== undefined,
-      "useTheme must be used within a ThemeProvider",
-   );
+   invariant(context, "useTheme must be used within a ThemeProvider");
 
    return context;
 }
