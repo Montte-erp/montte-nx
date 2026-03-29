@@ -3,12 +3,6 @@ import { useCallback, useState } from "react";
 
 type SetValue<T> = (value: T | ((prev: T) => T)) => void;
 
-/**
- * SSR-safe replacement for useLocalStorage.
- * Returns initialValue on the server and during the first client render,
- * then syncs with localStorage synchronously on client mount via
- * useIsomorphicLayoutEffect (prevents flash between server and real value).
- */
 export function useSafeLocalStorage<T>(
    key: string,
    initialValue: T,
@@ -21,9 +15,7 @@ export function useSafeLocalStorage<T>(
          if (item !== null) {
             setStoredValue(JSON.parse(item) as T);
          }
-      } catch {
-         // localStorage unavailable or corrupt — keep initialValue
-      }
+      } catch {}
    }, [key]);
 
    const setValue: SetValue<T> = useCallback(
@@ -35,9 +27,7 @@ export function useSafeLocalStorage<T>(
                   : value;
             try {
                window.localStorage.setItem(key, JSON.stringify(next));
-            } catch {
-               // localStorage unavailable — state still updates in memory
-            }
+            } catch {}
             return next;
          });
       },

@@ -1,11 +1,6 @@
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { useState } from "react";
 
-/**
- * SSR-safe replacement for useMediaQuery.
- * Returns `false` on the server and during the first client render,
- * then updates synchronously on client mount via useIsomorphicLayoutEffect.
- */
 export function useSafeMediaQuery(query: string): boolean {
    const [matches, setMatches] = useState(false);
 
