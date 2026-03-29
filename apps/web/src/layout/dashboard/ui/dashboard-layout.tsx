@@ -5,7 +5,7 @@ import {
    SidebarProvider,
 } from "@packages/ui/components/sidebar";
 import { cn } from "@packages/ui/lib/utils";
-import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "@tanstack/react-router";
 import type * as React from "react";
 import { useEffect } from "react";
@@ -21,7 +21,6 @@ import { useLastOrganization } from "@/hooks/use-last-organization";
 import { useLocalStorage } from "foxact/use-local-storage";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
-import { identifyClient, setClientGroup } from "@/integrations/posthog/client";
 import { AppSidebar } from "./app-sidebar";
 import { SidebarSubPanel } from "./sidebar-sub-panel";
 
@@ -64,10 +63,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       setSidebarCollapsed(!open);
    };
 
-   const { data: session } = useSuspenseQuery(
-      orpc.session.getSession.queryOptions({}),
-   );
-
    const isSettingsPage = pathname.includes("/settings");
    const isChatPage = pathname.includes("/chat");
 
@@ -98,27 +93,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       void setDefaultTeam();
    }, [activeOrganization?.id, activeTeam, queryClient, teams]);
 
-   useEffect(() => {
-      if (session?.user?.id) {
-         identifyClient(session.user.id, {
-            email: session.user.email,
-            name: session.user.name,
-         });
-      }
-      if (activeOrganization?.id) {
-         setClientGroup("organization", activeOrganization.id, {
-            name: activeOrganization.name,
-            slug: activeOrganization.slug,
-         });
-      }
-   }, [
-      session?.user?.id,
-      session?.user?.email,
-      session?.user?.name,
-      activeOrganization?.id,
-      activeOrganization?.name,
-      activeOrganization?.slug,
-   ]);
 
    return (
       <EarlyAccessProvider>

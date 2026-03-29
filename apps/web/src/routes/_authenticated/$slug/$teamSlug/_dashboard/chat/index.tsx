@@ -9,8 +9,7 @@ import {
    useNavigate,
    useParams,
 } from "@tanstack/react-router";
-import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
-import { useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { chatContextStore } from "@/features/rubi-chat/stores/chat-context-store";
 import { Thread } from "@/features/rubi-chat/ui/thread";
 import { useActiveTeam } from "@/hooks/use-active-team";
@@ -49,7 +48,7 @@ function ChatIndexPageContent({ teamId }: { teamId: string }) {
    const threadIdRef = useRef<string | undefined>(undefined);
    const hasNavigated = useRef(false);
    const createThread = useMutation(orpc.chat.createThread.mutationOptions({}));
-   const stableCreateThread = useStableHandler(createThread.mutateAsync);
+   const stableCreateThread = useCallback(createThread.mutateAsync, [createThread.mutateAsync]);
 
    const transport = useMemo(
       () =>

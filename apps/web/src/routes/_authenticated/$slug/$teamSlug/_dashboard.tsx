@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import posthog from "posthog-js";
 import { DashboardLayout } from "@/layout/dashboard/ui/dashboard-layout";
 
 export const Route = createFileRoute(
@@ -18,9 +19,24 @@ export const Route = createFileRoute(
       }
    },
    loader: async ({ context }) => {
-      await context.queryClient.prefetchQuery(
-         context.orpc.earlyAccess.getEnrolledFeatures.queryOptions(),
-      );
+      const [session] = await Promise.all([
+         context.queryClient.fetchQuery(
+            context.orpc.session.getSession.queryOptions(),
+         ),
+         context.queryClient.prefetchQuery(
+            context.orpc.earlyAccess.getEnrolledFeatures.queryOptions(),
+         ),
+      ]);
+
+      if (session?.user?.id) {
+         posthog.identify(session.user.id, {
+            email: session.user.email ?? undefined,
+            name: session.user.name ?? undefined,
+         });
+         if (session.session?.activeOrganizationId) {
+            posthog.group("organization", session.session.activeOrganizationId);
+         }
+      }
    },
    component: DashboardLayoutRoute,
 });

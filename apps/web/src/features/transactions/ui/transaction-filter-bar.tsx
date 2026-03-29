@@ -12,8 +12,7 @@ import {
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Search, X } from "lucide-react";
 import { useDebouncedValue } from "foxact/use-debounced-value";
-import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { orpc } from "@/integrations/orpc/client";
 import { TransactionFilterPopover } from "./transaction-filter-popover";
 
@@ -144,7 +143,7 @@ export function TransactionFilterBar({
    const [searchInput, setSearchInput] = useState(filters.search);
    const debouncedSearch = useDebouncedValue(searchInput, 350);
 
-   const stableOnFiltersChange = useStableHandler(onFiltersChange);
+   const stableOnFiltersChange = useCallback(onFiltersChange, [onFiltersChange]);
    const filtersRef = useRef(filters);
    useEffect(() => {
       filtersRef.current = filters;
