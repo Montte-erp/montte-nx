@@ -1,19 +1,18 @@
 // @vitest-environment jsdom
 import { render } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import posthog from "posthog-js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockRenderSurvey, mockDismiss } = vi.hoisted(() => ({
-   mockRenderSurvey: vi.fn(),
-   mockDismiss: vi.fn(),
-}));
-
-vi.mock("posthog-js", () => ({
-   default: { renderSurvey: mockRenderSurvey },
-}));
+vi.mock("posthog-js", () => {
+   const renderSurvey = vi.fn();
+   return { default: { renderSurvey, init: vi.fn() } };
+});
 
 vi.mock("@core/posthog/config", () => ({
    POSTHOG_SURVEYS: { bugReport: { id: "survey-123", flagKey: null } },
 }));
+
+const mockDismiss = vi.fn();
 
 vi.mock("@/features/feedback/hooks/use-api-error-tracker", () => ({
    useApiErrorTracker: vi.fn(),
@@ -21,6 +20,11 @@ vi.mock("@/features/feedback/hooks/use-api-error-tracker", () => ({
 
 import { useApiErrorTracker } from "@/features/feedback/hooks/use-api-error-tracker";
 import { AutoBugReporter } from "@/features/feedback/ui/auto-bug-reporter";
+
+beforeEach(() => {
+   vi.mocked(posthog.renderSurvey).mockReset();
+   mockDismiss.mockReset();
+});
 
 describe("AutoBugReporter", () => {
    it("does not call renderSurvey when shouldShowBugReport is false", () => {
@@ -32,7 +36,7 @@ describe("AutoBugReporter", () => {
 
       render(<AutoBugReporter />);
 
-      expect(mockRenderSurvey).not.toHaveBeenCalled();
+      expect(posthog.renderSurvey).not.toHaveBeenCalled();
       expect(mockDismiss).not.toHaveBeenCalled();
    });
 
@@ -45,7 +49,7 @@ describe("AutoBugReporter", () => {
 
       render(<AutoBugReporter />);
 
-      expect(mockRenderSurvey).toHaveBeenCalledWith("survey-123", "body");
+      expect(posthog.renderSurvey).toHaveBeenCalledWith("survey-123", "body");
       expect(mockDismiss).toHaveBeenCalled();
    });
 });
