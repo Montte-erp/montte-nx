@@ -1,32 +1,45 @@
 // @vitest-environment jsdom
 import { act, render, renderHook } from "@testing-library/react";
-import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const {
+   mockGetEarlyAccessFeatures,
+   mockIsFeatureEnabled,
+   mockUpdateEarlyAccessFeatureEnrollment,
+   mockPosthog,
+} = vi.hoisted(() => {
+   const mockGetEarlyAccessFeatures = vi.fn();
+   const mockIsFeatureEnabled = vi.fn();
+   const mockUpdateEarlyAccessFeatureEnrollment = vi.fn();
+   const mockPosthog = {
+      getEarlyAccessFeatures: mockGetEarlyAccessFeatures,
+      isFeatureEnabled: mockIsFeatureEnabled,
+      updateEarlyAccessFeatureEnrollment: mockUpdateEarlyAccessFeatureEnrollment,
+   };
+   return { mockGetEarlyAccessFeatures, mockIsFeatureEnabled, mockUpdateEarlyAccessFeatureEnrollment, mockPosthog };
+});
 
 vi.mock("foxact/create-local-storage-state", () => ({
    createLocalStorageState: (_key: string, initial: unknown) => {
+      const { useState } = require("react");
       const useHook = () => useState(initial);
       return [useHook];
    },
 }));
 
-const mockGetEarlyAccessFeatures = vi.fn();
-const mockIsFeatureEnabled = vi.fn();
-const mockUpdateEarlyAccessFeatureEnrollment = vi.fn();
-
 vi.mock("posthog-js/react", () => ({
-   usePostHog: () => ({
-      getEarlyAccessFeatures: mockGetEarlyAccessFeatures,
-      isFeatureEnabled: mockIsFeatureEnabled,
-      updateEarlyAccessFeatureEnrollment: mockUpdateEarlyAccessFeatureEnrollment,
-   }),
+   usePostHog: () => mockPosthog,
+}));
+
+vi.mock("@/integrations/posthog/client", () => ({
+   normalizeEarlyAccessStage: (stage: string) => stage ?? "concept",
 }));
 
 import { EarlyAccessProvider, useEarlyAccess } from "@/hooks/use-early-access";
 
 const rawFeatures = [
-   { flagKey: "contatos", name: "Contatos", description: "Desc", stage: "beta", documentationUrl: null, payload: {} },
-   { flagKey: "dados", name: "Dados", description: "Desc2", stage: "alpha", documentationUrl: null, payload: {} },
+   { flagKey: "contatos", name: "Contatos", description: "Desc", stage: "beta", documentationUrl: null },
+   { flagKey: "dados", name: "Dados", description: "Desc2", stage: "alpha", documentationUrl: null },
 ];
 
 beforeEach(() => {
@@ -36,10 +49,10 @@ beforeEach(() => {
 });
 
 describe("EarlyAccessProvider", () => {
-   it("calls getEarlyAccessFeatures with all stages", () => {
+   it("calls getEarlyAccessFeatures with all stages", async () => {
       mockGetEarlyAccessFeatures.mockImplementation(() => {});
 
-      render(<EarlyAccessProvider>x</EarlyAccessProvider>);
+      await act(async () => { render(<EarlyAccessProvider>{null}</EarlyAccessProvider>); });
 
       expect(mockGetEarlyAccessFeatures).toHaveBeenCalledWith(
          expect.any(Function),
@@ -48,11 +61,13 @@ describe("EarlyAccessProvider", () => {
       );
    });
 
-   it("seeds enrolled keys from posthog.isFeatureEnabled", () => {
+   it("seeds enrolled keys from posthog.isFeatureEnabled", async () => {
       mockIsFeatureEnabled.mockImplementation((key: string) => key === "contatos");
-      mockGetEarlyAccessFeatures.mockImplementation((cb: (f: typeof rawFeatures) => void) => cb(rawFeatures));
+      mockGetEarlyAccessFeatures.mockImplementation(
+         (cb: (f: typeof rawFeatures) => void) => cb(rawFeatures),
+      );
 
-      render(<EarlyAccessProvider>x</EarlyAccessProvider>);
+      await act(async () => { render(<EarlyAccessProvider>{null}</EarlyAccessProvider>); });
 
       expect(mockIsFeatureEnabled).toHaveBeenCalledWith("contatos");
       expect(mockIsFeatureEnabled).toHaveBeenCalledWith("dados");
