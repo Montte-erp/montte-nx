@@ -30,6 +30,7 @@ import {
    getCoreRowModel,
    getFilteredRowModel,
    getSortedRowModel,
+   type OnChangeFn,
    type Row,
    type RowSelectionState,
    type SortingState,
@@ -45,7 +46,7 @@ import {
    Settings2,
 } from "lucide-react";
 import { useLocalStorage } from "foxact/use-local-storage";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 
 import { cn } from "../lib/utils";
@@ -97,23 +98,27 @@ interface DataTablePaginationProps {
    pageSizeOptions?: number[];
 }
 
+export type DataTableStoredState = {
+   columnOrder: string[];
+   columnVisibility: VisibilityState;
+};
+
 interface DataTableProps<TData, TValue> {
    columns: ColumnDef<TData, TValue>[];
    data: TData[];
+   getRowId: (row: TData) => string;
+   sorting: SortingState;
+   onSortingChange: OnChangeFn<SortingState>;
+   columnFilters: ColumnFiltersState;
+   onColumnFiltersChange: OnChangeFn<ColumnFiltersState>;
+   tableState: DataTableStoredState | null;
+   onTableStateChange: (state: DataTableStoredState) => void;
    pagination?: DataTablePaginationProps;
-   enableRowSelection?: boolean;
    rowSelection?: RowSelectionState;
    onRowSelectionChange?: (selection: RowSelectionState) => void;
-   getRowId?: (row: TData) => string;
-   columnVisibility?: VisibilityState;
-   onColumnVisibilityChange?: (visibility: VisibilityState) => void;
    renderActions?: (props: { row: Row<TData> }) => React.ReactNode;
-   reorderColumns?: boolean;
-   reorderRows?: boolean;
-   onRowOrderChange?: (data: TData[]) => void;
    groupBy?: (row: TData) => string;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
-   storageKey?: string;
 }
 
 // =============================================================================
@@ -455,6 +460,12 @@ export function DataTable<TData, TValue>({
    getRowId,
    columnVisibility = {},
    onColumnVisibilityChange,
+   sorting: controlledSorting,
+   onSortingChange,
+   columnFilters: controlledColumnFilters,
+   onColumnFiltersChange,
+   tableState,
+   onTableStateChange,
    renderActions,
    reorderColumns = false,
    reorderRows = false,
@@ -463,7 +474,8 @@ export function DataTable<TData, TValue>({
    renderGroupHeader,
    storageKey,
 }: DataTableProps<TData, TValue>) {
-   const lsPrefix = `montte:datatable:${storageKey ?? "__no-persist"}`;
+   const instanceId = useId();
+   const lsPrefix = `montte:datatable:${storageKey ?? instanceId}`;
    const [storedColumnOrder, setStoredColumnOrder] = useLocalStorage<
       string[] | null
    >(`${lsPrefix}:column-order`, null);
@@ -471,8 +483,46 @@ export function DataTable<TData, TValue>({
       VisibilityState | null
    >(`${lsPrefix}:column-visibility`, null);
 
-   const [sorting, setSorting] = useState<SortingState>([]);
-   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+   const isSortingControlled = controlledSorting !== undefined;
+   const isColumnFiltersControlled = controlledColumnFilters !== undefined;
+
+   const [internalSorting, setInternalSorting] = useState<SortingState>([]);
+   const [internalColumnFilters, setInternalColumnFilters] = useState<ColumnFiltersState>([]);
+
+   const sorting = isSortingControlled ? controlledSorting : internalSorting;
+   const columnFilters = isColumnFiltersControlled ? controlledColumnFilters : internalColumnFilters;
+
+   const onSortingChangeRef = useRef(onSortingChange);
+   useIsomorphicLayoutEffect(() => { onSortingChangeRef.current = onSortingChange; });
+
+   const onColumnFiltersChangeRef = useRef(onColumnFiltersChange);
+   useIsomorphicLayoutEffect(() => { onColumnFiltersChangeRef.current = onColumnFiltersChange; });
+
+   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
+      (updater) => {
+         if (isSortingControlled) {
+            onSortingChangeRef.current?.(updater);
+         } else {
+            setInternalSorting((prev) =>
+               typeof updater === "function" ? updater(prev) : updater,
+            );
+         }
+      },
+      [isSortingControlled],
+   );
+
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
+      (updater) => {
+         if (isColumnFiltersControlled) {
+            onColumnFiltersChangeRef.current?.(updater);
+         } else {
+            setInternalColumnFilters((prev) =>
+               typeof updater === "function" ? updater(prev) : updater,
+            );
+         }
+      },
+      [isColumnFiltersControlled],
+   );
    const [internalRowSelection, setInternalRowSelection] =
       useState<RowSelectionState>({});
 
@@ -517,12 +567,16 @@ export function DataTable<TData, TValue>({
       onColumnVisibilityChangeRef.current = onColumnVisibilityChange;
    });
 
-   const useLocalVisibility = !onColumnVisibilityChange && !!storageKey;
+   const useLocalVisibility = !onColumnVisibilityChange && !!storageKey && !tableState;
+
+   const onTableStateChangeRef = useRef(onTableStateChange);
+   useIsomorphicLayoutEffect(() => { onTableStateChangeRef.current = onTableStateChange; });
 
    const effectiveColumnVisibility: VisibilityState = useMemo(() => {
+      if (tableState) return tableState.columnVisibility ?? {};
       if (!useLocalVisibility) return columnVisibility;
       return storedColumnVisibility ?? {};
-   }, [useLocalVisibility, columnVisibility, storedColumnVisibility]);
+   }, [tableState, useLocalVisibility, columnVisibility, storedColumnVisibility]);
 
    const handleColumnVisibilityChange = useCallback(
       (
@@ -537,11 +591,13 @@ export function DataTable<TData, TValue>({
          if (onColumnVisibilityChangeRef.current) {
             onColumnVisibilityChangeRef.current(next);
          }
-         if (storageKey) {
+         if (tableState !== undefined) {
+            onTableStateChangeRef.current?.({ ...tableState, columnVisibility: next });
+         } else if (storageKey) {
             setStoredColumnVisibility(next);
          }
       },
-      [effectiveColumnVisibility, storageKey, setStoredColumnVisibility],
+      [effectiveColumnVisibility, tableState, storageKey, setStoredColumnVisibility],
    );
 
    const hasActionsColumn =
@@ -581,23 +637,43 @@ export function DataTable<TData, TValue>({
       reorderRows,
    ]);
 
+   const isFixedColumn = (id: string) =>
+      id === "drag-handle" || id === "__actions";
+
    const [columnOrder, setColumnOrder] = useState<string[]>(() => {
-      if (storageKey && storedColumnOrder) return storedColumnOrder;
-      return allColumns.map((c) => c.id ?? "");
+      const draggableIds = allColumns
+         .filter((c) => !isFixedColumn(c.id ?? ""))
+         .map((c) => c.id ?? "");
+      const stored = tableState?.columnOrder ?? (storageKey ? storedColumnOrder : null);
+      if (stored) {
+         return stored.filter((id) => draggableIds.includes(id));
+      }
+      return draggableIds;
    });
 
    useEffect(() => {
       setColumnOrder((prev) => {
-         const newIds = allColumns.map((c) => c.id ?? "");
-         const kept = prev.filter((id) => newIds.includes(id));
-         const added = newIds.filter((id) => !prev.includes(id));
+         const draggableIds = allColumns
+            .filter((c) => !isFixedColumn(c.id ?? ""))
+            .map((c) => c.id ?? "");
+         const kept = prev.filter((id) => draggableIds.includes(id));
+         const added = draggableIds.filter((id) => !prev.includes(id));
          return [...kept, ...added];
       });
    }, [allColumns]);
 
+   const columnOrderMounted = useRef(false);
    useEffect(() => {
-      if (storageKey) setStoredColumnOrder(columnOrder);
-   }, [columnOrder, storageKey, setStoredColumnOrder]);
+      if (!columnOrderMounted.current) {
+         columnOrderMounted.current = true;
+         return;
+      }
+      if (tableState !== undefined) {
+         onTableStateChangeRef.current?.({ ...tableState, columnOrder });
+      } else if (storageKey) {
+         setStoredColumnOrder(columnOrder);
+      }
+   }, [columnOrder, tableState, storageKey, setStoredColumnOrder]);
 
    const table = useReactTable({
       columns: allColumns,
@@ -609,10 +685,10 @@ export function DataTable<TData, TValue>({
          ? (originalRow) => getRowId(originalRow)
          : (_row, index) => String(index),
       getSortedRowModel: getSortedRowModel(),
-      onColumnFiltersChange: setColumnFilters,
+      onColumnFiltersChange: handleColumnFiltersChange,
       onColumnVisibilityChange: handleColumnVisibilityChange,
       onRowSelectionChange: handleRowSelectionChange,
-      onSortingChange: setSorting,
+      onSortingChange: handleSortingChange,
       onColumnOrderChange: reorderColumns ? setColumnOrder : undefined,
       state: {
          columnFilters,
@@ -625,8 +701,6 @@ export function DataTable<TData, TValue>({
 
    const columnCount =
       table.getVisibleLeafColumns().length + (enableRowSelection ? 1 : 0);
-
-   const isFixedColumn = (id: string) => id === "drag-handle";
 
    const columnIds = useMemo<UniqueIdentifier[]>(
       () =>

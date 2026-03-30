@@ -39,13 +39,8 @@ import {
    TrendingDown,
    TrendingUp,
 } from "lucide-react";
-import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { useCallback } from "react";
 import { toast } from "sonner";
-
-const [useTransactionsColumnVisibility] = createLocalStorageState<
-   Record<string, boolean>
->("montte:dt-col-vis:transactions", {});
 import { BillFromTransactionDialogStack } from "@/features/bills/ui/bill-from-transaction-dialog-stack";
 import { BulkCategorizeForm } from "@/features/transactions/ui/bulk-categorize-form";
 import { BulkMoveAccountForm } from "@/features/transactions/ui/bulk-move-account-form";
@@ -71,8 +66,6 @@ export function TransactionsList({
    onPageChange,
    onPageSizeChange,
 }: TransactionsListProps) {
-   const [columnVisibility, setColumnVisibility] =
-      useTransactionsColumnVisibility();
    const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
    const {
@@ -310,8 +303,7 @@ export function TransactionsList({
          <SummaryBar summary={summary} />
          <DataTable
             columns={columns}
-            columnVisibility={columnVisibility ?? {}}
-            onColumnVisibilityChange={setColumnVisibility}
+            storageKey="transactions"
             data={transactionData}
             enableRowSelection
             getRowId={(row) => row.id}

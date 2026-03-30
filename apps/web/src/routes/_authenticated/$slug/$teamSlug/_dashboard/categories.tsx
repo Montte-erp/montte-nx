@@ -1,5 +1,6 @@
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
+import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import {
    Empty,
    EmptyDescription,
@@ -14,7 +15,9 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import type { ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
 import {
    Archive,
    Download,
@@ -26,6 +29,7 @@ import {
 } from "lucide-react";
 import { Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
 import {
    buildCategoryColumns,
@@ -42,9 +46,26 @@ import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
+const categoriesSearchSchema = z.object({
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .optional()
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .optional()
+      .default([]),
+});
+
+const [useCategoriesTableState] = createLocalStorageState<DataTableStoredState | null>(
+   "montte:datatable:categories",
+   null,
+);
+
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/categories",
 )({
+   validateSearch: categoriesSearchSchema,
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(
          orpc.categories.getAll.queryOptions({}),
@@ -74,9 +95,29 @@ function CategoriesSkeleton() {
 interface CategoriesListProps {
    filters: CategoryFilters;
    onFiltersChange: (filters: CategoryFilters) => void;
+   navigate: ReturnType<typeof Route.useNavigate>;
 }
 
-function CategoriesList({ filters }: CategoriesListProps) {
+function CategoriesList({ filters, navigate }: CategoriesListProps) {
+   const { sorting, columnFilters } = Route.useSearch();
+   const [tableState, setTableState] = useCategoriesTableState();
+
+   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
+      (updater) => {
+         const next = typeof updater === "function" ? updater(sorting as SortingState) : updater;
+         navigate({ search: (prev) => ({ ...prev, sorting: next }) });
+      },
+      [sorting, navigate],
+   );
+
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
+      (updater) => {
+         const next = typeof updater === "function" ? updater(columnFilters as ColumnFiltersState) : updater;
+         navigate({ search: (prev) => ({ ...prev, columnFilters: next }) });
+      },
+      [columnFilters, navigate],
+   );
+
    const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
    const {
@@ -210,7 +251,19 @@ function CategoriesList({ filters }: CategoriesListProps) {
             data={categories}
             enableRowSelection
             getRowId={(row) => row.id}
+            groupBy={(row) => row.type ?? "other"}
             onRowSelectionChange={onRowSelectionChange}
+            renderGroupHeader={(key) => {
+               if (key === "income") return "Receitas";
+               if (key === "expense") return "Despesas";
+               return "Outros";
+            }}
+            sorting={sorting as SortingState}
+            onSortingChange={handleSortingChange}
+            columnFilters={columnFilters as ColumnFiltersState}
+            onColumnFiltersChange={handleColumnFiltersChange}
+            tableState={tableState}
+            onTableStateChange={setTableState}
             renderActions={({ row }) => {
                if (row.original.isDefault) return null;
                return (
@@ -260,6 +313,7 @@ function CategoriesList({ filters }: CategoriesListProps) {
 // =============================================================================
 
 function CategoriesPage() {
+   const navigate = Route.useNavigate();
    const { openDialogStack, closeDialogStack } = useDialogStack();
 
    const [filters, setFilters] = useState<CategoryFilters>({
@@ -315,7 +369,7 @@ function CategoriesPage() {
          />
          <CategoryFilterBar filters={filters} onFiltersChange={setFilters} />
          <Suspense fallback={<CategoriesSkeleton />}>
-            <CategoriesList filters={filters} onFiltersChange={setFilters} />
+            <CategoriesList filters={filters} navigate={navigate} onFiltersChange={setFilters} />
          </Suspense>
       </main>
    );

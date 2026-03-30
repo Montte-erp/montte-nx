@@ -127,7 +127,7 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
          accessorKey: "subcategories",
          header: "Subcategorias",
          cell: ({ row }) => {
-            const count = row.original.subcategories.length;
+            const count = row.original.subcategories?.length ?? 0;
             if (count === 0)
                return <span className="text-sm text-muted-foreground">—</span>;
             return (
