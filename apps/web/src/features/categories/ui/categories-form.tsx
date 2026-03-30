@@ -173,7 +173,7 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
          if (isCreate) {
             const created = await createMutation.mutateAsync(payload);
             if (pendingSubcategories.length > 0) {
-               await Promise.all(
+               const results = await Promise.allSettled(
                   pendingSubcategories.map((name) =>
                      createMutation.mutateAsync({
                         name,
@@ -182,6 +182,10 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                      }),
                   ),
                );
+               const failed = results.filter((r) => r.status === "rejected");
+               if (failed.length > 0) {
+                  toast.error(`${failed.length} subcategoria(s) não puderam ser criadas.`);
+               }
             }
             toast.success("Categoria criada com sucesso.");
             onSuccess();

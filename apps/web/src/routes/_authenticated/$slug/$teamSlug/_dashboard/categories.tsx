@@ -200,7 +200,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
                   onSuccess={closeCredenza}
                   parentId={category.id}
                   parentName={category.name}
-                  parentType={(category.type ?? "expense") as "income" | "expense"}
+                  parentType={category.type === "income" ? "income" : "expense"}
                />
             ),
          });

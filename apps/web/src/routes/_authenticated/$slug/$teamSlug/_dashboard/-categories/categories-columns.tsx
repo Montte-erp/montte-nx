@@ -52,7 +52,7 @@ export type CategoryRow = {
    color: string | null;
    icon: string | null;
    keywords: string[] | null;
-   type: string | null;
+   type: "income" | "expense" | null;
    parentId: string | null;
    subcategories?: CategoryRow[];
    createdAt: string | Date;

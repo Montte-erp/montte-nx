@@ -19,6 +19,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
+   type AccessorKeyColumnDef,
    type ColumnDef,
    type ColumnFiltersState,
    type ExpandedState,
@@ -129,7 +130,7 @@ const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
 function getColumnDefId<TData>(col: ColumnDef<TData, unknown>): string {
    if (col.id) return col.id;
    if ("accessorKey" in col && col.accessorKey != null) {
-      return String((col as { accessorKey: string | number }).accessorKey);
+      return String((col as AccessorKeyColumnDef<TData, unknown>).accessorKey);
    }
    return "";
 }
