@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import { Label } from "@packages/ui/components/label";
 import { Slider } from "@packages/ui/components/slider";
@@ -49,6 +50,12 @@ type SurveyQuestionProps = {
 };
 
 export function SurveyQuestion({ question, value, onChange }: SurveyQuestionProps) {
+   useEffect(() => {
+      if (question.type === "rating" && question.display !== "emoji" && value === null) {
+         onChange(1);
+      }
+   }, []);
+
    return (
       <div className="flex flex-col gap-2">
          <Label className="text-sm font-medium leading-snug">

@@ -108,8 +108,13 @@ export function SurveyModalContent({ surveyId, onClose, title, description }: Su
          return val !== undefined && val !== null && val !== "";
       });
 
+   useEffect(() => {
+      if (surveyNotFound) {
+         onClose();
+      }
+   }, [surveyNotFound, onClose]);
+
    if (surveyNotFound) {
-      onClose();
       return null;
    }
 
