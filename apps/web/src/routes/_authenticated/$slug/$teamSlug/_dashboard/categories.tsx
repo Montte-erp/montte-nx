@@ -36,12 +36,14 @@ import {
    type CategoryRow,
 } from "./-categories/categories-columns";
 import { CategoryForm } from "@/features/categories/ui/categories-form";
+import { SubcategoryForm } from "@/features/categories/ui/subcategory-form";
 import { CategoryFilterBar } from "./-categories/category-filter-bar";
 import { CategoryImportDialogStack } from "./-categories/category-import-dialog-stack";
 import { exportCategoriesCsv } from "./-categories/export-categories-csv";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
+
 
 const categoriesSearchSchema = z.object({
    sorting: z
@@ -117,7 +119,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
       [columnFilters, navigate],
    );
 
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const {
       rowSelection,
@@ -166,7 +168,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
 
    const handleEdit = useCallback(
       (category: CategoryRow) => {
-         openDialogStack({
+         openCredenza({
             children: (
                <CategoryForm
                   category={{
@@ -178,12 +180,28 @@ function CategoriesList({ navigate }: CategoriesListProps) {
                      type: category.type,
                   }}
                   mode="edit"
-                  onSuccess={closeDialogStack}
+                  onSuccess={closeCredenza}
                />
             ),
          });
       },
-      [openDialogStack, closeDialogStack],
+      [openCredenza, closeCredenza],
+   );
+
+   const handleAddSubcategory = useCallback(
+      (category: CategoryRow) => {
+         openCredenza({
+            children: (
+               <SubcategoryForm
+                  onSuccess={closeCredenza}
+                  parentId={category.id}
+                  parentName={category.name}
+                  parentType={(category.type ?? "expense") as "income" | "expense"}
+               />
+            ),
+         });
+      },
+      [openCredenza, closeCredenza],
    );
 
    const handleDelete = useCallback(
@@ -274,6 +292,13 @@ function CategoriesList({ navigate }: CategoriesListProps) {
                return (
                   <>
                      <Button
+                        onClick={() => handleAddSubcategory(row.original)}
+                        tooltip="Nova subcategoria"
+                        variant="outline"
+                     >
+                        <Plus className="size-4" />
+                     </Button>
+                     <Button
                         onClick={() => handleEdit(row.original)}
                         tooltip="Editar"
                         variant="outline"
@@ -320,7 +345,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
 function CategoriesPage() {
    const navigate = Route.useNavigate();
    const { type, includeArchived, groupBy, search } = Route.useSearch();
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
 
    const handleIncludeArchivedChange = useCallback(
       (checked: boolean) => {
@@ -349,16 +374,16 @@ function CategoriesPage() {
    );
 
    const handleCreate = useCallback(() => {
-      openDialogStack({
-         children: <CategoryForm mode="create" onSuccess={closeDialogStack} />,
+      openCredenza({
+         children: <CategoryForm mode="create" onSuccess={closeCredenza} />,
       });
-   }, [openDialogStack, closeDialogStack]);
+   }, [openCredenza, closeCredenza]);
 
    const handleImport = useCallback(() => {
-      openDialogStack({
-         children: <CategoryImportDialogStack onSuccess={closeDialogStack} />,
+      openCredenza({
+         children: <CategoryImportDialogStack onSuccess={closeCredenza} />,
       });
-   }, [openDialogStack, closeDialogStack]);
+   }, [openCredenza, closeCredenza]);
 
    const handleExport = useCallback(async () => {
       try {

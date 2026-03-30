@@ -63,22 +63,33 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
          accessorKey: "name",
          header: "Nome",
          cell: ({ row }) => {
-            const { name, color, icon, isDefault } = row.original;
+            const { name, color, icon, isDefault, subcategories } = row.original;
             const IconComponent = icon ? ICON_MAP[icon] : null;
             return (
-               <div className="flex items-center gap-2 min-w-0">
-                  {color || IconComponent ? (
-                     <span
-                        className="size-7 rounded-md flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: color ?? "#6366f1" }}
-                     >
-                        {IconComponent && (
-                           <IconComponent className="size-3.5 text-white" />
-                        )}
-                     </span>
-                  ) : null}
-                  <span className="font-medium truncate">{name}</span>
-                  {isDefault && <Badge variant="outline">Padrão</Badge>}
+               <div className="flex flex-col gap-2 min-w-0">
+                  <div className="flex items-center gap-2">
+                     {color || IconComponent ? (
+                        <span
+                           className="size-7 rounded-md flex items-center justify-center shrink-0"
+                           style={{ backgroundColor: color ?? "#6366f1" }}
+                        >
+                           {IconComponent && (
+                              <IconComponent className="size-3.5 text-white" />
+                           )}
+                        </span>
+                     ) : null}
+                     <span className="font-medium truncate">{name}</span>
+                     {isDefault && <Badge variant="outline">Padrão</Badge>}
+                  </div>
+                  {subcategories && subcategories.length > 0 && (
+                     <div className="flex flex-col gap-2 pl-9">
+                        {subcategories.map((sub) => (
+                           <span className="text-sm text-muted-foreground truncate" key={sub.id}>
+                              {sub.name}
+                           </span>
+                        ))}
+                     </div>
+                  )}
                </div>
             );
          },
@@ -120,20 +131,6 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
                      <Badge variant="secondary">+{keywords.length - 3}</Badge>
                   )}
                </div>
-            );
-         },
-      },
-      {
-         accessorKey: "subcategories",
-         header: "Subcategorias",
-         cell: ({ row }) => {
-            const count = row.original.subcategories?.length ?? 0;
-            if (count === 0)
-               return <span className="text-sm text-muted-foreground">—</span>;
-            return (
-               <Badge variant="outline">
-                  {count} {count === 1 ? "subcategoria" : "subcategorias"}
-               </Badge>
             );
          },
       },
