@@ -1,4 +1,3 @@
-import { env } from "@core/environment/web";
 import { Toaster } from "@packages/ui/components/sonner";
 import { ThemeProvider } from "@packages/ui/lib/theme-provider";
 import appCss from "@tooling/css/globals.css?url";
@@ -14,15 +13,20 @@ import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
 import { GlobalCredenza } from "@/hooks/use-credenza";
 import { GlobalSurveyModal } from "@/hooks/use-survey-modal";
 import { GlobalDialogStack } from "@/hooks/use-dialog-stack";
+import { getPublicEnv } from "@/integrations/public-env";
 import { PostHogWrapper } from "@/integrations/posthog/client";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import type { RouterContext } from "../integrations/tanstack-query/root-provider";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
    loader: async ({ context }) => {
-      await context.queryClient
-         .ensureQueryData(context.orpc.session.getSession.queryOptions())
-         .catch(() => null);
+      const [, publicEnv] = await Promise.all([
+         context.queryClient
+            .ensureQueryData(context.orpc.session.getSession.queryOptions())
+            .catch(() => null),
+         Promise.resolve(getPublicEnv()),
+      ]);
+      return { publicEnv };
    },
    head: () => ({
       meta: [
@@ -55,13 +59,19 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+   const { publicEnv } = Route.useLoaderData();
    return (
       <html lang="pt-BR" suppressHydrationWarning>
          <head>
             <HeadContent />
+            <script
+               dangerouslySetInnerHTML={{
+                  __html: `window.__env = ${JSON.stringify(publicEnv)}`,
+               }}
+            />
          </head>
          <body>
-            <PostHogWrapper env={env}>
+            <PostHogWrapper env={publicEnv}>
                <ThemeProvider
                   attribute="class"
                   defaultTheme="system"
