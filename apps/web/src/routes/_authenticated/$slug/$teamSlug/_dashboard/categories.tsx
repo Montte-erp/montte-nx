@@ -27,7 +27,7 @@ import {
    Trash2,
    Upload,
 } from "lucide-react";
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
@@ -36,10 +36,7 @@ import {
    type CategoryRow,
 } from "./-categories/categories-columns";
 import { CategoryForm } from "@/features/categories/ui/categories-form";
-import {
-   CategoryFilterBar,
-   type CategoryFilters,
-} from "./-categories/category-filter-bar";
+import { CategoryFilterBar } from "./-categories/category-filter-bar";
 import { CategoryImportDialogStack } from "./-categories/category-import-dialog-stack";
 import { exportCategoriesCsv } from "./-categories/export-categories-csv";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -55,6 +52,10 @@ const categoriesSearchSchema = z.object({
       .array(z.object({ id: z.string(), value: z.unknown() }))
       .optional()
       .default([]),
+   type: z.enum(["income", "expense"]).optional(),
+   includeArchived: z.boolean().optional().default(false),
+   groupBy: z.boolean().optional().default(true),
+   search: z.string().optional().default(""),
 });
 
 const [useCategoriesTableState] = createLocalStorageState<DataTableStoredState | null>(
@@ -93,13 +94,11 @@ function CategoriesSkeleton() {
 // =============================================================================
 
 interface CategoriesListProps {
-   filters: CategoryFilters;
-   onFiltersChange: (filters: CategoryFilters) => void;
    navigate: ReturnType<typeof Route.useNavigate>;
 }
 
-function CategoriesList({ filters, navigate }: CategoriesListProps) {
-   const { sorting, columnFilters } = Route.useSearch();
+function CategoriesList({ navigate }: CategoriesListProps) {
+   const { sorting, columnFilters, type, includeArchived, groupBy, search } = Route.useSearch();
    const [tableState, setTableState] = useCategoriesTableState();
 
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
@@ -131,13 +130,20 @@ function CategoriesList({ filters, navigate }: CategoriesListProps) {
    const { data: result } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({
          input: {
-            type: filters.type,
-            includeArchived: filters.includeArchived || undefined,
+            type,
+            includeArchived: includeArchived || undefined,
          },
       }),
    );
 
-   const categories = result as unknown as CategoryRow[];
+   const allCategories = result as unknown as CategoryRow[];
+   const categories = search
+      ? allCategories.filter(
+           (c) =>
+              c.name.toLowerCase().includes(search.toLowerCase()) ||
+              c.keywords?.some((k) => k.toLowerCase().includes(search.toLowerCase())),
+        )
+      : allCategories;
 
    const deleteMutation = useMutation(
       orpc.categories.remove.mutationOptions({
@@ -235,7 +241,7 @@ function CategoriesList({ filters, navigate }: CategoriesListProps) {
                </EmptyMedia>
                <EmptyTitle>Nenhuma categoria</EmptyTitle>
                <EmptyDescription>
-                  {filters.search || filters.type
+                  {type || search
                      ? "Nenhuma categoria encontrada com os filtros atuais."
                      : "Adicione uma categoria para organizar suas transações."}
                </EmptyDescription>
@@ -250,7 +256,7 @@ function CategoriesList({ filters, navigate }: CategoriesListProps) {
             columns={columns}
             data={categories}
             getRowId={(row) => row.id}
-            groupBy={(row) => row.type ?? "other"}
+            groupBy={groupBy ? (row) => row.type ?? "other" : undefined}
             onRowSelectionChange={onRowSelectionChange}
             renderGroupHeader={(key) => {
                if (key === "income") return "Receitas";
@@ -313,14 +319,34 @@ function CategoriesList({ filters, navigate }: CategoriesListProps) {
 
 function CategoriesPage() {
    const navigate = Route.useNavigate();
+   const { type, includeArchived, groupBy, search } = Route.useSearch();
    const { openDialogStack, closeDialogStack } = useDialogStack();
 
-   const [filters, setFilters] = useState<CategoryFilters>({
-      search: "",
-      type: undefined,
-      includeArchived: false,
-      page: 1,
-   });
+   const handleIncludeArchivedChange = useCallback(
+      (checked: boolean) => {
+         navigate({ search: (prev) => ({ ...prev, includeArchived: checked }) });
+      },
+      [navigate],
+   );
+
+   const handleGroupByChange = useCallback(
+      (checked: boolean) => {
+         navigate({ search: (prev) => ({ ...prev, groupBy: checked }) });
+      },
+      [navigate],
+   );
+
+   const handleSearchChange = useCallback(
+      (value: string) => {
+         navigate({ search: (prev) => ({ ...prev, search: value }) });
+      },
+      [navigate],
+   );
+
+   const handleClearFilters = useCallback(
+      () => navigate({ search: (prev) => ({ ...prev, type: undefined, includeArchived: false, search: "" }) }),
+      [navigate],
+   );
 
    const handleCreate = useCallback(() => {
       openDialogStack({
@@ -366,9 +392,16 @@ function CategoriesPage() {
             description="Gerencie as categorias das suas transações"
             title="Categorias"
          />
-         <CategoryFilterBar filters={filters} onFiltersChange={setFilters} />
+         <CategoryFilterBar
+            groupBy={groupBy}
+            includeArchived={includeArchived}
+            onClear={handleClearFilters}
+            onGroupByChange={handleGroupByChange}
+            onIncludeArchivedChange={handleIncludeArchivedChange}
+            type={type}
+         />
          <Suspense fallback={<CategoriesSkeleton />}>
-            <CategoriesList filters={filters} navigate={navigate} onFiltersChange={setFilters} />
+            <CategoriesList navigate={navigate} />
          </Suspense>
       </main>
    );
