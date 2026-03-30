@@ -5,8 +5,7 @@ import {
    DndContext,
    type DragEndEvent,
    KeyboardSensor,
-   MouseSensor,
-   TouchSensor,
+   PointerSensor,
    type UniqueIdentifier,
    useSensor,
    useSensors,
@@ -121,6 +120,14 @@ interface DataTableProps<TData, TValue> {
 // =============================================================================
 
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
+
+function getColumnDefId<TData>(col: ColumnDef<TData, unknown>): string {
+   if (col.id) return col.id;
+   if ("accessorKey" in col && col.accessorKey != null) {
+      return String((col as { accessorKey: string | number }).accessorKey);
+   }
+   return "";
+}
 
 function getPageNumbers(currentPage: number, totalPages: number): number[] {
    if (totalPages <= 5)
@@ -453,8 +460,9 @@ export function DataTable<TData, TValue>({
 
    const [columnOrder, setColumnOrder] = useState<string[]>(() => {
       const draggableIds = allColumns
-         .filter((c) => !isFixedColumn(c.id ?? ""))
-         .map((c) => c.id ?? "");
+         .filter((c) => !isFixedColumn(getColumnDefId(c)))
+         .map((c) => getColumnDefId(c))
+         .filter(Boolean);
       if (tableState?.columnOrder) {
          return tableState.columnOrder.filter((id) => draggableIds.includes(id));
       }
@@ -464,8 +472,9 @@ export function DataTable<TData, TValue>({
    useEffect(() => {
       setColumnOrder((prev) => {
          const draggableIds = allColumns
-            .filter((c) => !isFixedColumn(c.id ?? ""))
-            .map((c) => c.id ?? "");
+            .filter((c) => !isFixedColumn(getColumnDefId(c)))
+            .map((c) => getColumnDefId(c))
+            .filter(Boolean);
          const kept = prev.filter((id) => draggableIds.includes(id));
          const added = draggableIds.filter((id) => !prev.includes(id));
          return [...kept, ...added];
@@ -521,8 +530,7 @@ export function DataTable<TData, TValue>({
    );
 
    const sensors = useSensors(
-      useSensor(MouseSensor, {}),
-      useSensor(TouchSensor, {}),
+      useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
       useSensor(KeyboardSensor, {}),
    );
 
@@ -701,7 +709,7 @@ export function DataTable<TData, TValue>({
             <TableRow key={`group-${key}`} className="hover:bg-transparent">
                <TableCell
                   colSpan={columnCount}
-                  className="py-2 px-4 bg-muted/30"
+                  className="py-2 px-4 bg-muted text-sm font-medium text-foreground"
                >
                   {renderGroupHeader(key, groupRows)}
                </TableCell>
@@ -722,7 +730,7 @@ export function DataTable<TData, TValue>({
             sensors={sensors}
          >
             <div className="rounded-md border">
-               <Table>
+               <Table className="border-separate border-spacing-0">
                   <TableHeader>
                      {table.getHeaderGroups().map((headerGroup) => (
                         <TableRow key={headerGroup.id}>

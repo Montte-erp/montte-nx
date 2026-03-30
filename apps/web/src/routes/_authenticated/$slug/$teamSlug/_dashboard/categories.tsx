@@ -34,14 +34,14 @@ import { DefaultHeader } from "@/components/default-header";
 import {
    buildCategoryColumns,
    type CategoryRow,
-} from "@/features/categories/ui/categories-columns";
+} from "./-categories/categories-columns";
 import { CategoryForm } from "@/features/categories/ui/categories-form";
 import {
    CategoryFilterBar,
    type CategoryFilters,
-} from "@/features/categories/ui/category-filter-bar";
-import { CategoryImportDialogStack } from "@/features/categories/ui/category-import-dialog-stack";
-import { exportCategoriesCsv } from "@/features/categories/utils/export-categories-csv";
+} from "./-categories/category-filter-bar";
+import { CategoryImportDialogStack } from "./-categories/category-import-dialog-stack";
+import { exportCategoriesCsv } from "./-categories/export-categories-csv";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
