@@ -398,6 +398,8 @@ function CategoriesPage() {
             onClear={handleClearFilters}
             onGroupByChange={handleGroupByChange}
             onIncludeArchivedChange={handleIncludeArchivedChange}
+            onSearchChange={handleSearchChange}
+            search={search}
             type={type}
          />
          <Suspense fallback={<CategoriesSkeleton />}>
