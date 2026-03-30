@@ -44,7 +44,6 @@ import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
-
 const categoriesSearchSchema = z.object({
    sorting: z
       .array(z.object({ id: z.string(), desc: z.boolean() }))
@@ -412,15 +411,15 @@ function CategoriesPage() {
             actions={
                <div className="flex gap-2">
                   <Button onClick={handleImport} variant="outline">
-                     <Upload className="size-4 mr-1" />
+                     <Upload className="size-4 " />
                      Importar
                   </Button>
                   <Button onClick={handleExport} variant="outline">
-                     <Download className="size-4 mr-1" />
+                     <Download className="size-4 " />
                      Exportar
                   </Button>
                   <Button onClick={handleCreate}>
-                     <Plus className="size-4 mr-1" />
+                     <Plus className="size-4 " />
                      Nova Categoria
                   </Button>
                </div>

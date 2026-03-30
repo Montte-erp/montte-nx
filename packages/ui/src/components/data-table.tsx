@@ -428,6 +428,11 @@ export function DataTable<TData, TValue>({
    const effectiveColumnVisibility: VisibilityState =
       tableState?.columnVisibility ?? {};
 
+   const effectiveColumnVisibilityRef = useRef(effectiveColumnVisibility);
+   useIsomorphicLayoutEffect(() => {
+      effectiveColumnVisibilityRef.current = effectiveColumnVisibility;
+   });
+
    const onTableStateChangeRef = useRef(onTableStateChange);
    useIsomorphicLayoutEffect(() => {
       onTableStateChangeRef.current = onTableStateChange;
@@ -505,9 +510,9 @@ export function DataTable<TData, TValue>({
       }
       onTableStateChangeRef.current?.({
          columnOrder,
-         columnVisibility: effectiveColumnVisibility,
+         columnVisibility: effectiveColumnVisibilityRef.current,
       });
-   }, [columnOrder, effectiveColumnVisibility]);
+   }, [columnOrder]);
 
    const table = useReactTable({
       columns: allColumns,

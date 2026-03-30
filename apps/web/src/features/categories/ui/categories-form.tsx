@@ -408,7 +408,7 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
             <form.Subscribe selector={(s) => s}>
                {(state) => (
                   <Button disabled={!state.canSubmit || state.isSubmitting || isPending} type="submit">
-                     {(state.isSubmitting || isPending) && <Spinner className="size-4 mr-2" />}
+                     {(state.isSubmitting || isPending) && <Spinner className="size-4" />}
                      Salvar
                   </Button>
                )}

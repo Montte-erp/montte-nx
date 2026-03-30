@@ -239,6 +239,21 @@ import { categories } from "./categories";
 
 **No `useStableHandler`.** Never use `foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired`. Use `useCallback` instead. The only exception is `use-event-listener.ts` which uses a `useRef` + `useIsomorphicLayoutEffect` pattern internally.
 
+**No margin utilities.** Never use `m-`, `mt-`, `mb-`, `ml-`, `mr-`, `mx-`, `my-`, `space-x-*`, or `space-y-*` for spacing between sibling elements. Always use `gap-*` with `flex` or `grid` instead. The Button component already applies `gap-2` internally — never add `mr-*` or `ml-*` to icons inside buttons.
+
+```tsx
+// ❌ Never
+<div className="space-y-4">...</div>
+<Spinner className="size-4 mr-2" />
+<div className="mt-4">...</div>
+
+// ✅ Always
+<div className="flex flex-col gap-4">...</div>
+<Spinner className="size-4" />  {/* Button already has gap-2 */}
+```
+
+**Minimize `useEffect`.** Avoid `useEffect` unless truly necessary. Prefer: derived state (compute directly from props/state), event handlers, `useIsomorphicLayoutEffect` for DOM sync, or ref patterns. Only use `useEffect` for syncing with external systems (subscriptions, timers, non-React APIs) or post-commit DOM work that cannot happen during render or in event handlers. Never use `useEffect` to sync one piece of state to another — derive instead.
+
 ---
 
 ## PostHog

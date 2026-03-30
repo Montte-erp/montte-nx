@@ -96,7 +96,7 @@ export function SubcategoryForm({
                      type="submit"
                   >
                      {(state.isSubmitting || createMutation.isPending) && (
-                        <Spinner className="size-4 mr-2" />
+                        <Spinner className="size-4" />
                      )}
                      Criar Subcategoria
                   </Button>
