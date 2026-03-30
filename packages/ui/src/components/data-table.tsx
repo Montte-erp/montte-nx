@@ -493,7 +493,7 @@ export function DataTable<TData, TValue>({
          columnOrder,
          columnVisibility: effectiveColumnVisibility,
       });
-   }, [columnOrder]);
+   }, [columnOrder, effectiveColumnVisibility]);
 
    const table = useReactTable({
       columns: allColumns,

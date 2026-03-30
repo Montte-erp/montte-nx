@@ -39,7 +39,10 @@ import {
    TrendingDown,
    TrendingUp,
 } from "lucide-react";
-import { useCallback } from "react";
+import type { DataTableStoredState } from "@packages/ui/components/data-table";
+import type { ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/react-table";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { BillFromTransactionDialogStack } from "@/features/bills/ui/bill-from-transaction-dialog-stack";
 import { BulkCategorizeForm } from "@/features/transactions/ui/bulk-categorize-form";
@@ -55,6 +58,11 @@ import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
+const [useTransactionsTableState] = createLocalStorageState<DataTableStoredState | null>(
+   "montte:datatable:transactions",
+   null,
+);
+
 interface TransactionsListProps {
    filters: TransactionFilters;
    onPageChange: (page: number) => void;
@@ -66,6 +74,20 @@ export function TransactionsList({
    onPageChange,
    onPageSizeChange,
 }: TransactionsListProps) {
+   const [sorting, setSorting] = useState<SortingState>([]);
+   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+   const [tableState, setTableState] = useTransactionsTableState();
+
+   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
+      (updater) => setSorting((prev) => (typeof updater === "function" ? updater(prev) : updater)),
+      [],
+   );
+
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
+      (updater) => setColumnFilters((prev) => (typeof updater === "function" ? updater(prev) : updater)),
+      [],
+   );
+
    const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
    const {
@@ -303,11 +325,15 @@ export function TransactionsList({
          <SummaryBar summary={summary} />
          <DataTable
             columns={columns}
-            storageKey="transactions"
+            columnFilters={columnFilters}
             data={transactionData}
-            enableRowSelection
             getRowId={(row) => row.id}
+            onColumnFiltersChange={handleColumnFiltersChange}
             onRowSelectionChange={onRowSelectionChange}
+            onSortingChange={handleSortingChange}
+            onTableStateChange={setTableState}
+            sorting={sorting}
+            tableState={tableState}
             pagination={{
                currentPage: filters.page,
                onPageChange,
