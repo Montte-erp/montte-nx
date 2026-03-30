@@ -11,16 +11,12 @@ import {
    useSensor,
    useSensors,
 } from "@dnd-kit/core";
-import {
-   restrictToHorizontalAxis,
-   restrictToVerticalAxis,
-} from "@dnd-kit/modifiers";
+import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import {
    arrayMove,
    horizontalListSortingStrategy,
    SortableContext,
    useSortable,
-   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -45,8 +41,7 @@ import {
    GripVertical,
    Settings2,
 } from "lucide-react";
-import { useLocalStorage } from "foxact/use-local-storage";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 
 import { cn } from "../lib/utils";
@@ -137,35 +132,6 @@ function getPageNumbers(currentPage: number, totalPages: number): number[] {
 }
 
 // =============================================================================
-// DnD — Row drag handle
-// =============================================================================
-
-function createDragHandleColumn<TData>(): ColumnDef<TData> {
-   return {
-      id: "drag-handle",
-      header: () => null,
-      cell: ({ row }) => <RowDragHandle rowId={row.id} />,
-      size: 40,
-      enableSorting: false,
-      enableHiding: false,
-   };
-}
-
-function RowDragHandle({ rowId }: { rowId: string }) {
-   const { attributes, listeners } = useSortable({ id: rowId });
-   return (
-      <button
-         type="button"
-         className="flex size-8 cursor-grab items-center justify-center text-muted-foreground hover:text-foreground"
-         {...attributes}
-         {...listeners}
-      >
-         <GripVertical className="size-4" />
-      </button>
-   );
-}
-
-// =============================================================================
 // DnD — Sortable header cell (column reorder)
 // =============================================================================
 
@@ -213,72 +179,6 @@ function SortableHeaderCell({
             {children}
          </div>
       </TableHead>
-   );
-}
-
-// =============================================================================
-// DnD — Sortable body cell (column reorder)
-// =============================================================================
-
-function SortableCell({
-   columnId,
-   children,
-}: {
-   columnId: string;
-   children: React.ReactNode;
-}) {
-   const { setNodeRef, transform, transition, isDragging } = useSortable({
-      id: columnId,
-   });
-
-   return (
-      <TableCell
-         ref={setNodeRef}
-         className={cn(isDragging && "opacity-50")}
-         style={{
-            position: "relative",
-            transform: CSS.Translate.toString(transform),
-            transition,
-            zIndex: isDragging ? 1 : undefined,
-         }}
-      >
-         {children}
-      </TableCell>
-   );
-}
-
-// =============================================================================
-// DnD — Sortable row (row reorder)
-// =============================================================================
-
-function SortableRow({
-   rowId,
-   children,
-   className,
-   ...props
-}: {
-   rowId: string;
-   children: React.ReactNode;
-   className?: string;
-} & React.HTMLAttributes<HTMLTableRowElement>) {
-   const { setNodeRef, transform, transition, isDragging } = useSortable({
-      id: rowId,
-   });
-
-   return (
-      <TableRow
-         ref={setNodeRef}
-         className={cn(isDragging && "opacity-50", className)}
-         style={{
-            position: "relative",
-            transform: CSS.Translate.toString(transform),
-            transition,
-            zIndex: isDragging ? 1 : undefined,
-         }}
-         {...props}
-      >
-         {children}
-      </TableRow>
    );
 }
 
@@ -512,6 +412,8 @@ export function DataTable<TData, TValue>({
       onTableStateChangeRef.current = onTableStateChange;
    });
 
+   const columnOrderRef = useRef<string[]>([]);
+
    const handleColumnVisibilityChange = useCallback(
       (
          updaterOrValue:
@@ -523,7 +425,7 @@ export function DataTable<TData, TValue>({
                ? updaterOrValue(effectiveColumnVisibility)
                : updaterOrValue;
          onTableStateChangeRef.current?.({
-            columnOrder,
+            columnOrder: columnOrderRef.current,
             columnVisibility: next,
          });
       },
@@ -570,6 +472,8 @@ export function DataTable<TData, TValue>({
       });
    }, [allColumns]);
 
+   columnOrderRef.current = columnOrder;
+
    const columnOrderMounted = useRef(false);
    useEffect(() => {
       if (!columnOrderMounted.current) {
@@ -604,8 +508,7 @@ export function DataTable<TData, TValue>({
       },
    });
 
-   const columnCount =
-      table.getVisibleLeafColumns().length + (enableRowSelection ? 1 : 0);
+   const columnCount = table.getVisibleLeafColumns().length + 1;
 
    const columnIds = useMemo<UniqueIdentifier[]>(
       () =>
@@ -615,12 +518,6 @@ export function DataTable<TData, TValue>({
             .map((col) => col.id),
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [table, columnOrder, effectiveColumnVisibility],
-   );
-
-   const rowIds = useMemo<UniqueIdentifier[]>(
-      () => table.getRowModel().rows.map((row) => row.id),
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [table.getRowModel().rows],
    );
 
    const sensors = useSensors(
@@ -640,27 +537,11 @@ export function DataTable<TData, TValue>({
       }
    }
 
-   function handleRowDragEnd(event: DragEndEvent) {
-      const { active, over } = event;
-      if (active && over && active.id !== over.id) {
-         const getId = getRowId
-            ? (row: TData) => getRowId(row)
-            : (_row: TData, index: number) => String(index);
-         const oldIndex = data.findIndex(
-            (row, i) => getId(row, i) === active.id,
-         );
-         const newIndex = data.findIndex((row, i) => getId(row, i) === over.id);
-         if (oldIndex !== -1 && newIndex !== -1) {
-            onRowOrderChange?.(arrayMove([...data], oldIndex, newIndex));
-         }
-      }
-   }
-
    // --- Header cells ---
    const renderHeaderCells = (
       headerGroup: ReturnType<typeof table.getHeaderGroups>[number],
    ) => {
-      const selectionHead = enableRowSelection && (
+      const selectionHead = (
          <TableHead className="w-[40px] px-2">
             <Checkbox
                aria-label="Select all"
@@ -679,17 +560,13 @@ export function DataTable<TData, TValue>({
          if (header.column.id === "__actions") {
             return (
                <TableHead className="w-0" key={header.id}>
-                  {(onColumnVisibilityChange || useLocalVisibility) ? (
-                     <div className="flex items-center justify-end">
-                        <ColumnVisibilityToggle
-                           columnVisibility={effectiveColumnVisibility}
-                           onColumnVisibilityChange={
-                              handleColumnVisibilityChange
-                           }
-                           table={table}
-                        />
-                     </div>
-                  ) : null}
+                  <div className="flex items-center justify-end">
+                     <ColumnVisibilityToggle
+                        columnVisibility={effectiveColumnVisibility}
+                        onColumnVisibilityChange={handleColumnVisibilityChange}
+                        table={table}
+                     />
+                  </div>
                </TableHead>
             );
          }
@@ -717,7 +594,7 @@ export function DataTable<TData, TValue>({
                flexRender(header.column.columnDef.header, header.getContext())
             );
 
-         if (reorderColumns && !isFixedColumn(header.column.id)) {
+         if (!isFixedColumn(header.column.id)) {
             return (
                <SortableHeaderCell
                   key={header.id}
@@ -739,16 +616,12 @@ export function DataTable<TData, TValue>({
       return (
          <>
             {selectionHead}
-            {reorderColumns ? (
-               <SortableContext
-                  items={columnIds}
-                  strategy={horizontalListSortingStrategy}
-               >
-                  {headers}
-               </SortableContext>
-            ) : (
-               headers
-            )}
+            <SortableContext
+               items={columnIds}
+               strategy={horizontalListSortingStrategy}
+            >
+               {headers}
+            </SortableContext>
          </>
       );
    };
@@ -757,7 +630,7 @@ export function DataTable<TData, TValue>({
    const renderBodyCells = (
       row: ReturnType<typeof table.getRowModel>["rows"][number],
    ) => {
-      const selectionCell = enableRowSelection && (
+      const selectionCell = (
          <TableCell className="w-[40px] px-2">
             <Checkbox
                aria-label="Select row"
@@ -767,77 +640,36 @@ export function DataTable<TData, TValue>({
          </TableCell>
       );
 
-      const cells = row.getVisibleCells().map((cell) => {
-         const content = flexRender(
-            cell.column.columnDef.cell,
-            cell.getContext(),
-         );
-
-         if (reorderColumns && !isFixedColumn(cell.column.id)) {
-            return (
-               <SortableCell key={cell.id} columnId={cell.column.id}>
-                  {content}
-               </SortableCell>
-            );
-         }
-
-         return (
-            <TableCell
-               className="truncate"
-               key={cell.id}
-               style={{ maxWidth: cell.column.columnDef.maxSize }}
-            >
-               {content}
-            </TableCell>
-         );
-      });
+      const cells = row.getVisibleCells().map((cell) => (
+         <TableCell
+            className="truncate"
+            key={cell.id}
+            style={{ maxWidth: cell.column.columnDef.maxSize }}
+         >
+            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+         </TableCell>
+      ));
 
       return (
          <>
             {selectionCell}
-            {reorderColumns ? (
-               <SortableContext
-                  items={columnIds}
-                  strategy={horizontalListSortingStrategy}
-               >
-                  {cells}
-               </SortableContext>
-            ) : (
-               cells
-            )}
+            {cells}
          </>
       );
    };
 
-   const activeReorderRows = reorderRows && !reorderColumns;
-
    // --- Single row ---
    const renderRow = (
       row: ReturnType<typeof table.getRowModel>["rows"][number],
-   ) => {
-      if (activeReorderRows) {
-         return (
-            <SortableRow
-               key={row.id}
-               rowId={row.id}
-               className={cn(row.getIsSelected() && "bg-muted/50")}
-               data-state={row.getIsSelected() ? "selected" : undefined}
-            >
-               {renderBodyCells(row)}
-            </SortableRow>
-         );
-      }
-
-      return (
-         <TableRow
-            key={row.id}
-            className={cn(row.getIsSelected() && "bg-muted/50")}
-            data-state={row.getIsSelected() ? "selected" : undefined}
-         >
-            {renderBodyCells(row)}
-         </TableRow>
-      );
-   };
+   ) => (
+      <TableRow
+         key={row.id}
+         className={cn(row.getIsSelected() && "bg-muted/50")}
+         data-state={row.getIsSelected() ? "selected" : undefined}
+      >
+         {renderBodyCells(row)}
+      </TableRow>
+   );
 
    // --- Body rows (with optional grouping) ---
    const renderBodyRows = () => {
@@ -878,61 +710,30 @@ export function DataTable<TData, TValue>({
          ]);
       }
 
-      if (activeReorderRows) {
-         return (
-            <SortableContext
-               items={rowIds}
-               strategy={verticalListSortingStrategy}
-            >
-               {rows.map(renderRow)}
-            </SortableContext>
-         );
-      }
-
       return rows.map(renderRow);
    };
 
-   // --- Table content ---
-   const tableContent = (
-      <div className="rounded-md border">
-         <Table>
-            <TableHeader>
-               {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                     {renderHeaderCells(headerGroup)}
-                  </TableRow>
-               ))}
-            </TableHeader>
-            <TableBody>{renderBodyRows()}</TableBody>
-         </Table>
-      </div>
-   );
-
-   const activeReorderColumns = reorderColumns;
-   const needsDndContext = activeReorderColumns || activeReorderRows;
-   const dndModifiers = activeReorderColumns
-      ? [restrictToHorizontalAxis]
-      : activeReorderRows
-        ? [restrictToVerticalAxis]
-        : [];
-   const handleDragEnd = activeReorderColumns
-      ? handleColumnDragEnd
-      : handleRowDragEnd;
-
    return (
       <div>
-         {needsDndContext ? (
-            <DndContext
-               collisionDetection={closestCenter}
-               modifiers={dndModifiers}
-               onDragEnd={handleDragEnd}
-               sensors={sensors}
-            >
-               {tableContent}
-            </DndContext>
-         ) : (
-            tableContent
-         )}
+         <DndContext
+            collisionDetection={closestCenter}
+            modifiers={[restrictToHorizontalAxis]}
+            onDragEnd={handleColumnDragEnd}
+            sensors={sensors}
+         >
+            <div className="rounded-md border">
+               <Table>
+                  <TableHeader>
+                     {table.getHeaderGroups().map((headerGroup) => (
+                        <TableRow key={headerGroup.id}>
+                           {renderHeaderCells(headerGroup)}
+                        </TableRow>
+                     ))}
+                  </TableHeader>
+                  <TableBody>{renderBodyRows()}</TableBody>
+               </Table>
+            </div>
+         </DndContext>
          {pagination && <DataTablePagination {...pagination} />}
       </div>
    );

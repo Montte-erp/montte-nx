@@ -249,8 +249,96 @@ Use `DataTable` from `@packages/ui/components/data-table` for all tabular lists.
 **Rules:**
 
 - Prefer `DataTable` over manual `Table` primitives for list views.
-- Tables should be expandable via row click using `renderSubComponent`.
 - Do not wrap `DataTable` in `Card`/`CardContent` containers.
+- All features are always enabled — column reorder, column visibility, row selection. No feature flags.
+- `getRowId`, `sorting`, `onSortingChange`, `columnFilters`, `onColumnFiltersChange`, `tableState`, `onTableStateChange` are **required** props.
+
+### Required call site setup
+
+Every DataTable usage requires two things at module level:
+
+**1. localStorage state** — created once per feature with a fixed key:
+
+```typescript
+import { createLocalStorageState } from "foxact/create-local-storage-state";
+import type { DataTableStoredState } from "@packages/ui/components/data-table";
+
+const [useFeatureTableState] = createLocalStorageState<DataTableStoredState | null>(
+  "montte:datatable:<feature>",
+  null,
+);
+```
+
+**2. URL search params** — for route files, add `validateSearch` to the route:
+
+```typescript
+import { z } from "zod";
+
+const featureSearchSchema = z.object({
+  sorting: z
+    .array(z.object({ id: z.string(), desc: z.boolean() }))
+    .optional()
+    .default([]),
+  columnFilters: z
+    .array(z.object({ id: z.string(), value: z.unknown() }))
+    .optional()
+    .default([]),
+});
+
+export const Route = createFileRoute("...")({
+  validateSearch: featureSearchSchema,
+  ...
+});
+```
+
+For non-route components (e.g. billing panels), use local `useState` instead of URL params.
+
+### Wiring in the component
+
+```typescript
+import type { OnChangeFn, SortingState, ColumnFiltersState } from "@tanstack/react-table";
+
+function FeatureList() {
+  const navigate = Route.useNavigate();
+  const { sorting, columnFilters } = Route.useSearch();
+  const [tableState, setTableState] = useFeatureTableState();
+
+  const handleSortingChange: OnChangeFn<SortingState> = useCallback(
+    (updater) => {
+      const next = typeof updater === "function" ? updater(sorting as SortingState) : updater;
+      navigate({ search: (prev) => ({ ...prev, sorting: next }) });
+    },
+    [sorting, navigate],
+  );
+
+  const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
+    (updater) => {
+      const next = typeof updater === "function" ? updater(columnFilters as ColumnFiltersState) : updater;
+      navigate({ search: (prev) => ({ ...prev, columnFilters: next }) });
+    },
+    [columnFilters, navigate],
+  );
+
+  return (
+    <DataTable
+      columns={columns}
+      data={data}
+      getRowId={(row) => row.id}
+      sorting={sorting as SortingState}
+      onSortingChange={handleSortingChange}
+      columnFilters={columnFilters as ColumnFiltersState}
+      onColumnFiltersChange={handleColumnFiltersChange}
+      tableState={tableState}
+      onTableStateChange={setTableState}
+      rowSelection={rowSelection}
+      onRowSelectionChange={onRowSelectionChange}
+      renderActions={({ row }) => { ... }}
+    />
+  );
+}
+```
+
+**Open issues for remaining call sites:** MON-193 through MON-198.
 
 ### Card View (`view` prop)
 

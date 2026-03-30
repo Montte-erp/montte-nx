@@ -249,7 +249,6 @@ function CategoriesList({ filters, navigate }: CategoriesListProps) {
          <DataTable
             columns={columns}
             data={categories}
-            enableRowSelection
             getRowId={(row) => row.id}
             groupBy={(row) => row.type ?? "other"}
             onRowSelectionChange={onRowSelectionChange}
