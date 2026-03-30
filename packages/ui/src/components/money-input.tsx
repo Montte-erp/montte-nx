@@ -8,7 +8,7 @@ import {
    InputGroupText,
 } from "@packages/ui/components/input-group";
 import * as React from "react";
-import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
+import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { mergeRefs } from "foxact/merge-refs";
 
 interface MoneyInputProps extends Omit<
@@ -54,8 +54,9 @@ export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
       const inputRef = React.useRef<HTMLInputElement | null>(null);
       const isInternalChange = React.useRef(false);
 
-      const stableOnChange = useStableHandler((value: number | undefined) => {
-         onChange?.(value);
+      const onChangeRef = React.useRef(onChange);
+      useIsomorphicLayoutEffect(() => {
+         onChangeRef.current = onChange;
       });
       const debounceTimerRef = React.useRef<NodeJS.Timeout | undefined>(
          undefined,
@@ -66,11 +67,11 @@ export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
             if (debounceTimerRef.current)
                clearTimeout(debounceTimerRef.current);
             debounceTimerRef.current = setTimeout(
-               () => stableOnChange(value),
+               () => onChangeRef.current?.(value),
                debounceMs,
             );
          },
-         [debounceMs, stableOnChange],
+         [debounceMs],
       );
 
       const emitChange = React.useCallback(

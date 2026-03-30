@@ -7,7 +7,7 @@ import {
 } from "@packages/ui/components/dialog";
 import { Spinner } from "@packages/ui/components/spinner";
 import posthog from "posthog-js";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SurveyQuestion } from "./survey-question";
 import type { SurveyQuestion as SurveyQuestionType } from "./survey-question";
 
@@ -52,7 +52,7 @@ type SurveyModalContentProps = {
 export function SurveyModalContent({ surveyId, onClose, title, description }: SurveyModalContentProps) {
    const [survey, setSurvey] = useState<PostHogSurvey | null>(null);
    const [responses, setResponses] = useState<Responses>({});
-   const [submitted, setSubmitted] = useState(false);
+   const submittedRef = useRef(false);
 
    useEffect(() => {
       posthog.getSurveys((surveys) => {
@@ -64,11 +64,11 @@ export function SurveyModalContent({ surveyId, onClose, title, description }: Su
       });
 
       return () => {
-         if (!submitted) {
+         if (!submittedRef.current) {
             posthog.capture("survey dismissed", { $survey_id: surveyId });
          }
       };
-   }, [surveyId, submitted]);
+   }, [surveyId]);
 
    const handleChange = (questionId: string, value: string | string[] | number) => {
       setResponses((prev) => ({ ...prev, [questionId]: value }));
@@ -87,7 +87,7 @@ export function SurveyModalContent({ surveyId, onClose, title, description }: Su
       }
 
       posthog.capture("survey sent", responsePayload);
-      setSubmitted(true);
+      submittedRef.current = true;
       onClose();
    };
 

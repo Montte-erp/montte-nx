@@ -78,7 +78,6 @@ export const settingsNavSections: SettingsNavSection[] = [
                   title: "Assistente IA",
                   href: "/$slug/$teamSlug/settings/project/products/ai-agents",
                   icon: Sparkles,
-                  earlyAccessFlag: "analises-avancadas",
                },
             ],
          },

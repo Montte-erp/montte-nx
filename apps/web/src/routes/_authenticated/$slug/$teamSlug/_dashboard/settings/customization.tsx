@@ -13,10 +13,9 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { Switch } from "@packages/ui/components/switch";
 import { createFileRoute } from "@tanstack/react-router";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
-import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
 import { Activity, Moon } from "lucide-react";
 import { usePostHog } from "posthog-js/react";
-import { Suspense, useState } from "react";
+import { Suspense, useCallback, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { ThemeSwitcher } from "@/layout/dashboard/ui/theme-switcher";
 
@@ -160,14 +159,14 @@ function PreferencesSectionContent() {
       setHasConsent(!posthog.has_opted_out_capturing());
    }, [posthog]);
 
-   const handleConsentChange = useStableHandler((checked: boolean) => {
+   const handleConsentChange = useCallback((checked: boolean) => {
       if (checked) {
          posthog.opt_in_capturing();
       } else {
          posthog.opt_out_capturing();
       }
       setHasConsent(checked);
-   });
+   }, [posthog]);
 
    return (
       <div className="space-y-6">

@@ -44,8 +44,8 @@ import {
    GripVertical,
    Settings2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 
 import { cn } from "../lib/utils";
 import { Button } from "./button";
@@ -470,9 +470,10 @@ export function DataTable<TData, TValue>({
       ? controlledRowSelection
       : internalRowSelection;
 
-   const stableOnRowSelectionChange = useStableHandler(
-      (value: RowSelectionState) => onRowSelectionChange?.(value),
-   );
+   const onRowSelectionChangeRef = useRef(onRowSelectionChange);
+   useIsomorphicLayoutEffect(() => {
+      onRowSelectionChangeRef.current = onRowSelectionChange;
+   });
 
    const handleRowSelectionChange = useCallback(
       (
@@ -485,34 +486,40 @@ export function DataTable<TData, TValue>({
                typeof updaterOrValue === "function"
                   ? updaterOrValue(prev)
                   : updaterOrValue;
-            stableOnRowSelectionChange(resolve(controlledRowSelection));
+            onRowSelectionChangeRef.current?.(resolve(controlledRowSelection));
          } else {
             setInternalRowSelection((prev) => {
                const next =
                   typeof updaterOrValue === "function"
                      ? updaterOrValue(prev)
                      : updaterOrValue;
-               stableOnRowSelectionChange(next);
+               onRowSelectionChangeRef.current?.(next);
                return next;
             });
          }
       },
-      [isControlled, controlledRowSelection, stableOnRowSelectionChange],
+      [isControlled, controlledRowSelection],
    );
 
-   const stableOnColumnVisibilityChange = useStableHandler(
+   const onColumnVisibilityChangeRef = useRef(onColumnVisibilityChange);
+   useIsomorphicLayoutEffect(() => {
+      onColumnVisibilityChangeRef.current = onColumnVisibilityChange;
+   });
+
+   const handleColumnVisibilityChange = useCallback(
       (
          updaterOrValue:
             | VisibilityState
             | ((old: VisibilityState) => VisibilityState),
       ) => {
-         if (!onColumnVisibilityChange) return;
+         if (!onColumnVisibilityChangeRef.current) return;
          const next =
             typeof updaterOrValue === "function"
                ? updaterOrValue(columnVisibility)
                : updaterOrValue;
-         onColumnVisibilityChange(next);
+         onColumnVisibilityChangeRef.current(next);
       },
+      [columnVisibility],
    );
 
    const hasActionsColumn = !!renderActions || !!onColumnVisibilityChange;
@@ -575,7 +582,7 @@ export function DataTable<TData, TValue>({
          : (_row, index) => String(index),
       getSortedRowModel: getSortedRowModel(),
       onColumnFiltersChange: setColumnFilters,
-      onColumnVisibilityChange: stableOnColumnVisibilityChange,
+      onColumnVisibilityChange: handleColumnVisibilityChange,
       onRowSelectionChange: handleRowSelectionChange,
       onSortingChange: setSorting,
       onColumnOrderChange: reorderColumns ? setColumnOrder : undefined,
@@ -669,7 +676,7 @@ export function DataTable<TData, TValue>({
                         <ColumnVisibilityToggle
                            columnVisibility={columnVisibility}
                            onColumnVisibilityChange={
-                              stableOnColumnVisibilityChange
+                              handleColumnVisibilityChange
                            }
                            table={table}
                         />
