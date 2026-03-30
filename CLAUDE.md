@@ -167,6 +167,36 @@ import { cnpjDataSchema } from "@core/authentication/server";
 
 ## Code Style
 
+**No type casting.** Never use `as`, `as unknown as`, or any other type assertion to force TypeScript to accept a type. If you need to cast, the types are wrong — fix the source types instead. Type assertions hide bugs and break refactoring safety.
+
+```typescript
+// ❌ Never — hides type errors
+const categories = result as unknown as CategoryRow[];
+const value = foo as string;
+
+// ✅ Fix the types at the source
+const categories: CategoryRow[] = result;
+```
+
+**Prefer URL search params over local state for UI state.** Filters, sort order, pagination, toggles, and any state that should survive a refresh or be shareable must live in URL search params via `validateSearch` on the route. Use `useState` only for ephemeral UI state that has no value being bookmarked or shared (e.g. a debounced input buffer before it commits to the URL).
+
+```typescript
+// ❌ Never use useState for filter/sort state
+const [filters, setFilters] = useState({ type: undefined, includeArchived: false });
+
+// ✅ Put it in the URL schema
+const featureSearchSchema = z.object({
+  type: z.enum(["income", "expense"]).optional(),
+  includeArchived: z.boolean().optional().default(false),
+});
+export const Route = createFileRoute("...")({ validateSearch: featureSearchSchema });
+
+// ✅ Read and write via useSearch + useNavigate
+const { type, includeArchived } = Route.useSearch();
+const navigate = Route.useNavigate();
+navigate({ search: (prev) => ({ ...prev, type: "income" }) });
+```
+
 **Files:** kebab-case (`transactions-table.tsx`, `use-transactions.ts`)
 **Components:** PascalCase `[Feature][Action][Type]` (`TransactionsTable`, `AgentSettingsSection`)
 **Hooks:** `use[Feature][Action]` (`useTransactions`, `useCreateTransaction`)
