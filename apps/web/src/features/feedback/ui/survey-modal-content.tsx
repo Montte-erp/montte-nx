@@ -51,20 +51,29 @@ type SurveyModalContentProps = {
 
 export function SurveyModalContent({ surveyId, onClose, title, description }: SurveyModalContentProps) {
    const [survey, setSurvey] = useState<PostHogSurvey | null>(null);
+   const [surveyNotFound, setSurveyNotFound] = useState(false);
    const [responses, setResponses] = useState<Responses>({});
    const submittedRef = useRef(false);
+   const surveyShownRef = useRef(false);
 
    useEffect(() => {
+      let cancelled = false;
+
       posthog.getSurveys((surveys) => {
+         if (cancelled) return;
          const found = surveys.find((s) => s.id === surveyId) as PostHogSurvey | undefined;
          if (found) {
             setSurvey(found);
+            surveyShownRef.current = true;
             posthog.capture("survey shown", { $survey_id: surveyId });
+         } else {
+            setSurveyNotFound(true);
          }
       });
 
       return () => {
-         if (!submittedRef.current) {
+         cancelled = true;
+         if (surveyShownRef.current && !submittedRef.current) {
             posthog.capture("survey dismissed", { $survey_id: surveyId });
          }
       };
@@ -98,6 +107,11 @@ export function SurveyModalContent({ surveyId, onClose, title, description }: Su
          if (Array.isArray(val)) return val.length > 0;
          return val !== undefined && val !== null && val !== "";
       });
+
+   if (surveyNotFound) {
+      onClose();
+      return null;
+   }
 
    if (!survey) {
       return (
