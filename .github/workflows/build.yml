@@ -20,4 +20,4 @@ jobs:
            uses: ./.github/actions/setup-bun-nx
 
          - name: Run Nx affected build
-           run: bunx nx affected -t build --base=origin/master --head=HEAD
+           run: bunx nx affected -t build --base=$NX_BASE --head=$NX_HEAD
