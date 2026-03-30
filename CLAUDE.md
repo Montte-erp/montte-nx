@@ -207,6 +207,39 @@ import { categories } from "./categories";
 
 **Dates:** Always use `dayjs` for all date manipulation (parsing, formatting, arithmetic). Never use raw `Date` math or manual string formatting for dates.
 
+**No `useStableHandler`.** Never use `foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired`. Use `useCallback` instead. The only exception is `use-event-listener.ts` which uses a `useRef` + `useIsomorphicLayoutEffect` pattern internally.
+
+---
+
+## PostHog
+
+PostHog is the analytics, feature flags, and survey platform. All PostHog configuration (survey IDs, feature flag keys) lives in `@core/posthog/config` — never hardcode survey IDs as magic strings.
+
+```typescript
+import { POSTHOG_SURVEYS, FEATURE_FLAG_KEYS } from "@core/posthog/config";
+
+// Render a native PostHog survey
+posthog.renderSurvey(POSTHOG_SURVEYS.bugReport.id, "body");
+
+// Use typed feature flag keys
+const FLAG_KEYS = new Set(FEATURE_FLAG_KEYS);
+```
+
+**Rules:**
+
+- Import `usePostHog` directly from `posthog-js/react` — never re-export it from `client.tsx`
+- Import `posthog` default from `posthog-js` for imperative calls (`posthog.identify`, `posthog.renderSurvey`, etc.)
+- Never hardcode survey IDs or feature flag keys — always use `POSTHOG_SURVEYS.*` and `FEATURE_FLAG_KEYS` from `@core/posthog/config`
+- PostHog identity (`posthog.identify` + `posthog.group`) is called in the `_dashboard.tsx` route loader — not in hooks or effects
+- Telemetry opt-out uses PostHog native APIs: `posthog.opt_out_capturing()` / `posthog.opt_in_capturing()` / `posthog.has_opted_out_capturing()` — no DB field
+- `opt_in_site_apps: true` is required in the PostHog config for `posthog.renderSurvey()` to work
+- Early access feature stages come exclusively from PostHog `getEarlyAccessFeatures()` — never hardcode `stage` in static feature definitions
+- Per-feature feedback surveys are linked to their feature flag in PostHog dashboard (project `359458`)
+
+**Survey keys (`POSTHOG_SURVEYS`):** `bugReport`, `featureRequest`, `featureFeedback`, `feedbackContatos`, `feedbackProdutosEstoque`, `feedbackGestaoServicos`, `feedbackAnalisesAvancadas`, `feedbackDados`
+
+**Feature flag keys (`FEATURE_FLAG_KEYS`):** `contatos`, `produtos-estoque`, `gestao-de-servicos`, `analises-avancadas`, `dados`
+
 ---
 
 ## Data Table Pattern

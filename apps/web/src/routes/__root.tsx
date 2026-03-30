@@ -8,15 +8,12 @@ import {
    createRootRouteWithContext,
    HeadContent,
    Scripts,
-   useRouterState,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
+import { GlobalSurveyModal } from "@/hooks/use-survey-modal";
 import { GlobalDialogStack } from "@/hooks/use-dialog-stack";
-import {
-   PostHogWrapper,
-   PosthogRouterTracker,
-} from "@/integrations/posthog/client";
+import { PostHogWrapper } from "@/integrations/posthog/client";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import type { RouterContext } from "../integrations/tanstack-query/root-provider";
 
@@ -57,8 +54,6 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-   const routerState = useRouterState();
-
    return (
       <html lang="pt-BR" suppressHydrationWarning>
          <head>
@@ -72,18 +67,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   enableSystem
                >
                   {children}
-                  <PosthogRouterTracker
-                     location={{
-                        href:
-                           typeof window !== "undefined"
-                              ? window.location.href
-                              : "",
-                        pathname: routerState.location.pathname,
-                        search: routerState.location.search,
-                     }}
-                  />
                   <Toaster richColors />
                   <GlobalAlertDialog />
+                  <GlobalSurveyModal />
                   <GlobalDialogStack />
                   <ClientOnly>
                      <TanStackDevtools

@@ -75,9 +75,8 @@ function FeaturePreviewsPage() {
 
    const conceptByName = new Map(conceptFeatures.map((f) => [f.name, f]));
 
-   // Filter features by selected stages
-   const filteredFeatures = parentFeatures.filter((f) =>
-      selectedStages.has(f.stage),
+   const filteredFeatures = parentFeatures.filter(
+      (f) => f.stage !== null && selectedStages.has(f.stage),
    );
 
    // Count features per stage for the filter labels
@@ -186,10 +185,12 @@ function FeaturePreviewsPage() {
                               <ItemContent>
                                  <div className="flex items-center gap-2">
                                     <ItemTitle>{feature.name}</ItemTitle>
-                                    <FeatureStageBadge
-                                       className="text-xs"
-                                       stage={feature.stage}
-                                    />
+                                    {feature.stage && (
+                                       <FeatureStageBadge
+                                          className="text-xs"
+                                          stage={feature.stage}
+                                       />
+                                    )}
                                  </div>
                                  <ItemDescription>
                                     {feature.description}

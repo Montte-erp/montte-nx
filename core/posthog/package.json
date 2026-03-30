@@ -11,6 +11,10 @@
       "./server": {
          "types": "./dist/server.d.ts",
          "default": "./dist/server.js"
+      },
+      "./config": {
+         "types": "./dist/config.d.ts",
+         "default": "./dist/config.js"
       }
    },
    "scripts": {

@@ -1,3 +1,4 @@
+import { POSTHOG_SURVEYS } from "@core/posthog/config";
 import { createFileRoute } from "@tanstack/react-router";
 import { Plug } from "lucide-react";
 import {
@@ -17,7 +18,7 @@ const INTEGRATIONS_BANNER: EarlyAccessBannerTemplate = {
    ctaLabel: "Sugerir integração",
    stage: "concept",
    icon: Plug,
-   form: "request",
+   surveyId: POSTHOG_SURVEYS.suggestIntegration.id,
    bullets: [
       "Quais meios de pagamento você utiliza?",
       "Há alguma plataforma de e-commerce ou marketplace que precisa se conectar?",

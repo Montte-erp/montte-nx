@@ -157,13 +157,6 @@ export function createAuth(deps: CreateAuthDeps) {
                },
             },
          },
-         user: {
-            create: {
-               after: async (_user) => {
-                  // Organization creation handled by onboarding flow.
-               },
-            },
-         },
       },
 
       emailAndPassword: {
@@ -191,14 +184,6 @@ export function createAuth(deps: CreateAuthDeps) {
       user: {
          changeEmail: {
             enabled: true,
-         },
-         additionalFields: {
-            telemetryConsent: {
-               defaultValue: false,
-               input: true,
-               required: true,
-               type: "boolean",
-            },
          },
       },
 

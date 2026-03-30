@@ -11,13 +11,12 @@ import {
 } from "@packages/ui/components/item";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Switch } from "@packages/ui/components/switch";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { Activity, Moon } from "lucide-react";
-import { Suspense } from "react";
+import { usePostHog } from "posthog-js/react";
+import { Suspense, useCallback, useState } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
-import { authClient } from "@/integrations/better-auth/auth-client";
-import { orpc } from "@/integrations/orpc/client";
 import { ThemeSwitcher } from "@/layout/dashboard/ui/theme-switcher";
 
 export const Route = createFileRoute(
@@ -111,11 +110,9 @@ function AppearanceSection() {
 
 function PrivacySection({
    hasConsent,
-   isPending,
    onConsentChange,
 }: {
    hasConsent: boolean;
-   isPending: boolean;
    onConsentChange: (consent: boolean) => void;
 }) {
    return (
@@ -141,7 +138,6 @@ function PrivacySection({
                   <Switch
                      aria-label="Telemetria"
                      checked={hasConsent}
-                     disabled={isPending}
                      onCheckedChange={onConsentChange}
                   />
                </ItemActions>
@@ -156,19 +152,21 @@ function PrivacySection({
 // ============================================
 
 function PreferencesSectionContent() {
-   const { data: session } = useSuspenseQuery(
-      orpc.session.getSession.queryOptions({}),
-   );
+   const posthog = usePostHog();
+   const [hasConsent, setHasConsent] = useState(true);
 
-   const updateConsentMutation = useMutation({
-      mutationFn: async (consent: boolean) => {
-         return authClient.updateUser({
-            telemetryConsent: consent,
-         });
-      },
-   });
+   useIsomorphicLayoutEffect(() => {
+      setHasConsent(!posthog.has_opted_out_capturing());
+   }, [posthog]);
 
-   const hasConsent = session?.user?.telemetryConsent ?? true;
+   const handleConsentChange = useCallback((checked: boolean) => {
+      if (checked) {
+         posthog.opt_in_capturing();
+      } else {
+         posthog.opt_out_capturing();
+      }
+      setHasConsent(checked);
+   }, [posthog]);
 
    return (
       <div className="space-y-6">
@@ -185,10 +183,7 @@ function PreferencesSectionContent() {
 
          <PrivacySection
             hasConsent={hasConsent}
-            isPending={updateConsentMutation.isPending}
-            onConsentChange={(checked) => {
-               updateConsentMutation.mutate(checked);
-            }}
+            onConsentChange={handleConsentChange}
          />
       </div>
    );

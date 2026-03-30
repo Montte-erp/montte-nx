@@ -9,10 +9,7 @@
       {
          "path": "./packages/analytics"
       },
-      {
-         "path": "./packages/feedback"
-      },
-      {
+{
          "path": "./core/environment"
       },
       {

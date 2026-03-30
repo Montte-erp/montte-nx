@@ -2,9 +2,6 @@ import { Button } from "@packages/ui/components/button";
 import {
    Popover,
    PopoverContent,
-   PopoverDescription,
-   PopoverHeader,
-   PopoverTitle,
    PopoverTrigger,
 } from "@packages/ui/components/popover";
 import { Separator } from "@packages/ui/components/separator";
@@ -18,19 +15,11 @@ import {
    useSidebar,
 } from "@packages/ui/components/sidebar";
 import { Link, useParams } from "@tanstack/react-router";
-import {
-   Bug,
-   ExternalLink,
-   Lightbulb,
-   MessageSquarePlus,
-   PanelLeftClose,
-   Settings,
-} from "lucide-react";
+import { Bug, MessageSquarePlus, PanelLeftClose, Settings, Sparkles } from "lucide-react";
 import type * as React from "react";
 import { useState } from "react";
-import { BugReportForm } from "@/features/feedback/ui/bug-report-form";
-import { FeatureRequestForm } from "@/features/feedback/ui/feature-request-form";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { POSTHOG_SURVEYS } from "@core/posthog/config";
+import { useSurveyModal } from "@/hooks/use-survey-modal";
 import { EarlyAccessSidebarBanner } from "./early-access-sidebar-banner";
 import { SidebarDefaultItems, SidebarNav } from "./sidebar-nav";
 import { SidebarScopeSwitcher } from "./sidebar-scope-switcher";
@@ -56,81 +45,42 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
    );
 }
 
-const DOCS_URL = "https://montte.co/docs";
 
 function SidebarFeedbackButton() {
+   const { openSurveyModal } = useSurveyModal();
    const [open, setOpen] = useState(false);
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+
+   const handleSelect = (surveyId: string) => {
+      setOpen(false);
+      openSurveyModal(surveyId);
+   };
 
    return (
       <SidebarMenuItem>
          <Popover onOpenChange={setOpen} open={open}>
             <PopoverTrigger asChild>
                <SidebarMenuButton tooltip="Feedback">
-                  <MessageSquarePlus />
+                  <MessageSquarePlus className="size-4" />
                   <span>Feedback</span>
                </SidebarMenuButton>
             </PopoverTrigger>
-            <PopoverContent
-               align="end"
-               className="w-56 p-2"
-               side="right"
-               sideOffset={8}
-            >
-               <PopoverHeader className="mb-2">
-                  <PopoverTitle>Feedback</PopoverTitle>
-                  <PopoverDescription>
-                     Reporte bugs ou sugira melhorias.
-                  </PopoverDescription>
-               </PopoverHeader>
-               <div className="flex flex-col gap-1">
-                  <Button
-                     className="justify-start gap-3"
-                     onClick={() => {
-                        setOpen(false);
-                        openDialogStack({
-                           children: (
-                              <BugReportForm onSuccess={closeDialogStack} />
-                           ),
-                        });
-                     }}
-                     variant="ghost"
-                  >
-                     <Bug className="size-4 text-red-500" />
-                     <span>Reportar Bug</span>
-                  </Button>
-                  <Button
-                     className="justify-start gap-3"
-                     onClick={() => {
-                        setOpen(false);
-                        openDialogStack({
-                           children: (
-                              <FeatureRequestForm
-                                 onSuccess={closeDialogStack}
-                              />
-                           ),
-                        });
-                     }}
-                     variant="ghost"
-                  >
-                     <Lightbulb className="size-4 text-amber-500" />
-                     <span>Sugerir Feature</span>
-                  </Button>
-                  <Button
-                     asChild
-                     className="justify-start gap-3"
-                     variant="ghost"
-                  >
-                     <a
-                        href={DOCS_URL}
-                        rel="noopener noreferrer"
-                        target="_blank"
-                     >
-                        <ExternalLink className="size-4 text-blue-500" />
-                        <span>Documentação</span>
-                     </a>
-                  </Button>
-               </div>
+            <PopoverContent align="start" className="w-auto p-1" side="right">
+               <Button
+                  className="w-full justify-start gap-2"
+                  onClick={() => handleSelect(POSTHOG_SURVEYS.featureRequest.id)}
+                  variant="ghost"
+               >
+                  <Sparkles className="size-4" />
+                  Sugestão de funcionalidade
+               </Button>
+               <Button
+                  className="w-full justify-start gap-2"
+                  onClick={() => handleSelect(POSTHOG_SURVEYS.bugReport.id)}
+                  variant="ghost"
+               >
+                  <Bug className="size-4" />
+                  Reportar bug
+               </Button>
             </PopoverContent>
          </Popover>
       </SidebarMenuItem>

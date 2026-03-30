@@ -22,17 +22,6 @@ export function createTestAuth(db: DatabaseInstance) {
          requireEmailVerification: false,
       },
 
-      user: {
-         additionalFields: {
-            telemetryConsent: {
-               defaultValue: false,
-               input: true,
-               required: true,
-               type: "boolean",
-            },
-         },
-      },
-
       plugins: [
          organization({
             schema: {

@@ -1,6 +1,6 @@
 import type { RefObject } from "react";
-import { useEffect } from "react";
-import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
+import { useEffect, useRef } from "react";
+import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 
 export function useEventListener<K extends keyof WindowEventMap>(
    eventName: K,
@@ -17,7 +17,10 @@ export function useEventListener<K extends keyof WindowEventMap>(
       typeof document !== "undefined" ? document : (null as Document | null);
    const defaultTarget = target ?? resolved;
 
-   const stableHandler = useStableHandler(handler);
+   const handlerRef = useRef(handler);
+   useIsomorphicLayoutEffect(() => {
+      handlerRef.current = handler;
+   });
 
    useEffect(() => {
       const el =
@@ -27,12 +30,9 @@ export function useEventListener<K extends keyof WindowEventMap>(
               ? defaultTarget.current
               : defaultTarget;
       if (!el) return;
-      el.addEventListener(eventName, stableHandler as EventListener, options);
-      return () =>
-         el.removeEventListener(
-            eventName,
-            stableHandler as EventListener,
-            options,
-         );
-   }, [eventName, defaultTarget, options, stableHandler]);
+      const listener = (e: Event) =>
+         handlerRef.current(e as WindowEventMap[K]);
+      el.addEventListener(eventName, listener, options);
+      return () => el.removeEventListener(eventName, listener, options);
+   }, [eventName, defaultTarget, options]);
 }
