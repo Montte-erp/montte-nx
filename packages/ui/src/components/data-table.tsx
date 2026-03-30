@@ -731,7 +731,7 @@ export function DataTable<TData, TValue>({
    ) => (
       <TableRow
          key={row.id}
-         className={cn(row.getIsSelected() && "bg-muted/50")}
+         className={cn("bg-card", row.getIsSelected() && "bg-muted/50")}
          data-state={row.getIsSelected() ? "selected" : undefined}
       >
          {renderBodyCells(row)}
@@ -792,7 +792,7 @@ export function DataTable<TData, TValue>({
                <Table className="border-separate border-spacing-0">
                   <TableHeader>
                      {table.getHeaderGroups().map((headerGroup) => (
-                        <TableRow key={headerGroup.id}>
+                        <TableRow key={headerGroup.id} className="bg-muted/50 hover:bg-muted/50 border-b">
                            {renderHeaderCells(headerGroup)}
                         </TableRow>
                      ))}

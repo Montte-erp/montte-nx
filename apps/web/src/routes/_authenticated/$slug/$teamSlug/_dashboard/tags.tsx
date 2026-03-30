@@ -1,5 +1,6 @@
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
+import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import {
    Empty,
    EmptyDescription,
@@ -7,23 +8,47 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
+import {
+   SelectionActionBar,
+   SelectionActionButton,
+} from "@packages/ui/components/selection-action-bar";
 import { Skeleton } from "@packages/ui/components/skeleton";
+import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import type { ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Archive, Pencil, Plus, Tag, Trash2 } from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
-import { buildTagColumns, type TagRow } from "@/features/tags/ui/tags-columns";
-import { TagForm } from "@/features/tags/ui/tags-form";
-import { useAccountType } from "@/hooks/use-account-type";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
+import { buildTagColumns, type TagRow } from "./-tags/tags-columns";
+import { TagForm } from "./-tags/tags-form";
+
+const tagsSearchSchema = z.object({
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .optional()
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .optional()
+      .default([]),
+});
+
+const [useTagsTableState] = createLocalStorageState<DataTableStoredState | null>(
+   "montte:datatable:tags",
+   null,
+);
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/tags",
 )({
+   validateSearch: tagsSearchSchema,
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(orpc.tags.getAll.queryOptions({}));
    },
@@ -36,7 +61,7 @@ export const Route = createFileRoute(
 
 function TagsSkeleton() {
    return (
-      <div className="space-y-3">
+      <div className="flex flex-col gap-3">
          {Array.from({ length: 5 }).map((_, index) => (
             <Skeleton className="h-12 w-full" key={`skeleton-${index + 1}`} />
          ))}
@@ -48,55 +73,80 @@ function TagsSkeleton() {
 // List
 // =============================================================================
 
-function TagsList() {
-   const { openDialogStack, closeDialogStack } = useDialogStack();
-   const { openAlertDialog } = useAlertDialog();
-   const { isBusiness } = useAccountType();
+interface TagsListProps {
+   navigate: ReturnType<typeof Route.useNavigate>;
+}
 
-   const entityName = isBusiness ? "centro de custo" : "tag";
+function TagsList({ navigate }: TagsListProps) {
+   const { sorting, columnFilters } = Route.useSearch();
+   const [tableState, setTableState] = useTagsTableState();
+
+   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
+      (updater) => {
+         const next = typeof updater === "function" ? updater(sorting) : updater;
+         navigate({ search: (prev) => ({ ...prev, sorting: next }) });
+      },
+      [sorting, navigate],
+   );
+
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
+      (updater) => {
+         const next = typeof updater === "function" ? updater(columnFilters) : updater;
+         navigate({ search: (prev) => ({ ...prev, columnFilters: next }) });
+      },
+      [columnFilters, navigate],
+   );
+
+   const { openCredenza, closeCredenza } = useCredenza();
+   const { openAlertDialog } = useAlertDialog();
+   const {
+      rowSelection,
+      onRowSelectionChange,
+      selectedCount,
+      selectedIds,
+      onClear,
+   } = useRowSelection();
 
    const { data: tags } = useSuspenseQuery(orpc.tags.getAll.queryOptions({}));
 
    const deleteMutation = useMutation(
       orpc.tags.remove.mutationOptions({
          onSuccess: () => {
-            toast.success(
-               `${isBusiness ? "Centro de custo excluído" : "Tag excluída"} com sucesso.`,
-            );
+            toast.success("Centro de custo excluído com sucesso.");
          },
          onError: (error) => {
-            toast.error(error.message || `Erro ao excluir ${entityName}.`);
+            toast.error(error.message || "Erro ao excluir centro de custo.");
          },
       }),
    );
 
    const archiveMutation = useMutation(
       orpc.tags.archive.mutationOptions({
-         onSuccess: () =>
-            toast.success(
-               `${isBusiness ? "Centro de custo arquivado" : "Tag arquivada"}.`,
-            ),
-         onError: (e) =>
-            toast.error(e.message || `Erro ao arquivar ${entityName}.`),
+         onSuccess: () => toast.success("Centro de custo arquivado."),
+         onError: (e) => toast.error(e.message || "Erro ao arquivar centro de custo."),
       }),
    );
 
    const handleEdit = useCallback(
       (tag: TagRow) => {
-         openDialogStack({
+         openCredenza({
             children: (
-               <TagForm mode="edit" onSuccess={closeDialogStack} tag={tag} />
+               <TagForm
+                  mode="edit"
+                  onSuccess={closeCredenza}
+                  tag={{ id: tag.id, name: tag.name, color: tag.color, description: tag.description }}
+               />
             ),
          });
       },
-      [openDialogStack, closeDialogStack],
+      [openCredenza, closeCredenza],
    );
 
    const handleDelete = useCallback(
       (tag: TagRow) => {
          openAlertDialog({
-            title: `Excluir ${entityName}`,
-            description: `Tem certeza que deseja excluir ${isBusiness ? "o centro de custo" : "a tag"} "${tag.name}"? Esta ação não pode ser desfeita.`,
+            title: "Excluir centro de custo",
+            description: `Tem certeza que deseja excluir o centro de custo "${tag.name}"? Esta ação não pode ser desfeita.`,
             actionLabel: "Excluir",
             cancelLabel: "Cancelar",
             variant: "destructive",
@@ -105,7 +155,7 @@ function TagsList() {
             },
          });
       },
-      [openAlertDialog, deleteMutation, isBusiness, entityName],
+      [openAlertDialog, deleteMutation],
    );
 
    const handleArchive = useCallback(
@@ -115,6 +165,21 @@ function TagsList() {
       [archiveMutation],
    );
 
+   const handleBulkDelete = useCallback(() => {
+      if (selectedIds.length === 0) return;
+      openAlertDialog({
+         title: `Excluir ${selectedIds.length} ${selectedIds.length === 1 ? "centro de custo" : "centros de custo"}`,
+         description: "Tem certeza que deseja excluir os centros de custo selecionados? Esta ação não pode ser desfeita.",
+         actionLabel: "Excluir",
+         cancelLabel: "Cancelar",
+         variant: "destructive",
+         onAction: async () => {
+            await Promise.all(selectedIds.map((id) => deleteMutation.mutateAsync({ id })));
+            onClear();
+         },
+      });
+   }, [openAlertDialog, selectedIds, deleteMutation, onClear]);
+
    if (tags.length === 0) {
       return (
          <Empty>
@@ -122,13 +187,9 @@ function TagsList() {
                <EmptyMedia variant="icon">
                   <Tag className="size-6" />
                </EmptyMedia>
-               <EmptyTitle>
-                  {isBusiness ? "Nenhum centro de custo" : "Nenhuma tag"}
-               </EmptyTitle>
+               <EmptyTitle>Nenhum centro de custo</EmptyTitle>
                <EmptyDescription>
-                  {isBusiness
-                     ? "Adicione um centro de custo para categorizar suas transações."
-                     : "Adicione uma tag para categorizar suas transações."}
+                  Adicione um centro de custo para categorizar suas transações.
                </EmptyDescription>
             </EmptyHeader>
          </Empty>
@@ -138,37 +199,56 @@ function TagsList() {
    const columns = buildTagColumns();
 
    return (
-      <DataTable
-         columns={columns}
-         data={tags}
-         getRowId={(row) => row.id}
-         renderActions={({ row }) => (
-            <>
-               <Button
-                  onClick={() => handleEdit(row.original)}
-                  tooltip="Editar"
-                  variant="outline"
-               >
-                  <Pencil className="size-4" />
-               </Button>
-               <Button
-                  onClick={() => handleArchive(row.original)}
-                  tooltip="Arquivar"
-                  variant="outline"
-               >
-                  <Archive className="size-4" />
-               </Button>
-               <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(row.original)}
-                  tooltip="Excluir"
-                  variant="outline"
-               >
-                  <Trash2 className="size-4" />
-               </Button>
-            </>
-         )}
-      />
+      <>
+         <DataTable
+            columns={columns}
+            data={tags}
+            getRowId={(row) => row.id}
+            sorting={sorting}
+            onSortingChange={handleSortingChange}
+            columnFilters={columnFilters}
+            onColumnFiltersChange={handleColumnFiltersChange}
+            tableState={tableState}
+            onTableStateChange={setTableState}
+            rowSelection={rowSelection}
+            onRowSelectionChange={onRowSelectionChange}
+            renderActions={({ row }) => (
+               <>
+                  <Button
+                     onClick={() => handleEdit(row.original)}
+                     tooltip="Editar"
+                     variant="outline"
+                  >
+                     <Pencil className="size-4" />
+                  </Button>
+                  <Button
+                     onClick={() => handleArchive(row.original)}
+                     tooltip="Arquivar"
+                     variant="outline"
+                  >
+                     <Archive className="size-4" />
+                  </Button>
+                  <Button
+                     className="text-destructive hover:text-destructive"
+                     onClick={() => handleDelete(row.original)}
+                     tooltip="Excluir"
+                     variant="outline"
+                  >
+                     <Trash2 className="size-4" />
+                  </Button>
+               </>
+            )}
+         />
+         <SelectionActionBar onClear={onClear} selectedCount={selectedCount}>
+            <SelectionActionButton
+               icon={<Trash2 className="size-3.5" />}
+               onClick={handleBulkDelete}
+               variant="destructive"
+            >
+               Excluir
+            </SelectionActionButton>
+         </SelectionActionBar>
+      </>
    );
 }
 
@@ -177,33 +257,29 @@ function TagsList() {
 // =============================================================================
 
 function TagsPage() {
-   const { openDialogStack, closeDialogStack } = useDialogStack();
-   const { isBusiness } = useAccountType();
+   const navigate = Route.useNavigate();
+   const { openCredenza, closeCredenza } = useCredenza();
 
    const handleCreate = useCallback(() => {
-      openDialogStack({
-         children: <TagForm mode="create" onSuccess={closeDialogStack} />,
+      openCredenza({
+         children: <TagForm mode="create" onSuccess={closeCredenza} />,
       });
-   }, [openDialogStack, closeDialogStack]);
+   }, [openCredenza, closeCredenza]);
 
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
                <Button onClick={handleCreate}>
-                  <Plus className="size-4 mr-1" />
-                  {isBusiness ? "Novo Centro de Custo" : "Nova Tag"}
+                  <Plus className="size-4" />
+                  Novo Centro de Custo
                </Button>
             }
-            description={
-               isBusiness
-                  ? "Gerencie seus centros de custo para categorizar transações"
-                  : "Gerencie suas tags para categorizar transações"
-            }
-            title={isBusiness ? "Centros de Custo" : "Tags"}
+            description="Gerencie seus centros de custo para categorizar transações"
+            title="Centros de Custo"
          />
          <Suspense fallback={<TagsSkeleton />}>
-            <TagsList />
+            <TagsList navigate={navigate} />
          </Suspense>
       </main>
    );
