@@ -8,45 +8,18 @@ import {
 } from "@packages/ui/components/credenza";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
-import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
-import { useMutation } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { orpc } from "@/integrations/orpc/client";
 
-interface SubcategoryFormProps {
-   parentId: string;
+interface SubcategoryMiniFormProps {
    parentName: string;
-   parentType: "income" | "expense";
-   onSuccess: () => void;
+   onAdd: (name: string) => void;
 }
 
-export function SubcategoryForm({
-   parentId,
-   parentName,
-   parentType,
-   onSuccess,
-}: SubcategoryFormProps) {
-   const createMutation = useMutation(
-      orpc.categories.create.mutationOptions({
-         onSuccess: () => {
-            toast.success("Subcategoria criada com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao criar subcategoria.");
-         },
-      }),
-   );
-
+export function SubcategoryMiniForm({ parentName, onAdd }: SubcategoryMiniFormProps) {
    const form = useForm({
       defaultValues: { name: "" },
-      onSubmit: async ({ value }) => {
-         createMutation.mutate({
-            name: value.name.trim(),
-            parentId,
-            type: parentType,
-         });
+      onSubmit: ({ value }) => {
+         onAdd(value.name.trim());
       },
    });
 
@@ -61,7 +34,7 @@ export function SubcategoryForm({
          <CredenzaHeader>
             <CredenzaTitle>Nova Subcategoria</CredenzaTitle>
             <CredenzaDescription>
-               Adicionando subcategoria em <strong>{parentName}</strong>.
+               Adicionando em <strong>{parentName}</strong>.
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -91,14 +64,8 @@ export function SubcategoryForm({
          <CredenzaFooter>
             <form.Subscribe selector={(s) => s}>
                {(state) => (
-                  <Button
-                     disabled={!state.canSubmit || state.isSubmitting || createMutation.isPending}
-                     type="submit"
-                  >
-                     {(state.isSubmitting || createMutation.isPending) && (
-                        <Spinner className="size-4 mr-2" />
-                     )}
-                     Criar Subcategoria
+                  <Button disabled={!state.canSubmit || !state.values.name.trim()} type="submit">
+                     Adicionar
                   </Button>
                )}
             </form.Subscribe>

@@ -138,14 +138,20 @@ function CategoriesList({ navigate }: CategoriesListProps) {
       }),
    );
 
-   const allCategories: CategoryRow[] = result;
+   const parentCategories: CategoryRow[] = result
+      .filter((c) => c.parentId === null)
+      .map((parent) => ({
+         ...parent,
+         subcategories: result.filter((c) => c.parentId === parent.id),
+      }));
+
    const categories = search
-      ? allCategories.filter(
+      ? parentCategories.filter(
            (c) =>
               c.name.toLowerCase().includes(search.toLowerCase()) ||
-              c.keywords?.some((k) => k.toLowerCase().includes(search.toLowerCase())),
+              c.subcategories?.some((s) => s.name.toLowerCase().includes(search.toLowerCase())),
         )
-      : allCategories;
+      : parentCategories;
 
    const deleteMutation = useMutation(
       orpc.categories.remove.mutationOptions({
@@ -176,7 +182,6 @@ function CategoriesList({ navigate }: CategoriesListProps) {
                      name: category.name,
                      color: category.color,
                      icon: category.icon,
-                     keywords: category.keywords,
                      type: category.type,
                   }}
                   mode="edit"
@@ -274,6 +279,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
             columns={columns}
             data={categories}
             getRowId={(row) => row.id}
+            getSubRows={(row) => row.subcategories}
             groupBy={groupBy ? (row) => row.type ?? "other" : undefined}
             onRowSelectionChange={onRowSelectionChange}
             renderGroupHeader={(key) => {
@@ -289,15 +295,18 @@ function CategoriesList({ navigate }: CategoriesListProps) {
             onTableStateChange={setTableState}
             renderActions={({ row }) => {
                if (row.original.isDefault) return null;
+               const isSub = row.original.parentId !== null;
                return (
                   <>
-                     <Button
-                        onClick={() => handleAddSubcategory(row.original)}
-                        tooltip="Nova subcategoria"
-                        variant="outline"
-                     >
-                        <Plus className="size-4" />
-                     </Button>
+                     {!isSub && (
+                        <Button
+                           onClick={() => handleAddSubcategory(row.original)}
+                           tooltip="Nova subcategoria"
+                           variant="outline"
+                        >
+                           <Plus className="size-4" />
+                        </Button>
+                     )}
                      <Button
                         onClick={() => handleEdit(row.original)}
                         tooltip="Editar"
@@ -305,13 +314,15 @@ function CategoriesList({ navigate }: CategoriesListProps) {
                      >
                         <Pencil className="size-4" />
                      </Button>
-                     <Button
-                        onClick={() => handleArchive(row.original)}
-                        tooltip="Arquivar"
-                        variant="outline"
-                     >
-                        <Archive className="size-4" />
-                     </Button>
+                     {!isSub && (
+                        <Button
+                           onClick={() => handleArchive(row.original)}
+                           tooltip="Arquivar"
+                           variant="outline"
+                        >
+                           <Archive className="size-4" />
+                        </Button>
+                     )}
                      <Button
                         className="text-destructive hover:text-destructive"
                         onClick={() => handleDelete(row.original)}

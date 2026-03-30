@@ -53,7 +53,8 @@ export type CategoryRow = {
    icon: string | null;
    keywords: string[] | null;
    type: string | null;
-   subcategories?: { id: string; name: string; keywords: string[] | null }[];
+   parentId: string | null;
+   subcategories?: CategoryRow[];
    createdAt: string | Date;
 };
 
@@ -63,33 +64,20 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
          accessorKey: "name",
          header: "Nome",
          cell: ({ row }) => {
-            const { name, color, icon, isDefault, subcategories } = row.original;
+            const { name, color, icon, isDefault } = row.original;
             const IconComponent = icon ? ICON_MAP[icon] : null;
             return (
-               <div className="flex flex-col gap-2 min-w-0">
-                  <div className="flex items-center gap-2">
-                     {color || IconComponent ? (
-                        <span
-                           className="size-7 rounded-md flex items-center justify-center shrink-0"
-                           style={{ backgroundColor: color ?? "#6366f1" }}
-                        >
-                           {IconComponent && (
-                              <IconComponent className="size-3.5 text-white" />
-                           )}
-                        </span>
-                     ) : null}
-                     <span className="font-medium truncate">{name}</span>
-                     {isDefault && <Badge variant="outline">Padrão</Badge>}
-                  </div>
-                  {subcategories && subcategories.length > 0 && (
-                     <div className="flex flex-col gap-2 pl-9">
-                        {subcategories.map((sub) => (
-                           <span className="text-sm text-muted-foreground truncate" key={sub.id}>
-                              {sub.name}
-                           </span>
-                        ))}
-                     </div>
-                  )}
+               <div className="flex items-center gap-2 min-w-0">
+                  {(color || IconComponent) && row.depth === 0 ? (
+                     <span
+                        className="size-7 rounded-md flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: color ?? "#6366f1" }}
+                     >
+                        {IconComponent && <IconComponent className="size-3.5 text-white" />}
+                     </span>
+                  ) : null}
+                  <span className={row.depth > 0 ? "truncate" : "font-medium truncate"}>{name}</span>
+                  {isDefault && row.depth === 0 && <Badge variant="outline">Padrão</Badge>}
                </div>
             );
          },
@@ -111,27 +99,6 @@ export function buildCategoryColumns(): ColumnDef<CategoryRow>[] {
             if (type === "expense")
                return <Badge variant="destructive">Despesa</Badge>;
             return <span className="text-sm text-muted-foreground">—</span>;
-         },
-      },
-      {
-         accessorKey: "keywords",
-         header: "Palavras-chave",
-         cell: ({ row }) => {
-            const { keywords } = row.original;
-            if (!keywords || keywords.length === 0)
-               return <span className="text-sm text-muted-foreground">—</span>;
-            return (
-               <div className="flex flex-wrap gap-1">
-                  {keywords.slice(0, 3).map((kw) => (
-                     <Badge key={kw} variant="secondary">
-                        {kw}
-                     </Badge>
-                  ))}
-                  {keywords.length > 3 && (
-                     <Badge variant="secondary">+{keywords.length - 3}</Badge>
-                  )}
-               </div>
-            );
          },
       },
    ];

@@ -36,7 +36,6 @@ import {
    SelectValue,
 } from "@packages/ui/components/select";
 import { Spinner } from "@packages/ui/components/spinner";
-import { Badge } from "@packages/ui/components/badge";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import Color from "color";
@@ -56,6 +55,7 @@ import {
    Music,
    Package,
    Plane,
+   Shuffle,
    ShoppingCart,
    Smartphone,
    Utensils,
@@ -63,7 +63,7 @@ import {
    X,
    Zap,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -99,6 +99,14 @@ const PRESET_COLORS = [
 const ICON_OPTIONS = CATEGORY_ICONS.map(({ name, label }) => ({ value: name, label }));
 const ICON_MAP = Object.fromEntries(CATEGORY_ICONS.map(({ name, Icon }) => [name, Icon]));
 
+function randomIcon() {
+   return CATEGORY_ICONS[Math.floor(Math.random() * CATEGORY_ICONS.length)].name;
+}
+
+function randomColor() {
+   return PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
+}
+
 function IconOption({ value, label }: { value: string; label: string }) {
    const Icon = ICON_MAP[value];
    return (
@@ -116,23 +124,19 @@ interface CategoryFormProps {
       name: string;
       color?: string | null;
       icon?: string | null;
-      keywords?: string[] | null;
       type?: string | null;
-      notes?: string | null;
    };
    onSuccess: () => void;
 }
 
 export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
    const isCreate = mode === "create";
-   const [keywordInput, setKeywordInput] = useState("");
+   const [pendingSubcategories, setPendingSubcategories] = useState<string[]>([]);
+   const [subInput, setSubInput] = useState("");
+   const subInputRef = useRef<HTMLInputElement>(null);
 
    const createMutation = useMutation(
       orpc.categories.create.mutationOptions({
-         onSuccess: () => {
-            toast.success("Categoria criada com sucesso.");
-            onSuccess();
-         },
          onError: (error) => {
             toast.error(error.message || "Erro ao criar categoria.");
          },
@@ -153,24 +157,34 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
 
    const form = useForm({
       defaultValues: {
-         color: category?.color ?? "#6366f1",
-         icon: category?.icon ?? "",
-         keywords: (category?.keywords ?? []) as string[],
+         color: category?.color ?? (isCreate ? randomColor() : "#6366f1"),
+         icon: category?.icon ?? (isCreate ? randomIcon() : ""),
          name: category?.name ?? "",
-         notes: category?.notes ?? "",
          type: (category?.type ?? "expense") as "income" | "expense",
       },
       onSubmit: async ({ value }) => {
          const payload = {
             color: value.color || null,
             icon: value.icon || null,
-            keywords: value.keywords.length > 0 ? value.keywords : null,
             name: value.name.trim(),
-            notes: value.notes || null,
             type: value.type,
          };
+
          if (isCreate) {
-            createMutation.mutate(payload);
+            const created = await createMutation.mutateAsync(payload);
+            if (pendingSubcategories.length > 0) {
+               await Promise.all(
+                  pendingSubcategories.map((name) =>
+                     createMutation.mutateAsync({
+                        name,
+                        parentId: created.id,
+                        type: value.type,
+                     }),
+                  ),
+               );
+            }
+            toast.success("Categoria criada com sucesso.");
+            onSuccess();
          } else if (category) {
             updateMutation.mutate({ id: category.id, ...payload });
          }
@@ -179,16 +193,16 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
 
    const isPending = createMutation.isPending || updateMutation.isPending;
 
-   const addKeyword = useCallback(
-      (keywords: string[], push: (val: string) => void) => {
-         const trimmed = keywordInput.trim().toLowerCase();
-         if (trimmed && !keywords.includes(trimmed)) {
-            push(trimmed);
-         }
-         setKeywordInput("");
-      },
-      [keywordInput],
-   );
+   const addSubcategory = useCallback((name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed || pendingSubcategories.includes(trimmed)) return;
+      setPendingSubcategories((prev) => [...prev, trimmed]);
+      setSubInput("");
+   }, [pendingSubcategories]);
+
+   const removeSubcategory = useCallback((index: number) => {
+      setPendingSubcategories((prev) => prev.filter((_, i) => i !== index));
+   }, []);
 
    return (
       <form
@@ -201,53 +215,131 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
          <CredenzaHeader>
             <CredenzaTitle>{isCreate ? "Nova Categoria" : "Editar Categoria"}</CredenzaTitle>
             <CredenzaDescription>
-               {isCreate
-                  ? "Preencha os dados da nova categoria."
-                  : "Atualize os dados da categoria."}
+               {isCreate ? "Preencha os dados da nova categoria." : "Atualize os dados da categoria."}
             </CredenzaDescription>
          </CredenzaHeader>
 
          <CredenzaBody>
             <FieldGroup>
-               <form.Field name="name">
-                  {(field) => {
-                     const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-                     return (
-                        <Field data-invalid={isInvalid}>
-                           <FieldLabel>Nome *</FieldLabel>
-                           <Input
-                              onBlur={field.handleBlur}
-                              onChange={(e) => field.handleChange(e.target.value)}
-                              placeholder="Ex: Alimentação, Transporte"
+               <div className="grid grid-cols-2 gap-4">
+                  <form.Field name="name">
+                     {(field) => {
+                        const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                        return (
+                           <Field data-invalid={isInvalid}>
+                              <FieldLabel>Nome *</FieldLabel>
+                              <Input
+                                 autoFocus
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) => field.handleChange(e.target.value)}
+                                 placeholder="Ex: Alimentação"
+                                 value={field.state.value}
+                              />
+                              {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                           </Field>
+                        );
+                     }}
+                  </form.Field>
+
+                  <form.Field name="type">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel>Tipo</FieldLabel>
+                           <Select
+                              onValueChange={(v) => field.handleChange(v as "income" | "expense")}
                               value={field.state.value}
-                           />
-                           {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                           >
+                              <SelectTrigger>
+                                 <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 <SelectItem value="expense">Despesa</SelectItem>
+                                 <SelectItem value="income">Receita</SelectItem>
+                              </SelectContent>
+                           </Select>
                         </Field>
+                     )}
+                  </form.Field>
+               </div>
+
+               <form.Subscribe selector={(s) => ({ icon: s.values.icon, color: s.values.color, name: s.values.name })}>
+                  {({ icon, color, name }) => {
+                     const PreviewIcon = icon ? ICON_MAP[icon] : null;
+                     return (
+                        <div className="flex items-center gap-4 p-3 rounded-lg border bg-muted/30">
+                           <div
+                              className="size-12 rounded-xl flex items-center justify-center shrink-0"
+                              style={{ backgroundColor: color }}
+                           >
+                              {PreviewIcon && <PreviewIcon className="size-6 text-white" />}
+                           </div>
+                           <div className="flex flex-col gap-1 min-w-0 flex-1">
+                              <span className="text-sm font-medium truncate">{name || "Nova categoria"}</span>
+                              <span className="text-xs text-muted-foreground truncate">{color}</span>
+                           </div>
+                           <Button
+                              onClick={() => {
+                                 form.setFieldValue("icon", randomIcon());
+                                 form.setFieldValue("color", randomColor());
+                              }}
+                              size="sm"
+                              title="Aleatorizar ícone e cor"
+                              type="button"
+                              variant="ghost"
+                           >
+                              <Shuffle className="size-3.5" />
+                           </Button>
+                        </div>
                      );
                   }}
-               </form.Field>
+               </form.Subscribe>
 
-               <form.Field name="type">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel>Tipo</FieldLabel>
-                        <Select
-                           onValueChange={(v) => field.handleChange(v as "income" | "expense")}
-                           value={field.state.value}
-                        >
-                           <SelectTrigger>
-                              <SelectValue />
-                           </SelectTrigger>
-                           <SelectContent>
-                              <SelectItem value="expense">Despesa</SelectItem>
-                              <SelectItem value="income">Receita</SelectItem>
-                           </SelectContent>
-                        </Select>
-                     </Field>
-                  )}
-               </form.Field>
+               <div className="grid grid-cols-2 gap-4">
+                  <form.Field name="color">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel>Cor</FieldLabel>
+                           <Popover>
+                              <PopoverTrigger asChild>
+                                 <Button className="w-full justify-start gap-2" type="button" variant="outline">
+                                    <span
+                                       className="size-4 rounded shrink-0"
+                                       style={{ backgroundColor: field.state.value }}
+                                    />
+                                    <span className="truncate text-xs font-mono">{field.state.value}</span>
+                                 </Button>
+                              </PopoverTrigger>
+                              <PopoverContent align="start" className="w-64">
+                                 <ColorPicker
+                                    className="flex flex-col gap-4"
+                                    onChange={(rgba) => {
+                                       if (Array.isArray(rgba)) {
+                                          field.handleChange(Color.rgb(rgba[0], rgba[1], rgba[2]).hex());
+                                       }
+                                    }}
+                                    value={field.state.value || "#000000"}
+                                 >
+                                    <div className="h-32 rounded-md overflow-hidden">
+                                       <ColorPickerSelection />
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                       <ColorPickerEyeDropper />
+                                       <div className="grid w-full gap-2">
+                                          <ColorPickerHue />
+                                          <ColorPickerAlpha />
+                                       </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                       <ColorPickerOutput />
+                                       <ColorPickerFormat />
+                                    </div>
+                                 </ColorPicker>
+                              </PopoverContent>
+                           </Popover>
+                        </Field>
+                     )}
+                  </form.Field>
 
-               <div className="grid grid-cols-[1fr_auto] gap-4">
                   <form.Field name="icon">
                      {(field) => (
                         <Field>
@@ -266,108 +358,49 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                         </Field>
                      )}
                   </form.Field>
-
-                  <form.Field name="color">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>Cor</FieldLabel>
-                           <Popover>
-                              <PopoverTrigger asChild>
-                                 <Button
-                                    className="w-full flex gap-2 justify-start"
-                                    type="button"
-                                    variant="outline"
-                                 >
-                                    <div
-                                       className="w-4 h-4 rounded border border-border shrink-0"
-                                       style={{ backgroundColor: field.state.value }}
-                                    />
-                                    {field.state.value}
-                                 </Button>
-                              </PopoverTrigger>
-                              <PopoverContent align="start" className="w-64 rounded-md border bg-background">
-                                 <div className="flex flex-col gap-4">
-                                    <div className="grid grid-cols-8 gap-2">
-                                       {PRESET_COLORS.map((color) => (
-                                          <button
-                                             className="w-6 h-6 rounded-full border border-border transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                             key={color}
-                                             onClick={() => field.handleChange(color)}
-                                             style={{ backgroundColor: color }}
-                                             type="button"
-                                          />
-                                       ))}
-                                    </div>
-                                    <ColorPicker
-                                       className="flex flex-col gap-4"
-                                       onChange={(rgba) => {
-                                          if (Array.isArray(rgba)) {
-                                             field.handleChange(
-                                                Color.rgb(rgba[0], rgba[1], rgba[2]).hex(),
-                                             );
-                                          }
-                                       }}
-                                       value={field.state.value || "#000000"}
-                                    >
-                                       <div className="h-24">
-                                          <ColorPickerSelection />
-                                       </div>
-                                       <div className="flex items-center gap-4">
-                                          <ColorPickerEyeDropper />
-                                          <div className="grid w-full gap-2">
-                                             <ColorPickerHue />
-                                             <ColorPickerAlpha />
-                                          </div>
-                                       </div>
-                                       <div className="flex items-center gap-2">
-                                          <ColorPickerOutput />
-                                          <ColorPickerFormat />
-                                       </div>
-                                    </ColorPicker>
-                                 </div>
-                              </PopoverContent>
-                           </Popover>
-                        </Field>
-                     )}
-                  </form.Field>
                </div>
 
-               <form.Field name="keywords" mode="array">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel>Palavras-chave</FieldLabel>
-                        <div className="flex flex-col gap-2">
-                           <Input
-                              onKeyDown={(e) => {
-                                 if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    addKeyword(field.state.value, field.pushValue);
-                                 }
-                              }}
-                              onChange={(e) => setKeywordInput(e.target.value)}
-                              placeholder="Digite e pressione Enter para adicionar..."
-                              value={keywordInput}
-                           />
-                           {field.state.value.length > 0 && (
-                              <div className="flex flex-wrap gap-2">
-                                 {field.state.value.map((kw, i) => (
-                                    <Badge className="gap-1 pr-1" key={`kw-${i + 1}`} variant="secondary">
-                                       {kw}
-                                       <button
-                                          className="rounded-full hover:text-foreground"
-                                          onClick={() => field.removeValue(i)}
-                                          type="button"
-                                       >
-                                          <X className="size-3" />
-                                       </button>
-                                    </Badge>
-                                 ))}
-                              </div>
-                           )}
-                        </div>
-                     </Field>
-                  )}
-               </form.Field>
+               {isCreate && (
+                  <Field>
+                     <FieldLabel>Subcategorias</FieldLabel>
+                     <div
+                        className="flex flex-wrap gap-2 min-h-10 rounded-md border bg-background px-3 py-2 cursor-text"
+                        onClick={() => subInputRef.current?.focus()}
+                     >
+                        {pendingSubcategories.map((name, i) => (
+                           <span
+                              className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-sm font-medium text-secondary-foreground"
+                              key={`sub-${i + 1}`}
+                           >
+                              {name}
+                              <button
+                                 className="text-secondary-foreground/50 hover:text-secondary-foreground transition-colors"
+                                 onClick={(e) => { e.stopPropagation(); removeSubcategory(i); }}
+                                 type="button"
+                              >
+                                 <X className="size-3" />
+                              </button>
+                           </span>
+                        ))}
+                        <input
+                           className="flex-1 min-w-[120px] bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                           onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === ",") {
+                                 e.preventDefault();
+                                 addSubcategory(subInput);
+                              }
+                              if (e.key === "Backspace" && !subInput && pendingSubcategories.length > 0) {
+                                 removeSubcategory(pendingSubcategories.length - 1);
+                              }
+                           }}
+                           onChange={(e) => setSubInput(e.target.value)}
+                           placeholder={pendingSubcategories.length === 0 ? "Digite e pressione Enter..." : ""}
+                           ref={subInputRef}
+                           value={subInput}
+                        />
+                     </div>
+                  </Field>
+               )}
             </FieldGroup>
          </CredenzaBody>
 

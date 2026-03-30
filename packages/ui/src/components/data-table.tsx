@@ -21,8 +21,10 @@ import { CSS } from "@dnd-kit/utilities";
 import {
    type ColumnDef,
    type ColumnFiltersState,
+   type ExpandedState,
    flexRender,
    getCoreRowModel,
+   getExpandedRowModel,
    getFilteredRowModel,
    getSortedRowModel,
    type OnChangeFn,
@@ -37,6 +39,8 @@ import {
    ArrowDown,
    ArrowUp,
    ArrowUpDown,
+   ChevronDown,
+   ChevronRight,
    GripVertical,
    Settings2,
 } from "lucide-react";
@@ -113,6 +117,7 @@ interface DataTableProps<TData, TValue> {
    renderActions?: (props: { row: Row<TData> }) => React.ReactNode;
    groupBy?: (row: TData) => string;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
+   getSubRows?: (row: TData) => TData[] | undefined;
 }
 
 // =============================================================================
@@ -373,9 +378,11 @@ export function DataTable<TData, TValue>({
    renderActions,
    groupBy,
    renderGroupHeader,
+   getSubRows,
 }: DataTableProps<TData, TValue>) {
    const [internalSorting, setInternalSorting] = useState<SortingState>([]);
    const [internalColumnFilters, setInternalColumnFilters] = useState<ColumnFiltersState>([]);
+   const [expanded, setExpanded] = useState<ExpandedState>(true);
    const [internalRowSelection, setInternalRowSelection] =
       useState<RowSelectionState>({});
 
@@ -507,17 +514,21 @@ export function DataTable<TData, TValue>({
       data,
       enableRowSelection: true,
       getCoreRowModel: getCoreRowModel(),
+      getExpandedRowModel: getExpandedRowModel(),
       getFilteredRowModel: getFilteredRowModel(),
       getRowId: (originalRow) => getRowId(originalRow),
       getSortedRowModel: getSortedRowModel(),
+      getSubRows,
       onColumnFiltersChange: effectiveOnColumnFiltersChange,
       onColumnVisibilityChange: handleColumnVisibilityChange,
+      onExpandedChange: setExpanded,
       onRowSelectionChange: handleRowSelectionChange,
       onSortingChange: effectiveOnSortingChange,
       onColumnOrderChange: setColumnOrder,
       state: {
          columnFilters: effectiveColumnFilters,
          columnVisibility: effectiveColumnVisibility,
+         expanded,
          rowSelection,
          sorting: effectiveSorting,
          columnOrder,
@@ -645,13 +656,48 @@ export function DataTable<TData, TValue>({
    const renderBodyCells = (
       row: ReturnType<typeof table.getRowModel>["rows"][number],
    ) => {
+      if (row.depth > 0) {
+         const cells = row.getVisibleCells().map((cell) => (
+            <TableCell
+               className="truncate text-muted-foreground"
+               key={cell.id}
+               style={{ maxWidth: cell.column.columnDef.maxSize }}
+            >
+               {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            </TableCell>
+         ));
+         return (
+            <>
+               <TableCell className="relative w-[40px] p-0">
+                  <div className="absolute inset-x-1/2 top-0 bottom-0 w-px bg-border" />
+               </TableCell>
+               {cells}
+            </>
+         );
+      }
+
       const selectionCell = (
          <TableCell className="w-[40px] px-2">
-            <Checkbox
-               aria-label="Select row"
-               checked={row.getIsSelected()}
-               onCheckedChange={(value) => row.toggleSelected(!!value)}
-            />
+            <div className="flex items-center gap-1">
+               {row.getCanExpand() ? (
+                  <button
+                     className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                     onClick={() => row.toggleExpanded()}
+                     type="button"
+                  >
+                     {row.getIsExpanded()
+                        ? <ChevronDown className="size-3.5" />
+                        : <ChevronRight className="size-3.5" />}
+                  </button>
+               ) : (
+                  <span className="size-3.5 shrink-0" />
+               )}
+               <Checkbox
+                  aria-label="Select row"
+                  checked={row.getIsSelected()}
+                  onCheckedChange={(value) => row.toggleSelected(!!value)}
+               />
+            </div>
          </TableCell>
       );
 
