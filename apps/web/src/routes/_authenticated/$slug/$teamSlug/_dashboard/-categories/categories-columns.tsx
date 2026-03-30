@@ -53,7 +53,7 @@ export type CategoryRow = {
    icon: string | null;
    keywords: string[] | null;
    type: string | null;
-   subcategories: { id: string; name: string; keywords: string[] | null }[];
+   subcategories?: { id: string; name: string; keywords: string[] | null }[];
    createdAt: string | Date;
 };
 

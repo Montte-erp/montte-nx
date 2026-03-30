@@ -76,6 +76,7 @@ export function CategoryFilterBar({
                            ? "bg-primary text-primary-foreground shadow-sm"
                            : "text-muted-foreground hover:text-foreground hover:bg-muted",
                      )}
+                     from="/$slug/$teamSlug/categories"
                      key={opt.label}
                      preload="intent"
                      search={(prev) => ({ ...prev, type: opt.value })}

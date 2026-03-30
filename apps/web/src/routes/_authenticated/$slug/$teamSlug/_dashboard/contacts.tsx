@@ -191,7 +191,6 @@ function ContactsList({ typeFilter }: ContactsListProps) {
          <DataTable
             columns={columns}
             data={contacts as ContactRow[]}
-            enableRowSelection
             getRowId={(row) => row.id}
             onRowSelectionChange={onRowSelectionChange}
             renderActions={({ row }) => (

@@ -103,7 +103,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
 
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
       (updater) => {
-         const next = typeof updater === "function" ? updater(sorting as SortingState) : updater;
+         const next = typeof updater === "function" ? updater(sorting) : updater;
          navigate({ search: (prev) => ({ ...prev, sorting: next }) });
       },
       [sorting, navigate],
@@ -111,7 +111,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
 
    const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
       (updater) => {
-         const next = typeof updater === "function" ? updater(columnFilters as ColumnFiltersState) : updater;
+         const next = typeof updater === "function" ? updater(columnFilters) : updater;
          navigate({ search: (prev) => ({ ...prev, columnFilters: next }) });
       },
       [columnFilters, navigate],
@@ -136,7 +136,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
       }),
    );
 
-   const allCategories = result as unknown as CategoryRow[];
+   const allCategories: CategoryRow[] = result;
    const categories = search
       ? allCategories.filter(
            (c) =>
@@ -263,9 +263,9 @@ function CategoriesList({ navigate }: CategoriesListProps) {
                if (key === "expense") return "Despesas";
                return "Outros";
             }}
-            sorting={sorting as SortingState}
+            sorting={sorting}
             onSortingChange={handleSortingChange}
-            columnFilters={columnFilters as ColumnFiltersState}
+            columnFilters={columnFilters}
             onColumnFiltersChange={handleColumnFiltersChange}
             tableState={tableState}
             onTableStateChange={setTableState}

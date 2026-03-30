@@ -180,6 +180,7 @@ function InventoryList() {
       <DataTable
          columns={columns}
          data={products as InventoryProductRow[]}
+         getRowId={(row) => row.id}
          renderActions={({ row }) => (
             <>
                <Button

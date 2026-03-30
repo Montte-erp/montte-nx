@@ -101,12 +101,12 @@ interface DataTableProps<TData, TValue> {
    columns: ColumnDef<TData, TValue>[];
    data: TData[];
    getRowId: (row: TData) => string;
-   sorting: SortingState;
-   onSortingChange: OnChangeFn<SortingState>;
-   columnFilters: ColumnFiltersState;
-   onColumnFiltersChange: OnChangeFn<ColumnFiltersState>;
-   tableState: DataTableStoredState | null;
-   onTableStateChange: (state: DataTableStoredState) => void;
+   sorting?: SortingState;
+   onSortingChange?: OnChangeFn<SortingState>;
+   columnFilters?: ColumnFiltersState;
+   onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
+   tableState?: DataTableStoredState | null;
+   onTableStateChange?: (state: DataTableStoredState) => void;
    pagination?: DataTablePaginationProps;
    rowSelection?: RowSelectionState;
    onRowSelectionChange?: (selection: RowSelectionState) => void;
@@ -374,8 +374,15 @@ export function DataTable<TData, TValue>({
    groupBy,
    renderGroupHeader,
 }: DataTableProps<TData, TValue>) {
+   const [internalSorting, setInternalSorting] = useState<SortingState>([]);
+   const [internalColumnFilters, setInternalColumnFilters] = useState<ColumnFiltersState>([]);
    const [internalRowSelection, setInternalRowSelection] =
       useState<RowSelectionState>({});
+
+   const effectiveSorting = sorting ?? internalSorting;
+   const effectiveColumnFilters = columnFilters ?? internalColumnFilters;
+   const effectiveOnSortingChange: OnChangeFn<SortingState> = onSortingChange ?? setInternalSorting;
+   const effectiveOnColumnFiltersChange: OnChangeFn<ColumnFiltersState> = onColumnFiltersChange ?? setInternalColumnFilters;
 
    const isControlled = controlledRowSelection !== undefined;
    const rowSelection = isControlled ? controlledRowSelection : internalRowSelection;
@@ -503,16 +510,16 @@ export function DataTable<TData, TValue>({
       getFilteredRowModel: getFilteredRowModel(),
       getRowId: (originalRow) => getRowId(originalRow),
       getSortedRowModel: getSortedRowModel(),
-      onColumnFiltersChange,
+      onColumnFiltersChange: effectiveOnColumnFiltersChange,
       onColumnVisibilityChange: handleColumnVisibilityChange,
       onRowSelectionChange: handleRowSelectionChange,
-      onSortingChange,
+      onSortingChange: effectiveOnSortingChange,
       onColumnOrderChange: setColumnOrder,
       state: {
-         columnFilters,
+         columnFilters: effectiveColumnFilters,
          columnVisibility: effectiveColumnVisibility,
          rowSelection,
-         sorting,
+         sorting: effectiveSorting,
          columnOrder,
       },
    });
@@ -538,8 +545,8 @@ export function DataTable<TData, TValue>({
       const { active, over } = event;
       if (active && over && active.id !== over.id) {
          setColumnOrder((prev) => {
-            const oldIndex = prev.indexOf(active.id as string);
-            const newIndex = prev.indexOf(over.id as string);
+            const oldIndex = prev.indexOf(String(active.id));
+            const newIndex = prev.indexOf(String(over.id));
             return arrayMove(prev, oldIndex, newIndex);
          });
       }

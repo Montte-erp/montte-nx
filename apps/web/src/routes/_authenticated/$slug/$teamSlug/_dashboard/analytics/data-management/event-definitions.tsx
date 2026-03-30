@@ -231,7 +231,7 @@ function EventDefinitionsPage() {
                <p className="text-muted-foreground">Nenhum evento encontrado</p>
             </div>
          ) : (
-            <DataTable columns={columns} data={filtered} />
+            <DataTable columns={columns} data={filtered} getRowId={(row) => row.id} />
          )}
       </div>
    );
