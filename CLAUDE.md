@@ -694,7 +694,7 @@ const handleSubmit = useCallback((e: FormEvent) => {
 <form.Subscribe>
    {(formState) => (
       <Button disabled={!formState.canSubmit || isPending} type="submit">
-         {isPending && <Loader2 className="size-4 mr-2 animate-spin" />}
+         {isPending && <Loader2 className="size-4 animate-spin" />}
          Salvar
       </Button>
    )}
@@ -756,7 +756,6 @@ import { AlertDialog } from "@packages/ui/components/alert-dialog";
 | Shared localStorage (fixed key, syncs tabs) | `foxact/create-local-storage-state` | — |
 | Media queries | `foxact/use-media-query` | `@uidotdev/usehooks` useMediaQuery |
 | Debounce a value | `foxact/use-debounced-value` | — |
-| Stable event handler | `foxact/use-stable-handler-...` | `useRef(fn)` + `ref.current = fn` |
 | Lazy singleton ref | `foxact/use-singleton` | `useRef(new Foo())` |
 | Clipboard copy | `foxact/use-clipboard` | — |
 | SSR-safe layout effect | `foxact/use-isomorphic-layout-effect` | `useLayoutEffect` |
@@ -783,28 +782,6 @@ const [theme, setTheme] = useThemeStorage();
 
 Use when multiple components need to read/write the same key reactively. For dynamic keys or local-only state, use `foxact/use-local-storage` directly.
 
-### Stable Handler
-
-```typescript
-import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
-
-const stableOnSave = useStableHandler(onSave);
-```
-
-Use for event listener handlers, callback props stored across renders, any `ref.current = fn` pattern.
-
-**⚠️ NEVER call a `useStableHandler` result during render** (e.g., inside `.filter()`, `.map()`). It throws before mount. Use `useCallback` for functions called during render:
-
-```typescript
-// ❌ Wrong — throws before mount
-const isVisible = useStableHandler((id: string) => !hidden.includes(id));
-items.filter((item) => isVisible(item.id));
-
-// ✅ Correct — useCallback for render-time calls
-const isVisible = useCallback((id: string) => !hidden.includes(id), [hidden]);
-items.filter((item) => isVisible(item.id));
-```
-
 ### invariant (context guard)
 
 ```typescript
@@ -829,7 +806,6 @@ import { useMediaQuery, useLocalStorage } from "@uidotdev/usehooks";
 useLayoutEffect(...)             // → foxact/use-isomorphic-layout-effect
 window.open(url, "_blank")       // → foxact/open-new-tab
 useRef(new Foo())                // → foxact/use-singleton
-useRef(fn) / ref.current = fn   // → foxact/use-stable-handler
 () => {} as default/fallback     // → foxact/noop
 if (!ctx) throw new Error(...)   // → foxact/invariant
 localStorage.getItem/setItem     // → foxact/use-local-storage or create-local-storage-state
