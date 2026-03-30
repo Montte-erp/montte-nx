@@ -788,11 +788,11 @@ export function DataTable<TData, TValue>({
             onDragEnd={handleColumnDragEnd}
             sensors={sensors}
          >
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-hidden">
                <Table className="border-separate border-spacing-0">
                   <TableHeader>
                      {table.getHeaderGroups().map((headerGroup) => (
-                        <TableRow key={headerGroup.id} className="bg-muted/50 hover:bg-muted/50 border-b">
+                        <TableRow key={headerGroup.id} className="bg-muted/50 hover:bg-muted/50">
                            {renderHeaderCells(headerGroup)}
                         </TableRow>
                      ))}
