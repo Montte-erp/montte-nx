@@ -44,6 +44,7 @@ import {
    GripVertical,
    Settings2,
 } from "lucide-react";
+import { useLocalStorage } from "foxact/use-local-storage";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 
@@ -112,6 +113,7 @@ interface DataTableProps<TData, TValue> {
    onRowOrderChange?: (data: TData[]) => void;
    groupBy?: (row: TData) => string;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
+   storageKey?: string;
 }
 
 // =============================================================================
@@ -459,7 +461,16 @@ export function DataTable<TData, TValue>({
    onRowOrderChange,
    groupBy,
    renderGroupHeader,
+   storageKey,
 }: DataTableProps<TData, TValue>) {
+   const lsPrefix = `montte:datatable:${storageKey ?? "__no-persist"}`;
+   const [storedColumnOrder, setStoredColumnOrder] = useLocalStorage<
+      string[] | null
+   >(`${lsPrefix}:column-order`, null);
+   const [storedColumnVisibility, setStoredColumnVisibility] = useLocalStorage<
+      VisibilityState | null
+   >(`${lsPrefix}:column-visibility`, null);
+
    const [sorting, setSorting] = useState<SortingState>([]);
    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
    const [internalRowSelection, setInternalRowSelection] =
@@ -506,23 +517,35 @@ export function DataTable<TData, TValue>({
       onColumnVisibilityChangeRef.current = onColumnVisibilityChange;
    });
 
+   const useLocalVisibility = !onColumnVisibilityChange && !!storageKey;
+
+   const effectiveColumnVisibility: VisibilityState = useMemo(() => {
+      if (!useLocalVisibility) return columnVisibility;
+      return storedColumnVisibility ?? {};
+   }, [useLocalVisibility, columnVisibility, storedColumnVisibility]);
+
    const handleColumnVisibilityChange = useCallback(
       (
          updaterOrValue:
             | VisibilityState
             | ((old: VisibilityState) => VisibilityState),
       ) => {
-         if (!onColumnVisibilityChangeRef.current) return;
          const next =
             typeof updaterOrValue === "function"
-               ? updaterOrValue(columnVisibility)
+               ? updaterOrValue(effectiveColumnVisibility)
                : updaterOrValue;
-         onColumnVisibilityChangeRef.current(next);
+         if (onColumnVisibilityChangeRef.current) {
+            onColumnVisibilityChangeRef.current(next);
+         }
+         if (storageKey) {
+            setStoredColumnVisibility(next);
+         }
       },
-      [columnVisibility],
+      [effectiveColumnVisibility, storageKey, setStoredColumnVisibility],
    );
 
-   const hasActionsColumn = !!renderActions || !!onColumnVisibilityChange;
+   const hasActionsColumn =
+      !!renderActions || !!onColumnVisibilityChange || useLocalVisibility;
 
    const allColumns = useMemo(() => {
       const base: ColumnDef<TData, TValue>[] = [
@@ -534,7 +557,10 @@ export function DataTable<TData, TValue>({
       if (!hasActionsColumn) return base;
       const actionsCol: ColumnDef<TData, unknown> = {
          id: "__actions",
-         header: onColumnVisibilityChange ? () => null : undefined,
+         header:
+            onColumnVisibilityChange || useLocalVisibility
+               ? () => null
+               : undefined,
          cell: renderActions
             ? ({ row }) => (
                  <div className="flex items-center justify-end gap-1">
@@ -550,26 +576,28 @@ export function DataTable<TData, TValue>({
       columns,
       hasActionsColumn,
       onColumnVisibilityChange,
+      useLocalVisibility,
       renderActions,
       reorderRows,
    ]);
 
-   const [columnOrder, setColumnOrder] = useState<string[]>(() =>
-      allColumns.map(
-         (c) => (c as { accessorKey?: string }).accessorKey ?? c.id ?? "",
-      ),
-   );
+   const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+      if (storageKey && storedColumnOrder) return storedColumnOrder;
+      return allColumns.map((c) => c.id ?? "");
+   });
 
    useEffect(() => {
       setColumnOrder((prev) => {
-         const newIds = allColumns.map(
-            (c) => (c as { accessorKey?: string }).accessorKey ?? c.id ?? "",
-         );
+         const newIds = allColumns.map((c) => c.id ?? "");
          const kept = prev.filter((id) => newIds.includes(id));
          const added = newIds.filter((id) => !prev.includes(id));
          return [...kept, ...added];
       });
    }, [allColumns]);
+
+   useEffect(() => {
+      if (storageKey) setStoredColumnOrder(columnOrder);
+   }, [columnOrder, storageKey, setStoredColumnOrder]);
 
    const table = useReactTable({
       columns: allColumns,
@@ -588,14 +616,15 @@ export function DataTable<TData, TValue>({
       onColumnOrderChange: reorderColumns ? setColumnOrder : undefined,
       state: {
          columnFilters,
-         columnVisibility,
+         columnVisibility: effectiveColumnVisibility,
          rowSelection,
          sorting,
          ...(reorderColumns ? { columnOrder } : {}),
       },
    });
 
-   const columnCount = allColumns.length + (enableRowSelection ? 1 : 0);
+   const columnCount =
+      table.getVisibleLeafColumns().length + (enableRowSelection ? 1 : 0);
 
    const isFixedColumn = (id: string) => id === "drag-handle";
 
@@ -606,7 +635,7 @@ export function DataTable<TData, TValue>({
             .filter((col) => !isFixedColumn(col.id))
             .map((col) => col.id),
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [table, columnOrder, columnVisibility],
+      [table, columnOrder, effectiveColumnVisibility],
    );
 
    const rowIds = useMemo<UniqueIdentifier[]>(
@@ -671,10 +700,10 @@ export function DataTable<TData, TValue>({
          if (header.column.id === "__actions") {
             return (
                <TableHead className="w-0" key={header.id}>
-                  {onColumnVisibilityChange ? (
+                  {(onColumnVisibilityChange || useLocalVisibility) ? (
                      <div className="flex items-center justify-end">
                         <ColumnVisibilityToggle
-                           columnVisibility={columnVisibility}
+                           columnVisibility={effectiveColumnVisibility}
                            onColumnVisibilityChange={
                               handleColumnVisibilityChange
                            }
@@ -802,13 +831,6 @@ export function DataTable<TData, TValue>({
    };
 
    const activeReorderRows = reorderRows && !reorderColumns;
-
-   useEffect(() => {
-      if (reorderColumns && reorderRows) {
-      }
-      if (groupBy && reorderRows) {
-      }
-   }, [reorderColumns, reorderRows, groupBy]);
 
    // --- Single row ---
    const renderRow = (
