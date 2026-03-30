@@ -167,6 +167,36 @@ import { cnpjDataSchema } from "@core/authentication/server";
 
 ## Code Style
 
+**No type casting.** Never use `as`, `as unknown as`, or any other type assertion to force TypeScript to accept a type. If you need to cast, the types are wrong — fix the source types instead. Type assertions hide bugs and break refactoring safety.
+
+```typescript
+// ❌ Never — hides type errors
+const categories = result as unknown as CategoryRow[];
+const value = foo as string;
+
+// ✅ Fix the types at the source
+const categories: CategoryRow[] = result;
+```
+
+**Prefer URL search params over local state for UI state.** Filters, sort order, pagination, toggles, and any state that should survive a refresh or be shareable must live in URL search params via `validateSearch` on the route. Use `useState` only for ephemeral UI state that has no value being bookmarked or shared (e.g. a debounced input buffer before it commits to the URL).
+
+```typescript
+// ❌ Never use useState for filter/sort state
+const [filters, setFilters] = useState({ type: undefined, includeArchived: false });
+
+// ✅ Put it in the URL schema
+const featureSearchSchema = z.object({
+  type: z.enum(["income", "expense"]).optional(),
+  includeArchived: z.boolean().optional().default(false),
+});
+export const Route = createFileRoute("...")({ validateSearch: featureSearchSchema });
+
+// ✅ Read and write via useSearch + useNavigate
+const { type, includeArchived } = Route.useSearch();
+const navigate = Route.useNavigate();
+navigate({ search: (prev) => ({ ...prev, type: "income" }) });
+```
+
 **Files:** kebab-case (`transactions-table.tsx`, `use-transactions.ts`)
 **Components:** PascalCase `[Feature][Action][Type]` (`TransactionsTable`, `AgentSettingsSection`)
 **Hooks:** `use[Feature][Action]` (`useTransactions`, `useCreateTransaction`)
@@ -209,6 +239,21 @@ import { categories } from "./categories";
 
 **No `useStableHandler`.** Never use `foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired`. Use `useCallback` instead. The only exception is `use-event-listener.ts` which uses a `useRef` + `useIsomorphicLayoutEffect` pattern internally.
 
+**No margin utilities.** Never use `m-`, `mt-`, `mb-`, `ml-`, `mr-`, `mx-`, `my-`, `space-x-*`, or `space-y-*` for spacing between sibling elements. Always use `gap-*` with `flex` or `grid` instead. The Button component already applies `gap-2` internally — never add `mr-*` or `ml-*` to icons inside buttons.
+
+```tsx
+// ❌ Never
+<div className="space-y-4">...</div>
+<Spinner className="size-4 mr-2" />
+<div className="mt-4">...</div>
+
+// ✅ Always
+<div className="flex flex-col gap-4">...</div>
+<Spinner className="size-4" />  {/* Button already has gap-2 */}
+```
+
+**Minimize `useEffect`.** Avoid `useEffect` unless truly necessary. Prefer: derived state (compute directly from props/state), event handlers, `useIsomorphicLayoutEffect` for DOM sync, or ref patterns. Only use `useEffect` for syncing with external systems (subscriptions, timers, non-React APIs) or post-commit DOM work that cannot happen during render or in event handlers. Never use `useEffect` to sync one piece of state to another — derive instead.
+
 ---
 
 ## PostHog
@@ -249,8 +294,96 @@ Use `DataTable` from `@packages/ui/components/data-table` for all tabular lists.
 **Rules:**
 
 - Prefer `DataTable` over manual `Table` primitives for list views.
-- Tables should be expandable via row click using `renderSubComponent`.
 - Do not wrap `DataTable` in `Card`/`CardContent` containers.
+- All features are always enabled — column reorder, column visibility, row selection. No feature flags.
+- `getRowId`, `sorting`, `onSortingChange`, `columnFilters`, `onColumnFiltersChange`, `tableState`, `onTableStateChange` are **required** props.
+
+### Required call site setup
+
+Every DataTable usage requires two things at module level:
+
+**1. localStorage state** — created once per feature with a fixed key:
+
+```typescript
+import { createLocalStorageState } from "foxact/create-local-storage-state";
+import type { DataTableStoredState } from "@packages/ui/components/data-table";
+
+const [useFeatureTableState] = createLocalStorageState<DataTableStoredState | null>(
+  "montte:datatable:<feature>",
+  null,
+);
+```
+
+**2. URL search params** — for route files, add `validateSearch` to the route:
+
+```typescript
+import { z } from "zod";
+
+const featureSearchSchema = z.object({
+  sorting: z
+    .array(z.object({ id: z.string(), desc: z.boolean() }))
+    .optional()
+    .default([]),
+  columnFilters: z
+    .array(z.object({ id: z.string(), value: z.unknown() }))
+    .optional()
+    .default([]),
+});
+
+export const Route = createFileRoute("...")({
+  validateSearch: featureSearchSchema,
+  ...
+});
+```
+
+For non-route components (e.g. billing panels), use local `useState` instead of URL params.
+
+### Wiring in the component
+
+```typescript
+import type { OnChangeFn, SortingState, ColumnFiltersState } from "@tanstack/react-table";
+
+function FeatureList() {
+  const navigate = Route.useNavigate();
+  const { sorting, columnFilters } = Route.useSearch();
+  const [tableState, setTableState] = useFeatureTableState();
+
+  const handleSortingChange: OnChangeFn<SortingState> = useCallback(
+    (updater) => {
+      const next = typeof updater === "function" ? updater(sorting as SortingState) : updater;
+      navigate({ search: (prev) => ({ ...prev, sorting: next }) });
+    },
+    [sorting, navigate],
+  );
+
+  const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
+    (updater) => {
+      const next = typeof updater === "function" ? updater(columnFilters as ColumnFiltersState) : updater;
+      navigate({ search: (prev) => ({ ...prev, columnFilters: next }) });
+    },
+    [columnFilters, navigate],
+  );
+
+  return (
+    <DataTable
+      columns={columns}
+      data={data}
+      getRowId={(row) => row.id}
+      sorting={sorting as SortingState}
+      onSortingChange={handleSortingChange}
+      columnFilters={columnFilters as ColumnFiltersState}
+      onColumnFiltersChange={handleColumnFiltersChange}
+      tableState={tableState}
+      onTableStateChange={setTableState}
+      rowSelection={rowSelection}
+      onRowSelectionChange={onRowSelectionChange}
+      renderActions={({ row }) => { ... }}
+    />
+  );
+}
+```
+
+**Open issues for remaining call sites:** MON-193 through MON-198.
 
 ### Card View (`view` prop)
 
@@ -561,7 +694,7 @@ const handleSubmit = useCallback((e: FormEvent) => {
 <form.Subscribe>
    {(formState) => (
       <Button disabled={!formState.canSubmit || isPending} type="submit">
-         {isPending && <Loader2 className="size-4 mr-2 animate-spin" />}
+         {isPending && <Loader2 className="size-4 animate-spin" />}
          Salvar
       </Button>
    )}
@@ -623,7 +756,6 @@ import { AlertDialog } from "@packages/ui/components/alert-dialog";
 | Shared localStorage (fixed key, syncs tabs) | `foxact/create-local-storage-state` | — |
 | Media queries | `foxact/use-media-query` | `@uidotdev/usehooks` useMediaQuery |
 | Debounce a value | `foxact/use-debounced-value` | — |
-| Stable event handler | `foxact/use-stable-handler-...` | `useRef(fn)` + `ref.current = fn` |
 | Lazy singleton ref | `foxact/use-singleton` | `useRef(new Foo())` |
 | Clipboard copy | `foxact/use-clipboard` | — |
 | SSR-safe layout effect | `foxact/use-isomorphic-layout-effect` | `useLayoutEffect` |
@@ -650,28 +782,6 @@ const [theme, setTheme] = useThemeStorage();
 
 Use when multiple components need to read/write the same key reactively. For dynamic keys or local-only state, use `foxact/use-local-storage` directly.
 
-### Stable Handler
-
-```typescript
-import { useStableHandler } from "foxact/use-stable-handler-only-when-you-know-what-you-are-doing-or-you-will-be-fired";
-
-const stableOnSave = useStableHandler(onSave);
-```
-
-Use for event listener handlers, callback props stored across renders, any `ref.current = fn` pattern.
-
-**⚠️ NEVER call a `useStableHandler` result during render** (e.g., inside `.filter()`, `.map()`). It throws before mount. Use `useCallback` for functions called during render:
-
-```typescript
-// ❌ Wrong — throws before mount
-const isVisible = useStableHandler((id: string) => !hidden.includes(id));
-items.filter((item) => isVisible(item.id));
-
-// ✅ Correct — useCallback for render-time calls
-const isVisible = useCallback((id: string) => !hidden.includes(id), [hidden]);
-items.filter((item) => isVisible(item.id));
-```
-
 ### invariant (context guard)
 
 ```typescript
@@ -696,7 +806,6 @@ import { useMediaQuery, useLocalStorage } from "@uidotdev/usehooks";
 useLayoutEffect(...)             // → foxact/use-isomorphic-layout-effect
 window.open(url, "_blank")       // → foxact/open-new-tab
 useRef(new Foo())                // → foxact/use-singleton
-useRef(fn) / ref.current = fn   // → foxact/use-stable-handler
 () => {} as default/fallback     // → foxact/noop
 if (!ctx) throw new Error(...)   // → foxact/invariant
 localStorage.getItem/setItem     // → foxact/use-local-storage or create-local-storage-state

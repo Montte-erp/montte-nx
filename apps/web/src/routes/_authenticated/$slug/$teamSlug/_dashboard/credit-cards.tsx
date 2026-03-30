@@ -151,7 +151,6 @@ function CreditCardsList() {
          <DataTable
             columns={columns}
             data={cards}
-            enableRowSelection
             getRowId={(row) => row.id}
             onRowSelectionChange={onRowSelectionChange}
             renderActions={({ row }) => (

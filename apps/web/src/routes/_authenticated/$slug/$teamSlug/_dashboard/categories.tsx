@@ -1,5 +1,6 @@
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
+import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import {
    Empty,
    EmptyDescription,
@@ -14,7 +15,9 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import type { ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
 import {
    Archive,
    Download,
@@ -24,27 +27,47 @@ import {
    Trash2,
    Upload,
 } from "lucide-react";
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
 import {
    buildCategoryColumns,
    type CategoryRow,
-} from "@/features/categories/ui/categories-columns";
+} from "./-categories/categories-columns";
 import { CategoryForm } from "@/features/categories/ui/categories-form";
-import {
-   CategoryFilterBar,
-   type CategoryFilters,
-} from "@/features/categories/ui/category-filter-bar";
-import { CategoryImportDialogStack } from "@/features/categories/ui/category-import-dialog-stack";
-import { exportCategoriesCsv } from "@/features/categories/utils/export-categories-csv";
+import { SubcategoryForm } from "@/features/categories/ui/subcategory-form";
+import { CategoryFilterBar } from "./-categories/category-filter-bar";
+import { CategoryImportDialogStack } from "./-categories/category-import-dialog-stack";
+import { exportCategoriesCsv } from "./-categories/export-categories-csv";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
+
+const categoriesSearchSchema = z.object({
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .optional()
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .optional()
+      .default([]),
+   type: z.enum(["income", "expense"]).optional(),
+   includeArchived: z.boolean().optional().default(false),
+   groupBy: z.boolean().optional().default(true),
+   search: z.string().optional().default(""),
+});
+
+const [useCategoriesTableState] = createLocalStorageState<DataTableStoredState | null>(
+   "montte:datatable:categories",
+   null,
+);
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/categories",
 )({
+   validateSearch: categoriesSearchSchema,
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(
          orpc.categories.getAll.queryOptions({}),
@@ -72,12 +95,30 @@ function CategoriesSkeleton() {
 // =============================================================================
 
 interface CategoriesListProps {
-   filters: CategoryFilters;
-   onFiltersChange: (filters: CategoryFilters) => void;
+   navigate: ReturnType<typeof Route.useNavigate>;
 }
 
-function CategoriesList({ filters }: CategoriesListProps) {
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+function CategoriesList({ navigate }: CategoriesListProps) {
+   const { sorting, columnFilters, type, includeArchived, groupBy, search } = Route.useSearch();
+   const [tableState, setTableState] = useCategoriesTableState();
+
+   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
+      (updater) => {
+         const next = typeof updater === "function" ? updater(sorting) : updater;
+         navigate({ search: (prev) => ({ ...prev, sorting: next }) });
+      },
+      [sorting, navigate],
+   );
+
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
+      (updater) => {
+         const next = typeof updater === "function" ? updater(columnFilters) : updater;
+         navigate({ search: (prev) => ({ ...prev, columnFilters: next }) });
+      },
+      [columnFilters, navigate],
+   );
+
+   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const {
       rowSelection,
@@ -90,13 +131,26 @@ function CategoriesList({ filters }: CategoriesListProps) {
    const { data: result } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({
          input: {
-            type: filters.type,
-            includeArchived: filters.includeArchived || undefined,
+            type,
+            includeArchived: includeArchived || undefined,
          },
       }),
    );
 
-   const categories = result as unknown as CategoryRow[];
+   const parentCategories: CategoryRow[] = result
+      .filter((c) => c.parentId === null)
+      .map((parent) => ({
+         ...parent,
+         subcategories: result.filter((c) => c.parentId === parent.id),
+      }));
+
+   const categories = search
+      ? parentCategories.filter(
+           (c) =>
+              c.name.toLowerCase().includes(search.toLowerCase()) ||
+              c.subcategories?.some((s) => s.name.toLowerCase().includes(search.toLowerCase())),
+        )
+      : parentCategories;
 
    const deleteMutation = useMutation(
       orpc.categories.remove.mutationOptions({
@@ -119,7 +173,7 @@ function CategoriesList({ filters }: CategoriesListProps) {
 
    const handleEdit = useCallback(
       (category: CategoryRow) => {
-         openDialogStack({
+         openCredenza({
             children: (
                <CategoryForm
                   category={{
@@ -127,16 +181,31 @@ function CategoriesList({ filters }: CategoriesListProps) {
                      name: category.name,
                      color: category.color,
                      icon: category.icon,
-                     keywords: category.keywords,
                      type: category.type,
                   }}
                   mode="edit"
-                  onSuccess={closeDialogStack}
+                  onSuccess={closeCredenza}
                />
             ),
          });
       },
-      [openDialogStack, closeDialogStack],
+      [openCredenza, closeCredenza],
+   );
+
+   const handleAddSubcategory = useCallback(
+      (category: CategoryRow) => {
+         openCredenza({
+            children: (
+               <SubcategoryForm
+                  onSuccess={closeCredenza}
+                  parentId={category.id}
+                  parentName={category.name}
+                  parentType={category.type === "income" ? "income" : "expense"}
+               />
+            ),
+         });
+      },
+      [openCredenza, closeCredenza],
    );
 
    const handleDelete = useCallback(
@@ -194,7 +263,7 @@ function CategoriesList({ filters }: CategoriesListProps) {
                </EmptyMedia>
                <EmptyTitle>Nenhuma categoria</EmptyTitle>
                <EmptyDescription>
-                  {filters.search || filters.type
+                  {type || search
                      ? "Nenhuma categoria encontrada com os filtros atuais."
                      : "Adicione uma categoria para organizar suas transações."}
                </EmptyDescription>
@@ -208,13 +277,35 @@ function CategoriesList({ filters }: CategoriesListProps) {
          <DataTable
             columns={columns}
             data={categories}
-            enableRowSelection
             getRowId={(row) => row.id}
+            getSubRows={(row) => row.subcategories}
+            groupBy={groupBy ? (row) => row.type ?? "other" : undefined}
             onRowSelectionChange={onRowSelectionChange}
+            renderGroupHeader={(key) => {
+               if (key === "income") return "Receitas";
+               if (key === "expense") return "Despesas";
+               return "Outros";
+            }}
+            sorting={sorting}
+            onSortingChange={handleSortingChange}
+            columnFilters={columnFilters}
+            onColumnFiltersChange={handleColumnFiltersChange}
+            tableState={tableState}
+            onTableStateChange={setTableState}
             renderActions={({ row }) => {
                if (row.original.isDefault) return null;
+               const isSub = row.original.parentId !== null;
                return (
                   <>
+                     {!isSub && (
+                        <Button
+                           onClick={() => handleAddSubcategory(row.original)}
+                           tooltip="Nova subcategoria"
+                           variant="outline"
+                        >
+                           <Plus className="size-4" />
+                        </Button>
+                     )}
                      <Button
                         onClick={() => handleEdit(row.original)}
                         tooltip="Editar"
@@ -222,13 +313,15 @@ function CategoriesList({ filters }: CategoriesListProps) {
                      >
                         <Pencil className="size-4" />
                      </Button>
-                     <Button
-                        onClick={() => handleArchive(row.original)}
-                        tooltip="Arquivar"
-                        variant="outline"
-                     >
-                        <Archive className="size-4" />
-                     </Button>
+                     {!isSub && (
+                        <Button
+                           onClick={() => handleArchive(row.original)}
+                           tooltip="Arquivar"
+                           variant="outline"
+                        >
+                           <Archive className="size-4" />
+                        </Button>
+                     )}
                      <Button
                         className="text-destructive hover:text-destructive"
                         onClick={() => handleDelete(row.original)}
@@ -260,26 +353,47 @@ function CategoriesList({ filters }: CategoriesListProps) {
 // =============================================================================
 
 function CategoriesPage() {
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const navigate = Route.useNavigate();
+   const { type, includeArchived, groupBy, search } = Route.useSearch();
+   const { openCredenza, closeCredenza } = useCredenza();
 
-   const [filters, setFilters] = useState<CategoryFilters>({
-      search: "",
-      type: undefined,
-      includeArchived: false,
-      page: 1,
-   });
+   const handleIncludeArchivedChange = useCallback(
+      (checked: boolean) => {
+         navigate({ search: (prev) => ({ ...prev, includeArchived: checked }) });
+      },
+      [navigate],
+   );
+
+   const handleGroupByChange = useCallback(
+      (checked: boolean) => {
+         navigate({ search: (prev) => ({ ...prev, groupBy: checked }) });
+      },
+      [navigate],
+   );
+
+   const handleSearchChange = useCallback(
+      (value: string) => {
+         navigate({ search: (prev) => ({ ...prev, search: value }) });
+      },
+      [navigate],
+   );
+
+   const handleClearFilters = useCallback(
+      () => navigate({ search: (prev) => ({ ...prev, type: undefined, includeArchived: false, search: "" }) }),
+      [navigate],
+   );
 
    const handleCreate = useCallback(() => {
-      openDialogStack({
-         children: <CategoryForm mode="create" onSuccess={closeDialogStack} />,
+      openCredenza({
+         children: <CategoryForm mode="create" onSuccess={closeCredenza} />,
       });
-   }, [openDialogStack, closeDialogStack]);
+   }, [openCredenza, closeCredenza]);
 
    const handleImport = useCallback(() => {
-      openDialogStack({
-         children: <CategoryImportDialogStack onSuccess={closeDialogStack} />,
+      openCredenza({
+         children: <CategoryImportDialogStack onSuccess={closeCredenza} />,
       });
-   }, [openDialogStack, closeDialogStack]);
+   }, [openCredenza, closeCredenza]);
 
    const handleExport = useCallback(async () => {
       try {
@@ -297,15 +411,15 @@ function CategoriesPage() {
             actions={
                <div className="flex gap-2">
                   <Button onClick={handleImport} variant="outline">
-                     <Upload className="size-4 mr-1" />
+                     <Upload className="size-4 " />
                      Importar
                   </Button>
                   <Button onClick={handleExport} variant="outline">
-                     <Download className="size-4 mr-1" />
+                     <Download className="size-4 " />
                      Exportar
                   </Button>
                   <Button onClick={handleCreate}>
-                     <Plus className="size-4 mr-1" />
+                     <Plus className="size-4 " />
                      Nova Categoria
                   </Button>
                </div>
@@ -313,9 +427,18 @@ function CategoriesPage() {
             description="Gerencie as categorias das suas transações"
             title="Categorias"
          />
-         <CategoryFilterBar filters={filters} onFiltersChange={setFilters} />
+         <CategoryFilterBar
+            groupBy={groupBy}
+            includeArchived={includeArchived}
+            onClear={handleClearFilters}
+            onGroupByChange={handleGroupByChange}
+            onIncludeArchivedChange={handleIncludeArchivedChange}
+            onSearchChange={handleSearchChange}
+            search={search}
+            type={type}
+         />
          <Suspense fallback={<CategoriesSkeleton />}>
-            <CategoriesList filters={filters} onFiltersChange={setFilters} />
+            <CategoriesList navigate={navigate} />
          </Suspense>
       </main>
    );

@@ -5,31 +5,30 @@ import {
    DndContext,
    type DragEndEvent,
    KeyboardSensor,
-   MouseSensor,
-   TouchSensor,
+   PointerSensor,
    type UniqueIdentifier,
    useSensor,
    useSensors,
 } from "@dnd-kit/core";
-import {
-   restrictToHorizontalAxis,
-   restrictToVerticalAxis,
-} from "@dnd-kit/modifiers";
+import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import {
    arrayMove,
    horizontalListSortingStrategy,
    SortableContext,
    useSortable,
-   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
+   type AccessorKeyColumnDef,
    type ColumnDef,
    type ColumnFiltersState,
+   type ExpandedState,
    flexRender,
    getCoreRowModel,
+   getExpandedRowModel,
    getFilteredRowModel,
    getSortedRowModel,
+   type OnChangeFn,
    type Row,
    type RowSelectionState,
    type SortingState,
@@ -41,6 +40,8 @@ import {
    ArrowDown,
    ArrowUp,
    ArrowUpDown,
+   ChevronDown,
+   ChevronRight,
    GripVertical,
    Settings2,
 } from "lucide-react";
@@ -96,22 +97,28 @@ interface DataTablePaginationProps {
    pageSizeOptions?: number[];
 }
 
+export type DataTableStoredState = {
+   columnOrder: string[];
+   columnVisibility: VisibilityState;
+};
+
 interface DataTableProps<TData, TValue> {
    columns: ColumnDef<TData, TValue>[];
    data: TData[];
+   getRowId: (row: TData) => string;
+   sorting?: SortingState;
+   onSortingChange?: OnChangeFn<SortingState>;
+   columnFilters?: ColumnFiltersState;
+   onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
+   tableState?: DataTableStoredState | null;
+   onTableStateChange?: (state: DataTableStoredState) => void;
    pagination?: DataTablePaginationProps;
-   enableRowSelection?: boolean;
    rowSelection?: RowSelectionState;
    onRowSelectionChange?: (selection: RowSelectionState) => void;
-   getRowId?: (row: TData) => string;
-   columnVisibility?: VisibilityState;
-   onColumnVisibilityChange?: (visibility: VisibilityState) => void;
    renderActions?: (props: { row: Row<TData> }) => React.ReactNode;
-   reorderColumns?: boolean;
-   reorderRows?: boolean;
-   onRowOrderChange?: (data: TData[]) => void;
    groupBy?: (row: TData) => string;
    renderGroupHeader?: (key: string, rows: Row<TData>[]) => React.ReactNode;
+   getSubRows?: (row: TData) => TData[] | undefined;
 }
 
 // =============================================================================
@@ -120,6 +127,14 @@ interface DataTableProps<TData, TValue> {
 
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
 
+function getColumnDefId<TData>(col: ColumnDef<TData, unknown>): string {
+   if (col.id) return col.id;
+   if ("accessorKey" in col && col.accessorKey != null) {
+      return String((col as AccessorKeyColumnDef<TData, unknown>).accessorKey);
+   }
+   return "";
+}
+
 function getPageNumbers(currentPage: number, totalPages: number): number[] {
    if (totalPages <= 5)
       return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -127,35 +142,6 @@ function getPageNumbers(currentPage: number, totalPages: number): number[] {
    if (currentPage >= totalPages - 2)
       return Array.from({ length: 5 }, (_, i) => totalPages - 4 + i);
    return Array.from({ length: 5 }, (_, i) => currentPage - 2 + i);
-}
-
-// =============================================================================
-// DnD — Row drag handle
-// =============================================================================
-
-function createDragHandleColumn<TData>(): ColumnDef<TData> {
-   return {
-      id: "drag-handle",
-      header: () => null,
-      cell: ({ row }) => <RowDragHandle rowId={row.id} />,
-      size: 40,
-      enableSorting: false,
-      enableHiding: false,
-   };
-}
-
-function RowDragHandle({ rowId }: { rowId: string }) {
-   const { attributes, listeners } = useSortable({ id: rowId });
-   return (
-      <button
-         type="button"
-         className="flex size-8 cursor-grab items-center justify-center text-muted-foreground hover:text-foreground"
-         {...attributes}
-         {...listeners}
-      >
-         <GripVertical className="size-4" />
-      </button>
-   );
 }
 
 // =============================================================================
@@ -206,72 +192,6 @@ function SortableHeaderCell({
             {children}
          </div>
       </TableHead>
-   );
-}
-
-// =============================================================================
-// DnD — Sortable body cell (column reorder)
-// =============================================================================
-
-function SortableCell({
-   columnId,
-   children,
-}: {
-   columnId: string;
-   children: React.ReactNode;
-}) {
-   const { setNodeRef, transform, transition, isDragging } = useSortable({
-      id: columnId,
-   });
-
-   return (
-      <TableCell
-         ref={setNodeRef}
-         className={cn(isDragging && "opacity-50")}
-         style={{
-            position: "relative",
-            transform: CSS.Translate.toString(transform),
-            transition,
-            zIndex: isDragging ? 1 : undefined,
-         }}
-      >
-         {children}
-      </TableCell>
-   );
-}
-
-// =============================================================================
-// DnD — Sortable row (row reorder)
-// =============================================================================
-
-function SortableRow({
-   rowId,
-   children,
-   className,
-   ...props
-}: {
-   rowId: string;
-   children: React.ReactNode;
-   className?: string;
-} & React.HTMLAttributes<HTMLTableRowElement>) {
-   const { setNodeRef, transform, transition, isDragging } = useSortable({
-      id: rowId,
-   });
-
-   return (
-      <TableRow
-         ref={setNodeRef}
-         className={cn(isDragging && "opacity-50", className)}
-         style={{
-            position: "relative",
-            transform: CSS.Translate.toString(transform),
-            transition,
-            zIndex: isDragging ? 1 : undefined,
-         }}
-         {...props}
-      >
-         {children}
-      </TableRow>
    );
 }
 
@@ -446,29 +366,34 @@ function DataTablePagination({
 export function DataTable<TData, TValue>({
    columns,
    data,
+   getRowId,
+   sorting,
+   onSortingChange,
+   columnFilters,
+   onColumnFiltersChange,
+   tableState,
+   onTableStateChange,
    pagination,
-   enableRowSelection = false,
    rowSelection: controlledRowSelection,
    onRowSelectionChange,
-   getRowId,
-   columnVisibility = {},
-   onColumnVisibilityChange,
    renderActions,
-   reorderColumns = false,
-   reorderRows = false,
-   onRowOrderChange,
    groupBy,
    renderGroupHeader,
+   getSubRows,
 }: DataTableProps<TData, TValue>) {
-   const [sorting, setSorting] = useState<SortingState>([]);
-   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+   const [internalSorting, setInternalSorting] = useState<SortingState>([]);
+   const [internalColumnFilters, setInternalColumnFilters] = useState<ColumnFiltersState>([]);
+   const [expanded, setExpanded] = useState<ExpandedState>(true);
    const [internalRowSelection, setInternalRowSelection] =
       useState<RowSelectionState>({});
 
+   const effectiveSorting = sorting ?? internalSorting;
+   const effectiveColumnFilters = columnFilters ?? internalColumnFilters;
+   const effectiveOnSortingChange: OnChangeFn<SortingState> = onSortingChange ?? setInternalSorting;
+   const effectiveOnColumnFiltersChange: OnChangeFn<ColumnFiltersState> = onColumnFiltersChange ?? setInternalColumnFilters;
+
    const isControlled = controlledRowSelection !== undefined;
-   const rowSelection = isControlled
-      ? controlledRowSelection
-      : internalRowSelection;
+   const rowSelection = isControlled ? controlledRowSelection : internalRowSelection;
 
    const onRowSelectionChangeRef = useRef(onRowSelectionChange);
    useIsomorphicLayoutEffect(() => {
@@ -501,10 +426,20 @@ export function DataTable<TData, TValue>({
       [isControlled, controlledRowSelection],
    );
 
-   const onColumnVisibilityChangeRef = useRef(onColumnVisibilityChange);
+   const effectiveColumnVisibility: VisibilityState =
+      tableState?.columnVisibility ?? {};
+
+   const effectiveColumnVisibilityRef = useRef(effectiveColumnVisibility);
    useIsomorphicLayoutEffect(() => {
-      onColumnVisibilityChangeRef.current = onColumnVisibilityChange;
+      effectiveColumnVisibilityRef.current = effectiveColumnVisibility;
    });
+
+   const onTableStateChangeRef = useRef(onTableStateChange);
+   useIsomorphicLayoutEffect(() => {
+      onTableStateChangeRef.current = onTableStateChange;
+   });
+
+   const columnOrderRef = useRef<string[]>([]);
 
    const handleColumnVisibilityChange = useCallback(
       (
@@ -512,29 +447,22 @@ export function DataTable<TData, TValue>({
             | VisibilityState
             | ((old: VisibilityState) => VisibilityState),
       ) => {
-         if (!onColumnVisibilityChangeRef.current) return;
          const next =
             typeof updaterOrValue === "function"
-               ? updaterOrValue(columnVisibility)
+               ? updaterOrValue(effectiveColumnVisibility)
                : updaterOrValue;
-         onColumnVisibilityChangeRef.current(next);
+         onTableStateChangeRef.current?.({
+            columnOrder: columnOrderRef.current,
+            columnVisibility: next,
+         });
       },
-      [columnVisibility],
+      [effectiveColumnVisibility],
    );
 
-   const hasActionsColumn = !!renderActions || !!onColumnVisibilityChange;
-
    const allColumns = useMemo(() => {
-      const base: ColumnDef<TData, TValue>[] = [
-         ...(reorderRows
-            ? [createDragHandleColumn<TData>() as ColumnDef<TData, TValue>]
-            : []),
-         ...columns,
-      ];
-      if (!hasActionsColumn) return base;
       const actionsCol: ColumnDef<TData, unknown> = {
          id: "__actions",
-         header: onColumnVisibilityChange ? () => null : undefined,
+         header: () => null,
          cell: renderActions
             ? ({ row }) => (
                  <div className="flex items-center justify-end gap-1">
@@ -545,59 +473,75 @@ export function DataTable<TData, TValue>({
          enableSorting: false,
          enableHiding: false,
       };
-      return [...base, actionsCol as ColumnDef<TData, TValue>];
-   }, [
-      columns,
-      hasActionsColumn,
-      onColumnVisibilityChange,
-      renderActions,
-      reorderRows,
-   ]);
+      return [...columns, actionsCol as ColumnDef<TData, TValue>];
+   }, [columns, renderActions]);
 
-   const [columnOrder, setColumnOrder] = useState<string[]>(() =>
-      allColumns.map(
-         (c) => (c as { accessorKey?: string }).accessorKey ?? c.id ?? "",
-      ),
-   );
+   const isFixedColumn = (id: string) => id === "__actions";
+
+   const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+      const draggableIds = allColumns
+         .filter((c) => !isFixedColumn(getColumnDefId(c)))
+         .map((c) => getColumnDefId(c))
+         .filter(Boolean);
+      if (tableState?.columnOrder) {
+         return tableState.columnOrder.filter((id) => draggableIds.includes(id));
+      }
+      return draggableIds;
+   });
 
    useEffect(() => {
       setColumnOrder((prev) => {
-         const newIds = allColumns.map(
-            (c) => (c as { accessorKey?: string }).accessorKey ?? c.id ?? "",
-         );
-         const kept = prev.filter((id) => newIds.includes(id));
-         const added = newIds.filter((id) => !prev.includes(id));
+         const draggableIds = allColumns
+            .filter((c) => !isFixedColumn(getColumnDefId(c)))
+            .map((c) => getColumnDefId(c))
+            .filter(Boolean);
+         const kept = prev.filter((id) => draggableIds.includes(id));
+         const added = draggableIds.filter((id) => !prev.includes(id));
          return [...kept, ...added];
       });
    }, [allColumns]);
 
+   columnOrderRef.current = columnOrder;
+
+   const columnOrderMounted = useRef(false);
+   useEffect(() => {
+      if (!columnOrderMounted.current) {
+         columnOrderMounted.current = true;
+         return;
+      }
+      onTableStateChangeRef.current?.({
+         columnOrder,
+         columnVisibility: effectiveColumnVisibilityRef.current,
+      });
+   }, [columnOrder]);
+
    const table = useReactTable({
       columns: allColumns,
       data,
-      enableRowSelection,
+      enableRowSelection: true,
       getCoreRowModel: getCoreRowModel(),
+      getExpandedRowModel: getExpandedRowModel(),
       getFilteredRowModel: getFilteredRowModel(),
-      getRowId: getRowId
-         ? (originalRow) => getRowId(originalRow)
-         : (_row, index) => String(index),
+      getRowId: (originalRow) => getRowId(originalRow),
       getSortedRowModel: getSortedRowModel(),
-      onColumnFiltersChange: setColumnFilters,
+      getSubRows,
+      onColumnFiltersChange: effectiveOnColumnFiltersChange,
       onColumnVisibilityChange: handleColumnVisibilityChange,
+      onExpandedChange: setExpanded,
       onRowSelectionChange: handleRowSelectionChange,
-      onSortingChange: setSorting,
-      onColumnOrderChange: reorderColumns ? setColumnOrder : undefined,
+      onSortingChange: effectiveOnSortingChange,
+      onColumnOrderChange: setColumnOrder,
       state: {
-         columnFilters,
-         columnVisibility,
+         columnFilters: effectiveColumnFilters,
+         columnVisibility: effectiveColumnVisibility,
+         expanded,
          rowSelection,
-         sorting,
-         ...(reorderColumns ? { columnOrder } : {}),
+         sorting: effectiveSorting,
+         columnOrder,
       },
    });
 
-   const columnCount = allColumns.length + (enableRowSelection ? 1 : 0);
-
-   const isFixedColumn = (id: string) => id === "drag-handle";
+   const columnCount = table.getVisibleLeafColumns().length + 1;
 
    const columnIds = useMemo<UniqueIdentifier[]>(
       () =>
@@ -606,18 +550,11 @@ export function DataTable<TData, TValue>({
             .filter((col) => !isFixedColumn(col.id))
             .map((col) => col.id),
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [table, columnOrder, columnVisibility],
-   );
-
-   const rowIds = useMemo<UniqueIdentifier[]>(
-      () => table.getRowModel().rows.map((row) => row.id),
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [table.getRowModel().rows],
+      [table, columnOrder, effectiveColumnVisibility],
    );
 
    const sensors = useSensors(
-      useSensor(MouseSensor, {}),
-      useSensor(TouchSensor, {}),
+      useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
       useSensor(KeyboardSensor, {}),
    );
 
@@ -625,26 +562,10 @@ export function DataTable<TData, TValue>({
       const { active, over } = event;
       if (active && over && active.id !== over.id) {
          setColumnOrder((prev) => {
-            const oldIndex = prev.indexOf(active.id as string);
-            const newIndex = prev.indexOf(over.id as string);
+            const oldIndex = prev.indexOf(String(active.id));
+            const newIndex = prev.indexOf(String(over.id));
             return arrayMove(prev, oldIndex, newIndex);
          });
-      }
-   }
-
-   function handleRowDragEnd(event: DragEndEvent) {
-      const { active, over } = event;
-      if (active && over && active.id !== over.id) {
-         const getId = getRowId
-            ? (row: TData) => getRowId(row)
-            : (_row: TData, index: number) => String(index);
-         const oldIndex = data.findIndex(
-            (row, i) => getId(row, i) === active.id,
-         );
-         const newIndex = data.findIndex((row, i) => getId(row, i) === over.id);
-         if (oldIndex !== -1 && newIndex !== -1) {
-            onRowOrderChange?.(arrayMove([...data], oldIndex, newIndex));
-         }
       }
    }
 
@@ -652,7 +573,7 @@ export function DataTable<TData, TValue>({
    const renderHeaderCells = (
       headerGroup: ReturnType<typeof table.getHeaderGroups>[number],
    ) => {
-      const selectionHead = enableRowSelection && (
+      const selectionHead = (
          <TableHead className="w-[40px] px-2">
             <Checkbox
                aria-label="Select all"
@@ -671,17 +592,13 @@ export function DataTable<TData, TValue>({
          if (header.column.id === "__actions") {
             return (
                <TableHead className="w-0" key={header.id}>
-                  {onColumnVisibilityChange ? (
-                     <div className="flex items-center justify-end">
-                        <ColumnVisibilityToggle
-                           columnVisibility={columnVisibility}
-                           onColumnVisibilityChange={
-                              handleColumnVisibilityChange
-                           }
-                           table={table}
-                        />
-                     </div>
-                  ) : null}
+                  <div className="flex items-center justify-end">
+                     <ColumnVisibilityToggle
+                        columnVisibility={effectiveColumnVisibility}
+                        onColumnVisibilityChange={handleColumnVisibilityChange}
+                        table={table}
+                     />
+                  </div>
                </TableHead>
             );
          }
@@ -709,7 +626,7 @@ export function DataTable<TData, TValue>({
                flexRender(header.column.columnDef.header, header.getContext())
             );
 
-         if (reorderColumns && !isFixedColumn(header.column.id)) {
+         if (!isFixedColumn(header.column.id)) {
             return (
                <SortableHeaderCell
                   key={header.id}
@@ -731,16 +648,12 @@ export function DataTable<TData, TValue>({
       return (
          <>
             {selectionHead}
-            {reorderColumns ? (
-               <SortableContext
-                  items={columnIds}
-                  strategy={horizontalListSortingStrategy}
-               >
-                  {headers}
-               </SortableContext>
-            ) : (
-               headers
-            )}
+            <SortableContext
+               items={columnIds}
+               strategy={horizontalListSortingStrategy}
+            >
+               {headers}
+            </SortableContext>
          </>
       );
    };
@@ -749,94 +662,81 @@ export function DataTable<TData, TValue>({
    const renderBodyCells = (
       row: ReturnType<typeof table.getRowModel>["rows"][number],
    ) => {
-      const selectionCell = enableRowSelection && (
-         <TableCell className="w-[40px] px-2">
-            <Checkbox
-               aria-label="Select row"
-               checked={row.getIsSelected()}
-               onCheckedChange={(value) => row.toggleSelected(!!value)}
-            />
-         </TableCell>
-      );
-
-      const cells = row.getVisibleCells().map((cell) => {
-         const content = flexRender(
-            cell.column.columnDef.cell,
-            cell.getContext(),
-         );
-
-         if (reorderColumns && !isFixedColumn(cell.column.id)) {
-            return (
-               <SortableCell key={cell.id} columnId={cell.column.id}>
-                  {content}
-               </SortableCell>
-            );
-         }
-
-         return (
+      if (row.depth > 0) {
+         const cells = row.getVisibleCells().map((cell) => (
             <TableCell
-               className="truncate"
+               className="truncate text-muted-foreground"
                key={cell.id}
                style={{ maxWidth: cell.column.columnDef.maxSize }}
             >
-               {content}
+               {flexRender(cell.column.columnDef.cell, cell.getContext())}
             </TableCell>
+         ));
+         return (
+            <>
+               <TableCell className="relative w-[40px] p-0">
+                  <div className="absolute inset-x-1/2 top-0 bottom-0 w-px bg-border" />
+               </TableCell>
+               {cells}
+            </>
          );
-      });
+      }
+
+      const selectionCell = (
+         <TableCell className="w-[40px] px-2">
+            <div className="flex items-center gap-1">
+               {row.getCanExpand() ? (
+                  <button
+                     className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                     onClick={() => row.toggleExpanded()}
+                     type="button"
+                  >
+                     {row.getIsExpanded()
+                        ? <ChevronDown className="size-3.5" />
+                        : <ChevronRight className="size-3.5" />}
+                  </button>
+               ) : (
+                  <span className="size-3.5 shrink-0" />
+               )}
+               <Checkbox
+                  aria-label="Select row"
+                  checked={row.getIsSelected()}
+                  onCheckedChange={(value) => row.toggleSelected(!!value)}
+               />
+            </div>
+         </TableCell>
+      );
+
+      const cells = row.getVisibleCells().map((cell) => (
+         <TableCell
+            className="truncate"
+            key={cell.id}
+            style={{ maxWidth: cell.column.columnDef.maxSize }}
+         >
+            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+         </TableCell>
+      ));
 
       return (
          <>
             {selectionCell}
-            {reorderColumns ? (
-               <SortableContext
-                  items={columnIds}
-                  strategy={horizontalListSortingStrategy}
-               >
-                  {cells}
-               </SortableContext>
-            ) : (
-               cells
-            )}
+            {cells}
          </>
       );
    };
 
-   const activeReorderRows = reorderRows && !reorderColumns;
-
-   useEffect(() => {
-      if (reorderColumns && reorderRows) {
-      }
-      if (groupBy && reorderRows) {
-      }
-   }, [reorderColumns, reorderRows, groupBy]);
-
    // --- Single row ---
    const renderRow = (
       row: ReturnType<typeof table.getRowModel>["rows"][number],
-   ) => {
-      if (activeReorderRows) {
-         return (
-            <SortableRow
-               key={row.id}
-               rowId={row.id}
-               className={cn(row.getIsSelected() && "bg-muted/50")}
-               data-state={row.getIsSelected() ? "selected" : undefined}
-            >
-               {renderBodyCells(row)}
-            </SortableRow>
-         );
-      }
-
-      return (
-         <TableRow
-            key={row.id}
-            className={cn(row.getIsSelected() && "bg-muted/50")}
-            data-state={row.getIsSelected() ? "selected" : undefined}
-         >
-            {renderBodyCells(row)}
-         </TableRow>
-      );
-   };
+   ) => (
+      <TableRow
+         key={row.id}
+         className={cn(row.getIsSelected() && "bg-muted/50")}
+         data-state={row.getIsSelected() ? "selected" : undefined}
+      >
+         {renderBodyCells(row)}
+      </TableRow>
+   );
 
    // --- Body rows (with optional grouping) ---
    const renderBodyRows = () => {
@@ -868,7 +768,7 @@ export function DataTable<TData, TValue>({
             <TableRow key={`group-${key}`} className="hover:bg-transparent">
                <TableCell
                   colSpan={columnCount}
-                  className="py-2 px-4 bg-muted/30"
+                  className="py-2 px-4 bg-muted text-sm font-medium text-foreground"
                >
                   {renderGroupHeader(key, groupRows)}
                </TableCell>
@@ -877,61 +777,30 @@ export function DataTable<TData, TValue>({
          ]);
       }
 
-      if (activeReorderRows) {
-         return (
-            <SortableContext
-               items={rowIds}
-               strategy={verticalListSortingStrategy}
-            >
-               {rows.map(renderRow)}
-            </SortableContext>
-         );
-      }
-
       return rows.map(renderRow);
    };
 
-   // --- Table content ---
-   const tableContent = (
-      <div className="rounded-md border">
-         <Table>
-            <TableHeader>
-               {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                     {renderHeaderCells(headerGroup)}
-                  </TableRow>
-               ))}
-            </TableHeader>
-            <TableBody>{renderBodyRows()}</TableBody>
-         </Table>
-      </div>
-   );
-
-   const activeReorderColumns = reorderColumns;
-   const needsDndContext = activeReorderColumns || activeReorderRows;
-   const dndModifiers = activeReorderColumns
-      ? [restrictToHorizontalAxis]
-      : activeReorderRows
-        ? [restrictToVerticalAxis]
-        : [];
-   const handleDragEnd = activeReorderColumns
-      ? handleColumnDragEnd
-      : handleRowDragEnd;
-
    return (
       <div>
-         {needsDndContext ? (
-            <DndContext
-               collisionDetection={closestCenter}
-               modifiers={dndModifiers}
-               onDragEnd={handleDragEnd}
-               sensors={sensors}
-            >
-               {tableContent}
-            </DndContext>
-         ) : (
-            tableContent
-         )}
+         <DndContext
+            collisionDetection={closestCenter}
+            modifiers={[restrictToHorizontalAxis]}
+            onDragEnd={handleColumnDragEnd}
+            sensors={sensors}
+         >
+            <div className="rounded-md border">
+               <Table className="border-separate border-spacing-0">
+                  <TableHeader>
+                     {table.getHeaderGroups().map((headerGroup) => (
+                        <TableRow key={headerGroup.id}>
+                           {renderHeaderCells(headerGroup)}
+                        </TableRow>
+                     ))}
+                  </TableHeader>
+                  <TableBody>{renderBodyRows()}</TableBody>
+               </Table>
+            </div>
+         </DndContext>
          {pagination && <DataTablePagination {...pagination} />}
       </div>
    );

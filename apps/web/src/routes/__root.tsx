@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
+import { GlobalCredenza } from "@/hooks/use-credenza";
 import { GlobalSurveyModal } from "@/hooks/use-survey-modal";
 import { GlobalDialogStack } from "@/hooks/use-dialog-stack";
 import { PostHogWrapper } from "@/integrations/posthog/client";
@@ -69,6 +70,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   {children}
                   <Toaster richColors />
                   <GlobalAlertDialog />
+                  <ClientOnly>
+                     <GlobalCredenza />
+                  </ClientOnly>
                   <GlobalSurveyModal />
                   <GlobalDialogStack />
                   <ClientOnly>
