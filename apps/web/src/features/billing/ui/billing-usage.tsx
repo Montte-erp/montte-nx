@@ -6,7 +6,6 @@ import {
    CardTitle,
 } from "@packages/ui/components/card";
 import { Progress } from "@packages/ui/components/progress";
-import { Skeleton } from "@packages/ui/components/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { orpc } from "@/integrations/orpc/client";
 import type { Outputs } from "@/integrations/orpc/client";
@@ -100,23 +99,6 @@ function EventRow({ item }: { item: MeterUsageItem }) {
    );
 }
 
-function UsageSkeleton() {
-   return (
-      <div className="space-y-4">
-         {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={`skeleton-${i + 1}`}>
-               <CardHeader>
-                  <Skeleton className="h-5 w-32" />
-               </CardHeader>
-               <CardContent className="space-y-3">
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-               </CardContent>
-            </Card>
-         ))}
-      </div>
-   );
-}
 
 export function BillingUsage() {
    const { data: meterUsage } = useSuspenseQuery(

@@ -197,11 +197,9 @@ export const getMeterUsage = protectedProcedure.handler(
                   };
                }),
             );
-            let batchFailed = 0;
             for (const [j, result] of batchResults.entries()) {
                const eventName = batch[j]![0];
                if (result.status === "rejected") {
-                  batchFailed++;
                   results.push({
                      eventName,
                      used: 0,
@@ -211,11 +209,6 @@ export const getMeterUsage = protectedProcedure.handler(
                } else {
                   results.push(result.value);
                }
-            }
-            if (batchFailed > 0) {
-               throw WebAppError.internal(
-                  `${batchFailed} meter(s) failed to fetch — data may be incomplete`,
-               );
             }
          }
 
