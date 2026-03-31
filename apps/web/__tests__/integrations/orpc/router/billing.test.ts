@@ -169,15 +169,6 @@ describe("getInvoices", () => {
    });
 });
 
-function withFailingDb(base: ORPCContextWithAuth): ORPCContextWithAuth {
-   const proxy = new Proxy(base.db, {
-      get(target, prop) {
-         if (prop === "select") return () => { throw new Error("simulated DB failure"); };
-         return (target as any)[prop];
-      },
-   });
-   return { ...base, db: proxy as any };
-}
 
 describe("getUpcomingInvoice", () => {
    it("throws when stripeClient is not configured", async () => {

@@ -13,39 +13,6 @@ import type { AuthInstance } from "@core/authentication/server";
 import { toast } from "sonner";
 import { invalidateAllQueries } from "./query-bridge";
 
-const ERROR_THRESHOLD = 3;
-const ERROR_WINDOW_MS = 60 * 1000;
-
-type ErrorEntry = {
-   count: number;
-   firstOccurrence: number;
-};
-
-const errorTracker = new Map<string, ErrorEntry>();
-
-function getErrorKey(path: string, code: string): string {
-   return `${path}:${code}`;
-}
-
-function shouldShowErrorModal(path: string, code: string): boolean {
-   const key = getErrorKey(path, code);
-   const now = Date.now();
-   const entry = errorTracker.get(key);
-
-   if (!entry || now - entry.firstOccurrence > ERROR_WINDOW_MS) {
-      errorTracker.set(key, { count: 1, firstOccurrence: now });
-      return false;
-   }
-
-   entry.count += 1;
-
-   if (entry.count >= ERROR_THRESHOLD) {
-      errorTracker.delete(key);
-      return true;
-   }
-
-   return false;
-}
 
 export const authClient = createBetterAuthClient({
    baseURL: "",
@@ -54,9 +21,6 @@ export const authClient = createBetterAuthClient({
          const path = "auth";
          const code = `HTTP_${context.response.status}`;
          const message = context.error?.message || context.response.statusText;
-         if (shouldShowErrorModal(path, code)) {
-            // TODO: Show error modal
-         }
          toast.error(message, { description: `${path} (${code})` });
       },
       onSuccess: () => {
