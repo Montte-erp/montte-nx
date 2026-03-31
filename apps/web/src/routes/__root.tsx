@@ -20,13 +20,10 @@ import type { RouterContext } from "../integrations/tanstack-query/root-provider
 
 export const Route = createRootRouteWithContext<RouterContext>()({
    loader: async ({ context }) => {
-      const [, publicEnv] = await Promise.all([
-         context.queryClient
-            .ensureQueryData(context.orpc.session.getSession.queryOptions())
-            .catch(() => null),
-         Promise.resolve(getPublicEnv()),
-      ]);
-      return { publicEnv };
+      await context.queryClient
+         .ensureQueryData(context.orpc.session.getSession.queryOptions())
+         .catch(() => null);
+      return { publicEnv: getPublicEnv() };
    },
    head: () => ({
       meta: [
@@ -66,7 +63,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             <HeadContent />
             <script
                dangerouslySetInnerHTML={{
-                  __html: `window.__env = ${JSON.stringify(publicEnv)}`,
+                  __html: `window.__env = ${JSON.stringify(publicEnv).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/\//g, "\\u002f")}`,
                }}
             />
          </head>
