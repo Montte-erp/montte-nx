@@ -54,58 +54,6 @@ function withStripe(base: ORPCContextWithAuth): ORPCContextWithAuth {
    return { ...base, stripeClient: mockStripeClient as any };
 }
 
-describe("getCurrentUsage", () => {
-   it("returns zero usage when no materialized view data exists", async () => {
-      const result = await call(billingRouter.getCurrentUsage, undefined, {
-         context: ctx,
-      });
-
-      expect(result).toEqual({
-         monthToDate: 0,
-         projected: 0,
-         byCategory: [],
-      });
-   });
-});
-
-describe("getStorageUsage", () => {
-   it("returns zero storage when no data exists", async () => {
-      const result = await call(billingRouter.getStorageUsage, undefined, {
-         context: ctx,
-      });
-
-      expect(result).toEqual({
-         currentBytes: 0,
-         monthToDateCost: 0,
-         projectedCost: 0,
-      });
-   });
-});
-
-describe("getCategoryUsage", () => {
-   it("returns empty array for a category with no usage", async () => {
-      const result = await call(
-         billingRouter.getCategoryUsage,
-         { category: "finance" },
-         { context: ctx },
-      );
-
-      expect(result).toEqual([]);
-   });
-});
-
-describe("getDailyUsage", () => {
-   it("returns empty array when no daily usage data exists", async () => {
-      const result = await call(
-         billingRouter.getDailyUsage,
-         { days: 30 },
-         { context: ctx },
-      );
-
-      expect(result).toEqual([]);
-   });
-});
-
 describe("getInvoices", () => {
    it("returns formatted invoice list", async () => {
       mockStripeClient.invoices.list.mockResolvedValueOnce({

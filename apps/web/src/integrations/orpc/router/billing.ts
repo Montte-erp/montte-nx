@@ -175,12 +175,16 @@ export const getMeterUsage = protectedProcedure.handler(
                               customer: userRecord.stripeCustomerId!,
                               start_time: startOfMonth,
                               end_time: now,
-                              value_grouping_window: "month",
+                              value_grouping_window: "day",
                            },
                         );
+                     const used = summary.data.reduce(
+                        (sum, s) => sum + s.aggregated_value,
+                        0,
+                     );
                      return {
                         eventName,
-                        used: summary.data[0]?.aggregated_value ?? 0,
+                        used,
                         freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
                         pricePerEvent: EVENT_PRICES[eventName] ?? "0",
                      };

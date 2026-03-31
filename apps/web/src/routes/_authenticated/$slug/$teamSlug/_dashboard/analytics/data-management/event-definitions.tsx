@@ -9,12 +9,10 @@ import {
 import { DataTable } from "@packages/ui/components/data-table";
 import { Input } from "@packages/ui/components/input";
 import { Switch } from "@packages/ui/components/switch";
-import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import { BookOpen, Search } from "lucide-react";
 import { useMemo, useState } from "react";
-import { orpc } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/event-definitions",
@@ -105,12 +103,7 @@ function EventDefinitionsPage() {
    const [search, setSearch] = useState("");
    const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
 
-   const { data: events = [] } = useQuery<EventCatalogEntry[]>({
-      // biome-ignore lint/suspicious/noExplicitAny: generated client is stale
-      ...((orpc.billing.getCategoryUsage.queryOptions({
-         input: { category: "finance" },
-      }) as any) ?? {}),
-   });
+   const events: EventCatalogEntry[] = [];
 
    const categories = useMemo(
       () => [...new Set(events.map((e) => e.category))],
