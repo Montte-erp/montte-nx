@@ -7,8 +7,14 @@ import { useMutation } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useCallback, useTransition } from "react";
 import { useForm } from "@tanstack/react-form";
+import { z } from "zod";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
+
+const formSchema = z.object({
+   name: z.string().min(1, "Nome é obrigatório"),
+   description: z.string(),
+});
 
 interface CreateDashboardFormProps {
    onSuccess: () => void;
@@ -25,17 +31,24 @@ export function CreateDashboardForm({ onSuccess }: CreateDashboardFormProps) {
 
    const form = useForm({
       defaultValues: { name: "", description: "" },
+      validators: { onChange: formSchema },
       onSubmit: async ({ value }) => {
-         const result = await mutation.mutateAsync({
-            name: value.name,
-            description: value.description || null,
-         });
-         toast.success("Dashboard criado com sucesso");
-         onSuccess();
-         navigate({
-            to: "/$slug/$teamSlug/analytics/dashboards/$dashboardId",
-            params: { slug, teamSlug, dashboardId: result.id },
-         });
+         try {
+            const result = await mutation.mutateAsync({
+               name: value.name,
+               description: value.description || null,
+            });
+            toast.success("Dashboard criado com sucesso");
+            onSuccess();
+            navigate({
+               to: "/$slug/$teamSlug/analytics/dashboards/$dashboardId",
+               params: { slug, teamSlug, dashboardId: result.id },
+            });
+         } catch {
+            toast.error("Erro ao criar dashboard", {
+               description: "Ocorreu um erro inesperado. Tente novamente.",
+            });
+         }
       },
    });
 

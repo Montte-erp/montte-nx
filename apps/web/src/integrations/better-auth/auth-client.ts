@@ -56,11 +56,10 @@ export const authClient = createBetterAuthClient({
          const path = "auth";
          const code = `HTTP_${context.response.status}`;
          const message = context.error?.message || context.response.statusText;
+         toast.error(message, { description: `${path} (${code})` });
          if (shouldShowErrorModal(path, code)) {
             openSurveyModal(POSTHOG_SURVEYS.bugReport.id);
-            return;
          }
-         toast.error(message, { description: `${path} (${code})` });
       },
       onSuccess: () => {
          invalidateAllQueries();
