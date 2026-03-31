@@ -21,8 +21,8 @@ export function getPublicEnv(): PublicEnv {
               VITE_POSTHOG_KEY: window.__env?.VITE_POSTHOG_KEY,
            }
          : {
-              VITE_POSTHOG_HOST: process.env["VITE_POSTHOG_HOST"],
-              VITE_POSTHOG_KEY: process.env["VITE_POSTHOG_KEY"],
+              VITE_POSTHOG_HOST: process.env["POSTHOG_HOST"],
+              VITE_POSTHOG_KEY: process.env["POSTHOG_KEY"],
            };
 
    return publicEnvSchema.parse(raw);
