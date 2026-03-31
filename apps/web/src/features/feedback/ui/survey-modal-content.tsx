@@ -47,9 +47,10 @@ type SurveyModalContentProps = {
    onClose: () => void;
    title?: string;
    description?: string;
+   extraPayload?: Record<string, unknown>;
 };
 
-export function SurveyModalContent({ surveyId, onClose, title, description }: SurveyModalContentProps) {
+export function SurveyModalContent({ surveyId, onClose, title, description, extraPayload }: SurveyModalContentProps) {
    const [survey, setSurvey] = useState<PostHogSurvey | null>(null);
    const [surveyNotFound, setSurveyNotFound] = useState(false);
    const [responses, setResponses] = useState<Responses>({});
@@ -95,7 +96,7 @@ export function SurveyModalContent({ surveyId, onClose, title, description }: Su
          }
       }
 
-      posthog.capture("survey sent", responsePayload);
+      posthog.capture("survey sent", { ...extraPayload, ...responsePayload });
       submittedRef.current = true;
       onClose();
    };
