@@ -154,9 +154,18 @@ export const getMeterUsage = protectedProcedure.handler(
             meters.data.map((m) => [m.event_name, m.id]),
          );
 
-         const results = await Promise.all(
-            Object.entries(STRIPE_METER_EVENTS).map(
-               async ([eventName, meterEventName]) => {
+         const entries = Object.entries(STRIPE_METER_EVENTS);
+         const concurrency = 5;
+         const results: Array<{
+            eventName: string;
+            used: number;
+            freeTierLimit: number;
+            pricePerEvent: string;
+         }> = [];
+         for (let i = 0; i < entries.length; i += concurrency) {
+            const batch = entries.slice(i, i + concurrency);
+            const batchResults = await Promise.allSettled(
+               batch.map(async ([eventName, meterEventName]) => {
                   const meterId = meterByEventName.get(meterEventName);
                   if (!meterId) {
                      return {
@@ -166,39 +175,42 @@ export const getMeterUsage = protectedProcedure.handler(
                         pricePerEvent: EVENT_PRICES[eventName] ?? "0",
                      };
                   }
-
-                  try {
-                     const summary =
-                        await stripeClient.billing.meters.listEventSummaries(
-                           meterId,
-                           {
-                              customer: userRecord.stripeCustomerId!,
-                              start_time: startOfMonth,
-                              end_time: now,
-                              value_grouping_window: "day",
-                           },
-                        );
-                     const used = summary.data.reduce(
-                        (sum, s) => sum + s.aggregated_value,
-                        0,
+                  const summary =
+                     await stripeClient.billing.meters.listEventSummaries(
+                        meterId,
+                        {
+                           customer: userRecord.stripeCustomerId!,
+                           start_time: startOfMonth,
+                           end_time: now,
+                           value_grouping_window: "day",
+                        },
                      );
-                     return {
-                        eventName,
-                        used,
-                        freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
-                        pricePerEvent: EVENT_PRICES[eventName] ?? "0",
-                     };
-                  } catch {
-                     return {
-                        eventName,
-                        used: 0,
-                        freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
-                        pricePerEvent: EVENT_PRICES[eventName] ?? "0",
-                     };
-                  }
-               },
-            ),
-         );
+                  const used = summary.data.reduce(
+                     (sum, s) => sum + s.aggregated_value,
+                     0,
+                  );
+                  return {
+                     eventName,
+                     used,
+                     freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
+                     pricePerEvent: EVENT_PRICES[eventName] ?? "0",
+                  };
+               }),
+            );
+            for (const [j, result] of batchResults.entries()) {
+               const eventName = batch[j]![0];
+               results.push(
+                  result.status === "fulfilled"
+                     ? result.value
+                     : {
+                          eventName,
+                          used: 0,
+                          freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
+                          pricePerEvent: EVENT_PRICES[eventName] ?? "0",
+                       },
+               );
+            }
+         }
 
          return results;
       } catch {

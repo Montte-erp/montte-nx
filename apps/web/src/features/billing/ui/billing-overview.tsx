@@ -194,7 +194,7 @@ function computeProjectedCost(monthToDateCost: number): number {
       now.getMonth() + 1,
       0,
    ).getDate();
-   if (dayOfMonth === 0) return monthToDateCost;
+   if (dayOfMonth <= 0) return monthToDateCost;
    return (monthToDateCost / dayOfMonth) * daysInMonth;
 }
 

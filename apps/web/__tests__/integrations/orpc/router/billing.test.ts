@@ -48,6 +48,12 @@ const mockStripeClient = {
    paymentMethods: {
       list: vi.fn(),
    },
+   billing: {
+      meters: {
+         list: vi.fn(),
+         listEventSummaries: vi.fn(),
+      },
+   },
 };
 
 function withStripe(base: ORPCContextWithAuth): ORPCContextWithAuth {
@@ -288,5 +294,96 @@ describe("getPaymentStatus", () => {
       });
 
       expect(result).toEqual({ hasPaymentMethod: true });
+   });
+});
+
+describe("getMeterUsage", () => {
+   it("returns fallback when stripeClient is not configured", async () => {
+      const result = await call(billingRouter.getMeterUsage, undefined, {
+         context: ctx,
+      });
+
+      expect(Array.isArray(result)).toBe(true);
+      for (const item of result) {
+         expect(item.used).toBe(0);
+         expect(typeof item.eventName).toBe("string");
+         expect(typeof item.freeTierLimit).toBe("number");
+         expect(typeof item.pricePerEvent).toBe("string");
+      }
+   });
+
+   it("returns fallback when user has no stripeCustomerId", async () => {
+      await ctx.db
+         .update((await import("@core/database/schema")).user)
+         .set({ stripeCustomerId: null })
+         .where(
+            (await import("drizzle-orm")).eq(
+               (await import("@core/database/schema")).user.id,
+               ctx.session!.user.id,
+            ),
+         );
+
+      const stripeCtx = withStripe(ctx);
+      const result = await call(billingRouter.getMeterUsage, undefined, {
+         context: stripeCtx,
+      });
+
+      expect(Array.isArray(result)).toBe(true);
+      for (const item of result) {
+         expect(item.used).toBe(0);
+      }
+   });
+
+   it("returns aggregated usage from Stripe meter summaries", async () => {
+      await ctx.db
+         .update((await import("@core/database/schema")).user)
+         .set({ stripeCustomerId: "cus_meter_test" })
+         .where(
+            (await import("drizzle-orm")).eq(
+               (await import("@core/database/schema")).user.id,
+               ctx.session!.user.id,
+            ),
+         );
+
+      mockStripeClient.billing.meters.list.mockResolvedValueOnce({
+         data: [{ id: "meter_tx", event_name: "finance_transactions" }],
+      });
+      mockStripeClient.billing.meters.listEventSummaries.mockResolvedValueOnce({
+         data: [
+            { aggregated_value: 300 },
+            { aggregated_value: 150 },
+         ],
+      });
+
+      const stripeCtx = withStripe(ctx);
+      const result = await call(billingRouter.getMeterUsage, undefined, {
+         context: stripeCtx,
+      });
+
+      const txItem = result.find((r) => r.eventName === "finance.transaction_created");
+      expect(txItem?.used).toBe(450);
+   });
+
+   it("returns zero usage for meters not found in Stripe", async () => {
+      await ctx.db
+         .update((await import("@core/database/schema")).user)
+         .set({ stripeCustomerId: "cus_empty_meters" })
+         .where(
+            (await import("drizzle-orm")).eq(
+               (await import("@core/database/schema")).user.id,
+               ctx.session!.user.id,
+            ),
+         );
+
+      mockStripeClient.billing.meters.list.mockResolvedValueOnce({ data: [] });
+
+      const stripeCtx = withStripe(ctx);
+      const result = await call(billingRouter.getMeterUsage, undefined, {
+         context: stripeCtx,
+      });
+
+      for (const item of result) {
+         expect(item.used).toBe(0);
+      }
    });
 });
