@@ -1,5 +1,6 @@
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
+import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import {
    Empty,
    EmptyDescription,
@@ -9,10 +10,13 @@ import {
 } from "@packages/ui/components/empty";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import type { ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Archive, Pencil, Plus, Tag, Trash2 } from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
 import { buildTagColumns, type TagRow } from "@/features/tags/ui/tags-columns";
 import { TagForm } from "@/features/tags/ui/tags-form";
@@ -21,9 +25,28 @@ import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
+const tagsSearchSchema = z.object({
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .optional()
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .optional()
+      .default([]),
+});
+
+export type TagsSearch = z.infer<typeof tagsSearchSchema>;
+
+const [useTagsTableState] = createLocalStorageState<DataTableStoredState | null>(
+   "montte:datatable:tags",
+   null,
+);
+
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/tags",
 )({
+   validateSearch: tagsSearchSchema,
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(orpc.tags.getAll.queryOptions({}));
    },
@@ -49,9 +72,28 @@ function TagsSkeleton() {
 // =============================================================================
 
 function TagsList() {
+   const navigate = Route.useNavigate();
+   const { sorting, columnFilters } = Route.useSearch();
+   const [tableState, setTableState] = useTagsTableState();
    const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
    const { isBusiness } = useAccountType();
+
+   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
+      (updater) => {
+         const next = typeof updater === "function" ? updater(sorting) : updater;
+         navigate({ search: (prev: TagsSearch) => ({ ...prev, sorting: next }) });
+      },
+      [sorting, navigate],
+   );
+
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
+      (updater) => {
+         const next = typeof updater === "function" ? updater(columnFilters) : updater;
+         navigate({ search: (prev: TagsSearch) => ({ ...prev, columnFilters: next }) });
+      },
+      [columnFilters, navigate],
+   );
 
    const entityName = isBusiness ? "centro de custo" : "tag";
 
@@ -140,8 +182,14 @@ function TagsList() {
    return (
       <DataTable
          columns={columns}
+         columnFilters={columnFilters}
          data={tags}
          getRowId={(row) => row.id}
+         onColumnFiltersChange={handleColumnFiltersChange}
+         onSortingChange={handleSortingChange}
+         onTableStateChange={setTableState}
+         sorting={sorting}
+         tableState={tableState}
          renderActions={({ row }) => (
             <>
                <Button
