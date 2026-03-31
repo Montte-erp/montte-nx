@@ -60,8 +60,12 @@ vi.mock("@/hooks/use-early-access", () => ({
    ),
 }));
 
-vi.mock("@/features/feedback/ui/feedback-fab", () => ({
-   FeedbackFab: () => null,
+vi.mock("@/features/feedback/ui/auto-bug-reporter", () => ({
+   AutoBugReporter: () => null,
+}));
+
+vi.mock("@/features/feedback/ui/monthly-satisfaction-survey", () => ({
+   MonthlySatisfactionSurvey: () => null,
 }));
 
 vi.mock("@/integrations/better-auth/auth-client", () => ({
@@ -119,16 +123,16 @@ vi.mock("@/layout/dashboard/hooks/use-tab-keyboard-shortcuts", () => ({
    useTabKeyboardShortcuts: vi.fn(),
 }));
 
+vi.mock("@/features/context-panel/context-panel", () => ({
+   GlobalContextPanel: () => null,
+}));
+
 vi.mock("@/layout/dashboard/ui/app-sidebar", () => ({
    AppSidebar: () => null,
 }));
 
 vi.mock("@/layout/dashboard/ui/sidebar-sub-panel", () => ({
    SidebarSubPanel: () => null,
-}));
-
-vi.mock("@/layout/dashboard/ui/tab-bar", () => ({
-   TabBar: () => null,
 }));
 
 vi.mock("@packages/ui/components/tooltip", () => ({
@@ -142,8 +146,12 @@ vi.mock("@packages/ui/components/tooltip", () => ({
    TooltipContent: () => null,
 }));
 
+const { useLocationMock } = vi.hoisted(() => ({
+   useLocationMock: vi.fn().mockReturnValue({ pathname: "/acme/home" }),
+}));
+
 vi.mock("@tanstack/react-router", () => ({
-   useLocation: () => ({ pathname: "/acme/home" }),
+   useLocation: useLocationMock,
 }));
 
 function renderWithClient() {
@@ -185,5 +193,19 @@ describe("DashboardLayout", () => {
       renderWithClient();
 
       expect(screen.getAllByText("Child content").length).toBeGreaterThan(0);
+   });
+
+   it("applies overflow-hidden when on settings page", () => {
+      useLocationMock.mockReturnValue({ pathname: "/acme/team/settings/general" });
+      const { container } = renderWithClient();
+      const main = container.querySelector("main");
+      expect(main?.className).toContain("overflow-hidden");
+      useLocationMock.mockReturnValue({ pathname: "/acme/home" });
+   });
+
+   it("applies overflow-y-auto when not on settings page", () => {
+      const { container } = renderWithClient();
+      const main = container.querySelector("main");
+      expect(main?.className).toContain("overflow-y-auto");
    });
 });
