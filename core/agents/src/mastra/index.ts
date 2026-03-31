@@ -6,7 +6,7 @@ import { PosthogExporter } from "@mastra/posthog";
 import type { DatabaseInstance } from "@core/database/client";
 import { env as serverEnv } from "@core/environment/web";
 import type { ModelId } from "@core/agents/models";
-import { rubiAgent } from "./agents/rubi-agent";
+import { rubiAgent } from "@core/agents/mastra/agents/rubi-agent";
 import { workspace } from "@core/agents/mastra/workspace-instance";
 export type { RequestContext };
 

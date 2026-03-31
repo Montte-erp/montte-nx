@@ -1,15 +1,13 @@
 import { toAISdkV5Messages } from "@mastra/ai-sdk/ui";
-import { ORPCError } from "@orpc/server";
 import { mastra } from "@core/agents";
+import { WebAppError } from "@core/logging/errors";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
 const getMemory = async () => {
    const memory = await mastra.getAgent("rubiAgent").getMemory();
    if (!memory)
-      throw new ORPCError("INTERNAL_SERVER_ERROR", {
-         message: "Memory not configured",
-      });
+      throw WebAppError.internal("Memory not configured");
    return memory;
 };
 
@@ -69,9 +67,7 @@ export const deleteThread = protectedProcedure
       const memory = await getMemory();
       const thread = await memory.getThreadById({ threadId: input.threadId });
       if (!thread?.resourceId?.endsWith(`:${context.userId}`)) {
-         throw new ORPCError("FORBIDDEN", {
-            message: "Thread not found or access denied",
-         });
+         throw WebAppError.forbidden("Thread not found or access denied");
       }
       await memory.deleteThread(input.threadId);
    });
@@ -82,9 +78,7 @@ export const getThreadMessages = protectedProcedure
       const memory = await getMemory();
       const thread = await memory.getThreadById({ threadId: input.threadId });
       if (!thread?.resourceId?.endsWith(`:${context.userId}`)) {
-         throw new ORPCError("FORBIDDEN", {
-            message: "Thread not found or access denied",
-         });
+         throw WebAppError.forbidden("Thread not found or access denied");
       }
       const { messages } = await memory.recall({
          threadId: input.threadId,

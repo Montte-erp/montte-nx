@@ -147,9 +147,47 @@ describe("getInvoices", () => {
          (e: ORPCError<string, unknown>) => e.code === "INTERNAL_SERVER_ERROR",
       );
    });
+
+   it("throws INTERNAL_SERVER_ERROR when stripe.invoices.list rejects", async () => {
+      await ctx.db
+         .update((await import("@core/database/schema")).user)
+         .set({ stripeCustomerId: "cus_err" })
+         .where(
+            (await import("drizzle-orm")).eq(
+               (await import("@core/database/schema")).user.id,
+               ctx.session!.user.id,
+            ),
+         );
+
+      mockStripeClient.invoices.list.mockRejectedValueOnce(new Error("stripe error"));
+
+      await expect(
+         call(billingRouter.getInvoices, undefined, { context: withStripe(ctx) }),
+      ).rejects.toSatisfy(
+         (e: ORPCError<string, unknown>) => e.code === "INTERNAL_SERVER_ERROR",
+      );
+   });
 });
 
+function withFailingDb(base: ORPCContextWithAuth): ORPCContextWithAuth {
+   const proxy = new Proxy(base.db, {
+      get(target, prop) {
+         if (prop === "select") return () => { throw new Error("simulated DB failure"); };
+         return (target as any)[prop];
+      },
+   });
+   return { ...base, db: proxy as any };
+}
+
 describe("getUpcomingInvoice", () => {
+   it("throws when stripeClient is not configured", async () => {
+      await expect(
+         call(billingRouter.getUpcomingInvoice, undefined, { context: ctx }),
+      ).rejects.toSatisfy(
+         (e: ORPCError<string, unknown>) => e.code === "INTERNAL_SERVER_ERROR",
+      );
+   });
+
    it("returns formatted upcoming invoice", async () => {
       await ctx.db
          .update((await import("@core/database/schema")).user)
