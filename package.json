@@ -231,6 +231,7 @@
       "dev:worker": "bun run scripts/seed-event-catalog.ts run --env local && nx run worker:dev",
       "doctor": "bun run scripts/doctor.ts",
       "seed:events": "bun run scripts/seed-event-catalog.ts run",
+      "seed:addons": "bun run scripts/seed-addons.ts run",
       "format": "oxfmt --write .",
       "format:check": "oxfmt --check .",
       "prepare": "lefthook install || true",
