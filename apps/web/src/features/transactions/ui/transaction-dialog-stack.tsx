@@ -759,6 +759,8 @@ function TransactionDialogStackContent({
       updateMutation.isPending ||
       billCreateMutation.isPending;
 
+   const emptyTagIds: string[] = [];
+
    const form = useForm({
       defaultValues: {
          name: transaction?.name ?? "",
@@ -771,7 +773,7 @@ function TransactionDialogStackContent({
          destinationBankAccountId: transaction?.destinationBankAccountId ?? "",
          categoryId: transaction?.categoryId ?? "",
          subcategoryId: "",
-         tagIds: Array.from<string>([]),
+         tagIds: emptyTagIds,
          description: transaction?.description ?? "",
          contactId: transaction?.contactId ?? (null as string | null),
          creditCardId: transaction?.creditCardId ?? "",

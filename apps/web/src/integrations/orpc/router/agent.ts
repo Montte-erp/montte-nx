@@ -3,7 +3,6 @@ import {
    createRequestContext,
    mastra,
 } from "@core/agents";
-import type { AgentChunkType } from "@mastra/core/stream";
 import {
    AVAILABLE_MODELS,
    DEFAULT_CONTENT_MODEL_ID,
@@ -19,7 +18,7 @@ type ChatChunk =
    | { type: "text"; text: string }
    | {
         type: "tool_call_start";
-        toolCall: { id: string; name: string; args: Record<string, unknown> };
+        toolCall: { id: string; name: string; args: unknown };
      }
    | {
         type: "tool_call_complete";
@@ -73,11 +72,9 @@ export const aiCommandStream = protectedProcedure
          );
 
          for await (const event of result.fullStream) {
-            const chunk = event as AgentChunkType;
-
-            switch (chunk.type) {
+            switch (event.type) {
                case "text-delta": {
-                  const textDelta = chunk.payload.text;
+                  const textDelta = event.payload.text;
                   if (!textDelta) break;
                   yield {
                      type: "text",
@@ -87,7 +84,7 @@ export const aiCommandStream = protectedProcedure
                }
 
                case "tool-call": {
-                  const { toolCallId, toolName, args } = chunk.payload;
+                  const { toolCallId, toolName, args } = event.payload;
                   if (!toolCallId || !toolName || !args) break;
 
                   yield {
@@ -95,7 +92,7 @@ export const aiCommandStream = protectedProcedure
                      toolCall: {
                         id: toolCallId,
                         name: toolName,
-                        args: args as Record<string, unknown>,
+                        args,
                      },
                   } satisfies ChatChunk;
                   break;
@@ -103,7 +100,7 @@ export const aiCommandStream = protectedProcedure
 
                case "tool-result": {
                   const { toolCallId, toolName, result: resultValue } =
-                     chunk.payload;
+                     event.payload;
                   if (!toolCallId || !toolName) break;
 
                   yield {
