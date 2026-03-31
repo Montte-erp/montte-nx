@@ -19,7 +19,7 @@ export const env = createEnv({
       STRIPE_ENTERPRISE_PRICE_ID: z.string().optional(),
 
       POSTHOG_HOST: z.url(),
-      POSTHOG_KEY: z.string(),
+      POSTHOG_KEY: z.string().min(1),
       POSTHOG_PUBLIC_KEY: z.string().optional(),
       POSTHOG_PROJECT_ID: z.string(),
 
