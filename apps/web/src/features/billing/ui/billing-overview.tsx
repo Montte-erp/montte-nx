@@ -32,7 +32,7 @@ import {
    TooltipProvider,
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import {
    Briefcase,
@@ -280,7 +280,7 @@ function BillingPeriodSection() {
 // ============================================
 
 function AddCardBanner() {
-   const { data, isLoading } = useQuery(
+   const { data } = useSuspenseQuery(
       orpc.billing.getPaymentStatus.queryOptions({}),
    );
    const { activeOrganization } = useActiveOrganization();
@@ -302,7 +302,7 @@ function AddCardBanner() {
       });
    };
 
-   if (isLoading || data?.hasPaymentMethod) return null;
+   if (data?.hasPaymentMethod) return null;
 
    return (
       <div className="rounded-lg border border-dashed bg-muted/40 p-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -481,7 +481,7 @@ function OverviewProductCardSkeleton() {
 }
 
 function OverviewProductSubItems({ category }: { category: string }) {
-   const { data: events, isLoading } = useQuery(
+   const { data: events } = useSuspenseQuery(
       orpc.billing.getCategoryUsage.queryOptions({
          input: {
             category: category as
@@ -499,10 +499,6 @@ function OverviewProductSubItems({ category }: { category: string }) {
          },
       }),
    );
-
-   if (isLoading) {
-      return <OverviewProductCardSkeleton />;
-   }
 
    if (!events || events.length === 0) {
       return (
@@ -813,7 +809,7 @@ export function BillingOverview() {
    const { data } = useSuspenseQuery(
       orpc.billing.getCurrentUsage.queryOptions({}),
    );
-   const { data: paymentStatus } = useQuery(
+   const { data: paymentStatus } = useSuspenseQuery(
       orpc.billing.getPaymentStatus.queryOptions({}),
    );
    const hasPaymentMethod = paymentStatus?.hasPaymentMethod ?? false;

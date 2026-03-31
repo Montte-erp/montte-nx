@@ -14,8 +14,7 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@packages/ui/components/select";
-import { Skeleton } from "@packages/ui/components/skeleton";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { UsageChart } from "@/features/billing/ui/usage-chart";
@@ -71,53 +70,15 @@ function formatShortDate(dateStr: string): string {
 }
 
 // ============================================
-// Loading Skeleton
-// ============================================
-
-function SpendSkeleton() {
-   return (
-      <div className="space-y-6">
-         <Card>
-            <CardHeader>
-               <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                     <Skeleton className="h-6 w-40" />
-                     <Skeleton className="h-4 w-64" />
-                  </div>
-                  <Skeleton className="h-10 w-40" />
-               </div>
-            </CardHeader>
-            <CardContent>
-               <Skeleton className="h-[350px] w-full" />
-            </CardContent>
-         </Card>
-         <Card>
-            <CardHeader>
-               <Skeleton className="h-6 w-48" />
-            </CardHeader>
-            <CardContent>
-               <Skeleton className="h-48 w-full" />
-            </CardContent>
-         </Card>
-      </div>
-   );
-}
-
-// ============================================
 // BillingSpend Component
 // ============================================
 
 export function BillingSpend() {
    const [days, setDays] = useState(30);
 
-   const { data, isLoading } = useQuery({
-      ...orpc.billing.getDailyUsage.queryOptions({ input: { days } }),
-      placeholderData: keepPreviousData,
-   });
-
-   if (isLoading && !data) {
-      return <SpendSkeleton />;
-   }
+   const { data } = useSuspenseQuery(
+      orpc.billing.getDailyUsage.queryOptions({ input: { days } }),
+   );
 
    const usageData = data ?? [];
 

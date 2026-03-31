@@ -5,11 +5,9 @@ import {
    ContextPanelHeader,
    ContextPanelTitle,
 } from "@packages/ui/components/context-panel";
-import { Skeleton } from "@packages/ui/components/skeleton";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
-   AlertCircle,
    Clock,
    Copy,
    RefreshCw,
@@ -69,11 +67,7 @@ function EditInsightPage() {
    const queryClient = useQueryClient();
    const { openAlertDialog } = useAlertDialog();
 
-   const {
-      data: insight,
-      isLoading,
-      error,
-   } = useQuery(
+   const { data: insight } = useSuspenseQuery(
       orpc.insights.getById.queryOptions({
          input: { id: insightId },
       }),
@@ -257,31 +251,6 @@ function EditInsightPage() {
          </ContextPanel>
       ) : null,
    );
-
-   if (isLoading) {
-      return (
-         <main className="flex flex-col gap-4 h-full">
-            <Skeleton className="h-10 w-64" />
-            <Skeleton className="h-8 w-full max-w-md" />
-            <Skeleton className="h-10 w-48" />
-            <Skeleton className="h-[200px] w-full" />
-            <Skeleton className="h-[400px] w-full" />
-         </main>
-      );
-   }
-
-   if (error) {
-      return (
-         <main className="flex flex-col items-center justify-center gap-3 h-64 text-muted-foreground">
-            <AlertCircle className="size-8 text-destructive/60" />
-            <p className="text-sm text-center max-w-xs">
-               Erro ao carregar insight: {error.message}
-            </p>
-         </main>
-      );
-   }
-
-   if (!insight) return null;
 
    return (
       <>
