@@ -7,7 +7,7 @@ describe("buildTagColumns", () => {
    it("returns an array with the name column", () => {
       const columns = buildTagColumns();
       expect(columns).toHaveLength(1);
-      expect(columns[0]!.accessorKey).toBe("name");
+      expect((columns[0]! as { accessorKey?: string }).accessorKey).toBe("name");
    });
 
    it("renders name with color dot", () => {
