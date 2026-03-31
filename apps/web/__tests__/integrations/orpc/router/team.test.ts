@@ -1,4 +1,4 @@
-import { call } from "@orpc/server";
+import { ORPCError, call } from "@orpc/server";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("@core/database/client", async () => {
@@ -118,6 +118,44 @@ describe("team router", () => {
             teamId,
             userId: secondUserId,
          });
+      });
+
+      it("throws BAD_REQUEST when user is not an org member", async () => {
+         await expect(
+            call(
+               teamRouter.addMember,
+               { teamId: getTeamId(ctx), userId: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee" },
+               { context: ctx },
+            ),
+         ).rejects.toSatisfy(
+            (e: ORPCError<string, unknown>) => e.code === "BAD_REQUEST",
+         );
+      });
+
+      it("throws BAD_REQUEST when user is already a team member", async () => {
+         const orgId = getOrgId(ctx);
+         const teamId = getTeamId(ctx);
+         const { and, eq } = await import("drizzle-orm");
+         const { teamMember } = await import("@core/database/schemas/auth");
+
+         const freshUserId = getUserId(ctx2);
+
+         await ctx.db
+            .insert(member)
+            .values({ organizationId: orgId, userId: freshUserId, role: "member", createdAt: new Date() })
+            .onConflictDoNothing();
+
+         await ctx.db
+            .delete(teamMember)
+            .where(and(eq(teamMember.teamId, teamId), eq(teamMember.userId, freshUserId)));
+
+         await call(teamRouter.addMember, { teamId, userId: freshUserId }, { context: ctx });
+
+         await expect(
+            call(teamRouter.addMember, { teamId, userId: freshUserId }, { context: ctx }),
+         ).rejects.toSatisfy(
+            (e: ORPCError<string, unknown>) => e.code === "BAD_REQUEST",
+         );
       });
 
       it("rejects non-org member", async () => {
