@@ -82,6 +82,16 @@ describe("isWithinFreeTier", () => {
       expect(result).toBe(true);
    });
 
+   it("returns true (fail-open) when Redis throws", async () => {
+      mockHget.mockRejectedValue(new Error("connection refused"));
+      const result = await isWithinFreeTier(
+         "org-1",
+         "finance.transaction_created",
+         mockRedis,
+      );
+      expect(result).toBe(true);
+   });
+
    it("returns true when no redis provided", async () => {
       const result = await isWithinFreeTier(
          "org-1",
@@ -114,6 +124,13 @@ describe("incrementUsage", () => {
    it("no-ops when no redis provided", async () => {
       await incrementUsage("org-1", "ai.chat_message");
       expect(mockHincrby).not.toHaveBeenCalled();
+   });
+
+   it("silently swallows Redis errors", async () => {
+      mockHincrby.mockRejectedValue(new Error("connection refused"));
+      await expect(
+         incrementUsage("org-1", "ai.chat_message", mockRedis),
+      ).resolves.not.toThrow();
    });
 });
 

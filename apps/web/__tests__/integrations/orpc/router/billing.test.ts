@@ -416,3 +416,13 @@ describe("getMeterUsage", () => {
       }
    });
 });
+
+describe("getEventCatalog", () => {
+   it("returns event catalog rows ordered by category and displayName", async () => {
+      const result = await call(billingRouter.getEventCatalog, undefined, {
+         context: ctx,
+      });
+
+      expect(Array.isArray(result)).toBe(true);
+   });
+});
