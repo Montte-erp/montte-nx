@@ -185,6 +185,9 @@ export function createAuth(deps: CreateAuthDeps) {
          changeEmail: {
             enabled: true,
          },
+         deleteUser: {
+            enabled: true,
+         },
       },
 
       plugins: [
