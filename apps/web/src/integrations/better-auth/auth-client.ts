@@ -60,6 +60,7 @@ export const authClient = createBetterAuthClient({
          if (shouldShowErrorModal(path, code)) {
             openSurveyModal(POSTHOG_SURVEYS.bugReport.id, {
                description: `${message} (${code})`,
+               extraPayload: { auth_error_code: code, auth_error_message: message },
             });
          }
       },
