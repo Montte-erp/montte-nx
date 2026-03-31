@@ -22,6 +22,7 @@ import {
    type BankAccountRow,
    buildBankAccountColumns,
 } from "./-bank-accounts/bank-accounts-columns";
+import { BankAccountsFilterBar } from "./-bank-accounts/bank-accounts-filter-bar";
 import { BankAccountForm } from "@/features/bank-accounts/ui/bank-accounts-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
@@ -36,6 +37,7 @@ const bankAccountsSearchSchema = z.object({
       .array(z.object({ id: z.string(), value: z.unknown() }))
       .optional()
       .default([]),
+   type: z.enum(["checking", "savings", "investment", "payment", "cash"]).optional(),
 });
 
 const [useBankAccountsTableState] = createLocalStorageState<DataTableStoredState | null>(
@@ -78,7 +80,7 @@ interface BankAccountsListProps {
 }
 
 function BankAccountsList({ navigate }: BankAccountsListProps) {
-   const { sorting, columnFilters } = Route.useSearch();
+   const { sorting, columnFilters, type } = Route.useSearch();
    const [tableState, setTableState] = useBankAccountsTableState();
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
@@ -145,9 +147,10 @@ function BankAccountsList({ navigate }: BankAccountsListProps) {
       [openAlertDialog, deleteMutation],
    );
 
+   const filtered = type ? accounts.filter((a) => a.type === type) : accounts;
    const columns = buildBankAccountColumns();
 
-   if (accounts.length === 0) {
+   if (filtered.length === 0) {
       return (
          <Empty>
             <EmptyHeader>
@@ -167,7 +170,7 @@ function BankAccountsList({ navigate }: BankAccountsListProps) {
    return (
       <DataTable
          columns={columns}
-         data={accounts}
+         data={filtered}
          getRowId={(row) => row.id}
          sorting={sorting as SortingState}
          onSortingChange={handleSortingChange}
@@ -204,6 +207,7 @@ function BankAccountsList({ navigate }: BankAccountsListProps) {
 
 function BankAccountsPage() {
    const navigate = Route.useNavigate();
+   const { type } = Route.useSearch();
    const { openCredenza, closeCredenza } = useCredenza();
 
    const handleCreate = useCallback(() => {
@@ -226,6 +230,7 @@ function BankAccountsPage() {
             description="Gerencie suas contas bancárias e saldos"
             title="Contas Bancárias"
          />
+         <BankAccountsFilterBar type={type} />
          <Suspense fallback={<BankAccountsSkeleton />}>
             <BankAccountsList navigate={navigate} />
          </Suspense>
