@@ -21,10 +21,13 @@ export async function isWithinFreeTier(
    const limit = FREE_TIER_LIMITS[eventName];
    if (limit === undefined) return true;
 
-   const raw = await redis.hget(usageHashKey(organizationId), eventName);
-   if (raw === null) return true;
-
-   return Number(raw) < limit;
+   try {
+      const raw = await redis.hget(usageHashKey(organizationId), eventName);
+      if (raw === null) return true;
+      return Number(raw) < limit;
+   } catch {
+      return true;
+   }
 }
 
 export async function incrementUsage(
@@ -34,14 +37,18 @@ export async function incrementUsage(
 ): Promise<void> {
    if (!redis) return;
 
-   const key = usageHashKey(organizationId);
-   const newValue = await redis.hincrby(key, eventName, 1);
+   try {
+      const key = usageHashKey(organizationId);
+      const newValue = await redis.hincrby(key, eventName, 1);
 
-   if (newValue === 1) {
-      const ttl = await redis.pttl(key);
-      if (ttl < 0) {
-         await redis.pexpire(key, msUntilEndOfMonth());
+      if (newValue === 1) {
+         const ttl = await redis.pttl(key);
+         if (ttl < 0) {
+            await redis.pexpire(key, msUntilEndOfMonth());
+         }
       }
+   } catch {
+      // fail open on Redis errors
    }
 }
 

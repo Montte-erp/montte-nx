@@ -847,7 +847,7 @@ export function BillingOverview() {
          <CurrentBillHeader monthToDate={monthToDate} />
          <BillingPeriodSection />
          <AddCardBanner />
-         <AddonsSection hasPaymentMethod={hasPaymentMethod} />
+         {paymentStatus !== undefined && <AddonsSection hasPaymentMethod={hasPaymentMethod} />}
 
          <div>
             <h2 className="text-lg font-semibold mb-4">Produtos</h2>

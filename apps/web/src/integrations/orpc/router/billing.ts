@@ -223,7 +223,11 @@ export const getMeterUsage = protectedProcedure.handler(
 
 export const getEventCatalog = protectedProcedure.handler(async ({ context }) => {
    const { db } = context;
-   return db.select().from(eventCatalog).orderBy(eventCatalog.category, eventCatalog.displayName);
+   try {
+      return await db.select().from(eventCatalog).orderBy(eventCatalog.category, eventCatalog.displayName);
+   } catch {
+      throw WebAppError.internal("Failed to fetch event catalog");
+   }
 });
 
 function buildUsageFallback() {
