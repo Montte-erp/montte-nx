@@ -11,7 +11,6 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
 import { GlobalCredenza } from "@/hooks/use-credenza";
-import { GlobalAuthErrorModal } from "@/integrations/better-auth/global-error-modal";
 import { GlobalSurveyModal } from "@/hooks/use-survey-modal";
 import { GlobalDialogStack } from "@/hooks/use-dialog-stack";
 import { getPublicEnv } from "@/integrations/public-env";
@@ -78,7 +77,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   {children}
                   <Toaster richColors />
                   <GlobalAlertDialog />
-                  <GlobalAuthErrorModal />
                   <ClientOnly>
                      <GlobalCredenza />
                   </ClientOnly>

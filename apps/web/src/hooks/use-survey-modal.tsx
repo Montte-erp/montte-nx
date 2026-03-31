@@ -21,15 +21,18 @@ type OpenSurveyOptions = {
    description?: string;
 };
 
+export function openSurveyModal(surveyId: string, options?: OpenSurveyOptions) {
+   surveyModalStore.setState(() => ({
+      isOpen: true,
+      surveyId,
+      title: options?.title,
+      description: options?.description,
+   }));
+}
+
 export function useSurveyModal() {
    return {
-      openSurveyModal: (surveyId: string, options?: OpenSurveyOptions) =>
-         surveyModalStore.setState(() => ({
-            isOpen: true,
-            surveyId,
-            title: options?.title,
-            description: options?.description,
-         })),
+      openSurveyModal,
       closeSurveyModal: () => surveyModalStore.setState(() => initialState),
    };
 }
