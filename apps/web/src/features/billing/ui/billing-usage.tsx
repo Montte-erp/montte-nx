@@ -5,255 +5,159 @@ import {
    CardHeader,
    CardTitle,
 } from "@packages/ui/components/card";
-import { DataTable } from "@packages/ui/components/data-table";
-import {
-   Select,
-   SelectContent,
-   SelectItem,
-   SelectTrigger,
-   SelectValue,
-} from "@packages/ui/components/select";
+import { Progress } from "@packages/ui/components/progress";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
-import { UsageChart } from "@/features/billing/ui/usage-chart";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { orpc } from "@/integrations/orpc/client";
+import type { Outputs } from "@/integrations/orpc/client";
 
-// ============================================
-// Constants
-// ============================================
+type MeterUsageItem = Outputs["billing"]["getMeterUsage"][number];
 
 const CATEGORY_LABELS: Record<string, string> = {
-   content: "Conteudo",
+   finance: "Financeiro",
    ai: "Inteligencia Artificial",
-   form: "Formularios",
-   seo: "SEO",
-   experiment: "Experimentos",
+   workflow: "Automacoes",
+   contact: "Contatos",
+   crm: "CRM",
+   document: "Documentos",
+   inventory: "Estoque",
+   service: "Servicos",
+   coworking: "Coworking",
    webhook: "Webhooks",
-   system: "Sistema",
+   payment: "Pagamentos",
+   nfe: "NF-e",
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-   content: "#3b82f6",
-   ai: "#8b5cf6",
-   form: "#f59e0b",
-   seo: "#10b981",
-   experiment: "#f43f5e",
-   webhook: "#06b6d4",
-   system: "#64748b",
-};
-
-// ============================================
-// Types
-// ============================================
-
-type UsageRow = {
-   category: string;
-   total: number;
-   [date: string]: number | string;
-};
-
-// ============================================
-// Helpers
-// ============================================
-
-function formatNumber(value: number): string {
-   return value.toLocaleString("pt-BR");
+function getCategoryFromEventName(eventName: string): string {
+   return eventName.split(".")[0] ?? "system";
 }
 
-function formatShortDate(dateStr: string): string {
-   const d = new Date(dateStr);
-   return d
-      .toLocaleDateString("pt-BR", { day: "numeric", month: "short" })
-      .toUpperCase();
+function humanizeEventName(eventName: string): string {
+   const parts = eventName.split(".");
+   const name = parts[parts.length - 1] ?? eventName;
+   return name
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// ============================================
-// Loading Skeleton
-// ============================================
+function formatBRL(value: number): string {
+   return value.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: 4,
+   });
+}
 
-function UsageSkeleton() {
+function EventRow({ item }: { item: MeterUsageItem }) {
+   const hasLimit = item.freeTierLimit > 0;
+   const overage = Math.max(0, item.used - item.freeTierLimit);
+   const cost = overage * parseFloat(item.pricePerEvent);
+   const percentage = hasLimit
+      ? Math.min((item.used / item.freeTierLimit) * 100, 100)
+      : 0;
+
    return (
-      <div className="space-y-6">
-         <Card>
-            <CardHeader>
-               <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                     <Skeleton className="h-6 w-40" />
-                     <Skeleton className="h-4 w-64" />
-                  </div>
-                  <Skeleton className="h-10 w-40" />
+      <div className="flex flex-col gap-2 py-3 border-b last:border-b-0">
+         <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+               <p className="text-sm font-medium truncate">
+                  {humanizeEventName(item.eventName)}
+               </p>
+               <p className="text-xs text-muted-foreground font-mono">
+                  {item.eventName}
+               </p>
+            </div>
+            <div className="flex items-center gap-6 shrink-0 text-sm">
+               <div className="text-right">
+                  <p className="tabular-nums font-medium">
+                     {item.used.toLocaleString("pt-BR")}
+                     {hasLimit && (
+                        <span className="text-muted-foreground">
+                           {" "}/ {item.freeTierLimit.toLocaleString("pt-BR")}
+                        </span>
+                     )}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Uso / Gratuito</p>
                </div>
-            </CardHeader>
-            <CardContent>
-               <Skeleton className="h-[350px] w-full" />
-            </CardContent>
-         </Card>
-         <Card>
-            <CardHeader>
-               <Skeleton className="h-6 w-48" />
-            </CardHeader>
-            <CardContent>
-               <Skeleton className="h-48 w-full" />
-            </CardContent>
-         </Card>
+               <div className="text-right">
+                  <p className="tabular-nums font-medium">
+                     {formatBRL(parseFloat(item.pricePerEvent))}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Por evento</p>
+               </div>
+               <div className="text-right w-24">
+                  <p
+                     className={`tabular-nums font-semibold ${cost > 0 ? "text-foreground" : "text-muted-foreground"}`}
+                  >
+                     {formatBRL(cost)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Cobrado</p>
+               </div>
+            </div>
+         </div>
+         {hasLimit && <Progress className="h-1.5" value={percentage} />}
       </div>
    );
 }
 
-// ============================================
-// BillingUsage Component
-// ============================================
+function UsageSkeleton() {
+   return (
+      <div className="space-y-4">
+         {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={`skeleton-${i + 1}`}>
+               <CardHeader>
+                  <Skeleton className="h-5 w-32" />
+               </CardHeader>
+               <CardContent className="space-y-3">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+               </CardContent>
+            </Card>
+         ))}
+      </div>
+   );
+}
 
 export function BillingUsage() {
-   const [days, setDays] = useState(30);
-
-   const { data, isLoading } = useQuery({
-      ...orpc.billing.getDailyUsage.queryOptions({ input: { days } }),
-      placeholderData: keepPreviousData,
-   });
-
-   const usageData = data ?? [];
-
-   // Build chart data using countByCategory for the line chart
-   const chartData = usageData.map((d) => ({
-      date: d.date,
-      total: d.totalCount,
-      byCategory: d.countByCategory,
-   }));
-
-   // Always include all known categories
-   const allCategories = Object.keys(CATEGORY_LABELS);
-   const allDates = usageData.map((d) => d.date);
-
-   // Build totals per category
-   const categoryTotals = new Map<string, number>();
-   for (const cat of allCategories) {
-      categoryTotals.set(cat, 0);
-   }
-   for (const d of usageData) {
-      for (const [cat, count] of Object.entries(d.countByCategory)) {
-         categoryTotals.set(cat, (categoryTotals.get(cat) ?? 0) + count);
-      }
-   }
-
-   // Sort categories by total descending
-   const sortedCategories = [...allCategories].sort(
-      (a, b) => (categoryTotals.get(b) ?? 0) - (categoryTotals.get(a) ?? 0),
+   const { data: meterUsage } = useSuspenseQuery(
+      orpc.billing.getMeterUsage.queryOptions({}),
    );
 
-   // Transform data into flat rows for DataTable
-   const tableData: UsageRow[] = sortedCategories.map((cat) => {
-      const row: UsageRow = {
-         category: cat,
-         total: categoryTotals.get(cat) ?? 0,
-      };
-      for (const date of allDates) {
-         const dayData = usageData.find((d) => d.date === date);
-         row[date] = dayData?.countByCategory[cat] ?? 0;
-      }
-      return row;
-   });
+   const byCategory = new Map<string, MeterUsageItem[]>();
+   for (const item of meterUsage) {
+      const cat = getCategoryFromEventName(item.eventName);
+      const existing = byCategory.get(cat) ?? [];
+      existing.push(item);
+      byCategory.set(cat, existing);
+   }
 
-   // Build columns dynamically based on dates
-   const columns = useMemo<ColumnDef<UsageRow>[]>(() => {
-      const cols: ColumnDef<UsageRow>[] = [
-         {
-            accessorKey: "category",
-            header: "Serie",
-            enableSorting: false,
-            cell: ({ row }) => {
-               const cat = row.original.category;
-               return (
-                  <div className="flex items-center gap-2">
-                     <div
-                        className="size-2.5 rounded-full shrink-0"
-                        style={{
-                           backgroundColor: CATEGORY_COLORS[cat] ?? "#94a3b8",
-                        }}
-                     />
-                     <span className="text-sm font-medium">
-                        {CATEGORY_LABELS[cat] ?? cat}
-                     </span>
-                  </div>
-               );
-            },
-         },
-         {
-            accessorKey: "total",
-            header: "Total",
-            cell: ({ row }) => (
-               <div className="text-right font-medium tabular-nums">
-                  {formatNumber(row.original.total)}
-               </div>
-            ),
-         },
-         ...allDates.map<ColumnDef<UsageRow>>((date) => ({
-            accessorKey: date,
-            header: formatShortDate(date),
-            enableSorting: false,
-            cell: ({ row }) => (
-               <div className="text-right tabular-nums text-sm">
-                  {formatNumber((row.original[date] as number) ?? 0)}
-               </div>
-            ),
-         })),
-      ];
-      return cols;
-   }, [allDates]);
+   const sortedCategories = [...byCategory.entries()].sort(([a], [b]) =>
+      (CATEGORY_LABELS[a] ?? a).localeCompare(CATEGORY_LABELS[b] ?? b),
+   );
 
-   if (isLoading && !data) {
+   if (sortedCategories.length === 0) {
       return <UsageSkeleton />;
    }
 
    return (
-      <div className="space-y-6">
-         {/* Chart Card */}
-         <Card>
-            <CardHeader>
-               <div className="flex items-center justify-between">
-                  <div>
-                     <CardTitle>Uso diario</CardTitle>
-                     <CardDescription>
-                        Eventos processados por dia, agrupados por produto
-                     </CardDescription>
-                  </div>
-                  <Select
-                     onValueChange={(v) => setDays(Number(v))}
-                     value={String(days)}
-                  >
-                     <SelectTrigger className="w-40">
-                        <SelectValue />
-                     </SelectTrigger>
-                     <SelectContent>
-                        <SelectItem value="7">Ultimos 7 dias</SelectItem>
-                        <SelectItem value="30">Ultimos 30 dias</SelectItem>
-                        <SelectItem value="90">Ultimos 90 dias</SelectItem>
-                     </SelectContent>
-                  </Select>
-               </div>
-            </CardHeader>
-            <CardContent>
-               <UsageChart data={chartData} mode="count" />
-            </CardContent>
-         </Card>
-
-         {/* Daily breakdown table */}
-         <Card>
-            <CardHeader>
-               <CardTitle className="text-base">
-                  Uso diario por produto
-               </CardTitle>
-            </CardHeader>
-            <CardContent>
-               <DataTable
-                  columns={columns}
-                  data={tableData}
-                  getRowId={(row) => row.category}
-               />
-            </CardContent>
-         </Card>
+      <div className="space-y-4">
+         {sortedCategories.map(([category, items]) => (
+            <Card key={category}>
+               <CardHeader>
+                  <CardTitle className="text-base">
+                     {CATEGORY_LABELS[category] ?? category}
+                  </CardTitle>
+                  <CardDescription>
+                     Uso atual do mes vs. limite gratuito
+                  </CardDescription>
+               </CardHeader>
+               <CardContent>
+                  {items.map((item) => (
+                     <EventRow item={item} key={item.eventName} />
+                  ))}
+               </CardContent>
+            </Card>
+         ))}
       </div>
    );
 }
