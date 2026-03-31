@@ -11,7 +11,6 @@ export * from "@core/database/schemas/credit-card-statements";
 export * from "@core/database/schemas/credit-card-statement-totals";
 export * from "@core/database/schemas/dashboards";
 export * from "@core/database/schemas/event-catalog";
-export * from "@core/database/schemas/event-views";
 export * from "@core/database/schemas/financial-goals";
 export * from "@core/database/schemas/events";
 export * from "@core/database/schemas/insights";
