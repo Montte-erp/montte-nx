@@ -5,6 +5,7 @@
       "outDir": "${configDir}/dist",
       "rootDir": "${configDir}/src",
       "emitDeclarationOnly": false,
+      "sourceMap": true,
       "lib": ["ES2022"]
    },
    "exclude": ["node_modules", "dist", "**/*.test.ts", "**/__tests__/**"]
