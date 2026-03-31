@@ -3,12 +3,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mockHget = vi.fn<(key: string, field: string) => Promise<string | null>>();
 const mockHincrby = vi.fn<(key: string, field: string, increment: number) => Promise<number>>();
 const mockPexpire = vi.fn<(key: string, ms: number) => Promise<number>>();
+const mockPttl = vi.fn<(key: string) => Promise<number>>();
 const mockHgetall = vi.fn<(key: string) => Promise<Record<string, string>>>();
 
 const mockRedis = {
    hget: mockHget,
    hincrby: mockHincrby,
    pexpire: mockPexpire,
+   pttl: mockPttl,
    hgetall: mockHgetall,
 } as any;
 
@@ -20,6 +22,7 @@ vi.mock("@core/stripe/constants", () => ({
 }));
 
 import {
+   enforceCreditBudget,
    getCurrentUsage,
    incrementUsage,
    isWithinFreeTier,
@@ -97,6 +100,7 @@ describe("incrementUsage", () => {
 
    it("sets TTL on first increment", async () => {
       mockHincrby.mockResolvedValue(1);
+      mockPttl.mockResolvedValue(-1);
       await incrementUsage("org-1", "ai.chat_message", mockRedis);
       expect(mockPexpire).toHaveBeenCalledWith("usage:org-1", expect.any(Number));
    });
@@ -110,6 +114,35 @@ describe("incrementUsage", () => {
    it("no-ops when no redis provided", async () => {
       await incrementUsage("org-1", "ai.chat_message");
       expect(mockHincrby).not.toHaveBeenCalled();
+   });
+});
+
+describe("enforceCreditBudget", () => {
+   it("does not throw when within free tier", async () => {
+      mockHget.mockResolvedValue("10");
+      await expect(
+         enforceCreditBudget("org-1", "finance.transaction_created", mockRedis, null),
+      ).resolves.not.toThrow();
+   });
+
+   it("does not throw when over free tier but stripe customer exists", async () => {
+      mockHget.mockResolvedValue("600");
+      await expect(
+         enforceCreditBudget("org-1", "finance.transaction_created", mockRedis, "cus_123"),
+      ).resolves.not.toThrow();
+   });
+
+   it("throws when over free tier and no stripe customer", async () => {
+      mockHget.mockResolvedValue("600");
+      await expect(
+         enforceCreditBudget("org-1", "finance.transaction_created", mockRedis, null),
+      ).rejects.toThrow();
+   });
+
+   it("does not throw for non-metered events even without stripe", async () => {
+      await expect(
+         enforceCreditBudget("org-1", "dashboard.created", mockRedis, null),
+      ).resolves.not.toThrow();
    });
 });
 

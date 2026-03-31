@@ -10,9 +10,10 @@ import {
    identifyUser,
    setGroup,
 } from "@core/posthog/server";
+import type { Redis } from "@core/redis/connection";
 import type { StripeClient } from "@core/stripe";
 import { sanitizeData } from "@core/utils/sanitization";
-import { auth, db, posthog, stripeClient } from "@/integrations/singletons";
+import { auth, db, posthog, redis, stripeClient } from "@/integrations/singletons";
 
 export interface ORPCContext {
    headers: Headers;
@@ -25,6 +26,7 @@ export interface ORPCContextWithAuth extends ORPCContext {
    session: Awaited<ReturnType<AuthInstance["api"]["getSession"]>> | null;
    posthog?: PostHog;
    stripeClient?: StripeClient;
+   redis?: Redis;
 }
 
 export interface ORPCContextAuthenticated extends ORPCContextWithAuth {
@@ -61,6 +63,7 @@ const withDeps = base.use(async ({ context, next }) => {
          session,
          posthog: ctx.posthog ?? posthog,
          stripeClient: ctx.stripeClient ?? stripeClient,
+         redis: ctx.redis ?? redis,
       },
    });
 });

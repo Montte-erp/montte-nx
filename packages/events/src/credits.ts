@@ -60,6 +60,18 @@ export async function getCurrentUsage(
    return { used, limit, withinFreeTier: used < limit };
 }
 
+export async function enforceCreditBudget(
+   organizationId: string,
+   eventName: string,
+   redis?: Redis,
+   stripeCustomerId?: string | null,
+): Promise<void> {
+   const withinFree = await isWithinFreeTier(organizationId, eventName, redis);
+   if (!withinFree && !stripeCustomerId) {
+      throw new Error(`Free tier limit exceeded for ${eventName}`);
+   }
+}
+
 export async function getAllUsage(
    organizationId: string,
    redis?: Redis,

@@ -11,7 +11,9 @@ import {
    getModelPreset,
 } from "@core/agents/models";
 import { emitAiChatMessage } from "@packages/events/ai";
+import { enforceCreditBudget } from "@packages/events/credits";
 import { createEmitFn } from "@packages/events/emit";
+import { WebAppError } from "@core/logging/errors";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
 
@@ -41,7 +43,18 @@ export const aiCommandStream = protectedProcedure
       }),
    )
    .handler(async function* ({ context, input }) {
-      const { userId, db, organizationId, posthog, teamId, headers } = context;
+      const { userId, db, organizationId, posthog, teamId, headers, redis } = context;
+
+      const userRecord = await db.query.user.findFirst({
+         where: (fields, { eq }) => eq(fields.id, userId),
+         columns: { stripeCustomerId: true },
+      });
+
+      try {
+         await enforceCreditBudget(organizationId, "ai.chat_message", redis, userRecord?.stripeCustomerId);
+      } catch {
+         throw WebAppError.forbidden("Limite gratuito de mensagens de IA atingido. Adicione um método de pagamento para continuar.");
+      }
 
       const agent = mastra.getAgent("rubiAgent");
 
@@ -160,7 +173,7 @@ export const aiCommandStream = protectedProcedure
 
          try {
             await emitAiChatMessage(
-               createEmitFn(db, posthog),
+               createEmitFn(db, posthog, userRecord?.stripeCustomerId ? context.stripeClient : undefined, userRecord?.stripeCustomerId ?? undefined, redis),
                { organizationId, userId, teamId },
                {
                   chatId: crypto.randomUUID(),
