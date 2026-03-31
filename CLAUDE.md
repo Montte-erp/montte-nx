@@ -135,6 +135,80 @@ Zod schemas belong in the backend. Frontend only imports inferred types via `Inp
 
 ---
 
+## Suspense, Error Boundaries & Empty States
+
+### Suspense + ErrorBoundary
+
+Every component that calls `useSuspenseQuery` must be wrapped in both `<Suspense>` and `<ErrorBoundary>` at the route or layout level.
+
+```tsx
+import { Suspense } from "react";
+import { ErrorBoundary } from "react-error-boundary";
+import { createErrorFallback } from "@packages/ui/components/error-fallback";
+
+function MyPage() {
+   return (
+      <ErrorBoundary FallbackComponent={createErrorFallback({ errorTitle: "Erro ao carregar" })}>
+         <Suspense fallback={<MyPageSkeleton />}>
+            <MyPageContent />
+         </Suspense>
+      </ErrorBoundary>
+   );
+}
+```
+
+**Rules:**
+- `<ErrorBoundary>` wraps `<Suspense>` — error boundary is always the outer layer.
+- `<Suspense fallback={...}>` — always provide a meaningful skeleton, never `fallback={null}` unless the component is genuinely invisible while loading (e.g. a filter popover loading option data).
+- The inner component (`MyPageContent`) calls `useSuspenseQuery` — never add `isLoading` checks inside it.
+- Never render inline loading spinners or skeletons inside suspense children — that's the fallback's job.
+- Use `createErrorFallback({ errorTitle, errorDescription })` from `@packages/ui/components/error-fallback` for the `FallbackComponent`. Only write a custom fallback function for complex retry logic.
+
+### Empty States
+
+Use the `Empty` family of components from `@packages/ui/components/empty` for all empty states. Never build custom empty states with raw `div` + `flex` + icon patterns.
+
+```tsx
+import {
+   Empty,
+   EmptyHeader,
+   EmptyMedia,
+   EmptyTitle,
+   EmptyDescription,
+   EmptyContent,
+} from "@packages/ui/components/empty";
+import { Button } from "@packages/ui/components/button";
+import { SomeIcon } from "lucide-react";
+
+function MyEmptyState({ onCreate }: { onCreate: () => void }) {
+   return (
+      <Empty>
+         <EmptyHeader>
+            <EmptyMedia variant="icon">
+               <SomeIcon />
+            </EmptyMedia>
+            <EmptyTitle>Nenhum item encontrado</EmptyTitle>
+            <EmptyDescription>
+               Crie o primeiro item para começar.
+            </EmptyDescription>
+         </EmptyHeader>
+         <EmptyContent>
+            <Button onClick={onCreate}>Criar item</Button>
+         </EmptyContent>
+      </Empty>
+   );
+}
+```
+
+**Rules:**
+- `EmptyMedia variant="icon"` — for a lucide icon in a rounded box.
+- `EmptyMedia` (no variant) — for illustrations or images.
+- `EmptyContent` — for action buttons below the header.
+- All text in pt-BR.
+- Never define a local `EmptyState` function using raw HTML — always use the `Empty` primitives.
+
+---
+
 ## Code Style
 
 - **No type casting** — never use `as` or `as unknown as`. Fix the source types.
