@@ -1,5 +1,6 @@
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
+import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import {
    Empty,
    EmptyDescription,
@@ -9,23 +10,43 @@ import {
 } from "@packages/ui/components/empty";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import type { ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Landmark, Pencil, Plus, Trash2 } from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
 import {
    type BankAccountRow,
    buildBankAccountColumns,
-} from "@/features/bank-accounts/ui/bank-accounts-columns";
+} from "./-bank-accounts/bank-accounts-columns";
 import { BankAccountForm } from "@/features/bank-accounts/ui/bank-accounts-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
+
+const bankAccountsSearchSchema = z.object({
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .optional()
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .optional()
+      .default([]),
+});
+
+const [useBankAccountsTableState] = createLocalStorageState<DataTableStoredState | null>(
+   "montte:datatable:bank-accounts",
+   null,
+);
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts",
 )({
+   validateSearch: bankAccountsSearchSchema,
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(
          orpc.bankAccounts.getAll.queryOptions({}),
@@ -40,7 +61,7 @@ export const Route = createFileRoute(
 
 function BankAccountsSkeleton() {
    return (
-      <div className="space-y-3">
+      <div className="flex flex-col gap-4">
          {Array.from({ length: 5 }).map((_, index) => (
             <Skeleton className="h-12 w-full" key={`skeleton-${index + 1}`} />
          ))}
@@ -52,9 +73,31 @@ function BankAccountsSkeleton() {
 // List
 // =============================================================================
 
-function BankAccountsList() {
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+interface BankAccountsListProps {
+   navigate: ReturnType<typeof Route.useNavigate>;
+}
+
+function BankAccountsList({ navigate }: BankAccountsListProps) {
+   const { sorting, columnFilters } = Route.useSearch();
+   const [tableState, setTableState] = useBankAccountsTableState();
+   const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
+
+   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
+      (updater) => {
+         const next = typeof updater === "function" ? updater(sorting as SortingState) : updater;
+         navigate({ search: (prev) => ({ ...prev, sorting: next }) });
+      },
+      [sorting, navigate],
+   );
+
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
+      (updater) => {
+         const next = typeof updater === "function" ? updater(columnFilters as ColumnFiltersState) : updater;
+         navigate({ search: (prev) => ({ ...prev, columnFilters: next }) });
+      },
+      [columnFilters, navigate],
+   );
 
    const { data: accounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
@@ -73,17 +116,17 @@ function BankAccountsList() {
 
    const handleEdit = useCallback(
       (account: BankAccountRow) => {
-         openDialogStack({
+         openCredenza({
             children: (
                <BankAccountForm
                   account={account}
                   mode="edit"
-                  onSuccess={closeDialogStack}
+                  onSuccess={closeCredenza}
                />
             ),
          });
       },
-      [openDialogStack, closeDialogStack],
+      [openCredenza, closeCredenza],
    );
 
    const handleDelete = useCallback(
@@ -126,6 +169,12 @@ function BankAccountsList() {
          columns={columns}
          data={accounts}
          getRowId={(row) => row.id}
+         sorting={sorting as SortingState}
+         onSortingChange={handleSortingChange}
+         columnFilters={columnFilters as ColumnFiltersState}
+         onColumnFiltersChange={handleColumnFiltersChange}
+         tableState={tableState}
+         onTableStateChange={setTableState}
          renderActions={({ row }) => (
             <>
                <Button
@@ -154,22 +203,23 @@ function BankAccountsList() {
 // =============================================================================
 
 function BankAccountsPage() {
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const navigate = Route.useNavigate();
+   const { openCredenza, closeCredenza } = useCredenza();
 
-   function handleCreate() {
-      openDialogStack({
+   const handleCreate = useCallback(() => {
+      openCredenza({
          children: (
-            <BankAccountForm mode="create" onSuccess={closeDialogStack} />
+            <BankAccountForm mode="create" onSuccess={closeCredenza} />
          ),
       });
-   }
+   }, [openCredenza, closeCredenza]);
 
    return (
       <main className="flex flex-col gap-4">
          <DefaultHeader
             actions={
                <Button onClick={handleCreate}>
-                  <Plus className="size-4 mr-1" />
+                  <Plus className="size-4" />
                   Nova Conta
                </Button>
             }
@@ -177,7 +227,7 @@ function BankAccountsPage() {
             title="Contas Bancárias"
          />
          <Suspense fallback={<BankAccountsSkeleton />}>
-            <BankAccountsList />
+            <BankAccountsList navigate={navigate} />
          </Suspense>
       </main>
    );
