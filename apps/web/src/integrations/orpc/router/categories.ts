@@ -1,5 +1,6 @@
 import {
    archiveCategory,
+   bulkDeleteCategories,
    createCategory,
    deleteCategory,
    ensureCategoryOwnership,
@@ -83,17 +84,6 @@ export const archive = protectedProcedure
 export const bulkRemove = protectedProcedure
    .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))
    .handler(async ({ context, input }) => {
-      const results = await Promise.allSettled(
-         input.ids.map(async (id) => {
-            await ensureCategoryOwnership(context.db, id, context.teamId);
-            await deleteCategory(context.db, id);
-         }),
-      );
-      const failed = results.filter((r) => r.status === "rejected").length;
-      if (failed > 0) {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: `${failed} categoria(s) não puderam ser excluídas.`,
-         });
-      }
+      await bulkDeleteCategories(context.db, input.ids, context.teamId);
       return { deleted: input.ids.length };
    });

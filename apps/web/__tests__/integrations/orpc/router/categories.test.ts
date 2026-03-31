@@ -437,6 +437,31 @@ describe("bulkRemove", () => {
          ),
       ).rejects.toThrow();
    });
+
+   it("rejects if any category is a default category", async () => {
+      const [defaultCat] = await ctx.db
+         .insert(categories)
+         .values({
+            teamId: ctx.session!.session.activeTeamId!,
+            name: "Default",
+            type: "expense",
+            isDefault: true,
+         })
+         .returning();
+      const regular = await call(
+         categoriesRouter.create,
+         { name: "Regular", type: "expense" },
+         { context: ctx },
+      );
+
+      await expect(
+         call(
+            categoriesRouter.bulkRemove,
+            { ids: [regular.id, defaultCat!.id] },
+            { context: ctx },
+         ),
+      ).rejects.toThrow();
+   });
 });
 
 describe("archive", () => {
