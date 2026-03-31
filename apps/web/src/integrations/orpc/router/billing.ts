@@ -183,7 +183,7 @@ export const getMeterUsage = protectedProcedure.handler(
                            customer: userRecord.stripeCustomerId!,
                            start_time: startOfMonth,
                            end_time: now,
-                           value_grouping_window: "day",
+                           value_grouping_window: "month",
                         },
                      );
                   const used = summary.data.reduce(
@@ -198,17 +198,24 @@ export const getMeterUsage = protectedProcedure.handler(
                   };
                }),
             );
+            let batchFailed = 0;
             for (const [j, result] of batchResults.entries()) {
                const eventName = batch[j]![0];
-               results.push(
-                  result.status === "fulfilled"
-                     ? result.value
-                     : {
-                          eventName,
-                          used: 0,
-                          freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
-                          pricePerEvent: EVENT_PRICES[eventName] ?? "0",
-                       },
+               if (result.status === "rejected") {
+                  batchFailed++;
+                  results.push({
+                     eventName,
+                     used: 0,
+                     freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
+                     pricePerEvent: EVENT_PRICES[eventName] ?? "0",
+                  });
+               } else {
+                  results.push(result.value);
+               }
+            }
+            if (batchFailed > 0) {
+               throw WebAppError.internal(
+                  `${batchFailed} meter(s) failed to fetch — data may be incomplete`,
                );
             }
          }

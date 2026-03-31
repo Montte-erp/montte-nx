@@ -5,6 +5,7 @@ import {
    EVENT_PRICES,
    STRIPE_METER_EVENTS,
 } from "@core/stripe/constants";
+import { of, toMinorUnitsString } from "@f-o-t/money";
 import chalk from "chalk";
 import { cac } from "cac";
 import { config } from "dotenv";
@@ -177,9 +178,7 @@ async function runSetup(env: string, dryRun: boolean) {
                product: productId,
                currency: "brl",
                billing_scheme: "per_unit",
-               unit_amount_decimal: String(
-                  Math.round(Number(entry.pricePerEvent) * 100),
-               ),
+               unit_amount_decimal: toMinorUnitsString(of(entry.pricePerEvent, "BRL")),
                recurring: {
                   interval: "month",
                   usage_type: "metered",

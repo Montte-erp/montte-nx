@@ -136,7 +136,13 @@ export function BillingUsage() {
    );
 
    if (sortedCategories.length === 0) {
-      return <UsageSkeleton />;
+      return (
+         <Card>
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">
+               Nenhum evento registrado este mês
+            </CardContent>
+         </Card>
+      );
    }
 
    return (
