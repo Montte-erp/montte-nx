@@ -226,6 +226,53 @@ describe("remove", () => {
    });
 });
 
+describe("bulkRemove", () => {
+   it("deletes multiple tags and returns deleted count", async () => {
+      const tag1 = await call(
+         tagsRouter.create,
+         { name: "Tag1" },
+         { context: ctx },
+      );
+      const tag2 = await call(
+         tagsRouter.create,
+         { name: "Tag2" },
+         { context: ctx },
+      );
+
+      const result = await call(
+         tagsRouter.bulkRemove,
+         { ids: [tag1.id, tag2.id] },
+         { context: ctx },
+      );
+
+      expect(result).toEqual({ deleted: 2 });
+
+      const rows = await ctx.db.query.tags.findMany();
+      expect(rows).toHaveLength(0);
+   });
+
+   it("rejects if any tag belongs to another team", async () => {
+      const tag1 = await call(
+         tagsRouter.create,
+         { name: "Mine" },
+         { context: ctx },
+      );
+      const tag2 = await call(
+         tagsRouter.create,
+         { name: "Other" },
+         { context: ctx2 },
+      );
+
+      await expect(
+         call(
+            tagsRouter.bulkRemove,
+            { ids: [tag1.id, tag2.id] },
+            { context: ctx },
+         ),
+      ).rejects.toThrow();
+   });
+});
+
 describe("archive", () => {
    it("archives tag after ownership check", async () => {
       const created = await call(
