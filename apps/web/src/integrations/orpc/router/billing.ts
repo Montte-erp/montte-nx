@@ -183,7 +183,6 @@ export const getMeterUsage = protectedProcedure.handler(
                            customer: userRecord.stripeCustomerId!,
                            start_time: startOfMonth,
                            end_time: now,
-                           value_grouping_window: "month",
                         },
                      );
                   const used = summary.data.reduce(
