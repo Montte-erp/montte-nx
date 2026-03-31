@@ -10,10 +10,8 @@ import {
 } from "better-auth/client/plugins";
 import { createAuthClient as createBetterAuthClient } from "better-auth/react";
 import type { AuthInstance } from "@core/authentication/server";
-import { POSTHOG_SURVEYS } from "@core/posthog/config";
 import { toast } from "sonner";
 import { invalidateAllQueries } from "./query-bridge";
-import { openSurveyModal } from "@/hooks/use-survey-modal";
 
 
 export const authClient = createBetterAuthClient({
@@ -24,12 +22,6 @@ export const authClient = createBetterAuthClient({
          const code = `HTTP_${context.response.status}`;
          const message = context.error?.message || context.response.statusText;
          toast.error(message, { description: `${path} (${code})` });
-         if (shouldShowErrorModal(path, code)) {
-            openSurveyModal(POSTHOG_SURVEYS.bugReport.id, {
-               description: `${message} (${code})`,
-               extraPayload: { auth_error_code: code, auth_error_message: message },
-            });
-         }
       },
       onSuccess: () => {
          invalidateAllQueries();
