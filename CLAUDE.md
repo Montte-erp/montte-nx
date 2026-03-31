@@ -19,6 +19,9 @@ bun dev:worker       # Worker only
 # Build & Quality
 bun run build        # Build all (Nx cached)
 bun run typecheck    # TypeScript checks
+# ⚠️ If typecheck fails with "Module has no exported member" on a core package,
+# the dist is stale. Rebuild the affected package:
+# cd core/<package> && bun run build
 bun run check        # oxlint
 bun run format       # oxfmt format
 bun run format:check # oxfmt check

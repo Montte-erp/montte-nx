@@ -7,7 +7,6 @@ import {
    listTags,
    updateTag,
 } from "@core/database/repositories/tags-repository";
-import { ORPCError } from "@orpc/server";
 import { createTagSchema, updateTagSchema } from "@core/database/schemas/tags";
 import { z } from "zod";
 import { protectedProcedure } from "../server";

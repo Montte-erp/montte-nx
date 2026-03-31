@@ -7,7 +7,6 @@ import {
    listCategories,
    updateCategory,
 } from "@core/database/repositories/categories-repository";
-import { ORPCError } from "@orpc/server";
 import {
    createCategorySchema,
    updateCategorySchema,
