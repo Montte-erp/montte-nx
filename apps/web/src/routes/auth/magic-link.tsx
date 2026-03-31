@@ -83,8 +83,8 @@ function MagicLinkPage() {
 
    if (isSent) {
       return (
-         <section className="space-y-6 w-full">
-            <div className="text-center space-y-6 py-4">
+         <section className="flex flex-col gap-4 w-full">
+            <div className="text-center flex flex-col gap-4 py-4">
                {/* Success Icon */}
                <div className="flex items-center justify-center">
                   <div className="flex items-center justify-center size-16 rounded-full bg-primary/10">
@@ -93,7 +93,7 @@ function MagicLinkPage() {
                </div>
 
                {/* Header */}
-               <div className="space-y-2">
+               <div className="flex flex-col gap-2">
                   <h1 className="text-3xl font-semibold font-serif">
                      Verifique seu e-mail
                   </h1>
@@ -125,7 +125,7 @@ function MagicLinkPage() {
    }
 
    return (
-      <section className="space-y-6 w-full">
+      <section className="flex flex-col gap-4 w-full">
          {/* Back Link */}
          <Button asChild className="gap-2 px-0" variant="link">
             <Link to="/auth/sign-in">
@@ -135,7 +135,7 @@ function MagicLinkPage() {
          </Button>
 
          {/* Header */}
-         <div className="text-center space-y-2">
+         <div className="text-center flex flex-col gap-2">
             <h1 className="text-3xl font-semibold font-serif">
                Acesso sem senha
             </h1>
@@ -146,7 +146,7 @@ function MagicLinkPage() {
          </div>
 
          {/* Form */}
-         <form className="space-y-4" onSubmit={handleSubmit}>
+         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <FieldGroup>
                <form.Field name="email">
                   {(field) => {

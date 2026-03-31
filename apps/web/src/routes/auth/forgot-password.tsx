@@ -269,7 +269,7 @@ function ForgotPasswordPage() {
    return (
       <Stepper.Provider>
          {({ methods }) => (
-            <section className="space-y-6 w-full">
+            <section className="flex flex-col gap-4 w-full">
                {/* Back Link */}
                <Button asChild className="gap-2 px-0" variant="link">
                   <Link to="/auth/sign-in">
@@ -279,7 +279,7 @@ function ForgotPasswordPage() {
                </Button>
 
                {/* Header */}
-               <div className="text-center space-y-2">
+               <div className="text-center flex flex-col gap-2">
                   <h1 className="text-3xl font-semibold font-serif">
                      Esqueci Minha Senha
                   </h1>
@@ -292,13 +292,13 @@ function ForgotPasswordPage() {
                   </p>
                </div>
 
-               <div className="space-y-6">
+               <div className="flex flex-col gap-4">
                   <Stepper.Navigation className="w-full">
                      {steps.map((step) => (
                         <Stepper.Step key={step.id} of={step.id} />
                      ))}
                   </Stepper.Navigation>
-                  <form className="space-y-4" onSubmit={handleSubmit}>
+                  <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
                      {methods.flow.switch({
                         "enter-email": () => <EmailStep />,
                         "enter-otp": () => <OtpStep />,

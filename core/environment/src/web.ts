@@ -2,11 +2,6 @@ import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
 export const env = createEnv({
-   clientPrefix: "VITE_",
-   client: {
-      VITE_POSTHOG_HOST: z.string().url(),
-      VITE_POSTHOG_KEY: z.string(),
-   },
    server: {
       DATABASE_URL: z.url(),
       REDIS_URL: z.url().optional().default("redis://localhost:6379"),
@@ -24,7 +19,7 @@ export const env = createEnv({
       STRIPE_ENTERPRISE_PRICE_ID: z.string().optional(),
 
       POSTHOG_HOST: z.url(),
-      POSTHOG_KEY: z.string(),
+      POSTHOG_KEY: z.string().min(1),
       POSTHOG_PUBLIC_KEY: z.string().optional(),
       POSTHOG_PROJECT_ID: z.string(),
 
@@ -60,8 +55,7 @@ export const env = createEnv({
       GITHUB_FEEDBACK_OWNER: z.string().optional(),
       GITHUB_FEEDBACK_REPO: z.string().optional(),
    },
-   runtimeEnv: { ...process.env, ...import.meta.env },
+   runtimeEnv: process.env,
 });
 
 export type WebServerEnv = typeof env;
-export type WebClientEnv = typeof env;

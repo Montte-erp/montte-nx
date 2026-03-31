@@ -1,5 +1,5 @@
-import type { WebClientEnv } from "@core/environment/web";
 import { isClientProduction } from "@core/environment/helpers";
+import type { PublicEnv } from "@/integrations/public-env";
 import { PostHogProvider } from "posthog-js/react";
 
 export type EarlyAccessStage =
@@ -31,9 +31,7 @@ export function normalizeEarlyAccessStage(
    return "beta";
 }
 
-type PosthogEnv = Pick<WebClientEnv, "VITE_POSTHOG_HOST" | "VITE_POSTHOG_KEY">;
-
-function getReactPosthogConfig(env: PosthogEnv) {
+function getReactPosthogConfig(env: PublicEnv) {
    return {
       api_host: env.VITE_POSTHOG_HOST,
       api_key: env.VITE_POSTHOG_KEY,
@@ -54,7 +52,7 @@ export function PostHogWrapper({
    env,
 }: {
    children: React.ReactNode;
-   env: PosthogEnv;
+   env: PublicEnv;
 }) {
    return (
       <PostHogProvider
