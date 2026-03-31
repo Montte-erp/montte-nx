@@ -172,7 +172,7 @@ function SortableHeaderCell({
       <TableHead
          ref={setNodeRef}
          colSpan={colSpan}
-         className={cn(isDragging && "opacity-50")}
+         className={cn("text-xs font-medium", isDragging && "opacity-50")}
          style={{
             position: "relative",
             transform: CSS.Translate.toString(transform),
@@ -180,10 +180,10 @@ function SortableHeaderCell({
             zIndex: isDragging ? 1 : undefined,
          }}
       >
-         <div className="flex items-center">
+         <div className="group flex items-center">
             <button
                type="button"
-               className="flex size-6 cursor-grab items-center justify-center text-muted-foreground/50 hover:text-muted-foreground"
+               className="flex size-6 cursor-grab items-center justify-center opacity-0 group-hover:opacity-100 text-muted-foreground/50 hover:text-muted-foreground transition-opacity"
                {...attributes}
                {...listeners}
             >
@@ -606,7 +606,7 @@ export function DataTable<TData, TValue>({
          const content =
             header.isPlaceholder ? null : header.column.getCanSort() ? (
                <Button
-                  className="h-8 gap-2"
+                  className="h-8 gap-1.5 text-xs font-medium px-2"
                   onClick={header.column.getToggleSortingHandler()}
                   variant="ghost"
                >
@@ -615,15 +615,17 @@ export function DataTable<TData, TValue>({
                      header.getContext(),
                   )}
                   {header.column.getIsSorted() === "asc" ? (
-                     <ArrowUp className="size-4" />
+                     <ArrowUp className="size-3.5" />
                   ) : header.column.getIsSorted() === "desc" ? (
-                     <ArrowDown className="size-4" />
+                     <ArrowDown className="size-3.5" />
                   ) : (
-                     <ArrowUpDown className="size-4" />
+                     <ArrowUpDown className="size-3.5 opacity-50" />
                   )}
                </Button>
             ) : (
-               flexRender(header.column.columnDef.header, header.getContext())
+               <span className="px-2 text-xs font-medium">
+                  {flexRender(header.column.columnDef.header, header.getContext())}
+               </span>
             );
 
          if (!isFixedColumn(header.column.id)) {
@@ -639,7 +641,7 @@ export function DataTable<TData, TValue>({
          }
 
          return (
-            <TableHead key={header.id} colSpan={header.colSpan}>
+            <TableHead key={header.id} colSpan={header.colSpan} className="text-xs font-medium">
                {content}
             </TableHead>
          );
@@ -663,9 +665,10 @@ export function DataTable<TData, TValue>({
       row: ReturnType<typeof table.getRowModel>["rows"][number],
    ) => {
       if (row.depth > 0) {
-         const cells = row.getVisibleCells().map((cell) => (
+         const visibleCells = row.getVisibleCells();
+         const cells = visibleCells.map((cell, i) => (
             <TableCell
-               className="truncate text-muted-foreground"
+               className={cn("truncate text-sm", i === 0 && "pl-6")}
                key={cell.id}
                style={{ maxWidth: cell.column.columnDef.maxSize }}
             >
@@ -674,9 +677,7 @@ export function DataTable<TData, TValue>({
          ));
          return (
             <>
-               <TableCell className="relative w-[40px] p-0">
-                  <div className="absolute inset-x-1/2 top-0 bottom-0 w-px bg-border" />
-               </TableCell>
+               <TableCell className="w-[40px] p-0" />
                {cells}
             </>
          );
@@ -685,18 +686,20 @@ export function DataTable<TData, TValue>({
       const selectionCell = (
          <TableCell className="w-[40px] px-2">
             <div className="flex items-center gap-1">
-               {row.getCanExpand() ? (
-                  <button
-                     className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                     onClick={() => row.toggleExpanded()}
-                     type="button"
-                  >
-                     {row.getIsExpanded()
-                        ? <ChevronDown className="size-3.5" />
-                        : <ChevronRight className="size-3.5" />}
-                  </button>
-               ) : (
-                  <span className="size-3.5 shrink-0" />
+               {getSubRows && (
+                  row.getCanExpand() ? (
+                     <button
+                        className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => row.toggleExpanded()}
+                        type="button"
+                     >
+                        {row.getIsExpanded()
+                           ? <ChevronDown className="size-3.5" />
+                           : <ChevronRight className="size-3.5" />}
+                     </button>
+                  ) : (
+                     <span className="size-3.5 shrink-0" />
+                  )
                )}
                <Checkbox
                   aria-label="Select row"
