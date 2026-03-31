@@ -13,7 +13,6 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@packages/ui/components/select";
-import { Skeleton } from "@packages/ui/components/skeleton";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
@@ -67,39 +66,6 @@ function formatShortDate(dateStr: string): string {
    return d
       .toLocaleDateString("pt-BR", { day: "numeric", month: "short" })
       .toUpperCase();
-}
-
-// ============================================
-// Loading Skeleton
-// ============================================
-
-function UsageSkeleton() {
-   return (
-      <div className="space-y-6">
-         <Card>
-            <CardHeader>
-               <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                     <Skeleton className="h-6 w-40" />
-                     <Skeleton className="h-4 w-64" />
-                  </div>
-                  <Skeleton className="h-10 w-40" />
-               </div>
-            </CardHeader>
-            <CardContent>
-               <Skeleton className="h-[350px] w-full" />
-            </CardContent>
-         </Card>
-         <Card>
-            <CardHeader>
-               <Skeleton className="h-6 w-48" />
-            </CardHeader>
-            <CardContent>
-               <Skeleton className="h-48 w-full" />
-            </CardContent>
-         </Card>
-      </div>
-   );
 }
 
 // ============================================
