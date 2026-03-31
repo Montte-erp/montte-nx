@@ -2050,7 +2050,8 @@ function TransactionDialogStackContent({
                         form.setFieldValue("tagIds", [
                            ...form.getFieldValue("tagIds"),
                            id,
-                        ], { touch: true });
+                        ]);
+                        form.setFieldMeta("tagIds", (prev) => ({ ...prev, isTouched: true }));
                         setSecondaryForm(null);
                         setActiveIndex(0);
                      }}
