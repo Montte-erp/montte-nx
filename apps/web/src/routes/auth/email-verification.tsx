@@ -102,8 +102,8 @@ function EmailVerificationPage() {
    );
 
    return (
-      <section className="space-y-6 w-full">
-         <div className="text-center space-y-2">
+      <section className="flex flex-col gap-4 w-full">
+         <div className="text-center flex flex-col gap-2">
             <h1 className="text-3xl font-semibold font-serif">
                Verificacao de Email
             </h1>
@@ -112,9 +112,9 @@ function EmailVerificationPage() {
             </p>
          </div>
 
-         <div className="space-y-6">
+         <div className="flex flex-col gap-4">
             <form
-               className="space-y-4"
+               className="flex flex-col gap-4"
                onSubmit={(e) => {
                   handleSubmit(e);
                }}

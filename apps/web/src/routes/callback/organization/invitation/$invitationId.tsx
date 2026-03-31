@@ -54,7 +54,7 @@ function AcceptInvitationPage() {
    if (error) {
       return (
          <div className="flex min-h-screen items-center justify-center bg-background">
-            <div className="text-center space-y-4 max-w-sm px-4">
+            <div className="text-center flex flex-col gap-4 max-w-sm px-4">
                <div className="flex justify-center">
                   <AlertCircle className="size-12 text-destructive" />
                </div>
@@ -70,7 +70,7 @@ function AcceptInvitationPage() {
 
    return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-         <div className="text-center space-y-3">
+         <div className="text-center flex flex-col gap-4">
             <div className="flex justify-center">
                <Loader2 className="size-8 animate-spin text-primary" />
             </div>
