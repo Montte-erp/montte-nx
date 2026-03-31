@@ -157,7 +157,7 @@ export async function bulkDeleteTags(
          .where(inArray(transactionTags.tagId, ids));
       if ((withTransactions[0]?.count ?? 0) > 0) {
          throw AppError.conflict(
-            "Tags com lançamentos não podem ser excluídas. Use arquivamento.",
+            "Centros de custo com lançamentos não podem ser excluídos. Use arquivamento.",
          );
       }
       await db.delete(tags).where(inArray(tags.id, ids));
