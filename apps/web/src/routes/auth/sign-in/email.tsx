@@ -77,7 +77,7 @@ function SignInEmailPage() {
    );
 
    return (
-      <section className="space-y-6 w-full">
+      <section className="flex flex-col gap-4 w-full">
          {/* Back Link */}
          <Button asChild className="gap-2 px-0" variant="link">
             <Link to="/auth/sign-in">
@@ -87,7 +87,7 @@ function SignInEmailPage() {
          </Button>
 
          {/* Header */}
-         <div className="text-center space-y-2">
+         <div className="text-center flex flex-col gap-2">
             <h1 className="text-3xl font-semibold font-serif">
                Entrar com Email
             </h1>
@@ -97,7 +97,7 @@ function SignInEmailPage() {
          </div>
 
          {/* Form */}
-         <form className="space-y-4" onSubmit={handleSubmit}>
+         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <FieldGroup>
                <form.Field name="email">
                   {(field) => {
