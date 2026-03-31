@@ -1,19 +1,13 @@
-import { ORPCError } from "@orpc/server";
+import { WebAppError } from "@core/logging/errors";
 import {
-   currentMonthStorageCost,
-   currentMonthUsageByCategory,
-   currentMonthUsageByEvent,
-   dailyUsageByEvent,
-   eventCatalog,
-} from "@core/database/schema";
-import { and, eq, sql } from "drizzle-orm";
+   EVENT_PRICES,
+   FREE_TIER_LIMITS,
+   STRIPE_METER_EVENTS,
+} from "@core/stripe/constants";
 import { z } from "zod";
 
 import { protectedProcedure } from "../server";
 
-/**
- * Get user invoices from Stripe
- */
 export const getInvoices = protectedProcedure
    .input(
       z
@@ -26,18 +20,14 @@ export const getInvoices = protectedProcedure
       const { db, stripeClient, userId } = context;
 
       if (!stripeClient) {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Stripe client not configured",
-         });
+         throw WebAppError.internal("Stripe client not configured");
       }
 
-      // Get the user's stripe customer ID from the user table
       const userRecord = await db.query.user.findFirst({
          where: (fields, { eq }) => eq(fields.id, userId),
       });
 
       if (!userRecord?.stripeCustomerId) {
-         // Return empty array if user has no Stripe customer
          return [];
       }
 
@@ -61,23 +51,16 @@ export const getInvoices = protectedProcedure
             hostedInvoiceUrl: invoice.hosted_invoice_url ?? null,
          }));
       } catch {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to fetch invoices",
-         });
+         throw WebAppError.internal("Failed to fetch invoices");
       }
    });
 
-/**
- * Get upcoming invoice preview from Stripe
- */
 export const getUpcomingInvoice = protectedProcedure.handler(
    async ({ context }) => {
       const { db, stripeClient, userId } = context;
 
       if (!stripeClient) {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Stripe client not configured",
-         });
+         throw WebAppError.internal("Stripe client not configured");
       }
 
       const userRecord = await db.query.user.findFirst({
@@ -106,162 +89,11 @@ export const getUpcomingInvoice = protectedProcedure.handler(
             })),
          };
       } catch {
-         // If no upcoming invoice exists (e.g., canceled subscription), return null
          return null;
       }
    },
 );
 
-/**
- * Get current month usage summary by category
- */
-export const getCurrentUsage = protectedProcedure.handler(
-   async ({ context }) => {
-      const { db, organizationId } = context;
-
-      try {
-         const [rows, storageRows] = await Promise.all([
-            db
-               .select()
-               .from(currentMonthUsageByCategory)
-               .where(
-                  eq(
-                     currentMonthUsageByCategory.organizationId,
-                     organizationId,
-                  ),
-               ),
-            db
-               .select()
-               .from(currentMonthStorageCost)
-               .where(
-                  eq(currentMonthStorageCost.organizationId, organizationId),
-               ),
-         ]);
-
-         const byCategory = rows.map((row) => ({
-            category: row.eventCategory,
-            eventCount: row.eventCount,
-            monthToDateCost: Number(row.monthToDateCost),
-            projectedCost: Number(row.projectedCost),
-         }));
-
-         const storageRow = storageRows[0];
-         const storageMonthToDate = Number(storageRow?.monthToDateCost ?? 0);
-         const storageProjected = Number(storageRow?.projectedCost ?? 0);
-
-         const monthToDate =
-            byCategory.reduce((sum, c) => sum + c.monthToDateCost, 0) +
-            storageMonthToDate;
-         const projected =
-            byCategory.reduce((sum, c) => sum + c.projectedCost, 0) +
-            storageProjected;
-
-         return { monthToDate, projected, byCategory };
-      } catch {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to fetch current usage",
-         });
-      }
-   },
-);
-
-/**
- * Get current month storage usage and cost for the organization
- */
-export const getStorageUsage = protectedProcedure.handler(
-   async ({ context }) => {
-      const { db, organizationId } = context;
-
-      try {
-         const rows = await db
-            .select()
-            .from(currentMonthStorageCost)
-            .where(eq(currentMonthStorageCost.organizationId, organizationId));
-
-         const row = rows[0];
-         return {
-            currentBytes: Number(row?.currentBytes ?? 0),
-            monthToDateCost: Number(row?.monthToDateCost ?? 0),
-            projectedCost: Number(row?.projectedCost ?? 0),
-         };
-      } catch {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to fetch storage usage",
-         });
-      }
-   },
-);
-
-/**
- * Get usage by event for a specific category, enriched with catalog metadata
- */
-export const getCategoryUsage = protectedProcedure
-   .input(
-      z.object({
-         category: z.enum([
-            "finance",
-            "ai",
-            "webhook",
-            "dashboard",
-            "insight",
-            "contact",
-            "inventory",
-            "service",
-            "nfe",
-            "document",
-            "system",
-         ]),
-      }),
-   )
-   .handler(async ({ context, input }) => {
-      const { db, organizationId } = context;
-
-      try {
-         const [usageRows, catalogRows] = await Promise.all([
-            db
-               .select()
-               .from(currentMonthUsageByEvent)
-               .where(
-                  and(
-                     eq(
-                        currentMonthUsageByEvent.organizationId,
-                        organizationId,
-                     ),
-                     eq(currentMonthUsageByEvent.eventCategory, input.category),
-                  ),
-               ),
-            db
-               .select()
-               .from(eventCatalog)
-               .where(eq(eventCatalog.category, input.category)),
-         ]);
-
-         const catalogByName = new Map(
-            catalogRows.map((c) => [c.eventName, c]),
-         );
-
-         return usageRows.map((row) => {
-            const catalog = catalogByName.get(row.eventName);
-            return {
-               eventName: row.eventName,
-               eventCount: row.eventCount,
-               monthToDateCost: Number(row.monthToDateCost),
-               displayName: catalog?.displayName ?? row.eventName,
-               description: catalog?.description ?? null,
-               pricePerEvent: catalog ? Number(catalog.pricePerEvent) : null,
-               freeTierLimit: catalog?.freeTierLimit ?? 0,
-            };
-         });
-      } catch {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to fetch category usage",
-         });
-      }
-   });
-
-/**
- * Check whether the Stripe customer for this user has a saved payment method
- */
 export const getPaymentStatus = protectedProcedure.handler(
    async ({ context }) => {
       const { db, stripeClient, userId } = context;
@@ -291,74 +123,91 @@ export const getPaymentStatus = protectedProcedure.handler(
    },
 );
 
-/**
- * Get daily usage chart data for the last N days
- */
-export const getDailyUsage = protectedProcedure
-   .input(z.object({ days: z.number().int().min(1).max(90).default(30) }))
-   .handler(async ({ context, input }) => {
-      const { db, organizationId } = context;
+export const getMeterUsage = protectedProcedure.handler(
+   async ({ context }) => {
+      const { db, stripeClient, userId } = context;
+
+      if (!stripeClient) {
+         return buildUsageFallback();
+      }
+
+      const userRecord = await db.query.user.findFirst({
+         where: (fields, { eq }) => eq(fields.id, userId),
+      });
+
+      if (!userRecord?.stripeCustomerId) {
+         return buildUsageFallback();
+      }
 
       try {
-         const rows = await db
-            .select()
-            .from(dailyUsageByEvent)
-            .where(
-               and(
-                  eq(dailyUsageByEvent.organizationId, organizationId),
-                  sql`${dailyUsageByEvent.date} >= CURRENT_DATE - ${input.days} * INTERVAL '1 day'`,
-               ),
-            );
+         const now = Math.floor(Date.now() / 1000);
+         const startOfMonth = Math.floor(
+            new Date(
+               new Date().getFullYear(),
+               new Date().getMonth(),
+               1,
+            ).getTime() / 1000,
+         );
 
-         // Group by date, aggregate by category (both cost and event count)
-         const dateMap = new Map<
-            string,
-            {
-               total: number;
-               totalCount: number;
-               byCategory: Map<string, number>;
-               countByCategory: Map<string, number>;
-            }
-         >();
+         const meters = await stripeClient.billing.meters.list({ limit: 100 });
+         const meterByEventName = new Map(
+            meters.data.map((m) => [m.event_name, m.id]),
+         );
 
-         for (const row of rows) {
-            const dateStr = row.date;
-            if (!dateMap.has(dateStr)) {
-               dateMap.set(dateStr, {
-                  total: 0,
-                  totalCount: 0,
-                  byCategory: new Map(),
-                  countByCategory: new Map(),
-               });
-            }
-            const entry = dateMap.get(dateStr);
-            if (!entry) continue;
-            const cost = Number(row.totalCost);
-            const count = row.eventCount;
-            entry.total += cost;
-            entry.totalCount += count;
-            entry.byCategory.set(
-               row.eventCategory,
-               (entry.byCategory.get(row.eventCategory) ?? 0) + cost,
-            );
-            entry.countByCategory.set(
-               row.eventCategory,
-               (entry.countByCategory.get(row.eventCategory) ?? 0) + count,
-            );
-         }
+         const results = await Promise.all(
+            Object.entries(STRIPE_METER_EVENTS).map(
+               async ([eventName, meterEventName]) => {
+                  const meterId = meterByEventName.get(meterEventName);
+                  if (!meterId) {
+                     return {
+                        eventName,
+                        used: 0,
+                        freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
+                        pricePerEvent: EVENT_PRICES[eventName] ?? "0",
+                     };
+                  }
 
-         return Array.from(dateMap.entries())
-            .map(([date, data]) => ({
-               date,
-               total: data.total,
-               totalCount: data.totalCount,
-               byCategory: Object.fromEntries(data.byCategory),
-               countByCategory: Object.fromEntries(data.countByCategory),
-            }))
-            .sort((a, b) => a.date.localeCompare(b.date));
+                  try {
+                     const summary =
+                        await stripeClient.billing.meters.listEventSummaries(
+                           meterId,
+                           {
+                              customer: userRecord.stripeCustomerId!,
+                              start_time: startOfMonth,
+                              end_time: now,
+                              value_grouping_window: "month",
+                           },
+                        );
+                     return {
+                        eventName,
+                        used: summary.data[0]?.aggregated_value ?? 0,
+                        freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
+                        pricePerEvent: EVENT_PRICES[eventName] ?? "0",
+                     };
+                  } catch {
+                     return {
+                        eventName,
+                        used: 0,
+                        freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
+                        pricePerEvent: EVENT_PRICES[eventName] ?? "0",
+                     };
+                  }
+               },
+            ),
+         );
+
+         return results;
       } catch {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to fetch daily usage",
-         });
+         throw WebAppError.internal("Failed to fetch meter usage");
       }
-   });
+   },
+);
+
+function buildUsageFallback() {
+   return Object.keys(FREE_TIER_LIMITS).map((eventName) => ({
+      eventName,
+      used: 0,
+      freeTierLimit: FREE_TIER_LIMITS[eventName] ?? 0,
+      pricePerEvent: EVENT_PRICES[eventName] ?? "0",
+   }));
+}
