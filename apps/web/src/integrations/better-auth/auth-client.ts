@@ -58,7 +58,9 @@ export const authClient = createBetterAuthClient({
          const message = context.error?.message || context.response.statusText;
          toast.error(message, { description: `${path} (${code})` });
          if (shouldShowErrorModal(path, code)) {
-            openSurveyModal(POSTHOG_SURVEYS.bugReport.id);
+            openSurveyModal(POSTHOG_SURVEYS.bugReport.id, {
+               description: `${message} (${code})`,
+            });
          }
       },
       onSuccess: () => {
