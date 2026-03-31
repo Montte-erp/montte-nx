@@ -40,6 +40,8 @@ const tagsSearchSchema = z.object({
       .default([]),
 });
 
+export type TagsSearch = z.infer<typeof tagsSearchSchema>;
+
 const [useTagsTableState] = createLocalStorageState<DataTableStoredState | null>(
    "montte:datatable:tags",
    null,
@@ -84,7 +86,7 @@ function TagsList({ navigate }: TagsListProps) {
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
       (updater) => {
          const next = typeof updater === "function" ? updater(sorting) : updater;
-         navigate({ search: (prev) => ({ ...prev, sorting: next }) });
+         navigate({ search: (prev: TagsSearch) => ({ ...prev, sorting: next }) });
       },
       [sorting, navigate],
    );
@@ -92,7 +94,7 @@ function TagsList({ navigate }: TagsListProps) {
    const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
       (updater) => {
          const next = typeof updater === "function" ? updater(columnFilters) : updater;
-         navigate({ search: (prev) => ({ ...prev, columnFilters: next }) });
+         navigate({ search: (prev: TagsSearch) => ({ ...prev, columnFilters: next }) });
       },
       [columnFilters, navigate],
    );

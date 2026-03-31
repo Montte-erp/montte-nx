@@ -1,6 +1,7 @@
 import { cn } from "@packages/ui/lib/utils";
 import { Link } from "@tanstack/react-router";
 import type { BankAccountRow } from "./bank-accounts-columns";
+import type { BankAccountsSearch } from "../bank-accounts";
 
 type AccountType = BankAccountRow["type"] | undefined;
 
@@ -31,7 +32,7 @@ export function BankAccountsFilterBar({ type }: BankAccountsFilterBarProps) {
                from="/$slug/$teamSlug/bank-accounts"
                key={opt.label}
                preload="intent"
-               search={(prev) => ({ ...prev, type: opt.value })}
+               search={(prev: BankAccountsSearch) => ({ ...prev, type: opt.value })}
             >
                {opt.label}
             </Link>

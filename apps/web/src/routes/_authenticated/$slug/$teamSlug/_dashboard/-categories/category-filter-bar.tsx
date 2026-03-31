@@ -1,3 +1,4 @@
+import type { CategoriesSearch } from "../categories";
 import { Button } from "@packages/ui/components/button";
 import { Input } from "@packages/ui/components/input";
 import { Label } from "@packages/ui/components/label";
@@ -79,7 +80,7 @@ export function CategoryFilterBar({
                      from="/$slug/$teamSlug/categories"
                      key={opt.label}
                      preload="intent"
-                     search={(prev) => ({ ...prev, type: opt.value })}
+                     search={(prev: CategoriesSearch) => ({ ...prev, type: opt.value })}
                   >
                      {opt.label}
                   </Link>
@@ -96,7 +97,7 @@ export function CategoryFilterBar({
                   onMouseEnter={() =>
                      router.preloadRoute({
                         to: ".",
-                        search: (prev) => ({ ...prev, includeArchived: !includeArchived }),
+                        search: (prev: CategoriesSearch) => ({ ...prev, includeArchived: !includeArchived }),
                      })
                   }
                />

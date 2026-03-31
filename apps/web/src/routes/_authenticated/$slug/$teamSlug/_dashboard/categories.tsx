@@ -59,6 +59,8 @@ const categoriesSearchSchema = z.object({
    search: z.string().optional().default(""),
 });
 
+export type CategoriesSearch = z.infer<typeof categoriesSearchSchema>;
+
 const [useCategoriesTableState] = createLocalStorageState<DataTableStoredState | null>(
    "montte:datatable:categories",
    null,
@@ -105,7 +107,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
       (updater) => {
          const next = typeof updater === "function" ? updater(sorting) : updater;
-         navigate({ search: (prev) => ({ ...prev, sorting: next }) });
+         navigate({ search: (prev: CategoriesSearch) => ({ ...prev, sorting: next }) });
       },
       [sorting, navigate],
    );
@@ -113,7 +115,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
    const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
       (updater) => {
          const next = typeof updater === "function" ? updater(columnFilters) : updater;
-         navigate({ search: (prev) => ({ ...prev, columnFilters: next }) });
+         navigate({ search: (prev: CategoriesSearch) => ({ ...prev, columnFilters: next }) });
       },
       [columnFilters, navigate],
    );
@@ -368,27 +370,27 @@ function CategoriesPage() {
 
    const handleIncludeArchivedChange = useCallback(
       (checked: boolean) => {
-         navigate({ search: (prev) => ({ ...prev, includeArchived: checked }) });
+         navigate({ search: (prev: CategoriesSearch) => ({ ...prev, includeArchived: checked }) });
       },
       [navigate],
    );
 
    const handleGroupByChange = useCallback(
       (checked: boolean) => {
-         navigate({ search: (prev) => ({ ...prev, groupBy: checked }) });
+         navigate({ search: (prev: CategoriesSearch) => ({ ...prev, groupBy: checked }) });
       },
       [navigate],
    );
 
    const handleSearchChange = useCallback(
       (value: string) => {
-         navigate({ search: (prev) => ({ ...prev, search: value }) });
+         navigate({ search: (prev: CategoriesSearch) => ({ ...prev, search: value }) });
       },
       [navigate],
    );
 
    const handleClearFilters = useCallback(
-      () => navigate({ search: (prev) => ({ ...prev, type: undefined, includeArchived: false, search: "" }) }),
+      () => navigate({ search: (prev: CategoriesSearch) => ({ ...prev, type: undefined, includeArchived: false, search: "" }) }),
       [navigate],
    );
 
