@@ -392,6 +392,100 @@ describe("importBatch", () => {
    });
 });
 
+describe("bulkRemove", () => {
+   it("deletes multiple categories and returns deleted count", async () => {
+      const cat1 = await call(
+         categoriesRouter.create,
+         { name: "Cat1", type: "expense" },
+         { context: ctx },
+      );
+      const cat2 = await call(
+         categoriesRouter.create,
+         { name: "Cat2", type: "income" },
+         { context: ctx },
+      );
+
+      const result = await call(
+         categoriesRouter.bulkRemove,
+         { ids: [cat1.id, cat2.id] },
+         { context: ctx },
+      );
+
+      expect(result).toEqual({ deleted: 2 });
+
+      const rows = await ctx.db.query.categories.findMany();
+      expect(rows).toHaveLength(0);
+   });
+
+   it("rejects if any category belongs to another team", async () => {
+      const cat1 = await call(
+         categoriesRouter.create,
+         { name: "Mine", type: "expense" },
+         { context: ctx },
+      );
+      const cat2 = await call(
+         categoriesRouter.create,
+         { name: "Other", type: "expense" },
+         { context: ctx2 },
+      );
+
+      await expect(
+         call(
+            categoriesRouter.bulkRemove,
+            { ids: [cat1.id, cat2.id] },
+            { context: ctx },
+         ),
+      ).rejects.toThrow();
+   });
+
+   it("rejects if any category is a default category", async () => {
+      const [defaultCat] = await ctx.db
+         .insert(categories)
+         .values({
+            teamId: ctx.session!.session.activeTeamId!,
+            name: "Default",
+            type: "expense",
+            isDefault: true,
+         })
+         .returning();
+      const regular = await call(
+         categoriesRouter.create,
+         { name: "Regular", type: "expense" },
+         { context: ctx },
+      );
+
+      await expect(
+         call(
+            categoriesRouter.bulkRemove,
+            { ids: [regular.id, defaultCat!.id] },
+            { context: ctx },
+         ),
+      ).rejects.toThrow();
+   });
+
+   it("rejects if any category has transactions", async () => {
+      const cat = await call(
+         categoriesRouter.create,
+         { name: "Com Lancamentos", type: "expense" },
+         { context: ctx },
+      );
+
+      await ctx.db.insert(transactions).values({
+         teamId: ctx.session!.session.activeTeamId!,
+         type: "expense",
+         amount: "100.00",
+         date: "2025-01-15",
+         categoryId: cat.id,
+      });
+
+      await expect(
+         call(categoriesRouter.bulkRemove, { ids: [cat.id] }, { context: ctx }),
+      ).rejects.toThrow(
+         "Categorias com lançamentos não podem ser excluídas. Use arquivamento.",
+      );
+   });
+});
+
 describe("archive", () => {
    it("archives category and persists the change", async () => {
       const created = await call(

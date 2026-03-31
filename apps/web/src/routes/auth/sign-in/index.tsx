@@ -49,9 +49,9 @@ export function SignInPage() {
    };
 
    return (
-      <section className="space-y-8 w-full">
+      <section className="flex flex-col gap-4 w-full">
          {/* Header */}
-         <div className="text-center space-y-2">
+         <div className="text-center flex flex-col gap-2">
             <h1 className="text-3xl font-semibold font-serif">Entrar</h1>
             <p className="text-muted-foreground text-sm">
                Bom te ver de volta. O ERP com IA espera por voce.
@@ -59,7 +59,7 @@ export function SignInPage() {
          </div>
 
          {/* Primary methods — 2-column grid */}
-         <div className="space-y-3">
+         <div className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-3">
                {/* Google */}
                <div className="relative">
@@ -132,7 +132,7 @@ export function SignInPage() {
          </div>
 
          {/* Footer */}
-         <div className="text-sm text-center space-y-4">
+         <div className="text-sm text-center flex flex-col gap-4">
             <div className="flex gap-1 justify-center items-center">
                <span>Primeira vez aqui? </span>
                <Link

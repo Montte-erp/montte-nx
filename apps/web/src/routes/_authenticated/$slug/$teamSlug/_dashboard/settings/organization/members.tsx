@@ -18,7 +18,6 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { getInitials } from "@core/utils/text";
 import {
    useMutation,
-   useQuery,
    useQueryClient,
    useSuspenseQuery,
 } from "@tanstack/react-query";
@@ -121,7 +120,7 @@ function MembersErrorFallback({ resetErrorBoundary }: FallbackProps) {
 function PendingInvitesSection({ organizationId }: { organizationId: string }) {
    const queryClient = useQueryClient();
 
-   const { data: invitesData, isLoading } = useQuery({
+   const { data: invitesData } = useSuspenseQuery({
       queryKey: ["pending-invites", organizationId],
       queryFn: async () => {
          const result = await authClient.organization.listInvitations({
@@ -158,20 +157,6 @@ function PendingInvitesSection({ organizationId }: { organizationId: string }) {
    });
 
    const invites = invitesData ?? [];
-
-   if (isLoading) {
-      return (
-         <section className="flex flex-col gap-4">
-            <div>
-               <h2 className="text-lg font-medium">Convites pendentes</h2>
-               <p className="text-sm text-muted-foreground mt-1">
-                  Convites enviados que ainda não foram aceitos.
-               </p>
-            </div>
-            <Skeleton className="h-20 w-full rounded-lg" />
-         </section>
-      );
-   }
 
    return (
       <section className="flex flex-col gap-4">

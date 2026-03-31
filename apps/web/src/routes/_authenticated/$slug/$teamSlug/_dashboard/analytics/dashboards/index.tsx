@@ -16,7 +16,7 @@ import {
 import { createFileRoute, Link } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Home, LayoutDashboard, Plus } from "lucide-react";
-import { Suspense, useMemo } from "react";
+import { Suspense, useCallback, useMemo } from "react";
 import { PageHeader } from "@/components/page-header";
 import {
    EarlyAccessBanner,
@@ -24,7 +24,9 @@ import {
 } from "@/features/billing/ui/early-access-banner";
 import { ContextPanelAction } from "@/features/context-panel/context-panel-info";
 import { useContextPanelInfo } from "@/features/context-panel/use-context-panel";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
+import { CreateDashboardForm } from "./-dashboards/create-dashboard-form";
 
 const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
    badgeLabel: "Analytics Avançado",
@@ -80,6 +82,7 @@ function DashboardsPageSkeleton() {
 // ---------------------------------------------------------------------------
 
 function DashboardsList() {
+   const { openCredenza, closeCredenza } = useCredenza();
    const { slug, teamSlug } = Route.useParams();
    const queryClient = useQueryClient();
 
@@ -177,8 +180,16 @@ function DashboardsList() {
                Crie seu primeiro dashboard para organizar seus insights em um
                painel visual.
             </p>
-            <Button>
-               <Plus className="size-4 mr-1" />
+            <Button
+               onClick={() =>
+                  openCredenza({
+                     children: (
+                        <CreateDashboardForm onSuccess={closeCredenza} />
+                     ),
+                  })
+               }
+            >
+               <Plus className="size-4" />
                Novo dashboard
             </Button>
          </div>
@@ -214,6 +225,14 @@ function DashboardsList() {
 // ---------------------------------------------------------------------------
 
 function DashboardsPage() {
+   const { openCredenza, closeCredenza } = useCredenza();
+
+   const handleCreateDashboard = useCallback(() => {
+      openCredenza({
+         children: <CreateDashboardForm onSuccess={closeCredenza} />,
+      });
+   }, [openCredenza, closeCredenza]);
+
    useContextPanelInfo(
       <ContextPanel>
          <ContextPanelHeader>
@@ -223,9 +242,7 @@ function DashboardsPage() {
             <ContextPanelAction
                icon={Plus}
                label="Novo dashboard"
-               onClick={() => {
-                  // TODO: Wire to create dashboard action
-               }}
+               onClick={handleCreateDashboard}
             />
          </ContextPanelContent>
       </ContextPanel>,
@@ -235,8 +252,8 @@ function DashboardsPage() {
       <main className="flex flex-col gap-4">
          <PageHeader
             actions={
-               <Button>
-                  <Plus className="size-4 mr-1" />
+               <Button onClick={handleCreateDashboard}>
+                  <Plus className="size-4" />
                   Novo dashboard
                </Button>
             }

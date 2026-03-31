@@ -198,9 +198,6 @@ function SignUpPage() {
                   }}
                </form.Field>
             </FieldGroup>
-            <form.Subscribe selector={(state) => state.values.password}>
-               {(password) => <PasswordStrengthCard password={password} />}
-            </form.Subscribe>
             <FieldGroup>
                <form.Field name="confirmPassword">
                   {(field) => {
@@ -231,6 +228,9 @@ function SignUpPage() {
                   }}
                </form.Field>
             </FieldGroup>
+            <form.Subscribe selector={(state) => state.values.password}>
+               {(password) => <PasswordStrengthCard password={password} />}
+            </form.Subscribe>
          </>
       );
    }
@@ -238,9 +238,9 @@ function SignUpPage() {
    return (
       <Stepper.Provider>
          {({ methods }) => (
-            <section className="space-y-6 w-full">
+            <section className="flex flex-col gap-4 w-full">
                {/* Header */}
-               <div className="text-center space-y-2">
+               <div className="text-center flex flex-col gap-2">
                   <h1 className="text-3xl font-semibold font-serif">
                      Cadastrar
                   </h1>
@@ -250,13 +250,13 @@ function SignUpPage() {
                </div>
 
                {/* Form */}
-               <div className="space-y-6">
+               <div className="flex flex-col gap-4">
                   <Stepper.Navigation>
                      {steps.map((step) => (
                         <Stepper.Step key={step.id} of={step.id}></Stepper.Step>
                      ))}
                   </Stepper.Navigation>
-                  <form className="space-y-4" onSubmit={handleSubmit}>
+                  <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
                      {methods.flow.switch({
                         "basic-info": () => <BasicInfoStep />,
                         password: () => <PasswordStep />,
@@ -317,7 +317,7 @@ function SignUpPage() {
                </div>
 
                {/* Footer */}
-               <div className="text-sm text-center space-y-4">
+               <div className="text-sm text-center flex flex-col gap-4">
                   <div className="flex gap-1 justify-center items-center">
                      <span>Ja tem uma conta?</span>
                      <Link

@@ -287,6 +287,74 @@ describe("tags-repository", () => {
       });
    });
 
+   describe("bulkDeleteTags", () => {
+      it("deletes multiple tags with no transactions", async () => {
+         const teamId = randomTeamId();
+         const tag1 = await repo.createTag(
+            testDb.db,
+            teamId,
+            validCreateInput({ name: "Bulk A" }),
+         );
+         const tag2 = await repo.createTag(
+            testDb.db,
+            teamId,
+            validCreateInput({ name: "Bulk B" }),
+         );
+
+         await repo.bulkDeleteTags(testDb.db, [tag1.id, tag2.id], teamId);
+
+         expect(await repo.getTag(testDb.db, tag1.id)).toBeNull();
+         expect(await repo.getTag(testDb.db, tag2.id)).toBeNull();
+      });
+
+      it("rejects if any tag belongs to another team", async () => {
+         const teamId = randomTeamId();
+         const otherTeamId = randomTeamId();
+         const tag1 = await repo.createTag(
+            testDb.db,
+            teamId,
+            validCreateInput({ name: "Mine Bulk" }),
+         );
+         const tag2 = await repo.createTag(
+            testDb.db,
+            otherTeamId,
+            validCreateInput({ name: "Other Bulk" }),
+         );
+
+         await expect(
+            repo.bulkDeleteTags(testDb.db, [tag1.id, tag2.id], teamId),
+         ).rejects.toThrow(/não foram encontradas/);
+      });
+
+      it("rejects if any tag has transactions", async () => {
+         const teamId = randomTeamId();
+         const tag = await repo.createTag(
+            testDb.db,
+            teamId,
+            validCreateInput({ name: "Com Lancamentos Bulk" }),
+         );
+
+         const [txn] = await testDb.db
+            .insert(transactions)
+            .values({
+               teamId,
+               type: "income",
+               amount: "50.00",
+               date: "2025-01-15",
+            })
+            .returning();
+
+         await testDb.db.insert(transactionTags).values({
+            transactionId: txn!.id,
+            tagId: tag.id,
+         });
+
+         await expect(
+            repo.bulkDeleteTags(testDb.db, [tag.id], teamId),
+         ).rejects.toThrow(/lançamentos/);
+      });
+   });
+
    describe("deleteTag", () => {
       it("deletes tag without transactions", async () => {
          const teamId = randomTeamId();

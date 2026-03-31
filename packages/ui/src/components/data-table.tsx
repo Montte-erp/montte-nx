@@ -734,10 +734,7 @@ export function DataTable<TData, TValue>({
    ) => (
       <TableRow
          key={row.id}
-         className={cn(
-            row.getIsSelected() && "bg-muted/50",
-            row.depth > 0 && "bg-muted hover:bg-muted border-l-2 border-l-border",
-         )}
+         className={cn("bg-card", row.getIsSelected() && "bg-muted/50")}
          data-state={row.getIsSelected() ? "selected" : undefined}
       >
          {renderBodyCells(row)}
@@ -794,11 +791,11 @@ export function DataTable<TData, TValue>({
             onDragEnd={handleColumnDragEnd}
             sensors={sensors}
          >
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-hidden">
                <Table className="border-separate border-spacing-0">
                   <TableHeader>
                      {table.getHeaderGroups().map((headerGroup) => (
-                        <TableRow key={headerGroup.id} className="bg-muted/40 hover:bg-muted/40">
+                        <TableRow key={headerGroup.id} className="bg-muted/50 hover:bg-muted/50">
                            {renderHeaderCells(headerGroup)}
                         </TableRow>
                      ))}

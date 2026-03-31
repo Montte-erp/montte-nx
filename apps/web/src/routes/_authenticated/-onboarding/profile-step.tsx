@@ -80,8 +80,8 @@ export const ProfileStep = forwardRef<StepHandle, ProfileStepProps>(
       );
 
       return (
-         <div className="space-y-6">
-            <div className="space-y-2 text-center">
+         <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2 text-center">
                <h2 className="font-serif text-2xl font-semibold">
                   Como podemos te chamar?
                </h2>
@@ -90,7 +90,7 @@ export const ProfileStep = forwardRef<StepHandle, ProfileStepProps>(
                </p>
             </div>
 
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
                <FieldGroup>
                   <form.Field name="userName">
                      {(field) => {

@@ -7,7 +7,7 @@ import { Button } from "@packages/ui/components/button";
 import { DateRangePicker } from "@packages/ui/components/date-range-picker";
 import { cn } from "@packages/ui/lib/utils";
 import { formatRelativeTime } from "@core/utils/date";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import {
    Check,
    Clock,
@@ -157,7 +157,7 @@ const DATE_RANGE_PRESETS = [
 
 function DashboardFilterBar({ dashboard }: { dashboard: Dashboard }) {
    const queryClient = useQueryClient();
-   const { data: insights } = useQuery(
+   const { data: insights } = useSuspenseQuery(
       orpc.analytics.getDashboardInsights.queryOptions({
          input: { dashboardId: dashboard.id },
       }),

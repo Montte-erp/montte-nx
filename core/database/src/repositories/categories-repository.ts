@@ -261,6 +261,43 @@ export async function deleteCategory(db: DatabaseInstance, id: string) {
    }
 }
 
+export async function bulkDeleteCategories(
+   db: DatabaseInstance,
+   ids: string[],
+   teamId: string,
+) {
+   try {
+      const existing = await db.query.categories.findMany({
+         where: (fields, { and, inArray, eq }) =>
+            and(inArray(fields.id, ids), eq(fields.teamId, teamId)),
+      });
+      if (existing.length !== ids.length) {
+         throw AppError.notFound("Uma ou mais categorias não foram encontradas.");
+      }
+      const defaultOne = existing.find((c) => c.isDefault);
+      if (defaultOne) {
+         throw AppError.conflict("Categorias padrão não podem ser excluídas.");
+      }
+      const allDescendantIds = (
+         await Promise.all(ids.map((id) => getDescendantIds(db, id)))
+      ).flat();
+      const allIds = [...new Set([...ids, ...allDescendantIds])];
+      const [row] = await db
+         .select({ count: sql<number>`count(*)::int` })
+         .from(transactions)
+         .where(inArray(transactions.categoryId, allIds));
+      if ((row?.count ?? 0) > 0) {
+         throw AppError.conflict(
+            "Categorias com lançamentos não podem ser excluídas. Use arquivamento.",
+         );
+      }
+      await db.delete(categories).where(inArray(categories.id, ids));
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to bulk delete categories");
+   }
+}
+
 export async function categoryTreeHasTransactions(
    db: DatabaseInstance,
    categoryId: string,

@@ -7,12 +7,10 @@ import {
    ContextPanelTitle,
 } from "@packages/ui/components/context-panel";
 import { DataTable } from "@packages/ui/components/data-table";
-import { Skeleton } from "@packages/ui/components/skeleton";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
-   AlertCircle,
    GitBranch,
    Lightbulb,
    Loader2,
@@ -103,16 +101,6 @@ function formatDate(date: string | Date): string {
 // Loading skeleton
 // ---------------------------------------------------------------------------
 
-function ListSkeleton() {
-   return (
-      <div className="space-y-3">
-         {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton className="h-14 w-full" key={`skeleton-${i + 1}`} />
-         ))}
-      </div>
-   );
-}
-
 // ---------------------------------------------------------------------------
 // Empty state
 // ---------------------------------------------------------------------------
@@ -191,11 +179,7 @@ function InsightsListPage() {
       </ContextPanel>,
    );
 
-   const {
-      data: insights,
-      isLoading,
-      error,
-   } = useQuery(orpc.insights.list.queryOptions({}));
+   const { data: insights } = useSuspenseQuery(orpc.insights.list.queryOptions({}));
 
    const deleteMutation = useMutation(
       orpc.insights.remove.mutationOptions({
@@ -292,19 +276,10 @@ function InsightsListPage() {
          />
          <EarlyAccessBanner template={ANALYTICS_BANNER} />
 
-         {isLoading && <ListSkeleton />}
-         {error && (
-            <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
-               <AlertCircle className="size-8 text-destructive/60" />
-               <p className="text-sm">
-                  Erro ao carregar insights: {error.message}
-               </p>
-            </div>
-         )}
-         {!isLoading && !error && insights?.length === 0 && (
+         {insights.length === 0 && (
             <EmptyState onCreateClick={handleCreate} />
          )}
-         {!isLoading && !error && insights && insights.length > 0 && (
+         {insights.length > 0 && (
             <DataTable
                columns={columns}
                data={insights as InsightRow[]}

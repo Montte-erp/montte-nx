@@ -69,7 +69,7 @@ function AuthLayout() {
             </div>
 
             {/* Center Content - Illustration & Tagline */}
-            <div className="relative z-10 space-y-8">
+            <div className="relative z-10 flex flex-col gap-4">
                {/* ERP Dashboard Illustration */}
                <div className="relative">
                   <svg
@@ -399,7 +399,7 @@ function AuthLayout() {
                   </svg>
                </div>
 
-               <div className="text-center space-y-4">
+               <div className="text-center flex flex-col gap-4">
                   <h2 className="text-2xl xl:text-3xl font-serif font-semibold text-white">
                      Seu ERP com superpoderes de IA
                   </h2>
