@@ -809,6 +809,8 @@ function TransactionDialogStackContent({
             return;
          }
 
+         const tagIdsTouched = form.getFieldMeta("tagIds")?.isTouched ?? false;
+
          const payload = {
             type: value.type,
             name: value.name?.trim() || null,
@@ -821,7 +823,7 @@ function TransactionDialogStackContent({
             categoryId: isTransfer ? null : value.categoryId || null,
             subcategoryId: isTransfer ? null : value.subcategoryId || null,
             attachments: [] as Attachment[],
-            tagIds: value.tagIds,
+            tagIds: isCreate || tagIdsTouched ? value.tagIds : undefined,
             description: value.description || null,
             contactId: value.contactId,
             creditCardId:

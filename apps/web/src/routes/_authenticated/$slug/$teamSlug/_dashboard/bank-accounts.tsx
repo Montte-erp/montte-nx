@@ -40,6 +40,8 @@ const bankAccountsSearchSchema = z.object({
    type: z.enum(["checking", "savings", "investment", "payment", "cash"]).optional(),
 });
 
+export type BankAccountsSearch = z.infer<typeof bankAccountsSearchSchema>;
+
 const [useBankAccountsTableState] = createLocalStorageState<DataTableStoredState | null>(
    "montte:datatable:bank-accounts",
    null,
@@ -88,7 +90,7 @@ function BankAccountsList({ navigate }: BankAccountsListProps) {
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
       (updater) => {
          const next = typeof updater === "function" ? updater(sorting as SortingState) : updater;
-         navigate({ search: (prev) => ({ ...prev, sorting: next }) });
+         navigate({ search: (prev: BankAccountsSearch) => ({ ...prev, sorting: next }) });
       },
       [sorting, navigate],
    );
@@ -96,7 +98,7 @@ function BankAccountsList({ navigate }: BankAccountsListProps) {
    const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
       (updater) => {
          const next = typeof updater === "function" ? updater(columnFilters as ColumnFiltersState) : updater;
-         navigate({ search: (prev) => ({ ...prev, columnFilters: next }) });
+         navigate({ search: (prev: BankAccountsSearch) => ({ ...prev, columnFilters: next }) });
       },
       [columnFilters, navigate],
    );
