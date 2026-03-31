@@ -1,4 +1,3 @@
-import type { EventCatalogEntry } from "@core/database/schemas/event-catalog";
 import { Badge } from "@packages/ui/components/badge";
 import {
    Card,
@@ -9,10 +8,13 @@ import {
 import { DataTable } from "@packages/ui/components/data-table";
 import { Input } from "@packages/ui/components/input";
 import { Switch } from "@packages/ui/components/switch";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import { BookOpen, Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import { orpc } from "@/integrations/orpc/client";
+import type { Outputs } from "@/integrations/orpc/client";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/event-definitions",
@@ -20,17 +22,7 @@ export const Route = createFileRoute(
    component: EventDefinitionsPage,
 });
 
-type EventEntry = {
-   id: string;
-   eventName: string;
-   category: string;
-   displayName: string;
-   description: string | null;
-   pricePerEvent: string;
-   freeTierLimit: number;
-   isBillable: boolean;
-   isActive: boolean;
-};
+type EventEntry = Outputs["billing"]["getEventCatalog"][number];
 
 const categoryColors: Record<string, string> = {
    content: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -103,7 +95,9 @@ function EventDefinitionsPage() {
    const [search, setSearch] = useState("");
    const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
 
-   const events: EventCatalogEntry[] = [];
+   const { data: events } = useSuspenseQuery(
+      orpc.billing.getEventCatalog.queryOptions({}),
+   );
 
    const categories = useMemo(
       () => [...new Set(events.map((e) => e.category))],
