@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { computeInsightData } from "@packages/analytics/compute-insight";
 import {
    createDefaultDashboard,
@@ -18,6 +17,7 @@ import {
    markTeamOnboardingComplete,
    updateInsightCache,
 } from "@core/database/repositories/onboarding-repository";
+import { WebAppError } from "@core/logging/errors";
 import { getLogger } from "@core/logging/root";
 import { createSlug } from "@core/utils/text";
 
@@ -155,9 +155,7 @@ export const createWorkspace = authenticatedProcedure
       });
 
       if (!org?.id) {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to create workspace",
-         });
+         throw WebAppError.internal("Failed to create workspace");
       }
 
       logger.info({ orgId: org.id, orgSlug: org.slug }, "Organization created");
@@ -182,9 +180,7 @@ export const createWorkspace = authenticatedProcedure
       });
 
       if (!createdTeam?.id) {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to create team",
-         });
+         throw WebAppError.internal("Failed to create team");
       }
 
       logger.info({ teamId: createdTeam.id }, "Team created");
@@ -254,17 +250,13 @@ export const getOnboardingStatus = protectedProcedure.handler(
       const org = await getOrganizationById(db, organizationId);
 
       if (!org) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Organization not found",
-         });
+         throw WebAppError.notFound("Organization not found");
       }
 
       const currentTeam = await getTeamById(db, teamId);
 
       if (!currentTeam) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Team not found",
-         });
+         throw WebAppError.notFound("Team not found");
       }
 
       const {
@@ -312,15 +304,11 @@ export const fixOnboarding = authenticatedProcedure
       );
 
       if (!org) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "Organization not found",
-         });
+         throw WebAppError.notFound("Organization not found");
       }
 
       if (!targetTeam) {
-         throw new ORPCError("NOT_FOUND", {
-            message: "No team found for organization",
-         });
+         throw WebAppError.notFound("No team found for organization");
       }
 
       if (!org.onboardingCompleted) {

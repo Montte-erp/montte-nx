@@ -1,4 +1,4 @@
-import { call } from "@orpc/server";
+import { ORPCError, call } from "@orpc/server";
 import {
    afterAll,
    beforeAll,
@@ -69,7 +69,79 @@ beforeEach(async () => {
    await ctx.db.execute(sql`DELETE FROM categories`);
 });
 
+describe("createWorkspace", () => {
+   it("throws when organization creation returns no id", async () => {
+      const failAuthCtx: ORPCContextWithAuth = {
+         ...ctx,
+         auth: {
+            ...ctx.auth,
+            api: {
+               ...ctx.auth.api,
+               createOrganization: vi.fn().mockResolvedValue(null),
+            } as any,
+         },
+      };
+
+      await expect(
+         call(onboardingRouter.createWorkspace, { workspaceName: "Test Org" }, { context: failAuthCtx }),
+      ).rejects.toSatisfy((e: ORPCError<string, unknown>) => e.code === "INTERNAL_SERVER_ERROR");
+   });
+
+   it("throws when team creation returns no id", async () => {
+      const failTeamAuthCtx: ORPCContextWithAuth = {
+         ...ctx,
+         auth: {
+            ...ctx.auth,
+            api: {
+               ...ctx.auth.api,
+               createOrganization: vi.fn().mockResolvedValue({ id: "org-fake-id", slug: "fake-slug" }),
+               setActiveOrganization: vi.fn().mockResolvedValue(undefined),
+               createTeam: vi.fn().mockResolvedValue(null),
+            } as any,
+         },
+      };
+
+      await expect(
+         call(onboardingRouter.createWorkspace, { workspaceName: "Test Org" }, { context: failTeamAuthCtx }),
+      ).rejects.toSatisfy((e: ORPCError<string, unknown>) => e.code === "INTERNAL_SERVER_ERROR");
+   });
+});
+
 describe("getOnboardingStatus", () => {
+   it("throws NOT_FOUND when organization does not exist", async () => {
+      const orphanCtx: ORPCContextWithAuth = {
+         ...ctx,
+         session: {
+            ...ctx.session!,
+            session: {
+               ...ctx.session!.session,
+               activeOrganizationId: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+            },
+         },
+      };
+
+      await expect(
+         call(onboardingRouter.getOnboardingStatus, undefined, { context: orphanCtx }),
+      ).rejects.toSatisfy((e: ORPCError<string, unknown>) => e.code === "NOT_FOUND");
+   });
+
+   it("throws NOT_FOUND when team does not exist", async () => {
+      const fakeTeamCtx: ORPCContextWithAuth = {
+         ...ctx,
+         session: {
+            ...ctx.session!,
+            session: {
+               ...ctx.session!.session,
+               activeTeamId: "aaaaaaaa-bbbb-4ccc-8ddd-ffffffffffff",
+            },
+         },
+      };
+
+      await expect(
+         call(onboardingRouter.getOnboardingStatus, undefined, { context: fakeTeamCtx }),
+      ).rejects.toSatisfy((e: ORPCError<string, unknown>) => e.code === "NOT_FOUND");
+   });
+
    it("returns onboarding status with auto-detected tasks", async () => {
       const teamId = ctx.session!.session.activeTeamId!;
 
@@ -188,5 +260,17 @@ describe("skipTask", () => {
       expect(status.project.tasks).toEqual(
          expect.objectContaining({ invite_team: true }),
       );
+   });
+});
+
+describe("fixOnboarding", () => {
+   it("throws NOT_FOUND when organization does not exist", async () => {
+      await expect(
+         call(
+            onboardingRouter.fixOnboarding,
+            { organizationId: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee" },
+            { context: ctx },
+         ),
+      ).rejects.toSatisfy((e: ORPCError<string, unknown>) => e.code === "NOT_FOUND");
    });
 });

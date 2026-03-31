@@ -1,5 +1,5 @@
-import { ORPCError } from "@orpc/server";
 import type { DatabaseInstance } from "@core/database/client";
+import { WebAppError } from "@core/logging/errors";
 import { team, teamMember } from "@core/database/schemas/auth";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -55,9 +55,7 @@ async function verifyTeamOwnership(
       .limit(1);
 
    if (!result) {
-      throw new ORPCError("NOT_FOUND", {
-         message: "Team not found",
-      });
+      throw WebAppError.notFound("Team not found");
    }
 
    return result;
@@ -97,9 +95,7 @@ export const updateAllowedDomains = protectedProcedure
          .returning({ allowedDomains: team.allowedDomains });
 
       if (!updated) {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to update allowed domains",
-         });
+         throw WebAppError.internal("Failed to update allowed domains");
       }
 
       return { allowedDomains: updated.allowedDomains };
@@ -172,9 +168,7 @@ export const addMember = protectedProcedure
       });
 
       if (!orgMember) {
-         throw new ORPCError("BAD_REQUEST", {
-            message: "User must be an organization member first",
-         });
+         throw WebAppError.badRequest("User must be an organization member first");
       }
 
       // Check if already a team member
@@ -187,9 +181,7 @@ export const addMember = protectedProcedure
       });
 
       if (existingTeamMember) {
-         throw new ORPCError("BAD_REQUEST", {
-            message: "User is already a team member",
-         });
+         throw WebAppError.badRequest("User is already a team member");
       }
 
       // Add user to team
