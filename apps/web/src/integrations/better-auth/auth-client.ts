@@ -12,6 +12,7 @@ import { createAuthClient as createBetterAuthClient } from "better-auth/react";
 import type { AuthInstance } from "@core/authentication/server";
 import { toast } from "sonner";
 import { invalidateAllQueries } from "./query-bridge";
+import { openErrorModal } from "./error-modal-store";
 
 const ERROR_THRESHOLD = 3;
 const ERROR_WINDOW_MS = 60 * 1000;
@@ -55,7 +56,8 @@ export const authClient = createBetterAuthClient({
          const code = `HTTP_${context.response.status}`;
          const message = context.error?.message || context.response.statusText;
          if (shouldShowErrorModal(path, code)) {
-            // TODO: Show error modal
+            openErrorModal(message, code);
+            return;
          }
          toast.error(message, { description: `${path} (${code})` });
       },
