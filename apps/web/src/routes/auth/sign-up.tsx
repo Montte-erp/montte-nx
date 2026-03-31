@@ -198,9 +198,6 @@ function SignUpPage() {
                   }}
                </form.Field>
             </FieldGroup>
-            <form.Subscribe selector={(state) => state.values.password}>
-               {(password) => <PasswordStrengthCard password={password} />}
-            </form.Subscribe>
             <FieldGroup>
                <form.Field name="confirmPassword">
                   {(field) => {
@@ -231,6 +228,9 @@ function SignUpPage() {
                   }}
                </form.Field>
             </FieldGroup>
+            <form.Subscribe selector={(state) => state.values.password}>
+               {(password) => <PasswordStrengthCard password={password} />}
+            </form.Subscribe>
          </>
       );
    }

@@ -1,4 +1,4 @@
-import { ORPCError } from "@orpc/server";
+import { WebAppError } from "@core/logging/errors";
 import {
    currentMonthStorageCost,
    currentMonthUsageByCategory,
@@ -26,9 +26,7 @@ export const getInvoices = protectedProcedure
       const { db, stripeClient, userId } = context;
 
       if (!stripeClient) {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Stripe client not configured",
-         });
+         throw WebAppError.internal("Stripe client not configured");
       }
 
       // Get the user's stripe customer ID from the user table
@@ -61,9 +59,7 @@ export const getInvoices = protectedProcedure
             hostedInvoiceUrl: invoice.hosted_invoice_url ?? null,
          }));
       } catch {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to fetch invoices",
-         });
+         throw WebAppError.internal("Failed to fetch invoices");
       }
    });
 
@@ -75,9 +71,7 @@ export const getUpcomingInvoice = protectedProcedure.handler(
       const { db, stripeClient, userId } = context;
 
       if (!stripeClient) {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Stripe client not configured",
-         });
+         throw WebAppError.internal("Stripe client not configured");
       }
 
       const userRecord = await db.query.user.findFirst({
@@ -158,9 +152,7 @@ export const getCurrentUsage = protectedProcedure.handler(
 
          return { monthToDate, projected, byCategory };
       } catch {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to fetch current usage",
-         });
+         throw WebAppError.internal("Failed to fetch current usage");
       }
    },
 );
@@ -185,9 +177,7 @@ export const getStorageUsage = protectedProcedure.handler(
             projectedCost: Number(row?.projectedCost ?? 0),
          };
       } catch {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to fetch storage usage",
-         });
+         throw WebAppError.internal("Failed to fetch storage usage");
       }
    },
 );
@@ -253,9 +243,7 @@ export const getCategoryUsage = protectedProcedure
             };
          });
       } catch {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to fetch category usage",
-         });
+         throw WebAppError.internal("Failed to fetch category usage");
       }
    });
 
@@ -357,8 +345,6 @@ export const getDailyUsage = protectedProcedure
             }))
             .sort((a, b) => a.date.localeCompare(b.date));
       } catch {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: "Failed to fetch daily usage",
-         });
+         throw WebAppError.internal("Failed to fetch daily usage");
       }
    });
