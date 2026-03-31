@@ -198,14 +198,20 @@ describe("DashboardLayout", () => {
    it("applies overflow-hidden when on settings page", () => {
       useLocationMock.mockReturnValue({ pathname: "/acme/team/settings/general" });
       const { container } = renderWithClient();
-      const main = container.querySelector("main");
-      expect(main?.className).toContain("overflow-hidden");
+      const mains = container.querySelectorAll("main");
+      const innerMain = Array.from(mains).find((el) =>
+         el.className.includes("relative flex-1"),
+      );
+      expect(innerMain?.className).toContain("overflow-hidden");
       useLocationMock.mockReturnValue({ pathname: "/acme/home" });
    });
 
    it("applies overflow-y-auto when not on settings page", () => {
       const { container } = renderWithClient();
-      const main = container.querySelector("main");
-      expect(main?.className).toContain("overflow-y-auto");
+      const mains = container.querySelectorAll("main");
+      const innerMain = Array.from(mains).find((el) =>
+         el.className.includes("relative flex-1"),
+      );
+      expect(innerMain?.className).toContain("overflow-y-auto");
    });
 });
