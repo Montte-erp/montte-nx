@@ -1,5 +1,6 @@
 import {
    archiveTag,
+   bulkDeleteTags,
    createTag,
    deleteTag,
    ensureTagOwnership,
@@ -49,17 +50,6 @@ export const archive = protectedProcedure
 export const bulkRemove = protectedProcedure
    .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))
    .handler(async ({ context, input }) => {
-      const results = await Promise.allSettled(
-         input.ids.map(async (id) => {
-            await ensureTagOwnership(context.db, id, context.teamId);
-            await deleteTag(context.db, id);
-         }),
-      );
-      const failed = results.filter((r) => r.status === "rejected").length;
-      if (failed > 0) {
-         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-            message: `${failed} centro(s) de custo não puderam ser excluídos.`,
-         });
-      }
+      await bulkDeleteTags(context.db, input.ids, context.teamId);
       return { deleted: input.ids.length };
    });

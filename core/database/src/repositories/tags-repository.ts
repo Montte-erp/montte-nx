@@ -1,5 +1,5 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { eq, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    type CreateTagInput,
@@ -135,6 +135,35 @@ export async function deleteTag(db: DatabaseInstance, id: string) {
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to delete tag");
+   }
+}
+
+export async function bulkDeleteTags(
+   db: DatabaseInstance,
+   ids: string[],
+   teamId: string,
+) {
+   try {
+      const existing = await db.query.tags.findMany({
+         where: (fields, { and, inArray, eq }) =>
+            and(inArray(fields.id, ids), eq(fields.teamId, teamId)),
+      });
+      if (existing.length !== ids.length) {
+         throw AppError.notFound("Uma ou mais tags não foram encontradas.");
+      }
+      const withTransactions = await db
+         .select({ count: sql<number>`count(*)::int` })
+         .from(transactionTags)
+         .where(inArray(transactionTags.tagId, ids));
+      if ((withTransactions[0]?.count ?? 0) > 0) {
+         throw AppError.conflict(
+            "Tags com lançamentos não podem ser excluídas. Use arquivamento.",
+         );
+      }
+      await db.delete(tags).where(inArray(tags.id, ids));
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to bulk delete tags");
    }
 }
 
