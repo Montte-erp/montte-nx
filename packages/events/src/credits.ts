@@ -38,7 +38,10 @@ export async function incrementUsage(
    const newValue = await redis.hincrby(key, eventName, 1);
 
    if (newValue === 1) {
-      await redis.pexpire(key, msUntilEndOfMonth());
+      const ttl = await redis.pttl(key);
+      if (ttl < 0) {
+         await redis.pexpire(key, msUntilEndOfMonth());
+      }
    }
 }
 

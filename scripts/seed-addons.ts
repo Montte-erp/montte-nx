@@ -154,7 +154,11 @@ async function runSeed(
             .update(subscription)
             .set({ status: "active", periodStart: now, periodEnd, cancelAtPeriodEnd: false })
             .where(eq(subscription.id, existing.id));
-         console.log(colors.green(`  ✅ Updated existing addon: ${addon.plan}`));
+         if (existing.status !== "active") {
+            console.log(colors.yellow(`  ⚠️  Reactivated previously ${existing.status} addon: ${addon.plan}`));
+         } else {
+            console.log(colors.green(`  ✅ Updated existing addon: ${addon.plan}`));
+         }
       } else {
          await db.insert(subscription).values({
             plan: addon.plan,
