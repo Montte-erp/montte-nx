@@ -88,20 +88,12 @@ const defineStepper = <const Steps extends Stepperize.Step[]>(
                      date-component="stepper-navigation"
                      {...props}
                   >
-                     <div className="flex items-center gap-4">
-                        <ol
-                           className={classForNavigationList({ variant })}
-                           date-component="stepper-navigation-list"
-                        >
-                           {children}
-                        </ol>
-                        <span
-                           className="text-sm text-muted-foreground whitespace-nowrap"
-                           date-component="stepper-step-counter"
-                        >
-                           {`Passo ${currentIndex + 1} de ${totalSteps}`}
-                        </span>
-                     </div>
+                     <ol
+                        className={cn(classForNavigationList({ variant }), "w-full")}
+                        date-component="stepper-navigation-list"
+                     >
+                        {children}
+                     </ol>
                   </nav>
                );
             }
@@ -183,14 +175,14 @@ const defineStepper = <const Steps extends Stepperize.Step[]>(
             if (variant === "line") {
                return (
                   <li
-                     className={cn(className)}
+                     className={cn("flex-1", className)}
                      data-state={dataState}
                      date-component="stepper-step"
                   >
                      <button
                         aria-current={isActive ? "step" : undefined}
                         className={cn(
-                           "h-1 w-8 rounded-full transition-colors duration-300",
+                           "h-1 w-full rounded-full transition-colors duration-300",
                            dataState === "completed" || dataState === "active"
                               ? "bg-primary"
                               : "bg-muted",
