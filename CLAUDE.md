@@ -103,6 +103,39 @@ throw new ORPCError("FORBIDDEN", { message: "Insufficient permissions" });
 
 **Errors in repositories** (`core/database/src/repositories/`): Use `AppError` + `propagateError()` from `@core/utils/errors`.
 
+**Bulk operations must have a dedicated router procedure.** Never loop `mutateAsync` N times from the client for bulk actions — this fires N success/error callbacks and N cache invalidations. Create a `bulkRemove` (or `bulkXxx`) procedure that accepts `ids: z.array(z.string().uuid()).min(1)` and runs the operation server-side. The client calls it once, then shows a single summary toast after the mutation resolves.
+
+```typescript
+// ✅ Router — dedicated bulk procedure
+export const bulkRemove = protectedProcedure
+   .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))
+   .handler(async ({ context, input }) => {
+      const results = await Promise.allSettled(
+         input.ids.map(async (id) => {
+            await ensureOwnership(context.db, id, context.teamId);
+            await deleteRecord(context.db, id);
+         }),
+      );
+      const failed = results.filter((r) => r.status === "rejected").length;
+      if (failed > 0) {
+         throw new ORPCError("INTERNAL_SERVER_ERROR", { message: `${failed} item(s) failed.` });
+      }
+      return { deleted: input.ids.length };
+   });
+
+// ✅ Client — one call, one toast
+const bulkDeleteMutation = useMutation(orpc.resource.bulkRemove.mutationOptions({ onError: ... }));
+
+onAction: async () => {
+   await bulkDeleteMutation.mutateAsync({ ids: selectedIds });
+   toast.success(`${selectedIds.length} items excluídos com sucesso.`);
+   onClear();
+};
+
+// ❌ Never — fires N toasts and N invalidations
+await Promise.all(selectedIds.map((id) => deleteMutation.mutateAsync({ id })));
+```
+
 ---
 
 ## Client-Side Patterns (oRPC + TanStack Query)

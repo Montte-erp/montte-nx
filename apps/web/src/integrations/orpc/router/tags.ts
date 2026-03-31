@@ -6,6 +6,7 @@ import {
    listTags,
    updateTag,
 } from "@core/database/repositories/tags-repository";
+import { ORPCError } from "@orpc/server";
 import { createTagSchema, updateTagSchema } from "@core/database/schemas/tags";
 import { z } from "zod";
 import { protectedProcedure } from "../server";
@@ -43,4 +44,22 @@ export const archive = protectedProcedure
    .handler(async ({ context, input }) => {
       await ensureTagOwnership(context.db, input.id, context.teamId);
       return archiveTag(context.db, input.id);
+   });
+
+export const bulkRemove = protectedProcedure
+   .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))
+   .handler(async ({ context, input }) => {
+      const results = await Promise.allSettled(
+         input.ids.map(async (id) => {
+            await ensureTagOwnership(context.db, id, context.teamId);
+            await deleteTag(context.db, id);
+         }),
+      );
+      const failed = results.filter((r) => r.status === "rejected").length;
+      if (failed > 0) {
+         throw new ORPCError("INTERNAL_SERVER_ERROR", {
+            message: `${failed} centro(s) de custo não puderam ser excluídos.`,
+         });
+      }
+      return { deleted: input.ids.length };
    });
