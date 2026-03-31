@@ -18,7 +18,7 @@ import {
 } from "@packages/ui/components/select";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { TooltipProvider } from "@packages/ui/components/tooltip";
-import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
    Briefcase,
@@ -294,12 +294,12 @@ function ServicesPage() {
       categoryId: "",
    });
 
-   const { data: categoriesResult } = useQuery(
+   const { data: categoriesResult } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
    const categories = categoriesResult;
 
-   const { data: servicesList } = useQuery(
+   const { data: servicesList } = useSuspenseQuery(
       orpc.services.getAll.queryOptions({}),
    );
 

@@ -10,6 +10,7 @@ interface SurveyModalState {
    surveyId: string | null;
    title?: string;
    description?: string;
+   extraPayload?: Record<string, unknown>;
 }
 
 const initialState: SurveyModalState = { isOpen: false, surveyId: null };
@@ -19,17 +20,22 @@ const surveyModalStore = new Store<SurveyModalState>(initialState);
 type OpenSurveyOptions = {
    title?: string;
    description?: string;
+   extraPayload?: Record<string, unknown>;
 };
+
+export function openSurveyModal(surveyId: string, options?: OpenSurveyOptions) {
+   surveyModalStore.setState(() => ({
+      isOpen: true,
+      surveyId,
+      title: options?.title,
+      description: options?.description,
+      extraPayload: options?.extraPayload,
+   }));
+}
 
 export function useSurveyModal() {
    return {
-      openSurveyModal: (surveyId: string, options?: OpenSurveyOptions) =>
-         surveyModalStore.setState(() => ({
-            isOpen: true,
-            surveyId,
-            title: options?.title,
-            description: options?.description,
-         })),
+      openSurveyModal,
       closeSurveyModal: () => surveyModalStore.setState(() => initialState),
    };
 }
@@ -45,6 +51,7 @@ export function GlobalSurveyModal() {
             {state.surveyId && (
                <SurveyModalContent
                   description={state.description}
+                  extraPayload={state.extraPayload}
                   onClose={close}
                   surveyId={state.surveyId}
                   title={state.title}

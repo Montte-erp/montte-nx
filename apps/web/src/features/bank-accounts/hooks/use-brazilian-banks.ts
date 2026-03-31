@@ -1,5 +1,5 @@
 import type { ComboboxOption } from "@packages/ui/components/combobox";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 interface BrasilApiBank {
@@ -16,7 +16,7 @@ async function fetchBrazilianBanks(): Promise<BrasilApiBank[]> {
 }
 
 export function useBrazilianBanks() {
-   const { data: banks = [], isLoading } = useQuery({
+   const { data: banks } = useSuspenseQuery({
       queryKey: ["brazilian-banks"],
       queryFn: fetchBrazilianBanks,
       staleTime: Number.POSITIVE_INFINITY,
@@ -35,5 +35,5 @@ export function useBrazilianBanks() {
       [banks],
    );
 
-   return { bankOptions, isLoading };
+   return { bankOptions };
 }

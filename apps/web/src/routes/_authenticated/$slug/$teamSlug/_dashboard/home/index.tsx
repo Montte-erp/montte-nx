@@ -1,6 +1,6 @@
 import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
@@ -63,28 +63,9 @@ function HomePageSkeleton() {
 // =============================================================================
 
 function HomePageContent() {
-   const { data: dashboard, error } = useQuery(
+   const { data: dashboard } = useSuspenseQuery(
       orpc.analytics.getDefaultDashboard.queryOptions(),
    );
-
-   if (error) {
-      return (
-         <main className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-            <div className="text-center">
-               <h2 className="text-lg font-semibold">
-                  Dashboard não encontrado
-               </h2>
-               <p className="text-sm text-muted-foreground mt-2">
-                  Complete o processo de onboarding para criar seu dashboard.
-               </p>
-            </div>
-         </main>
-      );
-   }
-
-   if (!dashboard) {
-      return <HomePageSkeleton />;
-   }
 
    return (
       <DashboardView dashboard={dashboard}>
