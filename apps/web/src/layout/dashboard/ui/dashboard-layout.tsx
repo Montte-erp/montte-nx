@@ -42,7 +42,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
    };
 
    const isSettingsPage = pathname.includes("/settings");
-   const isChatPage = pathname.includes("/chat");
 
    useEffect(() => {
       if (activeOrganization?.slug) {
@@ -96,11 +95,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                      <main
                         className={cn(
                            "relative flex-1",
-                           isChatPage
-                              ? "overflow-hidden "
-                              : isSettingsPage
-                                ? "overflow-hidden p-4"
-                                : "overflow-y-auto p-4",
+                           isSettingsPage
+                              ? "overflow-hidden p-4"
+                              : "overflow-y-auto p-4",
                         )}
                      >
                         {children}

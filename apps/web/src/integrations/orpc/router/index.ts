@@ -1,5 +1,4 @@
 import * as accountRouter from "./account";
-import * as agentRouter from "./agent";
 import * as agentSettingsRouter from "./agent-settings";
 import * as analyticsRouter from "./analytics";
 import * as bankAccountsRouter from "./bank-accounts";
@@ -25,7 +24,6 @@ import * as transactionsRouter from "./transactions";
 
 export default {
    account: accountRouter,
-   agent: agentRouter,
    agentSettings: agentSettingsRouter,
    analytics: analyticsRouter,
    bankAccounts: bankAccountsRouter,
