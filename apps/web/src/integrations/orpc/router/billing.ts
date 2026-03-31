@@ -1,3 +1,4 @@
+import { eventCatalog } from "@core/database/schemas/event-catalog";
 import { WebAppError } from "@core/logging/errors";
 import {
    EVENT_PRICES,
@@ -218,6 +219,11 @@ export const getMeterUsage = protectedProcedure.handler(
       }
    },
 );
+
+export const getEventCatalog = protectedProcedure.handler(async ({ context }) => {
+   const { db } = context;
+   return db.select().from(eventCatalog).orderBy(eventCatalog.category, eventCatalog.displayName);
+});
 
 function buildUsageFallback() {
    return Object.keys(FREE_TIER_LIMITS).map((eventName) => ({
