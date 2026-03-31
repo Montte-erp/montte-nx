@@ -1,5 +1,4 @@
 import { format, fromMinorUnits, of } from "@f-o-t/money";
-import { FREE_TIER_LIMITS } from "@core/stripe/constants";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -21,8 +20,6 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import type { FeatureStage } from "@packages/ui/components/feature-stage-badge";
-import { FeatureStageBadge } from "@packages/ui/components/feature-stage-badge";
 import { Progress } from "@packages/ui/components/progress";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
@@ -33,7 +30,6 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { Link, useParams } from "@tanstack/react-router";
 import {
    Briefcase,
    Calendar,
@@ -41,117 +37,47 @@ import {
    Coins,
    CreditCard,
    ExternalLink,
-   FileCheck,
-   FileText,
    HelpCircle,
    Package,
    Receipt,
-   Sparkles,
    Users,
    Webhook,
-   Workflow,
-   ShoppingCart,
-   Building2,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Suspense, useTransition } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
-import { useEarlyAccess } from "@/hooks/use-early-access";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 import type { Outputs } from "@/integrations/orpc/client";
 
 type MeterUsageItem = Outputs["billing"]["getMeterUsage"][number];
+type CatalogEntry = Outputs["billing"]["getEventCatalog"][number];
+
+interface EventWithUsage {
+   eventName: string;
+   displayName: string;
+   used: number;
+   freeTierLimit: number;
+   pricePerEvent: string;
+}
 
 interface CategorySummary {
    category: string;
    eventCount: number;
    monthToDateCost: number;
    projectedCost: number;
-   events: MeterUsageItem[];
+   events: EventWithUsage[];
 }
 
-const CATEGORY_CONFIG: Record<
-   string,
-   { label: string; description: string; icon: ReactNode }
-> = {
-   finance: {
-      label: "Financeiro",
-      description: "Transacoes financeiras, contas bancarias e categorias",
-      icon: <Coins className="size-5" />,
-   },
-   ai: {
-      label: "Inteligencia Artificial",
-      description: "Mensagens de chat IA e acoes de agentes",
-      icon: <Sparkles className="size-5" />,
-   },
-   contact: {
-      label: "Contatos",
-      description: "Cadastro de pessoas e empresas",
-      icon: <Users className="size-5" />,
-   },
-   crm: {
-      label: "CRM",
-      description: "Negociações, mensagens e cobranças",
-      icon: <ShoppingCart className="size-5" />,
-   },
-   inventory: {
-      label: "Estoque",
-      description: "Produtos, materiais e controle de estoque",
-      icon: <Package className="size-5" />,
-   },
-   service: {
-      label: "Servicos",
-      description: "Prestacao de servicos e ordens de servico",
-      icon: <Briefcase className="size-5" />,
-   },
-   workflow: {
-      label: "Automacoes",
-      description: "Execucoes de workflows e etapas automatizadas",
-      icon: <Workflow className="size-5" />,
-   },
-   document: {
-      label: "Documentos",
-      description: "Criacao e gestao de documentos",
-      icon: <FileCheck className="size-5" />,
-   },
-   coworking: {
-      label: "Coworking",
-      description: "Check-ins e reservas de espacos",
-      icon: <Building2 className="size-5" />,
-   },
-   nfe: {
-      label: "NF-e",
-      description: "Emissao e cancelamento de notas fiscais eletronicas",
-      icon: <FileText className="size-5" />,
-   },
-   webhook: {
-      label: "Webhooks",
-      description: "Entregas de webhook e notificacoes externas",
-      icon: <Webhook className="size-5" />,
-   },
-   payment: {
-      label: "Pagamentos",
-      description: "Processamento de pagamentos e assinaturas",
-      icon: <CreditCard className="size-5" />,
-   },
+const CATEGORY_ICONS: Record<string, ReactNode> = {
+   finance: <Coins className="size-5" />,
+   contact: <Users className="size-5" />,
+   inventory: <Package className="size-5" />,
+   service: <Briefcase className="size-5" />,
+   webhook: <Webhook className="size-5" />,
 };
-
-const EARLY_ACCESS_CATEGORY_GATES: Record<
-   string,
-   { flag: string; fallbackStage: FeatureStage }
-> = {
-   nfe: { flag: "nfe", fallbackStage: "alpha" },
-   document: { flag: "document-signing", fallbackStage: "alpha" },
-   coworking: { flag: "coworking", fallbackStage: "alpha" },
-   crm: { flag: "crm", fallbackStage: "alpha" },
-   workflow: { flag: "workflow", fallbackStage: "alpha" },
-   payment: { flag: "payment", fallbackStage: "alpha" },
-};
-
-const COMING_SOON_CATEGORIES = new Set(["nfe"]);
 
 const PLATFORM_ADDONS = [
    {
@@ -177,11 +103,7 @@ const PLATFORM_ADDONS = [
    },
 ] as const;
 
-function getCategoryFromEventName(eventName: string): string {
-   return eventName.split(".")[0] ?? "system";
-}
-
-function computeMonthlyCost(item: MeterUsageItem): number {
+function computeMonthlyCost(item: EventWithUsage): number {
    const overage = Math.max(0, item.used - item.freeTierLimit);
    return overage * parseFloat(item.pricePerEvent);
 }
@@ -199,15 +121,24 @@ function computeProjectedCost(monthToDateCost: number): number {
 }
 
 function buildCategorySummaries(
+   catalog: CatalogEntry[],
    meterUsage: MeterUsageItem[],
 ): CategorySummary[] {
-   const byCategory = new Map<string, MeterUsageItem[]>();
+   const usageMap = new Map(meterUsage.map((m) => [m.eventName, m.used]));
+   const billable = catalog.filter((e) => e.isBillable);
+   const byCategory = new Map<string, EventWithUsage[]>();
 
-   for (const item of meterUsage) {
-      const cat = getCategoryFromEventName(item.eventName);
-      const existing = byCategory.get(cat) ?? [];
-      existing.push(item);
-      byCategory.set(cat, existing);
+   for (const entry of billable) {
+      const used = usageMap.get(entry.eventName) ?? 0;
+      const existing = byCategory.get(entry.category) ?? [];
+      existing.push({
+         eventName: entry.eventName,
+         displayName: entry.displayName,
+         used,
+         freeTierLimit: entry.freeTierLimit,
+         pricePerEvent: entry.pricePerEvent,
+      });
+      byCategory.set(entry.category, existing);
    }
 
    const summaries: CategorySummary[] = [];
@@ -227,12 +158,6 @@ function buildCategorySummaries(
    }
 
    return summaries;
-}
-
-function getCategoryFreeTier(category: string): number {
-   return Object.entries(FREE_TIER_LIMITS)
-      .filter(([key]) => key.startsWith(`${category}.`))
-      .reduce((sum, [, limit]) => sum + limit, 0);
 }
 
 function formatCurrency(value: number): string {
@@ -263,13 +188,6 @@ function getDaysRemaining(): number {
    );
 }
 
-function humanizeEventName(eventName: string): string {
-   const parts = eventName.split(".");
-   const name = parts[parts.length - 1] ?? eventName;
-   return name
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 function CurrentBillHeader({ monthToDate }: { monthToDate: number }) {
    return (
@@ -509,182 +427,124 @@ function AddonsSection({ hasPaymentMethod }: { hasPaymentMethod: boolean }) {
    );
 }
 
-function OverviewProductCard({
-   category,
-   stage,
-   enrolled = true,
-   comingSoon = false,
-}: {
-   category: CategorySummary;
-   stage?: FeatureStage;
-   enrolled?: boolean;
-   comingSoon?: boolean;
-}) {
-   const { slug, teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
-   const config = CATEGORY_CONFIG[category.category];
-   if (!config) return null;
+function OverviewProductCard({ category }: { category: CategorySummary }) {
+   const icon = CATEGORY_ICONS[category.category] ?? <HelpCircle className="size-5" />;
+   const freeTier = category.events.reduce((sum, e) => sum + e.freeTierLimit, 0);
 
    return (
-      <Card className={comingSoon || !enrolled ? "opacity-70" : ""}>
+      <Card>
          <Collapsible>
             <CardHeader className="pb-3">
-               <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                     <div className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground shrink-0">
-                        {config.icon}
-                     </div>
-                     <div className="min-w-0">
-                        <CardTitle className="text-base">
-                           {config.label}
-                        </CardTitle>
-                        <CardDescription className="text-xs mt-0.5">
-                           {config.description}
-                        </CardDescription>
-                     </div>
+               <div className="flex items-start gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground shrink-0">
+                     {icon}
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                     {stage && <FeatureStageBadge stage={stage} />}
-                     {comingSoon ? (
-                        <Badge variant="secondary">Em breve</Badge>
-                     ) : !enrolled ? (
-                        <Button asChild variant="outline">
-                           <Link
-                              params={{ slug, teamSlug }}
-                              to="/$slug/$teamSlug/settings/feature-previews"
-                           >
-                              Ativar
-                           </Link>
-                        </Button>
-                     ) : null}
+                  <div className="min-w-0">
+                     <CardTitle className="text-base capitalize">
+                        {category.category}
+                     </CardTitle>
                   </div>
                </div>
             </CardHeader>
 
-            {enrolled && (
-               <CardContent className="space-y-4">
-                  <div className="flex items-center gap-4">
-                     <CollapsibleTrigger className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors shrink-0">
-                        <ChevronRight className="size-4 transition-transform [[data-state=open]_&]:rotate-90" />
-                     </CollapsibleTrigger>
+            <CardContent className="space-y-4">
+               <div className="flex items-center gap-4">
+                  <CollapsibleTrigger className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors shrink-0">
+                     <ChevronRight className="size-4 transition-transform [[data-state=open]_&]:rotate-90" />
+                  </CollapsibleTrigger>
 
-                     <div className="flex-1 flex items-center gap-6">
-                        <div className="text-sm shrink-0">
-                           <span className="text-muted-foreground">Atual</span>
-                           <p className="font-medium tabular-nums">
-                              {category.eventCount.toLocaleString("pt-BR")}
+                  <div className="flex-1 flex items-center gap-6">
+                     <div className="text-sm shrink-0">
+                        <span className="text-muted-foreground">Atual</span>
+                        <p className="font-medium tabular-nums">
+                           {category.eventCount.toLocaleString("pt-BR")}
+                        </p>
+                     </div>
+
+                     <div className="flex-1 space-y-1 min-w-0">
+                        <Progress
+                           className="h-2"
+                           value={
+                              freeTier > 0
+                                 ? Math.min(
+                                      (category.eventCount / freeTier) * 100,
+                                      100,
+                                   )
+                                 : 0
+                           }
+                        />
+                        {freeTier > 0 && (
+                           <p className="text-xs text-muted-foreground">
+                              Limite gratuito:{" "}
+                              {freeTier.toLocaleString("pt-BR")}
+                           </p>
+                        )}
+                     </div>
+
+                     <div className="flex items-center gap-6 shrink-0">
+                        <div className="text-right">
+                           <span className="text-lg font-semibold tabular-nums">
+                              {formatCurrency(category.monthToDateCost)}
+                           </span>
+                           <p className="text-xs text-muted-foreground">
+                              No mes
                            </p>
                         </div>
-
-                        {(() => {
-                           const freeTier = getCategoryFreeTier(
-                              category.category,
-                           );
-                           return (
-                              <div className="flex-1 space-y-1 min-w-0">
-                                 <Progress
-                                    className="h-2"
-                                    value={
-                                       freeTier > 0
-                                          ? Math.min(
-                                               (category.eventCount /
-                                                  freeTier) *
-                                                  100,
-                                               100,
-                                            )
-                                          : 0
-                                    }
-                                 />
-                                 {freeTier > 0 && (
-                                    <p className="text-xs text-muted-foreground">
-                                       Limite gratuito:{" "}
-                                       {freeTier.toLocaleString("pt-BR")}
-                                    </p>
-                                 )}
-                              </div>
-                           );
-                        })()}
-
-                        <div className="flex items-center gap-6 shrink-0">
-                           <div className="text-right">
-                              <span className="text-lg font-semibold tabular-nums">
-                                 {formatCurrency(category.monthToDateCost)}
-                              </span>
-                              <p className="text-xs text-muted-foreground">
-                                 No mes
-                              </p>
-                           </div>
-                           <div className="text-right">
-                              <span className="text-lg font-semibold tabular-nums">
-                                 {formatCurrency(category.projectedCost)}
-                              </span>
-                              <p className="text-xs text-muted-foreground">
-                                 Projetado
-                              </p>
-                           </div>
+                        <div className="text-right">
+                           <span className="text-lg font-semibold tabular-nums">
+                              {formatCurrency(category.projectedCost)}
+                           </span>
+                           <p className="text-xs text-muted-foreground">
+                              Projetado
+                           </p>
                         </div>
                      </div>
                   </div>
+               </div>
 
-                  <CollapsibleContent>
-                     <div className="border-t pt-4 space-y-3">
-                        {category.events.length === 0 ? (
-                           <p className="text-sm text-muted-foreground py-3">
-                              Nenhum evento registrado nesta categoria
-                           </p>
-                        ) : (
-                           category.events.map((event) => {
-                              const hasLimit = event.freeTierLimit > 0;
-                              const percentage = hasLimit
-                                 ? Math.min(
-                                      (event.used / event.freeTierLimit) * 100,
-                                      100,
-                                   )
-                                 : undefined;
-                              const cost = computeMonthlyCost(event);
+               <CollapsibleContent>
+                  <div className="border-t pt-4 space-y-3">
+                     {category.events.map((event) => {
+                        const hasLimit = event.freeTierLimit > 0;
+                        const percentage = hasLimit
+                           ? Math.min(
+                                (event.used / event.freeTierLimit) * 100,
+                                100,
+                             )
+                           : undefined;
+                        const cost = computeMonthlyCost(event);
 
-                              return (
-                                 <div
-                                    className="space-y-1.5"
-                                    key={event.eventName}
-                                 >
-                                    <div className="flex items-center justify-between text-sm">
-                                       <span>
-                                          {humanizeEventName(event.eventName)}
-                                       </span>
-                                       <div className="flex items-center gap-4">
-                                          <span className="tabular-nums text-muted-foreground">
-                                             {event.used.toLocaleString("pt-BR")}
-                                             {hasLimit && (
-                                                <span>
-                                                   {" "}
-                                                   /{" "}
-                                                   {event.freeTierLimit.toLocaleString(
-                                                      "pt-BR",
-                                                   )}
-                                                </span>
+                        return (
+                           <div className="space-y-1.5" key={event.eventName}>
+                              <div className="flex items-center justify-between text-sm">
+                                 <span>{event.displayName}</span>
+                                 <div className="flex items-center gap-4">
+                                    <span className="tabular-nums text-muted-foreground">
+                                       {event.used.toLocaleString("pt-BR")}
+                                       {hasLimit && (
+                                          <span>
+                                             {" "}
+                                             /{" "}
+                                             {event.freeTierLimit.toLocaleString(
+                                                "pt-BR",
                                              )}
                                           </span>
-                                          <span className="tabular-nums font-medium w-20 text-right">
-                                             {formatCurrency(cost)}
-                                          </span>
-                                       </div>
-                                    </div>
-                                    {percentage !== undefined && (
-                                       <Progress
-                                          className="h-1"
-                                          value={percentage}
-                                       />
-                                    )}
+                                       )}
+                                    </span>
+                                    <span className="tabular-nums font-medium w-20 text-right">
+                                       {formatCurrency(cost)}
+                                    </span>
                                  </div>
-                              );
-                           })
-                        )}
-                     </div>
-                  </CollapsibleContent>
-               </CardContent>
-            )}
+                              </div>
+                              {percentage !== undefined && (
+                                 <Progress className="h-1" value={percentage} />
+                              )}
+                           </div>
+                        );
+                     })}
+                  </div>
+               </CollapsibleContent>
+            </CardContent>
          </Collapsible>
       </Card>
    );
@@ -799,46 +659,21 @@ export function BillingOverview() {
    const { data: meterUsage } = useSuspenseQuery(
       orpc.billing.getMeterUsage.queryOptions({}),
    );
+   const { data: catalog } = useSuspenseQuery(
+      orpc.billing.getEventCatalog.queryOptions({}),
+   );
    const { data: paymentStatus } = useQuery(
       orpc.billing.getPaymentStatus.queryOptions({}),
    );
    const hasPaymentMethod = paymentStatus?.hasPaymentMethod ?? false;
-   const { features, isEnrolled } = useEarlyAccess();
 
-   function resolveStage(
-      flagKey: string,
-      fallback: FeatureStage,
-   ): FeatureStage {
-      const posthogStage = features.find((f) => f.flagKey === flagKey)?.stage as
-         | FeatureStage
-         | undefined;
-      return posthogStage ?? fallback;
-   }
-
-   const categorySummaries = buildCategorySummaries(meterUsage);
+   const categorySummaries = buildCategorySummaries(catalog, meterUsage);
    const monthToDate = categorySummaries.reduce(
       (sum, c) => sum + c.monthToDateCost,
       0,
    );
 
-   const visibleCategories = Object.keys(CATEGORY_CONFIG);
-   const categoryDataMap = new Map(
-      categorySummaries.map((c) => [c.category, c]),
-   );
-
-   const allCategories: CategorySummary[] = visibleCategories.map((cat) => {
-      return (
-         categoryDataMap.get(cat) ?? {
-            category: cat,
-            eventCount: 0,
-            monthToDateCost: 0,
-            projectedCost: 0,
-            events: [],
-         }
-      );
-   });
-
-   const sortedCategories = allCategories.sort(
+   const sortedCategories = [...categorySummaries].sort(
       (a, b) => b.monthToDateCost - a.monthToDateCost,
    );
 
@@ -852,27 +687,9 @@ export function BillingOverview() {
          <div>
             <h2 className="text-lg font-semibold mb-4">Produtos</h2>
             <div className="space-y-4">
-               {sortedCategories.map((cat) => {
-                  const gate = EARLY_ACCESS_CATEGORY_GATES[cat.category];
-                  const stage = gate
-                     ? resolveStage(gate.flag, gate.fallbackStage)
-                     : undefined;
-                  const comingSoon = COMING_SOON_CATEGORIES.has(cat.category);
-                  const enrolled = comingSoon
-                     ? false
-                     : gate
-                       ? isEnrolled(gate.flag)
-                       : true;
-                  return (
-                     <OverviewProductCard
-                        category={cat}
-                        comingSoon={comingSoon}
-                        enrolled={enrolled}
-                        key={cat.category}
-                        stage={stage}
-                     />
-                  );
-               })}
+               {sortedCategories.map((cat) => (
+                  <OverviewProductCard category={cat} key={cat.category} />
+               ))}
             </div>
          </div>
 
