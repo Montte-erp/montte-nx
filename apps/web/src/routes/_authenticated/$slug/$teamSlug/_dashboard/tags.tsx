@@ -191,6 +191,8 @@ function TagsList({ navigate }: TagsListProps) {
       });
    }, [openAlertDialog, selectedIds, bulkDeleteMutation, onClear]);
 
+   const columns = useMemo(() => buildTagColumns(), []);
+
    if (tags.length === 0) {
       return (
          <Empty>
@@ -206,8 +208,6 @@ function TagsList({ navigate }: TagsListProps) {
          </Empty>
       );
    }
-
-   const columns = useMemo(() => buildTagColumns(), []);
 
    return (
       <>
