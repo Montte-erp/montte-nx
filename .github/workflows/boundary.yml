@@ -1,0 +1,23 @@
+name: Boundary
+
+on:
+   pull_request:
+      branches: ["*"]
+      types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+   check:
+      if: github.event.pull_request.draft == false
+      runs-on: blacksmith-4vcpu-ubuntu-2404
+      steps:
+         - name: Checkout code
+           uses: actions/checkout@v4
+           with:
+              fetch-depth: 0
+              filter: tree:0
+
+         - name: Bun & Nx Setup
+           uses: ./.github/actions/setup-bun-nx
+
+         - name: Run boundary check
+           run: bun run check-boundaries

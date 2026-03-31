@@ -467,6 +467,78 @@ describe("categories-repository", () => {
       });
    });
 
+   describe("bulkDeleteCategories", () => {
+      it("deletes multiple categories with no transactions", async () => {
+         const teamId = randomTeamId();
+         const cat1 = await repo.createCategory(
+            testDb.db,
+            teamId,
+            validCreateInput({ name: "Bulk Cat A" }),
+         );
+         const cat2 = await repo.createCategory(
+            testDb.db,
+            teamId,
+            validCreateInput({ name: "Bulk Cat B" }),
+         );
+
+         await repo.bulkDeleteCategories(testDb.db, [cat1.id, cat2.id], teamId);
+
+         expect(await repo.getCategory(testDb.db, cat1.id)).toBeNull();
+         expect(await repo.getCategory(testDb.db, cat2.id)).toBeNull();
+      });
+
+      it("rejects if any category belongs to another team", async () => {
+         const teamId = randomTeamId();
+         const otherTeamId = randomTeamId();
+         const cat1 = await repo.createCategory(
+            testDb.db,
+            teamId,
+            validCreateInput({ name: "Mine Bulk Cat" }),
+         );
+         const cat2 = await repo.createCategory(
+            testDb.db,
+            otherTeamId,
+            validCreateInput({ name: "Other Bulk Cat" }),
+         );
+
+         await expect(
+            repo.bulkDeleteCategories(testDb.db, [cat1.id, cat2.id], teamId),
+         ).rejects.toThrow(/não foram encontradas/);
+      });
+
+      it("rejects if any category is default", async () => {
+         const teamId = randomTeamId();
+         await repo.seedDefaultCategories(testDb.db, teamId);
+         const list = await repo.listCategories(testDb.db, teamId);
+         const defaultCat = list.find((c) => c.isDefault)!;
+
+         await expect(
+            repo.bulkDeleteCategories(testDb.db, [defaultCat.id], teamId),
+         ).rejects.toThrow(/padrão/);
+      });
+
+      it("rejects if any category has transactions", async () => {
+         const teamId = randomTeamId();
+         const cat = await repo.createCategory(
+            testDb.db,
+            teamId,
+            validCreateInput({ name: "Cat Com Lancamentos" }),
+         );
+
+         await testDb.db.insert(transactions).values({
+            teamId,
+            type: "expense",
+            amount: "100.00",
+            date: "2025-01-15",
+            categoryId: cat.id,
+         });
+
+         await expect(
+            repo.bulkDeleteCategories(testDb.db, [cat.id], teamId),
+         ).rejects.toThrow(/lançamentos/);
+      });
+   });
+
    describe("seedDefaultCategories", () => {
       it("seeds defaults with correct types", async () => {
          const teamId = randomTeamId();

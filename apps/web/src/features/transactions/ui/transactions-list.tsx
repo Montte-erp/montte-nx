@@ -132,7 +132,7 @@ export function TransactionsList({
       }),
    );
 
-   const transactionData = result.data as unknown as TransactionRow[];
+   const transactionData = result.data;
    const totalPages = Math.ceil(result.total / filters.pageSize);
 
    const deleteMutation = useMutation(

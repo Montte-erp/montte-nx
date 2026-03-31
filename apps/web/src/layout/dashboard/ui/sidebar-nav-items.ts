@@ -10,7 +10,6 @@ import {
    Lightbulb,
    Package,
    Receipt,
-   Sparkles,
    Tag,
    Tags,
    Target,
@@ -63,12 +62,6 @@ export const navGroups: NavGroupDef[] = [
             label: "Inicio",
             icon: House,
             route: "/$slug/$teamSlug/home",
-         },
-         {
-            id: "chat",
-            label: "Montte AI",
-            icon: Sparkles,
-            route: "/$slug/$teamSlug/chat",
          },
          {
             id: "dashboards",

@@ -27,7 +27,7 @@ import {
    Trash2,
    Upload,
 } from "lucide-react";
-import { Suspense, useCallback } from "react";
+import { Suspense, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
@@ -58,6 +58,8 @@ const categoriesSearchSchema = z.object({
    groupBy: z.boolean().optional().default(true),
    search: z.string().optional().default(""),
 });
+
+export type CategoriesSearch = z.infer<typeof categoriesSearchSchema>;
 
 const [useCategoriesTableState] = createLocalStorageState<DataTableStoredState | null>(
    "montte:datatable:categories",
@@ -105,7 +107,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
       (updater) => {
          const next = typeof updater === "function" ? updater(sorting) : updater;
-         navigate({ search: (prev) => ({ ...prev, sorting: next }) });
+         navigate({ search: (prev: CategoriesSearch) => ({ ...prev, sorting: next }) });
       },
       [sorting, navigate],
    );
@@ -113,7 +115,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
    const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
       (updater) => {
          const next = typeof updater === "function" ? updater(columnFilters) : updater;
-         navigate({ search: (prev) => ({ ...prev, columnFilters: next }) });
+         navigate({ search: (prev: CategoriesSearch) => ({ ...prev, columnFilters: next }) });
       },
       [columnFilters, navigate],
    );
@@ -159,6 +161,14 @@ function CategoriesList({ navigate }: CategoriesListProps) {
          },
          onError: (error) => {
             toast.error(error.message || "Erro ao excluir categoria.");
+         },
+      }),
+   );
+
+   const bulkDeleteMutation = useMutation(
+      orpc.categories.bulkRemove.mutationOptions({
+         onError: (error) => {
+            toast.error(error.message || "Erro ao excluir categorias.");
          },
       }),
    );
@@ -244,15 +254,16 @@ function CategoriesList({ navigate }: CategoriesListProps) {
          cancelLabel: "Cancelar",
          variant: "destructive",
          onAction: async () => {
-            await Promise.all(
-               deletableIds.map((id) => deleteMutation.mutateAsync({ id })),
+            await bulkDeleteMutation.mutateAsync({ ids: deletableIds });
+            toast.success(
+               `${deletableIds.length} ${deletableIds.length === 1 ? "categoria excluída" : "categorias excluídas"} com sucesso.`,
             );
             onClear();
          },
       });
-   }, [openAlertDialog, selectedIds, categories, deleteMutation, onClear]);
+   }, [openAlertDialog, selectedIds, categories, bulkDeleteMutation, onClear]);
 
-   const columns = buildCategoryColumns();
+   const columns = useMemo(() => buildCategoryColumns(), []);
 
    if (categories.length === 0) {
       return (
@@ -359,27 +370,27 @@ function CategoriesPage() {
 
    const handleIncludeArchivedChange = useCallback(
       (checked: boolean) => {
-         navigate({ search: (prev) => ({ ...prev, includeArchived: checked }) });
+         navigate({ search: (prev: CategoriesSearch) => ({ ...prev, includeArchived: checked }) });
       },
       [navigate],
    );
 
    const handleGroupByChange = useCallback(
       (checked: boolean) => {
-         navigate({ search: (prev) => ({ ...prev, groupBy: checked }) });
+         navigate({ search: (prev: CategoriesSearch) => ({ ...prev, groupBy: checked }) });
       },
       [navigate],
    );
 
    const handleSearchChange = useCallback(
       (value: string) => {
-         navigate({ search: (prev) => ({ ...prev, search: value }) });
+         navigate({ search: (prev: CategoriesSearch) => ({ ...prev, search: value }) });
       },
       [navigate],
    );
 
    const handleClearFilters = useCallback(
-      () => navigate({ search: (prev) => ({ ...prev, type: undefined, includeArchived: false, search: "" }) }),
+      () => navigate({ search: (prev: CategoriesSearch) => ({ ...prev, type: undefined, includeArchived: false, search: "" }) }),
       [navigate],
    );
 

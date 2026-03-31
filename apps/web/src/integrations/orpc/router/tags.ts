@@ -1,5 +1,6 @@
 import {
    archiveTag,
+   bulkDeleteTags,
    createTag,
    deleteTag,
    ensureTagOwnership,
@@ -43,4 +44,11 @@ export const archive = protectedProcedure
    .handler(async ({ context, input }) => {
       await ensureTagOwnership(context.db, input.id, context.teamId);
       return archiveTag(context.db, input.id);
+   });
+
+export const bulkRemove = protectedProcedure
+   .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))
+   .handler(async ({ context, input }) => {
+      await bulkDeleteTags(context.db, input.ids, context.teamId);
+      return { deleted: input.ids.length };
    });

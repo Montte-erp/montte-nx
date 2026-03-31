@@ -759,21 +759,21 @@ function TransactionDialogStackContent({
       updateMutation.isPending ||
       billCreateMutation.isPending;
 
+   const emptyTagIds: string[] = [];
+
    const form = useForm({
       defaultValues: {
-         name:
-            (transaction as TransactionRow & { name?: string | null })?.name ??
-            "",
+         name: transaction?.name ?? "",
          type: (transaction?.type ?? "income") as TransactionType,
          amount: transaction?.amount ?? "",
          date: transaction?.date
             ? new Date(`${transaction.date}T12:00:00`)
-            : (undefined as unknown as Date),
+            : undefined,
          bankAccountId: transaction?.bankAccountId ?? "",
          destinationBankAccountId: transaction?.destinationBankAccountId ?? "",
          categoryId: transaction?.categoryId ?? "",
-         subcategoryId: transaction?.subcategoryId ?? "",
-         tagIds: transaction?.tagIds ?? ([] as string[]),
+         subcategoryId: "",
+         tagIds: emptyTagIds,
          description: transaction?.description ?? "",
          contactId: transaction?.contactId ?? (null as string | null),
          creditCardId: transaction?.creditCardId ?? "",
@@ -809,6 +809,8 @@ function TransactionDialogStackContent({
             return;
          }
 
+         const tagIdsTouched = form.getFieldMeta("tagIds")?.isTouched ?? false;
+
          const payload = {
             type: value.type,
             name: value.name?.trim() || null,
@@ -821,7 +823,7 @@ function TransactionDialogStackContent({
             categoryId: isTransfer ? null : value.categoryId || null,
             subcategoryId: isTransfer ? null : value.subcategoryId || null,
             attachments: [] as Attachment[],
-            tagIds: value.tagIds,
+            tagIds: isCreate || tagIdsTouched ? value.tagIds : undefined,
             description: value.description || null,
             contactId: value.contactId,
             creditCardId:
@@ -2049,6 +2051,7 @@ function TransactionDialogStackContent({
                            ...form.getFieldValue("tagIds"),
                            id,
                         ]);
+                        form.setFieldMeta("tagIds", (prev) => ({ ...prev, isTouched: true }));
                         setSecondaryForm(null);
                         setActiveIndex(0);
                      }}

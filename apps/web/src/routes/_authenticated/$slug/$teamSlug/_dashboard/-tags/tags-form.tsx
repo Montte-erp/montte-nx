@@ -9,11 +9,12 @@ import {
    ColorPickerSelection,
 } from "@packages/ui/components/color-picker";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import {
    Field,
    FieldError,
@@ -21,6 +22,7 @@ import {
    FieldLabel,
 } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
+import { Textarea } from "@packages/ui/components/textarea";
 import {
    Popover,
    PopoverContent,
@@ -31,7 +33,6 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import Color from "color";
 import { toast } from "sonner";
-import { useAccountType } from "@/hooks/use-account-type";
 import { orpc } from "@/integrations/orpc/client";
 
 interface TagFormProps {
@@ -40,26 +41,22 @@ interface TagFormProps {
       id: string;
       name: string;
       color: string;
+      description: string | null;
    };
    onSuccess: () => void;
 }
 
 export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
    const isCreate = mode === "create";
-   const { isBusiness } = useAccountType();
-   const entityName = isBusiness ? "centro de custo" : "tag";
-   const entityNameCapitalized = isBusiness ? "Centro de custo" : "Tag";
 
    const createMutation = useMutation(
       orpc.tags.create.mutationOptions({
          onSuccess: () => {
-            toast.success(
-               `${entityNameCapitalized} ${isBusiness ? "criado" : "criada"} com sucesso.`,
-            );
+            toast.success("Centro de custo criado com sucesso.");
             onSuccess();
          },
          onError: (error) => {
-            toast.error(error.message || `Erro ao criar ${entityName}.`);
+            toast.error(error.message || "Erro ao criar centro de custo.");
          },
       }),
    );
@@ -67,13 +64,11 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
    const updateMutation = useMutation(
       orpc.tags.update.mutationOptions({
          onSuccess: () => {
-            toast.success(
-               `${entityNameCapitalized} ${isBusiness ? "atualizado" : "atualizada"} com sucesso.`,
-            );
+            toast.success("Centro de custo atualizado com sucesso.");
             onSuccess();
          },
          onError: (error) => {
-            toast.error(error.message || `Erro ao atualizar ${entityName}.`);
+            toast.error(error.message || "Erro ao atualizar centro de custo.");
          },
       }),
    );
@@ -82,18 +77,21 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
       defaultValues: {
          color: tag?.color ?? "#6366f1",
          name: tag?.name ?? "",
+         description: tag?.description ?? "",
       },
       onSubmit: async ({ value }) => {
          if (isCreate) {
             createMutation.mutate({
                color: value.color,
                name: value.name.trim(),
+               description: value.description.trim() || null,
             });
          } else if (tag) {
             updateMutation.mutate({
                color: value.color,
                id: tag.id,
                name: value.name.trim(),
+               description: value.description.trim() || null,
             });
          }
       },
@@ -108,30 +106,19 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
             form.handleSubmit();
          }}
       >
-         <DialogStackContent index={0}>
-            <DialogStackHeader>
-               <DialogStackTitle>
-                  {isCreate
-                     ? isBusiness
-                        ? "Novo Centro de Custo"
-                        : "Nova Tag"
-                     : isBusiness
-                       ? "Editar Centro de Custo"
-                       : "Editar Tag"}
-               </DialogStackTitle>
-               <DialogStackDescription>
-                  {isCreate
-                     ? isBusiness
-                        ? "Adicione um novo centro de custo para categorizar suas transações."
-                        : "Adicione uma nova tag para categorizar suas transações."
-                     : isBusiness
-                       ? "Atualize as informações do centro de custo."
-                       : "Atualize as informações da tag."}
-               </DialogStackDescription>
-            </DialogStackHeader>
+         <CredenzaHeader>
+            <CredenzaTitle>
+               {isCreate ? "Novo Centro de Custo" : "Editar Centro de Custo"}
+            </CredenzaTitle>
+            <CredenzaDescription>
+               {isCreate
+                  ? "Adicione um novo centro de custo para categorizar suas transações."
+                  : "Atualize as informações do centro de custo."}
+            </CredenzaDescription>
+         </CredenzaHeader>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4">
-               <FieldGroup>
+         <CredenzaBody>
+            <FieldGroup>
                   <form.Field name="name">
                      {(field) => {
                         const isInvalid =
@@ -145,7 +132,7 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
                                  onChange={(e) =>
                                     field.handleChange(e.target.value)
                                  }
-                                 placeholder="Ex: Alimentação, Transporte"
+                                 placeholder="Ex: Marketing, Recursos Humanos, Operações"
                                  value={field.state.value}
                               />
                               {isInvalid && (
@@ -156,6 +143,25 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
                      }}
                   </form.Field>
 
+                  <form.Field name="description">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel>
+                              Descrição{" "}
+                              <span className="text-muted-foreground font-normal">(opcional)</span>
+                           </FieldLabel>
+                           <Textarea
+                              maxLength={255}
+                              onBlur={field.handleBlur}
+                              onChange={(e) => field.handleChange(e.target.value)}
+                              placeholder="Ex: Projeto X, Cliente Y, viagem de negócios"
+                              rows={2}
+                              value={field.state.value}
+                           />
+                        </Field>
+                     )}
+                  </form.Field>
+
                   <form.Field name="color">
                      {(field) => {
                         const isInvalid =
@@ -163,7 +169,7 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
                            !field.state.meta.isValid;
                         return (
                            <Field data-invalid={isInvalid}>
-                              <FieldLabel>Cor</FieldLabel>
+                              <FieldLabel>Cor de identificação</FieldLabel>
                               <Popover>
                                  <PopoverTrigger asChild>
                                     <Button
@@ -173,12 +179,13 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
                                        variant="outline"
                                     >
                                        <div
-                                          className="w-4 h-4 rounded border border-border shrink-0"
+                                          className="w-5 h-5 rounded-full border border-border shrink-0"
                                           style={{
                                              backgroundColor: field.state.value,
                                           }}
                                        />
-                                       {field.state.value}
+                                       <span className="flex-1 text-left">Selecionar cor</span>
+                                       <span className="text-muted-foreground font-mono text-xs">{field.state.value}</span>
                                     </Button>
                                  </PopoverTrigger>
                                  <PopoverContent
@@ -225,36 +232,29 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
                      }}
                   </form.Field>
                </FieldGroup>
-            </div>
+         </CredenzaBody>
 
-            <div className="border-t px-4 py-4">
-               <form.Subscribe selector={(state) => state}>
-                  {(state) => (
-                     <Button
-                        className="w-full"
-                        disabled={
-                           !state.canSubmit ||
-                           state.isSubmitting ||
-                           createMutation.isPending ||
-                           updateMutation.isPending
-                        }
-                        type="submit"
-                     >
-                        {(state.isSubmitting ||
-                           createMutation.isPending ||
-                           updateMutation.isPending) && (
-                           <Spinner className="size-4 mr-2" />
-                        )}
-                        {isCreate
-                           ? isBusiness
-                              ? "Criar centro de custo"
-                              : "Criar tag"
-                           : "Salvar alterações"}
-                     </Button>
-                  )}
-               </form.Subscribe>
-            </div>
-         </DialogStackContent>
+         <CredenzaFooter>
+            <form.Subscribe selector={(state) => state}>
+               {(state) => (
+                  <Button
+                     className="w-full"
+                     disabled={
+                        !state.canSubmit ||
+                        state.isSubmitting ||
+                        createMutation.isPending ||
+                        updateMutation.isPending
+                     }
+                     type="submit"
+                  >
+                     {(state.isSubmitting ||
+                        createMutation.isPending ||
+                        updateMutation.isPending) && <Spinner className="size-4" />}
+                     {isCreate ? "Criar centro de custo" : "Salvar alterações"}
+                  </Button>
+               )}
+            </form.Subscribe>
+         </CredenzaFooter>
       </form>
    );
 }
