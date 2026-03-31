@@ -15,7 +15,7 @@ import {
    SelectValue,
 } from "@packages/ui/components/select";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { UsageChart } from "@/features/billing/ui/usage-chart";
@@ -110,14 +110,10 @@ function SpendSkeleton() {
 export function BillingSpend() {
    const [days, setDays] = useState(30);
 
-   const { data, isLoading } = useQuery({
+   const { data } = useSuspenseQuery({
       ...orpc.billing.getDailyUsage.queryOptions({ input: { days } }),
       placeholderData: keepPreviousData,
    });
-
-   if (isLoading && !data) {
-      return <SpendSkeleton />;
-   }
 
    const usageData = data ?? [];
 
