@@ -144,25 +144,25 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
                   </form.Field>
 
                   <form.Field name="description">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel>
-                           Descrição{" "}
-                           <span className="text-muted-foreground font-normal">(opcional)</span>
-                        </FieldLabel>
-                        <Textarea
-                           maxLength={255}
-                           onBlur={field.handleBlur}
-                           onChange={(e) => field.handleChange(e.target.value)}
-                           placeholder="Ex: Projeto X, Cliente Y, viagem de negócios"
-                           rows={2}
-                           value={field.state.value}
-                        />
-                     </Field>
-                  )}
-               </form.Field>
+                     {(field) => (
+                        <Field>
+                           <FieldLabel>
+                              Descrição{" "}
+                              <span className="text-muted-foreground font-normal">(opcional)</span>
+                           </FieldLabel>
+                           <Textarea
+                              maxLength={255}
+                              onBlur={field.handleBlur}
+                              onChange={(e) => field.handleChange(e.target.value)}
+                              placeholder="Ex: Projeto X, Cliente Y, viagem de negócios"
+                              rows={2}
+                              value={field.state.value}
+                           />
+                        </Field>
+                     )}
+                  </form.Field>
 
-               <form.Field name="color">
+                  <form.Field name="color">
                      {(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&

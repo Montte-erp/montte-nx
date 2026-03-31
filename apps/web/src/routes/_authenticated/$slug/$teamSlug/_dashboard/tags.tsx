@@ -19,7 +19,7 @@ import type { ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/rea
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Archive, Pencil, Plus, Tag, Trash2 } from "lucide-react";
-import { Suspense, useCallback } from "react";
+import { Suspense, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
@@ -120,6 +120,14 @@ function TagsList({ navigate }: TagsListProps) {
       }),
    );
 
+   const bulkDeleteMutation = useMutation(
+      orpc.tags.bulkRemove.mutationOptions({
+         onError: (error) => {
+            toast.error(error.message || "Erro ao excluir centros de custo.");
+         },
+      }),
+   );
+
    const archiveMutation = useMutation(
       orpc.tags.archive.mutationOptions({
          onSuccess: () => toast.success("Centro de custo arquivado."),
@@ -174,11 +182,14 @@ function TagsList({ navigate }: TagsListProps) {
          cancelLabel: "Cancelar",
          variant: "destructive",
          onAction: async () => {
-            await Promise.all(selectedIds.map((id) => deleteMutation.mutateAsync({ id })));
+            await bulkDeleteMutation.mutateAsync({ ids: selectedIds });
+            toast.success(
+               `${selectedIds.length} ${selectedIds.length === 1 ? "centro de custo excluído" : "centros de custo excluídos"} com sucesso.`,
+            );
             onClear();
          },
       });
-   }, [openAlertDialog, selectedIds, deleteMutation, onClear]);
+   }, [openAlertDialog, selectedIds, bulkDeleteMutation, onClear]);
 
    if (tags.length === 0) {
       return (
@@ -196,7 +207,7 @@ function TagsList({ navigate }: TagsListProps) {
       );
    }
 
-   const columns = buildTagColumns();
+   const columns = useMemo(() => buildTagColumns(), []);
 
    return (
       <>
