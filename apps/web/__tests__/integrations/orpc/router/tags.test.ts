@@ -299,7 +299,7 @@ describe("bulkRemove", () => {
       await expect(
          call(tagsRouter.bulkRemove, { ids: [created.id] }, { context: ctx }),
       ).rejects.toThrow(
-         "Tags com lançamentos não podem ser excluídas. Use arquivamento.",
+         "Centros de custo com lançamentos não podem ser excluídos. Use arquivamento.",
       );
    });
 });
