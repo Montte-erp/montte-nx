@@ -6,6 +6,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const mockCreateMutate = vi.fn();
 const mockUpdateMutate = vi.fn();
 
+let mockCreateShouldFail = false;
+let mockUpdateShouldFail = false;
+
 vi.mock("@/integrations/orpc/client", () => ({
    orpc: {
       tags: {
@@ -14,6 +17,7 @@ vi.mock("@/integrations/orpc/client", () => ({
                mutationKey: ["tags.create"],
                mutationFn: async (input: unknown) => {
                   mockCreateMutate(input);
+                  if (mockCreateShouldFail) throw new Error("Erro de servidor");
                   return input;
                },
                onSuccess,
@@ -25,6 +29,7 @@ vi.mock("@/integrations/orpc/client", () => ({
                mutationKey: ["tags.update"],
                mutationFn: async (input: unknown) => {
                   mockUpdateMutate(input);
+                  if (mockUpdateShouldFail) throw new Error("Erro de servidor");
                   return input;
                },
                onSuccess,
@@ -81,6 +86,8 @@ import { TagForm } from "@/routes/_authenticated/$slug/$teamSlug/_dashboard/-tag
 
 afterEach(() => {
    cleanup();
+   mockCreateShouldFail = false;
+   mockUpdateShouldFail = false;
 });
 
 function wrapper({ children }: { children: React.ReactNode }) {
@@ -198,5 +205,73 @@ describe("TagForm", () => {
       );
       const textarea = getByPlaceholderText("Ex: Projeto X, Cliente Y, viagem de negócios");
       expect((textarea as HTMLTextAreaElement).value).toBe("Minha descrição");
+   });
+
+   it("calls onSuccess callback after successful create", async () => {
+      const { toast } = await import("sonner");
+      const onSuccess = vi.fn();
+      render(<TagForm mode="create" onSuccess={onSuccess} />, { wrapper });
+
+      const input = screen.getByPlaceholderText("Ex: Marketing, Recursos Humanos, Operações");
+      fireEvent.change(input, { target: { value: "Novo Tag" } });
+      fireEvent.click(screen.getByText("Criar centro de custo"));
+
+      await waitFor(() => {
+         expect(toast.success).toHaveBeenCalledWith("Centro de custo criado com sucesso.");
+         expect(onSuccess).toHaveBeenCalled();
+      });
+   });
+
+   it("shows error toast on create failure", async () => {
+      const { toast } = await import("sonner");
+      mockCreateShouldFail = true;
+      render(<TagForm mode="create" onSuccess={vi.fn()} />, { wrapper });
+
+      const input = screen.getByPlaceholderText("Ex: Marketing, Recursos Humanos, Operações");
+      fireEvent.change(input, { target: { value: "Vai Falhar" } });
+      fireEvent.click(screen.getByText("Criar centro de custo"));
+
+      await waitFor(() => {
+         expect(toast.error).toHaveBeenCalledWith("Erro de servidor");
+      });
+   });
+
+   it("calls onSuccess callback after successful update", async () => {
+      const { toast } = await import("sonner");
+      const onSuccess = vi.fn();
+      render(
+         <TagForm
+            mode="edit"
+            tag={{ id: "tag-1", name: "Velho", color: "#6366f1", description: null }}
+            onSuccess={onSuccess}
+         />,
+         { wrapper },
+      );
+
+      fireEvent.click(screen.getByText("Salvar alterações"));
+
+      await waitFor(() => {
+         expect(toast.success).toHaveBeenCalledWith("Centro de custo atualizado com sucesso.");
+         expect(onSuccess).toHaveBeenCalled();
+      });
+   });
+
+   it("shows error toast on update failure", async () => {
+      const { toast } = await import("sonner");
+      mockUpdateShouldFail = true;
+      render(
+         <TagForm
+            mode="edit"
+            tag={{ id: "tag-2", name: "Velho", color: "#6366f1", description: null }}
+            onSuccess={vi.fn()}
+         />,
+         { wrapper },
+      );
+
+      fireEvent.click(screen.getByText("Salvar alterações"));
+
+      await waitFor(() => {
+         expect(toast.error).toHaveBeenCalledWith("Erro de servidor");
+      });
    });
 });

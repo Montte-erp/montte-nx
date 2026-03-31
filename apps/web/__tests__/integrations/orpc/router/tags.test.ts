@@ -271,6 +271,37 @@ describe("bulkRemove", () => {
          ),
       ).rejects.toThrow();
    });
+
+   it("rejects if any tag has transactions", async () => {
+      const created = await call(
+         tagsRouter.create,
+         { name: "Com Lancamentos" },
+         { context: ctx },
+      );
+
+      const teamId = ctx.session!.session.activeTeamId!;
+
+      const [txn] = await ctx.db
+         .insert(transactions)
+         .values({
+            teamId,
+            type: "income",
+            amount: "50.00",
+            date: "2025-01-15",
+         })
+         .returning();
+
+      await ctx.db.insert(transactionTags).values({
+         transactionId: txn!.id,
+         tagId: created.id,
+      });
+
+      await expect(
+         call(tagsRouter.bulkRemove, { ids: [created.id] }, { context: ctx }),
+      ).rejects.toThrow(
+         "Tags com lançamentos não podem ser excluídas. Use arquivamento.",
+      );
+   });
 });
 
 describe("archive", () => {

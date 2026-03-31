@@ -462,6 +462,28 @@ describe("bulkRemove", () => {
          ),
       ).rejects.toThrow();
    });
+
+   it("rejects if any category has transactions", async () => {
+      const cat = await call(
+         categoriesRouter.create,
+         { name: "Com Lancamentos", type: "expense" },
+         { context: ctx },
+      );
+
+      await ctx.db.insert(transactions).values({
+         teamId: ctx.session!.session.activeTeamId!,
+         type: "expense",
+         amount: "100.00",
+         date: "2025-01-15",
+         categoryId: cat.id,
+      });
+
+      await expect(
+         call(categoriesRouter.bulkRemove, { ids: [cat.id] }, { context: ctx }),
+      ).rejects.toThrow(
+         "Categorias com lançamentos não podem ser excluídas. Use arquivamento.",
+      );
+   });
 });
 
 describe("archive", () => {
