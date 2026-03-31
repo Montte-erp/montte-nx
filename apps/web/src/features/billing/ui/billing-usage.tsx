@@ -14,7 +14,7 @@ import {
    SelectValue,
 } from "@packages/ui/components/select";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import { keepPreviousData, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { UsageChart } from "@/features/billing/ui/usage-chart";
@@ -109,10 +109,9 @@ function UsageSkeleton() {
 export function BillingUsage() {
    const [days, setDays] = useState(30);
 
-   const { data } = useSuspenseQuery({
-      ...orpc.billing.getDailyUsage.queryOptions({ input: { days } }),
-      placeholderData: keepPreviousData,
-   });
+   const { data } = useSuspenseQuery(
+      orpc.billing.getDailyUsage.queryOptions({ input: { days } }),
+   );
 
    const usageData = data ?? [];
 
@@ -202,10 +201,6 @@ export function BillingUsage() {
       ];
       return cols;
    }, [allDates]);
-
-   if (isLoading && !data) {
-      return <UsageSkeleton />;
-   }
 
    return (
       <div className="space-y-6">

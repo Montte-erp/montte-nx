@@ -7,7 +7,6 @@ import {
    ContextPanelTitle,
 } from "@packages/ui/components/context-panel";
 import { DataTable } from "@packages/ui/components/data-table";
-import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -101,16 +100,6 @@ function formatDate(date: string | Date): string {
 // ---------------------------------------------------------------------------
 // Loading skeleton
 // ---------------------------------------------------------------------------
-
-function ListSkeleton() {
-   return (
-      <div className="space-y-3">
-         {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton className="h-14 w-full" key={`skeleton-${i + 1}`} />
-         ))}
-      </div>
-   );
-}
 
 // ---------------------------------------------------------------------------
 // Empty state
