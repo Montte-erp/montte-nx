@@ -1,7 +1,7 @@
 import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
-import { DEFAULT_CONTENT_MODEL_ID } from "../../models";
-import { buildLanguageInstruction } from "../../utils";
+import { DEFAULT_CONTENT_MODEL_ID } from "@core/agents/models";
+import { buildLanguageInstruction } from "@core/agents/utils";
 
 const memory = new Memory({
    options: {

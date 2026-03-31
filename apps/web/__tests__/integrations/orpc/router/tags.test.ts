@@ -226,6 +226,84 @@ describe("remove", () => {
    });
 });
 
+describe("bulkRemove", () => {
+   it("deletes multiple tags and returns deleted count", async () => {
+      const tag1 = await call(
+         tagsRouter.create,
+         { name: "Tag1" },
+         { context: ctx },
+      );
+      const tag2 = await call(
+         tagsRouter.create,
+         { name: "Tag2" },
+         { context: ctx },
+      );
+
+      const result = await call(
+         tagsRouter.bulkRemove,
+         { ids: [tag1.id, tag2.id] },
+         { context: ctx },
+      );
+
+      expect(result).toEqual({ deleted: 2 });
+
+      const rows = await ctx.db.query.tags.findMany();
+      expect(rows).toHaveLength(0);
+   });
+
+   it("rejects if any tag belongs to another team", async () => {
+      const tag1 = await call(
+         tagsRouter.create,
+         { name: "Mine" },
+         { context: ctx },
+      );
+      const tag2 = await call(
+         tagsRouter.create,
+         { name: "Other" },
+         { context: ctx2 },
+      );
+
+      await expect(
+         call(
+            tagsRouter.bulkRemove,
+            { ids: [tag1.id, tag2.id] },
+            { context: ctx },
+         ),
+      ).rejects.toThrow();
+   });
+
+   it("rejects if any tag has transactions", async () => {
+      const created = await call(
+         tagsRouter.create,
+         { name: "Com Lancamentos" },
+         { context: ctx },
+      );
+
+      const teamId = ctx.session!.session.activeTeamId!;
+
+      const [txn] = await ctx.db
+         .insert(transactions)
+         .values({
+            teamId,
+            type: "income",
+            amount: "50.00",
+            date: "2025-01-15",
+         })
+         .returning();
+
+      await ctx.db.insert(transactionTags).values({
+         transactionId: txn!.id,
+         tagId: created.id,
+      });
+
+      await expect(
+         call(tagsRouter.bulkRemove, { ids: [created.id] }, { context: ctx }),
+      ).rejects.toThrow(
+         "Centros de custo com lançamentos não podem ser excluídos. Use arquivamento.",
+      );
+   });
+});
+
 describe("archive", () => {
    it("archives tag after ownership check", async () => {
       const created = await call(

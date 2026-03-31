@@ -127,7 +127,7 @@ export function BankAccountForm({
 }: BankAccountFormProps) {
    const isCreate = mode === "create";
    const [typeOpen, setTypeOpen] = useState(false);
-   const { bankOptions, isLoading: banksLoading } = useBrazilianBanks();
+   const { bankOptions } = useBrazilianBanks();
 
    const createMutation = useMutation(
       orpc.bankAccounts.create.mutationOptions({
@@ -315,18 +315,13 @@ export function BankAccountForm({
                                           <FieldLabel>Banco *</FieldLabel>
                                           <Combobox
                                              className="w-full"
-                                             disabled={banksLoading}
                                              emptyMessage="Nenhum banco encontrado."
                                              onBlur={field.handleBlur}
                                              onValueChange={(v) =>
                                                 field.handleChange(v)
                                              }
                                              options={bankOptions}
-                                             placeholder={
-                                                banksLoading
-                                                   ? "Carregando..."
-                                                   : "Selecionar banco..."
-                                             }
+                                             placeholder="Selecionar banco..."
                                              searchPlaceholder="Pesquisar"
                                              value={field.state.value}
                                           />

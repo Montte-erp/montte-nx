@@ -9,9 +9,12 @@ import {
    ItemSeparator,
    ItemTitle,
 } from "@packages/ui/components/item";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowRightLeft, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { authClient } from "@/integrations/better-auth/auth-client";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { useActiveTeam } from "@/hooks/use-active-team";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone",
@@ -21,9 +24,11 @@ export const Route = createFileRoute(
 
 function ProjectDangerZonePage() {
    const { openAlertDialog } = useAlertDialog();
+   const { activeTeam } = useActiveTeam();
+   const navigate = useNavigate();
 
    return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-4">
          <div>
             <h1 className="text-2xl font-semibold font-serif">
                Zona de Perigo
@@ -83,7 +88,24 @@ function ProjectDangerZonePage() {
                            actionLabel: "Deletar",
                            variant: "destructive",
                            onAction: async () => {
-                              // TODO: implement
+                              if (!activeTeam) return;
+
+                              const { error } =
+                                 await authClient.organization.removeTeam({
+                                    teamId: activeTeam.id,
+                                 });
+
+                              if (error) {
+                                 toast.error("Erro ao deletar projeto", {
+                                    description:
+                                       error.message ||
+                                       "Ocorreu um erro inesperado. Tente novamente.",
+                                 });
+                                 return;
+                              }
+
+                              toast.success("Projeto deletado com sucesso");
+                              navigate({ to: "/" });
                            },
                         })
                      }

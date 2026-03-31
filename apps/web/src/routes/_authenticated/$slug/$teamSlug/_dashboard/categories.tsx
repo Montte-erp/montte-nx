@@ -27,7 +27,7 @@ import {
    Trash2,
    Upload,
 } from "lucide-react";
-import { Suspense, useCallback } from "react";
+import { Suspense, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
@@ -165,6 +165,14 @@ function CategoriesList({ navigate }: CategoriesListProps) {
       }),
    );
 
+   const bulkDeleteMutation = useMutation(
+      orpc.categories.bulkRemove.mutationOptions({
+         onError: (error) => {
+            toast.error(error.message || "Erro ao excluir categorias.");
+         },
+      }),
+   );
+
    const archiveMutation = useMutation(
       orpc.categories.archive.mutationOptions({
          onSuccess: () => toast.success("Categoria arquivada."),
@@ -246,15 +254,16 @@ function CategoriesList({ navigate }: CategoriesListProps) {
          cancelLabel: "Cancelar",
          variant: "destructive",
          onAction: async () => {
-            await Promise.all(
-               deletableIds.map((id) => deleteMutation.mutateAsync({ id })),
+            await bulkDeleteMutation.mutateAsync({ ids: deletableIds });
+            toast.success(
+               `${deletableIds.length} ${deletableIds.length === 1 ? "categoria excluída" : "categorias excluídas"} com sucesso.`,
             );
             onClear();
          },
       });
-   }, [openAlertDialog, selectedIds, categories, deleteMutation, onClear]);
+   }, [openAlertDialog, selectedIds, categories, bulkDeleteMutation, onClear]);
 
-   const columns = buildCategoryColumns();
+   const columns = useMemo(() => buildCategoryColumns(), []);
 
    if (categories.length === 0) {
       return (

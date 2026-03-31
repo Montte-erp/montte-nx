@@ -8,8 +8,10 @@ import {
    ItemMedia,
    ItemTitle,
 } from "@packages/ui/components/item";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { authClient } from "@/integrations/better-auth/auth-client";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 
 export const Route = createFileRoute(
@@ -20,9 +22,10 @@ export const Route = createFileRoute(
 
 function AccountDangerZonePage() {
    const { openAlertDialog } = useAlertDialog();
+   const navigate = useNavigate();
 
    return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-4">
          <div>
             <h1 className="text-2xl font-semibold font-serif">
                Zona de Perigo
@@ -49,11 +52,21 @@ function AccountDangerZonePage() {
                         openAlertDialog({
                            title: "Deletar conta",
                            description:
-                              "Tem certeza? Esta ação não pode ser desfeita. Todos os dados serão permanentemente removidos.",
+                              "Tem certeza? Esta ação não pode ser desfeita. Sua conta e todos os dados associados serão permanentemente removidos.",
                            actionLabel: "Deletar conta",
                            variant: "destructive",
                            onAction: async () => {
-                              // TODO: implement
+                              const { error } = await authClient.deleteUser();
+                              if (error) {
+                                 toast.error("Erro ao deletar conta", {
+                                    description:
+                                       error.message ||
+                                       "Ocorreu um erro inesperado. Tente novamente.",
+                                 });
+                                 return;
+                              }
+                              toast.success("Conta deletada com sucesso");
+                              navigate({ to: "/" });
                            },
                         })
                      }
