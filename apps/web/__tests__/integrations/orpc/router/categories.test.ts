@@ -392,6 +392,53 @@ describe("importBatch", () => {
    });
 });
 
+describe("bulkRemove", () => {
+   it("deletes multiple categories and returns deleted count", async () => {
+      const cat1 = await call(
+         categoriesRouter.create,
+         { name: "Cat1", type: "expense" },
+         { context: ctx },
+      );
+      const cat2 = await call(
+         categoriesRouter.create,
+         { name: "Cat2", type: "income" },
+         { context: ctx },
+      );
+
+      const result = await call(
+         categoriesRouter.bulkRemove,
+         { ids: [cat1.id, cat2.id] },
+         { context: ctx },
+      );
+
+      expect(result).toEqual({ deleted: 2 });
+
+      const rows = await ctx.db.query.categories.findMany();
+      expect(rows).toHaveLength(0);
+   });
+
+   it("rejects if any category belongs to another team", async () => {
+      const cat1 = await call(
+         categoriesRouter.create,
+         { name: "Mine", type: "expense" },
+         { context: ctx },
+      );
+      const cat2 = await call(
+         categoriesRouter.create,
+         { name: "Other", type: "expense" },
+         { context: ctx2 },
+      );
+
+      await expect(
+         call(
+            categoriesRouter.bulkRemove,
+            { ids: [cat1.id, cat2.id] },
+            { context: ctx },
+         ),
+      ).rejects.toThrow();
+   });
+});
+
 describe("archive", () => {
    it("archives category and persists the change", async () => {
       const created = await call(
