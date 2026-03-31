@@ -87,7 +87,7 @@ Routers live in `apps/web/src/integrations/orpc/router/`. Uses `@orpc/server`, N
 **Router pattern:**
 
 ```typescript
-import { ORPCError } from "@orpc/server";
+import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "../server";
 
 export const getAll = protectedProcedure
@@ -97,14 +97,43 @@ export const getAll = protectedProcedure
    });
 ```
 
-**Errors in routers:** Use `ORPCError` — NOT native `Error`, NOT `APIError`/`AppError`:
+**Errors in routers:** Use `WebAppError` from `@core/logging/errors` — NOT bare `ORPCError`, NOT native `Error`, NOT `APIError`/`AppError`. `WebAppError` extends `ORPCError` and auto-emits to OpenTelemetry on construction.
 
 ```typescript
-throw new ORPCError("NOT_FOUND", { message: "Transaction not found" });
-throw new ORPCError("FORBIDDEN", { message: "Insufficient permissions" });
+import { WebAppError } from "@core/logging/errors";
+
+// Static factory methods (preferred — typed return, readable)
+throw WebAppError.notFound("Transaction not found");
+throw WebAppError.forbidden("Insufficient permissions");
+throw WebAppError.unauthorized("Not authenticated");
+throw WebAppError.badRequest("Invalid input");
+throw WebAppError.conflict("Already exists");
+throw WebAppError.internal("Unexpected failure");
+throw WebAppError.tooManyRequests("Rate limit exceeded");
+
+// Convert an AppError from a repository into a WebAppError
+throw WebAppError.fromAppError(appError);
+
+// Or use the constructor directly for custom codes
+throw new WebAppError("NOT_FOUND", { message: "Transaction not found" });
 ```
 
-**Errors in repositories** (`core/database/src/repositories/`): Use `AppError` + `propagateError()` from `@core/utils/errors`.
+**Errors in repositories** (`core/database/src/repositories/`): Use `AppError` + `propagateError()` from `@core/logging/errors`. `AppError` also auto-emits to OpenTelemetry.
+
+```typescript
+import { AppError, propagateError } from "@core/logging/errors";
+
+try {
+   const [row] = await db.insert(...).returning();
+   if (!row) throw AppError.database("Failed to create record");
+   return row;
+} catch (err) {
+   propagateError(err); // re-throws AppError as-is
+   throw AppError.database("Failed to create record");
+}
+```
+
+Available `AppError` factories: `database`, `validation`, `notFound`, `unauthorized`, `forbidden`, `conflict`, `tooManyRequests`, `internal`.
 
 **Bulk operations must have a dedicated router procedure.** Never loop `mutateAsync` N times from the client for bulk actions — this fires N success/error callbacks and N cache invalidations. Create a `bulkRemove` (or `bulkXxx`) procedure that accepts `ids: z.array(z.string().uuid()).min(1)` and runs the operation server-side. The client calls it once, then shows a single summary toast after the mutation resolves.
 
