@@ -2,8 +2,8 @@ import {
    type CustomRequestContext,
    createRequestContext,
    mastra,
-   type RequestContext,
 } from "@core/agents";
+import type { AgentChunkType } from "@mastra/core/stream";
 import {
    AVAILABLE_MODELS,
    DEFAULT_CONTENT_MODEL_ID,
@@ -69,34 +69,15 @@ export const aiCommandStream = protectedProcedure
       try {
          const result = await agent.stream(
             [{ role: "user", content: input.prompt }],
-            {
-               requestContext: requestContext as RequestContext<unknown>,
-            } as unknown as Parameters<typeof agent.stream>[1],
+            { requestContext },
          );
 
          for await (const event of result.fullStream) {
-            const chunk = event as unknown as {
-               type: string;
-               payload?: {
-                  textDelta?: string;
-                  toolCallId?: string;
-                  toolName?: string;
-                  args?: Record<string, unknown>;
-                  result?: unknown;
-               };
-               textDelta?: string;
-               toolCallId?: string;
-               toolName?: string;
-               args?: Record<string, unknown>;
-               result?: unknown;
-            };
+            const chunk = event as AgentChunkType;
 
             switch (chunk.type) {
                case "text-delta": {
-                  const payload = chunk.payload as unknown as {
-                     textDelta?: string;
-                  };
-                  const textDelta = chunk.textDelta ?? payload?.textDelta;
+                  const textDelta = chunk.payload.text;
                   if (!textDelta) break;
                   yield {
                      type: "text",
@@ -106,10 +87,7 @@ export const aiCommandStream = protectedProcedure
                }
 
                case "tool-call": {
-                  const toolCallId =
-                     chunk.toolCallId ?? chunk.payload?.toolCallId;
-                  const toolName = chunk.toolName ?? chunk.payload?.toolName;
-                  const args = chunk.args ?? chunk.payload?.args;
+                  const { toolCallId, toolName, args } = chunk.payload;
                   if (!toolCallId || !toolName || !args) break;
 
                   yield {
@@ -117,17 +95,15 @@ export const aiCommandStream = protectedProcedure
                      toolCall: {
                         id: toolCallId,
                         name: toolName,
-                        args,
+                        args: args as Record<string, unknown>,
                      },
                   } satisfies ChatChunk;
                   break;
                }
 
                case "tool-result": {
-                  const toolCallId =
-                     chunk.toolCallId ?? chunk.payload?.toolCallId;
-                  const toolName = chunk.toolName ?? chunk.payload?.toolName;
-                  const resultValue = chunk.result ?? chunk.payload?.result;
+                  const { toolCallId, toolName, result: resultValue } =
+                     chunk.payload;
                   if (!toolCallId || !toolName) break;
 
                   yield {

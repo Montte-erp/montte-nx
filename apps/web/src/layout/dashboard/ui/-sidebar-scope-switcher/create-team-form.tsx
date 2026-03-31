@@ -78,13 +78,12 @@ const CreateTeamFormContent = () => {
    const schema = z.object({
       description: z
          .string()
-         .max(200, "A descrição deve ter menos de 200 caracteres")
-         .default(""),
+         .max(200, "A descrição deve ter menos de 200 caracteres"),
       name: z
          .string()
          .min(1, "Nome do espaço é obrigatório")
          .max(50, "O nome deve ter menos de 50 caracteres"),
-      organizationId: z.string().default(""),
+      organizationId: z.string(),
    });
 
    const form = useForm({
@@ -103,7 +102,7 @@ const CreateTeamFormContent = () => {
       },
 
       validators: {
-         onBlur: schema as unknown as undefined,
+         onBlur: schema,
       },
    });
 

@@ -1,37 +1,9 @@
 import { format, of } from "@f-o-t/money";
-import type { Attachment } from "@core/database/schemas/transactions";
 import { Badge } from "@packages/ui/components/badge";
 import type { ColumnDef } from "@tanstack/react-table";
+import type { Outputs } from "@/integrations/orpc/client";
 
-export type TransactionRow = {
-   id: string;
-   teamId: string;
-   type: "income" | "expense" | "transfer";
-   amount: string;
-   name: string | null;
-   description: string | null;
-   date: string;
-   bankAccountId: string | null;
-   bankAccountName?: string | null;
-   destinationBankAccountId: string | null;
-   categoryId: string | null;
-   subcategoryId: string | null;
-   attachments: Attachment[] | null;
-   tagIds?: string[];
-   contactId: string | null;
-   contactName?: string | null;
-   billId?: string | null;
-   creditCardId: string | null;
-   categoryName?: string | null;
-   creditCardName?: string | null;
-   paymentMethod?: string | null;
-   isInstallment?: boolean;
-   installmentCount?: number | null;
-   installmentNumber?: number | null;
-   installmentGroupId?: string | null;
-   createdAt: Date | string;
-   updatedAt: Date | string;
-};
+export type TransactionRow = Outputs["transactions"]["getAll"]["data"][number];
 
 export function formatBRL(value: string | number): string {
    return format(of(String(value), "BRL"), "pt-BR");

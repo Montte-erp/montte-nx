@@ -2,6 +2,12 @@ import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
 import { useMediaQuery } from "foxact/use-media-query";
 import { useState } from "react";
 
+function hasStandaloneProperty(
+   nav: Navigator,
+): nav is Navigator & { standalone: boolean } {
+   return "standalone" in nav;
+}
+
 export function useIsStandalone() {
    const isStandaloneMedia = useMediaQuery("(display-mode: standalone)");
    const isWindowControlsOverlay = useMediaQuery(
@@ -11,7 +17,7 @@ export function useIsStandalone() {
 
    useIsomorphicLayoutEffect(() => {
       setIsIOSStandalone(
-         (navigator as unknown as { standalone?: boolean }).standalone === true,
+         hasStandaloneProperty(navigator) && navigator.standalone === true,
       );
    }, []);
 

@@ -761,19 +761,17 @@ function TransactionDialogStackContent({
 
    const form = useForm({
       defaultValues: {
-         name:
-            (transaction as TransactionRow & { name?: string | null })?.name ??
-            "",
+         name: transaction?.name ?? "",
          type: (transaction?.type ?? "income") as TransactionType,
          amount: transaction?.amount ?? "",
          date: transaction?.date
             ? new Date(`${transaction.date}T12:00:00`)
-            : (undefined as unknown as Date),
+            : undefined,
          bankAccountId: transaction?.bankAccountId ?? "",
          destinationBankAccountId: transaction?.destinationBankAccountId ?? "",
          categoryId: transaction?.categoryId ?? "",
-         subcategoryId: transaction?.subcategoryId ?? "",
-         tagIds: transaction?.tagIds ?? ([] as string[]),
+         subcategoryId: "",
+         tagIds: Array.from<string>([]),
          description: transaction?.description ?? "",
          contactId: transaction?.contactId ?? (null as string | null),
          creditCardId: transaction?.creditCardId ?? "",
