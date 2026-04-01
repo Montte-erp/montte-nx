@@ -3,6 +3,8 @@ import {
    createDefaultDashboard,
    createDefaultInsights,
 } from "@packages/analytics/seed-defaults";
+import { seedEmpresarialCategories } from "@core/database/repositories/categories-repository";
+import { seedOrganizacaoConfig } from "@core/database/repositories/organization-config-repository";
 import { getInsightById } from "@core/database/repositories/insight-repository";
 import {
    getOnboardingCounts,
@@ -81,6 +83,12 @@ async function runOnboardingCompletion({
 }) {
    logger.info("Inserting teamMember");
    await insertTeamMember(db, teamId, userId);
+
+   logger.info("Seeding empresarial categories");
+   await seedEmpresarialCategories(db, teamId);
+
+   logger.info("Seeding organizacao config");
+   await seedOrganizacaoConfig(db, teamId);
 
    logger.info("Updating team");
    await markTeamOnboardingComplete(db, teamId, {
