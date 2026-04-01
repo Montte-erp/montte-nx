@@ -1,6 +1,5 @@
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Link, useParams } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { useRubiRuntime } from "@/features/rubi-chat/hooks/use-rubi-runtime";
 import type { QuickSuggestion } from "@/features/rubi-chat/ui/thread";
@@ -31,18 +30,13 @@ function RecentThreadsList({ teamId }: { teamId: string }) {
          input: { teamId, page: 0, perPage: 5 },
       }),
    );
-   const { slug, teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
 
    return (
       <>
          {data.threads.map((t) => (
-            <Link
-               className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-accent/60"
+            <div
+               className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left"
                key={t.id}
-               params={{ slug, teamSlug, threadId: t.id }}
-               to="/$slug/$teamSlug/chat/$threadId"
             >
                <span className="flex-1 truncate text-sm text-foreground/80">
                   {t.title}
@@ -50,7 +44,7 @@ function RecentThreadsList({ teamId }: { teamId: string }) {
                <span className="shrink-0 text-xs text-muted-foreground/60">
                   {formatTimeAgo(t.updatedAt)}
                </span>
-            </Link>
+            </div>
          ))}
       </>
    );

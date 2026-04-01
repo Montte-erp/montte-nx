@@ -14,11 +14,18 @@ import {
    SidebarMenuItem,
    useSidebar,
 } from "@packages/ui/components/sidebar";
-import { Link, useParams } from "@tanstack/react-router";
-import { Bug, MessageSquarePlus, PanelLeftClose, Settings, Sparkles } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import {
+   Bug,
+   MessageSquarePlus,
+   PanelLeftClose,
+   Settings,
+   Sparkles,
+} from "lucide-react";
 import type * as React from "react";
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import { POSTHOG_SURVEYS } from "@core/posthog/config";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useSurveyModal } from "@/hooks/use-survey-modal";
 import { EarlyAccessSidebarBanner } from "./early-access-sidebar-banner";
 import { SidebarDefaultItems, SidebarNav } from "./sidebar-nav";
@@ -28,15 +35,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
    return (
       <Sidebar className="px-0" collapsible="icon" variant="inset" {...props}>
          <SidebarContent>
-            <Suspense fallback={null}>
-               <SidebarDefaultItems />
-            </Suspense>
+            <SidebarDefaultItems />
             <div className="px-2">
                <Separator />
             </div>
-            <Suspense fallback={null}>
-               <SidebarNav />
-            </Suspense>
+            <SidebarNav />
          </SidebarContent>
 
          <SidebarFooter>
@@ -48,7 +51,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       </Sidebar>
    );
 }
-
 
 function SidebarFeedbackButton() {
    const { openSurveyModal } = useSurveyModal();
@@ -71,7 +73,9 @@ function SidebarFeedbackButton() {
             <PopoverContent align="start" className="w-auto p-1" side="right">
                <Button
                   className="w-full justify-start gap-2"
-                  onClick={() => handleSelect(POSTHOG_SURVEYS.featureRequest.id)}
+                  onClick={() =>
+                     handleSelect(POSTHOG_SURVEYS.featureRequest.id)
+                  }
                   variant="ghost"
                >
                   <Sparkles className="size-4" />
@@ -92,11 +96,7 @@ function SidebarFeedbackButton() {
 }
 
 function SidebarFooterContent() {
-   const params = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
-   const slug = params.slug ?? "";
-   const teamSlug = params.teamSlug ?? "";
+   const { slug, teamSlug } = useDashboardSlugs();
    const { toggleSidebar, state } = useSidebar();
 
    return (

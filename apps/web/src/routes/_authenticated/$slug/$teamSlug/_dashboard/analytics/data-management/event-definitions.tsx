@@ -5,95 +5,74 @@ import {
    CardHeader,
    CardTitle,
 } from "@packages/ui/components/card";
-import { DataTable } from "@packages/ui/components/data-table";
+import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import { Input } from "@packages/ui/components/input";
-import { Switch } from "@packages/ui/components/switch";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import type { ColumnDef } from "@tanstack/react-table";
-import { BookOpen, Search } from "lucide-react";
+import type {
+   ColumnFiltersState,
+   OnChangeFn,
+   SortingState,
+} from "@tanstack/react-table";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
+import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import { z } from "zod";
 import { orpc } from "@/integrations/orpc/client";
-import type { Outputs } from "@/integrations/orpc/client";
+import { EventDefinitionsTable } from "./-event-definitions/event-definitions-table";
+
+const eventDefinitionsSearchSchema = z.object({
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .optional()
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .optional()
+      .default([]),
+});
+
+type EventDefinitionsSearch = z.infer<typeof eventDefinitionsSearchSchema>;
+
+const [useEventDefinitionsTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:event-definitions",
+      null,
+   );
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/event-definitions",
 )({
+   validateSearch: eventDefinitionsSearchSchema,
    component: EventDefinitionsPage,
 });
 
-type EventEntry = Outputs["billing"]["getEventCatalog"][number];
-
-const categoryColors: Record<string, string> = {
-   content: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-   ai: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-   platform:
-      "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-   forms: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-};
-
-const columns: ColumnDef<EventEntry>[] = [
-   {
-      accessorKey: "displayName",
-      header: "Evento",
-      cell: ({ row }) => (
-         <div className="flex flex-col gap-0.5">
-            <span className="font-medium">{row.original.displayName}</span>
-            <span className="text-xs text-muted-foreground font-mono">
-               {row.original.eventName}
-            </span>
-         </div>
-      ),
-   },
-   {
-      accessorKey: "category",
-      header: "Categoria",
-      cell: ({ row }) => (
-         <Badge
-            className={categoryColors[row.original.category] ?? ""}
-            variant="secondary"
-         >
-            {row.original.category}
-         </Badge>
-      ),
-   },
-   {
-      accessorKey: "pricePerEvent",
-      header: "Preço/Evento",
-      cell: ({ row }) => (
-         <span className="font-mono text-sm">
-            R$ {row.original.pricePerEvent}
-         </span>
-      ),
-   },
-   {
-      accessorKey: "freeTierLimit",
-      header: "Limite Free",
-      cell: ({ row }) => (
-         <span className="text-sm">
-            {row.original.freeTierLimit.toLocaleString("pt-BR")}
-         </span>
-      ),
-   },
-   {
-      accessorKey: "isBillable",
-      header: "Faturável",
-      cell: ({ row }) => (
-         <Badge variant={row.original.isBillable ? "default" : "secondary"}>
-            {row.original.isBillable ? "Sim" : "Não"}
-         </Badge>
-      ),
-   },
-   {
-      accessorKey: "isActive",
-      header: "Ativo",
-      cell: ({ row }) => <Switch checked={row.original.isActive} disabled />,
-   },
-];
-
 function EventDefinitionsPage() {
+   const navigate = Route.useNavigate();
+   const { sorting, columnFilters } = Route.useSearch();
+   const [tableState, setTableState] = useEventDefinitionsTableState();
    const [search, setSearch] = useState("");
    const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+
+   const handleSortingChange: OnChangeFn<SortingState> = (updater) => {
+      const next = typeof updater === "function" ? updater(sorting) : updater;
+      navigate({
+         search: (prev: EventDefinitionsSearch) => ({ ...prev, sorting: next }),
+      });
+   };
+
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = (
+      updater,
+   ) => {
+      const next =
+         typeof updater === "function" ? updater(columnFilters) : updater;
+      navigate({
+         search: (prev: EventDefinitionsSearch) => ({
+            ...prev,
+            columnFilters: next,
+         }),
+      });
+   };
 
    const { data: events } = useSuspenseQuery(
       orpc.billing.getEventCatalog.queryOptions({}),
@@ -212,14 +191,15 @@ function EventDefinitionsPage() {
             </div>
          </div>
 
-         {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-               <BookOpen className="size-12 text-muted-foreground mb-4" />
-               <p className="text-muted-foreground">Nenhum evento encontrado</p>
-            </div>
-         ) : (
-            <DataTable columns={columns} data={filtered} getRowId={(row) => row.id} />
-         )}
+         <EventDefinitionsTable
+            data={filtered}
+            sorting={sorting as SortingState}
+            onSortingChange={handleSortingChange}
+            columnFilters={columnFilters as ColumnFiltersState}
+            onColumnFiltersChange={handleColumnFiltersChange}
+            tableState={tableState}
+            onTableStateChange={setTableState}
+         />
       </div>
    );
 }

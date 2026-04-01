@@ -16,13 +16,20 @@ import {
    DialogStackHeader,
    DialogStackTitle,
 } from "@packages/ui/components/dialog-stack";
-import { DataTable } from "@packages/ui/components/data-table";
+import {
+   DataTable,
+   type DataTableStoredState,
+} from "@packages/ui/components/data-table";
 import {
    useMutation,
    useSuspenseQuery,
    useQueryClient,
 } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
+import type {
+   ColumnDef,
+   ColumnFiltersState,
+   SortingState,
+} from "@tanstack/react-table";
 import { BarChart3, CheckCircle2, Plus } from "lucide-react";
 import { noop } from "foxact/noop";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -119,6 +126,11 @@ function AddInsightCredenza({
    onAdd: (insight: Insight) => void;
 }) {
    const [currentPage, setCurrentPage] = useState(1);
+   const [sorting, setSorting] = useState<SortingState>([]);
+   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+   const [tableState, setTableState] = useState<DataTableStoredState | null>(
+      null,
+   );
    const { data: insights } = useSuspenseQuery(
       orpc.insights.list.queryOptions({}),
    );
@@ -157,6 +169,12 @@ function AddInsightCredenza({
                   columns={columns}
                   data={paginatedInsights}
                   getRowId={(row) => row.id}
+                  sorting={sorting}
+                  onSortingChange={setSorting}
+                  columnFilters={columnFilters}
+                  onColumnFiltersChange={setColumnFilters}
+                  tableState={tableState}
+                  onTableStateChange={setTableState}
                   pagination={{
                      currentPage,
                      totalPages,
@@ -211,7 +229,9 @@ export function EditableDashboardGrid({
       }),
    );
 
-   const stableOnSaveComplete = useCallback(onSaveComplete ?? noop, [onSaveComplete]);
+   const stableOnSaveComplete = useCallback(onSaveComplete ?? noop, [
+      onSaveComplete,
+   ]);
    const stableOnSaveError = useCallback(onSaveError ?? noop, [onSaveError]);
 
    const handleReorder = useCallback((reordered: DashboardTileType[]) => {

@@ -29,12 +29,7 @@ import {
 } from "@packages/ui/components/sidebar";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import {
-   Link,
-   useLocation,
-   useParams,
-   useRouter,
-} from "@tanstack/react-router";
+import { Link, useLocation, useRouter } from "@tanstack/react-router";
 import {
    Check,
    ChevronsUpDown,
@@ -54,6 +49,7 @@ import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 import { ThemeSwitcher } from "./theme-switcher";
@@ -147,12 +143,8 @@ function SidebarScopeSwitcherContent() {
    const router = useRouter();
    const { pathname } = useLocation();
    const { isMobile, setOpenMobile } = useSidebar();
-   const params = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
-   const currentSlug = params.slug ?? activeOrganization.slug;
-   const slug = params.slug ?? "";
-   const teamSlug = params.teamSlug ?? "";
+   const { slug, teamSlug } = useDashboardSlugs();
+   const currentSlug = slug || activeOrganization.slug;
 
    const { data: organizations } = useSuspenseQuery(
       orpc.organization.getOrganizations.queryOptions({}),
@@ -175,7 +167,7 @@ function SidebarScopeSwitcherContent() {
 
             const nextPath = pathname.startsWith(`/${currentSlug}`)
                ? pathname.replace(`/${currentSlug}`, `/${org.slug}`)
-               : `/${org.slug}/${params.teamSlug ?? ""}/home`;
+               : `/${org.slug}/${teamSlug}/home`;
 
             router.navigate({ to: nextPath });
          });
@@ -184,7 +176,7 @@ function SidebarScopeSwitcherContent() {
          activeOrganization.id,
          currentSlug,
          isPending,
-         params.teamSlug,
+         teamSlug,
          pathname,
          router,
          setActiveOrganization,
@@ -208,9 +200,9 @@ function SidebarScopeSwitcherContent() {
             let nextPath = `/${currentSlug}/${teamParam}/home`;
 
             if (pathname.startsWith(`${prefix}/`)) {
-               nextPath = params.teamSlug
+               nextPath = teamSlug
                   ? pathname.replace(
-                       `${prefix}/${params.teamSlug}`,
+                       `${prefix}/${teamSlug}`,
                        `${prefix}/${teamParam}`,
                     )
                   : `/${currentSlug}/${teamParam}${pathname.slice(prefix.length)}`;
@@ -219,14 +211,7 @@ function SidebarScopeSwitcherContent() {
             router.navigate({ to: nextPath });
          }
       },
-      [
-         activeTeam?.id,
-         currentSlug,
-         params.teamSlug,
-         pathname,
-         queryClient,
-         router,
-      ],
+      [activeTeam?.id, currentSlug, teamSlug, pathname, queryClient, router],
    );
 
    const handleNewProject = useCallback(

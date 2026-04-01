@@ -15,10 +15,7 @@ import {
    Target,
    Users,
 } from "lucide-react";
-import type { Outputs } from "@/integrations/orpc/client";
 import type { SubSidebarSection } from "../hooks/use-sidebar-nav";
-
-type Modulo = Outputs["organizationConfig"]["getModules"][number]["modulo"];
 
 export type NavItemAction = {
    type: "create";
@@ -45,7 +42,8 @@ export type NavItemDef = {
       | "general-availability";
    /** Whether the item can be hidden by the user via sidebar visibility settings */
    configurable?: boolean;
-   moduleKey?: Modulo;
+   /** Per-accountType label overrides */
+   labelOverrides?: Partial<Record<"personal" | "business", string>>;
 };
 
 export type NavGroupDef = {
@@ -70,16 +68,14 @@ export const navGroups: NavGroupDef[] = [
             label: "Dashboards",
             icon: LayoutDashboard,
             route: "/$slug/$teamSlug/analytics/dashboards",
-            earlyAccessFlag: "advanced-analytics",
-            moduleKey: "RELATORIOS",
+            earlyAccessFlag: "analises-avancadas",
          },
          {
             id: "insights",
             label: "Insights",
             icon: Lightbulb,
             route: "/$slug/$teamSlug/analytics/insights",
-            earlyAccessFlag: "advanced-analytics",
-            moduleKey: "RELATORIOS",
+            earlyAccessFlag: "analises-avancadas",
          },
          {
             id: "data-management",
@@ -87,7 +83,7 @@ export const navGroups: NavGroupDef[] = [
             icon: Database,
             route: "/$slug/$teamSlug/analytics/data-management",
             subPanel: "data-management",
-            earlyAccessFlag: "data-management",
+            earlyAccessFlag: "dados",
             earlyAccessFallbackStage: "concept",
          },
       ],
@@ -110,7 +106,6 @@ export const navGroups: NavGroupDef[] = [
             icon: Building2,
             route: "/$slug/$teamSlug/bank-accounts",
             configurable: true,
-            moduleKey: "CONTAS",
          },
          {
             id: "credit-cards",
@@ -118,7 +113,6 @@ export const navGroups: NavGroupDef[] = [
             icon: CreditCard,
             route: "/$slug/$teamSlug/credit-cards",
             configurable: true,
-            moduleKey: "CARTOES",
          },
          {
             id: "categories",
@@ -133,6 +127,7 @@ export const navGroups: NavGroupDef[] = [
             icon: Tags,
             route: "/$slug/$teamSlug/tags",
             configurable: true,
+            labelOverrides: { business: "Centros de Custo" },
          },
          {
             id: "goals",
@@ -140,7 +135,6 @@ export const navGroups: NavGroupDef[] = [
             icon: Target,
             route: "/$slug/$teamSlug/goals",
             configurable: true,
-            moduleKey: "PLANEJAMENTO",
          },
          {
             id: "bills",
@@ -160,8 +154,7 @@ export const navGroups: NavGroupDef[] = [
             label: "Contatos",
             icon: Users,
             route: "/$slug/$teamSlug/contacts",
-            earlyAccessFlag: "contacts",
-            moduleKey: "CONTATOS",
+            earlyAccessFlag: "contatos",
          },
          {
             id: "inventory",
@@ -170,16 +163,14 @@ export const navGroups: NavGroupDef[] = [
             route: "/$slug/$teamSlug/inventory",
             quickAction: { type: "create", target: "sheet" },
             configurable: true,
-            earlyAccessFlag: "inventory",
-            moduleKey: "ESTOQUE",
+            earlyAccessFlag: "produtos-estoque",
          },
          {
             id: "services",
             label: "Serviços",
             icon: Briefcase,
             route: "/$slug/$teamSlug/erp/services",
-            earlyAccessFlag: "services",
-            moduleKey: "SERVICOS",
+            earlyAccessFlag: "gestao-de-servicos",
          },
       ],
    },

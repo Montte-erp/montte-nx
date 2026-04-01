@@ -7,7 +7,7 @@ import {
    CardTitle,
 } from "@packages/ui/components/card";
 import { Progress } from "@packages/ui/components/progress";
-import { useParams } from "@tanstack/react-router";
+import { useOrgSlug } from "@/hooks/use-dashboard-slugs";
 import { ChevronDown, ChevronUp, Rocket, X } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useLocalStorage } from "foxact/use-local-storage";
@@ -27,9 +27,7 @@ const CHECKLIST_HIDDEN_STORAGE_KEY = "montte:checklist_hidden";
 export function QuickStartChecklist() {
    const { data: status } = useOnboardingStatus();
    const completeTaskMutation = useCompleteTask();
-   const { slug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
+   const slug = useOrgSlug();
    const [isCollapsed, setIsCollapsed] = useState(false);
    const [hiddenBySlug, setHiddenBySlug] = useLocalStorage<
       Record<string, boolean>

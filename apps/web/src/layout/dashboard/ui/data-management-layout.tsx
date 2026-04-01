@@ -1,12 +1,13 @@
 import { Button } from "@packages/ui/components/button";
 import { useMediaQuery } from "foxact/use-media-query";
-import { Link, useLocation, useParams } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { ChevronLeft, Database } from "lucide-react";
 import type * as React from "react";
 import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
+import { useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { DataManagementMobileNav } from "./data-management-mobile-nav";
 
@@ -31,9 +32,7 @@ export function DataManagementLayout({ children }: DataManagementLayoutProps) {
    const isMobile = useMediaQuery("(max-width: 767px)", false);
    const { pathname } = useLocation();
    const { activeOrganization } = useActiveOrganization();
-   const { teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
+   const teamSlug = useTeamSlug();
 
    const isIndexRoute = pathname.endsWith("/data-management");
 
@@ -48,7 +47,7 @@ export function DataManagementLayout({ children }: DataManagementLayoutProps) {
                <Link
                   params={{
                      slug: activeOrganization.slug,
-                     teamSlug: teamSlug ?? "",
+                     teamSlug,
                   }}
                   to="/$slug/$teamSlug/analytics/data-management"
                >
