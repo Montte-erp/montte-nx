@@ -98,7 +98,7 @@ export async function generateTransactionOccurrences(): Promise<void> {
 
       if (teamRow) {
          await emitFinanceRecurringProcessed(
-            (params) => emitEvent({ ...params, redis }),
+            (params) => emitEvent({ ...params, db, redis }),
             { organizationId: teamRow.organizationId, teamId: rule.teamId },
             {
                recurringTransactionId: rule.id,
