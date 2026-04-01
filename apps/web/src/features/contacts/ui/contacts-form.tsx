@@ -202,7 +202,10 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                               field.state.meta.isTouched &&
                               field.state.meta.errors.length > 0;
                            return (
-                              <Field className="col-span-2">
+                              <Field
+                                 className="col-span-2"
+                                 data-invalid={isInvalid}
+                              >
                                  <FieldLabel htmlFor={field.name}>
                                     Número
                                  </FieldLabel>
@@ -230,7 +233,7 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
                         return (
-                           <Field>
+                           <Field data-invalid={isInvalid}>
                               <FieldLabel htmlFor={field.name}>
                                  Email
                               </FieldLabel>
@@ -258,7 +261,7 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
                         return (
-                           <Field>
+                           <Field data-invalid={isInvalid}>
                               <FieldLabel htmlFor={field.name}>
                                  Telefone
                               </FieldLabel>
@@ -285,7 +288,7 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
                         return (
-                           <Field>
+                           <Field data-invalid={isInvalid}>
                               <FieldLabel htmlFor={field.name}>
                                  Observações
                               </FieldLabel>

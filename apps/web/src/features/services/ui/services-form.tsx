@@ -279,7 +279,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
                      return (
-                        <Field>
+                        <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
                               Descrição
                            </FieldLabel>
@@ -369,7 +369,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                                           field.state.meta.isTouched &&
                                           field.state.meta.errors.length > 0;
                                        return (
-                                          <Field>
+                                          <Field data-invalid={isInvalid}>
                                              <FieldLabel htmlFor={field.name}>
                                                 Nome
                                              </FieldLabel>

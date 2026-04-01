@@ -344,7 +344,7 @@ export function BankAccountForm({
                                        field.state.meta.isTouched &&
                                        field.state.meta.errors.length > 0;
                                     return (
-                                       <Field>
+                                       <Field data-invalid={isInvalid}>
                                           <FieldLabel htmlFor={field.name}>
                                              Apelido
                                           </FieldLabel>
@@ -381,7 +381,7 @@ export function BankAccountForm({
                                        field.state.meta.isTouched &&
                                        field.state.meta.errors.length > 0;
                                     return (
-                                       <Field>
+                                       <Field data-invalid={isInvalid}>
                                           <FieldLabel htmlFor={field.name}>
                                              Agência
                                           </FieldLabel>
@@ -410,7 +410,7 @@ export function BankAccountForm({
                                        field.state.meta.isTouched &&
                                        field.state.meta.errors.length > 0;
                                     return (
-                                       <Field>
+                                       <Field data-invalid={isInvalid}>
                                           <FieldLabel htmlFor={field.name}>
                                              Conta
                                           </FieldLabel>
@@ -471,7 +471,7 @@ export function BankAccountForm({
                                  field.state.meta.isTouched &&
                                  field.state.meta.errors.length > 0;
                               return (
-                                 <Field>
+                                 <Field data-invalid={isInvalid}>
                                     <FieldLabel htmlFor={field.name}>
                                        Data do Saldo Inicial *
                                     </FieldLabel>
@@ -570,7 +570,7 @@ export function BankAccountForm({
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
                         return (
-                           <Field>
+                           <Field data-invalid={isInvalid}>
                               <FieldLabel htmlFor={field.name}>
                                  Outras informações
                               </FieldLabel>

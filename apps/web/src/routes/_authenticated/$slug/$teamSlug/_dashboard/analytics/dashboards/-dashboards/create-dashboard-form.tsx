@@ -74,7 +74,9 @@ export function CreateDashboardForm({ onSuccess }: CreateDashboardFormProps) {
          <form.Field
             name="name"
             children={(field) => {
-               const isInvalid = field.state.meta.errors.length > 0;
+               const isInvalid =
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                return (
                   <div className="flex flex-col gap-2">
                      <Label htmlFor="dashboard-name">Nome</Label>
@@ -99,7 +101,9 @@ export function CreateDashboardForm({ onSuccess }: CreateDashboardFormProps) {
          <form.Field
             name="description"
             children={(field) => {
-               const isInvalid = field.state.meta.errors.length > 0;
+               const isInvalid =
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                return (
                   <div className="flex flex-col gap-2">
                      <Label htmlFor="dashboard-description">

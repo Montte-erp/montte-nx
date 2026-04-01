@@ -214,7 +214,7 @@ function BillFromTransactionDialogStackInner({
                                  field.state.meta.isTouched &&
                                  field.state.meta.errors.length > 0;
                               return (
-                                 <Field>
+                                 <Field data-invalid={isInvalid}>
                                     <FieldLabel htmlFor={field.name}>
                                        Número de parcelas
                                     </FieldLabel>
@@ -287,7 +287,7 @@ function BillFromTransactionDialogStackInner({
                                  field.state.meta.isTouched &&
                                  field.state.meta.errors.length > 0;
                               return (
-                                 <Field>
+                                 <Field data-invalid={isInvalid}>
                                     <FieldLabel htmlFor={field.name}>
                                        Gerar contas para quantos meses?
                                     </FieldLabel>
