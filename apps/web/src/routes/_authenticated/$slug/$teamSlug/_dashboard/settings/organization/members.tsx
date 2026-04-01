@@ -107,12 +107,12 @@ function MembersContent() {
          });
          if (result.error) {
             toast.error(result.error.message ?? "Erro ao alterar função");
-         } else {
-            queryClient.invalidateQueries({
-               queryKey: orpc.organization.getMembers.queryOptions({}).queryKey,
-            });
-            toast.success("Função atualizada com sucesso");
+            return;
          }
+         queryClient.invalidateQueries({
+            queryKey: orpc.organization.getMembers.queryOptions({}).queryKey,
+         });
+         toast.success("Função atualizada com sucesso");
       });
    }
 
