@@ -15,6 +15,7 @@ import * as financialSettingsRouter from "./financial-settings";
 import * as insightsRouter from "./insights";
 import * as inventoryRouter from "./inventory";
 import * as onboardingRouter from "./onboarding";
+import * as organizationConfigRouter from "./organization-config";
 import * as organizationRouter from "./organization";
 import * as servicesRouter from "./services";
 import * as sessionRouter from "./session";
@@ -40,6 +41,7 @@ export default {
    insights: insightsRouter,
    inventory: inventoryRouter,
    onboarding: onboardingRouter,
+   organizationConfig: organizationConfigRouter,
    services: servicesRouter,
    session: sessionRouter,
    tags: tagsRouter,
