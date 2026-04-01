@@ -1,5 +1,5 @@
 import { Button } from "@packages/ui/components/button";
-import { DataTable } from "@packages/ui/components/data-table";
+import { DataTable, type DataTableStoredState } from "@packages/ui/components/data-table";
 import {
    DropdownMenu,
    DropdownMenuContent,
@@ -15,8 +15,11 @@ import {
    EmptyTitle,
 } from "@packages/ui/components/empty";
 import { Skeleton } from "@packages/ui/components/skeleton";
+import type { ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/react-table";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
+import { z } from "zod";
 import {
    Archive,
    History,
@@ -44,9 +47,26 @@ import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
+const searchSchema = z.object({
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .optional()
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .optional()
+      .default([]),
+});
+
+const [useInventoryTableState] = createLocalStorageState<DataTableStoredState | null>(
+   "montte:datatable:inventory",
+   null,
+);
+
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/inventory/",
 )({
+   validateSearch: searchSchema,
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(
          orpc.inventory.getProducts.queryOptions({}),
@@ -87,12 +107,26 @@ function InventorySkeleton() {
 // =============================================================================
 
 function InventoryList() {
+   const navigate = Route.useNavigate();
+   const { sorting, columnFilters } = Route.useSearch();
+   const [tableState, setTableState] = useInventoryTableState();
+
    const { data: products } = useSuspenseQuery(
       orpc.inventory.getProducts.queryOptions({}),
    );
 
    const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
+
+   const handleSortingChange: OnChangeFn<SortingState> = (updater) => {
+      const next = typeof updater === "function" ? updater(sorting) : updater;
+      navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, sorting: next }) });
+   };
+
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = (updater) => {
+      const next = typeof updater === "function" ? updater(columnFilters) : updater;
+      navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, columnFilters: next }) });
+   };
 
    const archiveMutation = useMutation(
       orpc.inventory.archiveProduct.mutationOptions({
@@ -179,8 +213,14 @@ function InventoryList() {
    return (
       <DataTable
          columns={columns}
-         data={products as InventoryProductRow[]}
+         data={products}
          getRowId={(row) => row.id}
+         sorting={sorting}
+         onSortingChange={handleSortingChange}
+         columnFilters={columnFilters}
+         onColumnFiltersChange={handleColumnFiltersChange}
+         tableState={tableState}
+         onTableStateChange={setTableState}
          renderActions={({ row }) => (
             <>
                <Button
