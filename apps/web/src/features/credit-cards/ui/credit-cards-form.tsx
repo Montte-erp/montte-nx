@@ -147,15 +147,17 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                         onBlur: ({ value }) =>
                            !value.trim() ? "Nome é obrigatório" : undefined,
                      }}
-                  >
-                     {(field) => {
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
-                              <FieldLabel>Nome</FieldLabel>
+                              <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
                               <Input
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
                                  onBlur={field.handleBlur}
                                  onChange={(e) =>
                                     field.handleChange(e.target.value)
@@ -171,10 +173,11 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
-                  <form.Field name="color">
-                     {(field) => (
+                  <form.Field
+                     name="color"
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Cor</FieldLabel>
                            <Popover>
@@ -231,10 +234,11 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                            </Popover>
                         </Field>
                      )}
-                  </form.Field>
+                  />
 
-                  <form.Field name="creditLimit">
-                     {(field) => (
+                  <form.Field
+                     name="creditLimit"
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Limite de Crédito</FieldLabel>
                            <MoneyInput
@@ -246,7 +250,7 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                            />
                         </Field>
                      )}
-                  </form.Field>
+                  />
 
                   <form.Field
                      name="closingDay"
@@ -256,15 +260,19 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                               ? "Dia deve ser entre 1 e 31"
                               : undefined,
                      }}
-                  >
-                     {(field) => {
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
-                              <FieldLabel>Dia de Fechamento</FieldLabel>
+                              <FieldLabel htmlFor={field.name}>
+                                 Dia de Fechamento
+                              </FieldLabel>
                               <Input
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
                                  max={31}
                                  min={1}
                                  onBlur={field.handleBlur}
@@ -283,7 +291,7 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
                   <form.Field
                      name="dueDay"
@@ -293,15 +301,19 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                               ? "Dia deve ser entre 1 e 31"
                               : undefined,
                      }}
-                  >
-                     {(field) => {
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
-                              <FieldLabel>Dia de Vencimento</FieldLabel>
+                              <FieldLabel htmlFor={field.name}>
+                                 Dia de Vencimento
+                              </FieldLabel>
                               <Input
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
                                  max={31}
                                  min={1}
                                  onBlur={field.handleBlur}
@@ -320,10 +332,11 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
-                  <form.Field name="bankAccountId">
-                     {(field) => (
+                  <form.Field
+                     name="bankAccountId"
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Conta Bancária Vinculada</FieldLabel>
                            <Combobox
@@ -340,7 +353,7 @@ export function CreditCardForm({ mode, card, onSuccess }: CreditCardFormProps) {
                            />
                         </Field>
                      )}
-                  </form.Field>
+                  />
                </FieldGroup>
             </div>
 

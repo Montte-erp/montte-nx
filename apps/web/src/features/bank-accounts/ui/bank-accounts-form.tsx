@@ -220,8 +220,9 @@ export function BankAccountForm({
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
                <FieldGroup>
-                  <form.Field name="type">
-                     {(field) => {
+                  <form.Field
+                     name="type"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
@@ -299,14 +300,15 @@ export function BankAccountForm({
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
                   <form.Subscribe selector={(s) => s.values.type}>
                      {(type) =>
                         type !== "cash" ? (
                            <div className="grid grid-cols-2 gap-4">
-                              <form.Field name="bankCode">
-                                 {(field) => {
+                              <form.Field
+                                 name="bankCode"
+                                 children={(field) => {
                                     const isInvalid =
                                        field.state.meta.isTouched &&
                                        field.state.meta.errors.length > 0;
@@ -333,23 +335,36 @@ export function BankAccountForm({
                                        </Field>
                                     );
                                  }}
-                              </form.Field>
+                              />
 
-                              <form.Field name="nickname">
-                                 {(field) => (
-                                    <Field>
-                                       <FieldLabel>Apelido</FieldLabel>
-                                       <Input
-                                          onBlur={field.handleBlur}
-                                          onChange={(e) =>
-                                             field.handleChange(e.target.value)
-                                          }
-                                          placeholder="Ex: Conta principal"
-                                          value={field.state.value}
-                                       />
-                                    </Field>
-                                 )}
-                              </form.Field>
+                              <form.Field
+                                 name="nickname"
+                                 children={(field) => {
+                                    const isInvalid =
+                                       field.state.meta.isTouched &&
+                                       field.state.meta.errors.length > 0;
+                                    return (
+                                       <Field>
+                                          <FieldLabel htmlFor={field.name}>
+                                             Apelido
+                                          </FieldLabel>
+                                          <Input
+                                             id={field.name}
+                                             name={field.name}
+                                             aria-invalid={isInvalid}
+                                             onBlur={field.handleBlur}
+                                             onChange={(e) =>
+                                                field.handleChange(
+                                                   e.target.value,
+                                                )
+                                             }
+                                             placeholder="Ex: Conta principal"
+                                             value={field.state.value}
+                                          />
+                                       </Field>
+                                    );
+                                 }}
+                              />
                            </div>
                         ) : null
                      }
@@ -359,37 +374,63 @@ export function BankAccountForm({
                      {(type) =>
                         type !== "cash" ? (
                            <div className="grid grid-cols-2 gap-4">
-                              <form.Field name="branch">
-                                 {(field) => (
-                                    <Field>
-                                       <FieldLabel>Agência</FieldLabel>
-                                       <Input
-                                          onBlur={field.handleBlur}
-                                          onChange={(e) =>
-                                             field.handleChange(e.target.value)
-                                          }
-                                          placeholder="0001"
-                                          value={field.state.value}
-                                       />
-                                    </Field>
-                                 )}
-                              </form.Field>
+                              <form.Field
+                                 name="branch"
+                                 children={(field) => {
+                                    const isInvalid =
+                                       field.state.meta.isTouched &&
+                                       field.state.meta.errors.length > 0;
+                                    return (
+                                       <Field>
+                                          <FieldLabel htmlFor={field.name}>
+                                             Agência
+                                          </FieldLabel>
+                                          <Input
+                                             id={field.name}
+                                             name={field.name}
+                                             aria-invalid={isInvalid}
+                                             onBlur={field.handleBlur}
+                                             onChange={(e) =>
+                                                field.handleChange(
+                                                   e.target.value,
+                                                )
+                                             }
+                                             placeholder="0001"
+                                             value={field.state.value}
+                                          />
+                                       </Field>
+                                    );
+                                 }}
+                              />
 
-                              <form.Field name="accountNumber">
-                                 {(field) => (
-                                    <Field>
-                                       <FieldLabel>Conta</FieldLabel>
-                                       <Input
-                                          onBlur={field.handleBlur}
-                                          onChange={(e) =>
-                                             field.handleChange(e.target.value)
-                                          }
-                                          placeholder="12345-6"
-                                          value={field.state.value}
-                                       />
-                                    </Field>
-                                 )}
-                              </form.Field>
+                              <form.Field
+                                 name="accountNumber"
+                                 children={(field) => {
+                                    const isInvalid =
+                                       field.state.meta.isTouched &&
+                                       field.state.meta.errors.length > 0;
+                                    return (
+                                       <Field>
+                                          <FieldLabel htmlFor={field.name}>
+                                             Conta
+                                          </FieldLabel>
+                                          <Input
+                                             id={field.name}
+                                             name={field.name}
+                                             aria-invalid={isInvalid}
+                                             onBlur={field.handleBlur}
+                                             onChange={(e) =>
+                                                field.handleChange(
+                                                   e.target.value,
+                                                )
+                                             }
+                                             placeholder="12345-6"
+                                             value={field.state.value}
+                                          />
+                                       </Field>
+                                    );
+                                 }}
+                              />
                            </div>
                         ) : null
                      }
@@ -397,8 +438,9 @@ export function BankAccountForm({
 
                   {isCreate && (
                      <div className="grid grid-cols-2 gap-4">
-                        <form.Field name="initialBalance">
-                           {(field) => {
+                        <form.Field
+                           name="initialBalance"
+                           children={(field) => {
                               const isInvalid =
                                  field.state.meta.isTouched &&
                                  field.state.meta.errors.length > 0;
@@ -420,30 +462,40 @@ export function BankAccountForm({
                                  </Field>
                               );
                            }}
-                        </form.Field>
+                        />
 
-                        <form.Field name="initialBalanceDate">
-                           {(field) => (
-                              <Field>
-                                 <FieldLabel>
-                                    Data do Saldo Inicial *
-                                 </FieldLabel>
-                                 <Input
-                                    onBlur={field.handleBlur}
-                                    onChange={(e) =>
-                                       field.handleChange(e.target.value)
-                                    }
-                                    type="date"
-                                    value={field.state.value}
-                                 />
-                              </Field>
-                           )}
-                        </form.Field>
+                        <form.Field
+                           name="initialBalanceDate"
+                           children={(field) => {
+                              const isInvalid =
+                                 field.state.meta.isTouched &&
+                                 field.state.meta.errors.length > 0;
+                              return (
+                                 <Field>
+                                    <FieldLabel htmlFor={field.name}>
+                                       Data do Saldo Inicial *
+                                    </FieldLabel>
+                                    <Input
+                                       id={field.name}
+                                       name={field.name}
+                                       aria-invalid={isInvalid}
+                                       onBlur={field.handleBlur}
+                                       onChange={(e) =>
+                                          field.handleChange(e.target.value)
+                                       }
+                                       type="date"
+                                       value={field.state.value}
+                                    />
+                                 </Field>
+                              );
+                           }}
+                        />
                      </div>
                   )}
 
-                  <form.Field name="color">
-                     {(field) => {
+                  <form.Field
+                     name="color"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
@@ -509,24 +561,35 @@ export function BankAccountForm({
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
-                  <form.Field name="notes">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>Outras informações</FieldLabel>
-                           <Textarea
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="Informações adicionais sobre a conta..."
-                              rows={3}
-                              value={field.state.value}
-                           />
-                        </Field>
-                     )}
-                  </form.Field>
+                  <form.Field
+                     name="notes"
+                     children={(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           field.state.meta.errors.length > 0;
+                        return (
+                           <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                 Outras informações
+                              </FieldLabel>
+                              <Textarea
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                 }
+                                 placeholder="Informações adicionais sobre a conta..."
+                                 rows={3}
+                                 value={field.state.value}
+                              />
+                           </Field>
+                        );
+                     }}
+                  />
                </FieldGroup>
             </div>
 

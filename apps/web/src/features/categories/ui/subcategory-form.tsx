@@ -72,16 +72,20 @@ export function SubcategoryForm({
 
          <CredenzaBody>
             <FieldGroup>
-               <form.Field name="name">
-                  {(field) => {
+               <form.Field
+                  name="name"
+                  children={(field) => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel>Nome *</FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Nome *</FieldLabel>
                            <Input
                               autoFocus
+                              id={field.name}
+                              name={field.name}
+                              aria-invalid={isInvalid}
                               onBlur={field.handleBlur}
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
@@ -95,7 +99,7 @@ export function SubcategoryForm({
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
             </FieldGroup>
          </CredenzaBody>
 

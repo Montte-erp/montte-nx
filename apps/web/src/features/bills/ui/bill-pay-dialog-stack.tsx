@@ -97,8 +97,9 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
                }}
             >
                <FieldGroup>
-                  <form.Field name="paymentType">
-                     {(field) => (
+                  <form.Field
+                     name="paymentType"
+                     children={(field) => (
                         <Field>
                            <FieldLabel>
                               {isPayable
@@ -133,7 +134,7 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
                            </Select>
                         </Field>
                      )}
-                  </form.Field>
+                  />
                   <form.Field
                      name="amount"
                      validators={{
@@ -150,8 +151,7 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
                            return undefined;
                         },
                      }}
-                  >
-                     {(field) => (
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Valor</FieldLabel>
                            <form.Subscribe
@@ -185,9 +185,10 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
                            />
                         </Field>
                      )}
-                  </form.Field>
-                  <form.Field name="date">
-                     {(field) => (
+                  />
+                  <form.Field
+                     name="date"
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Data do Pagamento</FieldLabel>
                            <DatePicker
@@ -204,10 +205,11 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
                            />
                         </Field>
                      )}
-                  </form.Field>
+                  />
                   {accounts.length > 0 && (
-                     <form.Field name="bankAccountId">
-                        {(field) => (
+                     <form.Field
+                        name="bankAccountId"
+                        children={(field) => (
                            <Field>
                               <FieldLabel>Conta Bancária</FieldLabel>
                               <Select
@@ -227,7 +229,7 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
                               </Select>
                            </Field>
                         )}
-                     </form.Field>
+                     />
                   )}
                </FieldGroup>
             </form>

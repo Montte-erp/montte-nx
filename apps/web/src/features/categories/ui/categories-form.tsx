@@ -255,16 +255,22 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
          <CredenzaBody>
             <FieldGroup>
                <div className="grid grid-cols-2 gap-4">
-                  <form.Field name="name">
-                     {(field) => {
+                  <form.Field
+                     name="name"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
-                              <FieldLabel>Nome *</FieldLabel>
+                              <FieldLabel htmlFor={field.name}>
+                                 Nome *
+                              </FieldLabel>
                               <Input
                                  autoFocus
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
                                  onBlur={field.handleBlur}
                                  onChange={(e) =>
                                     field.handleChange(e.target.value)
@@ -278,10 +284,11 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
-                  <form.Field name="type">
-                     {(field) => (
+                  <form.Field
+                     name="type"
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Tipo</FieldLabel>
                            <Select
@@ -302,7 +309,7 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                            </Select>
                         </Field>
                      )}
-                  </form.Field>
+                  />
                </div>
 
                <form.Subscribe
@@ -350,8 +357,9 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                </form.Subscribe>
 
                <div className="grid grid-cols-2 gap-4">
-                  <form.Field name="color">
-                     {(field) => (
+                  <form.Field
+                     name="color"
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Cor</FieldLabel>
                            <Popover>
@@ -407,10 +415,11 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                            </Popover>
                         </Field>
                      )}
-                  </form.Field>
+                  />
 
-                  <form.Field name="icon">
-                     {(field) => (
+                  <form.Field
+                     name="icon"
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Ícone</FieldLabel>
                            <Combobox
@@ -436,7 +445,7 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                            />
                         </Field>
                      )}
-                  </form.Field>
+                  />
                </div>
 
                {isCreate && (

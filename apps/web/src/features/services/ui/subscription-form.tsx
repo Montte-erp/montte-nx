@@ -123,8 +123,9 @@ export function SubscriptionForm({
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
                <FieldGroup>
-                  <form.Field name="serviceId">
-                     {(field) => {
+                  <form.Field
+                     name="serviceId"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
@@ -162,11 +163,12 @@ export function SubscriptionForm({
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
                   {selectedServiceId && (
-                     <form.Field name="variantId">
-                        {(field) => {
+                     <form.Field
+                        name="variantId"
+                        children={(field) => {
                            const isInvalid =
                               field.state.meta.isTouched &&
                               field.state.meta.errors.length > 0;
@@ -206,18 +208,24 @@ export function SubscriptionForm({
                               </Field>
                            );
                         }}
-                     </form.Field>
+                     />
                   )}
 
-                  <form.Field name="startDate">
-                     {(field) => {
+                  <form.Field
+                     name="startDate"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
-                              <FieldLabel>Data de início *</FieldLabel>
+                              <FieldLabel htmlFor={field.name}>
+                                 Data de início *
+                              </FieldLabel>
                               <Input
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
                                  onBlur={field.handleBlur}
                                  onChange={(e) =>
                                     field.handleChange(e.target.value)
@@ -231,26 +239,38 @@ export function SubscriptionForm({
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
-                  <form.Field name="endDate">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>Data de término</FieldLabel>
-                           <Input
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              type="date"
-                              value={field.state.value}
-                           />
-                        </Field>
-                     )}
-                  </form.Field>
+                  <form.Field
+                     name="endDate"
+                     children={(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           field.state.meta.errors.length > 0;
+                        return (
+                           <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                 Data de término
+                              </FieldLabel>
+                              <Input
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                 }
+                                 type="date"
+                                 value={field.state.value}
+                              />
+                           </Field>
+                        );
+                     }}
+                  />
 
-                  <form.Field name="negotiatedPrice">
-                     {(field) => {
+                  <form.Field
+                     name="negotiatedPrice"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
@@ -288,23 +308,34 @@ export function SubscriptionForm({
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
-                  <form.Field name="notes">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>Observações</FieldLabel>
-                           <Input
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="Ex: Desconto especial aprovado"
-                              value={field.state.value}
-                           />
-                        </Field>
-                     )}
-                  </form.Field>
+                  <form.Field
+                     name="notes"
+                     children={(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           field.state.meta.errors.length > 0;
+                        return (
+                           <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                 Observações
+                              </FieldLabel>
+                              <Input
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                 }
+                                 placeholder="Ex: Desconto especial aprovado"
+                                 value={field.state.value}
+                              />
+                           </Field>
+                        );
+                     }}
+                  />
                </FieldGroup>
             </div>
 

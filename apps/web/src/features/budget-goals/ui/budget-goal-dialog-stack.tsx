@@ -208,15 +208,21 @@ export function BudgetGoalDialogStack({
                <FieldGroup>
                   {isCreate && (
                      <div className="grid grid-cols-2 gap-4">
-                        <form.Field name="limitAmount">
-                           {(field) => {
+                        <form.Field
+                           name="limitAmount"
+                           children={(field) => {
                               const isInvalid =
                                  field.state.meta.isTouched &&
                                  field.state.meta.errors.length > 0;
                               return (
                                  <Field data-invalid={isInvalid}>
-                                    <FieldLabel>Limite (R$)</FieldLabel>
+                                    <FieldLabel htmlFor={field.name}>
+                                       Limite (R$)
+                                    </FieldLabel>
                                     <Input
+                                       id={field.name}
+                                       name={field.name}
+                                       aria-invalid={isInvalid}
                                        min="0.01"
                                        onBlur={field.handleBlur}
                                        onChange={(e) =>
@@ -235,20 +241,26 @@ export function BudgetGoalDialogStack({
                                  </Field>
                               );
                            }}
-                        </form.Field>
+                        />
                      </div>
                   )}
 
                   {!isCreate && (
-                     <form.Field name="limitAmount">
-                        {(field) => {
+                     <form.Field
+                        name="limitAmount"
+                        children={(field) => {
                            const isInvalid =
                               field.state.meta.isTouched &&
                               field.state.meta.errors.length > 0;
                            return (
                               <Field data-invalid={isInvalid}>
-                                 <FieldLabel>Limite (R$)</FieldLabel>
+                                 <FieldLabel htmlFor={field.name}>
+                                    Limite (R$)
+                                 </FieldLabel>
                                  <Input
+                                    id={field.name}
+                                    name={field.name}
+                                    aria-invalid={isInvalid}
                                     min="0.01"
                                     onBlur={field.handleBlur}
                                     onChange={(e) =>
@@ -267,12 +279,13 @@ export function BudgetGoalDialogStack({
                               </Field>
                            );
                         }}
-                     </form.Field>
+                     />
                   )}
 
                   <div className="grid grid-cols-2 gap-4">
-                     <form.Field name="categoryId">
-                        {(field) => {
+                     <form.Field
+                        name="categoryId"
+                        children={(field) => {
                            const isInvalid =
                               field.state.meta.isTouched &&
                               field.state.meta.errors.length > 0;
@@ -324,11 +337,12 @@ export function BudgetGoalDialogStack({
                               </Field>
                            );
                         }}
-                     </form.Field>
+                     />
                   </div>
 
-                  <form.Field name="alertEnabled">
-                     {(alertEnabledField) => (
+                  <form.Field
+                     name="alertEnabled"
+                     children={(alertEnabledField) => (
                         <Field>
                            <div className="flex items-center justify-between gap-2">
                               <FieldLabel className="mb-0">
@@ -343,18 +357,22 @@ export function BudgetGoalDialogStack({
                            </div>
 
                            {alertEnabledField.state.value && (
-                              <form.Field name="alertThreshold">
-                                 {(field) => {
+                              <form.Field
+                                 name="alertThreshold"
+                                 children={(field) => {
                                     const isInvalid =
                                        field.state.meta.isTouched &&
                                        field.state.meta.errors.length > 0;
                                     return (
                                        <div className="mt-2">
-                                          <FieldLabel>
+                                          <FieldLabel htmlFor={field.name}>
                                              Alertar quando atingir{" "}
                                              {field.state.value}% do limite
                                           </FieldLabel>
                                           <Input
+                                             id={field.name}
+                                             name={field.name}
+                                             aria-invalid={isInvalid}
                                              className="mt-1.5"
                                              max="100"
                                              min="1"
@@ -375,11 +393,11 @@ export function BudgetGoalDialogStack({
                                        </div>
                                     );
                                  }}
-                              </form.Field>
+                              />
                            )}
                         </Field>
                      )}
-                  </form.Field>
+                  />
                </FieldGroup>
             </div>
 

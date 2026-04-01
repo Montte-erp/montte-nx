@@ -113,15 +113,21 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
                <FieldGroup>
-                  <form.Field name="name">
-                     {(field) => {
+                  <form.Field
+                     name="name"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
-                              <FieldLabel>Nome *</FieldLabel>
+                              <FieldLabel htmlFor={field.name}>
+                                 Nome *
+                              </FieldLabel>
                               <Input
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
                                  onBlur={field.handleBlur}
                                  onChange={(e) =>
                                     field.handleChange(e.target.value)
@@ -135,10 +141,11 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
-                  <form.Field name="type">
-                     {(field) => (
+                  <form.Field
+                     name="type"
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Tipo *</FieldLabel>
                            <Select
@@ -162,11 +169,12 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                            </Select>
                         </Field>
                      )}
-                  </form.Field>
+                  />
 
                   <div className="grid grid-cols-3 gap-2">
-                     <form.Field name="documentType">
-                        {(field) => (
+                     <form.Field
+                        name="documentType"
+                        children={(field) => (
                            <Field>
                               <FieldLabel>Tipo Doc.</FieldLabel>
                               <Select
@@ -185,74 +193,118 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                               </Select>
                            </Field>
                         )}
-                     </form.Field>
+                     />
 
-                     <form.Field name="document">
-                        {(field) => (
-                           <Field className="col-span-2">
-                              <FieldLabel>Número</FieldLabel>
+                     <form.Field
+                        name="document"
+                        children={(field) => {
+                           const isInvalid =
+                              field.state.meta.isTouched &&
+                              field.state.meta.errors.length > 0;
+                           return (
+                              <Field className="col-span-2">
+                                 <FieldLabel htmlFor={field.name}>
+                                    Número
+                                 </FieldLabel>
+                                 <Input
+                                    id={field.name}
+                                    name={field.name}
+                                    aria-invalid={isInvalid}
+                                    onBlur={field.handleBlur}
+                                    onChange={(e) =>
+                                       field.handleChange(e.target.value)
+                                    }
+                                    placeholder="000.000.000-00"
+                                    value={field.state.value}
+                                 />
+                              </Field>
+                           );
+                        }}
+                     />
+                  </div>
+
+                  <form.Field
+                     name="email"
+                     children={(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           field.state.meta.errors.length > 0;
+                        return (
+                           <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                 Email
+                              </FieldLabel>
                               <Input
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
                                  onBlur={field.handleBlur}
                                  onChange={(e) =>
                                     field.handleChange(e.target.value)
                                  }
-                                 placeholder="000.000.000-00"
+                                 placeholder="contato@empresa.com"
+                                 type="email"
                                  value={field.state.value}
                               />
                            </Field>
-                        )}
-                     </form.Field>
-                  </div>
+                        );
+                     }}
+                  />
 
-                  <form.Field name="email">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>Email</FieldLabel>
-                           <Input
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="contato@empresa.com"
-                              type="email"
-                              value={field.state.value}
-                           />
-                        </Field>
-                     )}
-                  </form.Field>
+                  <form.Field
+                     name="phone"
+                     children={(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           field.state.meta.errors.length > 0;
+                        return (
+                           <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                 Telefone
+                              </FieldLabel>
+                              <Input
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                 }
+                                 placeholder="(11) 99999-9999"
+                                 value={field.state.value}
+                              />
+                           </Field>
+                        );
+                     }}
+                  />
 
-                  <form.Field name="phone">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>Telefone</FieldLabel>
-                           <Input
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="(11) 99999-9999"
-                              value={field.state.value}
-                           />
-                        </Field>
-                     )}
-                  </form.Field>
-
-                  <form.Field name="notes">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>Observações</FieldLabel>
-                           <Textarea
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="Informações adicionais..."
-                              rows={3}
-                              value={field.state.value}
-                           />
-                        </Field>
-                     )}
-                  </form.Field>
+                  <form.Field
+                     name="notes"
+                     children={(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           field.state.meta.errors.length > 0;
+                        return (
+                           <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                 Observações
+                              </FieldLabel>
+                              <Textarea
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                 }
+                                 placeholder="Informações adicionais..."
+                                 rows={3}
+                                 value={field.state.value}
+                              />
+                           </Field>
+                        );
+                     }}
+                  />
                </FieldGroup>
             </div>
 
