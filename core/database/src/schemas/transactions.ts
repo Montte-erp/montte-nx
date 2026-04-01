@@ -142,6 +142,32 @@ export const transactionItems = pgTable("transaction_items", {
       .defaultNow(),
 });
 
+export const transactionRateio = pgTable(
+   "transaction_rateio",
+   {
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
+      transactionId: uuid("transaction_id")
+         .notNull()
+         .references(() => transactions.id, { onDelete: "cascade" }),
+      categoryId: uuid("category_id")
+         .notNull()
+         .references(() => categories.id, { onDelete: "restrict" }),
+      tagId: uuid("tag_id").references(() => tags.id, {
+         onDelete: "set null",
+      }),
+      amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+      createdAt: timestamp("created_at", { withTimezone: true })
+         .notNull()
+         .defaultNow(),
+   },
+   (table) => [
+      index("transaction_rateio_transaction_id_idx").on(table.transactionId),
+      index("transaction_rateio_category_id_idx").on(table.categoryId),
+   ],
+);
+
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
 export type TransactionType = (typeof transactionTypeEnum.enumValues)[number];
@@ -149,6 +175,8 @@ export type TransactionTag = typeof transactionTags.$inferSelect;
 export type NewTransactionTag = typeof transactionTags.$inferInsert;
 export type TransactionItem = typeof transactionItems.$inferSelect;
 export type NewTransactionItem = typeof transactionItems.$inferInsert;
+export type TransactionRateio = typeof transactionRateio.$inferSelect;
+export type NewTransactionRateio = typeof transactionRateio.$inferInsert;
 
 const numericPositive = (msg: string) =>
    z.string().refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0, {
