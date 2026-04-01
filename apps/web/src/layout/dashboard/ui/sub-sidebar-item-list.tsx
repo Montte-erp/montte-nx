@@ -4,6 +4,13 @@ import {
    CollapsibleContent,
    CollapsibleTrigger,
 } from "@packages/ui/components/collapsible";
+import {
+   Empty,
+   EmptyContent,
+   EmptyHeader,
+   EmptyMedia,
+   EmptyTitle,
+} from "@packages/ui/components/empty";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { cn } from "@packages/ui/lib/utils";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -416,6 +423,7 @@ function EmptyState({
    slug: string;
 }) {
    const label = section === "dashboards" ? "dashboard" : "insight";
+   const Icon = section === "dashboards" ? LayoutDashboard : Lightbulb;
    const { teamSlug } = useParams({
       from: "/_authenticated/$slug/$teamSlug/_dashboard",
    });
@@ -425,31 +433,32 @@ function EmptyState({
          ? `/${slug}${teamSegment}/analytics/dashboards`
          : `/${slug}${teamSegment}/analytics/insights`;
 
-   if (hasSearchQuery) {
-      return (
-         <div className="flex-1 flex items-center justify-center p-4">
-            <p className="text-sm text-muted-foreground text-center">
-               {section === "dashboards"
-                  ? "Nenhum dashboard encontrado"
-                  : "Nenhum insight encontrado"}
-            </p>
-         </div>
-      );
-   }
-
    return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-3 p-4">
-         <p className="text-sm text-muted-foreground text-center">
-            {section === "dashboards"
-               ? "Nenhum dashboard encontrado"
-               : "Nenhum insight encontrado"}
-         </p>
-         <Button asChild variant="outline">
-            <Link to={listRoute}>
-               <Plus className="size-3.5" />
-               Novo {label}
-            </Link>
-         </Button>
-      </div>
+      <Empty>
+         <EmptyHeader>
+            <EmptyMedia variant="icon">
+               <Icon />
+            </EmptyMedia>
+            <EmptyTitle>
+               {hasSearchQuery
+                  ? section === "dashboards"
+                     ? "Nenhum dashboard encontrado"
+                     : "Nenhum insight encontrado"
+                  : section === "dashboards"
+                    ? "Nenhum dashboard ainda"
+                    : "Nenhum insight ainda"}
+            </EmptyTitle>
+         </EmptyHeader>
+         {!hasSearchQuery && (
+            <EmptyContent>
+               <Button asChild variant="outline" size="sm">
+                  <Link to={listRoute}>
+                     <Plus className="size-3.5" />
+                     Novo {label}
+                  </Link>
+               </Button>
+            </EmptyContent>
+         )}
+      </Empty>
    );
 }
