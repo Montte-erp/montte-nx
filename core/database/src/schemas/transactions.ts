@@ -12,6 +12,7 @@ import {
    primaryKey,
    text,
    timestamp,
+   uniqueIndex,
    uuid,
 } from "drizzle-orm/pg-core";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
@@ -115,6 +116,9 @@ export const transactions = pgTable(
       index("transactions_recurring_transaction_id_idx").on(
          table.recurringTransactionId,
       ),
+      uniqueIndex("transactions_recurring_transaction_date_unique")
+         .on(table.recurringTransactionId, table.date)
+         .where(sql`${table.recurringTransactionId} IS NOT NULL`),
    ],
 );
 

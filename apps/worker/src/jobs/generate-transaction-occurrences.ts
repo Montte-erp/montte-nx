@@ -53,7 +53,9 @@ export async function generateTransactionOccurrences(): Promise<void> {
          recurringTransactionId: typeof rule.id;
       }[] = [];
 
-      let nextDate = computeNextDate(fromDate, rule.frequency);
+      let nextDate = lastTx
+         ? computeNextDate(fromDate, rule.frequency)
+         : fromDate;
 
       while (
          dayjs(nextDate).isBefore(windowEnd) ||
@@ -81,31 +83,41 @@ export async function generateTransactionOccurrences(): Promise<void> {
 
       if (toCreate.length === 0) continue;
 
-      for (const txData of toCreate) {
-         await createTransaction(db, rule.teamId, txData);
-      }
-
-      logger.info(
-         { count: toCreate.length, recurringTransactionId: rule.id },
-         "Generated recurring transaction occurrences",
-      );
-
       const [teamRow] = await db
          .select({ organizationId: team.organizationId })
          .from(team)
          .where(eq(team.id, rule.teamId))
          .limit(1);
 
-      if (teamRow) {
-         await emitFinanceRecurringProcessed(
-            (params) => emitEvent({ ...params, db, redis }),
-            { organizationId: teamRow.organizationId, teamId: rule.teamId },
-            {
-               recurringTransactionId: rule.id,
-               generatedCount: toCreate.length,
-               teamId: rule.teamId,
-            },
-         );
+      let created = 0;
+      for (const txData of toCreate) {
+         try {
+            await createTransaction(db, rule.teamId, txData);
+            created++;
+            if (teamRow) {
+               await emitFinanceRecurringProcessed(
+                  (params) => emitEvent({ ...params, db, redis }),
+                  {
+                     organizationId: teamRow.organizationId,
+                     teamId: rule.teamId,
+                  },
+                  {
+                     recurringTransactionId: rule.id,
+                     generatedCount: 1,
+                     teamId: rule.teamId,
+                  },
+               );
+            }
+         } catch (err) {
+            const pgErr = err as { code?: string };
+            if (pgErr.code === "23505") continue;
+            throw err;
+         }
       }
+
+      logger.info(
+         { count: created, recurringTransactionId: rule.id },
+         "Generated recurring transaction occurrences",
+      );
    }
 }

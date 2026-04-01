@@ -1,5 +1,5 @@
 import { AppError, propagateError, validateInput } from "@core/logging/errors";
-import { and, desc, eq, lte, isNull, or } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, lte, or } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
    recurringTransactions,
@@ -68,9 +68,10 @@ export async function getActiveRecurringTransactions(db: DatabaseInstance) {
       .where(
          and(
             eq(recurringTransactions.isActive, true),
+            lte(recurringTransactions.startDate, today),
             or(
                isNull(recurringTransactions.endsAt),
-               lte(recurringTransactions.endsAt, today),
+               gte(recurringTransactions.endsAt, today),
             ),
          ),
       );

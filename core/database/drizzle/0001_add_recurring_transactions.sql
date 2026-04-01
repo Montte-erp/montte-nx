@@ -30,4 +30,5 @@ ALTER TABLE "recurring_transactions" ADD CONSTRAINT "recurring_transactions_cont
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_recurring_transaction_id_recurring_transactions_id_fk" FOREIGN KEY ("recurring_transaction_id") REFERENCES "public"."recurring_transactions"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "recurring_transactions_team_id_idx" ON "recurring_transactions" USING btree ("team_id");--> statement-breakpoint
 CREATE INDEX "recurring_transactions_is_active_idx" ON "recurring_transactions" USING btree ("is_active");--> statement-breakpoint
-CREATE INDEX "transactions_recurring_transaction_id_idx" ON "transactions" USING btree ("recurring_transaction_id");
+CREATE INDEX "transactions_recurring_transaction_id_idx" ON "transactions" USING btree ("recurring_transaction_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "transactions_recurring_transaction_date_unique" ON "transactions" USING btree ("recurring_transaction_id","date") WHERE "recurring_transaction_id" IS NOT NULL;
