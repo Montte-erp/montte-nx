@@ -22,7 +22,7 @@ import {
    useQueryClient,
    useSuspenseQuery,
 } from "@tanstack/react-query";
-import { Link, useParams } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import {
    AlertCircle,
    Copy,
@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { Suspense, useRef } from "react";
 import { ErrorBoundary } from "react-error-boundary";
+import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 import { InsightEditDialogStack } from "./insight-edit-dialog-stack";
@@ -312,9 +313,8 @@ export function DashboardTile({
       transition,
    };
 
-   const { slug, teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
+   const slug = useOrgSlug();
+   const teamSlug = useTeamSlug();
    const { name, description, typeLabel, dateRangeLabel, lastComputedAt } =
       useInsightMetadata(insightName, insightId, globalDateRange);
 

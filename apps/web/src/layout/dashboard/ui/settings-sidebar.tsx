@@ -18,12 +18,12 @@ import { cn } from "@packages/ui/lib/utils";
 import {
    Link,
    useLocation,
-   useParams,
    useRouter,
 } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
+import { useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 import {
    type SettingsNavItemDef,
@@ -239,9 +239,7 @@ function NavSection({
 
 export function SettingsSidebar({ search }: { search: string }) {
    const { activeOrganization } = useActiveOrganization();
-   const { teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
+   const teamSlug = useTeamSlug();
    const { pathname } = useLocation();
 
    const filteredSections = settingsNavSections.map((section) =>
@@ -257,7 +255,7 @@ export function SettingsSidebar({ search }: { search: string }) {
                pathname={pathname}
                section={section}
                slug={activeOrganization.slug}
-               teamSlug={teamSlug ?? ""}
+               teamSlug={teamSlug}
             />
          ))}
       </>

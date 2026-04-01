@@ -5,15 +5,15 @@ import {
    SidebarMenuButton,
    SidebarMenuItem,
 } from "@packages/ui/components/sidebar";
-import { Link, useParams } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { FlaskConical, X } from "lucide-react";
+import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 
 export function EarlyAccessSidebarBanner() {
    const { isBannerVisible, dismissBanner } = useEarlyAccess();
-   const { slug, teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
+   const slug = useOrgSlug();
+   const teamSlug = useTeamSlug();
 
    if (!isBannerVisible) return null;
 

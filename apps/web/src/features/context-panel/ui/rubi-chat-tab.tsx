@@ -1,10 +1,11 @@
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Link, useParams } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { useRubiRuntime } from "@/features/rubi-chat/hooks/use-rubi-runtime";
 import type { QuickSuggestion } from "@/features/rubi-chat/ui/thread";
 import { formatTimeAgo, Thread } from "@/features/rubi-chat/ui/thread";
+import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -31,9 +32,8 @@ function RecentThreadsList({ teamId }: { teamId: string }) {
          input: { teamId, page: 0, perPage: 5 },
       }),
    );
-   const { slug, teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
+   const slug = useOrgSlug();
+   const teamSlug = useTeamSlug();
 
    return (
       <>

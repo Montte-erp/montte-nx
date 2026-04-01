@@ -12,9 +12,10 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { FolderPlus, LayoutDashboard, Lightbulb, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { orpc } from "@/integrations/orpc/client";
 import type { SubSidebarSection } from "../hooks/use-sidebar-nav";
 
@@ -28,9 +29,8 @@ export function SubSidebarNewMenu({
    onAction,
 }: SubSidebarNewMenuProps) {
    const navigate = useNavigate();
-   const { slug, teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
+   const slug = useOrgSlug();
+   const teamSlug = useTeamSlug();
    const queryClient = useQueryClient();
 
    const createDashboardMutation = useMutation(

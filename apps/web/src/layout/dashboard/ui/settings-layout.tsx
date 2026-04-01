@@ -9,10 +9,11 @@ import {
    SidebarProvider,
 } from "@packages/ui/components/sidebar";
 import { useMediaQuery } from "foxact/use-media-query";
-import { Link, useLocation, useParams } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { ChevronLeft, Search } from "lucide-react";
 import type * as React from "react";
 import { useState } from "react";
+import { useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { SettingsMobileNav } from "./settings-mobile-nav";
 import { SettingsSidebar } from "./settings-sidebar";
@@ -24,9 +25,7 @@ interface SettingsLayoutProps {
 export function SettingsLayout({ children }: SettingsLayoutProps) {
    const isMobile = useMediaQuery("(max-width: 767px)", false);
    const { pathname } = useLocation();
-   const { teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
+   const teamSlug = useTeamSlug();
    const { activeOrganization } = useActiveOrganization();
    const [search, setSearch] = useState("");
 
