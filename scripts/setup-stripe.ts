@@ -12,30 +12,10 @@ import { config } from "dotenv";
 
 const DISPLAY_NAMES: Record<string, string> = {
    "finance.transaction_created": "Transação Financeira",
-   "finance.recurring_processed": "Transação Recorrente Processada",
-   "finance.bill_auto_generated": "Conta a Pagar Gerada Automaticamente",
-   "finance.statement_imported": "Importação de Extrato",
-   "finance.reconciliation_run": "Conciliação Bancária",
-   "ai.keyword_derived": "Palavra-chave Derivada por IA",
-   "ai.chat_message": "Mensagem de Chat IA",
-   "ai.tool_call": "Chamada de Ferramenta IA",
-   "ai.whatsapp_reply": "Resposta WhatsApp IA",
-   "ai.workflow_run": "Execução de Workflow IA",
-   "workflow.step_executed": "Passo de Workflow Executado",
-   "workflow.run": "Execução de Workflow",
+   "webhook.delivered": "Webhook Entregue",
    "contact.created": "Contato Criado",
-   "crm.deal_created": "Negócio CRM Criado",
-   "crm.whatsapp_sent": "Mensagem WhatsApp CRM Enviada",
-   "crm.charge_created": "Cobrança CRM Criada",
-   "document.created": "Documento Criado",
    "inventory.item_created": "Item de Estoque Criado",
    "service.created": "Serviço Criado",
-   "coworking.checkin": "Check-in Coworking",
-   "coworking.booking_created": "Reserva Coworking Criada",
-   "webhook.delivered": "Webhook Entregue",
-   "webhook.received": "Webhook Recebido",
-   "payment.subscription_billed": "Assinatura Cobrada",
-   "payment.processed": "Pagamento Processado",
 };
 
 const colors = {
