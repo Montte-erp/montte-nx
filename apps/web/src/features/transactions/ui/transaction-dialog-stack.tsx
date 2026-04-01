@@ -212,14 +212,18 @@ function NovaConta({
                <form.Field
                   name="name"
                   validators={{ onBlur: requiredStringSchema }}
-               >
-                  {(field) => (
+                  children={(field) => (
                      <Field>
                         <FieldLabel htmlFor={field.name}>
                            Nome <span className="text-destructive">*</span>
                         </FieldLabel>
                         <Input
                            id={field.name}
+                           name={field.name}
+                           aria-invalid={
+                              field.state.meta.isTouched &&
+                              field.state.meta.errors.length > 0
+                           }
                            onBlur={field.handleBlur}
                            onChange={(e) => field.handleChange(e.target.value)}
                            placeholder="Ex: Nubank, Bradesco"
@@ -228,9 +232,10 @@ function NovaConta({
                         <FieldError errors={field.state.meta.errors} />
                      </Field>
                   )}
-               </form.Field>
-               <form.Field name="accountType">
-                  {(field) => (
+               />
+               <form.Field
+                  name="accountType"
+                  children={(field) => (
                      <Field>
                         <FieldLabel>Tipo de conta</FieldLabel>
                         <Select
@@ -254,7 +259,7 @@ function NovaConta({
                         </Select>
                      </Field>
                   )}
-               </form.Field>
+               />
             </FieldGroup>
             <DialogStackFooter>
                <form.Subscribe selector={(s) => ({ canSubmit: s.canSubmit })}>
@@ -340,14 +345,18 @@ function NovoCartao({
                <form.Field
                   name="name"
                   validators={{ onBlur: requiredStringSchema }}
-               >
-                  {(field) => (
+                  children={(field) => (
                      <Field>
                         <FieldLabel htmlFor={field.name}>
                            Nome <span className="text-destructive">*</span>
                         </FieldLabel>
                         <Input
                            id={field.name}
+                           name={field.name}
+                           aria-invalid={
+                              field.state.meta.isTouched &&
+                              field.state.meta.errors.length > 0
+                           }
                            onBlur={field.handleBlur}
                            onChange={(e) => field.handleChange(e.target.value)}
                            placeholder="Ex: Nubank, Visa"
@@ -356,12 +365,11 @@ function NovoCartao({
                         <FieldError errors={field.state.meta.errors} />
                      </Field>
                   )}
-               </form.Field>
+               />
                <form.Field
                   name="bankAccountId"
                   validators={{ onBlur: bankAccountIdSchema }}
-               >
-                  {(field) => (
+                  children={(field) => (
                      <Field>
                         <FieldLabel>
                            Conta vinculada{" "}
@@ -382,16 +390,21 @@ function NovoCartao({
                         <FieldError errors={field.state.meta.errors} />
                      </Field>
                   )}
-               </form.Field>
+               />
                <div className="grid grid-cols-2 gap-4">
                   <form.Field
                      name="closingDay"
                      validators={{ onBlur: daySchema }}
-                  >
-                     {(field) => (
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Dia de fechamento</FieldLabel>
                            <Input
+                              id={field.name}
+                              name={field.name}
+                              aria-invalid={
+                                 field.state.meta.isTouched &&
+                                 field.state.meta.errors.length > 0
+                              }
                               max={31}
                               min={1}
                               onBlur={field.handleBlur}
@@ -404,12 +417,20 @@ function NovoCartao({
                            <FieldError errors={field.state.meta.errors} />
                         </Field>
                      )}
-                  </form.Field>
-                  <form.Field name="dueDay" validators={{ onBlur: daySchema }}>
-                     {(field) => (
+                  />
+                  <form.Field
+                     name="dueDay"
+                     validators={{ onBlur: daySchema }}
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Dia de vencimento</FieldLabel>
                            <Input
+                              id={field.name}
+                              name={field.name}
+                              aria-invalid={
+                                 field.state.meta.isTouched &&
+                                 field.state.meta.errors.length > 0
+                              }
                               max={31}
                               min={1}
                               onBlur={field.handleBlur}
@@ -422,7 +443,7 @@ function NovoCartao({
                            <FieldError errors={field.state.meta.errors} />
                         </Field>
                      )}
-                  </form.Field>
+                  />
                </div>
             </FieldGroup>
             <DialogStackFooter>
@@ -490,14 +511,18 @@ function NovoContato({
                <form.Field
                   name="name"
                   validators={{ onBlur: requiredStringSchema }}
-               >
-                  {(field) => (
+                  children={(field) => (
                      <Field>
                         <FieldLabel htmlFor={field.name}>
                            Nome <span className="text-destructive">*</span>
                         </FieldLabel>
                         <Input
                            id={field.name}
+                           name={field.name}
+                           aria-invalid={
+                              field.state.meta.isTouched &&
+                              field.state.meta.errors.length > 0
+                           }
                            onBlur={field.handleBlur}
                            onChange={(e) => field.handleChange(e.target.value)}
                            placeholder="Ex: João Silva"
@@ -506,7 +531,7 @@ function NovoContato({
                         <FieldError errors={field.state.meta.errors} />
                      </Field>
                   )}
-               </form.Field>
+               />
             </FieldGroup>
             <DialogStackFooter>
                <form.Subscribe selector={(s) => ({ canSubmit: s.canSubmit })}>
@@ -575,14 +600,18 @@ function NovaCategoria({
                <form.Field
                   name="name"
                   validators={{ onBlur: requiredStringSchema }}
-               >
-                  {(field) => (
+                  children={(field) => (
                      <Field>
                         <FieldLabel htmlFor={field.name}>
                            Nome <span className="text-destructive">*</span>
                         </FieldLabel>
                         <Input
                            id={field.name}
+                           name={field.name}
+                           aria-invalid={
+                              field.state.meta.isTouched &&
+                              field.state.meta.errors.length > 0
+                           }
                            onBlur={field.handleBlur}
                            onChange={(e) => field.handleChange(e.target.value)}
                            placeholder="Ex: Alimentação, Transporte"
@@ -591,7 +620,7 @@ function NovaCategoria({
                         <FieldError errors={field.state.meta.errors} />
                      </Field>
                   )}
-               </form.Field>
+               />
             </FieldGroup>
             <DialogStackFooter>
                <form.Subscribe selector={(s) => ({ canSubmit: s.canSubmit })}>
@@ -659,14 +688,18 @@ function NovaTag({
                <form.Field
                   name="name"
                   validators={{ onBlur: requiredStringSchema }}
-               >
-                  {(field) => (
+                  children={(field) => (
                      <Field>
                         <FieldLabel htmlFor={field.name}>
                            Nome <span className="text-destructive">*</span>
                         </FieldLabel>
                         <Input
                            id={field.name}
+                           name={field.name}
+                           aria-invalid={
+                              field.state.meta.isTouched &&
+                              field.state.meta.errors.length > 0
+                           }
                            onBlur={field.handleBlur}
                            onChange={(e) => field.handleChange(e.target.value)}
                            placeholder={`Ex: Marketing, Pessoal`}
@@ -675,7 +708,7 @@ function NovaTag({
                         <FieldError errors={field.state.meta.errors} />
                      </Field>
                   )}
-               </form.Field>
+               />
             </FieldGroup>
             <DialogStackFooter>
                <form.Subscribe selector={(s) => ({ canSubmit: s.canSubmit })}>
@@ -871,8 +904,9 @@ function TransactionDialogStackContent({
                <div className="flex-1 overflow-y-auto px-4 py-4">
                   <FieldGroup>
                      <div className="grid grid-cols-[3fr_2fr] gap-4">
-                        <form.Field name="name">
-                           {(field) => (
+                        <form.Field
+                           name="name"
+                           children={(field) => (
                               <Field>
                                  <FieldLabel htmlFor={field.name}>
                                     Nome{" "}
@@ -880,6 +914,11 @@ function TransactionDialogStackContent({
                                  </FieldLabel>
                                  <Input
                                     id={field.name}
+                                    name={field.name}
+                                    aria-invalid={
+                                       field.state.meta.isTouched &&
+                                       field.state.meta.errors.length > 0
+                                    }
                                     onBlur={field.handleBlur}
                                     onChange={(e) =>
                                        field.handleChange(e.target.value)
@@ -889,10 +928,11 @@ function TransactionDialogStackContent({
                                  />
                               </Field>
                            )}
-                        </form.Field>
+                        />
 
-                        <form.Field name="type">
-                           {(field) => (
+                        <form.Field
+                           name="type"
+                           children={(field) => (
                               <Field>
                                  <FieldLabel>
                                     Tipo{" "}
@@ -975,7 +1015,7 @@ function TransactionDialogStackContent({
                                  </Select>
                               </Field>
                            )}
-                        </form.Field>
+                        />
                      </div>
 
                      <form.Subscribe
@@ -1001,8 +1041,7 @@ function TransactionDialogStackContent({
                                              validators={{
                                                 onSubmit: requiredDateSchema,
                                              }}
-                                          >
-                                             {(field) => {
+                                             children={(field) => {
                                                 const isInvalid =
                                                    field.state.meta.isTouched &&
                                                    field.state.meta.errors
@@ -1040,7 +1079,7 @@ function TransactionDialogStackContent({
                                                    </Field>
                                                 );
                                              }}
-                                          </form.Field>
+                                          />
 
                                           <form.Field
                                              name="amount"
@@ -1048,8 +1087,7 @@ function TransactionDialogStackContent({
                                                 onBlur: amountSchema,
                                                 onSubmit: amountSchema,
                                              }}
-                                          >
-                                             {(field) => {
+                                             children={(field) => {
                                                 const isInvalid =
                                                    field.state.meta.isTouched &&
                                                    field.state.meta.errors
@@ -1089,7 +1127,7 @@ function TransactionDialogStackContent({
                                                    </Field>
                                                 );
                                              }}
-                                          </form.Field>
+                                          />
                                        </div>
 
                                        <div className="grid grid-cols-2 gap-4">
@@ -1098,8 +1136,7 @@ function TransactionDialogStackContent({
                                              validators={{
                                                 onSubmit: requiredStringSchema,
                                              }}
-                                          >
-                                             {(field) => {
+                                             children={(field) => {
                                                 const isInvalid =
                                                    field.state.meta.isTouched &&
                                                    field.state.meta.errors
@@ -1176,15 +1213,14 @@ function TransactionDialogStackContent({
                                                    </Field>
                                                 );
                                              }}
-                                          </form.Field>
+                                          />
 
                                           <form.Field
                                              name="destinationBankAccountId"
                                              validators={{
                                                 onSubmit: requiredStringSchema,
                                              }}
-                                          >
-                                             {(field) => {
+                                             children={(field) => {
                                                 const isInvalid =
                                                    field.state.meta.isTouched &&
                                                    field.state.meta.errors
@@ -1252,7 +1288,7 @@ function TransactionDialogStackContent({
                                                    </Field>
                                                 );
                                              }}
-                                          </form.Field>
+                                          />
                                        </div>
                                     </>
                                  ) : (
@@ -1263,8 +1299,7 @@ function TransactionDialogStackContent({
                                              validators={{
                                                 onSubmit: requiredDateSchema,
                                              }}
-                                          >
-                                             {(field) => {
+                                             children={(field) => {
                                                 const isInvalid =
                                                    field.state.meta.isTouched &&
                                                    field.state.meta.errors
@@ -1302,7 +1337,7 @@ function TransactionDialogStackContent({
                                                    </Field>
                                                 );
                                              }}
-                                          </form.Field>
+                                          />
 
                                           <form.Field
                                              name="amount"
@@ -1310,8 +1345,7 @@ function TransactionDialogStackContent({
                                                 onBlur: amountSchema,
                                                 onSubmit: amountSchema,
                                              }}
-                                          >
-                                             {(field) => {
+                                             children={(field) => {
                                                 const isInvalid =
                                                    field.state.meta.isTouched &&
                                                    field.state.meta.errors
@@ -1351,15 +1385,14 @@ function TransactionDialogStackContent({
                                                    </Field>
                                                 );
                                              }}
-                                          </form.Field>
+                                          />
 
                                           <form.Field
                                              name="bankAccountId"
                                              validators={{
                                                 onSubmit: requiredStringSchema,
                                              }}
-                                          >
-                                             {(field) => {
+                                             children={(field) => {
                                                 const isInvalid =
                                                    field.state.meta.isTouched &&
                                                    field.state.meta.errors
@@ -1423,14 +1456,15 @@ function TransactionDialogStackContent({
                                                    </Field>
                                                 );
                                              }}
-                                          </form.Field>
+                                          />
                                        </div>
                                     </>
                                  )}
 
                                  {type === "expense" && (
-                                    <form.Field name="creditCardId">
-                                       {(field) => (
+                                    <form.Field
+                                       name="creditCardId"
+                                       children={(field) => (
                                           <Field>
                                              <div className="flex items-center justify-between">
                                                 <FieldLabel>
@@ -1469,7 +1503,7 @@ function TransactionDialogStackContent({
                                              />
                                           </Field>
                                        )}
-                                    </form.Field>
+                                    />
                                  )}
 
                                  {!isTransfer && (
@@ -1483,8 +1517,7 @@ function TransactionDialogStackContent({
                                                       ? "Categoria é obrigatória."
                                                       : undefined,
                                              }}
-                                          >
-                                             {(field) => (
+                                             children={(field) => (
                                                 <Field>
                                                    <div className="flex items-center justify-between">
                                                       <FieldLabel>
@@ -1553,10 +1586,11 @@ function TransactionDialogStackContent({
                                                    />
                                                 </Field>
                                              )}
-                                          </form.Field>
+                                          />
 
-                                          <form.Field name="paymentMethod">
-                                             {(field) => (
+                                          <form.Field
+                                             name="paymentMethod"
+                                             children={(field) => (
                                                 <Field>
                                                    <FieldLabel>
                                                       Forma de pagamento
@@ -1598,12 +1632,13 @@ function TransactionDialogStackContent({
                                                    </Select>
                                                 </Field>
                                              )}
-                                          </form.Field>
+                                          />
                                        </div>
 
                                        {categoryId && (
-                                          <form.Field name="subcategoryId">
-                                             {(field) => (
+                                          <form.Field
+                                             name="subcategoryId"
+                                             children={(field) => (
                                                 <Field>
                                                    <FieldLabel>
                                                       Subcategoria
@@ -1626,7 +1661,7 @@ function TransactionDialogStackContent({
                                                    />
                                                 </Field>
                                              )}
-                                          </form.Field>
+                                          />
                                        )}
                                     </>
                                  )}
@@ -1638,8 +1673,9 @@ function TransactionDialogStackContent({
                      <form.Subscribe selector={(s) => s.values.type}>
                         {(type) => (
                            <div className="grid grid-cols-2 gap-4">
-                              <form.Field name="tagIds">
-                                 {(field) => (
+                              <form.Field
+                                 name="tagIds"
+                                 children={(field) => (
                                     <Field>
                                        <div className="flex items-center justify-between">
                                           <FieldLabel>
@@ -1677,11 +1713,12 @@ function TransactionDialogStackContent({
                                        </Suspense>
                                     </Field>
                                  )}
-                              </form.Field>
+                              />
 
                               {type !== "transfer" ? (
-                                 <form.Field name="contactId">
-                                    {(field) => (
+                                 <form.Field
+                                    name="contactId"
+                                    children={(field) => (
                                        <Field>
                                           <div className="flex items-center justify-between">
                                              <FieldLabel>Contato</FieldLabel>
@@ -1712,28 +1749,39 @@ function TransactionDialogStackContent({
                                           </Suspense>
                                        </Field>
                                     )}
-                                 </form.Field>
+                                 />
                               ) : null}
                            </div>
                         )}
                      </form.Subscribe>
 
-                     <form.Field name="description">
-                        {(field) => (
-                           <Field>
-                              <FieldLabel>Observações</FieldLabel>
-                              <Textarea
-                                 onBlur={field.handleBlur}
-                                 onChange={(e) =>
-                                    field.handleChange(e.target.value)
-                                 }
-                                 placeholder="Observações sobre o lançamento (opcional)"
-                                 rows={3}
-                                 value={field.state.value}
-                              />
-                           </Field>
-                        )}
-                     </form.Field>
+                     <form.Field
+                        name="description"
+                        children={(field) => {
+                           const isInvalid =
+                              field.state.meta.isTouched &&
+                              field.state.meta.errors.length > 0;
+                           return (
+                              <Field>
+                                 <FieldLabel htmlFor={field.name}>
+                                    Observações
+                                 </FieldLabel>
+                                 <Textarea
+                                    id={field.name}
+                                    name={field.name}
+                                    aria-invalid={isInvalid}
+                                    onBlur={field.handleBlur}
+                                    onChange={(e) =>
+                                       field.handleChange(e.target.value)
+                                    }
+                                    placeholder="Observações sobre o lançamento (opcional)"
+                                    rows={3}
+                                    value={field.state.value}
+                                 />
+                              </Field>
+                           );
+                        }}
+                     />
 
                      <form.Subscribe
                         selector={(s) => ({
@@ -1746,8 +1794,9 @@ function TransactionDialogStackContent({
                            type !== "transfer" ? (
                               <div className="flex flex-col gap-4">
                                  <div className="grid grid-cols-2 gap-4">
-                                    <form.Field name="isInstallment">
-                                       {(field) => (
+                                    <form.Field
+                                       name="isInstallment"
+                                       children={(field) => (
                                           <div className="flex items-center justify-between rounded-lg border p-3">
                                              <label
                                                 className="text-sm font-medium cursor-pointer select-none"
@@ -1779,10 +1828,11 @@ function TransactionDialogStackContent({
                                              />
                                           </div>
                                        )}
-                                    </form.Field>
+                                    />
 
-                                    <form.Field name="isRecurring">
-                                       {(field) => (
+                                    <form.Field
+                                       name="isRecurring"
+                                       children={(field) => (
                                           <div className="flex items-center justify-between rounded-lg border p-3">
                                              <label
                                                 className="text-sm font-medium cursor-pointer select-none"
@@ -1814,18 +1864,25 @@ function TransactionDialogStackContent({
                                              />
                                           </div>
                                        )}
-                                    </form.Field>
+                                    />
                                  </div>
 
                                  {isInstallment && (
-                                    <form.Field name="installmentCount">
-                                       {(field) => (
+                                    <form.Field
+                                       name="installmentCount"
+                                       children={(field) => (
                                           <Field>
-                                             <FieldLabel>
+                                             <FieldLabel htmlFor={field.name}>
                                                 Número de parcelas
                                              </FieldLabel>
                                              <Input
                                                 id={field.name}
+                                                name={field.name}
+                                                aria-invalid={
+                                                   field.state.meta.isTouched &&
+                                                   field.state.meta.errors
+                                                      .length > 0
+                                                }
                                                 max={72}
                                                 min={2}
                                                 onBlur={field.handleBlur}
@@ -1844,13 +1901,14 @@ function TransactionDialogStackContent({
                                              />
                                           </Field>
                                        )}
-                                    </form.Field>
+                                    />
                                  )}
 
                                  {isRecurring && (
                                     <div className="grid grid-cols-2 gap-4">
-                                       <form.Field name="recurringFrequency">
-                                          {(field) => (
+                                       <form.Field
+                                          name="recurringFrequency"
+                                          children={(field) => (
                                              <Field>
                                                 <FieldLabel>
                                                    Frequência
@@ -1886,16 +1944,26 @@ function TransactionDialogStackContent({
                                                 </Select>
                                              </Field>
                                           )}
-                                       </form.Field>
+                                       />
 
-                                       <form.Field name="recurringCount">
-                                          {(field) => (
+                                       <form.Field
+                                          name="recurringCount"
+                                          children={(field) => (
                                              <Field>
-                                                <FieldLabel>
+                                                <FieldLabel
+                                                   htmlFor={field.name}
+                                                >
                                                    Repetições
                                                 </FieldLabel>
                                                 <Input
                                                    id={field.name}
+                                                   name={field.name}
+                                                   aria-invalid={
+                                                      field.state.meta
+                                                         .isTouched &&
+                                                      field.state.meta.errors
+                                                         .length > 0
+                                                   }
                                                    max={120}
                                                    min={2}
                                                    onBlur={field.handleBlur}
@@ -1916,7 +1984,7 @@ function TransactionDialogStackContent({
                                                 />
                                              </Field>
                                           )}
-                                       </form.Field>
+                                       />
                                     </div>
                                  )}
                               </div>
@@ -1943,8 +2011,9 @@ function TransactionDialogStackContent({
                                     )}
 
                                     {type === "expense" && (
-                                       <form.Field name="createAsBill">
-                                          {(field) => (
+                                       <form.Field
+                                          name="createAsBill"
+                                          children={(field) => (
                                              <Field>
                                                 <div className="flex items-center gap-2">
                                                    <Checkbox
@@ -1966,7 +2035,7 @@ function TransactionDialogStackContent({
                                                 </div>
                                              </Field>
                                           )}
-                                       </form.Field>
+                                       />
                                     )}
                                  </>
                               );

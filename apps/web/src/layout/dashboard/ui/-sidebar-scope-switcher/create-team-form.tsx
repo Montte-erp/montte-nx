@@ -122,8 +122,9 @@ const CreateTeamFormContent = () => {
                id="create-team-form"
                onSubmit={handleSubmit}
             >
-               <form.Field name="name">
-                  {(field) => {
+               <form.Field
+                  name="name"
+                  children={(field) => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
@@ -150,10 +151,11 @@ const CreateTeamFormContent = () => {
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
 
-               <form.Field name="description">
-                  {(field) => {
+               <form.Field
+                  name="description"
+                  children={(field) => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
@@ -182,7 +184,7 @@ const CreateTeamFormContent = () => {
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
             </form>
          </div>
 
