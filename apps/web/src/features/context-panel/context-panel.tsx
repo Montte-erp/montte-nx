@@ -5,7 +5,6 @@ import {
    ContextPanel,
    ContextPanelContent,
    ContextPanelHeader,
-   ContextPanelHeaderActions,
    ContextPanelTitle,
 } from "@packages/ui/components/context-panel";
 import {
@@ -23,17 +22,8 @@ import {
    SidebarManager,
 } from "@packages/ui/components/sidebar";
 import { cn } from "@packages/ui/lib/utils";
-import { useNavigate } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
-import {
-   Check,
-   ChevronDown,
-   Info,
-   MessageSquare,
-   MoveDiagonalIcon,
-   X,
-} from "lucide-react";
-import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
+import { Check, ChevronDown, Info, MessageSquare, X } from "lucide-react";
 import type React from "react";
 import { ContextPanelAction } from "./context-panel-info";
 import {
@@ -133,29 +123,10 @@ function InfoContent() {
 }
 
 function ChatContent() {
-   const navigate = useNavigate();
-   const { slug, teamSlug } = useDashboardSlugs();
-
    return (
       <ContextPanel>
          <ContextPanelHeader>
             <ContextPanelTitle>Rubi AI</ContextPanelTitle>
-            <ContextPanelHeaderActions>
-               <Button
-                  className=""
-                  onClick={() =>
-                     navigate({
-                        to: "/$slug/$teamSlug/chat",
-                        params: { slug, teamSlug },
-                     })
-                  }
-                  tooltip="Expandir chat"
-                  type="button"
-                  variant="outline"
-               >
-                  <MoveDiagonalIcon className="" />
-               </Button>
-            </ContextPanelHeaderActions>
          </ContextPanelHeader>
          <ContextPanelContent>
             <RubiChatTab />
