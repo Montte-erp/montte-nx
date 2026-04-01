@@ -81,11 +81,10 @@ function TransactionsPage() {
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
       (updater) => {
          const next =
-            typeof updater === "function"
-               ? updater(sorting as SortingState)
-               : updater;
+            typeof updater === "function" ? updater(sorting) : updater;
          navigate({
             search: (prev: TransactionsSearch) => ({ ...prev, sorting: next }),
+            replace: true,
          });
       },
       [sorting, navigate],
@@ -95,14 +94,13 @@ function TransactionsPage() {
       useCallback(
          (updater) => {
             const next =
-               typeof updater === "function"
-                  ? updater(columnFilters as ColumnFiltersState)
-                  : updater;
+               typeof updater === "function" ? updater(columnFilters) : updater;
             navigate({
                search: (prev: TransactionsSearch) => ({
                   ...prev,
                   columnFilters: next,
                }),
+               replace: true,
             });
          },
          [columnFilters, navigate],
@@ -198,7 +196,7 @@ function TransactionsPage() {
          <TransactionFilterBar filters={filters} onFiltersChange={setFilters} />
          <Suspense fallback={<TransactionsSkeleton />}>
             <TransactionsList
-               columnFilters={columnFilters as ColumnFiltersState}
+               columnFilters={columnFilters}
                filters={filters}
                onColumnFiltersChange={handleColumnFiltersChange}
                onPageChange={(page) => setFilters((f) => ({ ...f, page }))}
@@ -206,7 +204,7 @@ function TransactionsPage() {
                   setFilters((f) => ({ ...f, pageSize, page: 1 }))
                }
                onSortingChange={handleSortingChange}
-               sorting={sorting as SortingState}
+               sorting={sorting}
             />
          </Suspense>
       </main>
