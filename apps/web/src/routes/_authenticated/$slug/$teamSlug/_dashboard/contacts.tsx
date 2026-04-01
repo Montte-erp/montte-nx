@@ -1,5 +1,8 @@
 import { Button } from "@packages/ui/components/button";
-import { DataTable } from "@packages/ui/components/data-table";
+import {
+   DataTable,
+   type DataTableStoredState,
+} from "@packages/ui/components/data-table";
 import {
    Empty,
    EmptyDescription,
@@ -15,10 +18,12 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Pencil, Plus, Trash2, Users } from "lucide-react";
 
 import { Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
 import {
    EarlyAccessBanner,
@@ -33,10 +38,33 @@ import { ContactForm } from "@/features/contacts/ui/contacts-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
+import type {
+   ColumnFiltersState,
+   OnChangeFn,
+   SortingState,
+} from "@tanstack/react-table";
+
+const searchSchema = z.object({
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .optional()
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .optional()
+      .default([]),
+});
+
+const [useContactsTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:contacts",
+      null,
+   );
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/contacts",
 )({
+   validateSearch: searchSchema,
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(orpc.contacts.getAll.queryOptions({}));
    },
@@ -56,23 +84,15 @@ const CONTACTS_BANNER: EarlyAccessBannerTemplate = {
    ],
 };
 
-// =============================================================================
-// Skeleton
-// =============================================================================
-
 function ContactsSkeleton() {
    return (
-      <div className="space-y-3">
+      <div className="flex flex-col gap-4">
          {Array.from({ length: 5 }).map((_, index) => (
             <Skeleton className="h-12 w-full" key={`skeleton-${index + 1}`} />
          ))}
       </div>
    );
 }
-
-// =============================================================================
-// Type filter
-// =============================================================================
 
 type TypeFilter = "all" | "cliente" | "fornecedor" | "ambos";
 
@@ -83,15 +103,14 @@ const TYPE_FILTER_LABELS: Record<TypeFilter, string> = {
    ambos: "Ambos",
 };
 
-// =============================================================================
-// List
-// =============================================================================
-
 interface ContactsListProps {
    typeFilter: TypeFilter;
 }
 
 function ContactsList({ typeFilter }: ContactsListProps) {
+   const navigate = Route.useNavigate();
+   const { sorting, columnFilters } = Route.useSearch();
+   const [tableState, setTableState] = useContactsTableState();
    const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
    const {
@@ -118,6 +137,39 @@ function ContactsList({ typeFilter }: ContactsListProps) {
          },
       }),
    );
+
+   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
+      (updater) => {
+         const next =
+            typeof updater === "function"
+               ? updater(sorting as SortingState)
+               : updater;
+         navigate({
+            search: (prev: z.infer<typeof searchSchema>) => ({
+               ...prev,
+               sorting: next,
+            }),
+         });
+      },
+      [navigate, sorting],
+   );
+
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
+      useCallback(
+         (updater) => {
+            const next =
+               typeof updater === "function"
+                  ? updater(columnFilters as ColumnFiltersState)
+                  : updater;
+            navigate({
+               search: (prev: z.infer<typeof searchSchema>) => ({
+                  ...prev,
+                  columnFilters: next,
+               }),
+            });
+         },
+         [navigate, columnFilters],
+      );
 
    const handleEdit = useCallback(
       (contact: ContactRow) => {
@@ -192,6 +244,12 @@ function ContactsList({ typeFilter }: ContactsListProps) {
             columns={columns}
             data={contacts as ContactRow[]}
             getRowId={(row) => row.id}
+            sorting={sorting as SortingState}
+            onSortingChange={handleSortingChange}
+            columnFilters={columnFilters as ColumnFiltersState}
+            onColumnFiltersChange={handleColumnFiltersChange}
+            tableState={tableState}
+            onTableStateChange={setTableState}
             onRowSelectionChange={onRowSelectionChange}
             renderActions={({ row }) => (
                <>
@@ -227,10 +285,6 @@ function ContactsList({ typeFilter }: ContactsListProps) {
    );
 }
 
-// =============================================================================
-// Page
-// =============================================================================
-
 function ContactsPage() {
    const { openDialogStack, closeDialogStack } = useDialogStack();
    const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
@@ -255,7 +309,6 @@ function ContactsPage() {
          />
          <EarlyAccessBanner template={CONTACTS_BANNER} />
 
-         {/* Type filter tabs */}
          <div className="flex gap-2 flex-wrap">
             {(Object.keys(TYPE_FILTER_LABELS) as TypeFilter[]).map((key) => (
                <Button

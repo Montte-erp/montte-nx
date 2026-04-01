@@ -1,5 +1,8 @@
 import { Button } from "@packages/ui/components/button";
-import { DataTable } from "@packages/ui/components/data-table";
+import {
+   DataTable,
+   type DataTableStoredState,
+} from "@packages/ui/components/data-table";
 import {
    Empty,
    EmptyDescription,
@@ -15,9 +18,16 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import type {
+   ColumnFiltersState,
+   OnChangeFn,
+   SortingState,
+} from "@tanstack/react-table";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { CreditCard, Pencil, Plus, Trash2 } from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
 import {
    buildCreditCardColumns,
@@ -28,9 +38,27 @@ import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
+const searchSchema = z.object({
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .optional()
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .optional()
+      .default([]),
+});
+
+const [useCreditCardsTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:credit-cards",
+      null,
+   );
+
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/credit-cards",
 )({
+   validateSearch: searchSchema,
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(
          orpc.creditCards.getAll.queryOptions({}),
@@ -53,6 +81,9 @@ function CreditCardsSkeleton() {
 }
 
 function CreditCardsList() {
+   const navigate = Route.useNavigate();
+   const { sorting, columnFilters } = Route.useSearch();
+   const [tableState, setTableState] = useCreditCardsTableState();
    const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
    const {
@@ -77,6 +108,39 @@ function CreditCardsList() {
          },
       }),
    );
+
+   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
+      (updater) => {
+         const next =
+            typeof updater === "function"
+               ? updater(sorting as SortingState)
+               : updater;
+         navigate({
+            search: (prev: z.infer<typeof searchSchema>) => ({
+               ...prev,
+               sorting: next,
+            }),
+         });
+      },
+      [navigate, sorting],
+   );
+
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
+      useCallback(
+         (updater) => {
+            const next =
+               typeof updater === "function"
+                  ? updater(columnFilters as ColumnFiltersState)
+                  : updater;
+            navigate({
+               search: (prev: z.infer<typeof searchSchema>) => ({
+                  ...prev,
+                  columnFilters: next,
+               }),
+            });
+         },
+         [navigate, columnFilters],
+      );
 
    const handleEdit = useCallback(
       (card: CreditCardRow) => {
@@ -152,6 +216,12 @@ function CreditCardsList() {
             columns={columns}
             data={cards}
             getRowId={(row) => row.id}
+            sorting={sorting as SortingState}
+            onSortingChange={handleSortingChange}
+            columnFilters={columnFilters as ColumnFiltersState}
+            onColumnFiltersChange={handleColumnFiltersChange}
+            tableState={tableState}
+            onTableStateChange={setTableState}
             onRowSelectionChange={onRowSelectionChange}
             renderActions={({ row }) => (
                <>
