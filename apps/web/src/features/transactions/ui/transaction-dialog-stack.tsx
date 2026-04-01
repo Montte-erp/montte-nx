@@ -37,12 +37,14 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { ChevronLeft, Plus } from "lucide-react";
-import { Suspense, useContext, useState } from "react";
+import { Suspense, useContext, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useAccountType } from "@/hooks/use-account-type";
 import { orpc } from "@/integrations/orpc/client";
 import type { TransactionRow } from "./transactions-columns";
+import type { RateioLine } from "./rateio-section";
+import { RateioSection } from "./rateio-section";
 
 type TransactionType = "income" | "expense" | "transfer";
 
@@ -718,9 +720,26 @@ function TransactionDialogStackContent({
       orpc.creditCards.getAll.queryOptions({}),
    );
 
+   const rateioLinesRef = useRef<RateioLine[]>([]);
+   const setRateioMutation = useMutation(
+      orpc.transactions.setRateio.mutationOptions(),
+   );
+
    const createMutation = useMutation(
       orpc.transactions.create.mutationOptions({
-         onSuccess: () => {
+         onSuccess: async (data) => {
+            if (rateioLinesRef.current.length > 0 && data) {
+               await setRateioMutation.mutateAsync({
+                  id: data.id,
+                  lines: rateioLinesRef.current
+                     .filter((l) => l.categoryId && l.amount !== undefined)
+                     .map((l) => ({
+                        categoryId: l.categoryId,
+                        tagId: l.tagId,
+                        amount: String(l.amount ?? 0),
+                     })),
+               });
+            }
             toast.success("Lançamento criado com sucesso.");
             onSuccess();
          },
@@ -732,7 +751,19 @@ function TransactionDialogStackContent({
 
    const updateMutation = useMutation(
       orpc.transactions.update.mutationOptions({
-         onSuccess: () => {
+         onSuccess: async (data) => {
+            if (rateioLinesRef.current.length > 0 && data) {
+               await setRateioMutation.mutateAsync({
+                  id: data.id,
+                  lines: rateioLinesRef.current
+                     .filter((l) => l.categoryId && l.amount !== undefined)
+                     .map((l) => ({
+                        categoryId: l.categoryId,
+                        tagId: l.tagId,
+                        amount: String(l.amount ?? 0),
+                     })),
+               });
+            }
             toast.success("Lançamento atualizado com sucesso.");
             onSuccess();
          },
@@ -760,6 +791,7 @@ function TransactionDialogStackContent({
       billCreateMutation.isPending;
 
    const emptyTagIds: string[] = [];
+   const emptyRateioLines: RateioLine[] = [];
 
    const form = useForm({
       defaultValues: {
@@ -787,6 +819,7 @@ function TransactionDialogStackContent({
          isRecurring: false as boolean,
          recurringFrequency: null as string | null,
          recurringCount: null as number | null,
+         rateioLines: emptyRateioLines,
       },
       onSubmit: ({ value }) => {
          const dateStr = value.date
@@ -1728,6 +1761,40 @@ function TransactionDialogStackContent({
                         )}
                      </form.Field>
 
+                     <form.Subscribe selector={(s) => s.values.rateioLines}>
+                        {(lines) => {
+                           rateioLinesRef.current = lines;
+                           return null;
+                        }}
+                     </form.Subscribe>
+
+                     <form.Subscribe
+                        selector={(s) => ({
+                           type: s.values.type,
+                           amount: s.values.amount,
+                        })}
+                     >
+                        {({ type, amount }) =>
+                           type !== "transfer" ? (
+                              <form.Field name="rateioLines">
+                                 {(field) => (
+                                    <Suspense fallback={null}>
+                                       <RateioSection
+                                          onChange={field.handleChange}
+                                          transactionAmount={
+                                             amount
+                                                ? Number(amount) * 100
+                                                : undefined
+                                          }
+                                          value={field.state.value}
+                                       />
+                                    </Suspense>
+                                 )}
+                              </form.Field>
+                           ) : null
+                        }
+                     </form.Subscribe>
+
                      <form.Subscribe
                         selector={(s) => ({
                            type: s.values.type,
@@ -2051,7 +2118,10 @@ function TransactionDialogStackContent({
                            ...form.getFieldValue("tagIds"),
                            id,
                         ]);
-                        form.setFieldMeta("tagIds", (prev) => ({ ...prev, isTouched: true }));
+                        form.setFieldMeta("tagIds", (prev) => ({
+                           ...prev,
+                           isTouched: true,
+                        }));
                         setSecondaryForm(null);
                         setActiveIndex(0);
                      }}
