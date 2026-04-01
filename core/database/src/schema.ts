@@ -21,4 +21,5 @@ export * from "@core/database/schemas/financial";
 export * from "@core/database/schemas/tags";
 export * from "@core/database/schemas/transactions";
 export * from "@core/database/schemas/webhooks";
+export * from "@core/database/schemas/organization-config";
 export * from "@core/database/relations";
