@@ -46,11 +46,18 @@ export function EarlyAccessProvider({ children }: { children: ReactNode }) {
                   documentationUrl: f.documentationUrl ?? null,
                })),
             );
-            setEnrolledKeys(
-               raw
+            setEnrolledKeys((prev) => {
+               const posthogKeys = new Set(
+                  raw.map((f) => f.flagKey).filter(Boolean),
+               );
+               const preserved = (prev ?? []).filter(
+                  (k) => !posthogKeys.has(k),
+               );
+               const posthogEnrolled = raw
                   .filter((f) => f.flagKey && posthog.isFeatureEnabled(f.flagKey))
-                  .map((f) => f.flagKey as string),
-            );
+                  .map((f) => f.flagKey as string);
+               return [...new Set([...posthogEnrolled, ...preserved])];
+            });
          },
          true,
          ALL_STAGES,

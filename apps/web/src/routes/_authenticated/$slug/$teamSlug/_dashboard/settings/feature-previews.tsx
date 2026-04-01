@@ -40,8 +40,14 @@ import {
    Workflow,
    Zap,
 } from "lucide-react";
-import { Fragment, useState } from "react";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
+import { Fragment, useCallback, useState } from "react";
 import { useEarlyAccess } from "@/hooks/use-early-access";
+
+const [useComingSoonNotifications] = createLocalStorageState<string[]>(
+   "montte:coming-soon-notifications",
+   [],
+);
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/settings/feature-previews",
@@ -125,7 +131,8 @@ const COMING_SOON_CATEGORIES: ComingSoonCategory[] = [
          {
             flagKey: "cobrancas",
             name: "Cobranças",
-            description: "PIX, boleto e cartão via Abacate Pay.",
+            description:
+               "Gere cobranças para contatos e acompanhe o status de pagamento em tempo real.",
             icon: CreditCard,
          },
          {
@@ -502,18 +509,31 @@ function FeaturePreviewsPage() {
             </ItemGroup>
          )}
 
-         <ComingSoonSection isEnrolled={isEnrolled} updateEnrollment={updateEnrollment} />
+         <ComingSoonSection />
       </div>
    );
 }
 
-function ComingSoonSection({
-   isEnrolled,
-   updateEnrollment,
-}: {
-   isEnrolled: (flagKey: string) => boolean;
-   updateEnrollment: (flagKey: string, enrolled: boolean) => void;
-}) {
+function ComingSoonSection() {
+   const [notified, setNotified] = useComingSoonNotifications();
+
+   const isNotified = useCallback(
+      (flagKey: string) => (notified ?? []).includes(flagKey),
+      [notified],
+   );
+
+   const toggleNotification = useCallback(
+      (flagKey: string) => {
+         setNotified((prev) => {
+            const keys = prev ?? [];
+            return keys.includes(flagKey)
+               ? keys.filter((k) => k !== flagKey)
+               : [...keys, flagKey];
+         });
+      },
+      [setNotified],
+   );
+
    return (
       <div className="flex flex-col gap-4">
          <div>
@@ -538,7 +558,7 @@ function ComingSoonSection({
                      <ItemGroup>
                         {category.features.map((feature, index) => {
                            const FeatureIcon = feature.icon;
-                           const enrolled = isEnrolled(feature.flagKey);
+                           const notifiedFlag = isNotified(feature.flagKey);
                            return (
                               <Fragment key={feature.flagKey}>
                                  {index > 0 && <ItemSeparator />}
@@ -555,17 +575,16 @@ function ComingSoonSection({
                                     <ItemActions>
                                        <Button
                                           onClick={() =>
-                                             updateEnrollment(
-                                                feature.flagKey,
-                                                !enrolled,
-                                             )
+                                             toggleNotification(feature.flagKey)
                                           }
                                           size="sm"
                                           variant={
-                                             enrolled ? "secondary" : "outline"
+                                             notifiedFlag
+                                                ? "secondary"
+                                                : "outline"
                                           }
                                        >
-                                          {enrolled ? (
+                                          {notifiedFlag ? (
                                              <>
                                                 <BellOff className="size-4" />
                                                 Inscrito
