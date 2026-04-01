@@ -1,16 +1,15 @@
 import { Input } from "@packages/ui/components/input";
 import { QuickAccessCard } from "@packages/ui/components/quick-access-card";
-import { useNavigate, useParams } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useState } from "react";
+import { useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { dataManagementNavSections } from "./data-management-nav-items";
 
 export function DataManagementMobileNav() {
    const { activeOrganization } = useActiveOrganization();
-   const { teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
+   const teamSlug = useTeamSlug();
    const navigate = useNavigate();
    const [search, setSearch] = useState("");
 
@@ -56,7 +55,7 @@ export function DataManagementMobileNav() {
                               navigate({
                                  params: {
                                     slug: activeOrganization.slug,
-                                    teamSlug: teamSlug ?? "",
+                                    teamSlug,
                                  },
                                  to: item.href,
                               })

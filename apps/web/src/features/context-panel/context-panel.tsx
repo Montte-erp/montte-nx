@@ -23,7 +23,7 @@ import {
    SidebarManager,
 } from "@packages/ui/components/sidebar";
 import { cn } from "@packages/ui/lib/utils";
-import { useNavigate, useParams } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
 import {
    Check,
@@ -33,6 +33,7 @@ import {
    MoveDiagonalIcon,
    X,
 } from "lucide-react";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import type React from "react";
 import { ContextPanelAction } from "./context-panel-info";
 import {
@@ -133,9 +134,7 @@ function InfoContent() {
 
 function ChatContent() {
    const navigate = useNavigate();
-   const { slug, teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
+   const { slug, teamSlug } = useDashboardSlugs();
 
    return (
       <ContextPanel>

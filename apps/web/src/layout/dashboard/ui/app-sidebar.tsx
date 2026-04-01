@@ -14,11 +14,12 @@ import {
    SidebarMenuItem,
    useSidebar,
 } from "@packages/ui/components/sidebar";
-import { Link, useParams } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { Bug, MessageSquarePlus, PanelLeftClose, Settings, Sparkles } from "lucide-react";
 import type * as React from "react";
 import { useState } from "react";
 import { POSTHOG_SURVEYS } from "@core/posthog/config";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useSurveyModal } from "@/hooks/use-survey-modal";
 import { EarlyAccessSidebarBanner } from "./early-access-sidebar-banner";
 import { SidebarDefaultItems, SidebarNav } from "./sidebar-nav";
@@ -88,11 +89,7 @@ function SidebarFeedbackButton() {
 }
 
 function SidebarFooterContent() {
-   const params = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
-   const slug = params.slug ?? "";
-   const teamSlug = params.teamSlug ?? "";
+   const { slug, teamSlug } = useDashboardSlugs();
    const { toggleSidebar, state } = useSidebar();
 
    return (

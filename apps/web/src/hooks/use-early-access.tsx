@@ -32,7 +32,6 @@ const [useDismissedFlags] = createLocalStorageState<string[]>(
 export function EarlyAccessProvider({ children }: { children: ReactNode }) {
    const posthog = usePostHog();
    const [, setFeatures] = useFeatures();
-   const [, setEnrolledKeys] = useEnrolledKeys();
 
    useEffect(() => {
       posthog.getEarlyAccessFeatures(
@@ -46,23 +45,11 @@ export function EarlyAccessProvider({ children }: { children: ReactNode }) {
                   documentationUrl: f.documentationUrl ?? null,
                })),
             );
-            setEnrolledKeys((prev) => {
-               const posthogKeys = new Set(
-                  raw.map((f) => f.flagKey).filter(Boolean),
-               );
-               const preserved = (prev ?? []).filter(
-                  (k) => !posthogKeys.has(k),
-               );
-               const posthogEnrolled = raw
-                  .filter((f) => f.flagKey && posthog.isFeatureEnabled(f.flagKey))
-                  .map((f) => f.flagKey as string);
-               return [...new Set([...posthogEnrolled, ...preserved])];
-            });
          },
          true,
          ALL_STAGES,
       );
-   }, [posthog, setFeatures, setEnrolledKeys]);
+   }, [posthog, setFeatures]);
 
    return <>{children}</>;
 }

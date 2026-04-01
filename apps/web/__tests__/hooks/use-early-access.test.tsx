@@ -61,16 +61,14 @@ describe("EarlyAccessProvider", () => {
       );
    });
 
-   it("seeds enrolled keys from posthog.isFeatureEnabled", async () => {
-      mockIsFeatureEnabled.mockImplementation((key: string) => key === "contatos");
+   it("does not call isFeatureEnabled — enrollment is managed by updateEnrollment only", async () => {
       mockGetEarlyAccessFeatures.mockImplementation(
          (cb: (f: typeof rawFeatures) => void) => cb(rawFeatures),
       );
 
       await act(async () => { render(<EarlyAccessProvider>{null}</EarlyAccessProvider>); });
 
-      expect(mockIsFeatureEnabled).toHaveBeenCalledWith("contatos");
-      expect(mockIsFeatureEnabled).toHaveBeenCalledWith("dados");
+      expect(mockIsFeatureEnabled).not.toHaveBeenCalled();
    });
 });
 
