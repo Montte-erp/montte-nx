@@ -208,8 +208,7 @@ export const getRateio = protectedProcedure
 
 export const setRateio = protectedProcedure
    .input(
-      z.object({
-         id: z.string().uuid(),
+      idSchema.extend({
          lines: z.array(rateioLineSchema),
       }),
    )
@@ -225,5 +224,5 @@ export const setRateio = protectedProcedure
          { amount: transaction.amount },
          input.lines,
       );
-      return { success: true };
+      return getRateioForTransaction(context.db, input.id);
    });
