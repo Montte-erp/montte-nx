@@ -7,13 +7,12 @@ import {
 } from "@packages/ui/components/sidebar";
 import { Link } from "@tanstack/react-router";
 import { FlaskConical, X } from "lucide-react";
-import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 
 export function EarlyAccessSidebarBanner() {
    const { isBannerVisible, dismissBanner } = useEarlyAccess();
-   const slug = useOrgSlug();
-   const teamSlug = useTeamSlug();
+   const { slug, teamSlug } = useDashboardSlugs();
 
    if (!isBannerVisible) return null;
 

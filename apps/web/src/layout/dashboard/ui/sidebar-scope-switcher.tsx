@@ -53,7 +53,7 @@ import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
-import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 import { ThemeSwitcher } from "./theme-switcher";
@@ -147,8 +147,7 @@ function SidebarScopeSwitcherContent() {
    const router = useRouter();
    const { pathname } = useLocation();
    const { isMobile, setOpenMobile } = useSidebar();
-   const slug = useOrgSlug();
-   const teamSlug = useTeamSlug();
+   const { slug, teamSlug } = useDashboardSlugs();
    const currentSlug = slug || activeOrganization.slug;
 
    const { data: organizations } = useSuspenseQuery(

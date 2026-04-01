@@ -19,7 +19,7 @@ import { Bug, MessageSquarePlus, PanelLeftClose, Settings, Sparkles } from "luci
 import type * as React from "react";
 import { useState } from "react";
 import { POSTHOG_SURVEYS } from "@core/posthog/config";
-import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useSurveyModal } from "@/hooks/use-survey-modal";
 import { EarlyAccessSidebarBanner } from "./early-access-sidebar-banner";
 import { SidebarDefaultItems, SidebarNav } from "./sidebar-nav";
@@ -89,8 +89,7 @@ function SidebarFeedbackButton() {
 }
 
 function SidebarFooterContent() {
-   const slug = useOrgSlug();
-   const teamSlug = useTeamSlug();
+   const { slug, teamSlug } = useDashboardSlugs();
    const { toggleSidebar, state } = useSidebar();
 
    return (

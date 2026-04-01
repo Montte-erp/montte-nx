@@ -9,15 +9,14 @@ import { SidebarMenuAction } from "@packages/ui/components/sidebar";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { openInNewTab } from "foxact/open-new-tab";
 import { ExternalLink, MoreHorizontal, Pin, Plus } from "lucide-react";
-import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { togglePinnedItem, useSidebarNav } from "../hooks/use-sidebar-nav";
 import type { NavItemDef } from "./sidebar-nav-items";
 import { SubSidebarNewMenu } from "./sub-sidebar-new-menu";
 
 function QuickCreateButton({ item }: { item: NavItemDef }) {
    const navigate = useNavigate();
-   const slug = useOrgSlug();
-   const teamSlug = useTeamSlug();
+   const { slug, teamSlug } = useDashboardSlugs();
 
    if (!item.quickAction) return null;
 
@@ -56,8 +55,7 @@ function QuickCreateButton({ item }: { item: NavItemDef }) {
 
 function MoreMenu({ item }: { item: NavItemDef }) {
    const { pinnedItems } = useSidebarNav();
-   const slug = useOrgSlug();
-   const teamSlug = useTeamSlug();
+   const { slug, teamSlug } = useDashboardSlugs();
    const router = useRouter();
    const isPinned = pinnedItems.includes(item.id);
 

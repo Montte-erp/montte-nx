@@ -33,7 +33,7 @@ import {
    MoveDiagonalIcon,
    X,
 } from "lucide-react";
-import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import type React from "react";
 import { ContextPanelAction } from "./context-panel-info";
 import {
@@ -134,8 +134,7 @@ function InfoContent() {
 
 function ChatContent() {
    const navigate = useNavigate();
-   const slug = useOrgSlug();
-   const teamSlug = useTeamSlug();
+   const { slug, teamSlug } = useDashboardSlugs();
 
    return (
       <ContextPanel>

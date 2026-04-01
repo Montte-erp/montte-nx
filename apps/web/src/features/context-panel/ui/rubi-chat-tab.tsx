@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { useRubiRuntime } from "@/features/rubi-chat/hooks/use-rubi-runtime";
 import type { QuickSuggestion } from "@/features/rubi-chat/ui/thread";
 import { formatTimeAgo, Thread } from "@/features/rubi-chat/ui/thread";
-import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -32,8 +32,7 @@ function RecentThreadsList({ teamId }: { teamId: string }) {
          input: { teamId, page: 0, perPage: 5 },
       }),
    );
-   const slug = useOrgSlug();
-   const teamSlug = useTeamSlug();
+   const { slug, teamSlug } = useDashboardSlugs();
 
    return (
       <>

@@ -15,7 +15,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { FolderPlus, LayoutDashboard, Lightbulb, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { orpc } from "@/integrations/orpc/client";
 import type { SubSidebarSection } from "../hooks/use-sidebar-nav";
 
@@ -29,8 +29,7 @@ export function SubSidebarNewMenu({
    onAction,
 }: SubSidebarNewMenuProps) {
    const navigate = useNavigate();
-   const slug = useOrgSlug();
-   const teamSlug = useTeamSlug();
+   const { slug, teamSlug } = useDashboardSlugs();
    const queryClient = useQueryClient();
 
    const createDashboardMutation = useMutation(

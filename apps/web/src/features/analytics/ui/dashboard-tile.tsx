@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { Suspense, useRef } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 import { InsightEditDialogStack } from "./insight-edit-dialog-stack";
@@ -313,8 +313,7 @@ export function DashboardTile({
       transition,
    };
 
-   const slug = useOrgSlug();
-   const teamSlug = useTeamSlug();
+   const { slug, teamSlug } = useDashboardSlugs();
    const { name, description, typeLabel, dateRangeLabel, lastComputedAt } =
       useInsightMetadata(insightName, insightId, globalDateRange);
 
