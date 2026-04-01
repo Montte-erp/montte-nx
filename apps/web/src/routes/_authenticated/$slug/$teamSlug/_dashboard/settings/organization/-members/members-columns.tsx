@@ -55,7 +55,7 @@ export function buildMembersColumns(
                   </AvatarFallback>
                </Avatar>
                <span className="truncate font-medium">{row.original.name}</span>
-               {row.original.id === currentUserId && (
+               {row.original.userId === currentUserId && (
                   <Badge className="text-[10px] px-1.5" variant="outline">
                      você
                   </Badge>

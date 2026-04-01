@@ -2,7 +2,7 @@ import { Button } from "@packages/ui/components/button";
 import { DataTable, type DataTableStoredState } from "@packages/ui/components/data-table";
 import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { Input } from "@packages/ui/components/input";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { InviteMemberForm } from "./-members/invite-member-form";
 import { MembersSkeleton } from "./-members/members-skeleton";
 import { PendingInvitesSection } from "./-members/pending-invites-section";
@@ -50,6 +50,7 @@ function MembersContent() {
    const { sorting, columnFilters } = Route.useSearch();
    const [tableState, setTableState] = useMembersTableState();
 
+   const queryClient = useQueryClient();
    const { openDialogStack, closeDialogStack } = useDialogStack();
    const [searchFilter, setSearchFilter] = useState("");
    const [isPending, startTransition] = useTransition();
@@ -86,7 +87,7 @@ function MembersContent() {
 
    const handleSortingChange: OnChangeFn<SortingState> = (updater) => {
       const next = typeof updater === "function" ? updater(sorting) : updater;
-      navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, sorting: next }) });
+      navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, sorting: next }), replace: true });
    };
 
    const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = (
@@ -94,7 +95,7 @@ function MembersContent() {
    ) => {
       const next =
          typeof updater === "function" ? updater(columnFilters) : updater;
-      navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, columnFilters: next }) });
+      navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, columnFilters: next }), replace: true });
    };
 
    function handleUpdateRole(member: MemberRow, newRole: string) {
@@ -107,6 +108,9 @@ function MembersContent() {
          if (result.error) {
             toast.error(result.error.message ?? "Erro ao alterar função");
          } else {
+            queryClient.invalidateQueries({
+               queryKey: orpc.organization.getMembers.queryOptions({}).queryKey,
+            });
             toast.success("Função atualizada com sucesso");
          }
       });
