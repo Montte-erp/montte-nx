@@ -1,30 +1,19 @@
-import { fileURLToPath, URL } from "node:url";
-import viteTsConfigPaths from "vite-tsconfig-paths";
-import { defineConfig } from "vitest/config";
+import { defineConfig, mergeConfig } from "vite";
+import viteConfig from "./vite.config";
 
-export default defineConfig({
-   esbuild: {
-      jsx: "automatic",
-   },
-   plugins: [
-      viteTsConfigPaths({
-         projects: [
-            "./tsconfig.json",
-            "../../core/authentication/tsconfig.json",
-            "../../core/database/tsconfig.json",
-            "../../core/files/tsconfig.json",
-            "../../core/logging/tsconfig.json",
-         ],
-      }),
-   ],
-   resolve: {
-      alias: {
-         "@": fileURLToPath(new URL("./src", import.meta.url)),
+export default mergeConfig(
+   viteConfig,
+   defineConfig({
+      test: {
+         include: ["./__tests__/**/*.test.{ts,tsx}"],
+         hookTimeout: 30000,
+         setupFiles: ["./__tests__/helpers/mock-singletons.ts"],
+         coverage: {
+            provider: "v8",
+            include: ["src/**/*.{ts,tsx}"],
+            exclude: ["src/routes/**", "src/integrations/**"],
+            reporter: ["text", "lcov"],
+         },
       },
-   },
-   test: {
-      include: ["./__tests__/**/*.test.{ts,tsx}"],
-      hookTimeout: 30000,
-      setupFiles: ["./__tests__/helpers/mock-singletons.ts"],
-   },
-});
+   }),
+);
