@@ -303,6 +303,7 @@ export async function listTransactions(
                creditCardName: creditCards.name,
                bankAccountName: bankAccounts.name,
                contactName: contacts.name,
+               rateioCount: sql<number>`(SELECT COUNT(*) FROM transaction_rateio WHERE transaction_id = ${transactions.id})::int`,
             })
             .from(transactions)
             .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -355,6 +356,7 @@ export async function listTransactions(
             creditCardName: creditCards.name,
             bankAccountName: bankAccounts.name,
             contactName: contacts.name,
+            rateioCount: sql<number>`(SELECT COUNT(*) FROM transaction_rateio WHERE transaction_id = ${transactions.id})::int`,
          })
          .from(transactions)
          .leftJoin(categories, eq(transactions.categoryId, categories.id))

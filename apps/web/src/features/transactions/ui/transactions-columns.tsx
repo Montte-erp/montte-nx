@@ -76,9 +76,21 @@ export function buildTransactionColumns(): ColumnDef<TransactionRow>[] {
          header: "Categoria",
          cell: ({ row }) => {
             const name = row.original.categoryName;
-            if (!name)
-               return <span className="text-xs text-muted-foreground">—</span>;
-            return <span className="text-sm">{name}</span>;
+            const rateioCount = row.original.rateioCount ?? 0;
+            return (
+               <div className="flex flex-col gap-2">
+                  {name ? (
+                     <span className="text-sm">{name}</span>
+                  ) : (
+                     <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                  {rateioCount > 0 && (
+                     <Badge variant="secondary" className="text-xs w-fit">
+                        Rateio ({rateioCount})
+                     </Badge>
+                  )}
+               </div>
+            );
          },
       },
       {
