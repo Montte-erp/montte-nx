@@ -1,15 +1,15 @@
 import { useParams } from "@tanstack/react-router";
 
 export function useOrgSlug() {
-	const params = useParams({
+	return useParams({
 		from: "/_authenticated/$slug/$teamSlug/_dashboard",
+		select: (p) => p.slug,
 	});
-	return params.slug ?? "";
 }
 
 export function useTeamSlug() {
-	const params = useParams({
+	return useParams({
 		from: "/_authenticated/$slug/$teamSlug/_dashboard",
+		select: (p) => p.teamSlug,
 	});
-	return params.teamSlug ?? "";
 }
