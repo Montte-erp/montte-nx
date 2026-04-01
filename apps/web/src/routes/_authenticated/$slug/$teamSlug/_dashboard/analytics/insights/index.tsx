@@ -6,9 +6,17 @@ import {
    ContextPanelTitle,
 } from "@packages/ui/components/context-panel";
 import type { DataTableStoredState } from "@packages/ui/components/data-table";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+   useMutation,
+   useQueryClient,
+   useSuspenseQuery,
+} from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import type { ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/react-table";
+import type {
+   ColumnFiltersState,
+   OnChangeFn,
+   SortingState,
+} from "@tanstack/react-table";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Loader2, Plus, TrendingUp } from "lucide-react";
 import { useCallback, useTransition } from "react";
@@ -40,16 +48,23 @@ const ANALYTICS_BANNER: EarlyAccessBannerTemplate = {
 };
 
 const insightsSearchSchema = z.object({
-   sorting: z.array(z.object({ id: z.string(), desc: z.boolean() })).optional().default([]),
-   columnFilters: z.array(z.object({ id: z.string(), value: z.unknown() })).optional().default([]),
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .optional()
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .optional()
+      .default([]),
 });
 
 type InsightsSearch = z.infer<typeof insightsSearchSchema>;
 
-const [useInsightsTableState] = createLocalStorageState<DataTableStoredState | null>(
-   "montte:datatable:insights",
-   null,
-);
+const [useInsightsTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:insights",
+      null,
+   );
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/insights/",
@@ -72,12 +87,19 @@ function InsightsListPage() {
 
    const handleSortingChange: OnChangeFn<SortingState> = (updater) => {
       const next = typeof updater === "function" ? updater(sorting) : updater;
-      navigate({ search: (prev: InsightsSearch) => ({ ...prev, sorting: next }) });
+      navigate({
+         search: (prev: InsightsSearch) => ({ ...prev, sorting: next }),
+      });
    };
 
-   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = (updater) => {
-      const next = typeof updater === "function" ? updater(columnFilters) : updater;
-      navigate({ search: (prev: InsightsSearch) => ({ ...prev, columnFilters: next }) });
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = (
+      updater,
+   ) => {
+      const next =
+         typeof updater === "function" ? updater(columnFilters) : updater;
+      navigate({
+         search: (prev: InsightsSearch) => ({ ...prev, columnFilters: next }),
+      });
    };
 
    const createMutation = useMutation(
@@ -123,7 +145,9 @@ function InsightsListPage() {
       </ContextPanel>,
    );
 
-   const { data: insights } = useSuspenseQuery(orpc.insights.list.queryOptions({}));
+   const { data: insights } = useSuspenseQuery(
+      orpc.insights.list.queryOptions({}),
+   );
 
    const deleteMutation = useMutation(
       orpc.insights.remove.mutationOptions({

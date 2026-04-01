@@ -9,7 +9,11 @@ import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import { Input } from "@packages/ui/components/input";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import type { ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/react-table";
+import type {
+   ColumnFiltersState,
+   OnChangeFn,
+   SortingState,
+} from "@tanstack/react-table";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -18,16 +22,23 @@ import { orpc } from "@/integrations/orpc/client";
 import { EventDefinitionsTable } from "./-event-definitions/event-definitions-table";
 
 const eventDefinitionsSearchSchema = z.object({
-   sorting: z.array(z.object({ id: z.string(), desc: z.boolean() })).optional().default([]),
-   columnFilters: z.array(z.object({ id: z.string(), value: z.unknown() })).optional().default([]),
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .optional()
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .optional()
+      .default([]),
 });
 
 type EventDefinitionsSearch = z.infer<typeof eventDefinitionsSearchSchema>;
 
-const [useEventDefinitionsTableState] = createLocalStorageState<DataTableStoredState | null>(
-   "montte:datatable:event-definitions",
-   null,
-);
+const [useEventDefinitionsTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:event-definitions",
+      null,
+   );
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/analytics/data-management/event-definitions",
@@ -45,12 +56,22 @@ function EventDefinitionsPage() {
 
    const handleSortingChange: OnChangeFn<SortingState> = (updater) => {
       const next = typeof updater === "function" ? updater(sorting) : updater;
-      navigate({ search: (prev: EventDefinitionsSearch) => ({ ...prev, sorting: next }) });
+      navigate({
+         search: (prev: EventDefinitionsSearch) => ({ ...prev, sorting: next }),
+      });
    };
 
-   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = (updater) => {
-      const next = typeof updater === "function" ? updater(columnFilters) : updater;
-      navigate({ search: (prev: EventDefinitionsSearch) => ({ ...prev, columnFilters: next }) });
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = (
+      updater,
+   ) => {
+      const next =
+         typeof updater === "function" ? updater(columnFilters) : updater;
+      navigate({
+         search: (prev: EventDefinitionsSearch) => ({
+            ...prev,
+            columnFilters: next,
+         }),
+      });
    };
 
    const { data: events } = useSuspenseQuery(

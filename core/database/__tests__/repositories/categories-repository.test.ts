@@ -253,7 +253,7 @@ describe("categories-repository", () => {
 
       it("rejects editing default category", async () => {
          const teamId = randomTeamId();
-         await repo.seedDefaultCategories(testDb.db, teamId);
+         await repo.seedEmpresarialCategories(testDb.db, teamId);
          const defaults = await repo.listCategories(testDb.db, teamId);
          const defaultCat = defaults.find((c) => c.isDefault)!;
 
@@ -289,7 +289,7 @@ describe("categories-repository", () => {
 
       it("rejects archiving default category", async () => {
          const teamId = randomTeamId();
-         await repo.seedDefaultCategories(testDb.db, teamId);
+         await repo.seedEmpresarialCategories(testDb.db, teamId);
          const defaults = await repo.listCategories(testDb.db, teamId);
          const defaultCat = defaults.find((c) => c.isDefault)!;
 
@@ -421,7 +421,7 @@ describe("categories-repository", () => {
 
       it("rejects deleting default category", async () => {
          const teamId = randomTeamId();
-         await repo.seedDefaultCategories(testDb.db, teamId);
+         await repo.seedEmpresarialCategories(testDb.db, teamId);
          const defaults = await repo.listCategories(testDb.db, teamId);
          const defaultCat = defaults.find((c) => c.isDefault)!;
 
@@ -508,7 +508,7 @@ describe("categories-repository", () => {
 
       it("rejects if any category is default", async () => {
          const teamId = randomTeamId();
-         await repo.seedDefaultCategories(testDb.db, teamId);
+         await repo.seedEmpresarialCategories(testDb.db, teamId);
          const list = await repo.listCategories(testDb.db, teamId);
          const defaultCat = list.find((c) => c.isDefault)!;
 
@@ -539,19 +539,22 @@ describe("categories-repository", () => {
       });
    });
 
-   describe("seedDefaultCategories", () => {
-      it("seeds defaults with correct types", async () => {
+   describe("seedEmpresarialCategories", () => {
+      it("seeds empresarial preset with correct types and hierarchy", async () => {
          const teamId = randomTeamId();
-         await repo.seedDefaultCategories(testDb.db, teamId);
+         await repo.seedEmpresarialCategories(testDb.db, teamId);
 
          const list = await repo.listCategories(testDb.db, teamId);
-         expect(list).toHaveLength(repo.DEFAULT_CATEGORIES.length);
+         expect(list.length).toBeGreaterThan(0);
          expect(list.every((c) => c.isDefault)).toBe(true);
 
-         const salario = list.find((c) => c.name === "Salário");
-         const investimento = list.find((c) => c.name === "Investimento");
-         expect(salario!.type).toBe("income");
-         expect(investimento!.type).toBe("income");
+         const vendas = list.find((c) => c.name === "Vendas");
+         const outrasReceitas = list.find((c) => c.name === "Outras Receitas");
+         expect(vendas!.type).toBe("income");
+         expect(outrasReceitas!.type).toBe("income");
+
+         const impostos = list.find((c) => c.name === "Impostos");
+         expect(impostos!.type).toBe("expense");
       });
    });
 });

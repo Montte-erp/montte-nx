@@ -1,7 +1,15 @@
 import { Badge } from "@packages/ui/components/badge";
-import { DataTable, type DataTableStoredState } from "@packages/ui/components/data-table";
+import {
+   DataTable,
+   type DataTableStoredState,
+} from "@packages/ui/components/data-table";
 import { Switch } from "@packages/ui/components/switch";
-import type { ColumnDef, ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/react-table";
+import type {
+   ColumnDef,
+   ColumnFiltersState,
+   OnChangeFn,
+   SortingState,
+} from "@tanstack/react-table";
 import { BookOpen } from "lucide-react";
 import type { Outputs } from "@/integrations/orpc/client";
 
@@ -10,7 +18,8 @@ type EventEntry = Outputs["billing"]["getEventCatalog"][number];
 const categoryColors: Record<string, string> = {
    content: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
    ai: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-   platform: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+   platform:
+      "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
    forms: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
 };
 

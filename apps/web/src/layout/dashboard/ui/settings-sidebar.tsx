@@ -15,11 +15,7 @@ import {
    SidebarMenuSubItem,
 } from "@packages/ui/components/sidebar";
 import { cn } from "@packages/ui/lib/utils";
-import {
-   Link,
-   useLocation,
-   useRouter,
-} from "@tanstack/react-router";
+import { Link, useLocation, useRouter } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { useActiveOrganization } from "@/hooks/use-active-organization";

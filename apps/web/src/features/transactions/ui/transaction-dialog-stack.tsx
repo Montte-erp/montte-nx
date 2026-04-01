@@ -40,7 +40,6 @@ import { ChevronLeft, Plus } from "lucide-react";
 import { Suspense, useContext, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { useAccountType } from "@/hooks/use-account-type";
 import { orpc } from "@/integrations/orpc/client";
 import type { TransactionRow } from "./transactions-columns";
 
@@ -93,9 +92,6 @@ function TagCombobox({
    onChange: (ids: string[]) => void;
 }) {
    const { data: tags } = useSuspenseQuery(orpc.tags.getAll.queryOptions({}));
-   const { isBusiness } = useAccountType();
-
-   const label = isBusiness ? "centro de custo" : "tag";
 
    return (
       <div className="flex flex-col gap-2">
@@ -130,7 +126,7 @@ function TagCombobox({
             })}
          </div>
          <p className="text-xs text-muted-foreground">
-            Use o botão + para criar {label}s
+            Use o botão + para criar centros de custos
          </p>
       </div>
    );
@@ -621,12 +617,10 @@ function NovaTag({
    onSuccess: (id: string) => void;
    onBack: () => void;
 }) {
-   const { isBusiness } = useAccountType();
-   const label = isBusiness ? "Centro de Custo" : "Tag";
    const mutation = useMutation(
       orpc.tags.create.mutationOptions({
          onSuccess: (data) => {
-            toast.success(`${label} criada.`);
+            toast.success("Centro de Custo criada.");
             onSuccess(data.id);
          },
       }),
@@ -645,7 +639,7 @@ function NovaTag({
                      <ChevronLeft className="size-4" />
                   </button>
                </DialogStackPrevious>
-               <DialogStackTitle>Nova {label}</DialogStackTitle>
+               <DialogStackTitle>Novo Centro de Custo</DialogStackTitle>
             </div>
          </DialogStackHeader>
          <form
@@ -688,7 +682,7 @@ function NovaTag({
                         {mutation.isPending ? (
                            <Spinner className="size-4 mr-2" />
                         ) : null}
-                        Criar {label.toLowerCase()}
+                        Criar centro de custo
                      </Button>
                   )}
                </form.Subscribe>
@@ -704,7 +698,6 @@ function TransactionDialogStackContent({
    onSuccess,
 }: TransactionCredenzaProps) {
    const isCreate = mode === "create";
-   const { isBusiness } = useAccountType();
    const [secondaryForm, setSecondaryForm] = useState<SecondaryForm>(null);
    const { setActiveIndex } = useContext(DialogStackContext);
 
@@ -1636,9 +1629,7 @@ function TransactionDialogStackContent({
                                     <Field>
                                        <div className="flex items-center justify-between">
                                           <FieldLabel>
-                                             {isBusiness
-                                                ? "Centros de Custo"
-                                                : "Tags"}
+                                             Centros de Custo
                                           </FieldLabel>
                                           <DialogStackNext asChild>
                                              <button
@@ -1657,9 +1648,7 @@ function TransactionDialogStackContent({
                                        <Suspense
                                           fallback={
                                              <p className="text-sm text-muted-foreground">
-                                                {isBusiness
-                                                   ? "Carregando centros de custo..."
-                                                   : "Carregando tags..."}
+                                                Carregando centros de custo...
                                              </p>
                                           }
                                        >

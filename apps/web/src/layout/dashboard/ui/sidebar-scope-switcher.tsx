@@ -29,11 +29,7 @@ import {
 } from "@packages/ui/components/sidebar";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import {
-   Link,
-   useLocation,
-   useRouter,
-} from "@tanstack/react-router";
+import { Link, useLocation, useRouter } from "@tanstack/react-router";
 import {
    Check,
    ChevronsUpDown,
@@ -215,14 +211,7 @@ function SidebarScopeSwitcherContent() {
             router.navigate({ to: nextPath });
          }
       },
-      [
-         activeTeam?.id,
-         currentSlug,
-         teamSlug,
-         pathname,
-         queryClient,
-         router,
-      ],
+      [activeTeam?.id, currentSlug, teamSlug, pathname, queryClient, router],
    );
 
    const handleNewProject = useCallback(
