@@ -4,7 +4,9 @@ import { Combobox } from "@packages/ui/components/combobox";
 import { MoneyInput } from "@packages/ui/components/money-input";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
+import { useCallback } from "react";
 import { orpc } from "@/integrations/orpc/client";
+import { formatBRL } from "./transactions-columns";
 
 export interface RateioLine {
    categoryId: string;
@@ -21,28 +23,18 @@ interface RateioSectionProps {
 function RateioLineRow({
    line,
    index,
+   categoryOptions,
+   tagOptions,
    onChange,
    onRemove,
 }: {
    line: RateioLine;
    index: number;
+   categoryOptions: ComboboxOption[];
+   tagOptions: ComboboxOption[];
    onChange: (line: RateioLine) => void;
    onRemove: () => void;
 }) {
-   const { data: categories } = useSuspenseQuery(
-      orpc.categories.getAll.queryOptions({}),
-   );
-   const { data: tags } = useSuspenseQuery(orpc.tags.getAll.queryOptions({}));
-
-   const categoryOptions: ComboboxOption[] = categories.map((c) => ({
-      value: c.id,
-      label: c.name,
-   }));
-   const tagOptions: ComboboxOption[] = tags.map((t) => ({
-      value: t.id,
-      label: t.name,
-   }));
-
    return (
       <div className="flex flex-col gap-2 rounded-md border p-3">
          <div className="flex items-center justify-between">
@@ -85,20 +77,40 @@ export function RateioSection({
    value,
    onChange,
 }: RateioSectionProps) {
+   const { data: categories } = useSuspenseQuery(
+      orpc.categories.getAll.queryOptions({}),
+   );
+   const { data: tags } = useSuspenseQuery(orpc.tags.getAll.queryOptions({}));
+
+   const categoryOptions: ComboboxOption[] = categories.map((c) => ({
+      value: c.id,
+      label: c.name,
+   }));
+   const tagOptions: ComboboxOption[] = tags.map((t) => ({
+      value: t.id,
+      label: t.name,
+   }));
+
    const total = transactionAmount ?? 0;
    const allocated = value.reduce((acc, l) => acc + (l.amount ?? 0), 0);
    const remaining = total - allocated;
 
+   const updateLine = useCallback(
+      (index: number, line: RateioLine) => {
+         onChange(value.map((l, i) => (i === index ? line : l)));
+      },
+      [onChange, value],
+   );
+
+   const removeLine = useCallback(
+      (index: number) => {
+         onChange(value.filter((_, i) => i !== index));
+      },
+      [onChange, value],
+   );
+
    function addLine() {
       onChange([...value, { categoryId: "", tagId: null, amount: undefined }]);
-   }
-
-   function updateLine(index: number, line: RateioLine) {
-      onChange(value.map((l, i) => (i === index ? line : l)));
-   }
-
-   function removeLine(index: number) {
-      onChange(value.filter((_, i) => i !== index));
    }
 
    return (
@@ -114,17 +126,19 @@ export function RateioSection({
             <div className="flex flex-col gap-2">
                {value.map((line, i) => (
                   <RateioLineRow
+                     categoryOptions={categoryOptions}
                      index={i}
                      key={`rateio-${i + 1}`}
                      line={line}
                      onChange={(updated) => updateLine(i, updated)}
                      onRemove={() => removeLine(i)}
+                     tagOptions={tagOptions}
                   />
                ))}
                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Alocado: R$ {(allocated / 100).toFixed(2)}</span>
+                  <span>Alocado: {formatBRL(allocated / 100)}</span>
                   <span className={remaining < 0 ? "text-destructive" : ""}>
-                     Restante: R$ {(remaining / 100).toFixed(2)}
+                     Restante: {formatBRL(remaining / 100)}
                   </span>
                </div>
             </div>
