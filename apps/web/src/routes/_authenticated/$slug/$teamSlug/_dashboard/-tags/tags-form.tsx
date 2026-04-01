@@ -119,15 +119,19 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
 
          <CredenzaBody>
             <FieldGroup>
-               <form.Field name="name">
-                  {(field) => {
+               <form.Field
+                  name="name"
+                  children={(field) => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel>Nome</FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
                            <Input
+                              aria-invalid={isInvalid}
+                              id={field.name}
+                              name={field.name}
                               onBlur={field.handleBlur}
                               onChange={(e) =>
                                  field.handleChange(e.target.value)
@@ -141,31 +145,46 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
 
-               <form.Field name="description">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel>
-                           Descrição{" "}
-                           <span className="text-muted-foreground font-normal">
-                              (opcional)
-                           </span>
-                        </FieldLabel>
-                        <Textarea
-                           maxLength={255}
-                           onBlur={field.handleBlur}
-                           onChange={(e) => field.handleChange(e.target.value)}
-                           placeholder="Ex: Projeto X, Cliente Y, viagem de negócios"
-                           rows={2}
-                           value={field.state.value}
-                        />
-                     </Field>
-                  )}
-               </form.Field>
+               <form.Field
+                  name="description"
+                  children={(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
+                     return (
+                        <Field data-invalid={isInvalid}>
+                           <FieldLabel htmlFor={field.name}>
+                              Descrição{" "}
+                              <span className="text-muted-foreground font-normal">
+                                 (opcional)
+                              </span>
+                           </FieldLabel>
+                           <Textarea
+                              aria-invalid={isInvalid}
+                              id={field.name}
+                              maxLength={255}
+                              name={field.name}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                              placeholder="Ex: Projeto X, Cliente Y, viagem de negócios"
+                              rows={2}
+                              value={field.state.value}
+                           />
+                           {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                           )}
+                        </Field>
+                     );
+                  }}
+               />
 
-               <form.Field name="color">
-                  {(field) => {
+               <form.Field
+                  name="color"
+                  children={(field) => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
@@ -236,7 +255,7 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
             </FieldGroup>
          </CredenzaBody>
 

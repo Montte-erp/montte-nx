@@ -124,8 +124,9 @@ function ForgotPasswordPage() {
    function EmailStep() {
       return (
          <FieldGroup>
-            <form.Field name="email">
-               {(field) => {
+            <form.Field
+               name="email"
+               children={(field) => {
                   const isInvalid =
                      field.state.meta.isTouched &&
                      field.state.meta.errors.length > 0;
@@ -149,7 +150,7 @@ function ForgotPasswordPage() {
                      </Field>
                   );
                }}
-            </form.Field>
+            />
          </FieldGroup>
       );
    }
@@ -157,8 +158,9 @@ function ForgotPasswordPage() {
    function OtpStep() {
       return (
          <FieldGroup>
-            <form.Field name="otp">
-               {(field) => {
+            <form.Field
+               name="otp"
+               children={(field) => {
                   const isInvalid =
                      field.state.meta.isTouched &&
                      field.state.meta.errors.length > 0;
@@ -198,7 +200,7 @@ function ForgotPasswordPage() {
                      </Field>
                   );
                }}
-            </form.Field>
+            />
          </FieldGroup>
       );
    }
@@ -207,8 +209,9 @@ function ForgotPasswordPage() {
       return (
          <>
             <FieldGroup>
-               <form.Field name="password">
-                  {(field) => {
+               <form.Field
+                  name="password"
+                  children={(field) => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
@@ -233,11 +236,12 @@ function ForgotPasswordPage() {
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
             </FieldGroup>
             <FieldGroup>
-               <form.Field name="confirmPassword">
-                  {(field) => {
+               <form.Field
+                  name="confirmPassword"
+                  children={(field) => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
@@ -264,7 +268,7 @@ function ForgotPasswordPage() {
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
             </FieldGroup>
          </>
       );

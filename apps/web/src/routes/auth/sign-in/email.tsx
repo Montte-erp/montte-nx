@@ -100,8 +100,9 @@ function SignInEmailPage() {
          {/* Form */}
          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <FieldGroup>
-               <form.Field name="email">
-                  {(field) => {
+               <form.Field
+                  name="email"
+                  children={(field) => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
@@ -126,11 +127,12 @@ function SignInEmailPage() {
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
             </FieldGroup>
             <FieldGroup>
-               <form.Field name="password">
-                  {(field) => {
+               <form.Field
+                  name="password"
+                  children={(field) => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
@@ -148,6 +150,7 @@ function SignInEmailPage() {
                               </Link>
                            </div>
                            <PasswordInput
+                              aria-invalid={isInvalid}
                               autoComplete="current-password"
                               id={field.name}
                               name={field.name}
@@ -164,7 +167,7 @@ function SignInEmailPage() {
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
             </FieldGroup>
             <form.Subscribe selector={(state) => state}>
                {(formState) => (

@@ -120,8 +120,9 @@ function EmailVerificationPage() {
                }}
             >
                <FieldGroup>
-                  <form.Field name="otp">
-                     {(field) => {
+                  <form.Field
+                     name="otp"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
@@ -163,7 +164,7 @@ function EmailVerificationPage() {
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
                </FieldGroup>
                <form.Subscribe selector={(state) => state}>
                   {(formState) => (

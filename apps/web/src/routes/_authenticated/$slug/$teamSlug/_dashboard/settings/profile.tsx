@@ -554,8 +554,9 @@ function ProfileNameSection({ currentName }: { currentName: string }) {
          </div>
          <form className="max-w-md space-y-3" onSubmit={handleSubmit}>
             <FieldGroup>
-               <form.Field name="name">
-                  {(field) => {
+               <form.Field
+                  name="name"
+                  children={(field) => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
@@ -579,7 +580,7 @@ function ProfileNameSection({ currentName }: { currentName: string }) {
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
             </FieldGroup>
             <form.Subscribe selector={(state) => state}>
                {(formState) => (
@@ -791,8 +792,9 @@ function ProfilePasswordSection({ hasPassword }: { hasPassword: boolean }) {
          <form className="max-w-md space-y-3" onSubmit={handleSubmit}>
             <FieldGroup>
                {hasPassword && (
-                  <form.Field name="currentPassword">
-                     {(field) => {
+                  <form.Field
+                     name="currentPassword"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
                            field.state.meta.errors.length > 0;
@@ -818,10 +820,11 @@ function ProfilePasswordSection({ hasPassword }: { hasPassword: boolean }) {
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
                )}
-               <form.Field name="newPassword">
-                  {(field) => {
+               <form.Field
+                  name="newPassword"
+                  children={(field) => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
@@ -847,9 +850,10 @@ function ProfilePasswordSection({ hasPassword }: { hasPassword: boolean }) {
                         </Field>
                      );
                   }}
-               </form.Field>
-               <form.Field name="confirmPassword">
-                  {(field) => {
+               />
+               <form.Field
+                  name="confirmPassword"
+                  children={(field) => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
@@ -875,7 +879,7 @@ function ProfilePasswordSection({ hasPassword }: { hasPassword: boolean }) {
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
             </FieldGroup>
             <form.Subscribe selector={(state) => state}>
                {(formState) => (

@@ -106,8 +106,9 @@ function SignUpPage() {
       return (
          <>
             <FieldGroup>
-               <form.Field name="name">
-                  {(field) => {
+               <form.Field
+                  name="name"
+                  children={(field) => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
@@ -132,11 +133,12 @@ function SignUpPage() {
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
             </FieldGroup>
             <FieldGroup>
-               <form.Field name="email">
-                  {(field) => {
+               <form.Field
+                  name="email"
+                  children={(field) => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
@@ -162,7 +164,7 @@ function SignUpPage() {
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
             </FieldGroup>
          </>
       );
@@ -173,8 +175,9 @@ function SignUpPage() {
       return (
          <>
             <FieldGroup>
-               <form.Field name="password">
-                  {(field) => {
+               <form.Field
+                  name="password"
+                  children={(field) => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
@@ -199,11 +202,12 @@ function SignUpPage() {
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
             </FieldGroup>
             <FieldGroup>
-               <form.Field name="confirmPassword">
-                  {(field) => {
+               <form.Field
+                  name="confirmPassword"
+                  children={(field) => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
@@ -230,7 +234,7 @@ function SignUpPage() {
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
             </FieldGroup>
             <form.Subscribe selector={(state) => state.values.password}>
                {(password) => <PasswordStrengthCard password={password} />}

@@ -148,8 +148,9 @@ function MagicLinkPage() {
          {/* Form */}
          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <FieldGroup>
-               <form.Field name="email">
-                  {(field) => {
+               <form.Field
+                  name="email"
+                  children={(field) => {
                      const isInvalid =
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0;
@@ -174,7 +175,7 @@ function MagicLinkPage() {
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
             </FieldGroup>
             <form.Subscribe selector={(state) => state}>
                {(formState) => (
