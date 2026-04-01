@@ -20,6 +20,7 @@ import * as servicesRouter from "./services";
 import * as sessionRouter from "./session";
 import * as tagsRouter from "./tags";
 import * as teamRouter from "./team";
+import * as recurringTransactionsRouter from "./recurring-transactions";
 import * as transactionsRouter from "./transactions";
 
 export default {
@@ -44,6 +45,7 @@ export default {
    session: sessionRouter,
    tags: tagsRouter,
    team: teamRouter,
+   recurringTransactions: recurringTransactionsRouter,
    transactions: transactionsRouter,
    organization: organizationRouter,
 };
