@@ -15,7 +15,10 @@ import {
    Target,
    Users,
 } from "lucide-react";
+import type { Outputs } from "@/integrations/orpc/client";
 import type { SubSidebarSection } from "../hooks/use-sidebar-nav";
+
+type Modulo = Outputs["organizationConfig"]["getModules"][number]["modulo"];
 
 export type NavItemAction = {
    type: "create";
@@ -42,6 +45,7 @@ export type NavItemDef = {
       | "general-availability";
    /** Whether the item can be hidden by the user via sidebar visibility settings */
    configurable?: boolean;
+   moduleKey?: Modulo;
 };
 
 export type NavGroupDef = {
@@ -67,6 +71,7 @@ export const navGroups: NavGroupDef[] = [
             icon: LayoutDashboard,
             route: "/$slug/$teamSlug/analytics/dashboards",
             earlyAccessFlag: "advanced-analytics",
+            moduleKey: "RELATORIOS",
          },
          {
             id: "insights",
@@ -74,6 +79,7 @@ export const navGroups: NavGroupDef[] = [
             icon: Lightbulb,
             route: "/$slug/$teamSlug/analytics/insights",
             earlyAccessFlag: "advanced-analytics",
+            moduleKey: "RELATORIOS",
          },
          {
             id: "data-management",
@@ -104,6 +110,7 @@ export const navGroups: NavGroupDef[] = [
             icon: Building2,
             route: "/$slug/$teamSlug/bank-accounts",
             configurable: true,
+            moduleKey: "CONTAS",
          },
          {
             id: "credit-cards",
@@ -111,6 +118,7 @@ export const navGroups: NavGroupDef[] = [
             icon: CreditCard,
             route: "/$slug/$teamSlug/credit-cards",
             configurable: true,
+            moduleKey: "CARTOES",
          },
          {
             id: "categories",
@@ -132,6 +140,7 @@ export const navGroups: NavGroupDef[] = [
             icon: Target,
             route: "/$slug/$teamSlug/goals",
             configurable: true,
+            moduleKey: "PLANEJAMENTO",
          },
          {
             id: "bills",
@@ -152,6 +161,7 @@ export const navGroups: NavGroupDef[] = [
             icon: Users,
             route: "/$slug/$teamSlug/contacts",
             earlyAccessFlag: "contacts",
+            moduleKey: "CONTATOS",
          },
          {
             id: "inventory",
@@ -161,6 +171,7 @@ export const navGroups: NavGroupDef[] = [
             quickAction: { type: "create", target: "sheet" },
             configurable: true,
             earlyAccessFlag: "inventory",
+            moduleKey: "ESTOQUE",
          },
          {
             id: "services",
@@ -168,6 +179,7 @@ export const navGroups: NavGroupDef[] = [
             icon: Briefcase,
             route: "/$slug/$teamSlug/erp/services",
             earlyAccessFlag: "services",
+            moduleKey: "SERVICOS",
          },
       ],
    },

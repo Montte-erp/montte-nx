@@ -17,7 +17,7 @@ import {
 import { Link, useParams } from "@tanstack/react-router";
 import { Bug, MessageSquarePlus, PanelLeftClose, Settings, Sparkles } from "lucide-react";
 import type * as React from "react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { POSTHOG_SURVEYS } from "@core/posthog/config";
 import { useSurveyModal } from "@/hooks/use-survey-modal";
 import { EarlyAccessSidebarBanner } from "./early-access-sidebar-banner";
@@ -28,11 +28,15 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
    return (
       <Sidebar className="px-0" collapsible="icon" variant="inset" {...props}>
          <SidebarContent>
-            <SidebarDefaultItems />
+            <Suspense fallback={null}>
+               <SidebarDefaultItems />
+            </Suspense>
             <div className="px-2">
                <Separator />
             </div>
-            <SidebarNav />
+            <Suspense fallback={null}>
+               <SidebarNav />
+            </Suspense>
          </SidebarContent>
 
          <SidebarFooter>

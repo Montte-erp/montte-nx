@@ -26,6 +26,7 @@ import {
    setActiveSection,
    useSidebarNav,
 } from "@/layout/dashboard/hooks/use-sidebar-nav";
+import { useOrganizationModules } from "@/layout/dashboard/hooks/use-organization-modules";
 import { useSidebarVisibility } from "@/layout/dashboard/hooks/use-sidebar-visibility";
 import { SidebarNavConfigForm } from "@/layout/dashboard/ui/sidebar-nav-config-form";
 import type {
@@ -190,6 +191,7 @@ export function SidebarDefaultItems() {
    const { pathname } = useLocation();
    const { isEnrolled } = useEarlyAccess();
    const { isVisible } = useSidebarVisibility();
+   const { isModuleEnabled } = useOrganizationModules();
 
    const mainGroup = navGroups.find((g) => !g.label);
    const visibleMainItems = (mainGroup?.items ?? [])
@@ -197,7 +199,8 @@ export function SidebarDefaultItems() {
          if (!item.earlyAccessFlag) return true;
          return isEnrolled(item.earlyAccessFlag);
       })
-      .filter((item) => isVisible(item.id));
+      .filter((item) => isVisible(item.id))
+      .filter((item) => (item.moduleKey ? isModuleEnabled(item.moduleKey) : true));
 
    const resolvedSlug = slug || pathname.split("/")[1] || "";
 
@@ -242,17 +245,17 @@ function NavGroup({
    const { isEnrolled } = useEarlyAccess();
    const { isVisible } = useSidebarVisibility();
    const { isWanted } = useFinanceNavPreferences();
+   const { isModuleEnabled } = useOrganizationModules();
 
    const visibleItems = group.items
       .filter((item) => {
          if (!item.earlyAccessFlag) return true;
-         // Labeled groups (finance, erp) use the finance nav preferences hook,
-         // falling back to enrollment so existing enrolled users aren't affected.
          if (group.label)
             return isWanted(item.id) || isEnrolled(item.earlyAccessFlag);
          return isEnrolled(item.earlyAccessFlag);
       })
-      .filter((item) => isVisible(item.id));
+      .filter((item) => isVisible(item.id))
+      .filter((item) => (item.moduleKey ? isModuleEnabled(item.moduleKey) : true));
 
    if (visibleItems.length === 0 && !onConfigure) return null;
 
