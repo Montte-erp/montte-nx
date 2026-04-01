@@ -148,6 +148,7 @@
             "@faker-js/faker": "^10.3.0",
             "@testing-library/dom": "^10.4.1",
             "@testing-library/react": "^16.3.2",
+            "@vitest/coverage-istanbul": "^4.1.2",
             "@vitest/coverage-v8": "^4.1.2",
             "jsdom": "^28.1.0",
             "vitest": "^4.1.2"
