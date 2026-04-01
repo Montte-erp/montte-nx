@@ -6,8 +6,10 @@ import {
    ensureTransactionOwnership,
    getTransactionsSummary,
    getTransactionWithTags,
+   getRateioForTransaction,
    listTransactions,
    replaceTransactionItems,
+   replaceTransactionRateio,
    updateTransaction,
    validateTransactionReferences,
 } from "@core/database/repositories/transactions-repository";
@@ -187,4 +189,41 @@ export const importBulk = protectedProcedure
          imported++;
       }
       return { imported, skipped: 0 };
+   });
+
+const rateioLineSchema = z.object({
+   categoryId: z.string().uuid(),
+   tagId: z.string().uuid().nullable().optional(),
+   amount: z.string().refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0, {
+      message: "Valor da linha deve ser maior que zero.",
+   }),
+});
+
+export const getRateio = protectedProcedure
+   .input(idSchema)
+   .handler(async ({ context, input }) => {
+      await ensureTransactionOwnership(context.db, input.id, context.teamId);
+      return getRateioForTransaction(context.db, input.id);
+   });
+
+export const setRateio = protectedProcedure
+   .input(
+      z.object({
+         id: z.string().uuid(),
+         lines: z.array(rateioLineSchema),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      const transaction = await ensureTransactionOwnership(
+         context.db,
+         input.id,
+         context.teamId,
+      );
+      await replaceTransactionRateio(
+         context.db,
+         input.id,
+         { amount: transaction.amount },
+         input.lines,
+      );
+      return { success: true };
    });
