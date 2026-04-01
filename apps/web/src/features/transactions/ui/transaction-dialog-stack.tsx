@@ -37,7 +37,7 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { ChevronLeft, Plus } from "lucide-react";
-import { Suspense, useContext, useRef, useState } from "react";
+import { Suspense, useContext, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useAccountType } from "@/hooks/use-account-type";
@@ -720,59 +720,6 @@ function TransactionDialogStackContent({
       orpc.creditCards.getAll.queryOptions({}),
    );
 
-   const rateioLinesRef = useRef<RateioLine[]>([]);
-   const setRateioMutation = useMutation(
-      orpc.transactions.setRateio.mutationOptions(),
-   );
-
-   const createMutation = useMutation(
-      orpc.transactions.create.mutationOptions({
-         onSuccess: async (data) => {
-            if (rateioLinesRef.current.length > 0 && data) {
-               await setRateioMutation.mutateAsync({
-                  id: data.id,
-                  lines: rateioLinesRef.current
-                     .filter((l) => l.categoryId && l.amount !== undefined)
-                     .map((l) => ({
-                        categoryId: l.categoryId,
-                        tagId: l.tagId,
-                        amount: String(l.amount ?? 0),
-                     })),
-               });
-            }
-            toast.success("Lançamento criado com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao criar lançamento.");
-         },
-      }),
-   );
-
-   const updateMutation = useMutation(
-      orpc.transactions.update.mutationOptions({
-         onSuccess: async (data) => {
-            if (rateioLinesRef.current.length > 0 && data) {
-               await setRateioMutation.mutateAsync({
-                  id: data.id,
-                  lines: rateioLinesRef.current
-                     .filter((l) => l.categoryId && l.amount !== undefined)
-                     .map((l) => ({
-                        categoryId: l.categoryId,
-                        tagId: l.tagId,
-                        amount: String(l.amount ?? 0),
-                     })),
-               });
-            }
-            toast.success("Lançamento atualizado com sucesso.");
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao atualizar lançamento.");
-         },
-      }),
-   );
-
    const billCreateMutation = useMutation(
       orpc.bills.create.mutationOptions({
          onSuccess: () => {
@@ -784,11 +731,6 @@ function TransactionDialogStackContent({
          },
       }),
    );
-
-   const isPending =
-      createMutation.isPending ||
-      updateMutation.isPending ||
-      billCreateMutation.isPending;
 
    const emptyTagIds: string[] = [];
    const emptyRateioLines: RateioLine[] = [];
@@ -878,6 +820,77 @@ function TransactionDialogStackContent({
          }
       },
    });
+
+   function buildRateioLines(lines: RateioLine[]) {
+      return lines
+         .filter((l) => l.categoryId && l.amount !== undefined)
+         .map((l) => ({
+            categoryId: l.categoryId,
+            tagId: l.tagId,
+            amount: String(l.amount),
+         }));
+   }
+
+   const setRateioMutation = useMutation(
+      orpc.transactions.setRateio.mutationOptions(),
+   );
+
+   const createMutation = useMutation(
+      orpc.transactions.create.mutationOptions({
+         onSuccess: async (data) => {
+            const lines = form.getFieldValue("rateioLines");
+            const validLines = buildRateioLines(lines);
+            if (validLines.length > 0 && data) {
+               try {
+                  await setRateioMutation.mutateAsync({
+                     id: data.id,
+                     lines: validLines,
+                  });
+               } catch {
+                  toast.error("Falha ao salvar rateio.");
+                  onSuccess();
+                  return;
+               }
+            }
+            toast.success("Lançamento criado com sucesso.");
+            onSuccess();
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao criar lançamento.");
+         },
+      }),
+   );
+
+   const updateMutation = useMutation(
+      orpc.transactions.update.mutationOptions({
+         onSuccess: async (data) => {
+            const lines = form.getFieldValue("rateioLines");
+            const validLines = buildRateioLines(lines);
+            if (validLines.length > 0 && data) {
+               try {
+                  await setRateioMutation.mutateAsync({
+                     id: data.id,
+                     lines: validLines,
+                  });
+               } catch {
+                  toast.error("Falha ao salvar rateio.");
+                  onSuccess();
+                  return;
+               }
+            }
+            toast.success("Lançamento atualizado com sucesso.");
+            onSuccess();
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao atualizar lançamento.");
+         },
+      }),
+   );
+
+   const isPending =
+      createMutation.isPending ||
+      updateMutation.isPending ||
+      billCreateMutation.isPending;
 
    return (
       <>
@@ -1760,13 +1773,6 @@ function TransactionDialogStackContent({
                            </Field>
                         )}
                      </form.Field>
-
-                     <form.Subscribe selector={(s) => s.values.rateioLines}>
-                        {(lines) => {
-                           rateioLinesRef.current = lines;
-                           return null;
-                        }}
-                     </form.Subscribe>
 
                      <form.Subscribe
                         selector={(s) => ({
