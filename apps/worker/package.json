@@ -18,6 +18,7 @@
       "@packages/analytics": "workspace:*",
       "@packages/events": "workspace:*",
       "bullmq": "catalog:workers",
+      "dayjs": "^1.11.19",
       "ioredis": "catalog:workers",
       "node-cron": "catalog:workers"
    },

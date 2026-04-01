@@ -5,6 +5,7 @@ import { getLogger } from "@core/logging/root";
 
 const logger = getLogger().child({ module: "scheduler" });
 import { generateBillOccurrences } from "./jobs/generate-bill-occurrences";
+import { generateTransactionOccurrences } from "./jobs/generate-transaction-occurrences";
 import { runRefreshInsights } from "./jobs/refresh-insights";
 
 const SERVICE_NAME = "montte-worker";
@@ -50,9 +51,15 @@ export function startScheduler(db: DatabaseInstance): cron.ScheduledTask[] {
       });
    });
 
-   tasks.push(insightsTask, billRecurrenceTask);
+   const transactionRecurrenceTask = cron.schedule("30 6 * * *", async () => {
+      await runWithTelemetry("transaction-recurrence-generation", async () => {
+         await generateTransactionOccurrences();
+      });
+   });
+
+   tasks.push(insightsTask, billRecurrenceTask, transactionRecurrenceTask);
    logger.info(
-      "Cron jobs registered (3-hourly insight refresh, daily bill recurrence)",
+      "Cron jobs registered (3-hourly insight refresh, daily bill recurrence, daily transaction recurrence)",
    );
 
    return tasks;
