@@ -1,5 +1,6 @@
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
+import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import {
    DropdownMenu,
    DropdownMenuContent,
@@ -22,7 +23,9 @@ import {
    TabsTrigger,
 } from "@packages/ui/components/tabs";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import type { ColumnFiltersState, SortingState } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
 import {
    Check,
    FileText,
@@ -31,7 +34,7 @@ import {
    Trash2,
    XCircle,
 } from "lucide-react";
-import { Suspense, useCallback } from "react";
+import { Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import { BillPayDialogStack } from "@/features/bills/ui/bill-pay-dialog-stack";
@@ -44,6 +47,18 @@ import { BillForm } from "@/features/bills/ui/bills-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
+
+const [useBillsPayableTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:bills-payable",
+      null,
+   );
+
+const [useBillsReceivableTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:bills-receivable",
+      null,
+   );
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/bills",
@@ -133,9 +148,13 @@ function BillsSummary({ items }: BillsSummaryProps) {
 
 interface BillsListProps {
    type: "payable" | "receivable";
+   tableState: DataTableStoredState | null;
+   onTableStateChange: (v: DataTableStoredState | null) => void;
 }
 
-function BillsList({ type }: BillsListProps) {
+function BillsList({ type, tableState, onTableStateChange }: BillsListProps) {
+   const [sorting, setSorting] = useState<SortingState>([]);
+   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
    const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
 
@@ -246,6 +265,12 @@ function BillsList({ type }: BillsListProps) {
             columns={columns}
             data={items}
             getRowId={(row) => row.id}
+            sorting={sorting}
+            onSortingChange={setSorting}
+            columnFilters={columnFilters}
+            onColumnFiltersChange={setColumnFilters}
+            tableState={tableState}
+            onTableStateChange={onTableStateChange}
             renderActions={({ row }) => {
                const bill = row.original;
                const displayStatus = computeDisplayStatus(bill);
@@ -310,9 +335,27 @@ function BillsList({ type }: BillsListProps) {
    );
 }
 
-// =============================================================================
-// Page
-// =============================================================================
+function BillsPayableList() {
+   const [tableState, setTableState] = useBillsPayableTableState();
+   return (
+      <BillsList
+         onTableStateChange={setTableState}
+         tableState={tableState}
+         type="payable"
+      />
+   );
+}
+
+function BillsReceivableList() {
+   const [tableState, setTableState] = useBillsReceivableTableState();
+   return (
+      <BillsList
+         onTableStateChange={setTableState}
+         tableState={tableState}
+         type="receivable"
+      />
+   );
+}
 
 function BillsPage() {
    return (
@@ -328,12 +371,12 @@ function BillsPage() {
             </TabsList>
             <TabsContent className="mt-4" value="payable">
                <Suspense fallback={<BillsSkeleton />}>
-                  <BillsList type="payable" />
+                  <BillsPayableList />
                </Suspense>
             </TabsContent>
             <TabsContent className="mt-4" value="receivable">
                <Suspense fallback={<BillsSkeleton />}>
-                  <BillsList type="receivable" />
+                  <BillsReceivableList />
                </Suspense>
             </TabsContent>
          </Tabs>
