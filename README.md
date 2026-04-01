@@ -45,7 +45,6 @@
 
 - **Webhooks**: Configure outgoing webhooks for real-time event notifications
 - **API Keys**: Programmatic access for external integrations
-- **SDK**: Official TypeScript SDK for building on top of Montte
 
 ### Team Collaboration
 
@@ -71,19 +70,19 @@ Usage-based billing powered by Stripe meter events. Each billable event (AI chat
 
 Built as an **Nx** monorepo with **Bun**.
 
-| Category     | Technology                                                                                   |
-| :----------- | :------------------------------------------------------------------------------------------- |
-| **Frontend** | React 19, Vite, TypeScript, TanStack Router, TanStack Query, shadcn/ui, Tailwind CSS        |
-| **AI**       | Vercel AI SDK, Mastra (Agent orchestration)                                                  |
-| **Backend**  | oRPC (type-safe API), ElysiaJS (SDK server), Drizzle ORM, PostgreSQL                        |
-| **Auth**     | Better Auth                                                                                  |
-| **Jobs**     | BullMQ, Redis                                                                                |
-| **Storage**  | MinIO (S3-compatible)                                                                        |
-| **Security** | Arcjet (Rate limiting & bot detection)                                                       |
-| **Analytics**| PostHog                                                                                      |
-| **Email**    | Resend (React Email templates)                                                               |
-| **Payments** | Stripe                                                                                       |
-| **Tooling**  | Nx, oxlint, oxfmt                                                                            |
+| Category      | Technology                                                                            |
+| :------------ | :------------------------------------------------------------------------------------ |
+| **Frontend**  | React 19, Vite, TypeScript, TanStack Router, TanStack Query, shadcn/ui, Tailwind CSS |
+| **AI**        | Mastra (Agent orchestration)                                                          |
+| **Backend**   | oRPC (type-safe API), ElysiaJS (SDK server), Drizzle ORM, PostgreSQL                 |
+| **Auth**      | Better Auth                                                                           |
+| **Jobs**      | BullMQ, Redis                                                                         |
+| **Storage**   | MinIO (S3-compatible)                                                                 |
+| **Security**  | Arcjet (Rate limiting & bot detection)                                                |
+| **Analytics** | PostHog                                                                               |
+| **Email**     | Resend (React Email templates)                                                        |
+| **Payments**  | Stripe                                                                                |
+| **Tooling**   | Nx, oxlint, oxfmt                                                                     |
 
 ---
 
@@ -100,44 +99,24 @@ montte-nx/
 │   ├── authentication/  # Better Auth setup
 │   ├── environment/     # Zod-validated env vars
 │   ├── redis/           # Redis singleton
-│   ├── logging/         # Pino logger
+│   ├── logging/         # Pino logger + error classes
 │   ├── files/           # MinIO file storage
-│   ├── posthog/         # Analytics (client & server)
-│   ├── stripe/          # Stripe SDK wrapper
-│   ├── transactional/   # Email templates (React Email + Resend)
-│   └── utils/           # Shared utilities + error classes
+│   ├── posthog/         # PostHog server/client + config
+│   ├── stripe/          # Stripe singleton
+│   ├── transactional/   # Resend + email templates
+│   └── utils/           # Shared utilities
 ├── packages/
 │   ├── agents/          # Mastra AI agents
 │   ├── analytics/       # Analytics engine
 │   ├── events/          # Event catalog, schemas, credits
 │   ├── feedback/        # User feedback collection
-│   ├── ui/              # Radix + Tailwind component library
-│   └── queue/           # BullMQ abstractions
+│   └── ui/              # Radix + Tailwind component library
 ├── libraries/
-│   └── sdk/             # TypeScript SDK for Montte API
+│   └── cli/             # Montte CLI
 └── tooling/
     ├── oxc/             # oxlint + oxfmt configs
     └── typescript/      # Shared TypeScript configs
 ```
-
----
-
-## SDK
-
-```bash
-npm install @contentta/sdk
-```
-
-```typescript
-import { createSdk } from "@contentta/sdk";
-
-const sdk = createSdk({
-   apiKey: "YOUR_API_KEY",
-   locale: "pt-BR",
-});
-```
-
-See the [SDK README](./libraries/sdk/README.md) for full documentation.
 
 ---
 
