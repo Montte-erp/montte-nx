@@ -21,7 +21,25 @@ import {
 } from "@packages/ui/components/item";
 import { Switch } from "@packages/ui/components/switch";
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronDown, Database, FlaskConical, Lightbulb } from "lucide-react";
+import {
+   Bell,
+   BellOff,
+   Bot,
+   Building2,
+   ChevronDown,
+   CreditCard,
+   Database,
+   FileText,
+   FlaskConical,
+   Lightbulb,
+   Link,
+   Receipt,
+   RefreshCw,
+   Sparkles,
+   Users,
+   Workflow,
+   Zap,
+} from "lucide-react";
 import { Fragment, useState } from "react";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 
@@ -31,20 +49,223 @@ export const Route = createFileRoute(
    component: FeaturePreviewsPage,
 });
 
-// ---------------------------------------------------------------------------
-// Local config — maps parent flagKey to concept sub-feature names.
-// Concept sub-features are nested visually under their parent.
-// ---------------------------------------------------------------------------
 const CONCEPT_CHILDREN: Record<string, string[]> = {};
 
 const FEATURE_ICONS: Record<string, React.ElementType> = {
    "data-management": Database,
 };
 
+type ComingSoonFeature = {
+   flagKey: string;
+   name: string;
+   description: string;
+   icon: React.ElementType;
+};
+
+type ComingSoonCategory = {
+   id: string;
+   label: string;
+   icon: React.ElementType;
+   features: ComingSoonFeature[];
+};
+
+const COMING_SOON_CATEGORIES: ComingSoonCategory[] = [
+   {
+      id: "financas",
+      label: "Finanças",
+      icon: Receipt,
+      features: [
+         {
+            flagKey: "transacoes-recorrentes",
+            name: "Transações Recorrentes",
+            description:
+               "Auto-criação de lançamentos baseada em regras de recorrência.",
+            icon: RefreshCw,
+         },
+         {
+            flagKey: "importacao-extrato",
+            name: "Importação de Extrato",
+            description: "Importe extratos bancários em CSV, XLSX e OFX.",
+            icon: FileText,
+         },
+         {
+            flagKey: "conciliacao-bancaria",
+            name: "Conciliação Bancária",
+            description:
+               "Matching automático entre extrato e lançamentos cadastrados.",
+            icon: Database,
+         },
+         {
+            flagKey: "nfe",
+            name: "NF-e",
+            description: "Emissão de nota fiscal eletrônica via SEFAZ.",
+            icon: FileText,
+         },
+         {
+            flagKey: "nfse",
+            name: "NFS-e",
+            description:
+               "Emissão de nota fiscal de serviço via APIs municipais.",
+            icon: FileText,
+         },
+      ],
+   },
+   {
+      id: "crm",
+      label: "CRM",
+      icon: Users,
+      features: [
+         {
+            flagKey: "pipeline-deals",
+            name: "Pipeline de Deals",
+            description:
+               "Kanban de oportunidades com probabilidade e valor estimado.",
+            icon: Workflow,
+         },
+         {
+            flagKey: "cobrancas",
+            name: "Cobranças",
+            description: "PIX, boleto e cartão via Abacate Pay.",
+            icon: CreditCard,
+         },
+         {
+            flagKey: "contratos",
+            name: "Contratos",
+            description: "Editor com assinatura eletrônica via ZapSign.",
+            icon: FileText,
+         },
+         {
+            flagKey: "propostas",
+            name: "Propostas",
+            description: "Editor com aceite online e pagamento integrado.",
+            icon: FileText,
+         },
+         {
+            flagKey: "ai-bot-whatsapp",
+            name: "AI Bot WhatsApp",
+            description:
+               "Auto-resposta a contatos via Evolution API com IA.",
+            icon: Bot,
+         },
+      ],
+   },
+   {
+      id: "ia-automacoes",
+      label: "IA & Automações",
+      icon: Sparkles,
+      features: [
+         {
+            flagKey: "workflows",
+            name: "Workflows",
+            description:
+               "Builder visual de automações com React Flow.",
+            icon: Workflow,
+         },
+         {
+            flagKey: "sub-agents",
+            name: "Sub-agents",
+            description:
+               "Agentes especializados: financeAgent, crmAgent, inventoryAgent, documentAgent.",
+            icon: Bot,
+         },
+         {
+            flagKey: "deteccao-anomalias",
+            name: "Detecção de Anomalias",
+            description:
+               "Alerta quando gastos ou recebíveis desviam do padrão histórico.",
+            icon: Zap,
+         },
+         {
+            flagKey: "previsao-receita",
+            name: "Previsão de Receita",
+            description: "IA prediz o MRR do próximo mês com base no histórico.",
+            icon: Sparkles,
+         },
+      ],
+   },
+   {
+      id: "coworking",
+      label: "Coworking",
+      icon: Building2,
+      features: [
+         {
+            flagKey: "espacos-reservas",
+            name: "Espaços & Reservas",
+            description:
+               "Catálogo de espaços e sistema de reservas para membros.",
+            icon: Building2,
+         },
+         {
+            flagKey: "check-in-checkout",
+            name: "Check-in / Check-out",
+            description: "Log de entrada e saída de membros.",
+            icon: Users,
+         },
+         {
+            flagKey: "portal-membro",
+            name: "Portal do Membro",
+            description: "Self-service para reservas e visualização de faturas.",
+            icon: Users,
+         },
+      ],
+   },
+   {
+      id: "integracoes",
+      label: "Integrações",
+      icon: Link,
+      features: [
+         {
+            flagKey: "abacate-pay",
+            name: "Abacate Pay",
+            description: "Gateway de pagamentos PIX, boleto e cartão.",
+            icon: CreditCard,
+         },
+         {
+            flagKey: "zapsign",
+            name: "ZapSign",
+            description:
+               "Assinatura eletrônica com chave própria do usuário.",
+            icon: FileText,
+         },
+         {
+            flagKey: "google-calendar-outlook",
+            name: "Google Calendar / Outlook",
+            description: "Sync de reservas com calendários externos.",
+            icon: RefreshCw,
+         },
+         {
+            flagKey: "zapier-make",
+            name: "Zapier / Make",
+            description: "Conecte o Montte a mais de 5.000 apps.",
+            icon: Zap,
+         },
+      ],
+   },
+   {
+      id: "hyperpay",
+      label: "HyperPay",
+      icon: CreditCard,
+      features: [
+         {
+            flagKey: "payment-orchestrator",
+            name: "Payment Orchestrator",
+            description:
+               "Smart routing entre múltiplos gateways de pagamento.",
+            icon: Workflow,
+         },
+         {
+            flagKey: "subscription-engine",
+            name: "Subscription Engine",
+            description: "Ciclo de billing, proration e renovações automáticas.",
+            icon: RefreshCw,
+         },
+      ],
+   },
+];
+
 function FeaturePreviewsPage() {
    const { features, isEnrolled, updateEnrollment } = useEarlyAccess();
 
-   // Filter state - starts with all stages selected
    const [selectedStages, setSelectedStages] = useState<Set<FeatureStage>>(
       new Set(["concept", "alpha", "beta", "general-availability"]),
    );
@@ -53,7 +274,6 @@ function FeaturePreviewsPage() {
       setSelectedStages((prev) => {
          const next = new Set(prev);
          if (next.has(stage)) {
-            // Don't allow empty filter - if trying to deselect last one, keep it
             if (next.size === 1) return prev;
             next.delete(stage);
          } else {
@@ -63,14 +283,11 @@ function FeaturePreviewsPage() {
       });
    };
 
-   // Names explicitly listed as children under a parent — always shown nested.
    const childNames = new Set(Object.values(CONCEPT_CHILDREN).flat());
 
-   // Top-level: has a flagKey AND is not a named child of another feature.
    const parentFeatures = features.filter(
       (f) => f.flagKey !== null && !childNames.has(f.name),
    );
-   // Children: by name, regardless of flagKey.
    const conceptFeatures = features.filter((f) => childNames.has(f.name));
 
    const conceptByName = new Map(conceptFeatures.map((f) => [f.name, f]));
@@ -79,7 +296,6 @@ function FeaturePreviewsPage() {
       (f) => f.stage !== null && selectedStages.has(f.stage),
    );
 
-   // Count features per stage for the filter labels
    const stageCounts = {
       concept: features.filter((f) => f.stage === "concept").length,
       alpha: features.filter((f) => f.stage === "alpha").length,
@@ -90,7 +306,7 @@ function FeaturePreviewsPage() {
    };
 
    return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-4">
          <div>
             <h1 className="text-2xl font-semibold font-serif">
                Prévias de funcionalidades
@@ -101,8 +317,7 @@ function FeaturePreviewsPage() {
                maturidade.
             </p>
 
-            {/* Filter Bar */}
-            <div className=" space-y-2">
+            <div className="flex flex-col gap-2 mt-4">
                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span>Filtrar por estágio:</span>
                   <Button
@@ -164,8 +379,9 @@ function FeaturePreviewsPage() {
                   const enrolled = isEnrolled(feature.flagKey);
                   const Icon = FEATURE_ICONS[feature.flagKey] ?? FlaskConical;
 
-                  const childNames = CONCEPT_CHILDREN[feature.flagKey] ?? [];
-                  const children = childNames
+                  const featureChildNames =
+                     CONCEPT_CHILDREN[feature.flagKey] ?? [];
+                  const children = featureChildNames
                      .map((name) => conceptByName.get(name))
                      .filter(Boolean);
                   const hasChildren = children.length > 0;
@@ -285,6 +501,92 @@ function FeaturePreviewsPage() {
                })}
             </ItemGroup>
          )}
+
+         <ComingSoonSection isEnrolled={isEnrolled} updateEnrollment={updateEnrollment} />
+      </div>
+   );
+}
+
+function ComingSoonSection({
+   isEnrolled,
+   updateEnrollment,
+}: {
+   isEnrolled: (flagKey: string) => boolean;
+   updateEnrollment: (flagKey: string, enrolled: boolean) => void;
+}) {
+   return (
+      <div className="flex flex-col gap-4">
+         <div>
+            <h2 className="text-base font-semibold">Em breve</h2>
+            <p className="text-sm text-muted-foreground mt-2">
+               Funcionalidades que estão sendo desenvolvidas. Inscreva-se para
+               ser notificado quando estiverem disponíveis.
+            </p>
+         </div>
+
+         <div className="flex flex-col gap-4">
+            {COMING_SOON_CATEGORIES.map((category) => {
+               const CategoryIcon = category.icon;
+               return (
+                  <div key={category.id} className="flex flex-col gap-2">
+                     <div className="flex items-center gap-2">
+                        <CategoryIcon className="size-4 text-muted-foreground" />
+                        <span className="text-sm font-medium text-muted-foreground">
+                           {category.label}
+                        </span>
+                     </div>
+                     <ItemGroup>
+                        {category.features.map((feature, index) => {
+                           const FeatureIcon = feature.icon;
+                           const enrolled = isEnrolled(feature.flagKey);
+                           return (
+                              <Fragment key={feature.flagKey}>
+                                 {index > 0 && <ItemSeparator />}
+                                 <Item variant="muted">
+                                    <ItemMedia variant="icon">
+                                       <FeatureIcon className="size-4" />
+                                    </ItemMedia>
+                                    <ItemContent>
+                                       <ItemTitle>{feature.name}</ItemTitle>
+                                       <ItemDescription>
+                                          {feature.description}
+                                       </ItemDescription>
+                                    </ItemContent>
+                                    <ItemActions>
+                                       <Button
+                                          onClick={() =>
+                                             updateEnrollment(
+                                                feature.flagKey,
+                                                !enrolled,
+                                             )
+                                          }
+                                          size="sm"
+                                          variant={
+                                             enrolled ? "secondary" : "outline"
+                                          }
+                                       >
+                                          {enrolled ? (
+                                             <>
+                                                <BellOff className="size-4" />
+                                                Inscrito
+                                             </>
+                                          ) : (
+                                             <>
+                                                <Bell className="size-4" />
+                                                Ser notificado
+                                             </>
+                                          )}
+                                       </Button>
+                                    </ItemActions>
+                                 </Item>
+                              </Fragment>
+                           );
+                        })}
+                     </ItemGroup>
+                  </div>
+               );
+            })}
+         </div>
       </div>
    );
 }
