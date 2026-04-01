@@ -17,11 +17,10 @@ import {
    transactions,
    updateTransactionSchema,
 } from "@core/database/schemas/transactions";
-import { WebAppError } from "@core/logging/errors";
-import { enforceCreditBudget, incrementUsage } from "@packages/events/credits";
 import { createEmitFn } from "@packages/events/emit";
 import { emitFinanceStatementImported } from "@packages/events/finance";
 import { z } from "zod";
+import { withCreditEnforcement } from "../middlewares/credit-enforcement";
 import { protectedProcedure } from "../server";
 
 const idSchema = z.object({ id: z.string().uuid() });
@@ -169,7 +168,9 @@ export const remove = protectedProcedure
       return { success: true };
    });
 
-export const importStatement = protectedProcedure
+export const importStatement = withCreditEnforcement(
+   "finance.statement_imported",
+)
    .input(
       z.object({
          bankAccountId: z.string().uuid(),
@@ -202,18 +203,6 @@ export const importStatement = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      try {
-         await enforceCreditBudget(
-            context.organizationId,
-            "finance.statement_imported",
-            context.redis,
-         );
-      } catch {
-         throw WebAppError.forbidden(
-            "Limite do plano gratuito atingido para importação de extratos.",
-         );
-      }
-
       await ensureBankAccountOwnership(
          context.db,
          input.bankAccountId,
@@ -232,12 +221,6 @@ export const importStatement = protectedProcedure
       }));
 
       await context.db.insert(transactions).values(rows);
-
-      await incrementUsage(
-         context.organizationId,
-         "finance.statement_imported",
-         context.redis,
-      );
 
       try {
          const emit = createEmitFn(context.db, context.posthog);

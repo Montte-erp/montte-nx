@@ -12,7 +12,7 @@ import {
    TransactionFilterBar,
    type TransactionFilters,
 } from "@/features/transactions/ui/transaction-filter-bar";
-import { StatementImportDialogStack } from "@/features/transactions/ui/statement-import-dialog-stack";
+import { StatementImportDialogStack } from "./-transactions/statement-import-dialog-stack";
 import { TransactionImportDialogStack } from "@/features/transactions/ui/transaction-import-dialog-stack";
 import { TransactionPrerequisitesBlocker } from "@/features/transactions/ui/transaction-prerequisites-blocker";
 import { TransactionsList } from "@/features/transactions/ui/transactions-list";
