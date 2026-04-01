@@ -178,15 +178,19 @@ function BillFromTransactionDialogStackInner({
                }}
             >
                <FieldGroup>
-                  <form.Field name="name">
-                     {(field) => {
+                  <form.Field
+                     name="name"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
-                              <FieldLabel>Nome</FieldLabel>
+                              <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
                               <Input
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
                                  onBlur={field.handleBlur}
                                  onChange={(e) =>
                                     field.handleChange(e.target.value)
@@ -199,30 +203,45 @@ function BillFromTransactionDialogStackInner({
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
                   {mode === "installment" && (
                      <>
-                        <form.Field name="installmentCount">
-                           {(field) => (
-                              <Field>
-                                 <FieldLabel>Número de parcelas</FieldLabel>
-                                 <Input
-                                    min={2}
-                                    onBlur={field.handleBlur}
-                                    onChange={(e) =>
-                                       field.handleChange(
-                                          Number.parseInt(e.target.value, 10) ||
-                                             2,
-                                       )
-                                    }
-                                    type="number"
-                                    value={field.state.value}
-                                 />
-                                 <FieldError errors={field.state.meta.errors} />
-                              </Field>
-                           )}
-                        </form.Field>
+                        <form.Field
+                           name="installmentCount"
+                           children={(field) => {
+                              const isInvalid =
+                                 field.state.meta.isTouched &&
+                                 field.state.meta.errors.length > 0;
+                              return (
+                                 <Field data-invalid={isInvalid}>
+                                    <FieldLabel htmlFor={field.name}>
+                                       Número de parcelas
+                                    </FieldLabel>
+                                    <Input
+                                       id={field.name}
+                                       name={field.name}
+                                       aria-invalid={isInvalid}
+                                       min={2}
+                                       onBlur={field.handleBlur}
+                                       onChange={(e) =>
+                                          field.handleChange(
+                                             Number.parseInt(
+                                                e.target.value,
+                                                10,
+                                             ) || 2,
+                                          )
+                                       }
+                                       type="number"
+                                       value={field.state.value}
+                                    />
+                                    <FieldError
+                                       errors={field.state.meta.errors}
+                                    />
+                                 </Field>
+                              );
+                           }}
+                        />
 
                         {previewItems.length > 0 && (
                            <BillInstallmentPreview items={previewItems} />
@@ -232,8 +251,9 @@ function BillFromTransactionDialogStackInner({
 
                   {mode === "recurring" && (
                      <>
-                        <form.Field name="frequency">
-                           {(field) => (
+                        <form.Field
+                           name="frequency"
+                           children={(field) => (
                               <Field>
                                  <FieldLabel>Frequência</FieldLabel>
                                  <Select
@@ -258,31 +278,44 @@ function BillFromTransactionDialogStackInner({
                                  </Select>
                               </Field>
                            )}
-                        </form.Field>
+                        />
 
-                        <form.Field name="windowMonths">
-                           {(field) => (
-                              <Field>
-                                 <FieldLabel>
-                                    Gerar contas para quantos meses?
-                                 </FieldLabel>
-                                 <Input
-                                    max={12}
-                                    min={1}
-                                    onBlur={field.handleBlur}
-                                    onChange={(e) =>
-                                       field.handleChange(
-                                          Number.parseInt(e.target.value, 10) ||
-                                             1,
-                                       )
-                                    }
-                                    type="number"
-                                    value={field.state.value}
-                                 />
-                                 <FieldError errors={field.state.meta.errors} />
-                              </Field>
-                           )}
-                        </form.Field>
+                        <form.Field
+                           name="windowMonths"
+                           children={(field) => {
+                              const isInvalid =
+                                 field.state.meta.isTouched &&
+                                 field.state.meta.errors.length > 0;
+                              return (
+                                 <Field data-invalid={isInvalid}>
+                                    <FieldLabel htmlFor={field.name}>
+                                       Gerar contas para quantos meses?
+                                    </FieldLabel>
+                                    <Input
+                                       id={field.name}
+                                       name={field.name}
+                                       aria-invalid={isInvalid}
+                                       max={12}
+                                       min={1}
+                                       onBlur={field.handleBlur}
+                                       onChange={(e) =>
+                                          field.handleChange(
+                                             Number.parseInt(
+                                                e.target.value,
+                                                10,
+                                             ) || 1,
+                                          )
+                                       }
+                                       type="number"
+                                       value={field.state.value}
+                                    />
+                                    <FieldError
+                                       errors={field.state.meta.errors}
+                                    />
+                                 </Field>
+                              );
+                           }}
+                        />
                      </>
                   )}
                </FieldGroup>

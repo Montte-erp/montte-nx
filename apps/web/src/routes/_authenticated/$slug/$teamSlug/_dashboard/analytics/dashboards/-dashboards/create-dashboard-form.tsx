@@ -71,43 +71,61 @@ export function CreateDashboardForm({ onSuccess }: CreateDashboardFormProps) {
                Crie um painel personalizado com seus insights.
             </p>
          </div>
-         <form.Field name="name">
-            {(field) => (
-               <div className="flex flex-col gap-2">
-                  <Label htmlFor="dashboard-name">Nome</Label>
-                  <Input
-                     id="dashboard-name"
-                     onBlur={field.handleBlur}
-                     onChange={(e) => field.handleChange(e.target.value)}
-                     placeholder="Ex: Fluxo de caixa"
-                     value={field.state.value}
-                  />
-                  {field.state.meta.errors.length > 0 && (
-                     <p className="text-sm text-destructive">
-                        {String(field.state.meta.errors[0])}
-                     </p>
-                  )}
-               </div>
-            )}
-         </form.Field>
-         <form.Field name="description">
-            {(field) => (
-               <div className="flex flex-col gap-2">
-                  <Label htmlFor="dashboard-description">
-                     Descrição{" "}
-                     <span className="text-muted-foreground">(opcional)</span>
-                  </Label>
-                  <Textarea
-                     id="dashboard-description"
-                     onBlur={field.handleBlur}
-                     onChange={(e) => field.handleChange(e.target.value)}
-                     placeholder="Descreva o propósito deste dashboard..."
-                     rows={3}
-                     value={field.state.value}
-                  />
-               </div>
-            )}
-         </form.Field>
+         <form.Field
+            name="name"
+            children={(field) => {
+               const isInvalid =
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
+               return (
+                  <div className="flex flex-col gap-2">
+                     <Label htmlFor="dashboard-name">Nome</Label>
+                     <Input
+                        aria-invalid={isInvalid}
+                        id="dashboard-name"
+                        name={field.name}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder="Ex: Fluxo de caixa"
+                        value={field.state.value}
+                     />
+                     {isInvalid && (
+                        <p className="text-sm text-destructive">
+                           {String(field.state.meta.errors[0])}
+                        </p>
+                     )}
+                  </div>
+               );
+            }}
+         />
+         <form.Field
+            name="description"
+            children={(field) => {
+               const isInvalid =
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
+               return (
+                  <div className="flex flex-col gap-2">
+                     <Label htmlFor="dashboard-description">
+                        Descrição{" "}
+                        <span className="text-muted-foreground">
+                           (opcional)
+                        </span>
+                     </Label>
+                     <Textarea
+                        aria-invalid={isInvalid}
+                        id="dashboard-description"
+                        name={field.name}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder="Descreva o propósito deste dashboard..."
+                        rows={3}
+                        value={field.state.value}
+                     />
+                  </div>
+               );
+            }}
+         />
          <form.Subscribe>
             {(formState) => (
                <Button

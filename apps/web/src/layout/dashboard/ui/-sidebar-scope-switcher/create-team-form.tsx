@@ -49,6 +49,17 @@ function CreateTeamSkeleton() {
    );
 }
 
+const createTeamSchema = z.object({
+   description: z
+      .string()
+      .max(200, "A descrição deve ter menos de 200 caracteres"),
+   name: z
+      .string()
+      .min(1, "Nome do espaço é obrigatório")
+      .max(50, "O nome deve ter menos de 50 caracteres"),
+   organizationId: z.string(),
+});
+
 const CreateTeamFormContent = () => {
    const { activeOrganization } = useActiveOrganization();
    const [isPending, startTransition] = useTransition();
@@ -75,17 +86,6 @@ const CreateTeamFormContent = () => {
       [],
    );
 
-   const schema = z.object({
-      description: z
-         .string()
-         .max(200, "A descrição deve ter menos de 200 caracteres"),
-      name: z
-         .string()
-         .min(1, "Nome do espaço é obrigatório")
-         .max(50, "O nome deve ter menos de 50 caracteres"),
-      organizationId: z.string(),
-   });
-
    const form = useForm({
       defaultValues: {
          description: "",
@@ -102,7 +102,7 @@ const CreateTeamFormContent = () => {
       },
 
       validators: {
-         onBlur: schema,
+         onBlur: createTeamSchema,
       },
    });
 
@@ -122,10 +122,12 @@ const CreateTeamFormContent = () => {
                id="create-team-form"
                onSubmit={handleSubmit}
             >
-               <form.Field name="name">
-                  {(field) => {
+               <form.Field
+                  name="name"
+                  children={(field) => {
                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
 
                      return (
                         <Field data-invalid={isInvalid}>
@@ -149,12 +151,14 @@ const CreateTeamFormContent = () => {
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
 
-               <form.Field name="description">
-                  {(field) => {
+               <form.Field
+                  name="description"
+                  children={(field) => {
                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
 
                      return (
                         <Field data-invalid={isInvalid}>
@@ -180,7 +184,7 @@ const CreateTeamFormContent = () => {
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
             </form>
          </div>
 

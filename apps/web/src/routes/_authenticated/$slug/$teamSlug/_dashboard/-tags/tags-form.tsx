@@ -119,119 +119,144 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
 
          <CredenzaBody>
             <FieldGroup>
-                  <form.Field name="name">
-                     {(field) => {
-                        const isInvalid =
-                           field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
-                        return (
-                           <Field data-invalid={isInvalid}>
-                              <FieldLabel>Nome</FieldLabel>
-                              <Input
-                                 onBlur={field.handleBlur}
-                                 onChange={(e) =>
-                                    field.handleChange(e.target.value)
-                                 }
-                                 placeholder="Ex: Marketing, Recursos Humanos, Operações"
-                                 value={field.state.value}
-                              />
-                              {isInvalid && (
-                                 <FieldError errors={field.state.meta.errors} />
-                              )}
-                           </Field>
-                        );
-                     }}
-                  </form.Field>
+               <form.Field
+                  name="name"
+                  children={(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
+                     return (
+                        <Field data-invalid={isInvalid}>
+                           <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
+                           <Input
+                              aria-invalid={isInvalid}
+                              id={field.name}
+                              name={field.name}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                              placeholder="Ex: Marketing, Recursos Humanos, Operações"
+                              value={field.state.value}
+                           />
+                           {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                           )}
+                        </Field>
+                     );
+                  }}
+               />
 
-                  <form.Field name="description">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>
+               <form.Field
+                  name="description"
+                  children={(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
+                     return (
+                        <Field data-invalid={isInvalid}>
+                           <FieldLabel htmlFor={field.name}>
                               Descrição{" "}
-                              <span className="text-muted-foreground font-normal">(opcional)</span>
+                              <span className="text-muted-foreground font-normal">
+                                 (opcional)
+                              </span>
                            </FieldLabel>
                            <Textarea
+                              aria-invalid={isInvalid}
+                              id={field.name}
                               maxLength={255}
+                              name={field.name}
                               onBlur={field.handleBlur}
-                              onChange={(e) => field.handleChange(e.target.value)}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
                               placeholder="Ex: Projeto X, Cliente Y, viagem de negócios"
                               rows={2}
                               value={field.state.value}
                            />
+                           {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                           )}
                         </Field>
-                     )}
-                  </form.Field>
+                     );
+                  }}
+               />
 
-                  <form.Field name="color">
-                     {(field) => {
-                        const isInvalid =
-                           field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
-                        return (
-                           <Field data-invalid={isInvalid}>
-                              <FieldLabel>Cor de identificação</FieldLabel>
-                              <Popover>
-                                 <PopoverTrigger asChild>
-                                    <Button
-                                       aria-invalid={isInvalid || undefined}
-                                       className="w-full flex gap-2 justify-start"
-                                       type="button"
-                                       variant="outline"
-                                    >
-                                       <div
-                                          className="w-5 h-5 rounded-full border border-border shrink-0"
-                                          style={{
-                                             backgroundColor: field.state.value,
-                                          }}
-                                       />
-                                       <span className="flex-1 text-left">Selecionar cor</span>
-                                       <span className="text-muted-foreground font-mono text-xs">{field.state.value}</span>
-                                    </Button>
-                                 </PopoverTrigger>
-                                 <PopoverContent
-                                    align="start"
-                                    className="rounded-md border bg-background"
+               <form.Field
+                  name="color"
+                  children={(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
+                     return (
+                        <Field data-invalid={isInvalid}>
+                           <FieldLabel>Cor de identificação</FieldLabel>
+                           <Popover>
+                              <PopoverTrigger asChild>
+                                 <Button
+                                    aria-invalid={isInvalid || undefined}
+                                    className="w-full flex gap-2 justify-start"
+                                    type="button"
+                                    variant="outline"
                                  >
-                                    <ColorPicker
-                                       className="flex flex-col gap-4"
-                                       onChange={(rgba) => {
-                                          if (Array.isArray(rgba)) {
-                                             field.handleChange(
-                                                Color.rgb(
-                                                   rgba[0],
-                                                   rgba[1],
-                                                   rgba[2],
-                                                ).hex(),
-                                             );
-                                          }
+                                    <div
+                                       className="w-5 h-5 rounded-full border border-border shrink-0"
+                                       style={{
+                                          backgroundColor: field.state.value,
                                        }}
-                                       value={field.state.value || "#000000"}
-                                    >
-                                       <div className="h-24">
-                                          <ColorPickerSelection />
+                                    />
+                                    <span className="flex-1 text-left">
+                                       Selecionar cor
+                                    </span>
+                                    <span className="text-muted-foreground font-mono text-xs">
+                                       {field.state.value}
+                                    </span>
+                                 </Button>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                 align="start"
+                                 className="rounded-md border bg-background"
+                              >
+                                 <ColorPicker
+                                    className="flex flex-col gap-4"
+                                    onChange={(rgba) => {
+                                       if (Array.isArray(rgba)) {
+                                          field.handleChange(
+                                             Color.rgb(
+                                                rgba[0],
+                                                rgba[1],
+                                                rgba[2],
+                                             ).hex(),
+                                          );
+                                       }
+                                    }}
+                                    value={field.state.value || "#000000"}
+                                 >
+                                    <div className="h-24">
+                                       <ColorPickerSelection />
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                       <ColorPickerEyeDropper />
+                                       <div className="grid w-full gap-2">
+                                          <ColorPickerHue />
+                                          <ColorPickerAlpha />
                                        </div>
-                                       <div className="flex items-center gap-4">
-                                          <ColorPickerEyeDropper />
-                                          <div className="grid w-full gap-2">
-                                             <ColorPickerHue />
-                                             <ColorPickerAlpha />
-                                          </div>
-                                       </div>
-                                       <div className="flex items-center gap-2">
-                                          <ColorPickerOutput />
-                                          <ColorPickerFormat />
-                                       </div>
-                                    </ColorPicker>
-                                 </PopoverContent>
-                              </Popover>
-                              {isInvalid && (
-                                 <FieldError errors={field.state.meta.errors} />
-                              )}
-                           </Field>
-                        );
-                     }}
-                  </form.Field>
-               </FieldGroup>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                       <ColorPickerOutput />
+                                       <ColorPickerFormat />
+                                    </div>
+                                 </ColorPicker>
+                              </PopoverContent>
+                           </Popover>
+                           {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                           )}
+                        </Field>
+                     );
+                  }}
+               />
+            </FieldGroup>
          </CredenzaBody>
 
          <CredenzaFooter>
@@ -249,7 +274,9 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
                   >
                      {(state.isSubmitting ||
                         createMutation.isPending ||
-                        updateMutation.isPending) && <Spinner className="size-4" />}
+                        updateMutation.isPending) && (
+                        <Spinner className="size-4" />
+                     )}
                      {isCreate ? "Criar centro de custo" : "Salvar alterações"}
                   </Button>
                )}

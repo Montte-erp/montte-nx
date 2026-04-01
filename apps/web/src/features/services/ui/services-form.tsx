@@ -176,15 +176,21 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
                <div className="grid grid-cols-2 gap-4">
-                  <form.Field name="name">
-                     {(field) => {
+                  <form.Field
+                     name="name"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
-                              <FieldLabel>Nome *</FieldLabel>
+                              <FieldLabel htmlFor={field.name}>
+                                 Nome *
+                              </FieldLabel>
                               <Input
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
                                  onBlur={field.handleBlur}
                                  onChange={(e) =>
                                     field.handleChange(e.target.value)
@@ -198,10 +204,11 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
-                  <form.Field name="basePrice">
-                     {(field) => (
+                  <form.Field
+                     name="basePrice"
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Preço padrão *</FieldLabel>
                            <MoneyInput
@@ -212,12 +219,13 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                            />
                         </Field>
                      )}
-                  </form.Field>
+                  />
                </div>
 
                <div className="grid grid-cols-2 gap-4">
-                  <form.Field name="categoryId">
-                     {(field) => (
+                  <form.Field
+                     name="categoryId"
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Categoria</FieldLabel>
                            <Select
@@ -237,10 +245,11 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                            </Select>
                         </Field>
                      )}
-                  </form.Field>
+                  />
 
-                  <form.Field name="tagId">
-                     {(field) => (
+                  <form.Field
+                     name="tagId"
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Tag</FieldLabel>
                            <Select
@@ -260,31 +269,46 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                            </Select>
                         </Field>
                      )}
-                  </form.Field>
+                  />
                </div>
 
-               <form.Field name="description">
-                  {(field) => (
-                     <Field>
-                        <FieldLabel>Descrição</FieldLabel>
-                        <Textarea
-                           onBlur={field.handleBlur}
-                           onChange={(e) => field.handleChange(e.target.value)}
-                           placeholder="Opcional"
-                           rows={1}
-                           value={field.state.value}
-                        />
-                     </Field>
-                  )}
-               </form.Field>
+               <form.Field
+                  name="description"
+                  children={(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
+                     return (
+                        <Field data-invalid={isInvalid}>
+                           <FieldLabel htmlFor={field.name}>
+                              Descrição
+                           </FieldLabel>
+                           <Textarea
+                              id={field.name}
+                              name={field.name}
+                              aria-invalid={isInvalid}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                              placeholder="Opcional"
+                              rows={1}
+                              value={field.state.value}
+                           />
+                        </Field>
+                     );
+                  }}
+               />
 
                <Separator />
 
                <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                      <span className="text-sm font-medium">Variantes</span>
-                     <form.Field mode="array" name="variants">
-                        {(field) => (
+                     <form.Field
+                        mode="array"
+                        name="variants"
+                        children={(field) => (
                            <Button
                               className="h-7 text-xs"
                               onClick={() =>
@@ -302,7 +326,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                               Adicionar
                            </Button>
                         )}
-                     </form.Field>
+                     />
                   </div>
 
                   {!isCreate &&
@@ -328,36 +352,50 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                         </div>
                      )}
 
-                  <form.Field mode="array" name="variants">
-                     {(arrayField) => (
+                  <form.Field
+                     mode="array"
+                     name="variants"
+                     children={(arrayField) => (
                         <div className="flex flex-col gap-2">
                            {arrayField.state.value.map((_, index) => (
                               <div
                                  className="grid grid-cols-[1fr_1fr_1fr_auto] gap-4 items-end p-3 border rounded-md bg-muted/30"
                                  key={`variant-${index + 1}`}
                               >
-                                 <form.Field name={`variants[${index}].name`}>
-                                    {(field) => (
-                                       <Field>
-                                          <FieldLabel>Nome</FieldLabel>
-                                          <Input
-                                             onBlur={field.handleBlur}
-                                             onChange={(e) =>
-                                                field.handleChange(
-                                                   e.target.value,
-                                                )
-                                             }
-                                             placeholder="Ex: Mensal"
-                                             value={field.state.value as string}
-                                          />
-                                       </Field>
-                                    )}
-                                 </form.Field>
+                                 <form.Field
+                                    name={`variants[${index}].name`}
+                                    children={(field) => {
+                                       const isInvalid =
+                                          field.state.meta.isTouched &&
+                                          field.state.meta.errors.length > 0;
+                                       return (
+                                          <Field data-invalid={isInvalid}>
+                                             <FieldLabel htmlFor={field.name}>
+                                                Nome
+                                             </FieldLabel>
+                                             <Input
+                                                id={field.name}
+                                                name={field.name}
+                                                aria-invalid={isInvalid}
+                                                onBlur={field.handleBlur}
+                                                onChange={(e) =>
+                                                   field.handleChange(
+                                                      e.target.value,
+                                                   )
+                                                }
+                                                placeholder="Ex: Mensal"
+                                                value={
+                                                   field.state.value as string
+                                                }
+                                             />
+                                          </Field>
+                                       );
+                                    }}
+                                 />
 
                                  <form.Field
                                     name={`variants[${index}].basePrice`}
-                                 >
-                                    {(field) => (
+                                    children={(field) => (
                                        <Field>
                                           <FieldLabel>Preço</FieldLabel>
                                           <MoneyInput
@@ -372,12 +410,11 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                                           />
                                        </Field>
                                     )}
-                                 </form.Field>
+                                 />
 
                                  <form.Field
                                     name={`variants[${index}].billingCycle`}
-                                 >
-                                    {(field) => (
+                                    children={(field) => (
                                        <Field>
                                           <FieldLabel>Ciclo</FieldLabel>
                                           <Select
@@ -410,7 +447,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                                           </Select>
                                        </Field>
                                     )}
-                                 </form.Field>
+                                 />
 
                                  <Button
                                     aria-label="Remover variante"
@@ -428,7 +465,7 @@ export function ServiceForm({ mode, service, onSuccess }: ServiceFormProps) {
                            ))}
                         </div>
                      )}
-                  </form.Field>
+                  />
                </div>
             </div>
 

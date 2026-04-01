@@ -68,8 +68,9 @@ function ContatosSettingsForm() {
             </div>
 
             <div className="flex flex-col gap-4">
-               <form.Field name="defaultContactType">
-                  {(field) => (
+               <form.Field
+                  name="defaultContactType"
+                  children={(field) => (
                      <div className="flex flex-col gap-2">
                         <Label htmlFor={field.name}>
                            Tipo de contato padrão
@@ -94,10 +95,11 @@ function ContatosSettingsForm() {
                         </Select>
                      </div>
                   )}
-               </form.Field>
+               />
 
-               <form.Field name="duplicateDetectionEnabled">
-                  {(field) => (
+               <form.Field
+                  name="duplicateDetectionEnabled"
+                  children={(field) => (
                      <div className="flex items-center justify-between">
                         <Label htmlFor={field.name}>
                            Detecção de duplicatas
@@ -109,10 +111,11 @@ function ContatosSettingsForm() {
                         />
                      </div>
                   )}
-               </form.Field>
+               />
 
-               <form.Field name="requireTaxId">
-                  {(field) => (
+               <form.Field
+                  name="requireTaxId"
+                  children={(field) => (
                      <div className="flex items-center justify-between">
                         <Label htmlFor={field.name}>CPF/CNPJ obrigatório</Label>
                         <Switch
@@ -122,10 +125,11 @@ function ContatosSettingsForm() {
                         />
                      </div>
                   )}
-               </form.Field>
+               />
 
-               <form.Field name="defaultTagId">
-                  {(field) => (
+               <form.Field
+                  name="defaultTagId"
+                  children={(field) => (
                      <div className="flex flex-col gap-2">
                         <Label htmlFor={field.name}>
                            Centro de Custo padrão
@@ -147,7 +151,7 @@ function ContatosSettingsForm() {
                         </Select>
                      </div>
                   )}
-               </form.Field>
+               />
             </div>
 
             <form.Subscribe selector={(s) => s.isSubmitting}>

@@ -6,7 +6,12 @@ import {
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@packages/ui/components/field";
+import {
+   Field,
+   FieldError,
+   FieldGroup,
+   FieldLabel,
+} from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
@@ -67,24 +72,34 @@ export function SubcategoryForm({
 
          <CredenzaBody>
             <FieldGroup>
-               <form.Field name="name">
-                  {(field) => {
-                     const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+               <form.Field
+                  name="name"
+                  children={(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
                      return (
                         <Field data-invalid={isInvalid}>
-                           <FieldLabel>Nome *</FieldLabel>
+                           <FieldLabel htmlFor={field.name}>Nome *</FieldLabel>
                            <Input
                               autoFocus
+                              id={field.name}
+                              name={field.name}
+                              aria-invalid={isInvalid}
                               onBlur={field.handleBlur}
-                              onChange={(e) => field.handleChange(e.target.value)}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
                               placeholder="Ex: Supermercado, Farmácia"
                               value={field.state.value}
                            />
-                           {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                           {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                           )}
                         </Field>
                      );
                   }}
-               </form.Field>
+               />
             </FieldGroup>
          </CredenzaBody>
 
@@ -92,7 +107,11 @@ export function SubcategoryForm({
             <form.Subscribe selector={(s) => s}>
                {(state) => (
                   <Button
-                     disabled={!state.canSubmit || state.isSubmitting || createMutation.isPending}
+                     disabled={
+                        !state.canSubmit ||
+                        state.isSubmitting ||
+                        createMutation.isPending
+                     }
                      type="submit"
                   >
                      {(state.isSubmitting || createMutation.isPending) && (

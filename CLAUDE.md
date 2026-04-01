@@ -135,6 +135,73 @@ Zod schemas belong in the backend. Frontend only imports inferred types via `Inp
 
 ---
 
+## TanStack Form Pattern
+
+### Rules
+- **Schema at module level** — never define `z.object({...})` inside a component function; always declare at module scope to prevent recreation on every render.
+- **`isInvalid` check** — use `field.state.meta.isTouched && field.state.meta.errors.length > 0` (not `!field.state.meta.isValid`).
+- **Accessibility** — always set `id={field.name}`, `name={field.name}`, `aria-invalid={isInvalid}` on `<Input>`/`<PasswordInput>`/`<Textarea>`. Always set `htmlFor={field.name}` on `<FieldLabel>`.
+- **`children` prop** — always use `children={(field) => ...}` as an explicit JSX prop, not `{(field) => ...}` as JSX children.
+
+### Correct Pattern
+
+```tsx
+const formSchema = z.object({
+  name: z.string().min(1, "Campo obrigatório."),
+});
+
+function MyForm() {
+  const form = useForm({
+    defaultValues: { name: "" },
+    validators: { onSubmit: formSchema },
+    onSubmit: async ({ value }) => { /* ... */ },
+  });
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        form.handleSubmit();
+      }}
+    >
+      <FieldGroup>
+        <form.Field
+          name="name"
+          children={(field) => {
+            const isInvalid = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  aria-invalid={isInvalid}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            );
+          }}
+        />
+      </FieldGroup>
+
+      <form.Subscribe selector={(s) => [s.canSubmit, s.isSubmitting]}>
+        {([canSubmit, isSubmitting]) => (
+          <Button type="submit" disabled={!canSubmit || isSubmitting}>
+            Salvar
+          </Button>
+        )}
+      </form.Subscribe>
+    </form>
+  );
+}
+```
+
+---
+
 ## Suspense, Error Boundaries & Empty States
 
 ### Suspense + ErrorBoundary
