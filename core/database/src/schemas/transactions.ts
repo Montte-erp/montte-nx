@@ -49,6 +49,11 @@ export const transactionTypeEnum = pgEnum("transaction_type", [
    "transfer",
 ]);
 
+export const transactionRecurrenceFrequencyEnum = pgEnum(
+   "transaction_recurrence_frequency",
+   ["daily", "weekly", "monthly"],
+);
+
 export const transactions = pgTable(
    "transactions",
    {
@@ -91,6 +96,10 @@ export const transactions = pgTable(
          .notNull()
          .defaultNow()
          .$onUpdate(() => new Date()),
+      recurringTransactionId: uuid("recurring_transaction_id").references(
+         () => recurringTransactions.id,
+         { onDelete: "set null" },
+      ),
    },
    (table) => [
       index("transactions_team_id_idx").on(table.teamId),
@@ -102,6 +111,9 @@ export const transactions = pgTable(
       index("transactions_statement_period_idx").on(
          table.creditCardId,
          table.statementPeriod,
+      ),
+      index("transactions_recurring_transaction_id_idx").on(
+         table.recurringTransactionId,
       ),
    ],
 );
@@ -141,6 +153,58 @@ export const transactionItems = pgTable("transaction_items", {
       .notNull()
       .defaultNow(),
 });
+
+export const recurringTransactions = pgTable(
+   "recurring_transactions",
+   {
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
+      teamId: uuid("team_id").notNull(),
+      name: text("name"),
+      type: transactionTypeEnum("type").notNull(),
+      amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+      description: text("description"),
+      bankAccountId: uuid("bank_account_id").references(() => bankAccounts.id, {
+         onDelete: "restrict",
+      }),
+      destinationBankAccountId: uuid("destination_bank_account_id").references(
+         () => bankAccounts.id,
+         { onDelete: "restrict" },
+      ),
+      creditCardId: uuid("credit_card_id").references(() => creditCards.id, {
+         onDelete: "restrict",
+      }),
+      categoryId: uuid("category_id").references(() => categories.id, {
+         onDelete: "set null",
+      }),
+      contactId: uuid("contact_id").references(() => contacts.id, {
+         onDelete: "restrict",
+      }),
+      paymentMethod: paymentMethodEnum("payment_method"),
+      frequency: transactionRecurrenceFrequencyEnum("frequency").notNull(),
+      startDate: date("start_date").notNull(),
+      endsAt: date("ends_at"),
+      windowMonths: integer("window_months").notNull().default(3),
+      isActive: boolean("is_active").notNull().default(true),
+      createdAt: timestamp("created_at", { withTimezone: true })
+         .notNull()
+         .defaultNow(),
+      updatedAt: timestamp("updated_at", { withTimezone: true })
+         .notNull()
+         .defaultNow()
+         .$onUpdate(() => new Date()),
+   },
+   (table) => [
+      index("recurring_transactions_team_id_idx").on(table.teamId),
+      index("recurring_transactions_is_active_idx").on(table.isActive),
+   ],
+);
+
+export type RecurringTransaction = typeof recurringTransactions.$inferSelect;
+export type NewRecurringTransaction = typeof recurringTransactions.$inferInsert;
+export type TransactionRecurrenceFrequency =
+   (typeof transactionRecurrenceFrequencyEnum.enumValues)[number];
 
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;

@@ -8,6 +8,13 @@
          "when": 1771254360393,
          "tag": "0000_stiff_scarlet_witch",
          "breakpoints": true
+      },
+      {
+         "idx": 1,
+         "version": "7",
+         "when": 1743465600000,
+         "tag": "0001_add_recurring_transactions",
+         "breakpoints": true
       }
    ]
 }
