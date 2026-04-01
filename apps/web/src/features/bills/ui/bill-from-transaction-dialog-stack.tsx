@@ -20,11 +20,14 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@packages/ui/components/select";
+import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { Suspense } from "react";
+import { ErrorBoundary } from "react-error-boundary";
+import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import { BillInstallmentPreview } from "./bill-installment-preview";
@@ -314,12 +317,29 @@ function BillFromTransactionDialogStackInner({
    );
 }
 
+function BillFromTransactionDialogSkeleton() {
+   return (
+      <div className="flex flex-col gap-4 p-4">
+         <Skeleton className="h-4 w-32" />
+         <Skeleton className="h-10 w-full" />
+         <Skeleton className="h-4 w-24" />
+         <Skeleton className="h-10 w-full" />
+      </div>
+   );
+}
+
 export function BillFromTransactionDialogStack(
    props: BillFromTransactionDialogStackProps,
 ) {
    return (
-      <Suspense fallback={null}>
-         <BillFromTransactionDialogStackInner {...props} />
-      </Suspense>
+      <ErrorBoundary
+         FallbackComponent={createErrorFallback({
+            errorTitle: "Erro ao carregar transação",
+         })}
+      >
+         <Suspense fallback={<BillFromTransactionDialogSkeleton />}>
+            <BillFromTransactionDialogStackInner {...props} />
+         </Suspense>
+      </ErrorBoundary>
    );
 }

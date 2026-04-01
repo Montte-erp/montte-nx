@@ -29,11 +29,7 @@ import {
 } from "@packages/ui/components/sidebar";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import {
-   Link,
-   useLocation,
-   useRouter,
-} from "@tanstack/react-router";
+import { Link, useLocation, useRouter } from "@tanstack/react-router";
 import {
    Check,
    ChevronsUpDown,
@@ -45,6 +41,7 @@ import {
 } from "lucide-react";
 import { Suspense, useCallback, useTransition } from "react";
 import { ErrorBoundary } from "react-error-boundary";
+import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { toast } from "sonner";
 import { CreateTeamForm } from "./-sidebar-scope-switcher/create-team-form";
 import { ManageOrganizationForm } from "./-sidebar-scope-switcher/manage-organization-form";
@@ -215,14 +212,7 @@ function SidebarScopeSwitcherContent() {
             router.navigate({ to: nextPath });
          }
       },
-      [
-         activeTeam?.id,
-         currentSlug,
-         teamSlug,
-         pathname,
-         queryClient,
-         router,
-      ],
+      [activeTeam?.id, currentSlug, teamSlug, pathname, queryClient, router],
    );
 
    const handleNewProject = useCallback(
@@ -539,7 +529,11 @@ function SidebarScopeSwitcherContent() {
 
 export function SidebarScopeSwitcher() {
    return (
-      <ErrorBoundary fallbackRender={() => <SidebarScopeSwitcherSkeleton />}>
+      <ErrorBoundary
+         FallbackComponent={createErrorFallback({
+            errorTitle: "Erro ao carregar menu",
+         })}
+      >
          <Suspense fallback={<SidebarScopeSwitcherSkeleton />}>
             <SidebarScopeSwitcherContent />
          </Suspense>

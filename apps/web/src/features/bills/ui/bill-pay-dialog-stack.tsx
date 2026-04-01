@@ -20,11 +20,14 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@packages/ui/components/select";
+import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Suspense } from "react";
+import { ErrorBoundary } from "react-error-boundary";
+import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import type { BillRow } from "./bills-columns";
@@ -252,10 +255,28 @@ function BillPayDialogStackInner({ bill, onSuccess }: BillPayDialogStackProps) {
    );
 }
 
+function BillPayDialogSkeleton() {
+   return (
+      <div className="flex flex-col gap-4 p-4">
+         <Skeleton className="h-4 w-32" />
+         <Skeleton className="h-10 w-full" />
+         <Skeleton className="h-4 w-24" />
+         <Skeleton className="h-10 w-full" />
+         <Skeleton className="h-10 w-full" />
+      </div>
+   );
+}
+
 export function BillPayDialogStack(props: BillPayDialogStackProps) {
    return (
-      <Suspense fallback={null}>
-         <BillPayDialogStackInner {...props} />
-      </Suspense>
+      <ErrorBoundary
+         FallbackComponent={createErrorFallback({
+            errorTitle: "Erro ao carregar conta",
+         })}
+      >
+         <Suspense fallback={<BillPayDialogSkeleton />}>
+            <BillPayDialogStackInner {...props} />
+         </Suspense>
+      </ErrorBoundary>
    );
 }

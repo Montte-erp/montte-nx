@@ -1,5 +1,5 @@
-import { Alert, AlertDescription } from "@packages/ui/components/alert";
 import { Button } from "@packages/ui/components/button";
+import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import {
    DialogStackContent,
    DialogStackDescription,
@@ -11,7 +11,6 @@ import { Input } from "@packages/ui/components/input";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
-import { AlertTriangle } from "lucide-react";
 import type { FC, FormEvent } from "react";
 import { Suspense, useCallback, useTransition } from "react";
 import { ErrorBoundary } from "react-error-boundary";
@@ -20,19 +19,6 @@ import { z } from "zod";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { closeDialogStack } from "@/hooks/use-dialog-stack";
 import { authClient } from "@/integrations/better-auth/auth-client";
-
-function CreateTeamErrorFallback() {
-   return (
-      <div className="flex-1 overflow-y-auto px-4 py-4">
-         <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-               Erro ao carregar dados da organização. Tente novamente.
-            </AlertDescription>
-         </Alert>
-      </div>
-   );
-}
 
 function CreateTeamSkeleton() {
    return (
@@ -221,7 +207,11 @@ export const CreateTeamForm: FC = () => {
                Crie um novo espaço para organizar os membros da sua organização
             </DialogStackDescription>
          </DialogStackHeader>
-         <ErrorBoundary FallbackComponent={CreateTeamErrorFallback}>
+         <ErrorBoundary
+            FallbackComponent={createErrorFallback({
+               errorTitle: "Erro ao carregar dados da organização",
+            })}
+         >
             <Suspense fallback={<CreateTeamSkeleton />}>
                <CreateTeamFormContent />
             </Suspense>

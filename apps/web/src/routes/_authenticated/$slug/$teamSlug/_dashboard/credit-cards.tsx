@@ -17,6 +17,8 @@ import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { CreditCard, Pencil, Plus, Trash2 } from "lucide-react";
 import { Suspense, useCallback } from "react";
+import { ErrorBoundary } from "react-error-boundary";
+import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import {
@@ -52,6 +54,19 @@ function CreditCardsSkeleton() {
    );
 }
 
+function CreditCardFormSkeleton() {
+   return (
+      <div className="flex flex-col gap-4 p-4">
+         <Skeleton className="h-4 w-32" />
+         <Skeleton className="h-10 w-full" />
+         <Skeleton className="h-4 w-24" />
+         <Skeleton className="h-10 w-full" />
+         <Skeleton className="h-4 w-28" />
+         <Skeleton className="h-10 w-full" />
+      </div>
+   );
+}
+
 function CreditCardsList() {
    const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
@@ -82,13 +97,19 @@ function CreditCardsList() {
       (card: CreditCardRow) => {
          openDialogStack({
             children: (
-               <Suspense fallback={null}>
-                  <CreditCardForm
-                     card={card}
-                     mode="edit"
-                     onSuccess={closeDialogStack}
-                  />
-               </Suspense>
+               <ErrorBoundary
+                  FallbackComponent={createErrorFallback({
+                     errorTitle: "Erro ao carregar cartão",
+                  })}
+               >
+                  <Suspense fallback={<CreditCardFormSkeleton />}>
+                     <CreditCardForm
+                        card={card}
+                        mode="edit"
+                        onSuccess={closeDialogStack}
+                     />
+                  </Suspense>
+               </ErrorBoundary>
             ),
          });
       },
@@ -193,9 +214,15 @@ function CreditCardsPage() {
    function handleCreate() {
       openDialogStack({
          children: (
-            <Suspense fallback={null}>
-               <CreditCardForm mode="create" onSuccess={closeDialogStack} />
-            </Suspense>
+            <ErrorBoundary
+               FallbackComponent={createErrorFallback({
+                  errorTitle: "Erro ao carregar formulário",
+               })}
+            >
+               <Suspense fallback={<CreditCardFormSkeleton />}>
+                  <CreditCardForm mode="create" onSuccess={closeDialogStack} />
+               </Suspense>
+            </ErrorBoundary>
          ),
       });
    }
@@ -212,9 +239,15 @@ function CreditCardsPage() {
             description="Gerencie seus cartões de crédito"
             title="Cartões de Crédito"
          />
-         <Suspense fallback={<CreditCardsSkeleton />}>
-            <CreditCardsList />
-         </Suspense>
+         <ErrorBoundary
+            FallbackComponent={createErrorFallback({
+               errorTitle: "Erro ao carregar cartões",
+            })}
+         >
+            <Suspense fallback={<CreditCardsSkeleton />}>
+               <CreditCardsList />
+            </Suspense>
+         </ErrorBoundary>
       </main>
    );
 }
