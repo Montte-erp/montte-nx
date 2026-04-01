@@ -81,6 +81,13 @@ const FIELD_LABELS: Record<ColumnField, string> = {
 };
 
 const REQUIRED_FIELDS: ColumnField[] = ["date", "amount"];
+const COLUMN_FIELDS: ColumnField[] = [
+   "date",
+   "name",
+   "type",
+   "amount",
+   "description",
+];
 
 function parseDate(raw: string): string | null {
    for (const fmt of [
@@ -158,9 +165,10 @@ function guessMapping(headers: string[]): Partial<ColumnMapping> {
       description: ["descricao", "description", "obs", "complemento"],
    };
    const mapping: Partial<ColumnMapping> = {};
-   for (const [field, candidates] of Object.entries(patterns)) {
+   for (const field of COLUMN_FIELDS) {
+      const candidates = patterns[field];
       const idx = lower.findIndex((h) => candidates.some((c) => h.includes(c)));
-      if (idx !== -1) mapping[field as ColumnField] = headers[idx];
+      if (idx !== -1) mapping[field] = headers[idx];
    }
    return mapping;
 }
@@ -205,7 +213,7 @@ function StepBar({ methods }: { methods: StepperMethods }) {
    const steps = methods.state.all;
    const current = methods.lookup.getIndex(methods.state.current.data.id);
    return (
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-2">
          {steps.map((_s, i) => (
             <div
                className={[
@@ -480,7 +488,7 @@ function MapStep({
       methods.navigation.next();
    }
 
-   const allFields = Object.keys(FIELD_LABELS) as ColumnField[];
+   const allFields = COLUMN_FIELDS;
    const requiredFields = REQUIRED_FIELDS;
    const optionalFields = allFields.filter((f) => !requiredFields.includes(f));
 
