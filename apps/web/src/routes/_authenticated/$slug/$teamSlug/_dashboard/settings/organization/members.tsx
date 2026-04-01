@@ -49,13 +49,6 @@ type MemberRow = {
    createdAt: Date;
 };
 
-type PendingInvite = {
-   id: string;
-   email: string;
-   role: string;
-   createdAt: Date;
-};
-
 const ROLE_LABELS: Record<string, string> = {
    owner: "Proprietário",
    admin: "Administrador",
@@ -80,7 +73,7 @@ function MembersSkeleton() {
          <div className="flex items-center justify-between">
             <div>
                <Skeleton className="h-8 w-32" />
-               <Skeleton className="h-4 w-64 mt-1" />
+               <Skeleton className="h-4 w-64" />
             </div>
             <Skeleton className="h-8 w-24" />
          </div>
@@ -101,12 +94,12 @@ function MembersErrorFallback({ resetErrorBoundary }: FallbackProps) {
       <div className="flex flex-col gap-4">
          <div>
             <h1 className="text-2xl font-semibold font-serif">Membros</h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground">
                Gerencie os membros da sua organização.
             </p>
          </div>
          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-muted-foreground">
                Não foi possível carregar os membros da organização
             </p>
             <Button onClick={resetErrorBoundary} variant="outline">
@@ -131,7 +124,7 @@ function PendingInvitesSection({ organizationId }: { organizationId: string }) {
                result.error.message ?? "Erro ao carregar convites",
             );
          }
-         return result.data as PendingInvite[] | null;
+         return result.data;
       },
    });
 
@@ -162,7 +155,7 @@ function PendingInvitesSection({ organizationId }: { organizationId: string }) {
       <section className="flex flex-col gap-4">
          <div>
             <h2 className="text-lg font-medium">Convites pendentes</h2>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground">
                Convites enviados que ainda não foram aceitos.
             </p>
          </div>
@@ -357,12 +350,12 @@ function MembersContent() {
          <div className="flex items-center justify-between">
             <div>
                <h1 className="text-2xl font-semibold font-serif">Membros</h1>
-               <p className="text-sm text-muted-foreground mt-1">
+               <p className="text-sm text-muted-foreground">
                   Gerencie os membros da sua organização.
                </p>
             </div>
             <Button onClick={handleOpenInviteCredenza}>
-               <UserPlus className="size-4 mr-2" />
+               <UserPlus className="size-4" />
                Convidar membro
             </Button>
          </div>
@@ -375,7 +368,7 @@ function MembersContent() {
                   <h2 className="text-lg font-medium">
                      Membros da organização
                   </h2>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-sm text-muted-foreground">
                      {members.length}{" "}
                      {members.length === 1 ? "membro" : "membros"} na
                      organização

@@ -31,10 +31,6 @@ export const Route = createFileRoute(
    component: FeaturePreviewsPage,
 });
 
-// ---------------------------------------------------------------------------
-// Local config — maps parent flagKey to concept sub-feature names.
-// Concept sub-features are nested visually under their parent.
-// ---------------------------------------------------------------------------
 const CONCEPT_CHILDREN: Record<string, string[]> = {};
 
 const FEATURE_ICONS: Record<string, React.ElementType> = {
@@ -44,7 +40,6 @@ const FEATURE_ICONS: Record<string, React.ElementType> = {
 function FeaturePreviewsPage() {
    const { features, isEnrolled, updateEnrollment } = useEarlyAccess();
 
-   // Filter state - starts with all stages selected
    const [selectedStages, setSelectedStages] = useState<Set<FeatureStage>>(
       new Set(["concept", "alpha", "beta", "general-availability"]),
    );
@@ -53,7 +48,6 @@ function FeaturePreviewsPage() {
       setSelectedStages((prev) => {
          const next = new Set(prev);
          if (next.has(stage)) {
-            // Don't allow empty filter - if trying to deselect last one, keep it
             if (next.size === 1) return prev;
             next.delete(stage);
          } else {
@@ -63,14 +57,11 @@ function FeaturePreviewsPage() {
       });
    };
 
-   // Names explicitly listed as children under a parent — always shown nested.
    const childNames = new Set(Object.values(CONCEPT_CHILDREN).flat());
 
-   // Top-level: has a flagKey AND is not a named child of another feature.
    const parentFeatures = features.filter(
       (f) => f.flagKey !== null && !childNames.has(f.name),
    );
-   // Children: by name, regardless of flagKey.
    const conceptFeatures = features.filter((f) => childNames.has(f.name));
 
    const conceptByName = new Map(conceptFeatures.map((f) => [f.name, f]));
@@ -79,7 +70,6 @@ function FeaturePreviewsPage() {
       (f) => f.stage !== null && selectedStages.has(f.stage),
    );
 
-   // Count features per stage for the filter labels
    const stageCounts = {
       concept: features.filter((f) => f.stage === "concept").length,
       alpha: features.filter((f) => f.stage === "alpha").length,
@@ -90,19 +80,18 @@ function FeaturePreviewsPage() {
    };
 
    return (
-      <div className="space-y-6">
-         <div>
+      <div className="flex flex-col gap-4">
+         <div className="flex flex-col gap-2">
             <h1 className="text-2xl font-semibold font-serif">
                Prévias de funcionalidades
             </h1>
-            <p className="text-sm text-muted-foreground mt-3">
+            <p className="text-sm text-muted-foreground">
                As prévias permitem experimentar funcionalidades antes do
                lançamento oficial. Cada recurso passa por estágios de
                maturidade.
             </p>
 
-            {/* Filter Bar */}
-            <div className=" space-y-2">
+            <div className="flex flex-col gap-2">
                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span>Filtrar por estágio:</span>
                   <Button
