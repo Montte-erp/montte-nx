@@ -827,7 +827,7 @@ function TransactionDialogStackContent({
          .map((l) => ({
             categoryId: l.categoryId,
             tagId: l.tagId,
-            amount: String(l.amount),
+            amount: String((l.amount as number) / 100),
          }));
    }
 
@@ -840,14 +840,20 @@ function TransactionDialogStackContent({
          onSuccess: async (data) => {
             const lines = form.getFieldValue("rateioLines");
             const validLines = buildRateioLines(lines);
-            if (validLines.length > 0 && data) {
+            const transactionType = form.getFieldValue("type");
+            if (
+               validLines.length > 0 &&
+               data &&
+               transactionType !== "transfer"
+            ) {
                try {
                   await setRateioMutation.mutateAsync({
                      id: data.id,
                      lines: validLines,
                   });
-               } catch {
-                  toast.error("Falha ao salvar rateio.");
+               } catch (err) {
+                  const msg = err instanceof Error ? err.message : undefined;
+                  toast.error(msg || "Falha ao salvar rateio.");
                   onSuccess();
                   return;
                }
@@ -866,14 +872,20 @@ function TransactionDialogStackContent({
          onSuccess: async (data) => {
             const lines = form.getFieldValue("rateioLines");
             const validLines = buildRateioLines(lines);
-            if (validLines.length > 0 && data) {
+            const transactionType = form.getFieldValue("type");
+            if (
+               validLines.length > 0 &&
+               data &&
+               transactionType !== "transfer"
+            ) {
                try {
                   await setRateioMutation.mutateAsync({
                      id: data.id,
                      lines: validLines,
                   });
-               } catch {
-                  toast.error("Falha ao salvar rateio.");
+               } catch (err) {
+                  const msg = err instanceof Error ? err.message : undefined;
+                  toast.error(msg || "Falha ao salvar rateio.");
                   onSuccess();
                   return;
                }
@@ -890,6 +902,7 @@ function TransactionDialogStackContent({
    const isPending =
       createMutation.isPending ||
       updateMutation.isPending ||
+      setRateioMutation.isPending ||
       billCreateMutation.isPending;
 
    return (
