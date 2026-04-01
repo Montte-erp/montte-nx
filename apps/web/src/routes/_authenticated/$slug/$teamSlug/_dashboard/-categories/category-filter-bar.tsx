@@ -20,7 +20,10 @@ interface CategoryFilterBarProps {
    onClear: () => void;
 }
 
-const TYPE_OPTIONS: { label: string; value: "income" | "expense" | undefined }[] = [
+const TYPE_OPTIONS: {
+   label: string;
+   value: "income" | "expense" | undefined;
+}[] = [
    { label: "Todos", value: undefined },
    { label: "Receitas", value: "income" },
    { label: "Despesas", value: "expense" },
@@ -53,7 +56,8 @@ export function CategoryFilterBar({
       if (search === "") setInputValue("");
    }, [search]);
 
-   const hasActiveFilters = type !== undefined || includeArchived || search !== "";
+   const hasActiveFilters =
+      type !== undefined || includeArchived || search !== "";
 
    return (
       <div className="flex flex-col gap-2">
@@ -80,7 +84,10 @@ export function CategoryFilterBar({
                      from="/$slug/$teamSlug/categories"
                      key={opt.label}
                      preload="intent"
-                     search={(prev: CategoriesSearch) => ({ ...prev, type: opt.value })}
+                     search={(prev: CategoriesSearch) => ({
+                        ...prev,
+                        type: opt.value,
+                     })}
                   >
                      {opt.label}
                   </Link>
@@ -97,11 +104,17 @@ export function CategoryFilterBar({
                   onMouseEnter={() =>
                      router.preloadRoute({
                         to: ".",
-                        search: (prev: CategoriesSearch) => ({ ...prev, includeArchived: !includeArchived }),
+                        search: (prev) => ({
+                           ...prev,
+                           includeArchived: !includeArchived,
+                        }),
                      })
                   }
                />
-               <Label className="cursor-pointer text-sm" htmlFor="show-archived">
+               <Label
+                  className="cursor-pointer text-sm"
+                  htmlFor="show-archived"
+               >
                   Mostrar arquivadas
                </Label>
             </div>
@@ -114,7 +127,10 @@ export function CategoryFilterBar({
                   id="group-by-type"
                   onCheckedChange={onGroupByChange}
                />
-               <Label className="cursor-pointer text-sm flex items-center gap-1.5" htmlFor="group-by-type">
+               <Label
+                  className="cursor-pointer text-sm flex items-center gap-1.5"
+                  htmlFor="group-by-type"
+               >
                   <LayoutList className="size-3.5 text-muted-foreground" />
                   Agrupar por tipo
                </Label>
