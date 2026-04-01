@@ -293,6 +293,7 @@ export async function listTransactions(
       }
 
       const whereClause = and(...conditions);
+      const rateioCountExpr = sql<number>`(SELECT COUNT(*) FROM transaction_rateio WHERE transaction_id = ${transactions.id})::int`;
 
       if (isWeighted && filter.conditionGroup) {
          const condGroup = filter.conditionGroup;
@@ -303,7 +304,7 @@ export async function listTransactions(
                creditCardName: creditCards.name,
                bankAccountName: bankAccounts.name,
                contactName: contacts.name,
-               rateioCount: sql<number>`(SELECT COUNT(*) FROM transaction_rateio WHERE transaction_id = ${transactions.id})::int`,
+               rateioCount: rateioCountExpr,
             })
             .from(transactions)
             .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -356,7 +357,7 @@ export async function listTransactions(
             creditCardName: creditCards.name,
             bankAccountName: bankAccounts.name,
             contactName: contacts.name,
-            rateioCount: sql<number>`(SELECT COUNT(*) FROM transaction_rateio WHERE transaction_id = ${transactions.id})::int`,
+            rateioCount: rateioCountExpr,
          })
          .from(transactions)
          .leftJoin(categories, eq(transactions.categoryId, categories.id))
