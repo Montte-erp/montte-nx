@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { Fragment, useCallback, useState } from "react";
+import { usePostHog } from "posthog-js/react";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 
 const [useComingSoonNotifications] = createLocalStorageState<string[]>(
@@ -515,6 +516,7 @@ function FeaturePreviewsPage() {
 }
 
 function ComingSoonSection() {
+   const posthog = usePostHog();
    const [notified, setNotified] = useComingSoonNotifications();
 
    const isNotified = useCallback(
@@ -526,12 +528,18 @@ function ComingSoonSection() {
       (flagKey: string) => {
          setNotified((prev) => {
             const keys = prev ?? [];
-            return keys.includes(flagKey)
-               ? keys.filter((k) => k !== flagKey)
-               : [...keys, flagKey];
+            const enrolled = !keys.includes(flagKey);
+            posthog.people.set({ [`feature_interest_${flagKey}`]: enrolled });
+            posthog.capture("feature_interest_updated", {
+               feature_key: flagKey,
+               enrolled,
+            });
+            return enrolled
+               ? [...keys, flagKey]
+               : keys.filter((k) => k !== flagKey);
          });
       },
-      [setNotified],
+      [posthog, setNotified],
    );
 
    return (
