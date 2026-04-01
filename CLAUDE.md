@@ -219,6 +219,7 @@ function MyEmptyState({ onCreate }: { onCreate: () => void }) {
 - **No `useStableHandler`** — use `useCallback` instead.
 - **No margin utilities** — never `m-`, `mt-`, `mb-`, `ml-`, `mr-`, `mx-`, `my-`, `space-x-*`, `space-y-*`. Use `gap-*` with flex/grid.
 - **Gap values** — only `gap-2` and `gap-4`. Never `gap-1`, `gap-3`, `gap-6`, etc.
+- **Early returns over if/else** — always guard and return early; never use `else` after a `return`.
 - **Minimize `useEffect`** — derive state, use event handlers. Only for external system sync.
 - **Dates** — always `dayjs`. Never raw `Date` math or manual string formatting.
 - **URL search params over local state** — filters, sort, pagination live in `validateSearch` on the route. `useState` only for ephemeral input buffers.
