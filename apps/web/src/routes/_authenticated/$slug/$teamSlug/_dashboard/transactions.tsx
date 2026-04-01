@@ -12,6 +12,7 @@ import {
    TransactionFilterBar,
    type TransactionFilters,
 } from "@/features/transactions/ui/transaction-filter-bar";
+import { StatementImportDialogStack } from "@/features/transactions/ui/statement-import-dialog-stack";
 import { TransactionImportDialogStack } from "@/features/transactions/ui/transaction-import-dialog-stack";
 import { TransactionPrerequisitesBlocker } from "@/features/transactions/ui/transaction-prerequisites-blocker";
 import { TransactionsList } from "@/features/transactions/ui/transactions-list";
@@ -102,6 +103,12 @@ function TransactionsPage() {
       return () => window.removeEventListener("sidebar:quick-create", handler);
    }, [handleCreate]);
 
+   const handleStatementImport = useCallback(() => {
+      openDialogStack({
+         children: <StatementImportDialogStack onClose={closeDialogStack} />,
+      });
+   }, [openDialogStack, closeDialogStack]);
+
    const panelActions: PanelAction[] = [
       {
          icon: Upload,
@@ -112,6 +119,11 @@ function TransactionsPage() {
                   <TransactionImportDialogStack onClose={closeDialogStack} />
                ),
             }),
+      },
+      {
+         icon: Upload,
+         label: "Importar extrato",
+         onClick: handleStatementImport,
       },
       {
          icon: Download,
