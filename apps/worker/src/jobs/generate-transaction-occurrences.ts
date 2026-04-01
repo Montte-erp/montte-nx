@@ -53,9 +53,12 @@ export async function generateTransactionOccurrences(): Promise<void> {
          recurringTransactionId: typeof rule.id;
       }[] = [];
 
+      const startAnchor = dayjs(fromDate).isBefore(today, "day")
+         ? today.format("YYYY-MM-DD")
+         : fromDate;
       let nextDate = lastTx
          ? computeNextDate(fromDate, rule.frequency)
-         : fromDate;
+         : startAnchor;
 
       while (
          dayjs(nextDate).isBefore(windowEnd) ||
@@ -93,8 +96,14 @@ export async function generateTransactionOccurrences(): Promise<void> {
       for (const txData of toCreate) {
          try {
             await createTransaction(db, rule.teamId, txData);
-            created++;
-            if (teamRow) {
+         } catch (err) {
+            const pgErr = err as { code?: string };
+            if (pgErr.code === "23505") continue;
+            throw err;
+         }
+         created++;
+         if (teamRow) {
+            try {
                await emitFinanceRecurringProcessed(
                   (params) => emitEvent({ ...params, db, redis }),
                   {
@@ -107,11 +116,12 @@ export async function generateTransactionOccurrences(): Promise<void> {
                      teamId: rule.teamId,
                   },
                );
+            } catch (emitErr) {
+               logger.error(
+                  { err: emitErr, recurringTransactionId: rule.id },
+                  "Failed to emit billing event",
+               );
             }
-         } catch (err) {
-            const pgErr = err as { code?: string };
-            if (pgErr.code === "23505") continue;
-            throw err;
          }
       }
 
