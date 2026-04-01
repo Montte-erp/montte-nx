@@ -28,6 +28,7 @@ import {
    updateTransactionSchema,
    transactionItems,
    transactions,
+   transactionRateio,
    transactionTags,
 } from "@core/database/schemas/transactions";
 import { getBankAccount } from "@core/database/repositories/bank-accounts-repository";
@@ -563,6 +564,71 @@ export async function getTransactionItems(
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to get transaction items");
+   }
+}
+
+export async function getRateioForTransaction(
+   db: DatabaseInstance,
+   transactionId: string,
+) {
+   try {
+      return db
+         .select({
+            id: transactionRateio.id,
+            transactionId: transactionRateio.transactionId,
+            categoryId: transactionRateio.categoryId,
+            tagId: transactionRateio.tagId,
+            amount: transactionRateio.amount,
+            createdAt: transactionRateio.createdAt,
+            categoryName: categories.name,
+         })
+         .from(transactionRateio)
+         .leftJoin(categories, eq(transactionRateio.categoryId, categories.id))
+         .where(eq(transactionRateio.transactionId, transactionId));
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to get rateio");
+   }
+}
+
+export async function replaceTransactionRateio(
+   db: DatabaseInstance,
+   transactionId: string,
+   transaction: { amount: string },
+   lines: { categoryId: string; tagId?: string | null; amount: string }[],
+) {
+   try {
+      if (lines.length === 0) {
+         await db
+            .delete(transactionRateio)
+            .where(eq(transactionRateio.transactionId, transactionId));
+         return;
+      }
+
+      const sum = lines.reduce((acc, l) => acc + Number(l.amount), 0);
+      const total = Number(transaction.amount);
+      const diff = Math.abs(sum - total);
+      if (diff > 0.01) {
+         throw AppError.validation(
+            `Soma do rateio (${sum.toFixed(2)}) deve ser igual ao valor da transação (${total.toFixed(2)}).`,
+         );
+      }
+
+      await db
+         .delete(transactionRateio)
+         .where(eq(transactionRateio.transactionId, transactionId));
+
+      await db.insert(transactionRateio).values(
+         lines.map((l) => ({
+            transactionId,
+            categoryId: l.categoryId,
+            tagId: l.tagId ?? null,
+            amount: l.amount,
+         })),
+      );
+   } catch (err) {
+      propagateError(err);
+      throw AppError.database("Failed to replace rateio");
    }
 }
 
