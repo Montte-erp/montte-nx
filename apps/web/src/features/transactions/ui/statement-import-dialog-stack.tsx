@@ -34,7 +34,9 @@ import {
    FileText,
    Loader2,
 } from "lucide-react";
+import { ErrorBoundary } from "react-error-boundary";
 import { Suspense, useState, useTransition } from "react";
+import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -132,10 +134,10 @@ function parseXlsx(buffer: ArrayBuffer): RawData {
    const wb = xlsxRead(buffer, { type: "array" });
    const ws = wb.Sheets[wb.SheetNames[0]];
    if (!ws) throw new Error("Planilha vazia");
-   const data = xlsxUtils.sheet_to_json<string[]>(ws, {
+   const data = xlsxUtils.sheet_to_json<unknown[]>(ws, {
       header: 1,
       defval: "",
-   }) as string[][];
+   });
    if (data.length < 2) throw new Error("Planilha sem dados");
    return {
       headers: data[0].map(String),
@@ -415,20 +417,20 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                </Dropzone>
 
                <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-lg border bg-muted/30 p-3">
-                     <p className="text-xs font-medium mb-0.5">CSV / XLSX</p>
+                  <div className="rounded-lg border bg-muted/30 p-3 flex flex-col gap-2">
+                     <p className="text-xs font-medium">CSV / XLSX</p>
                      <p className="text-xs text-muted-foreground">
                         Mapeie as colunas no próximo passo
                      </p>
                   </div>
-                  <div className="rounded-lg border bg-muted/30 p-3">
-                     <p className="text-xs font-medium mb-0.5">OFX</p>
+                  <div className="rounded-lg border bg-muted/30 p-3 flex flex-col gap-2">
+                     <p className="text-xs font-medium">OFX</p>
                      <p className="text-xs text-muted-foreground">
                         Mapeamento automático — vai direto à prévia
                      </p>
                   </div>
-                  <div className="rounded-lg border bg-muted/30 p-3">
-                     <p className="text-xs font-medium mb-0.5">Dados</p>
+                  <div className="rounded-lg border bg-muted/30 p-3 flex flex-col gap-2">
+                     <p className="text-xs font-medium">Dados</p>
                      <p className="text-xs text-muted-foreground">
                         Data, valor, tipo e descrição
                      </p>
@@ -537,9 +539,9 @@ function MapStep({
                   <div className="grid grid-cols-2 gap-4">
                      {requiredFields.map((field) => (
                         <div className="flex flex-col gap-2" key={field}>
-                           <label className="text-xs font-medium text-muted-foreground">
+                           <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
                               {FIELD_LABELS[field].replace(" *", "")}
-                              <span className="text-destructive ml-0.5">*</span>
+                              <span className="text-destructive">*</span>
                            </label>
                            <Combobox
                               className="w-full h-8 text-xs"
@@ -597,13 +599,13 @@ function MapStep({
                   Voltar
                </Button>
                <Button
-                  className="flex-1"
+                  className="flex-1 flex items-center gap-2"
                   disabled={!canProceed()}
                   onClick={handleApply}
                   type="button"
                >
                   Aplicar mapeamento
-                  <ChevronRight className="size-4 ml-1" />
+                  <ChevronRight className="size-4" />
                </Button>
             </div>
          </div>
@@ -740,13 +742,13 @@ function PreviewStep({ methods, rows }: PreviewStepProps) {
                   Voltar
                </Button>
                <Button
-                  className="flex-1"
+                  className="flex-1 flex items-center gap-2"
                   disabled={rows.filter((r) => r.isValid).length === 0}
                   onClick={() => methods.navigation.next()}
                   type="button"
                >
                   Continuar
-                  <ChevronRight className="ml-1 size-4" />
+                  <ChevronRight className="size-4" />
                </Button>
             </div>
          </div>
@@ -927,7 +929,7 @@ function ConfirmStepInner({
                   Voltar
                </Button>
                <Button
-                  className="flex-1"
+                  className="flex-1 flex items-center gap-2"
                   disabled={
                      isLoading || validRows.length === 0 || !bankAccountId
                   }
@@ -935,7 +937,7 @@ function ConfirmStepInner({
                   type="button"
                >
                   {isLoading ? (
-                     <Loader2 className="mr-2 size-4 animate-spin" />
+                     <Loader2 className="size-4 animate-spin" />
                   ) : null}
                   Importar {validRows.length} transação(ões)
                </Button>
@@ -954,9 +956,17 @@ interface ConfirmStepProps {
 
 function ConfirmStep(props: ConfirmStepProps) {
    return (
-      <Suspense fallback={<StepLoadingFallback title="Confirmar Importação" />}>
-         <ConfirmStepInner {...props} />
-      </Suspense>
+      <ErrorBoundary
+         FallbackComponent={createErrorFallback({
+            errorTitle: "Erro ao carregar contas",
+         })}
+      >
+         <Suspense
+            fallback={<StepLoadingFallback title="Confirmar Importação" />}
+         >
+            <ConfirmStepInner {...props} />
+         </Suspense>
+      </ErrorBoundary>
    );
 }
 
