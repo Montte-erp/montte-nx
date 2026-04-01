@@ -8,6 +8,7 @@ export const FINANCE_EVENTS = {
    "finance.category_created": "finance.category_created",
    "finance.tag_created": "finance.tag_created",
    "finance.budget_alert_triggered": "finance.budget_alert_triggered",
+   "finance.recurring_processed": "finance.recurring_processed",
 } as const;
 
 export type FinanceEventName =
@@ -142,6 +143,28 @@ export function emitFinanceBudgetAlertTriggered(
    return emit({
       ...ctx,
       eventName: FINANCE_EVENTS["finance.budget_alert_triggered"],
+      eventCategory: EVENT_CATEGORIES.finance,
+      properties,
+   });
+}
+
+export const financeRecurringProcessedSchema = z.object({
+   recurringTransactionId: z.string().uuid(),
+   generatedCount: z.number().int().nonnegative(),
+   teamId: z.string().uuid(),
+});
+export type FinanceRecurringProcessedEvent = z.infer<
+   typeof financeRecurringProcessedSchema
+>;
+
+export function emitFinanceRecurringProcessed(
+   emit: EmitFn,
+   ctx: { organizationId: string; userId?: string; teamId?: string },
+   properties: FinanceRecurringProcessedEvent,
+) {
+   return emit({
+      ...ctx,
+      eventName: FINANCE_EVENTS["finance.recurring_processed"],
       eventCategory: EVENT_CATEGORIES.finance,
       properties,
    });
