@@ -1,18 +1,21 @@
-import { parseOrThrow as parseOfxOrThrow, getTransactions } from "@f-o-t/ofx";
+import { parseOrThrow as parseCsv } from "@f-o-t/csv";
+import { of as moneyOf, format as moneyFormat } from "@f-o-t/money";
+import { parseOrThrow as parseOfx, getTransactions } from "@f-o-t/ofx";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Combobox } from "@packages/ui/components/combobox";
 import {
-   DialogStackContent,
-   DialogStackDescription,
-   DialogStackHeader,
-   DialogStackTitle,
-} from "@packages/ui/components/dialog-stack";
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import {
    Dropzone,
    DropzoneContent,
    DropzoneEmptyState,
 } from "@packages/ui/components/dropzone";
+import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { defineStepper } from "@packages/ui/components/stepper";
 import {
    Table,
@@ -23,7 +26,6 @@ import {
    TableRow,
 } from "@packages/ui/components/table";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { read as xlsxRead, utils as xlsxUtils } from "xlsx";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import {
@@ -35,8 +37,8 @@ import {
    Loader2,
 } from "lucide-react";
 import { ErrorBoundary } from "react-error-boundary";
-import { Suspense, useState, useTransition } from "react";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
+import { Suspense, useState } from "react";
+import { read as xlsxRead, utils as xlsxUtils } from "xlsx";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -137,7 +139,13 @@ function validateRow(row: ParsedRow): ValidatedRow {
    return { ...row, isValid: errors.length === 0, errors };
 }
 
-function parseXlsx(buffer: ArrayBuffer): RawData {
+function formatMoney(value: string): string {
+   const n = Number.parseFloat(value);
+   if (Number.isNaN(n)) return value;
+   return moneyFormat(moneyOf(n, "BRL"), "pt-BR");
+}
+
+function parseXlsxToRaw(buffer: ArrayBuffer): RawData {
    const wb = xlsxRead(buffer, { type: "array" });
    const ws = wb.Sheets[wb.SheetNames[0]];
    if (!ws) throw new Error("Planilha vazia");
@@ -200,15 +208,6 @@ function applyMapping(
    };
 }
 
-function formatCurrency(value: string): string {
-   const num = Number(value);
-   if (Number.isNaN(num)) return value;
-   return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-   }).format(num);
-}
-
 function StepBar({ methods }: { methods: StepperMethods }) {
    const steps = methods.state.all;
    const current = methods.lookup.getIndex(methods.state.current.data.id);
@@ -228,24 +227,6 @@ function StepBar({ methods }: { methods: StepperMethods }) {
             />
          ))}
       </div>
-   );
-}
-
-function StepLoadingFallback({ title }: { title: string }) {
-   return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>{title}</DialogStackTitle>
-            <DialogStackDescription>
-               Aguarde enquanto processamos...
-            </DialogStackDescription>
-         </DialogStackHeader>
-         <div className="flex-1 overflow-y-auto px-4 py-4">
-            <div className="flex items-center justify-center py-12">
-               <Loader2 className="size-6 animate-spin text-muted-foreground" />
-            </div>
-         </div>
-      </DialogStackContent>
    );
 }
 
@@ -274,7 +255,7 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
             try {
                const content = ev.target?.result;
                if (typeof content !== "string") throw new Error("read error");
-               const ofxDoc = parseOfxOrThrow(content);
+               const ofxDoc = parseOfx(content);
                const txs = getTransactions(ofxDoc);
                const rows: ValidatedRow[] = txs.map((tx) => {
                   const amount = Math.abs(tx.TRNAMT);
@@ -311,11 +292,11 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                const buffer = ev.target?.result;
                if (!(buffer instanceof ArrayBuffer))
                   throw new Error("read error");
-               const raw = parseXlsx(buffer);
+               const raw = parseXlsxToRaw(buffer);
                onFileReady([], "xlsx", raw);
                methods.navigation.next();
             } catch {
-               toast.error("Erro ao processar planilha.");
+               toast.error("Erro ao processar planilha XLSX.");
                setSelectedFile(undefined);
             } finally {
                setIsParsing(false);
@@ -326,25 +307,13 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
       }
 
       const reader = new FileReader();
-      reader.onload = async (ev) => {
+      reader.onload = (ev) => {
          try {
             const content = ev.target?.result;
             if (typeof content !== "string") throw new Error("read error");
-            const lines = content.split(/\r?\n/).filter((l) => l.trim() !== "");
-            if (lines.length < 2) throw new Error("Arquivo sem dados");
-            const detectDelimiter = (line: string): string => {
-               const counts = {
-                  ";": (line.match(/;/g) ?? []).length,
-                  ",": (line.match(/,/g) ?? []).length,
-                  "\t": (line.match(/\t/g) ?? []).length,
-               };
-               return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
-            };
-            const delimiter = detectDelimiter(lines[0]);
-            const splitLine = (line: string): string[] =>
-               line.split(delimiter).map((c) => c.trim().replace(/^"|"$/g, ""));
-            const headers = splitLine(lines[0]);
-            const rows = lines.slice(1).map(splitLine);
+            const doc = parseCsv(content);
+            const headers = doc.headers ?? [];
+            const rows = doc.rows.map((r) => r.fields);
             onFileReady([], "csv", { headers, rows });
             methods.navigation.next();
          } catch {
@@ -358,16 +327,16 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
    }
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Importar Extrato</DialogStackTitle>
-            <DialogStackDescription>
-               Importe seu extrato bancário via arquivo CSV, XLSX ou OFX
-            </DialogStackDescription>
-         </DialogStackHeader>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Importar Extrato</CredenzaTitle>
+            <CredenzaDescription>
+               Importe seu extrato bancário via CSV, XLSX ou OFX
+            </CredenzaDescription>
+         </CredenzaHeader>
 
-         <div className="flex-1 overflow-y-auto px-4 py-4">
-            <div className="flex flex-col gap-4 w-full overflow-auto">
+         <CredenzaBody>
+            <div className="flex flex-col gap-4">
                <StepBar methods={methods} />
 
                <Dropzone
@@ -445,8 +414,8 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                   </div>
                </div>
             </div>
-         </div>
-      </DialogStackContent>
+         </CredenzaBody>
+      </>
    );
 }
 
@@ -465,159 +434,85 @@ function MapStep({
    onMappingChange,
    onApply,
 }: MapStepProps) {
-   const { headers, rows } = raw;
+   const canProceed = REQUIRED_FIELDS.every((f) => mapping[f] !== "");
 
-   const headerOptions = [
-      { value: "__none__", label: "— Ignorar —" },
-      ...headers.map((h) => ({ value: h, label: h })),
-   ];
-
-   const previewRows = rows.slice(0, 3);
-
-   function canProceed(): boolean {
-      return REQUIRED_FIELDS.every(
-         (f) => mapping[f] && mapping[f] !== "__none__",
+   function handleNext() {
+      const mapped = raw.rows.map((r) =>
+         validateRow(applyMapping(r, raw.headers, mapping)),
       );
-   }
-
-   function handleApply() {
-      const parsed = rows.map((row) =>
-         validateRow(applyMapping(row, headers, mapping)),
-      );
-      onApply(parsed);
+      onApply(mapped);
       methods.navigation.next();
    }
 
-   const allFields = COLUMN_FIELDS;
-   const requiredFields = REQUIRED_FIELDS;
-   const optionalFields = allFields.filter((f) => !requiredFields.includes(f));
-
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Mapear Colunas</DialogStackTitle>
-            <DialogStackDescription>
-               Relacione as colunas do arquivo com os campos do sistema
-            </DialogStackDescription>
-         </DialogStackHeader>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Mapear Colunas</CredenzaTitle>
+            <CredenzaDescription>
+               Associe as colunas do arquivo aos campos
+            </CredenzaDescription>
+         </CredenzaHeader>
 
-         <div className="flex-1 overflow-y-auto px-4 py-4">
+         <CredenzaBody>
             <div className="flex flex-col gap-4">
                <StepBar methods={methods} />
 
-               <div className="rounded-lg border overflow-hidden">
-                  <div className="bg-muted/50 px-3 py-2 border-b">
-                     <p className="text-xs font-medium text-muted-foreground">
-                        Prévia ({rows.length} linhas)
-                     </p>
-                  </div>
-                  <div className="overflow-auto max-h-24">
-                     <Table>
-                        <TableHeader>
-                           <TableRow>
-                              {headers.map((h) => (
-                                 <TableHead
-                                    className="text-xs whitespace-nowrap"
-                                    key={h}
-                                 >
-                                    {h}
-                                 </TableHead>
-                              ))}
-                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                           {previewRows.map((row, i) => (
-                              <TableRow key={`prev-${i + 1}`}>
-                                 {row.map((cell, j) => (
-                                    <TableCell
-                                       className="text-xs whitespace-nowrap"
-                                       key={`cell-${i + 1}-${j + 1}`}
-                                    >
-                                       {cell || "—"}
-                                    </TableCell>
-                                 ))}
-                              </TableRow>
-                           ))}
-                        </TableBody>
-                     </Table>
-                  </div>
-               </div>
-
-               <div className="flex flex-col gap-4">
-                  <div className="grid grid-cols-2 gap-4">
-                     {requiredFields.map((field) => (
-                        <div className="flex flex-col gap-2" key={field}>
-                           <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-                              {FIELD_LABELS[field].replace(" *", "")}
-                              <span className="text-destructive">*</span>
-                           </label>
+               <div className="flex flex-col gap-2">
+                  {COLUMN_FIELDS.map((field) => (
+                     <div className="flex items-center gap-4" key={field}>
+                        <span className="text-sm font-medium w-28 shrink-0">
+                           {FIELD_LABELS[field]}
+                        </span>
+                        <div className="flex-1">
                            <Combobox
-                              className="w-full h-8 text-xs"
-                              emptyMessage="Nenhuma coluna"
+                              options={[
+                                 { value: "__none__", label: "— Não mapear —" },
+                                 ...raw.headers.map((h) => ({
+                                    value: h,
+                                    label: h,
+                                 })),
+                              ]}
                               onValueChange={(v) =>
                                  onMappingChange({
                                     ...mapping,
                                     [field]: v === "__none__" ? "" : v,
                                  })
                               }
-                              options={headerOptions}
-                              placeholder="Selecionar coluna..."
-                              searchPlaceholder="Buscar coluna..."
                               value={mapping[field] || "__none__"}
                            />
                         </div>
-                     ))}
-                  </div>
+                     </div>
+                  ))}
+               </div>
 
-                  <div className="grid grid-cols-3 gap-4">
-                     {optionalFields.map((field) => (
-                        <div className="flex flex-col gap-2" key={field}>
-                           <label className="text-xs font-medium text-muted-foreground">
-                              {FIELD_LABELS[field].replace(" *", "")}
-                           </label>
-                           <Combobox
-                              className="w-full h-8 text-xs"
-                              emptyMessage="Nenhuma coluna"
-                              onValueChange={(v) =>
-                                 onMappingChange({
-                                    ...mapping,
-                                    [field]: v === "__none__" ? "" : v,
-                                 })
-                              }
-                              options={headerOptions}
-                              placeholder="— Ignorar —"
-                              searchPlaceholder="Buscar coluna..."
-                              value={mapping[field] || "__none__"}
-                           />
-                        </div>
-                     ))}
-                  </div>
+               <p className="text-xs text-muted-foreground">
+                  {raw.rows.length} linha(s) · Colunas: {raw.headers.join(", ")}
+               </p>
+
+               <div className="flex gap-2">
+                  <Button
+                     className="flex-none"
+                     onClick={() => methods.navigation.prev()}
+                     type="button"
+                     variant="outline"
+                  >
+                     Voltar
+                  </Button>
+                  <Button
+                     className="flex-1"
+                     disabled={!canProceed}
+                     onClick={handleNext}
+                     type="button"
+                  >
+                     <span className="flex items-center gap-2">
+                        Continuar
+                        <ChevronRight className="size-4" />
+                     </span>
+                  </Button>
                </div>
             </div>
-         </div>
-
-         <div className="border-t px-4 py-4">
-            <div className="flex gap-2">
-               <Button
-                  className="flex-none"
-                  onClick={() => methods.navigation.prev()}
-                  type="button"
-                  variant="outline"
-               >
-                  Voltar
-               </Button>
-               <Button
-                  className="flex-1 flex items-center gap-2"
-                  disabled={!canProceed()}
-                  onClick={handleApply}
-                  type="button"
-               >
-                  Aplicar mapeamento
-                  <ChevronRight className="size-4" />
-               </Button>
-            </div>
-         </div>
-      </DialogStackContent>
+         </CredenzaBody>
+      </>
    );
 }
 
@@ -627,140 +522,104 @@ interface PreviewStepProps {
 }
 
 function PreviewStep({ methods, rows }: PreviewStepProps) {
-   const previewRows = rows.slice(0, 15);
+   const validCount = rows.filter((r) => r.isValid).length;
    const invalidCount = rows.filter((r) => !r.isValid).length;
+   const previewRows = rows.slice(0, 15);
 
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Prévia do Extrato</DialogStackTitle>
-            <DialogStackDescription>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Prévia do Extrato</CredenzaTitle>
+            <CredenzaDescription>
                {rows.length} transação(ões) encontrada(s)
-               {invalidCount > 0 ? ` — ${invalidCount} com erros` : ""}
-            </DialogStackDescription>
-         </DialogStackHeader>
+            </CredenzaDescription>
+         </CredenzaHeader>
 
-         <div className="flex-1 overflow-y-auto px-4 py-4">
+         <CredenzaBody>
             <div className="flex flex-col gap-4">
                <StepBar methods={methods} />
 
-               {invalidCount > 0 && (
-                  <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                     <AlertTriangle className="size-4 shrink-0 text-amber-600" />
-                     <p className="text-xs text-amber-700">
-                        {invalidCount} linha(s) com dados inválidos serão
-                        ignoradas na importação.
-                     </p>
-                  </div>
-               )}
+               <div className="flex items-center gap-2">
+                  <Badge variant="default">{validCount} válida(s)</Badge>
+                  {invalidCount > 0 && (
+                     <Badge variant="destructive">
+                        {invalidCount} com erro(s)
+                     </Badge>
+                  )}
+               </div>
 
-               <div className="overflow-auto max-h-64 rounded-lg border">
+               <div className="max-h-72 overflow-auto rounded-lg border">
                   <Table>
                      <TableHeader>
                         <TableRow>
-                           <TableHead className="w-6 p-2" />
-                           <TableHead className="text-xs p-2">Data</TableHead>
-                           <TableHead className="text-xs p-2">Nome</TableHead>
-                           <TableHead className="text-xs p-2">Tipo</TableHead>
-                           <TableHead className="p-2 text-right text-xs">
-                              Valor
-                           </TableHead>
+                           <TableHead className="text-xs">Data</TableHead>
+                           <TableHead className="text-xs">Nome</TableHead>
+                           <TableHead className="text-xs">Tipo</TableHead>
+                           <TableHead className="text-xs">Valor</TableHead>
+                           <TableHead className="text-xs w-10" />
                         </TableRow>
                      </TableHeader>
                      <TableBody>
-                        {previewRows.map((row, index) => (
+                        {previewRows.map((row, i) => (
                            <TableRow
-                              className={row.isValid ? "" : "opacity-50"}
-                              key={`row-${index + 1}`}
+                              className={row.isValid ? "" : "bg-destructive/5"}
+                              key={`prev-${i + 1}`}
                            >
-                              <TableCell className="w-6 p-2">
-                                 {row.isValid ? (
-                                    <CheckCircle2 className="size-3.5 text-emerald-500" />
-                                 ) : (
-                                    <AlertTriangle className="size-3.5 text-amber-500" />
-                                 )}
-                              </TableCell>
-                              <TableCell className="p-2 text-xs whitespace-nowrap">
+                              <TableCell className="text-xs">
                                  {row.date}
                               </TableCell>
-                              <TableCell className="max-w-32 truncate p-2 text-xs">
-                                 {row.name || (
-                                    <span className="text-muted-foreground">
-                                       —
-                                    </span>
+                              <TableCell className="text-xs max-w-32 truncate">
+                                 {row.name || "—"}
+                              </TableCell>
+                              <TableCell className="text-xs">
+                                 {row.type === "income" ? "Entrada" : "Saída"}
+                              </TableCell>
+                              <TableCell className="text-xs">
+                                 {formatMoney(row.amount)}
+                              </TableCell>
+                              <TableCell className="text-xs">
+                                 {row.isValid ? (
+                                    <CheckCircle2 className="size-3.5 text-emerald-600" />
+                                 ) : (
+                                    <AlertTriangle className="size-3.5 text-destructive" />
                                  )}
-                              </TableCell>
-                              <TableCell className="p-2 text-xs">
-                                 <span
-                                    className={
-                                       row.type === "income"
-                                          ? "text-emerald-600"
-                                          : "text-red-500"
-                                    }
-                                 >
-                                    {row.type === "income"
-                                       ? "Receita"
-                                       : "Despesa"}
-                                 </span>
-                              </TableCell>
-                              <TableCell className="p-2 text-right font-mono text-xs">
-                                 {parseAmount(row.amount) !== null
-                                    ? formatCurrency(
-                                         parseAmount(row.amount) ?? "0",
-                                      )
-                                    : row.amount}
                               </TableCell>
                            </TableRow>
                         ))}
-                        {rows.length > 15 && (
-                           <TableRow>
-                              <TableCell
-                                 className="py-2 text-center text-xs text-muted-foreground"
-                                 colSpan={5}
-                              >
-                                 +{rows.length - 15} mais transações não
-                                 exibidas
-                              </TableCell>
-                           </TableRow>
-                        )}
-                        {rows.length === 0 && (
-                           <TableRow>
-                              <TableCell
-                                 className="py-6 text-center text-xs text-muted-foreground"
-                                 colSpan={5}
-                              >
-                                 Nenhuma transação encontrada
-                              </TableCell>
-                           </TableRow>
-                        )}
                      </TableBody>
                   </Table>
                </div>
-            </div>
-         </div>
 
-         <div className="border-t px-4 py-4">
-            <div className="flex gap-2">
-               <Button
-                  className="flex-none"
-                  onClick={() => methods.navigation.prev()}
-                  type="button"
-                  variant="outline"
-               >
-                  Voltar
-               </Button>
-               <Button
-                  className="flex-1 flex items-center gap-2"
-                  disabled={rows.filter((r) => r.isValid).length === 0}
-                  onClick={() => methods.navigation.next()}
-                  type="button"
-               >
-                  Continuar
-                  <ChevronRight className="size-4" />
-               </Button>
+               {rows.length > 15 && (
+                  <p className="text-xs text-muted-foreground text-center">
+                     Mostrando 15 de {rows.length}
+                  </p>
+               )}
+
+               <div className="flex gap-2">
+                  <Button
+                     className="flex-none"
+                     onClick={() => methods.navigation.prev()}
+                     type="button"
+                     variant="outline"
+                  >
+                     Voltar
+                  </Button>
+                  <Button
+                     className="flex-1"
+                     disabled={validCount === 0}
+                     onClick={() => methods.navigation.next()}
+                     type="button"
+                  >
+                     <span className="flex items-center gap-2">
+                        Continuar
+                        <ChevronRight className="size-4" />
+                     </span>
+                  </Button>
+               </div>
             </div>
-         </div>
-      </DialogStackContent>
+         </CredenzaBody>
+      </>
    );
 }
 
@@ -768,87 +627,77 @@ interface ConfirmStepInnerProps {
    methods: StepperMethods;
    rows: ValidatedRow[];
    format: FileFormat;
-   onSuccess: () => void;
+   onClose?: () => void;
 }
 
 function ConfirmStepInner({
    methods,
    rows,
    format,
-   onSuccess,
+   onClose,
 }: ConfirmStepInnerProps) {
-   const [bankAccountId, setBankAccountId] = useState("");
-   const [isPending, startTransition] = useTransition();
+   const validRows = rows.filter((r) => r.isValid);
+   const invalidCount = rows.filter((r) => !r.isValid).length;
 
    const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
    );
-
-   const bankAccountOptions = bankAccounts.map((acc) => ({
-      value: acc.id,
-      label: acc.name,
-   }));
-
-   const validRows = rows.filter((r) => r.isValid);
-   const selectedAccount = bankAccounts.find((acc) => acc.id === bankAccountId);
+   const [bankAccountId, setBankAccountId] = useState<string>("");
 
    const importMutation = useMutation(
-      orpc.transactions.importStatement.mutationOptions({
-         onSuccess: (data) => {
-            toast.success(
-               `${data.imported} transação(ões) importada(s) com sucesso.`,
-            );
-            onSuccess();
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao importar extrato.");
-         },
-      }),
+      orpc.transactions.importStatement.mutationOptions({}),
    );
 
-   function handleImport() {
-      if (validRows.length === 0 || !bankAccountId) return;
+   async function handleImport() {
+      if (!bankAccountId) {
+         toast.error("Selecione uma conta bancária.");
+         return;
+      }
 
-      startTransition(async () => {
-         importMutation.mutate({
-            bankAccountId,
-            format,
-            transactions: validRows.map((r) => ({
-               name: r.name || undefined,
-               type: r.type,
-               amount: parseAmount(r.amount) ?? r.amount,
-               date: parseDate(r.date) ?? r.date,
-               description: r.description || undefined,
-            })),
-         });
+      await importMutation.mutateAsync({
+         bankAccountId,
+         format,
+         transactions: validRows.map((r) => ({
+            name: r.name || undefined,
+            type: r.type,
+            amount: parseAmount(r.amount) ?? r.amount,
+            date: parseDate(r.date) ?? r.date,
+            description: r.description || undefined,
+         })),
       });
+
+      toast.success(
+         `${validRows.length} transação(ões) importada(s) com sucesso.`,
+      );
+      onClose?.();
    }
 
-   const isLoading = isPending || importMutation.isPending;
-
    return (
-      <DialogStackContent index={0}>
-         <DialogStackHeader>
-            <DialogStackTitle>Confirmar Importação</DialogStackTitle>
-            <DialogStackDescription>
-               Selecione a conta e confirme a importação
-            </DialogStackDescription>
-         </DialogStackHeader>
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Confirmar Importação</CredenzaTitle>
+            <CredenzaDescription>
+               Selecione a conta e confirme
+            </CredenzaDescription>
+         </CredenzaHeader>
 
-         <div className="flex-1 overflow-y-auto px-4 py-4">
+         <CredenzaBody>
             <div className="flex flex-col gap-4">
                <StepBar methods={methods} />
 
                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-medium text-muted-foreground">
-                     Conta bancária *
+                  <label className="text-sm font-medium">
+                     Conta bancária <span className="text-destructive">*</span>
                   </label>
                   <Combobox
-                     emptyMessage="Nenhuma conta encontrada."
+                     options={(bankAccounts ?? []).map(
+                        (a: { id: string; name: string }) => ({
+                           value: a.id,
+                           label: a.name,
+                        }),
+                     )}
                      onValueChange={setBankAccountId}
-                     options={bankAccountOptions}
                      placeholder="Selecionar conta..."
-                     searchPlaceholder="Buscar conta..."
                      value={bankAccountId}
                   />
                </div>
@@ -859,17 +708,7 @@ function ConfirmStepInner({
                         Resumo
                      </p>
                   </div>
-
                   <div className="divide-y">
-                     <div className="flex items-center justify-between px-4 py-2.5">
-                        <span className="text-sm text-muted-foreground">
-                           Formato
-                        </span>
-                        <Badge className="uppercase text-xs" variant="outline">
-                           {format}
-                        </Badge>
-                     </div>
-
                      <div className="flex items-center justify-between px-4 py-2.5">
                         <span className="text-sm text-muted-foreground">
                            Total no arquivo
@@ -878,18 +717,14 @@ function ConfirmStepInner({
                            {rows.length}
                         </span>
                      </div>
-
-                     {rows.filter((r) => !r.isValid).length > 0 && (
+                     {invalidCount > 0 && (
                         <div className="flex items-center justify-between px-4 py-2.5">
                            <span className="text-sm text-muted-foreground">
-                              Inválidas (ignoradas)
+                              Com erro
                            </span>
-                           <Badge className="text-xs" variant="destructive">
-                              {rows.filter((r) => !r.isValid).length}
-                           </Badge>
+                           <Badge variant="destructive">{invalidCount}</Badge>
                         </div>
                      )}
-
                      <div className="flex items-center justify-between bg-primary/5 px-4 py-2.5">
                         <span className="text-sm font-medium">
                            Serão importadas
@@ -898,71 +733,49 @@ function ConfirmStepInner({
                            {validRows.length}
                         </span>
                      </div>
-
-                     <div className="flex items-center justify-between px-4 py-2.5">
-                        <span className="text-sm text-muted-foreground">
-                           Conta
-                        </span>
-                        <span className="text-sm font-medium">
-                           {selectedAccount?.name ?? (
-                              <span className="text-destructive">
-                                 Não selecionada
-                              </span>
-                           )}
-                        </span>
-                     </div>
                   </div>
                </div>
 
-               {validRows.length === 0 && (
-                  <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                     <AlertTriangle className="size-4 shrink-0 text-amber-600" />
-                     <p className="text-xs text-amber-700">
-                        Não há transações válidas para importar.
-                     </p>
-                  </div>
-               )}
+               <div className="flex gap-2">
+                  <Button
+                     className="flex-none"
+                     disabled={importMutation.isPending}
+                     onClick={() => methods.navigation.prev()}
+                     type="button"
+                     variant="outline"
+                  >
+                     Voltar
+                  </Button>
+                  <Button
+                     className="flex-1"
+                     disabled={
+                        importMutation.isPending ||
+                        validRows.length === 0 ||
+                        !bankAccountId
+                     }
+                     onClick={handleImport}
+                     type="button"
+                  >
+                     <span className="flex items-center gap-2">
+                        {importMutation.isPending && (
+                           <Loader2 className="size-4 animate-spin" />
+                        )}
+                        Importar {validRows.length} transação(ões)
+                     </span>
+                  </Button>
+               </div>
             </div>
-         </div>
-
-         <div className="border-t px-4 py-4">
-            <div className="flex gap-2">
-               <Button
-                  className="flex-none"
-                  disabled={isLoading}
-                  onClick={() => methods.navigation.prev()}
-                  type="button"
-                  variant="outline"
-               >
-                  Voltar
-               </Button>
-               <Button
-                  className="flex-1 flex items-center gap-2"
-                  disabled={
-                     isLoading || validRows.length === 0 || !bankAccountId
-                  }
-                  onClick={handleImport}
-                  type="button"
-               >
-                  {isLoading ? (
-                     <Loader2 className="size-4 animate-spin" />
-                  ) : null}
-                  Importar {validRows.length} transação(ões)
-               </Button>
-            </div>
-         </div>
-      </DialogStackContent>
+         </CredenzaBody>
+      </>
    );
 }
 
-interface ConfirmStepProps {
-   methods: StepperMethods;
-   rows: ValidatedRow[];
-   format: FileFormat;
-   onSuccess: () => void;
-}
-
-function ConfirmStep(props: ConfirmStepProps) {
+function ConfirmStep({
+   methods,
+   rows,
+   format,
+   onClose,
+}: ConfirmStepInnerProps) {
    return (
       <ErrorBoundary
          FallbackComponent={createErrorFallback({
@@ -970,15 +783,24 @@ function ConfirmStep(props: ConfirmStepProps) {
          })}
       >
          <Suspense
-            fallback={<StepLoadingFallback title="Confirmar Importação" />}
+            fallback={
+               <div className="flex items-center justify-center p-8">
+                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
+               </div>
+            }
          >
-            <ConfirmStepInner {...props} />
+            <ConfirmStepInner
+               format={format}
+               methods={methods}
+               rows={rows}
+               onClose={onClose}
+            />
          </Suspense>
       </ErrorBoundary>
    );
 }
 
-function StatementImportWizard({
+function ImportWizard({
    methods,
    onClose,
 }: {
@@ -986,11 +808,10 @@ function StatementImportWizard({
    onClose?: () => void;
 }) {
    const currentId = methods.state.current.data.id;
-
+   const [rawData, setRawData] = useState<RawData | null>(null);
    const [rows, setRows] = useState<ValidatedRow[]>([]);
    const [format, setFormat] = useState<FileFormat>("csv");
-   const [raw, setRaw] = useState<RawData | null>(null);
-   const [columnMapping, setColumnMapping] = useState<ColumnMapping>({
+   const [mapping, setMapping] = useState<ColumnMapping>({
       date: "",
       name: "",
       type: "",
@@ -1000,20 +821,16 @@ function StatementImportWizard({
 
    function handleFileReady(
       parsedRows: ValidatedRow[],
-      fileFormat: FileFormat,
-      rawData: RawData | null,
+      fmt: FileFormat,
+      raw: RawData | null,
    ) {
-      setFormat(fileFormat);
-      if (fileFormat === "ofx") {
-         setRows(parsedRows);
-         setRaw(null);
-         return;
+      setFormat(fmt);
+      if (raw) {
+         setRawData(raw);
+         const guessed = guessMapping(raw.headers);
+         setMapping((prev) => ({ ...prev, ...guessed }));
       }
-      setRaw(rawData);
-      if (rawData) {
-         const guessed = guessMapping(rawData.headers);
-         setColumnMapping((prev) => ({ ...prev, ...guessed }));
-      }
+      if (parsedRows.length > 0) setRows(parsedRows);
    }
 
    return (
@@ -1021,27 +838,24 @@ function StatementImportWizard({
          {currentId === "upload" && (
             <UploadStep methods={methods} onFileReady={handleFileReady} />
          )}
-
-         {currentId === "map" && raw && (
+         {currentId === "map" && rawData && (
             <MapStep
-               mapping={columnMapping}
+               mapping={mapping}
                methods={methods}
+               raw={rawData}
                onApply={setRows}
-               onMappingChange={setColumnMapping}
-               raw={raw}
+               onMappingChange={setMapping}
             />
          )}
-
          {currentId === "preview" && (
             <PreviewStep methods={methods} rows={rows} />
          )}
-
          {currentId === "confirm" && (
             <ConfirmStep
                format={format}
                methods={methods}
-               onSuccess={() => onClose?.()}
                rows={rows}
+               onClose={onClose}
             />
          )}
       </>
@@ -1055,9 +869,7 @@ export function StatementImportDialogStack({
 }) {
    return (
       <Stepper.Provider variant="line">
-         {({ methods }) => (
-            <StatementImportWizard methods={methods} onClose={onClose} />
-         )}
+         {({ methods }) => <ImportWizard methods={methods} onClose={onClose} />}
       </Stepper.Provider>
    );
 }

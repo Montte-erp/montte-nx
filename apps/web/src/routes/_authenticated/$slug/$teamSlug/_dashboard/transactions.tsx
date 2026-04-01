@@ -17,6 +17,7 @@ import { TransactionImportDialogStack } from "@/features/transactions/ui/transac
 import { TransactionPrerequisitesBlocker } from "@/features/transactions/ui/transaction-prerequisites-blocker";
 import { TransactionsList } from "@/features/transactions/ui/transactions-list";
 import { TransactionsSkeleton } from "@/features/transactions/ui/transactions-skeleton";
+import { useCredenza } from "@/hooks/use-credenza";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
@@ -52,6 +53,7 @@ export const Route = createFileRoute(
 });
 
 function TransactionsPage() {
+   const { openCredenza, closeCredenza } = useCredenza();
    const { openDialogStack, closeDialogStack } = useDialogStack();
    const navigate = useNavigate();
    const { slug, teamSlug } = Route.useParams();
@@ -104,10 +106,10 @@ function TransactionsPage() {
    }, [handleCreate]);
 
    const handleStatementImport = useCallback(() => {
-      openDialogStack({
-         children: <StatementImportDialogStack onClose={closeDialogStack} />,
+      openCredenza({
+         children: <StatementImportDialogStack onClose={closeCredenza} />,
       });
-   }, [openDialogStack, closeDialogStack]);
+   }, [openCredenza, closeCredenza]);
 
    const panelActions: PanelAction[] = [
       {
