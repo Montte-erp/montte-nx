@@ -23,7 +23,6 @@ import { Pencil, Plus, Trash2, Users } from "lucide-react";
 
 import { Suspense, useCallback, useState } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
 import {
    EarlyAccessBanner,
@@ -38,22 +37,13 @@ import { ContactForm } from "@/features/contacts/ui/contacts-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
+import { tableSearchSchema } from "@/lib/table-search-schema";
 import type {
    ColumnFiltersState,
    OnChangeFn,
    SortingState,
 } from "@tanstack/react-table";
-
-const searchSchema = z.object({
-   sorting: z
-      .array(z.object({ id: z.string(), desc: z.boolean() }))
-      .optional()
-      .default([]),
-   columnFilters: z
-      .array(z.object({ id: z.string(), value: z.unknown() }))
-      .optional()
-      .default([]),
-});
+import { z } from "zod";
 
 const [useContactsTableState] =
    createLocalStorageState<DataTableStoredState | null>(
@@ -64,7 +54,7 @@ const [useContactsTableState] =
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/contacts",
 )({
-   validateSearch: searchSchema,
+   validateSearch: tableSearchSchema,
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(orpc.contacts.getAll.queryOptions({}));
    },
@@ -145,10 +135,11 @@ function ContactsList({ typeFilter }: ContactsListProps) {
                ? updater(sorting as SortingState)
                : updater;
          navigate({
-            search: (prev: z.infer<typeof searchSchema>) => ({
+            search: (prev: z.infer<typeof tableSearchSchema>) => ({
                ...prev,
                sorting: next,
             }),
+            replace: true,
          });
       },
       [navigate, sorting],
@@ -162,10 +153,11 @@ function ContactsList({ typeFilter }: ContactsListProps) {
                   ? updater(columnFilters as ColumnFiltersState)
                   : updater;
             navigate({
-               search: (prev: z.infer<typeof searchSchema>) => ({
+               search: (prev: z.infer<typeof tableSearchSchema>) => ({
                   ...prev,
                   columnFilters: next,
                }),
+               replace: true,
             });
          },
          [navigate, columnFilters],

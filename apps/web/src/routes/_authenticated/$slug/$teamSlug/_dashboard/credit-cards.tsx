@@ -27,7 +27,6 @@ import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { CreditCard, Pencil, Plus, Trash2 } from "lucide-react";
 import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
 import {
    buildCreditCardColumns,
@@ -37,17 +36,8 @@ import { CreditCardForm } from "@/features/credit-cards/ui/credit-cards-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
-
-const searchSchema = z.object({
-   sorting: z
-      .array(z.object({ id: z.string(), desc: z.boolean() }))
-      .optional()
-      .default([]),
-   columnFilters: z
-      .array(z.object({ id: z.string(), value: z.unknown() }))
-      .optional()
-      .default([]),
-});
+import { tableSearchSchema } from "@/lib/table-search-schema";
+import { z } from "zod";
 
 const [useCreditCardsTableState] =
    createLocalStorageState<DataTableStoredState | null>(
@@ -58,7 +48,7 @@ const [useCreditCardsTableState] =
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/credit-cards",
 )({
-   validateSearch: searchSchema,
+   validateSearch: tableSearchSchema,
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(
          orpc.creditCards.getAll.queryOptions({}),
@@ -116,10 +106,11 @@ function CreditCardsList() {
                ? updater(sorting as SortingState)
                : updater;
          navigate({
-            search: (prev: z.infer<typeof searchSchema>) => ({
+            search: (prev: z.infer<typeof tableSearchSchema>) => ({
                ...prev,
                sorting: next,
             }),
+            replace: true,
          });
       },
       [navigate, sorting],
@@ -133,10 +124,11 @@ function CreditCardsList() {
                   ? updater(columnFilters as ColumnFiltersState)
                   : updater;
             navigate({
-               search: (prev: z.infer<typeof searchSchema>) => ({
+               search: (prev: z.infer<typeof tableSearchSchema>) => ({
                   ...prev,
                   columnFilters: next,
                }),
+               replace: true,
             });
          },
          [navigate, columnFilters],
