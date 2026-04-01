@@ -108,7 +108,7 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                      {(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
                               <FieldLabel>Tipo</FieldLabel>
@@ -144,7 +144,7 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                      {(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
                               <FieldLabel>Nome</FieldLabel>

@@ -109,7 +109,8 @@ function SignUpPage() {
                <form.Field name="name">
                   {(field) => {
                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
@@ -137,7 +138,8 @@ function SignUpPage() {
                <form.Field name="email">
                   {(field) => {
                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>Email</FieldLabel>
@@ -174,7 +176,8 @@ function SignUpPage() {
                <form.Field name="password">
                   {(field) => {
                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>Senha</FieldLabel>
@@ -202,7 +205,8 @@ function SignUpPage() {
                <form.Field name="confirmPassword">
                   {(field) => {
                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>

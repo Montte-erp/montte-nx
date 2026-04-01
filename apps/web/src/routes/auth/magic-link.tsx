@@ -20,12 +20,12 @@ export const Route = createFileRoute("/auth/magic-link")({
    component: MagicLinkPage,
 });
 
+const magicLinkSchema = z.object({
+   email: z.email("Insira um endereco de email valido."),
+});
+
 function MagicLinkPage() {
    const [isSent, setIsSent] = useState(false);
-
-   const schema = z.object({
-      email: z.email("Insira um endereco de email valido."),
-   });
 
    const handleMagicLinkSignIn = useCallback(async (email: string) => {
       await authClient.signIn.magicLink(
@@ -68,7 +68,7 @@ function MagicLinkPage() {
          await handleMagicLinkSignIn(value.email);
       },
       validators: {
-         onBlur: schema,
+         onBlur: magicLinkSchema,
       },
    });
 
@@ -151,7 +151,8 @@ function MagicLinkPage() {
                <form.Field name="email">
                   {(field) => {
                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>Email</FieldLabel>

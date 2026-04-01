@@ -15,15 +15,16 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
 
+const signInSchema = z.object({
+   email: z.email("Insira um endereco de email valido."),
+   password: z.string().min(8, "O campo deve ter no minimo 8 caracteres."),
+});
+
 export const Route = createFileRoute("/auth/sign-in/email")({
    component: SignInEmailPage,
 });
 
 function SignInEmailPage() {
-   const schema = z.object({
-      email: z.email("Insira um endereco de email valido."),
-      password: z.string().min(8, "O campo deve ter no minimo 8 caracteres."),
-   });
    const router = useRouter();
 
    const handleSignIn = useCallback(
@@ -63,7 +64,7 @@ function SignInEmailPage() {
          formApi.reset();
       },
       validators: {
-         onBlur: schema,
+         onBlur: signInSchema,
       },
    });
 
@@ -102,7 +103,8 @@ function SignInEmailPage() {
                <form.Field name="email">
                   {(field) => {
                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>Email</FieldLabel>
@@ -130,7 +132,8 @@ function SignInEmailPage() {
                <form.Field name="password">
                   {(field) => {
                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
                      return (
                         <Field aria-required data-invalid={isInvalid}>
                            <div className="flex justify-between items-center">

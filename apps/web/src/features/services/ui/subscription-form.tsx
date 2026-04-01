@@ -127,7 +127,7 @@ export function SubscriptionForm({
                      {(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
                               <FieldLabel>Serviço *</FieldLabel>
@@ -169,7 +169,7 @@ export function SubscriptionForm({
                         {(field) => {
                            const isInvalid =
                               field.state.meta.isTouched &&
-                              !field.state.meta.isValid;
+                              field.state.meta.errors.length > 0;
                            return (
                               <Field data-invalid={isInvalid}>
                                  <FieldLabel>Variante *</FieldLabel>
@@ -213,7 +213,7 @@ export function SubscriptionForm({
                      {(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
                               <FieldLabel>Data de início *</FieldLabel>
@@ -253,7 +253,7 @@ export function SubscriptionForm({
                      {(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
                               <div className="flex items-center gap-2">

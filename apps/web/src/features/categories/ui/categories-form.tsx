@@ -90,17 +90,35 @@ const CATEGORY_ICONS: { name: string; label: string; Icon: LucideIcon }[] = [
 ];
 
 const PRESET_COLORS = [
-   "#ef4444", "#f97316", "#f59e0b", "#eab308",
-   "#84cc16", "#22c55e", "#14b8a6", "#06b6d4",
-   "#3b82f6", "#6366f1", "#8b5cf6", "#a855f7",
-   "#d946ef", "#ec4899", "#f43f5e", "#78716c",
+   "#ef4444",
+   "#f97316",
+   "#f59e0b",
+   "#eab308",
+   "#84cc16",
+   "#22c55e",
+   "#14b8a6",
+   "#06b6d4",
+   "#3b82f6",
+   "#6366f1",
+   "#8b5cf6",
+   "#a855f7",
+   "#d946ef",
+   "#ec4899",
+   "#f43f5e",
+   "#78716c",
 ];
 
-const ICON_OPTIONS = CATEGORY_ICONS.map(({ name, label }) => ({ value: name, label }));
-const ICON_MAP = Object.fromEntries(CATEGORY_ICONS.map(({ name, Icon }) => [name, Icon]));
+const ICON_OPTIONS = CATEGORY_ICONS.map(({ name, label }) => ({
+   value: name,
+   label,
+}));
+const ICON_MAP = Object.fromEntries(
+   CATEGORY_ICONS.map(({ name, Icon }) => [name, Icon]),
+);
 
 function randomIcon() {
-   return CATEGORY_ICONS[Math.floor(Math.random() * CATEGORY_ICONS.length)].name;
+   return CATEGORY_ICONS[Math.floor(Math.random() * CATEGORY_ICONS.length)]
+      .name;
 }
 
 function randomColor() {
@@ -131,7 +149,9 @@ interface CategoryFormProps {
 
 export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
    const isCreate = mode === "create";
-   const [pendingSubcategories, setPendingSubcategories] = useState<string[]>([]);
+   const [pendingSubcategories, setPendingSubcategories] = useState<string[]>(
+      [],
+   );
    const [subInput, setSubInput] = useState("");
    const subInputRef = useRef<HTMLInputElement>(null);
 
@@ -184,7 +204,9 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                );
                const failed = results.filter((r) => r.status === "rejected");
                if (failed.length > 0) {
-                  toast.error(`${failed.length} subcategoria(s) não puderam ser criadas.`);
+                  toast.error(
+                     `${failed.length} subcategoria(s) não puderam ser criadas.`,
+                  );
                }
             }
             toast.success("Categoria criada com sucesso.");
@@ -197,12 +219,15 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
 
    const isPending = createMutation.isPending || updateMutation.isPending;
 
-   const addSubcategory = useCallback((name: string) => {
-      const trimmed = name.trim();
-      if (!trimmed || pendingSubcategories.includes(trimmed)) return;
-      setPendingSubcategories((prev) => [...prev, trimmed]);
-      setSubInput("");
-   }, [pendingSubcategories]);
+   const addSubcategory = useCallback(
+      (name: string) => {
+         const trimmed = name.trim();
+         if (!trimmed || pendingSubcategories.includes(trimmed)) return;
+         setPendingSubcategories((prev) => [...prev, trimmed]);
+         setSubInput("");
+      },
+      [pendingSubcategories],
+   );
 
    const removeSubcategory = useCallback((index: number) => {
       setPendingSubcategories((prev) => prev.filter((_, i) => i !== index));
@@ -217,9 +242,13 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
          }}
       >
          <CredenzaHeader>
-            <CredenzaTitle>{isCreate ? "Nova Categoria" : "Editar Categoria"}</CredenzaTitle>
+            <CredenzaTitle>
+               {isCreate ? "Nova Categoria" : "Editar Categoria"}
+            </CredenzaTitle>
             <CredenzaDescription>
-               {isCreate ? "Preencha os dados da nova categoria." : "Atualize os dados da categoria."}
+               {isCreate
+                  ? "Preencha os dados da nova categoria."
+                  : "Atualize os dados da categoria."}
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -228,18 +257,24 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                <div className="grid grid-cols-2 gap-4">
                   <form.Field name="name">
                      {(field) => {
-                        const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
                               <FieldLabel>Nome *</FieldLabel>
                               <Input
                                  autoFocus
                                  onBlur={field.handleBlur}
-                                 onChange={(e) => field.handleChange(e.target.value)}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                 }
                                  placeholder="Ex: Alimentação"
                                  value={field.state.value}
                               />
-                              {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                              {isInvalid && (
+                                 <FieldError errors={field.state.meta.errors} />
+                              )}
                            </Field>
                         );
                      }}
@@ -250,14 +285,18 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                         <Field>
                            <FieldLabel>Tipo</FieldLabel>
                            <Select
-                              onValueChange={(v) => field.handleChange(v as "income" | "expense")}
+                              onValueChange={(v) =>
+                                 field.handleChange(v as "income" | "expense")
+                              }
                               value={field.state.value}
                            >
                               <SelectTrigger>
                                  <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                 <SelectItem value="expense">Despesa</SelectItem>
+                                 <SelectItem value="expense">
+                                    Despesa
+                                 </SelectItem>
                                  <SelectItem value="income">Receita</SelectItem>
                               </SelectContent>
                            </Select>
@@ -266,7 +305,13 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                   </form.Field>
                </div>
 
-               <form.Subscribe selector={(s) => ({ icon: s.values.icon, color: s.values.color, name: s.values.name })}>
+               <form.Subscribe
+                  selector={(s) => ({
+                     icon: s.values.icon,
+                     color: s.values.color,
+                     name: s.values.name,
+                  })}
+               >
                   {({ icon, color, name }) => {
                      const PreviewIcon = icon ? ICON_MAP[icon] : null;
                      return (
@@ -275,11 +320,17 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                               className="size-12 rounded-xl flex items-center justify-center shrink-0"
                               style={{ backgroundColor: color }}
                            >
-                              {PreviewIcon && <PreviewIcon className="size-6 text-white" />}
+                              {PreviewIcon && (
+                                 <PreviewIcon className="size-6 text-white" />
+                              )}
                            </div>
                            <div className="flex flex-col gap-1 min-w-0 flex-1">
-                              <span className="text-sm font-medium truncate">{name || "Nova categoria"}</span>
-                              <span className="text-xs text-muted-foreground truncate">{color}</span>
+                              <span className="text-sm font-medium truncate">
+                                 {name || "Nova categoria"}
+                              </span>
+                              <span className="text-xs text-muted-foreground truncate">
+                                 {color}
+                              </span>
                            </div>
                            <Button
                               onClick={() => {
@@ -305,12 +356,20 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                            <FieldLabel>Cor</FieldLabel>
                            <Popover>
                               <PopoverTrigger asChild>
-                                 <Button className="w-full justify-start gap-2" type="button" variant="outline">
+                                 <Button
+                                    className="w-full justify-start gap-2"
+                                    type="button"
+                                    variant="outline"
+                                 >
                                     <span
                                        className="size-4 rounded shrink-0"
-                                       style={{ backgroundColor: field.state.value }}
+                                       style={{
+                                          backgroundColor: field.state.value,
+                                       }}
                                     />
-                                    <span className="truncate text-xs font-mono">{field.state.value}</span>
+                                    <span className="truncate text-xs font-mono">
+                                       {field.state.value}
+                                    </span>
                                  </Button>
                               </PopoverTrigger>
                               <PopoverContent align="start" className="w-64">
@@ -318,7 +377,13 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                                     className="flex flex-col gap-4"
                                     onChange={(rgba) => {
                                        if (Array.isArray(rgba)) {
-                                          field.handleChange(Color.rgb(rgba[0], rgba[1], rgba[2]).hex());
+                                          field.handleChange(
+                                             Color.rgb(
+                                                rgba[0],
+                                                rgba[1],
+                                                rgba[2],
+                                             ).hex(),
+                                          );
                                        }
                                     }}
                                     value={field.state.value || "#000000"}
@@ -354,8 +419,18 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                               onValueChange={(v) => field.handleChange(v || "")}
                               options={ICON_OPTIONS}
                               placeholder="Selecionar ícone..."
-                              renderOption={(opt) => <IconOption label={opt.label} value={opt.value} />}
-                              renderSelected={(opt) => <IconOption label={opt.label} value={opt.value} />}
+                              renderOption={(opt) => (
+                                 <IconOption
+                                    label={opt.label}
+                                    value={opt.value}
+                                 />
+                              )}
+                              renderSelected={(opt) => (
+                                 <IconOption
+                                    label={opt.label}
+                                    value={opt.value}
+                                 />
+                              )}
                               searchPlaceholder="Buscar ícone..."
                               value={field.state.value}
                            />
@@ -379,7 +454,10 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                               {name}
                               <button
                                  className="text-secondary-foreground/50 hover:text-secondary-foreground transition-colors"
-                                 onClick={(e) => { e.stopPropagation(); removeSubcategory(i); }}
+                                 onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeSubcategory(i);
+                                 }}
                                  type="button"
                               >
                                  <X className="size-3" />
@@ -393,12 +471,22 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
                                  e.preventDefault();
                                  addSubcategory(subInput);
                               }
-                              if (e.key === "Backspace" && !subInput && pendingSubcategories.length > 0) {
-                                 removeSubcategory(pendingSubcategories.length - 1);
+                              if (
+                                 e.key === "Backspace" &&
+                                 !subInput &&
+                                 pendingSubcategories.length > 0
+                              ) {
+                                 removeSubcategory(
+                                    pendingSubcategories.length - 1,
+                                 );
                               }
                            }}
                            onChange={(e) => setSubInput(e.target.value)}
-                           placeholder={pendingSubcategories.length === 0 ? "Digite e pressione Enter..." : ""}
+                           placeholder={
+                              pendingSubcategories.length === 0
+                                 ? "Digite e pressione Enter..."
+                                 : ""
+                           }
                            ref={subInputRef}
                            value={subInput}
                         />
@@ -411,8 +499,15 @@ export function CategoryForm({ mode, category, onSuccess }: CategoryFormProps) {
          <CredenzaFooter>
             <form.Subscribe selector={(s) => s}>
                {(state) => (
-                  <Button disabled={!state.canSubmit || state.isSubmitting || isPending} type="submit">
-                     {(state.isSubmitting || isPending) && <Spinner className="size-4" />}
+                  <Button
+                     disabled={
+                        !state.canSubmit || state.isSubmitting || isPending
+                     }
+                     type="submit"
+                  >
+                     {(state.isSubmitting || isPending) && (
+                        <Spinner className="size-4" />
+                     )}
                      Salvar
                   </Button>
                )}

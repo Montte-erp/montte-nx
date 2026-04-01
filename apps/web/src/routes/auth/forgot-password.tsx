@@ -127,7 +127,8 @@ function ForgotPasswordPage() {
             <form.Field name="email">
                {(field) => {
                   const isInvalid =
-                     field.state.meta.isTouched && !field.state.meta.isValid;
+                     field.state.meta.isTouched &&
+                     field.state.meta.errors.length > 0;
                   return (
                      <Field data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>Email</FieldLabel>
@@ -159,7 +160,8 @@ function ForgotPasswordPage() {
             <form.Field name="otp">
                {(field) => {
                   const isInvalid =
-                     field.state.meta.isTouched && !field.state.meta.isValid;
+                     field.state.meta.isTouched &&
+                     field.state.meta.errors.length > 0;
                   return (
                      <Field data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>Codigo OTP</FieldLabel>
@@ -208,7 +210,8 @@ function ForgotPasswordPage() {
                <form.Field name="password">
                   {(field) => {
                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>Senha</FieldLabel>
@@ -236,7 +239,8 @@ function ForgotPasswordPage() {
                <form.Field name="confirmPassword">
                   {(field) => {
                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>

@@ -557,7 +557,8 @@ function ProfileNameSection({ currentName }: { currentName: string }) {
                <form.Field name="name">
                   {(field) => {
                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
@@ -794,7 +795,7 @@ function ProfilePasswordSection({ hasPassword }: { hasPassword: boolean }) {
                      {(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
                               <FieldLabel htmlFor={field.name}>
@@ -822,7 +823,8 @@ function ProfilePasswordSection({ hasPassword }: { hasPassword: boolean }) {
                <form.Field name="newPassword">
                   {(field) => {
                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>
@@ -849,7 +851,8 @@ function ProfilePasswordSection({ hasPassword }: { hasPassword: boolean }) {
                <form.Field name="confirmPassword">
                   {(field) => {
                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid;
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
                      return (
                         <Field data-invalid={isInvalid}>
                            <FieldLabel htmlFor={field.name}>

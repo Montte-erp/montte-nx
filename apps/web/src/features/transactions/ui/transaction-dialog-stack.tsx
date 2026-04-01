@@ -1005,7 +1005,8 @@ function TransactionDialogStackContent({
                                              {(field) => {
                                                 const isInvalid =
                                                    field.state.meta.isTouched &&
-                                                   !field.state.meta.isValid;
+                                                   field.state.meta.errors
+                                                      .length > 0;
                                                 return (
                                                    <Field
                                                       data-invalid={isInvalid}
@@ -1051,7 +1052,8 @@ function TransactionDialogStackContent({
                                              {(field) => {
                                                 const isInvalid =
                                                    field.state.meta.isTouched &&
-                                                   !field.state.meta.isValid;
+                                                   field.state.meta.errors
+                                                      .length > 0;
                                                 return (
                                                    <Field
                                                       data-invalid={isInvalid}
@@ -1100,7 +1102,8 @@ function TransactionDialogStackContent({
                                              {(field) => {
                                                 const isInvalid =
                                                    field.state.meta.isTouched &&
-                                                   !field.state.meta.isValid;
+                                                   field.state.meta.errors
+                                                      .length > 0;
                                                 return (
                                                    <Field
                                                       data-invalid={isInvalid}
@@ -1184,7 +1187,8 @@ function TransactionDialogStackContent({
                                              {(field) => {
                                                 const isInvalid =
                                                    field.state.meta.isTouched &&
-                                                   !field.state.meta.isValid;
+                                                   field.state.meta.errors
+                                                      .length > 0;
                                                 return (
                                                    <Field
                                                       data-invalid={isInvalid}
@@ -1263,7 +1267,8 @@ function TransactionDialogStackContent({
                                              {(field) => {
                                                 const isInvalid =
                                                    field.state.meta.isTouched &&
-                                                   !field.state.meta.isValid;
+                                                   field.state.meta.errors
+                                                      .length > 0;
                                                 return (
                                                    <Field
                                                       data-invalid={isInvalid}
@@ -1309,7 +1314,8 @@ function TransactionDialogStackContent({
                                              {(field) => {
                                                 const isInvalid =
                                                    field.state.meta.isTouched &&
-                                                   !field.state.meta.isValid;
+                                                   field.state.meta.errors
+                                                      .length > 0;
                                                 return (
                                                    <Field
                                                       data-invalid={isInvalid}
@@ -1356,7 +1362,8 @@ function TransactionDialogStackContent({
                                              {(field) => {
                                                 const isInvalid =
                                                    field.state.meta.isTouched &&
-                                                   !field.state.meta.isValid;
+                                                   field.state.meta.errors
+                                                      .length > 0;
                                                 return (
                                                    <Field
                                                       data-invalid={isInvalid}
@@ -2051,7 +2058,10 @@ function TransactionDialogStackContent({
                            ...form.getFieldValue("tagIds"),
                            id,
                         ]);
-                        form.setFieldMeta("tagIds", (prev) => ({ ...prev, isTouched: true }));
+                        form.setFieldMeta("tagIds", (prev) => ({
+                           ...prev,
+                           isTouched: true,
+                        }));
                         setSecondaryForm(null);
                         setActiveIndex(0);
                      }}

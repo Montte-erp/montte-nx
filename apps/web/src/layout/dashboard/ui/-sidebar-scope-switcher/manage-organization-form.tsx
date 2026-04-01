@@ -179,7 +179,7 @@ export function ManageOrganizationForm({
                            <Field
                               data-invalid={
                                  field.state.meta.isTouched &&
-                                 !field.state.meta.isValid
+                                 field.state.meta.errors.length > 0
                               }
                            >
                               <FieldLabel>Organization Logo</FieldLabel>
@@ -230,7 +230,7 @@ export function ManageOrganizationForm({
                                  </p>
                               )}
                               {field.state.meta.isTouched &&
-                                 !field.state.meta.isValid && (
+                                 field.state.meta.errors.length > 0 && (
                                     <FieldError
                                        errors={field.state.meta.errors}
                                     />
@@ -244,7 +244,7 @@ export function ManageOrganizationForm({
                      {(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
 
                         return (
                            <Field data-invalid={isInvalid}>
@@ -274,7 +274,7 @@ export function ManageOrganizationForm({
                      {(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
 
                         return (
                            <Field data-invalid={isInvalid}>

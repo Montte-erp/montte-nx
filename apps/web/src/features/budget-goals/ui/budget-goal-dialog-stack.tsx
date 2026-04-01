@@ -212,7 +212,7 @@ export function BudgetGoalDialogStack({
                            {(field) => {
                               const isInvalid =
                                  field.state.meta.isTouched &&
-                                 !field.state.meta.isValid;
+                                 field.state.meta.errors.length > 0;
                               return (
                                  <Field data-invalid={isInvalid}>
                                     <FieldLabel>Limite (R$)</FieldLabel>
@@ -244,7 +244,7 @@ export function BudgetGoalDialogStack({
                         {(field) => {
                            const isInvalid =
                               field.state.meta.isTouched &&
-                              !field.state.meta.isValid;
+                              field.state.meta.errors.length > 0;
                            return (
                               <Field data-invalid={isInvalid}>
                                  <FieldLabel>Limite (R$)</FieldLabel>
@@ -275,7 +275,7 @@ export function BudgetGoalDialogStack({
                         {(field) => {
                            const isInvalid =
                               field.state.meta.isTouched &&
-                              !field.state.meta.isValid;
+                              field.state.meta.errors.length > 0;
 
                            const categoryOptions: ComboboxOption[] =
                               expenseCategories.map((c) => ({
@@ -347,7 +347,7 @@ export function BudgetGoalDialogStack({
                                  {(field) => {
                                     const isInvalid =
                                        field.state.meta.isTouched &&
-                                       !field.state.meta.isValid;
+                                       field.state.meta.errors.length > 0;
                                     return (
                                        <div className="mt-2">
                                           <FieldLabel>

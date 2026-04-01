@@ -224,7 +224,7 @@ export function BankAccountForm({
                      {(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
                         const selected = TYPE_OPTIONS.find(
                            (o) => o.value === field.state.value,
                         );
@@ -309,7 +309,7 @@ export function BankAccountForm({
                                  {(field) => {
                                     const isInvalid =
                                        field.state.meta.isTouched &&
-                                       !field.state.meta.isValid;
+                                       field.state.meta.errors.length > 0;
                                     return (
                                        <Field data-invalid={isInvalid}>
                                           <FieldLabel>Banco *</FieldLabel>
@@ -401,7 +401,7 @@ export function BankAccountForm({
                            {(field) => {
                               const isInvalid =
                                  field.state.meta.isTouched &&
-                                 !field.state.meta.isValid;
+                                 field.state.meta.errors.length > 0;
                               return (
                                  <Field data-invalid={isInvalid}>
                                     <FieldLabel>Saldo Inicial *</FieldLabel>
@@ -446,7 +446,7 @@ export function BankAccountForm({
                      {(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
                               <FieldLabel>Cor</FieldLabel>
