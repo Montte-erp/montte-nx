@@ -36,13 +36,13 @@ import {
    EarlyAccessBanner,
    type EarlyAccessBannerTemplate,
 } from "@/features/billing/ui/early-access-banner";
-import { InventoryHistorySheet } from "@/features/inventory/ui/inventory-history-sheet";
-import { InventoryMovementDialogStack } from "@/features/inventory/ui/inventory-movement-dialog-stack";
+import { InventoryHistorySheet } from "./-inventory/inventory-history-sheet";
+import { InventoryMovementDialogStack } from "./-inventory/inventory-movement-dialog-stack";
 import {
    buildInventoryProductColumns,
    type InventoryProductRow,
-} from "@/features/inventory/ui/inventory-product-columns";
-import { InventoryProductForm } from "@/features/inventory/ui/inventory-product-form";
+} from "./-inventory/inventory-product-columns";
+import { InventoryProductForm } from "./-inventory/inventory-product-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
@@ -118,15 +118,21 @@ function InventoryList() {
    const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
 
-   const handleSortingChange: OnChangeFn<SortingState> = (updater) => {
-      const next = typeof updater === "function" ? updater(sorting) : updater;
-      navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, sorting: next }) });
-   };
+   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
+      (updater) => {
+         const next = typeof updater === "function" ? updater(sorting) : updater;
+         navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, sorting: next }), replace: true });
+      },
+      [navigate, sorting],
+   );
 
-   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = (updater) => {
-      const next = typeof updater === "function" ? updater(columnFilters) : updater;
-      navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, columnFilters: next }) });
-   };
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
+      (updater) => {
+         const next = typeof updater === "function" ? updater(columnFilters) : updater;
+         navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, columnFilters: next }), replace: true });
+      },
+      [navigate, columnFilters],
+   );
 
    const archiveMutation = useMutation(
       orpc.inventory.archiveProduct.mutationOptions({
