@@ -40,9 +40,13 @@ import {
    TrendingUp,
 } from "lucide-react";
 import type { DataTableStoredState } from "@packages/ui/components/data-table";
-import type { ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/react-table";
+import type {
+   ColumnFiltersState,
+   OnChangeFn,
+   SortingState,
+} from "@tanstack/react-table";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { toast } from "sonner";
 import { BillFromTransactionDialogStack } from "@/features/bills/ui/bill-from-transaction-dialog-stack";
 import { BulkCategorizeForm } from "@/features/transactions/ui/bulk-categorize-form";
@@ -58,35 +62,32 @@ import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
-const [useTransactionsTableState] = createLocalStorageState<DataTableStoredState | null>(
-   "montte:datatable:transactions",
-   null,
-);
+const [useTransactionsTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:transactions",
+      null,
+   );
 
 interface TransactionsListProps {
    filters: TransactionFilters;
    onPageChange: (page: number) => void;
    onPageSizeChange: (size: number) => void;
+   sorting: SortingState;
+   onSortingChange: OnChangeFn<SortingState>;
+   columnFilters: ColumnFiltersState;
+   onColumnFiltersChange: OnChangeFn<ColumnFiltersState>;
 }
 
 export function TransactionsList({
    filters,
    onPageChange,
    onPageSizeChange,
+   sorting,
+   onSortingChange,
+   columnFilters,
+   onColumnFiltersChange,
 }: TransactionsListProps) {
-   const [sorting, setSorting] = useState<SortingState>([]);
-   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
    const [tableState, setTableState] = useTransactionsTableState();
-
-   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
-      (updater) => setSorting((prev) => (typeof updater === "function" ? updater(prev) : updater)),
-      [],
-   );
-
-   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
-      (updater) => setColumnFilters((prev) => (typeof updater === "function" ? updater(prev) : updater)),
-      [],
-   );
 
    const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
@@ -328,9 +329,9 @@ export function TransactionsList({
             columnFilters={columnFilters}
             data={transactionData}
             getRowId={(row) => row.id}
-            onColumnFiltersChange={handleColumnFiltersChange}
+            onColumnFiltersChange={onColumnFiltersChange}
             onRowSelectionChange={onRowSelectionChange}
-            onSortingChange={handleSortingChange}
+            onSortingChange={onSortingChange}
             onTableStateChange={setTableState}
             sorting={sorting}
             tableState={tableState}
