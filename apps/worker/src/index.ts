@@ -27,7 +27,7 @@ async function main(): Promise<void> {
 
    const webhookWorker = startWebhookDeliveryWorker(queueConnection);
 
-   const scheduledTasks = startScheduler(db, redis);
+   const scheduledTasks = startScheduler(db);
 
    logger.info("All systems running");
 

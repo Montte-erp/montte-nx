@@ -2,15 +2,12 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { createDb } from "@core/database/client";
 import { eventCatalog } from "@core/database/schemas/event-catalog";
-import { AI_EVENTS } from "@packages/events/ai";
 import { EVENT_CATEGORIES } from "@packages/events/catalog";
 import { CONTACT_EVENTS } from "@packages/events/contact";
 import { DASHBOARD_EVENTS } from "@packages/events/dashboard";
-import { DOCUMENT_EVENTS } from "@packages/events/document";
 import { FINANCE_EVENTS } from "@packages/events/finance";
 import { INSIGHT_EVENTS } from "@packages/events/insight";
 import { INVENTORY_EVENTS } from "@packages/events/inventory";
-import { NFE_EVENTS } from "@packages/events/nfe";
 import { SERVICE_EVENTS } from "@packages/events/service";
 import { WEBHOOK_EVENTS } from "@packages/events/webhook";
 import chalk from "chalk";
@@ -72,24 +69,6 @@ const EVENT_PRICING: EventPricing[] = [
       displayName: "Tag Criada",
       description: "Registrada quando uma tag de transação é criada.",
       isBillable: false,
-   },
-   {
-      eventName: AI_EVENTS["ai.chat_message"],
-      category: EVENT_CATEGORIES.ai,
-      pricePerEvent: "0.020000",
-      freeTierLimit: 20,
-      displayName: "Mensagem de Chat IA",
-      description: "Registrada por mensagem no chat com a IA.",
-      isBillable: true,
-   },
-   {
-      eventName: AI_EVENTS["ai.agent_action"],
-      category: EVENT_CATEGORIES.ai,
-      pricePerEvent: "0.040000",
-      freeTierLimit: 5,
-      displayName: "Ação de Agente IA",
-      description: "Registrada por ação discreta de um agente IA.",
-      isBillable: true,
    },
    {
       eventName: WEBHOOK_EVENTS["webhook.endpoint.created"],
@@ -261,33 +240,6 @@ const EVENT_PRICING: EventPricing[] = [
       displayName: "Serviço Deletado",
       description: "Registrada quando um serviço é deletado.",
       isBillable: false,
-   },
-   {
-      eventName: NFE_EVENTS["nfe.emitted"],
-      category: EVENT_CATEGORIES.nfe,
-      pricePerEvent: "0.150000",
-      freeTierLimit: 5,
-      displayName: "NF-e Emitida",
-      description: "Registrada por emissão de nota fiscal eletrônica.",
-      isBillable: true,
-   },
-   {
-      eventName: NFE_EVENTS["nfe.cancelled"],
-      category: EVENT_CATEGORIES.nfe,
-      pricePerEvent: "0.000000",
-      freeTierLimit: 0,
-      displayName: "NF-e Cancelada",
-      description: "Registrada quando uma NF-e é cancelada.",
-      isBillable: false,
-   },
-   {
-      eventName: DOCUMENT_EVENTS["document.signed"],
-      category: EVENT_CATEGORIES.document,
-      pricePerEvent: "0.100000",
-      freeTierLimit: 10,
-      displayName: "Documento Assinado",
-      description: "Registrada por assinatura digital de documento.",
-      isBillable: true,
    },
 ];
 

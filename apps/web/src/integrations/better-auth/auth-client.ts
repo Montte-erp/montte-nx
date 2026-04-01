@@ -10,44 +10,9 @@ import {
 } from "better-auth/client/plugins";
 import { createAuthClient as createBetterAuthClient } from "better-auth/react";
 import type { AuthInstance } from "@core/authentication/server";
-import { POSTHOG_SURVEYS } from "@core/posthog/config";
 import { toast } from "sonner";
 import { invalidateAllQueries } from "./query-bridge";
-import { openSurveyModal } from "@/hooks/use-survey-modal";
 
-const ERROR_THRESHOLD = 3;
-const ERROR_WINDOW_MS = 60 * 1000;
-
-type ErrorEntry = {
-   count: number;
-   firstOccurrence: number;
-};
-
-const errorTracker = new Map<string, ErrorEntry>();
-
-function getErrorKey(path: string, code: string): string {
-   return `${path}:${code}`;
-}
-
-function shouldShowErrorModal(path: string, code: string): boolean {
-   const key = getErrorKey(path, code);
-   const now = Date.now();
-   const entry = errorTracker.get(key);
-
-   if (!entry || now - entry.firstOccurrence > ERROR_WINDOW_MS) {
-      errorTracker.set(key, { count: 1, firstOccurrence: now });
-      return false;
-   }
-
-   entry.count += 1;
-
-   if (entry.count >= ERROR_THRESHOLD) {
-      errorTracker.delete(key);
-      return true;
-   }
-
-   return false;
-}
 
 export const authClient = createBetterAuthClient({
    baseURL: "",
@@ -57,12 +22,6 @@ export const authClient = createBetterAuthClient({
          const code = `HTTP_${context.response.status}`;
          const message = context.error?.message || context.response.statusText;
          toast.error(message, { description: `${path} (${code})` });
-         if (shouldShowErrorModal(path, code)) {
-            openSurveyModal(POSTHOG_SURVEYS.bugReport.id, {
-               description: `${message} (${code})`,
-               extraPayload: { auth_error_code: code, auth_error_message: message },
-            });
-         }
       },
       onSuccess: () => {
          invalidateAllQueries();

@@ -1,9 +1,9 @@
 import { getOrganizationMembers } from "@core/database/repositories/auth-repository";
-import { member, organization } from "@core/database/schemas/auth";
+import { member, organization, subscription } from "@core/database/schemas/auth";
 import { generatePresignedPutUrl } from "@core/files/client";
 import { minioClient } from "@/integrations/singletons";
 import { WebAppError } from "@core/logging/errors";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { authenticatedProcedure, protectedProcedure } from "../server";
 
@@ -212,18 +212,37 @@ export const getMemberTeams = protectedProcedure
 
 export const hasAddon = protectedProcedure
    .input(z.object({ addonId: z.string() }))
-   .handler(async () => {
-      return { hasAddon: false };
+   .handler(async ({ context, input }) => {
+      const { db, organizationId } = context;
+      const row = await db.query.subscription.findFirst({
+         where: (fields, { and, eq }) =>
+            and(
+               eq(fields.referenceId, organizationId),
+               eq(fields.plan, input.addonId),
+               inArray(fields.status, ["active", "trialing"]),
+            ),
+      });
+      return { hasAddon: !!row };
    });
 
-export const getAddons = protectedProcedure.handler(async () => {
-   return [] as {
-      id: string;
-      addonId: string;
-      activatedAt: Date;
-      expiresAt: Date | null;
-      autoRenew: boolean;
-   }[];
+export const getAddons = protectedProcedure.handler(async ({ context }) => {
+   const { db, organizationId } = context;
+   const rows = await db
+      .select()
+      .from(subscription)
+      .where(
+         and(
+            eq(subscription.referenceId, organizationId),
+            inArray(subscription.status, ["active", "trialing"]),
+         ),
+      );
+   return rows.map((row) => ({
+      id: row.id,
+      addonId: row.plan,
+      activatedAt: row.periodStart ?? new Date(0),
+      expiresAt: row.periodEnd ?? null,
+      autoRenew: !row.cancelAtPeriodEnd,
+   }));
 });
 
 export const generateLogoUploadUrl = protectedProcedure

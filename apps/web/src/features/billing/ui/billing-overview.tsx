@@ -1,5 +1,4 @@
 import { format, fromMinorUnits, of } from "@f-o-t/money";
-import { FREE_TIER_LIMITS } from "@core/stripe/constants";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -21,8 +20,6 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import type { FeatureStage } from "@packages/ui/components/feature-stage-badge";
-import { FeatureStageBadge } from "@packages/ui/components/feature-stage-badge";
 import { Progress } from "@packages/ui/components/progress";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
@@ -32,8 +29,7 @@ import {
    TooltipProvider,
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { Link, useParams } from "@tanstack/react-router";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import {
    Briefcase,
    Calendar,
@@ -41,12 +37,9 @@ import {
    Coins,
    CreditCard,
    ExternalLink,
-   FileCheck,
-   FileText,
    HelpCircle,
    Package,
    Receipt,
-   Sparkles,
    Users,
    Webhook,
 } from "lucide-react";
@@ -55,102 +48,36 @@ import { Suspense, useTransition } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "sonner";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
-import { useEarlyAccess } from "@/hooks/use-early-access";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
+import type { Outputs } from "@/integrations/orpc/client";
 
-// ============================================
-// Types
-// ============================================
+type MeterUsageItem = Outputs["billing"]["getMeterUsage"][number];
+type CatalogEntry = Outputs["billing"]["getEventCatalog"][number];
+
+interface EventWithUsage {
+   eventName: string;
+   displayName: string;
+   used: number;
+   freeTierLimit: number;
+   pricePerEvent: string;
+}
 
 interface CategorySummary {
    category: string;
    eventCount: number;
    monthToDateCost: number;
    projectedCost: number;
+   events: EventWithUsage[];
 }
 
-interface EventUsage {
-   eventName: string;
-   eventCount: number;
-   monthToDateCost: number;
-   displayName: string;
-   description: string | null;
-   pricePerEvent: number | null;
-   freeTierLimit: number;
-}
-
-// ============================================
-// Constants
-// ============================================
-
-const CATEGORY_CONFIG: Record<
-   string,
-   { label: string; description: string; icon: ReactNode }
-> = {
-   finance: {
-      label: "Financeiro",
-      description: "Transacoes financeiras, contas bancarias e categorias",
-      icon: <Coins className="size-5" />,
-   },
-   ai: {
-      label: "Inteligencia Artificial",
-      description: "Mensagens de chat IA e acoes de agentes",
-      icon: <Sparkles className="size-5" />,
-   },
-   contact: {
-      label: "Contatos",
-      description: "Cadastro de pessoas e empresas",
-      icon: <Users className="size-5" />,
-   },
-   inventory: {
-      label: "Estoque",
-      description: "Produtos, materiais e controle de estoque",
-      icon: <Package className="size-5" />,
-   },
-   service: {
-      label: "Servicos",
-      description: "Prestacao de servicos e ordens de servico",
-      icon: <Briefcase className="size-5" />,
-   },
-   nfe: {
-      label: "NF-e",
-      description: "Emissao e cancelamento de notas fiscais eletronicas",
-      icon: <FileText className="size-5" />,
-   },
-   document: {
-      label: "Assinatura Digital",
-      description: "Assinaturas eletrônicas de documentos",
-      icon: <FileCheck className="size-5" />,
-   },
-   webhook: {
-      label: "Webhooks",
-      description: "Entregas de webhook e notificacoes externas",
-      icon: <Webhook className="size-5" />,
-   },
+const CATEGORY_ICONS: Record<string, ReactNode> = {
+   finance: <Coins className="size-5" />,
+   contact: <Users className="size-5" />,
+   inventory: <Package className="size-5" />,
+   service: <Briefcase className="size-5" />,
+   webhook: <Webhook className="size-5" />,
 };
-
-// ---------------------------------------------------------------------------
-// Early Access Gating
-// ---------------------------------------------------------------------------
-
-// Event-based categories gated by early access flag.
-// To add a new gated category: add one entry here (flag key + fallback stage).
-// The category must also exist in CATEGORY_CONFIG above.
-const EARLY_ACCESS_CATEGORY_GATES: Record<
-   string,
-   { flag: string; fallbackStage: FeatureStage }
-> = {
-   nfe: { flag: "nfe", fallbackStage: "alpha" },
-   document: { flag: "document-signing", fallbackStage: "alpha" },
-};
-
-// Categories that are not yet available — rendered as "Em breve" without enroll CTA.
-const COMING_SOON_CATEGORIES = new Set(["nfe", "document"]);
-
-// ---------------------------------------------------------------------------
-// Platform Add-ons
-// ---------------------------------------------------------------------------
 
 const PLATFORM_ADDONS = [
    {
@@ -176,14 +103,61 @@ const PLATFORM_ADDONS = [
    },
 ] as const;
 
-// ============================================
-// Helpers
-// ============================================
+function computeMonthlyCost(item: EventWithUsage): number {
+   const overage = Math.max(0, item.used - item.freeTierLimit);
+   return overage * parseFloat(item.pricePerEvent);
+}
 
-function getCategoryFreeTier(category: string): number {
-   return Object.entries(FREE_TIER_LIMITS)
-      .filter(([key]) => key.startsWith(`${category}.`))
-      .reduce((sum, [, limit]) => sum + limit, 0);
+function computeProjectedCost(monthToDateCost: number): number {
+   const now = new Date();
+   const dayOfMonth = now.getDate();
+   const daysInMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+   ).getDate();
+   if (dayOfMonth <= 0) return monthToDateCost;
+   return (monthToDateCost / dayOfMonth) * daysInMonth;
+}
+
+function buildCategorySummaries(
+   catalog: CatalogEntry[],
+   meterUsage: MeterUsageItem[],
+): CategorySummary[] {
+   const usageMap = new Map(meterUsage.map((m) => [m.eventName, m.used]));
+   const billable = catalog.filter((e) => e.isBillable);
+   const byCategory = new Map<string, EventWithUsage[]>();
+
+   for (const entry of billable) {
+      const used = usageMap.get(entry.eventName) ?? 0;
+      const existing = byCategory.get(entry.category) ?? [];
+      existing.push({
+         eventName: entry.eventName,
+         displayName: entry.displayName,
+         used,
+         freeTierLimit: entry.freeTierLimit,
+         pricePerEvent: entry.pricePerEvent,
+      });
+      byCategory.set(entry.category, existing);
+   }
+
+   const summaries: CategorySummary[] = [];
+   for (const [category, events] of byCategory) {
+      const eventCount = events.reduce((sum, e) => sum + e.used, 0);
+      const monthToDateCost = events.reduce(
+         (sum, e) => sum + computeMonthlyCost(e),
+         0,
+      );
+      summaries.push({
+         category,
+         eventCount,
+         monthToDateCost,
+         projectedCost: computeProjectedCost(monthToDateCost),
+         events,
+      });
+   }
+
+   return summaries;
 }
 
 function formatCurrency(value: number): string {
@@ -214,9 +188,6 @@ function getDaysRemaining(): number {
    );
 }
 
-// ============================================
-// Current Bill Header
-// ============================================
 
 function CurrentBillHeader({ monthToDate }: { monthToDate: number }) {
    return (
@@ -246,10 +217,6 @@ function CurrentBillHeader({ monthToDate }: { monthToDate: number }) {
    );
 }
 
-// ============================================
-// Billing Period + Payment Link
-// ============================================
-
 function BillingPeriodSection() {
    const { start, end } = getBillingPeriodDates();
    const daysRemaining = getDaysRemaining();
@@ -275,12 +242,8 @@ function BillingPeriodSection() {
    );
 }
 
-// ============================================
-// Add Card Banner
-// ============================================
-
 function AddCardBanner() {
-   const { data } = useSuspenseQuery(
+   const { data, isLoading } = useQuery(
       orpc.billing.getPaymentStatus.queryOptions({}),
    );
    const { activeOrganization } = useActiveOrganization();
@@ -302,7 +265,7 @@ function AddCardBanner() {
       });
    };
 
-   if (data?.hasPaymentMethod) return null;
+   if (isLoading || data?.hasPaymentMethod) return null;
 
    return (
       <div className="rounded-lg border border-dashed bg-muted/40 p-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -327,9 +290,9 @@ function AddCardBanner() {
             variant="default"
          >
             {isPending ? (
-               <Spinner className="size-4 mr-2" />
+               <Spinner className="size-4" />
             ) : (
-               <CreditCard className="size-4 mr-2" />
+               <CreditCard className="size-4" />
             )}
             Adicionar cartão
          </Button>
@@ -337,9 +300,7 @@ function AddCardBanner() {
    );
 }
 
-// ============================================
-// Addon Cards Section
-// ============================================
+type ActiveAddon = { addonId: string };
 
 function AddonCard({
    addon,
@@ -466,235 +427,128 @@ function AddonsSection({ hasPaymentMethod }: { hasPaymentMethod: boolean }) {
    );
 }
 
-// ============================================
-// Product Card (PostHog-style)
-// ============================================
-
-function OverviewProductCardSkeleton() {
-   return (
-      <div className="space-y-3 pt-4">
-         <Skeleton className="h-6 w-full" />
-         <Skeleton className="h-6 w-full" />
-         <Skeleton className="h-6 w-full" />
-      </div>
-   );
-}
-
-function OverviewProductSubItems({ category }: { category: string }) {
-   const { data: events } = useSuspenseQuery(
-      orpc.billing.getCategoryUsage.queryOptions({
-         input: {
-            category: category as
-               | "finance"
-               | "ai"
-               | "webhook"
-               | "dashboard"
-               | "insight"
-               | "contact"
-               | "inventory"
-               | "service"
-               | "nfe"
-               | "document"
-               | "system",
-         },
-      }),
-   );
-
-   if (!events || events.length === 0) {
-      return (
-         <p className="text-sm text-muted-foreground py-3">
-            Nenhum evento registrado nesta categoria
-         </p>
-      );
-   }
+function OverviewProductCard({ category }: { category: CategorySummary }) {
+   const icon = CATEGORY_ICONS[category.category] ?? <HelpCircle className="size-5" />;
+   const freeTier = category.events.reduce((sum, e) => sum + e.freeTierLimit, 0);
 
    return (
-      <div className="space-y-3 pt-4">
-         {events.map((event: EventUsage) => {
-            const hasLimit = event.freeTierLimit > 0;
-            const percentage = hasLimit
-               ? Math.min((event.eventCount / event.freeTierLimit) * 100, 100)
-               : undefined;
-
-            return (
-               <div className="space-y-1.5" key={event.eventName}>
-                  <div className="flex items-center justify-between text-sm">
-                     <span>{event.displayName}</span>
-                     <div className="flex items-center gap-4">
-                        <span className="tabular-nums text-muted-foreground">
-                           {event.eventCount.toLocaleString("pt-BR")}
-                           {hasLimit && (
-                              <span>
-                                 {" "}
-                                 / {event.freeTierLimit.toLocaleString("pt-BR")}
-                              </span>
-                           )}
-                        </span>
-                        <span className="tabular-nums font-medium w-20 text-right">
-                           {formatCurrency(event.monthToDateCost)}
-                        </span>
-                     </div>
-                  </div>
-                  {percentage !== undefined && (
-                     <Progress className="h-1" value={percentage} />
-                  )}
-               </div>
-            );
-         })}
-      </div>
-   );
-}
-
-function OverviewProductCard({
-   category,
-   stage,
-   enrolled = true,
-   comingSoon = false,
-}: {
-   category: CategorySummary;
-   stage?: FeatureStage;
-   enrolled?: boolean;
-   comingSoon?: boolean;
-}) {
-   const { slug, teamSlug } = useParams({
-      from: "/_authenticated/$slug/$teamSlug/_dashboard",
-   });
-   const config = CATEGORY_CONFIG[category.category];
-   if (!config) return null;
-
-   return (
-      <Card className={comingSoon || !enrolled ? "opacity-70" : ""}>
+      <Card>
          <Collapsible>
             <CardHeader className="pb-3">
-               <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                     <div className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground shrink-0">
-                        {config.icon}
-                     </div>
-                     <div className="min-w-0">
-                        <CardTitle className="text-base">
-                           {config.label}
-                        </CardTitle>
-                        <CardDescription className="text-xs mt-0.5">
-                           {config.description}
-                        </CardDescription>
-                     </div>
+               <div className="flex items-start gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground shrink-0">
+                     {icon}
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                     {stage && <FeatureStageBadge stage={stage} />}
-                     {comingSoon ? (
-                        <Badge variant="secondary">Em breve</Badge>
-                     ) : !enrolled ? (
-                        <Button asChild variant="outline">
-                           <Link
-                              params={{ slug, teamSlug }}
-                              to="/$slug/$teamSlug/settings/feature-previews"
-                           >
-                              Ativar
-                           </Link>
-                        </Button>
-                     ) : null}
+                  <div className="min-w-0">
+                     <CardTitle className="text-base capitalize">
+                        {category.category}
+                     </CardTitle>
                   </div>
                </div>
             </CardHeader>
 
-            {enrolled && (
-               <CardContent className="space-y-4">
-                  {/* Usage bar + stats row */}
-                  <div className="flex items-center gap-4">
-                     <CollapsibleTrigger className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors shrink-0">
-                        <ChevronRight className="size-4 transition-transform [[data-state=open]_&]:rotate-90" />
-                     </CollapsibleTrigger>
+            <CardContent className="space-y-4">
+               <div className="flex items-center gap-4">
+                  <CollapsibleTrigger className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors shrink-0">
+                     <ChevronRight className="size-4 transition-transform [[data-state=open]_&]:rotate-90" />
+                  </CollapsibleTrigger>
 
-                     <div className="flex-1 flex items-center gap-6">
-                        {/* Current usage */}
-                        <div className="text-sm shrink-0">
-                           <span className="text-muted-foreground">Atual</span>
-                           <p className="font-medium tabular-nums">
-                              {category.eventCount.toLocaleString("pt-BR")}
+                  <div className="flex-1 flex items-center gap-6">
+                     <div className="text-sm shrink-0">
+                        <span className="text-muted-foreground">Atual</span>
+                        <p className="font-medium tabular-nums">
+                           {category.eventCount.toLocaleString("pt-BR")}
+                        </p>
+                     </div>
+
+                     <div className="flex-1 space-y-1 min-w-0">
+                        <Progress
+                           className="h-2"
+                           value={
+                              freeTier > 0
+                                 ? Math.min(
+                                      (category.eventCount / freeTier) * 100,
+                                      100,
+                                   )
+                                 : 0
+                           }
+                        />
+                        {freeTier > 0 && (
+                           <p className="text-xs text-muted-foreground">
+                              Limite gratuito:{" "}
+                              {freeTier.toLocaleString("pt-BR")}
+                           </p>
+                        )}
+                     </div>
+
+                     <div className="flex items-center gap-6 shrink-0">
+                        <div className="text-right">
+                           <span className="text-lg font-semibold tabular-nums">
+                              {formatCurrency(category.monthToDateCost)}
+                           </span>
+                           <p className="text-xs text-muted-foreground">
+                              No mes
                            </p>
                         </div>
-
-                        {/* Progress bar + free tier label */}
-                        {(() => {
-                           const freeTier = getCategoryFreeTier(
-                              category.category,
-                           );
-                           return (
-                              <div className="flex-1 space-y-1 min-w-0">
-                                 <Progress
-                                    className="h-2"
-                                    value={
-                                       freeTier > 0
-                                          ? Math.min(
-                                               (category.eventCount /
-                                                  freeTier) *
-                                                  100,
-                                               100,
-                                            )
-                                          : 0
-                                    }
-                                 />
-                                 {freeTier > 0 && (
-                                    <p className="text-xs text-muted-foreground">
-                                       Limite gratuito:{" "}
-                                       {freeTier.toLocaleString("pt-BR")}
-                                    </p>
-                                 )}
-                              </div>
-                           );
-                        })()}
-
-                        {/* Costs */}
-                        <div className="flex items-center gap-6 shrink-0">
-                           <div className="text-right">
-                              <span className="text-lg font-semibold tabular-nums">
-                                 {formatCurrency(category.monthToDateCost)}
-                              </span>
-                              <p className="text-xs text-muted-foreground">
-                                 No mes
-                              </p>
-                           </div>
-                           <div className="text-right">
-                              <span className="text-lg font-semibold tabular-nums">
-                                 {formatCurrency(category.projectedCost)}
-                              </span>
-                              <p className="text-xs text-muted-foreground">
-                                 Projetado
-                              </p>
-                           </div>
+                        <div className="text-right">
+                           <span className="text-lg font-semibold tabular-nums">
+                              {formatCurrency(category.projectedCost)}
+                           </span>
+                           <p className="text-xs text-muted-foreground">
+                              Projetado
+                           </p>
                         </div>
                      </div>
                   </div>
+               </div>
 
-                  {/* Expandable sub-items */}
-                  <CollapsibleContent>
-                     <div className="border-t">
-                        <ErrorBoundary
-                           fallback={
-                              <p className="text-sm text-destructive py-3">
-                                 Erro ao carregar detalhes
-                              </p>
-                           }
-                        >
-                           <Suspense fallback={<OverviewProductCardSkeleton />}>
-                              <OverviewProductSubItems
-                                 category={category.category}
-                              />
-                           </Suspense>
-                        </ErrorBoundary>
-                     </div>
-                  </CollapsibleContent>
-               </CardContent>
-            )}
+               <CollapsibleContent>
+                  <div className="border-t pt-4 space-y-3">
+                     {category.events.map((event) => {
+                        const hasLimit = event.freeTierLimit > 0;
+                        const percentage = hasLimit
+                           ? Math.min(
+                                (event.used / event.freeTierLimit) * 100,
+                                100,
+                             )
+                           : undefined;
+                        const cost = computeMonthlyCost(event);
+
+                        return (
+                           <div className="space-y-1.5" key={event.eventName}>
+                              <div className="flex items-center justify-between text-sm">
+                                 <span>{event.displayName}</span>
+                                 <div className="flex items-center gap-4">
+                                    <span className="tabular-nums text-muted-foreground">
+                                       {event.used.toLocaleString("pt-BR")}
+                                       {hasLimit && (
+                                          <span>
+                                             {" "}
+                                             /{" "}
+                                             {event.freeTierLimit.toLocaleString(
+                                                "pt-BR",
+                                             )}
+                                          </span>
+                                       )}
+                                    </span>
+                                    <span className="tabular-nums font-medium w-20 text-right">
+                                       {formatCurrency(cost)}
+                                    </span>
+                                 </div>
+                              </div>
+                              {percentage !== undefined && (
+                                 <Progress className="h-1" value={percentage} />
+                              )}
+                           </div>
+                        );
+                     })}
+                  </div>
+               </CollapsibleContent>
+            </CardContent>
          </Collapsible>
       </Card>
    );
 }
-
-// ============================================
-// Invoices Section (compact)
-// ============================================
 
 function InvoicesPreviewSkeleton() {
    return (
@@ -801,96 +655,44 @@ function InvoicesPreviewContent() {
    );
 }
 
-// ============================================
-// BillingOverview (main export)
-// ============================================
-
 export function BillingOverview() {
-   const { data } = useSuspenseQuery(
-      orpc.billing.getCurrentUsage.queryOptions({}),
+   const { data: meterUsage } = useSuspenseQuery(
+      orpc.billing.getMeterUsage.queryOptions({}),
    );
-   const { data: paymentStatus } = useSuspenseQuery(
+   const { data: catalog } = useSuspenseQuery(
+      orpc.billing.getEventCatalog.queryOptions({}),
+   );
+   const { data: paymentStatus } = useQuery(
       orpc.billing.getPaymentStatus.queryOptions({}),
    );
    const hasPaymentMethod = paymentStatus?.hasPaymentMethod ?? false;
-   const { features, isEnrolled } = useEarlyAccess();
 
-   // Derive stage from PostHog feature config, fall back to local config.
-   function resolveStage(
-      flagKey: string,
-      fallback: FeatureStage,
-   ): FeatureStage {
-      const posthogStage = features.find((f) => f.flagKey === flagKey)?.stage as
-         | FeatureStage
-         | undefined;
-      return posthogStage ?? fallback;
-   }
+   const categorySummaries = buildCategorySummaries(catalog, meterUsage);
+   const monthToDate = categorySummaries.reduce(
+      (sum, c) => sum + c.monthToDateCost,
+      0,
+   );
 
-   // Show all categories — gated ones appear with an enroll CTA when not enrolled.
-   const visibleCategories = Object.keys(CATEGORY_CONFIG);
-
-   // Merge API data with known categories — always show all visible cards.
-   const categoryDataMap = new Map(data.byCategory.map((c) => [c.category, c]));
-
-   const allCategories: CategorySummary[] = visibleCategories.map((cat) => {
-      const existing = categoryDataMap.get(cat);
-      return (
-         existing ?? {
-            category: cat,
-            eventCount: 0,
-            monthToDateCost: 0,
-            projectedCost: 0,
-         }
-      );
-   });
-
-   const sortedCategories = allCategories.sort(
+   const sortedCategories = [...categorySummaries].sort(
       (a, b) => b.monthToDateCost - a.monthToDateCost,
    );
 
    return (
       <div className="space-y-6">
-         {/* Top section: bill total */}
-         <CurrentBillHeader monthToDate={data.monthToDate} />
-
-         {/* Billing period */}
+         <CurrentBillHeader monthToDate={monthToDate} />
          <BillingPeriodSection />
-
-         {/* Add card CTA — hidden once a payment method exists */}
          <AddCardBanner />
+         {paymentStatus !== undefined && <AddonsSection hasPaymentMethod={hasPaymentMethod} />}
 
-         {/* Add-ons section */}
-         <AddonsSection hasPaymentMethod={hasPaymentMethod} />
-
-         {/* Products section */}
          <div>
             <h2 className="text-lg font-semibold mb-4">Produtos</h2>
             <div className="space-y-4">
-               {sortedCategories.map((cat) => {
-                  const gate = EARLY_ACCESS_CATEGORY_GATES[cat.category];
-                  const stage = gate
-                     ? resolveStage(gate.flag, gate.fallbackStage)
-                     : undefined;
-                  const comingSoon = COMING_SOON_CATEGORIES.has(cat.category);
-                  const enrolled = comingSoon
-                     ? false
-                     : gate
-                       ? isEnrolled(gate.flag)
-                       : true;
-                  return (
-                     <OverviewProductCard
-                        category={cat}
-                        comingSoon={comingSoon}
-                        enrolled={enrolled}
-                        key={cat.category}
-                        stage={stage}
-                     />
-                  );
-               })}
+               {sortedCategories.map((cat) => (
+                  <OverviewProductCard category={cat} key={cat.category} />
+               ))}
             </div>
          </div>
 
-         {/* Recent invoices */}
          <Card>
             <CardHeader>
                <CardTitle className="text-base">Faturas recentes</CardTitle>
@@ -913,6 +715,3 @@ export function BillingOverview() {
       </div>
    );
 }
-type ActiveAddon = {
-   addonId: string;
-};

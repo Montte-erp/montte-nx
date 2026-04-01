@@ -1,13 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mockGet = vi.fn<(key: string) => Promise<string | null>>();
-const mockIncr = vi.fn<(key: string) => Promise<number>>();
+const mockHget = vi.fn<(key: string, field: string) => Promise<string | null>>();
+const mockHincrby = vi.fn<(key: string, field: string, increment: number) => Promise<number>>();
 const mockPexpire = vi.fn<(key: string, ms: number) => Promise<number>>();
+const mockPttl = vi.fn<(key: string) => Promise<number>>();
+const mockHgetall = vi.fn<(key: string) => Promise<Record<string, string>>>();
 
 const mockRedis = {
-   get: mockGet,
-   incr: mockIncr,
+   hget: mockHget,
+   hincrby: mockHincrby,
    pexpire: mockPexpire,
+   pttl: mockPttl,
+   hgetall: mockHgetall,
 } as any;
 
 vi.mock("@core/stripe/constants", () => ({
@@ -18,6 +22,7 @@ vi.mock("@core/stripe/constants", () => ({
 }));
 
 import {
+   enforceCreditBudget,
    getCurrentUsage,
    incrementUsage,
    isWithinFreeTier,
@@ -29,7 +34,7 @@ beforeEach(() => {
 
 describe("isWithinFreeTier", () => {
    it("returns true when usage is below limit", async () => {
-      mockGet.mockResolvedValue("10");
+      mockHget.mockResolvedValue("10");
       const result = await isWithinFreeTier(
          "org-1",
          "finance.transaction_created",
@@ -39,7 +44,7 @@ describe("isWithinFreeTier", () => {
    });
 
    it("returns false when usage meets limit", async () => {
-      mockGet.mockResolvedValue("500");
+      mockHget.mockResolvedValue("500");
       const result = await isWithinFreeTier(
          "org-1",
          "finance.transaction_created",
@@ -49,7 +54,7 @@ describe("isWithinFreeTier", () => {
    });
 
    it("returns false when usage exceeds limit", async () => {
-      mockGet.mockResolvedValue("501");
+      mockHget.mockResolvedValue("501");
       const result = await isWithinFreeTier(
          "org-1",
          "finance.transaction_created",
@@ -59,7 +64,7 @@ describe("isWithinFreeTier", () => {
    });
 
    it("returns true when no usage recorded (null)", async () => {
-      mockGet.mockResolvedValue(null);
+      mockHget.mockResolvedValue(null);
       const result = await isWithinFreeTier(
          "org-1",
          "finance.transaction_created",
@@ -77,6 +82,16 @@ describe("isWithinFreeTier", () => {
       expect(result).toBe(true);
    });
 
+   it("returns true (fail-open) when Redis throws", async () => {
+      mockHget.mockRejectedValue(new Error("connection refused"));
+      const result = await isWithinFreeTier(
+         "org-1",
+         "finance.transaction_created",
+         mockRedis,
+      );
+      expect(result).toBe(true);
+   });
+
    it("returns true when no redis provided", async () => {
       const result = await isWithinFreeTier(
          "org-1",
@@ -87,36 +102,70 @@ describe("isWithinFreeTier", () => {
 });
 
 describe("incrementUsage", () => {
-   it("increments the counter", async () => {
-      mockIncr.mockResolvedValue(5);
+   it("increments the hash field", async () => {
+      mockHincrby.mockResolvedValue(5);
       await incrementUsage("org-1", "ai.chat_message", mockRedis);
-      expect(mockIncr).toHaveBeenCalledWith("usage:org-1:ai.chat_message");
+      expect(mockHincrby).toHaveBeenCalledWith("usage:org-1", "ai.chat_message", 1);
    });
 
    it("sets TTL on first increment", async () => {
-      mockIncr.mockResolvedValue(1);
+      mockHincrby.mockResolvedValue(1);
+      mockPttl.mockResolvedValue(-1);
       await incrementUsage("org-1", "ai.chat_message", mockRedis);
-      expect(mockPexpire).toHaveBeenCalledWith(
-         "usage:org-1:ai.chat_message",
-         expect.any(Number),
-      );
+      expect(mockPexpire).toHaveBeenCalledWith("usage:org-1", expect.any(Number));
    });
 
    it("does not set TTL on subsequent increments", async () => {
-      mockIncr.mockResolvedValue(2);
+      mockHincrby.mockResolvedValue(2);
       await incrementUsage("org-1", "ai.chat_message", mockRedis);
       expect(mockPexpire).not.toHaveBeenCalled();
    });
 
    it("no-ops when no redis provided", async () => {
       await incrementUsage("org-1", "ai.chat_message");
-      expect(mockIncr).not.toHaveBeenCalled();
+      expect(mockHincrby).not.toHaveBeenCalled();
+   });
+
+   it("silently swallows Redis errors", async () => {
+      mockHincrby.mockRejectedValue(new Error("connection refused"));
+      await expect(
+         incrementUsage("org-1", "ai.chat_message", mockRedis),
+      ).resolves.not.toThrow();
+   });
+});
+
+describe("enforceCreditBudget", () => {
+   it("does not throw when within free tier", async () => {
+      mockHget.mockResolvedValue("10");
+      await expect(
+         enforceCreditBudget("org-1", "finance.transaction_created", mockRedis, null),
+      ).resolves.not.toThrow();
+   });
+
+   it("does not throw when over free tier but stripe customer exists", async () => {
+      mockHget.mockResolvedValue("600");
+      await expect(
+         enforceCreditBudget("org-1", "finance.transaction_created", mockRedis, "cus_123"),
+      ).resolves.not.toThrow();
+   });
+
+   it("throws when over free tier and no stripe customer", async () => {
+      mockHget.mockResolvedValue("600");
+      await expect(
+         enforceCreditBudget("org-1", "finance.transaction_created", mockRedis, null),
+      ).rejects.toThrow();
+   });
+
+   it("does not throw for non-metered events even without stripe", async () => {
+      await expect(
+         enforceCreditBudget("org-1", "dashboard.created", mockRedis, null),
+      ).resolves.not.toThrow();
    });
 });
 
 describe("getCurrentUsage", () => {
    it("returns usage data for metered events", async () => {
-      mockGet.mockResolvedValue("100");
+      mockHget.mockResolvedValue("100");
       const result = await getCurrentUsage(
          "org-1",
          "finance.transaction_created",
@@ -130,7 +179,7 @@ describe("getCurrentUsage", () => {
    });
 
    it("returns over-limit status", async () => {
-      mockGet.mockResolvedValue("600");
+      mockHget.mockResolvedValue("600");
       const result = await getCurrentUsage(
          "org-1",
          "finance.transaction_created",
@@ -144,7 +193,7 @@ describe("getCurrentUsage", () => {
    });
 
    it("returns zero usage when no data", async () => {
-      mockGet.mockResolvedValue(null);
+      mockHget.mockResolvedValue(null);
       const result = await getCurrentUsage(
          "org-1",
          "finance.transaction_created",
@@ -158,7 +207,7 @@ describe("getCurrentUsage", () => {
    });
 
    it("returns zero limit for non-metered events", async () => {
-      mockGet.mockResolvedValue(null);
+      mockHget.mockResolvedValue(null);
       const result = await getCurrentUsage(
          "org-1",
          "dashboard.created",

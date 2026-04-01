@@ -6,216 +6,157 @@ import {
    CardHeader,
    CardTitle,
 } from "@packages/ui/components/card";
-import { DataTable } from "@packages/ui/components/data-table";
-import {
-   Select,
-   SelectContent,
-   SelectItem,
-   SelectTrigger,
-   SelectValue,
-} from "@packages/ui/components/select";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
-import { UsageChart } from "@/features/billing/ui/usage-chart";
 import { orpc } from "@/integrations/orpc/client";
+import type { Outputs } from "@/integrations/orpc/client";
 
-// ============================================
-// Constants
-// ============================================
+type MeterUsageItem = Outputs["billing"]["getMeterUsage"][number];
 
 const CATEGORY_LABELS: Record<string, string> = {
-   content: "Conteudo",
+   finance: "Financeiro",
    ai: "Inteligencia Artificial",
-   form: "Formularios",
-   seo: "SEO",
-   experiment: "Experimentos",
+   workflow: "Automacoes",
+   contact: "Contatos",
+   crm: "CRM",
+   document: "Documentos",
+   inventory: "Estoque",
+   service: "Servicos",
+   coworking: "Coworking",
    webhook: "Webhooks",
-   system: "Sistema",
+   payment: "Pagamentos",
+   nfe: "NF-e",
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-   content: "#3b82f6",
-   ai: "#8b5cf6",
-   form: "#f59e0b",
-   seo: "#10b981",
-   experiment: "#f43f5e",
-   webhook: "#06b6d4",
-   system: "#64748b",
-};
+function getCategoryFromEventName(eventName: string): string {
+   return eventName.split(".")[0] ?? "system";
+}
 
-// ============================================
-// Types
-// ============================================
+function humanizeEventName(eventName: string): string {
+   const parts = eventName.split(".");
+   const name = parts[parts.length - 1] ?? eventName;
+   return name
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
-type SpendRow = {
-   category: string;
-   total: number;
-   [date: string]: number | string;
-};
-
-// ============================================
-// Helpers
-// ============================================
+function computeOverageCost(item: MeterUsageItem): number {
+   const overage = Math.max(0, item.used - item.freeTierLimit);
+   return overage * parseFloat(item.pricePerEvent);
+}
 
 function formatCurrency(value: number): string {
-   return format(of(String(value), "BRL"), "pt-BR");
+   return format(of(value.toFixed(6), "BRL"), "pt-BR");
 }
-
-function formatShortDate(dateStr: string): string {
-   const d = new Date(dateStr);
-   return d
-      .toLocaleDateString("pt-BR", { day: "numeric", month: "short" })
-      .toUpperCase();
-}
-
-// ============================================
-// BillingSpend Component
-// ============================================
 
 export function BillingSpend() {
-   const [days, setDays] = useState(30);
-
-   const { data } = useSuspenseQuery(
-      orpc.billing.getDailyUsage.queryOptions({ input: { days } }),
+   const { data: meterUsage } = useSuspenseQuery(
+      orpc.billing.getMeterUsage.queryOptions({}),
    );
 
-   const usageData = data ?? [];
-
-   // Build chart data using byCategory (cost) for the area chart
-   const chartData = usageData.map((d) => ({
-      date: d.date,
-      total: d.total,
-      byCategory: d.byCategory,
-   }));
-
-   // Always include all known categories
-   const allCategories = Object.keys(CATEGORY_LABELS);
-   const allDates = usageData.map((d) => d.date);
-
-   // Build totals per category
-   const categoryTotals = new Map<string, number>();
-   for (const cat of allCategories) {
-      categoryTotals.set(cat, 0);
-   }
-   for (const d of usageData) {
-      for (const [cat, cost] of Object.entries(d.byCategory)) {
-         categoryTotals.set(cat, (categoryTotals.get(cat) ?? 0) + cost);
-      }
-   }
-
-   // Sort categories by total descending
-   const sortedCategories = [...allCategories].sort(
-      (a, b) => (categoryTotals.get(b) ?? 0) - (categoryTotals.get(a) ?? 0),
+   const billableItems = meterUsage.filter(
+      (item) => computeOverageCost(item) > 0,
    );
 
-   // Transform data into flat rows for DataTable
-   const tableData: SpendRow[] = sortedCategories.map((cat) => {
-      const row: SpendRow = {
-         category: cat,
-         total: categoryTotals.get(cat) ?? 0,
-      };
-      for (const date of allDates) {
-         const dayData = usageData.find((d) => d.date === date);
-         row[date] = dayData?.byCategory[cat] ?? 0;
-      }
-      return row;
+   const byCategory = new Map<string, MeterUsageItem[]>();
+   for (const item of billableItems) {
+      const cat = getCategoryFromEventName(item.eventName);
+      const existing = byCategory.get(cat) ?? [];
+      existing.push(item);
+      byCategory.set(cat, existing);
+   }
+
+   const sortedCategories = [...byCategory.entries()].sort(([, aItems], [, bItems]) => {
+      const aTotal = aItems.reduce((s, i) => s + computeOverageCost(i), 0);
+      const bTotal = bItems.reduce((s, i) => s + computeOverageCost(i), 0);
+      return bTotal - aTotal;
    });
 
-   // Build columns dynamically based on dates
-   const columns = useMemo<ColumnDef<SpendRow>[]>(() => {
-      const cols: ColumnDef<SpendRow>[] = [
-         {
-            accessorKey: "category",
-            header: "Serie",
-            enableSorting: false,
-            cell: ({ row }) => {
-               const cat = row.original.category;
-               return (
-                  <div className="flex items-center gap-2">
-                     <div
-                        className="size-2.5 rounded-full shrink-0"
-                        style={{
-                           backgroundColor: CATEGORY_COLORS[cat] ?? "#94a3b8",
-                        }}
-                     />
-                     <span className="text-sm font-medium">
-                        {CATEGORY_LABELS[cat] ?? cat}
-                     </span>
-                  </div>
-               );
-            },
-         },
-         {
-            accessorKey: "total",
-            header: "Gasto total",
-            cell: ({ row }) => (
-               <div className="text-right font-medium tabular-nums">
-                  {formatCurrency(row.original.total)}
-               </div>
-            ),
-         },
-         ...allDates.map<ColumnDef<SpendRow>>((date) => ({
-            accessorKey: date,
-            header: formatShortDate(date),
-            enableSorting: false,
-            cell: ({ row }) => (
-               <div className="text-right tabular-nums text-sm">
-                  {formatCurrency((row.original[date] as number) ?? 0)}
-               </div>
-            ),
-         })),
-      ];
-      return cols;
-   }, [allDates]);
+   const totalCost = billableItems.reduce(
+      (sum, item) => sum + computeOverageCost(item),
+      0,
+   );
+
+   if (billableItems.length === 0) {
+      return (
+         <Card>
+            <CardHeader>
+               <CardTitle className="text-base">Gastos do mes</CardTitle>
+               <CardDescription>
+                  Nenhum gasto acima do tier gratuito este mes
+               </CardDescription>
+            </CardHeader>
+            <CardContent>
+               <p className="text-2xl font-bold tabular-nums">
+                  {formatCurrency(0)}
+               </p>
+            </CardContent>
+         </Card>
+      );
+   }
 
    return (
       <div className="space-y-4">
-         {/* Chart Card */}
          <Card>
             <CardHeader>
-               <div className="flex items-center justify-between">
-                  <div>
-                     <CardTitle>Gastos diarios</CardTitle>
-                     <CardDescription>
-                        Acompanhe seus gastos ao longo do tempo por produto
-                     </CardDescription>
-                  </div>
-                  <Select
-                     onValueChange={(v) => setDays(Number(v))}
-                     value={String(days)}
-                  >
-                     <SelectTrigger className="w-40">
-                        <SelectValue />
-                     </SelectTrigger>
-                     <SelectContent>
-                        <SelectItem value="7">Ultimos 7 dias</SelectItem>
-                        <SelectItem value="30">Ultimos 30 dias</SelectItem>
-                        <SelectItem value="90">Ultimos 90 dias</SelectItem>
-                     </SelectContent>
-                  </Select>
-               </div>
+               <CardTitle className="text-base">Total cobrado este mes</CardTitle>
+               <CardDescription>
+                  Apenas o que excede o tier gratuito é cobrado
+               </CardDescription>
             </CardHeader>
             <CardContent>
-               <UsageChart data={chartData} mode="cost" />
+               <p className="text-3xl font-bold tabular-nums">
+                  {formatCurrency(totalCost)}
+               </p>
             </CardContent>
          </Card>
 
-         {/* Daily breakdown table */}
-         <Card>
-            <CardHeader>
-               <CardTitle className="text-base">
-                  Gastos diarios por produto
-               </CardTitle>
-            </CardHeader>
-            <CardContent>
-               <DataTable
-                  columns={columns}
-                  data={tableData}
-                  getRowId={(row) => row.category}
-               />
-            </CardContent>
-         </Card>
+         {sortedCategories.map(([category, items]) => {
+            const categoryTotal = items.reduce(
+               (sum, item) => sum + computeOverageCost(item),
+               0,
+            );
+            return (
+               <Card key={category}>
+                  <CardHeader>
+                     <div className="flex items-center justify-between">
+                        <CardTitle className="text-base">
+                           {CATEGORY_LABELS[category] ?? category}
+                        </CardTitle>
+                        <span className="text-sm font-semibold tabular-nums">
+                           {formatCurrency(categoryTotal)}
+                        </span>
+                     </div>
+                  </CardHeader>
+                  <CardContent>
+                     <div className="space-y-2">
+                        {items.map((item) => {
+                           const cost = computeOverageCost(item);
+                           const overage = item.used - item.freeTierLimit;
+                           return (
+                              <div
+                                 className="flex items-center justify-between text-sm"
+                                 key={item.eventName}
+                              >
+                                 <div>
+                                    <span className="font-medium">
+                                       {humanizeEventName(item.eventName)}
+                                    </span>
+                                    <span className="text-muted-foreground ml-2 text-xs">
+                                       {overage.toLocaleString("pt-BR")} eventos
+                                       acima do gratuito
+                                    </span>
+                                 </div>
+                                 <span className="tabular-nums font-medium">
+                                    {formatCurrency(cost)}
+                                 </span>
+                              </div>
+                           );
+                        })}
+                     </div>
+                  </CardContent>
+               </Card>
+            );
+         })}
       </div>
    );
 }

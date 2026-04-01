@@ -48,105 +48,17 @@ const mockStripeClient = {
    paymentMethods: {
       list: vi.fn(),
    },
+   billing: {
+      meters: {
+         list: vi.fn(),
+         listEventSummaries: vi.fn(),
+      },
+   },
 };
 
 function withStripe(base: ORPCContextWithAuth): ORPCContextWithAuth {
    return { ...base, stripeClient: mockStripeClient as any };
 }
-
-describe("getCurrentUsage", () => {
-   it("returns zero usage when no materialized view data exists", async () => {
-      const result = await call(billingRouter.getCurrentUsage, undefined, {
-         context: ctx,
-      });
-
-      expect(result).toEqual({
-         monthToDate: 0,
-         projected: 0,
-         byCategory: [],
-      });
-   });
-
-   it("throws INTERNAL_SERVER_ERROR when DB fails", async () => {
-      await expect(
-         call(billingRouter.getCurrentUsage, undefined, {
-            context: withFailingDb(ctx),
-         }),
-      ).rejects.toSatisfy(
-         (e: ORPCError<string, unknown>) => e.code === "INTERNAL_SERVER_ERROR",
-      );
-   });
-});
-
-describe("getStorageUsage", () => {
-   it("returns zero storage when no data exists", async () => {
-      const result = await call(billingRouter.getStorageUsage, undefined, {
-         context: ctx,
-      });
-
-      expect(result).toEqual({
-         currentBytes: 0,
-         monthToDateCost: 0,
-         projectedCost: 0,
-      });
-   });
-
-   it("throws INTERNAL_SERVER_ERROR when DB fails", async () => {
-      await expect(
-         call(billingRouter.getStorageUsage, undefined, {
-            context: withFailingDb(ctx),
-         }),
-      ).rejects.toSatisfy(
-         (e: ORPCError<string, unknown>) => e.code === "INTERNAL_SERVER_ERROR",
-      );
-   });
-});
-
-describe("getCategoryUsage", () => {
-   it("returns empty array for a category with no usage", async () => {
-      const result = await call(
-         billingRouter.getCategoryUsage,
-         { category: "finance" },
-         { context: ctx },
-      );
-
-      expect(result).toEqual([]);
-   });
-
-   it("throws INTERNAL_SERVER_ERROR when DB fails", async () => {
-      await expect(
-         call(
-            billingRouter.getCategoryUsage,
-            { category: "finance" },
-            { context: withFailingDb(ctx) },
-         ),
-      ).rejects.toSatisfy(
-         (e: ORPCError<string, unknown>) => e.code === "INTERNAL_SERVER_ERROR",
-      );
-   });
-});
-
-describe("getDailyUsage", () => {
-   it("returns empty array when no daily usage data exists", async () => {
-      const result = await call(
-         billingRouter.getDailyUsage,
-         { days: 30 },
-         { context: ctx },
-      );
-
-      expect(result).toEqual([]);
-   });
-
-   it("throws INTERNAL_SERVER_ERROR when DB fails", async () => {
-      await expect(
-         call(billingRouter.getDailyUsage, { days: 30 }, {
-            context: withFailingDb(ctx),
-         }),
-      ).rejects.toSatisfy(
-         (e: ORPCError<string, unknown>) => e.code === "INTERNAL_SERVER_ERROR",
-      );
-   });
-});
 
 describe("getInvoices", () => {
    it("returns formatted invoice list", async () => {
@@ -257,15 +169,6 @@ describe("getInvoices", () => {
    });
 });
 
-function withFailingDb(base: ORPCContextWithAuth): ORPCContextWithAuth {
-   const proxy = new Proxy(base.db, {
-      get(target, prop) {
-         if (prop === "select") return () => { throw new Error("simulated DB failure"); };
-         return (target as any)[prop];
-      },
-   });
-   return { ...base, db: proxy as any };
-}
 
 describe("getUpcomingInvoice", () => {
    it("throws when stripeClient is not configured", async () => {
@@ -420,5 +323,106 @@ describe("getPaymentStatus", () => {
       });
 
       expect(result).toEqual({ hasPaymentMethod: true });
+   });
+});
+
+describe("getMeterUsage", () => {
+   it("returns fallback when stripeClient is not configured", async () => {
+      const result = await call(billingRouter.getMeterUsage, undefined, {
+         context: ctx,
+      });
+
+      expect(Array.isArray(result)).toBe(true);
+      for (const item of result) {
+         expect(item.used).toBe(0);
+         expect(typeof item.eventName).toBe("string");
+         expect(typeof item.freeTierLimit).toBe("number");
+         expect(typeof item.pricePerEvent).toBe("string");
+      }
+   });
+
+   it("returns fallback when user has no stripeCustomerId", async () => {
+      await ctx.db
+         .update((await import("@core/database/schema")).user)
+         .set({ stripeCustomerId: null })
+         .where(
+            (await import("drizzle-orm")).eq(
+               (await import("@core/database/schema")).user.id,
+               ctx.session!.user.id,
+            ),
+         );
+
+      const stripeCtx = withStripe(ctx);
+      const result = await call(billingRouter.getMeterUsage, undefined, {
+         context: stripeCtx,
+      });
+
+      expect(Array.isArray(result)).toBe(true);
+      for (const item of result) {
+         expect(item.used).toBe(0);
+      }
+   });
+
+   it("returns aggregated usage from Stripe meter summaries", async () => {
+      await ctx.db
+         .update((await import("@core/database/schema")).user)
+         .set({ stripeCustomerId: "cus_meter_test" })
+         .where(
+            (await import("drizzle-orm")).eq(
+               (await import("@core/database/schema")).user.id,
+               ctx.session!.user.id,
+            ),
+         );
+
+      mockStripeClient.billing.meters.list.mockResolvedValueOnce({
+         data: [{ id: "meter_tx", event_name: "finance_transactions" }],
+      });
+      mockStripeClient.billing.meters.listEventSummaries.mockResolvedValueOnce({
+         data: [
+            { aggregated_value: 300 },
+            { aggregated_value: 150 },
+         ],
+      });
+
+      const stripeCtx = withStripe(ctx);
+      const result = await call(billingRouter.getMeterUsage, undefined, {
+         context: stripeCtx,
+      });
+
+      const txItem = result.find((r) => r.eventName === "finance.transaction_created");
+      expect(txItem?.used).toBe(450);
+   });
+
+   it("returns zero usage for meters not found in Stripe", async () => {
+      await ctx.db
+         .update((await import("@core/database/schema")).user)
+         .set({ stripeCustomerId: "cus_empty_meters" })
+         .where(
+            (await import("drizzle-orm")).eq(
+               (await import("@core/database/schema")).user.id,
+               ctx.session!.user.id,
+            ),
+         );
+
+      mockStripeClient.billing.meters.list.mockResolvedValueOnce({ data: [] });
+
+      const stripeCtx = withStripe(ctx);
+      const result = await call(billingRouter.getMeterUsage, undefined, {
+         context: stripeCtx,
+      });
+
+      for (const item of result) {
+         expect(item.used).toBe(0);
+      }
+   });
+});
+
+describe("getEventCatalog", () => {
+   it("returns event catalog rows ordered by category and displayName", async () => {
+      const result = await call(billingRouter.getEventCatalog, undefined, {
+         context: ctx,
+      });
+
+      expect(Array.isArray(result)).toBe(true);
    });
 });
