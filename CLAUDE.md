@@ -424,20 +424,6 @@ npx vitest run apps/web/__tests__/integrations/orpc/router/transactions.test.ts
 
 **⚠️ Gotcha — `member` and `team` tables have no `.defaultNow()` on `createdAt`.** Always provide `createdAt: new Date()` explicitly in test inserts.
 
-**⚠️ Gotcha — `vite-tsconfig-paths` and self-referencing core packages.** Every `vitest.config.ts` must include all four self-referencing tsconfigs in its `projects` list: `authentication`, `database`, `files`, `logging`.
-
-```typescript
-viteTsConfigPaths({
-   projects: [
-      "./tsconfig.test.json",
-      "../../core/authentication/tsconfig.json",
-      "../../core/database/tsconfig.json",
-      "../../core/files/tsconfig.json",
-      "../../core/logging/tsconfig.json",
-   ],
-})
-```
-
 Use the `orpc-testing` skill when writing new oRPC procedure tests.
 
 ---
