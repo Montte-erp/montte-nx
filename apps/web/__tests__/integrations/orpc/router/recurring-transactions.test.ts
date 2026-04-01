@@ -47,8 +47,8 @@ beforeAll(async () => {
       organizationId: "auto",
       teamId: "auto",
    });
-   const session = ctx.session;
-   teamId = session.session.activeTeamId!;
+   if (!ctx.session) throw new Error("session is null");
+   teamId = ctx.session.session.activeTeamId!;
 });
 
 afterAll(async () => {

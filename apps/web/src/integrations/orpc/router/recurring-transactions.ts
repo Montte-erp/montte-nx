@@ -51,6 +51,7 @@ export const create = protectedProcedure
             .string()
             .regex(ISO_DATE_REGEX, "Data deve estar no formato YYYY-MM-DD."),
          endsAt: z.string().regex(ISO_DATE_REGEX).nullable().optional(),
+         windowMonths: z.number().int().min(1).max(24).default(3),
       }),
    )
    .handler(async ({ context, input }) => {
