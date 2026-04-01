@@ -572,7 +572,7 @@ export async function getRateioForTransaction(
    transactionId: string,
 ) {
    try {
-      return db
+      return await db
          .select({
             id: transactionRateio.id,
             transactionId: transactionRateio.transactionId,
@@ -614,18 +614,20 @@ export async function replaceTransactionRateio(
          );
       }
 
-      await db
-         .delete(transactionRateio)
-         .where(eq(transactionRateio.transactionId, transactionId));
+      await db.transaction(async (tx) => {
+         await tx
+            .delete(transactionRateio)
+            .where(eq(transactionRateio.transactionId, transactionId));
 
-      await db.insert(transactionRateio).values(
-         lines.map((l) => ({
-            transactionId,
-            categoryId: l.categoryId,
-            tagId: l.tagId ?? null,
-            amount: l.amount,
-         })),
-      );
+         await tx.insert(transactionRateio).values(
+            lines.map((l) => ({
+               transactionId,
+               categoryId: l.categoryId,
+               tagId: l.tagId ?? null,
+               amount: l.amount,
+            })),
+         );
+      });
    } catch (err) {
       propagateError(err);
       throw AppError.database("Failed to replace rateio");
