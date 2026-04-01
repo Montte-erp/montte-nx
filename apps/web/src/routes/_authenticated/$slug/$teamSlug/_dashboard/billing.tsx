@@ -22,7 +22,6 @@ import { BillingOverview } from "@/features/billing/ui/billing-overview";
 import { BillingSpend } from "@/features/billing/ui/billing-spend";
 import { BillingUsage } from "@/features/billing/ui/billing-usage";
 import { EarlyAccessBanner } from "@/features/billing/ui/early-access-banner";
-import { BillingPlans } from "./-billing/billing-plans";
 
 const earlyAccessTemplate = {
    badgeLabel: "Acesso antecipado",
@@ -97,7 +96,6 @@ function BillingPage() {
                <TabsTrigger value="overview">Geral</TabsTrigger>
                <TabsTrigger value="usage">Uso</TabsTrigger>
                <TabsTrigger value="spend">Gastos</TabsTrigger>
-               <TabsTrigger value="plans">Planos</TabsTrigger>
             </TabsList>
             <Separator />
 
@@ -126,10 +124,6 @@ function BillingPage() {
                      <BillingSpend />
                   </Suspense>
                </ErrorBoundary>
-            </TabsContent>
-
-            <TabsContent className="space-y-4" value="plans">
-               <BillingPlans />
             </TabsContent>
          </Tabs>
       </div>
