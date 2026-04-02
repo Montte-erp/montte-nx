@@ -364,7 +364,7 @@ export function BankAccountForm({
                                     variant="outline"
                                  >
                                     <div
-                                       className="w-4 h-4 rounded border border-border shrink-0"
+                                       className="size-4 rounded border border-border shrink-0"
                                        style={{
                                           backgroundColor: field.state.value,
                                        }}
@@ -453,77 +453,114 @@ export function BankAccountForm({
 
                               <form.Field
                                  name="nickname"
-                                 children={(field) => (
-                                    <Field>
-                                       <FieldLabel htmlFor={field.name}>
-                                          Apelido
-                                       </FieldLabel>
-                                       <Input
-                                          id={field.name}
-                                          name={field.name}
-                                          onBlur={field.handleBlur}
-                                          onChange={(e) =>
-                                             field.handleChange(e.target.value)
-                                          }
-                                          placeholder="Ex: Conta principal"
-                                          value={field.state.value}
-                                       />
-                                    </Field>
-                                 )}
+                                 children={(field) => {
+                                    const isInvalid =
+                                       field.state.meta.isTouched &&
+                                       field.state.meta.errors.length > 0;
+                                    return (
+                                       <Field data-invalid={isInvalid}>
+                                          <FieldLabel htmlFor={field.name}>
+                                             Apelido
+                                          </FieldLabel>
+                                          <Input
+                                             id={field.name}
+                                             name={field.name}
+                                             aria-invalid={isInvalid}
+                                             onBlur={field.handleBlur}
+                                             onChange={(e) =>
+                                                field.handleChange(
+                                                   e.target.value,
+                                                )
+                                             }
+                                             placeholder="Ex: Conta principal"
+                                             value={field.state.value}
+                                          />
+                                          {isInvalid && (
+                                             <FieldError
+                                                errors={field.state.meta.errors}
+                                             />
+                                          )}
+                                       </Field>
+                                    );
+                                 }}
                               />
                            </div>
 
                            <div className="grid grid-cols-2 gap-4">
                               <form.Field
                                  name="branch"
-                                 children={(field) => (
-                                    <Field>
-                                       <FieldLabel htmlFor={field.name}>
-                                          Agência
-                                       </FieldLabel>
-                                       <Input
-                                          ref={branchRef}
-                                          defaultValue={field.state.value}
-                                          id={field.name}
-                                          inputMode="numeric"
-                                          name={field.name}
-                                          onBlur={field.handleBlur}
-                                          onInput={(e) =>
-                                             field.handleChange(
-                                                (e.target as HTMLInputElement)
-                                                   .value,
-                                             )
-                                          }
-                                          placeholder="00000"
-                                       />
-                                    </Field>
-                                 )}
+                                 children={(field) => {
+                                    const isInvalid =
+                                       field.state.meta.isTouched &&
+                                       field.state.meta.errors.length > 0;
+                                    return (
+                                       <Field data-invalid={isInvalid}>
+                                          <FieldLabel htmlFor={field.name}>
+                                             Agência
+                                          </FieldLabel>
+                                          <Input
+                                             ref={branchRef}
+                                             aria-invalid={isInvalid}
+                                             defaultValue={field.state.value}
+                                             id={field.name}
+                                             inputMode="numeric"
+                                             name={field.name}
+                                             onBlur={field.handleBlur}
+                                             onInput={(e) =>
+                                                field.handleChange(
+                                                   (
+                                                      e.target as HTMLInputElement
+                                                   ).value,
+                                                )
+                                             }
+                                             placeholder="00000"
+                                          />
+                                          {isInvalid && (
+                                             <FieldError
+                                                errors={field.state.meta.errors}
+                                             />
+                                          )}
+                                       </Field>
+                                    );
+                                 }}
                               />
 
                               <form.Field
                                  name="accountNumber"
-                                 children={(field) => (
-                                    <Field>
-                                       <FieldLabel htmlFor={field.name}>
-                                          Conta
-                                       </FieldLabel>
-                                       <Input
-                                          ref={accountRef}
-                                          defaultValue={field.state.value}
-                                          id={field.name}
-                                          inputMode="numeric"
-                                          name={field.name}
-                                          onBlur={field.handleBlur}
-                                          onInput={(e) =>
-                                             field.handleChange(
-                                                (e.target as HTMLInputElement)
-                                                   .value,
-                                             )
-                                          }
-                                          placeholder="000000000000-0"
-                                       />
-                                    </Field>
-                                 )}
+                                 children={(field) => {
+                                    const isInvalid =
+                                       field.state.meta.isTouched &&
+                                       field.state.meta.errors.length > 0;
+                                    return (
+                                       <Field data-invalid={isInvalid}>
+                                          <FieldLabel htmlFor={field.name}>
+                                             Conta
+                                          </FieldLabel>
+                                          <Input
+                                             ref={accountRef}
+                                             aria-invalid={isInvalid}
+                                             defaultValue={field.state.value}
+                                             id={field.name}
+                                             inputMode="numeric"
+                                             name={field.name}
+                                             onBlur={field.handleBlur}
+                                             onInput={(e) =>
+                                                field.handleChange(
+                                                   (
+                                                      e.target as HTMLInputElement
+                                                   ).value,
+                                                )
+                                             }
+                                             placeholder="000000000000-0"
+                                          />
+                                          {isInvalid && (
+                                             <FieldError
+                                                errors={field.state.meta.errors}
+                                             />
+                                          )}
+                                       </Field>
+                                    );
+                                 }}
                               />
                            </div>
                         </>

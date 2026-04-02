@@ -474,7 +474,7 @@ function MyForm() {
          inputMode="numeric"
          onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
          placeholder="(11) 99999-9999"
-         value={field.state.value}
+         defaultValue={field.state.value}
       />
    );
 }

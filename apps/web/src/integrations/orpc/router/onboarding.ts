@@ -311,6 +311,7 @@ export const fetchCnpjData = authenticatedProcedure
       try {
          res = await fetch(
             `https://brasilapi.com.br/api/cnpj/v1/${input.cnpj}`,
+            { signal: AbortSignal.timeout(5000) },
          );
       } catch {
          throw WebAppError.internal(
