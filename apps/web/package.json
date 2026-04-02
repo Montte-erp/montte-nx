@@ -54,6 +54,7 @@
       "@tanstack/pacer": "catalog:tanstack",
       "@tanstack/react-devtools": "catalog:tanstack",
       "@tanstack/react-form": "catalog:tanstack",
+      "@tanstack/react-pacer": "catalog:tanstack",
       "@tanstack/react-query": "catalog:tanstack",
       "@tanstack/react-query-devtools": "catalog:tanstack",
       "@tanstack/react-router": "catalog:tanstack",

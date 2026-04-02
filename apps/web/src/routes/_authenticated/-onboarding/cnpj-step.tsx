@@ -10,7 +10,7 @@ import type { MaskitoOptions } from "@maskito/core";
 import { useMaskito } from "@maskito/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
-import { useDebouncedCallback } from "@tanstack/pacer";
+import { useDebouncedCallback } from "@tanstack/react-pacer";
 import dayjs from "dayjs";
 import { Building2, CheckCircle2, MapPin } from "lucide-react";
 import { forwardRef, useEffect, useImperativeHandle } from "react";

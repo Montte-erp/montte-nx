@@ -529,10 +529,10 @@ Standard hook library — SSR-safe. Import each hook from its own subpath. Never
 
 ## Debouncing & Throttling (@tanstack/pacer)
 
-Use `useDebouncedCallback` from `@tanstack/pacer` for debouncing callbacks in React components.
+Use `useDebouncedCallback` from `@tanstack/react-pacer` for debouncing callbacks in React components.
 
 ```tsx
-import { useDebouncedCallback } from "@tanstack/pacer";
+import { useDebouncedCallback } from "@tanstack/react-pacer";
 import { useCallback } from "react";
 
 const fetchData = useDebouncedCallback(

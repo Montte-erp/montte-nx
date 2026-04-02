@@ -119,6 +119,7 @@
          },
          "tanstack": {
             "@tanstack/pacer": "^0.20.1",
+            "@tanstack/react-pacer": "^0.21.1",
             "@tanstack/devtools-event-client": "^0.4.3",
             "@tanstack/devtools-vite": "^0.5.5",
             "@tanstack/match-sorter-utils": "^8.19.4",
