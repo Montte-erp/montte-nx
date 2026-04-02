@@ -8,7 +8,7 @@ import { Input } from "@packages/ui/components/input";
 import { Spinner } from "@packages/ui/components/spinner";
 import type { MaskitoOptions } from "@maskito/core";
 import { useMaskito } from "@maskito/react";
-import { useForm } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
 import dayjs from "dayjs";
@@ -77,9 +77,9 @@ export const CnpjStep = forwardRef<StepHandle, CnpjStepProps>(function CnpjStep(
 
    const cnpjInputRef = useMaskito({ options: cnpjMaskOptions });
 
-   const canContinue = form.useStore((s) => s.values.cnpjData !== null);
-   const isSubmitting = form.useStore((s) => s.isSubmitting);
-   const cnpjData = form.useStore((s) => s.values.cnpjData);
+   const canContinue = useStore(form.store, (s) => s.values.cnpjData !== null);
+   const isSubmitting = useStore(form.store, (s) => s.isSubmitting);
+   const cnpjData = useStore(form.store, (s) => s.values.cnpjData);
    const isPending = fetchCnpjMutation.isPending || isSubmitting;
 
    useImperativeHandle(
