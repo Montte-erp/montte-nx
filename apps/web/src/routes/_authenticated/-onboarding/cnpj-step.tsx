@@ -6,7 +6,8 @@ import {
 } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { Spinner } from "@packages/ui/components/spinner";
-import { useDebouncedValue } from "foxact/use-debounced-value";
+import type { MaskitoOptions } from "@maskito/core";
+import { useMaskito } from "@maskito/react";
 import dayjs from "dayjs";
 import { Building2, CheckCircle2, MapPin } from "lucide-react";
 import {
@@ -16,7 +17,10 @@ import {
    useImperativeHandle,
    useState,
 } from "react";
-import type { Inputs } from "@/integrations/orpc/client";
+import { useMemo } from "react";
+
+import { Debouncer } from "@tanstack/pacer";
+import { orpc, type Inputs } from "@/integrations/orpc/client";
 import type { StepHandle, StepState } from "./step-handle";
 
 type CnpjData = NonNullable<
@@ -30,19 +34,28 @@ const PORTE_MAP: Record<string, string> = {
    DEMAIS: "Grande Porte",
 };
 
-function formatCnpj(digits: string): string {
-   return digits
-      .replace(/^(\d{2})(\d)/, "$1.$2")
-      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-      .replace(/\.(\d{3})(\d)/, ".$1/$2")
-      .replace(/(\d{4})(\d)/, "$1-$2");
-}
-
-async function fetchCnpj(cnpj: string): Promise<CnpjData> {
-   const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
-   if (!res.ok) throw new Error("CNPJ não encontrado");
-   return res.json() as Promise<CnpjData>;
-}
+const cnpjMaskOptions: MaskitoOptions = {
+   mask: [
+      /\d/,
+      /\d/,
+      ".",
+      /\d/,
+      /\d/,
+      /\d/,
+      ".",
+      /\d/,
+      /\d/,
+      /\d/,
+      "/",
+      /\d/,
+      /\d/,
+      /\d/,
+      /\d/,
+      "-",
+      /\d/,
+      /\d/,
+   ],
+};
 
 interface CnpjStepProps {
    onNext: (data: CnpjData) => Promise<void>;
@@ -53,13 +66,11 @@ export const CnpjStep = forwardRef<StepHandle, CnpjStepProps>(function CnpjStep(
    { onNext, onStateChange },
    ref,
 ) {
-   const [rawValue, setRawValue] = useState("");
    const [cnpjData, setCnpjData] = useState<CnpjData | null>(null);
    const [error, setError] = useState<string | null>(null);
    const [isFetching, setIsFetching] = useState(false);
    const [isSubmitting, setIsSubmitting] = useState(false);
-
-   const debouncedDigits = useDebouncedValue(rawValue, 400);
+   const cnpjInputRef = useMaskito({ options: cnpjMaskOptions });
 
    const canContinue = cnpjData !== null;
    const isPending = isFetching || isSubmitting;
@@ -87,40 +98,43 @@ export const CnpjStep = forwardRef<StepHandle, CnpjStepProps>(function CnpjStep(
       onStateChange({ canContinue, isPending });
    }, [canContinue, isPending, onStateChange]);
 
-   useEffect(() => {
-      if (debouncedDigits.length !== 14) return;
+   const fetchData = useCallback(async (digits: string) => {
+      if (digits.length !== 14) return;
 
-      let cancelled = false;
       setIsFetching(true);
-
-      fetchCnpj(debouncedDigits)
-         .then((data) => {
-            if (cancelled) return;
-            if (data.descricao_situacao_cadastral !== "ATIVA") {
-               setError("Este CNPJ não está ativo na Receita Federal.");
-               return;
-            }
-            setCnpjData(data);
-         })
-         .catch(() => {
-            if (!cancelled) setError("CNPJ não encontrado ou inválido.");
-         })
-         .finally(() => {
-            if (!cancelled) setIsFetching(false);
-         });
-
-      return () => {
-         cancelled = true;
-         setIsFetching(false);
-      };
-   }, [debouncedDigits]);
-
-   const handleChange = useCallback((value: string) => {
-      const digits = value.replace(/\D/g, "").slice(0, 14);
-      setRawValue(digits);
       setCnpjData(null);
       setError(null);
+
+      try {
+         const data = await orpc.onboarding.fetchCnpjData.call({
+            cnpj: digits,
+         });
+         setCnpjData(data);
+      } catch (err) {
+         const msg =
+            err instanceof Error
+               ? err.message
+               : "CNPJ não encontrado ou inválido.";
+         setError(msg);
+      } finally {
+         setIsFetching(false);
+      }
    }, []);
+
+   const debouncer = useMemo(
+      () => new Debouncer(fetchData, { wait: 400 }),
+      [fetchData],
+   );
+
+   const handleInput = useCallback(
+      (value: string) => {
+         const digits = value.replace(/\D/g, "");
+         setCnpjData(null);
+         setError(null);
+         debouncer.maybeExecute(digits);
+      },
+      [debouncer],
+   );
 
    const displayName =
       cnpjData?.nome_fantasia || cnpjData?.razao_social || null;
@@ -147,12 +161,14 @@ export const CnpjStep = forwardRef<StepHandle, CnpjStepProps>(function CnpjStep(
                <FieldLabel>CNPJ</FieldLabel>
                <div className="relative">
                   <Input
+                     ref={cnpjInputRef}
                      autoFocus
                      disabled={isFetching}
                      inputMode="numeric"
-                     onChange={(e) => handleChange(e.target.value)}
+                     onInput={(e) =>
+                        handleInput((e.target as HTMLInputElement).value)
+                     }
                      placeholder="00.000.000/0000-00"
-                     value={formatCnpj(rawValue)}
                   />
                   {isFetching && (
                      <Spinner className="absolute right-3 top-1/2 size-4 -translate-y-1/2" />

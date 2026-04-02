@@ -43,6 +43,8 @@
       "@emoji-mart/data": "1.2.1",
       "@f-o-t/money": "catalog:fot",
       "@faker-js/faker": "^10.3.0",
+      "@maskito/kit": "catalog:ui",
+      "@maskito/react": "catalog:ui",
       "@radix-ui/react-use-controllable-state": "^1.2.2",
       "@stepperize/react": "catalog:ui",
       "@tanstack/react-form": "catalog:tanstack",

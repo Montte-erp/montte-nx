@@ -80,6 +80,9 @@
         "@f-o-t/spelling": "catalog:fot",
         "@f-o-t/uom": "catalog:fot",
         "@faker-js/faker": "catalog:testing",
+        "@maskito/core": "catalog:ui",
+        "@maskito/kit": "catalog:ui",
+        "@maskito/react": "catalog:ui",
         "@openrouter/ai-sdk-provider": "^2.2.3",
         "@orpc/client": "catalog:orpc",
         "@orpc/json-schema": "catalog:orpc",
@@ -91,6 +94,7 @@
         "@packages/ui": "workspace:*",
         "@tailwindcss/vite": "catalog:vite",
         "@tanstack/match-sorter-utils": "catalog:tanstack",
+        "@tanstack/pacer": "catalog:tanstack",
         "@tanstack/react-devtools": "catalog:tanstack",
         "@tanstack/react-form": "catalog:tanstack",
         "@tanstack/react-query": "catalog:tanstack",
@@ -427,6 +431,8 @@
         "@emoji-mart/data": "1.2.1",
         "@f-o-t/money": "catalog:fot",
         "@faker-js/faker": "^10.3.0",
+        "@maskito/kit": "catalog:ui",
+        "@maskito/react": "catalog:ui",
         "@radix-ui/react-use-controllable-state": "^1.2.2",
         "@stepperize/react": "catalog:ui",
         "@tanstack/react-form": "catalog:tanstack",
@@ -632,6 +638,7 @@
       "@tanstack/devtools-event-client": "^0.4.3",
       "@tanstack/devtools-vite": "^0.5.5",
       "@tanstack/match-sorter-utils": "^8.19.4",
+      "@tanstack/pacer": "^0.20.1",
       "@tanstack/react-devtools": "^0.9.13",
       "@tanstack/react-form": "^1.28.5",
       "@tanstack/react-query": "^5.90.21",
@@ -670,6 +677,9 @@
       "resend": "6.9.2",
     },
     "ui": {
+      "@maskito/core": "^5.2.2",
+      "@maskito/kit": "^5.2.2",
+      "@maskito/react": "^5.2.2",
       "@number-flow/react": "^0.5.11",
       "@stepperize/react": "^6.0.0",
       "@tailwindcss/postcss": "^4.1.18",
@@ -1180,6 +1190,12 @@
     "@lukeed/csprng": ["@lukeed/csprng@1.1.0", "", {}, "sha512-Z7C/xXCiGWsg0KuKsHTKJxbWhpI3Vs5GwLfOean7MGyVFGqdRgBbAjOCh6u4bbjPc/8MJ2pZmK/0DLdCbivLDA=="],
 
     "@lukeed/uuid": ["@lukeed/uuid@2.0.1", "", { "dependencies": { "@lukeed/csprng": "^1.1.0" } }, "sha512-qC72D4+CDdjGqJvkFMMEAtancHUQ7/d/tAiHf64z8MopFDmcrtbcJuerDtFceuAfQJ2pDSfCKCtbqoGBNnwg0w=="],
+
+    "@maskito/core": ["@maskito/core@5.2.2", "", {}, "sha512-OFLK9NMQrz4eCgNgJ74S4x6IklqGQ71pcQToNGRzkIYnlEZbGpO+pzLREKLN/iKh4oBz8PI/9JnD3HtkN5Rl+w=="],
+
+    "@maskito/kit": ["@maskito/kit@5.2.2", "", { "peerDependencies": { "@maskito/core": "^5.2.2" } }, "sha512-ACuhzZ0EmMPBqi+RMbAqVPTMpQuhYVSBTLgBlyQppha1DurC4fN1fXL8MzHqbJbKiCbG2WELpl4mgyTgMcACIg=="],
+
+    "@maskito/react": ["@maskito/react@5.2.2", "", { "peerDependencies": { "@maskito/core": "^5.2.2", "react": ">=16.8", "react-dom": ">=16.8" } }, "sha512-msI6RFuiWP/sFMvLkPF1e3Lihqzcox8xRZ4gnQESoQ23DOVlPL8MfpW10w5GFD859YGzKjW8LoGddxvRE9cAIA=="],
 
     "@mastra/ai-sdk": ["@mastra/ai-sdk@1.1.0", "", { "peerDependencies": { "@mastra/core": ">=1.5.0-0 <2.0.0-0", "zod": "^3.25.0 || ^4.0.0" } }, "sha512-NukoFp2yZ90UbAIaxfsCR6Y2k5wKiDdlzHFLOK9J39E7TMuNUNONqCGYucKcUAoRA+qVQHqRqqsA+D6OnMygeA=="],
 
@@ -1934,6 +1950,8 @@
     "@tanstack/history": ["@tanstack/history@1.161.6", "", {}, "sha512-NaOGLRrddszbQj9upGat6HG/4TKvXLvu+osAIgfxPYA+eIvYKv8GKDJOrY2D3/U9MRnKfMWD7bU4jeD4xmqyIg=="],
 
     "@tanstack/match-sorter-utils": ["@tanstack/match-sorter-utils@8.19.4", "", { "dependencies": { "remove-accents": "0.5.0" } }, "sha512-Wo1iKt2b9OT7d+YGhvEPD3DXvPv2etTusIMhMUoG7fbhmxcXCtIjJDEygy91Y2JFlwGyjqiBPRozme7UD8hoqg=="],
+
+    "@tanstack/pacer": ["@tanstack/pacer@0.20.1", "", { "dependencies": { "@tanstack/devtools-event-client": "^0.4.3", "@tanstack/store": "^0.9.3" } }, "sha512-ZNQ1bIL6eUXVKdic0tiImvBVkWrg/IoSK6VIacTrO3d3HAGnd70qFJNJagR/YOJIOw4EKGWnodwpYZkN1pWuVQ=="],
 
     "@tanstack/pacer-lite": ["@tanstack/pacer-lite@0.1.1", "", {}, "sha512-y/xtNPNt/YeyoVxE/JCx+T7yjEzpezmbb+toK8DDD1P4m7Kzs5YR956+7OKexG3f8aXgC3rLZl7b1V+yNUSy5w=="],
 

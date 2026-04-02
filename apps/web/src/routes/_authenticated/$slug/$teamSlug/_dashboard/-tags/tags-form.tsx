@@ -119,33 +119,97 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
 
          <CredenzaBody>
             <FieldGroup>
-               <form.Field
-                  name="name"
-                  children={(field) => {
-                     const isInvalid =
-                        field.state.meta.isTouched &&
-                        field.state.meta.errors.length > 0;
-                     return (
-                        <Field data-invalid={isInvalid}>
-                           <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
-                           <Input
-                              aria-invalid={isInvalid}
-                              id={field.name}
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="Ex: Marketing, Recursos Humanos, Operações"
-                              value={field.state.value}
-                           />
-                           {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                           )}
-                        </Field>
-                     );
-                  }}
-               />
+               <div className="flex items-end gap-2">
+                  <form.Field
+                     name="name"
+                     children={(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           field.state.meta.errors.length > 0;
+                        return (
+                           <Field className="flex-1" data-invalid={isInvalid}>
+                              <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
+                              <Input
+                                 aria-invalid={isInvalid}
+                                 id={field.name}
+                                 name={field.name}
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                 }
+                                 placeholder="Ex: Marketing, Recursos Humanos"
+                                 value={field.state.value}
+                              />
+                              {isInvalid && (
+                                 <FieldError errors={field.state.meta.errors} />
+                              )}
+                           </Field>
+                        );
+                     }}
+                  />
+
+                  <form.Field
+                     name="color"
+                     children={(field) => {
+                        return (
+                           <Field>
+                              <FieldLabel>Cor</FieldLabel>
+                              <Popover>
+                                 <PopoverTrigger asChild>
+                                    <Button
+                                       className="w-10 h-10 p-0 shrink-0"
+                                       type="button"
+                                       variant="outline"
+                                    >
+                                       <div
+                                          className="w-5 h-5 rounded-full border border-border"
+                                          style={{
+                                             backgroundColor: field.state.value,
+                                          }}
+                                       />
+                                    </Button>
+                                 </PopoverTrigger>
+                                 <PopoverContent
+                                    align="end"
+                                    className="rounded-md border bg-background"
+                                 >
+                                    <ColorPicker
+                                       className="flex flex-col gap-4"
+                                       onChange={(rgba) => {
+                                          if (Array.isArray(rgba)) {
+                                             field.handleChange(
+                                                Color.rgb(
+                                                   rgba[0],
+                                                   rgba[1],
+                                                   rgba[2],
+                                                ).hex(),
+                                             );
+                                          }
+                                       }}
+                                       value={field.state.value || "#000000"}
+                                    >
+                                       <div className="h-24">
+                                          <ColorPickerSelection />
+                                       </div>
+                                       <div className="flex items-center gap-4">
+                                          <ColorPickerEyeDropper />
+                                          <div className="grid w-full gap-2">
+                                             <ColorPickerHue />
+                                             <ColorPickerAlpha />
+                                          </div>
+                                       </div>
+                                       <div className="flex items-center gap-2">
+                                          <ColorPickerOutput />
+                                          <ColorPickerFormat />
+                                       </div>
+                                    </ColorPicker>
+                                 </PopoverContent>
+                              </Popover>
+                           </Field>
+                        );
+                     }}
+                  />
+               </div>
 
                <form.Field
                   name="description"
@@ -174,81 +238,6 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
                               rows={2}
                               value={field.state.value}
                            />
-                           {isInvalid && (
-                              <FieldError errors={field.state.meta.errors} />
-                           )}
-                        </Field>
-                     );
-                  }}
-               />
-
-               <form.Field
-                  name="color"
-                  children={(field) => {
-                     const isInvalid =
-                        field.state.meta.isTouched &&
-                        field.state.meta.errors.length > 0;
-                     return (
-                        <Field data-invalid={isInvalid}>
-                           <FieldLabel>Cor de identificação</FieldLabel>
-                           <Popover>
-                              <PopoverTrigger asChild>
-                                 <Button
-                                    aria-invalid={isInvalid || undefined}
-                                    className="w-full flex gap-2 justify-start"
-                                    type="button"
-                                    variant="outline"
-                                 >
-                                    <div
-                                       className="w-5 h-5 rounded-full border border-border shrink-0"
-                                       style={{
-                                          backgroundColor: field.state.value,
-                                       }}
-                                    />
-                                    <span className="flex-1 text-left">
-                                       Selecionar cor
-                                    </span>
-                                    <span className="text-muted-foreground font-mono text-xs">
-                                       {field.state.value}
-                                    </span>
-                                 </Button>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                 align="start"
-                                 className="rounded-md border bg-background"
-                              >
-                                 <ColorPicker
-                                    className="flex flex-col gap-4"
-                                    onChange={(rgba) => {
-                                       if (Array.isArray(rgba)) {
-                                          field.handleChange(
-                                             Color.rgb(
-                                                rgba[0],
-                                                rgba[1],
-                                                rgba[2],
-                                             ).hex(),
-                                          );
-                                       }
-                                    }}
-                                    value={field.state.value || "#000000"}
-                                 >
-                                    <div className="h-24">
-                                       <ColorPickerSelection />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                       <ColorPickerEyeDropper />
-                                       <div className="grid w-full gap-2">
-                                          <ColorPickerHue />
-                                          <ColorPickerAlpha />
-                                       </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                       <ColorPickerOutput />
-                                       <ColorPickerFormat />
-                                    </div>
-                                 </ColorPicker>
-                              </PopoverContent>
-                           </Popover>
                            {isInvalid && (
                               <FieldError errors={field.state.meta.errors} />
                            )}

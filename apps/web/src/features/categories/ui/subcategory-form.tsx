@@ -19,24 +19,28 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 
-interface SubcategoryFormProps {
-   parentId: string;
-   parentName: string;
-   parentType: "income" | "expense";
-   onSuccess: () => void;
-}
+type SubcategoryFormProps =
+   | {
+        mode: "create";
+        parentId: string;
+        parentName: string;
+        parentType: "income" | "expense";
+        onSuccess: () => void;
+     }
+   | {
+        mode: "edit";
+        id: string;
+        name: string;
+        parentName: string;
+        onSuccess: () => void;
+     };
 
-export function SubcategoryForm({
-   parentId,
-   parentName,
-   parentType,
-   onSuccess,
-}: SubcategoryFormProps) {
+export function SubcategoryForm(props: SubcategoryFormProps) {
    const createMutation = useMutation(
       orpc.categories.create.mutationOptions({
          onSuccess: () => {
             toast.success("Subcategoria criada com sucesso.");
-            onSuccess();
+            props.onSuccess();
          },
          onError: (error) => {
             toast.error(error.message || "Erro ao criar subcategoria.");
@@ -44,16 +48,34 @@ export function SubcategoryForm({
       }),
    );
 
+   const updateMutation = useMutation(
+      orpc.categories.update.mutationOptions({
+         onSuccess: () => {
+            toast.success("Subcategoria atualizada com sucesso.");
+            props.onSuccess();
+         },
+         onError: (error) => {
+            toast.error(error.message || "Erro ao atualizar subcategoria.");
+         },
+      }),
+   );
+
    const form = useForm({
-      defaultValues: { name: "" },
+      defaultValues: { name: props.mode === "edit" ? props.name : "" },
       onSubmit: async ({ value }) => {
-         createMutation.mutate({
-            name: value.name.trim(),
-            parentId,
-            type: parentType,
-         });
+         if (props.mode === "create") {
+            createMutation.mutate({
+               name: value.name.trim(),
+               parentId: props.parentId,
+               type: props.parentType,
+            });
+         } else {
+            updateMutation.mutate({ id: props.id, name: value.name.trim() });
+         }
       },
    });
+
+   const isPending = createMutation.isPending || updateMutation.isPending;
 
    return (
       <form
@@ -64,9 +86,16 @@ export function SubcategoryForm({
          }}
       >
          <CredenzaHeader>
-            <CredenzaTitle>Nova Subcategoria</CredenzaTitle>
+            <CredenzaTitle>
+               {props.mode === "create"
+                  ? "Nova Subcategoria"
+                  : "Editar Subcategoria"}
+            </CredenzaTitle>
             <CredenzaDescription>
-               Adicionando subcategoria em <strong>{parentName}</strong>.
+               {props.mode === "create"
+                  ? "Adicionando subcategoria em"
+                  : "Editando subcategoria de"}{" "}
+               <strong>{props.parentName}</strong>.
             </CredenzaDescription>
          </CredenzaHeader>
 
@@ -108,16 +137,14 @@ export function SubcategoryForm({
                {(state) => (
                   <Button
                      disabled={
-                        !state.canSubmit ||
-                        state.isSubmitting ||
-                        createMutation.isPending
+                        !state.canSubmit || state.isSubmitting || isPending
                      }
                      type="submit"
                   >
-                     {(state.isSubmitting || createMutation.isPending) && (
+                     {(state.isSubmitting || isPending) && (
                         <Spinner className="size-4" />
                      )}
-                     Criar Subcategoria
+                     {props.mode === "create" ? "Criar Subcategoria" : "Salvar"}
                   </Button>
                )}
             </form.Subscribe>

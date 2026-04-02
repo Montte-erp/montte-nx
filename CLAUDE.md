@@ -446,6 +446,62 @@ startTransition(async () => { await authClient.method(...); });
 
 ---
 
+## Input Masking (Maskito)
+
+Use `@maskito/core` + `@maskito/react` for all structured text inputs. Never build manual mask handlers or use `onChange` + `replace(/\D/g, '')` patterns for formatted inputs.
+
+```tsx
+import { useMaskito } from "@maskito/react";
+import type { MaskitoOptions } from "@maskito/core";
+
+// Define masks at module scope (never inside component)
+const phoneMaskOptions: MaskitoOptions = {
+   mask: ["(", /\d/, /\d/, ")", " ", /\d/, /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/, /\d/, /\d/],
+};
+const cpfMaskOptions: MaskitoOptions = {
+   mask: [/\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "-", /\d/, /\d/],
+};
+const cnpjMaskOptions: MaskitoOptions = {
+   mask: [/\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "/", /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/],
+};
+
+function MyForm() {
+   const phoneRef = useMaskito({ options: phoneMaskOptions });
+
+   return (
+      <Input
+         ref={phoneRef}
+         inputMode="numeric"
+         onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
+         placeholder="(11) 99999-9999"
+         value={field.state.value}
+      />
+   );
+}
+```
+
+**Rules:**
+- Always use `onInput` (not `onChange`) for masked inputs — Maskito fires before React's synthetic event.
+- Use `defaultValue` (not `value`) on masked inputs — controlled `value` conflicts with Maskito's DOM manipulation.
+- `Input` from `@packages/ui/components/input` uses `forwardRef` — the ref will reach the DOM element.
+- Use array masks `[/\d/, ".", /\d/]` for formatting (auto-inserts chars). Regex masks (`mask: /^regex$/`) only validate, they don't format.
+- Define `MaskitoOptions` at **module scope**, not inside components.
+- For dynamic masks (e.g. CPF vs CNPJ), use `useMemo` to compute options and pass to `useMaskito`.
+- Strip formatting before API calls when the backend expects raw digits: `value.replace(/\D/g, "")`.
+- `inputMode="numeric"` on digit-only inputs for mobile keyboard.
+- For currency inputs, use `MoneyInput` from `@packages/ui/components/money-input` — it uses `@maskito/kit`'s number mask internally.
+
+**Common masks:**
+| Field | Mask pattern |
+|-------|-------------|
+| Telefone | `["(", /\d/, /\d/, ")", " ", /\d/, /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/, /\d/, /\d/]` |
+| CPF | `[/\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "-", /\d/, /\d/]` |
+| CNPJ | `[/\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "/", /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/]` |
+| Agência | `mask: /^\d{0,4}(-\d{0,1})?$/` |
+| Conta | `mask: /^\d{0,12}(-\d{0,1})?$/` |
+
+---
+
 ## Foxact Hooks
 
 Standard hook library — SSR-safe. Import each hook from its own subpath. Never use `@uidotdev/usehooks` for browser-API hooks (server-unsafe).
@@ -468,6 +524,30 @@ Standard hook library — SSR-safe. Import each hook from its own subpath. Never
 - Use `useMediaQuery("(max-width: 767px)")` directly — no `useIsMobile` wrapper.
 - Context always created with `null` default so `invariant` guard is meaningful.
 - Never `typeof window === 'undefined'` guards — Vite SPA, window always defined.
+
+---
+
+## Debouncing & Throttling (@tanstack/pacer)
+
+Use `@tanstack/pacer` (framework-agnostic) for debouncing callbacks. Store the `Debouncer` instance in a `useRef` and call `maybeExecute()` to trigger it.
+
+```tsx
+import { Debouncer } from "@tanstack/pacer";
+import { useRef, useCallback } from "react";
+
+const debouncerRef = useRef<Debouncer<[string]> | null>(null);
+
+if (!debouncerRef.current) {
+   debouncerRef.current = new Debouncer(myAsyncFn, { wait: 400 });
+}
+
+const handleChange = useCallback((value: string) => {
+   debouncerRef.current?.maybeExecute(value);
+}, []);
+```
+
+- Never use `useDebouncedValue` from `foxact` for debouncing side effects — use `@tanstack/pacer` `Debouncer` instead.
+- `foxact/use-debounced-value` is for reactive derived values (UI display), not for debouncing API calls.
 
 ---
 

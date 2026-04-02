@@ -291,10 +291,42 @@ export const getOnboardingStatus = protectedProcedure.handler(
             onboardingProducts: currentTeam.onboardingProducts ?? null,
             tasks: Object.keys(tasks).length > 0 ? tasks : null,
             name: currentTeam.name,
+            cnpjData:
+               (currentTeam.cnpjData as {
+                  data_inicio_atividade?: string;
+               } | null) ?? null,
          },
       };
    },
 );
+
+export const fetchCnpjData = authenticatedProcedure
+   .input(
+      z.object({
+         cnpj: z.string().regex(/^\d{14}$/, "CNPJ deve conter 14 dígitos"),
+      }),
+   )
+   .handler(async ({ input }) => {
+      let res: Response;
+      try {
+         res = await fetch(
+            `https://brasilapi.com.br/api/cnpj/v1/${input.cnpj}`,
+         );
+      } catch {
+         throw WebAppError.internal(
+            "Não foi possível consultar o CNPJ. Tente novamente.",
+         );
+      }
+      if (!res.ok)
+         throw WebAppError.notFound("CNPJ não encontrado ou inválido.");
+      const data = cnpjDataSchema.parse(await res.json());
+      if (data.descricao_situacao_cadastral !== "ATIVA") {
+         throw WebAppError.badRequest(
+            "Este CNPJ não está ativo na Receita Federal.",
+         );
+      }
+      return data;
+   });
 
 export const fixOnboarding = authenticatedProcedure
    .input(z.object({ organizationId: z.string().uuid() }))
