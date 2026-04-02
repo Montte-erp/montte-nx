@@ -8,18 +8,12 @@ import { Input } from "@packages/ui/components/input";
 import { Spinner } from "@packages/ui/components/spinner";
 import type { MaskitoOptions } from "@maskito/core";
 import { useMaskito } from "@maskito/react";
+import { useForm } from "@tanstack/react-form";
+import { useDebouncedCallback } from "@tanstack/pacer";
 import dayjs from "dayjs";
 import { Building2, CheckCircle2, MapPin } from "lucide-react";
-import {
-   forwardRef,
-   useCallback,
-   useEffect,
-   useImperativeHandle,
-   useMemo,
-   useState,
-} from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle } from "react";
 
-import { Debouncer } from "@tanstack/pacer";
 import { orpc, type Inputs } from "@/integrations/orpc/client";
 import type { StepHandle, StepState } from "./step-handle";
 
@@ -66,74 +60,77 @@ export const CnpjStep = forwardRef<StepHandle, CnpjStepProps>(function CnpjStep(
    { onNext, onStateChange },
    ref,
 ) {
-   const [cnpjData, setCnpjData] = useState<CnpjData | null>(null);
-   const [error, setError] = useState<string | null>(null);
-   const [isFetching, setIsFetching] = useState(false);
-   const [isSubmitting, setIsSubmitting] = useState(false);
+   const form = useForm({
+      defaultValues: {
+         cnpjData: null as CnpjData | null,
+         isFetching: false,
+         error: null as string | null,
+      },
+      onSubmit: async ({ value }) => {
+         if (!value.cnpjData) return;
+         await onNext(value.cnpjData);
+      },
+   });
+
    const cnpjInputRef = useMaskito({ options: cnpjMaskOptions });
 
-   const canContinue = cnpjData !== null;
+   const canContinue = form.useStore((s) => s.values.cnpjData !== null);
+   const isFetching = form.useStore((s) => s.values.isFetching);
+   const isSubmitting = form.useStore((s) => s.isSubmitting);
+   const error = form.useStore((s) => s.values.error);
+   const cnpjData = form.useStore((s) => s.values.cnpjData);
    const isPending = isFetching || isSubmitting;
 
    useImperativeHandle(
       ref,
       () => ({
          submit: async () => {
-            if (!cnpjData || isSubmitting) return false;
-            setIsSubmitting(true);
-            try {
-               await onNext(cnpjData);
-               return true;
-            } finally {
-               setIsSubmitting(false);
-            }
+            await form.handleSubmit();
+            return true;
          },
          canContinue,
          isPending,
       }),
-      [cnpjData, canContinue, isPending, isSubmitting, onNext],
+      [canContinue, isPending, form],
    );
 
    useEffect(() => {
       onStateChange({ canContinue, isPending });
    }, [canContinue, isPending, onStateChange]);
 
-   const fetchData = useCallback(async (digits: string) => {
-      if (digits.length !== 14) return;
-
-      setIsFetching(true);
-      setCnpjData(null);
-      setError(null);
-
-      try {
-         const data = await orpc.onboarding.fetchCnpjData.call({
-            cnpj: digits,
-         });
-         setCnpjData(data);
-      } catch (err) {
-         const msg =
-            err instanceof Error
-               ? err.message
-               : "CNPJ não encontrado ou inválido.";
-         setError(msg);
-      } finally {
-         setIsFetching(false);
-      }
-   }, []);
-
-   const debouncer = useMemo(
-      () => new Debouncer(fetchData, { wait: 400 }),
-      [fetchData],
+   const fetchCnpj = useDebouncedCallback(
+      async (digits: string) => {
+         if (digits.length !== 14) return;
+         form.setFieldValue("isFetching", true);
+         form.setFieldValue("cnpjData", null);
+         form.setFieldValue("error", null);
+         try {
+            const data = await orpc.onboarding.fetchCnpjData.call({
+               cnpj: digits,
+            });
+            form.setFieldValue("cnpjData", data);
+         } catch (err) {
+            form.setFieldValue(
+               "error",
+               err instanceof Error
+                  ? err.message
+                  : "CNPJ não encontrado ou inválido.",
+            );
+         } finally {
+            form.setFieldValue("isFetching", false);
+         }
+      },
+      { wait: 400 },
    );
 
    const handleInput = useCallback(
       (value: string) => {
          const digits = value.replace(/\D/g, "");
-         setCnpjData(null);
-         setError(null);
-         debouncer.maybeExecute(digits);
+         form.setFieldValue("cnpjData", null);
+         form.setFieldValue("error", null);
+         fetchCnpj(digits);
       },
-      [debouncer],
+      [fetchCnpj, form],
    );
 
    const displayName =

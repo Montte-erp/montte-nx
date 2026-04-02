@@ -735,7 +735,7 @@ export function BankAccountForm({
             <form.Subscribe selector={(state) => state}>
                {(state) => (
                   <Button
-                     className="w-full"
+                     className="w-full gap-2"
                      disabled={
                         !state.canSubmit ||
                         state.isSubmitting ||

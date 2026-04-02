@@ -529,24 +529,23 @@ Standard hook library — SSR-safe. Import each hook from its own subpath. Never
 
 ## Debouncing & Throttling (@tanstack/pacer)
 
-Use `@tanstack/pacer` (framework-agnostic) for debouncing callbacks. Store the `Debouncer` instance in a `useRef` and call `maybeExecute()` to trigger it.
+Use `useDebouncedCallback` from `@tanstack/pacer` for debouncing callbacks in React components.
 
 ```tsx
-import { Debouncer } from "@tanstack/pacer";
-import { useRef, useCallback } from "react";
+import { useDebouncedCallback } from "@tanstack/pacer";
+import { useCallback } from "react";
 
-const debouncerRef = useRef<Debouncer<[string]> | null>(null);
-
-if (!debouncerRef.current) {
-   debouncerRef.current = new Debouncer(myAsyncFn, { wait: 400 });
-}
+const fetchData = useDebouncedCallback(
+   async (value: string) => { /* ... */ },
+   { wait: 400 },
+);
 
 const handleChange = useCallback((value: string) => {
-   debouncerRef.current?.maybeExecute(value);
-}, []);
+   fetchData(value);
+}, [fetchData]);
 ```
 
-- Never use `useDebouncedValue` from `foxact` for debouncing side effects — use `@tanstack/pacer` `Debouncer` instead.
+- Never use `useDebouncedValue` from `foxact` for debouncing side effects — use `@tanstack/pacer` `useDebouncedCallback` instead.
 - `foxact/use-debounced-value` is for reactive derived values (UI display), not for debouncing API calls.
 
 ---

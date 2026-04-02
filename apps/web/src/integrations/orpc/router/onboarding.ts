@@ -320,7 +320,20 @@ export const fetchCnpjData = authenticatedProcedure
       }
       if (!res.ok)
          throw WebAppError.notFound("CNPJ não encontrado ou inválido.");
-      const data = cnpjDataSchema.parse(await res.json());
+      let rawData: unknown;
+      try {
+         rawData = await res.json();
+      } catch {
+         throw WebAppError.internal(
+            "Não foi possível consultar o CNPJ. Tente novamente.",
+         );
+      }
+      const parsed = cnpjDataSchema.safeParse(rawData);
+      if (!parsed.success)
+         throw WebAppError.internal(
+            "Não foi possível consultar o CNPJ. Tente novamente.",
+         );
+      const data = parsed.data;
       if (data.descricao_situacao_cadastral !== "ATIVA") {
          throw WebAppError.badRequest(
             "Este CNPJ não está ativo na Receita Federal.",
