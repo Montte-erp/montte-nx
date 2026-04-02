@@ -6,17 +6,16 @@ import {
 } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { Spinner } from "@packages/ui/components/spinner";
-import { useDebouncedValue } from "foxact/use-debounced-value";
+import type { MaskitoOptions } from "@maskito/core";
+import { useMaskito } from "@maskito/react";
+import { useForm, useStore } from "@tanstack/react-form";
+import { useMutation } from "@tanstack/react-query";
+import { useDebouncedCallback } from "@tanstack/react-pacer";
 import dayjs from "dayjs";
 import { Building2, CheckCircle2, MapPin } from "lucide-react";
-import {
-   forwardRef,
-   useCallback,
-   useEffect,
-   useImperativeHandle,
-   useState,
-} from "react";
-import type { Inputs } from "@/integrations/orpc/client";
+import { forwardRef, useEffect, useImperativeHandle } from "react";
+
+import { orpc, type Inputs } from "@/integrations/orpc/client";
 import type { StepHandle, StepState } from "./step-handle";
 
 type CnpjData = NonNullable<
@@ -30,19 +29,28 @@ const PORTE_MAP: Record<string, string> = {
    DEMAIS: "Grande Porte",
 };
 
-function formatCnpj(digits: string): string {
-   return digits
-      .replace(/^(\d{2})(\d)/, "$1.$2")
-      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-      .replace(/\.(\d{3})(\d)/, ".$1/$2")
-      .replace(/(\d{4})(\d)/, "$1-$2");
-}
-
-async function fetchCnpj(cnpj: string): Promise<CnpjData> {
-   const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
-   if (!res.ok) throw new Error("CNPJ não encontrado");
-   return res.json() as Promise<CnpjData>;
-}
+const cnpjMaskOptions: MaskitoOptions = {
+   mask: [
+      /\d/,
+      /\d/,
+      ".",
+      /\d/,
+      /\d/,
+      /\d/,
+      ".",
+      /\d/,
+      /\d/,
+      /\d/,
+      "/",
+      /\d/,
+      /\d/,
+      /\d/,
+      /\d/,
+      "-",
+      /\d/,
+      /\d/,
+   ],
+};
 
 interface CnpjStepProps {
    onNext: (data: CnpjData) => Promise<void>;
@@ -53,74 +61,53 @@ export const CnpjStep = forwardRef<StepHandle, CnpjStepProps>(function CnpjStep(
    { onNext, onStateChange },
    ref,
 ) {
-   const [rawValue, setRawValue] = useState("");
-   const [cnpjData, setCnpjData] = useState<CnpjData | null>(null);
-   const [error, setError] = useState<string | null>(null);
-   const [isFetching, setIsFetching] = useState(false);
-   const [isSubmitting, setIsSubmitting] = useState(false);
+   const fetchCnpjMutation = useMutation(
+      orpc.onboarding.fetchCnpjData.mutationOptions(),
+   );
 
-   const debouncedDigits = useDebouncedValue(rawValue, 400);
+   const form = useForm({
+      defaultValues: {
+         cnpj: "",
+         cnpjData: null as CnpjData | null,
+      },
+      onSubmit: async ({ value }) => {
+         if (value.cnpjData) await onNext(value.cnpjData);
+      },
+   });
 
-   const canContinue = cnpjData !== null;
-   const isPending = isFetching || isSubmitting;
+   const cnpjInputRef = useMaskito({ options: cnpjMaskOptions });
+
+   const canContinue = useStore(form.store, (s) => s.values.cnpjData !== null);
+   const isSubmitting = useStore(form.store, (s) => s.isSubmitting);
+   const cnpjData = useStore(form.store, (s) => s.values.cnpjData);
+   const isPending = fetchCnpjMutation.isPending || isSubmitting;
 
    useImperativeHandle(
       ref,
       () => ({
          submit: async () => {
-            if (!cnpjData || isSubmitting) return false;
-            setIsSubmitting(true);
-            try {
-               await onNext(cnpjData);
-               return true;
-            } finally {
-               setIsSubmitting(false);
-            }
+            await form.handleSubmit();
+            return true;
          },
          canContinue,
          isPending,
       }),
-      [cnpjData, canContinue, isPending, isSubmitting, onNext],
+      [canContinue, isPending, form],
    );
 
    useEffect(() => {
       onStateChange({ canContinue, isPending });
    }, [canContinue, isPending, onStateChange]);
 
-   useEffect(() => {
-      if (debouncedDigits.length !== 14) return;
-
-      let cancelled = false;
-      setIsFetching(true);
-
-      fetchCnpj(debouncedDigits)
-         .then((data) => {
-            if (cancelled) return;
-            if (data.descricao_situacao_cadastral !== "ATIVA") {
-               setError("Este CNPJ não está ativo na Receita Federal.");
-               return;
-            }
-            setCnpjData(data);
-         })
-         .catch(() => {
-            if (!cancelled) setError("CNPJ não encontrado ou inválido.");
-         })
-         .finally(() => {
-            if (!cancelled) setIsFetching(false);
-         });
-
-      return () => {
-         cancelled = true;
-         setIsFetching(false);
-      };
-   }, [debouncedDigits]);
-
-   const handleChange = useCallback((value: string) => {
-      const digits = value.replace(/\D/g, "").slice(0, 14);
-      setRawValue(digits);
-      setCnpjData(null);
-      setError(null);
-   }, []);
+   const fetchCnpj = useDebouncedCallback(
+      async () => {
+         const digits = form.getFieldValue("cnpj").replace(/\D/g, "");
+         if (digits.length !== 14) return;
+         const data = await fetchCnpjMutation.mutateAsync({ cnpj: digits });
+         form.setFieldValue("cnpjData", data);
+      },
+      { wait: 400 },
+   );
 
    const displayName =
       cnpjData?.nome_fantasia || cnpjData?.razao_social || null;
@@ -143,23 +130,47 @@ export const CnpjStep = forwardRef<StepHandle, CnpjStepProps>(function CnpjStep(
          </div>
 
          <FieldGroup>
-            <Field data-invalid={!!error}>
-               <FieldLabel>CNPJ</FieldLabel>
-               <div className="relative">
-                  <Input
-                     autoFocus
-                     disabled={isFetching}
-                     inputMode="numeric"
-                     onChange={(e) => handleChange(e.target.value)}
-                     placeholder="00.000.000/0000-00"
-                     value={formatCnpj(rawValue)}
-                  />
-                  {isFetching && (
-                     <Spinner className="absolute right-3 top-1/2 size-4 -translate-y-1/2" />
-                  )}
-               </div>
-               {error && <FieldError errors={[{ message: error }]} />}
-            </Field>
+            <form.Field
+               name="cnpj"
+               children={(field) => {
+                  const isInvalid = !!fetchCnpjMutation.error;
+                  return (
+                     <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>CNPJ</FieldLabel>
+                        <div className="relative">
+                           <Input
+                              ref={cnpjInputRef}
+                              id={field.name}
+                              name={field.name}
+                              aria-invalid={isInvalid}
+                              autoFocus
+                              disabled={fetchCnpjMutation.isPending}
+                              inputMode="numeric"
+                              defaultValue={field.state.value}
+                              placeholder="00.000.000/0000-00"
+                              onInput={(e) => {
+                                 field.handleChange(
+                                    (e.target as HTMLInputElement).value,
+                                 );
+                                 form.setFieldValue("cnpjData", null);
+                                 fetchCnpj();
+                              }}
+                           />
+                           {fetchCnpjMutation.isPending && (
+                              <Spinner className="absolute right-3 top-1/2 size-4 -translate-y-1/2" />
+                           )}
+                        </div>
+                        {fetchCnpjMutation.error && (
+                           <FieldError
+                              errors={[
+                                 { message: fetchCnpjMutation.error.message },
+                              ]}
+                           />
+                        )}
+                     </Field>
+                  );
+               }}
+            />
          </FieldGroup>
 
          {cnpjData && displayName && (

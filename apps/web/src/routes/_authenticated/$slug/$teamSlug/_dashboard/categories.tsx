@@ -15,7 +15,11 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import type { ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/react-table";
+import type {
+   ColumnFiltersState,
+   OnChangeFn,
+   SortingState,
+} from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
 import {
@@ -61,10 +65,11 @@ const categoriesSearchSchema = z.object({
 
 export type CategoriesSearch = z.infer<typeof categoriesSearchSchema>;
 
-const [useCategoriesTableState] = createLocalStorageState<DataTableStoredState | null>(
-   "montte:datatable:categories",
-   null,
-);
+const [useCategoriesTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:categories",
+      null,
+   );
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/categories",
@@ -101,24 +106,35 @@ interface CategoriesListProps {
 }
 
 function CategoriesList({ navigate }: CategoriesListProps) {
-   const { sorting, columnFilters, type, includeArchived, groupBy, search } = Route.useSearch();
+   const { sorting, columnFilters, type, includeArchived, groupBy, search } =
+      Route.useSearch();
    const [tableState, setTableState] = useCategoriesTableState();
 
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
       (updater) => {
-         const next = typeof updater === "function" ? updater(sorting) : updater;
-         navigate({ search: (prev: CategoriesSearch) => ({ ...prev, sorting: next }) });
+         const next =
+            typeof updater === "function" ? updater(sorting) : updater;
+         navigate({
+            search: (prev: CategoriesSearch) => ({ ...prev, sorting: next }),
+         });
       },
       [sorting, navigate],
    );
 
-   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
-      (updater) => {
-         const next = typeof updater === "function" ? updater(columnFilters) : updater;
-         navigate({ search: (prev: CategoriesSearch) => ({ ...prev, columnFilters: next }) });
-      },
-      [columnFilters, navigate],
-   );
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
+      useCallback(
+         (updater) => {
+            const next =
+               typeof updater === "function" ? updater(columnFilters) : updater;
+            navigate({
+               search: (prev: CategoriesSearch) => ({
+                  ...prev,
+                  columnFilters: next,
+               }),
+            });
+         },
+         [columnFilters, navigate],
+      );
 
    const { openCredenza, closeCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
@@ -150,7 +166,9 @@ function CategoriesList({ navigate }: CategoriesListProps) {
       ? parentCategories.filter(
            (c) =>
               c.name.toLowerCase().includes(search.toLowerCase()) ||
-              c.subcategories?.some((s) => s.name.toLowerCase().includes(search.toLowerCase())),
+              c.subcategories?.some((s) =>
+                 s.name.toLowerCase().includes(search.toLowerCase()),
+              ),
         )
       : parentCategories;
 
@@ -183,6 +201,21 @@ function CategoriesList({ navigate }: CategoriesListProps) {
 
    const handleEdit = useCallback(
       (category: CategoryRow) => {
+         if (category.parentId !== null) {
+            const parent = result.find((c) => c.id === category.parentId);
+            openCredenza({
+               children: (
+                  <SubcategoryForm
+                     mode="edit"
+                     id={category.id}
+                     name={category.name}
+                     parentName={parent?.name ?? ""}
+                     onSuccess={closeCredenza}
+                  />
+               ),
+            });
+            return;
+         }
          openCredenza({
             children: (
                <CategoryForm
@@ -199,7 +232,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
             ),
          });
       },
-      [openCredenza, closeCredenza],
+      [openCredenza, closeCredenza, result],
    );
 
    const handleAddSubcategory = useCallback(
@@ -207,6 +240,7 @@ function CategoriesList({ navigate }: CategoriesListProps) {
          openCredenza({
             children: (
                <SubcategoryForm
+                  mode="create"
                   onSuccess={closeCredenza}
                   parentId={category.id}
                   parentName={category.name}
@@ -370,27 +404,44 @@ function CategoriesPage() {
 
    const handleIncludeArchivedChange = useCallback(
       (checked: boolean) => {
-         navigate({ search: (prev: CategoriesSearch) => ({ ...prev, includeArchived: checked }) });
+         navigate({
+            search: (prev: CategoriesSearch) => ({
+               ...prev,
+               includeArchived: checked,
+            }),
+         });
       },
       [navigate],
    );
 
    const handleGroupByChange = useCallback(
       (checked: boolean) => {
-         navigate({ search: (prev: CategoriesSearch) => ({ ...prev, groupBy: checked }) });
+         navigate({
+            search: (prev: CategoriesSearch) => ({ ...prev, groupBy: checked }),
+         });
       },
       [navigate],
    );
 
    const handleSearchChange = useCallback(
       (value: string) => {
-         navigate({ search: (prev: CategoriesSearch) => ({ ...prev, search: value }) });
+         navigate({
+            search: (prev: CategoriesSearch) => ({ ...prev, search: value }),
+         });
       },
       [navigate],
    );
 
    const handleClearFilters = useCallback(
-      () => navigate({ search: (prev: CategoriesSearch) => ({ ...prev, type: undefined, includeArchived: false, search: "" }) }),
+      () =>
+         navigate({
+            search: (prev: CategoriesSearch) => ({
+               ...prev,
+               type: undefined,
+               includeArchived: false,
+               search: "",
+            }),
+         }),
       [navigate],
    );
 

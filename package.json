@@ -118,6 +118,8 @@
             "elysia": "1.4.25"
          },
          "tanstack": {
+            "@tanstack/pacer": "^0.20.1",
+            "@tanstack/react-pacer": "^0.21.1",
             "@tanstack/devtools-event-client": "^0.4.3",
             "@tanstack/devtools-vite": "^0.5.5",
             "@tanstack/match-sorter-utils": "^8.19.4",
@@ -159,6 +161,9 @@
             "resend": "6.9.2"
          },
          "ui": {
+            "@maskito/core": "^5.2.2",
+            "@maskito/kit": "^5.2.2",
+            "@maskito/react": "^5.2.2",
             "@number-flow/react": "^0.5.11",
             "@stepperize/react": "^6.0.0",
             "@tailwindcss/postcss": "^4.1.18",

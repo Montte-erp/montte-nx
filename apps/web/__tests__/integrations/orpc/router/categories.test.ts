@@ -36,6 +36,7 @@ import {
 } from "../../../helpers/setup-integration-test";
 import type { ORPCContextWithAuth } from "@/integrations/orpc/server";
 import * as categoriesRouter from "@/integrations/orpc/router/categories";
+import { reactivateCategory } from "@core/database/repositories/categories-repository";
 
 let ctx: ORPCContextWithAuth;
 let ctx2: ORPCContextWithAuth;
@@ -106,6 +107,50 @@ describe("create", () => {
 
       expect(result.keywords).toEqual(["uber", "taxi"]);
    });
+
+   it("throws when creating a subcategory at level 3 (max depth exceeded)", async () => {
+      const level1 = await call(
+         categoriesRouter.create,
+         { name: "Level1", type: "expense" },
+         { context: ctx },
+      );
+      const level2 = await call(
+         categoriesRouter.create,
+         { name: "Level2", type: "expense", parentId: level1.id },
+         { context: ctx },
+      );
+      const level3 = await call(
+         categoriesRouter.create,
+         { name: "Level3", type: "expense", parentId: level2.id },
+         { context: ctx },
+      );
+
+      await expect(
+         call(
+            categoriesRouter.create,
+            { name: "Level4", type: "expense", parentId: level3.id },
+            { context: ctx },
+         ),
+      ).rejects.toThrow("Limite de 3 níveis atingido.");
+   });
+
+   it("throws CONFLICT when keywords are already used in another active category", async () => {
+      await call(
+         categoriesRouter.create,
+         { name: "Transporte", type: "expense", keywords: ["uber", "taxi"] },
+         { context: ctx },
+      );
+
+      await expect(
+         call(
+            categoriesRouter.create,
+            { name: "Mobilidade", type: "expense", keywords: ["uber"] },
+            { context: ctx },
+         ),
+      ).rejects.toThrow(
+         "Palavras-chave já utilizadas em outra categoria ativa.",
+      );
+   });
 });
 
 describe("getAll", () => {
@@ -126,6 +171,33 @@ describe("getAll", () => {
       });
 
       expect(result).toHaveLength(2);
+   });
+
+   it("filters by type including archived", async () => {
+      const created = await call(
+         categoriesRouter.create,
+         { name: "Lazer", type: "expense" },
+         { context: ctx },
+      );
+      await call(
+         categoriesRouter.archive,
+         { id: created.id },
+         { context: ctx },
+      );
+      await call(
+         categoriesRouter.create,
+         { name: "Salário", type: "income" },
+         { context: ctx },
+      );
+
+      const result = await call(
+         categoriesRouter.getAll,
+         { type: "expense", includeArchived: true },
+         { context: ctx },
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]!.isArchived).toBe(true);
    });
 
    it("filters by type", async () => {
@@ -241,6 +313,47 @@ describe("update", () => {
             { context: ctx2 },
          ),
       ).rejects.toThrow("Categoria não encontrada.");
+   });
+
+   it("allows updating with own keywords (excludes self from uniqueness check)", async () => {
+      const created = await call(
+         categoriesRouter.create,
+         { name: "Transporte", type: "expense", keywords: ["uber"] },
+         { context: ctx },
+      );
+
+      const updated = await call(
+         categoriesRouter.update,
+         { id: created.id, keywords: ["uber", "taxi"] },
+         { context: ctx },
+      );
+
+      expect(updated.keywords).toEqual(
+         expect.arrayContaining(["uber", "taxi"]),
+      );
+   });
+
+   it("throws CONFLICT when updating with keywords already used by another category", async () => {
+      await call(
+         categoriesRouter.create,
+         { name: "Transporte", type: "expense", keywords: ["uber"] },
+         { context: ctx },
+      );
+      const cat2 = await call(
+         categoriesRouter.create,
+         { name: "Mobilidade", type: "expense" },
+         { context: ctx },
+      );
+
+      await expect(
+         call(
+            categoriesRouter.update,
+            { id: cat2.id, keywords: ["uber"] },
+            { context: ctx },
+         ),
+      ).rejects.toThrow(
+         "Palavras-chave já utilizadas em outra categoria ativa.",
+      );
    });
 
    it("rejects update on default categories", async () => {
@@ -558,5 +671,35 @@ describe("archive", () => {
       const rows = await ctx.db.query.categories.findMany();
       expect(rows).toHaveLength(2);
       expect(rows.every((r) => r.isArchived)).toBe(true);
+   });
+});
+
+describe("reactivateCategory (repository)", () => {
+   it("reactivates an archived category", async () => {
+      const created = await call(
+         categoriesRouter.create,
+         { name: "Arquivada", type: "expense" },
+         { context: ctx },
+      );
+      await call(
+         categoriesRouter.archive,
+         { id: created.id },
+         { context: ctx },
+      );
+
+      const result = await reactivateCategory(ctx.db, created.id);
+
+      expect(result.isArchived).toBe(false);
+
+      const fromDb = await ctx.db.query.categories.findFirst({
+         where: (fields, { eq }) => eq(fields.id, created.id),
+      });
+      expect(fromDb!.isArchived).toBe(false);
+   });
+
+   it("throws NOT_FOUND when category does not exist", async () => {
+      await expect(
+         reactivateCategory(ctx.db, "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"),
+      ).rejects.toThrow("Categoria não encontrada.");
    });
 });
