@@ -531,6 +531,8 @@ function PreviewStep({
       orpc.categories.getAll.queryOptions({}),
    );
 
+   const categoryMap = new Map(categories.map((c) => [c.id, c.name]));
+
    const categoryOptions = categories.map((c) => ({
       value: c.id,
       label: c.name,
@@ -764,7 +766,7 @@ function PreviewStep({
                </div>
 
                <div className="rounded-lg border overflow-hidden">
-                  <div className="grid grid-cols-[2rem_6rem_1fr_4rem_5.5rem_2rem] items-center gap-2 border-b bg-muted/50 px-3 py-2">
+                  <div className="grid grid-cols-[2rem_6rem_1fr_4rem_6rem_5.5rem_2rem] items-center gap-2 border-b bg-muted/50 px-3 py-2">
                      <span />
                      <span className="text-xs font-medium text-muted-foreground">
                         Data
@@ -776,6 +778,9 @@ function PreviewStep({
                      </span>
                      <span className="text-xs font-medium text-muted-foreground">
                         Tipo
+                     </span>
+                     <span className="text-xs font-medium text-muted-foreground">
+                        Categoria
                      </span>
                      <span className="text-xs font-medium text-muted-foreground text-right">
                         Valor
@@ -816,7 +821,7 @@ function PreviewStep({
                                     transform: `translateY(${virtualRow.start}px)`,
                                  }}
                                  className={[
-                                    "grid grid-cols-[2rem_6rem_1fr_4rem_5.5rem_2rem] items-center gap-2 border-b px-3 h-10",
+                                    "grid grid-cols-[2rem_6rem_1fr_4rem_6rem_5.5rem_2rem] items-center gap-2 border-b px-3 h-10",
                                     !row.isValid ? "opacity-40" : "",
                                     isDuplicate && row.isValid
                                        ? "border-l-2 border-yellow-400"
@@ -920,6 +925,12 @@ function PreviewStep({
                                        ? "Entrada"
                                        : "Saída"}
                                  </Badge>
+                                 <span className="text-xs text-muted-foreground truncate">
+                                    {row.categoryId
+                                       ? (categoryMap.get(row.categoryId) ??
+                                         "—")
+                                       : "—"}
+                                 </span>
                                  <span className="text-xs text-right tabular-nums">
                                     {formatMoney(row.amount)}
                                  </span>
