@@ -1,4 +1,3 @@
-import { generateFromObjects } from "@f-o-t/csv";
 import {
    of as moneyOf,
    format as moneyFormat,
@@ -54,10 +53,12 @@ import {
 import { useDebouncedState } from "foxact/use-debounced-state";
 import { Suspense, useRef, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { utils as xlsxUtils, write as xlsxWrite } from "xlsx";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import { useCredenza } from "@/hooks/use-credenza";
+import { useCsvFile } from "@/hooks/use-csv-file";
+import { useXlsxFile } from "@/hooks/use-xlsx-file";
+import { useFileDownload } from "@/hooks/use-file-download";
 import {
    type ColumnMapping,
    type FileFormat,
@@ -115,40 +116,10 @@ const TEMPLATE_HEADERS = [
    "descricao",
 ] as const;
 
-function triggerDownload(blob: Blob, filename: string) {
-   const url = URL.createObjectURL(blob);
-   const a = document.createElement("a");
-   a.href = url;
-   a.download = filename;
-   a.click();
-   URL.revokeObjectURL(url);
-}
-
 function TemplateCredenza({ onClose }: { onClose?: () => void }) {
-   function downloadCsv() {
-      const csv = generateFromObjects(TEMPLATE_ROWS, {
-         headers: [...TEMPLATE_HEADERS],
-      });
-      triggerDownload(
-         new Blob([csv], { type: "text/csv;charset=utf-8;" }),
-         "modelo-importacao.csv",
-      );
-   }
-
-   function downloadXlsx() {
-      const ws = xlsxUtils.json_to_sheet(TEMPLATE_ROWS, {
-         header: [...TEMPLATE_HEADERS],
-      });
-      const wb = xlsxUtils.book_new();
-      xlsxUtils.book_append_sheet(wb, ws, "Modelo");
-      const data = xlsxWrite(wb, { type: "array", bookType: "xlsx" });
-      triggerDownload(
-         new Blob([data], {
-            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-         }),
-         "modelo-importacao.xlsx",
-      );
-   }
+   const csv = useCsvFile();
+   const xlsx = useXlsxFile();
+   const { download } = useFileDownload();
 
    return (
       <>
@@ -164,7 +135,10 @@ function TemplateCredenza({ onClose }: { onClose?: () => void }) {
                   type="button"
                   className="flex items-center gap-4 rounded-lg border bg-muted/20 px-4 py-3 text-left hover:bg-muted/40 transition-colors"
                   onClick={() => {
-                     downloadCsv();
+                     download(
+                        csv.generate(TEMPLATE_ROWS, [...TEMPLATE_HEADERS]),
+                        "modelo-importacao.csv",
+                     );
                      onClose?.();
                   }}
                >
@@ -181,7 +155,10 @@ function TemplateCredenza({ onClose }: { onClose?: () => void }) {
                   type="button"
                   className="flex items-center gap-4 rounded-lg border bg-muted/20 px-4 py-3 text-left hover:bg-muted/40 transition-colors"
                   onClick={() => {
-                     downloadXlsx();
+                     download(
+                        xlsx.generate(TEMPLATE_ROWS, [...TEMPLATE_HEADERS]),
+                        "modelo-importacao.xlsx",
+                     );
                      onClose?.();
                   }}
                >
