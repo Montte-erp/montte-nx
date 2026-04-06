@@ -1124,9 +1124,13 @@ function PreviewStep({
                               selectedIndices.has(originalIndex);
                            const isEditingDesc =
                               editingDescIdx === originalIndex;
-                           return (
+                           const rowEl = (
                               <div
-                                 key={`prev-${originalIndex + 1}`}
+                                 key={
+                                    row.isValid
+                                       ? `prev-${originalIndex + 1}`
+                                       : undefined
+                                 }
                                  data-index={virtualRow.index}
                                  ref={(el) => {
                                     if (el) virtualizer.measureElement(el);
@@ -1187,7 +1191,9 @@ function PreviewStep({
                                     />
                                  ) : (
                                     <TooltipProvider>
-                                       <Tooltip>
+                                       <Tooltip
+                                          disableHoverableContent={!row.isValid}
+                                       >
                                           <TooltipTrigger asChild>
                                              <span
                                                 className={[
@@ -1218,7 +1224,8 @@ function PreviewStep({
                                                    "—"}
                                              </span>
                                           </TooltipTrigger>
-                                          {row.description || row.name ? (
+                                          {(row.description || row.name) &&
+                                          row.isValid ? (
                                              <TooltipContent side="top">
                                                 <p className="max-w-xs">
                                                    {row.description || row.name}
@@ -1280,6 +1287,33 @@ function PreviewStep({
                                  </span>
                               </div>
                            );
+                           if (!row.isValid && row.errors.length > 0) {
+                              return (
+                                 <TooltipProvider
+                                    key={`prev-${originalIndex + 1}`}
+                                 >
+                                    <Tooltip>
+                                       <TooltipTrigger asChild>
+                                          {rowEl}
+                                       </TooltipTrigger>
+                                       <TooltipContent
+                                          side="top"
+                                          className="max-w-xs"
+                                       >
+                                          <p className="font-medium text-xs mb-1">
+                                             Não pode ser importado:
+                                          </p>
+                                          <ul className="list-disc list-inside text-xs space-y-0.5">
+                                             {row.errors.map((e) => (
+                                                <li key={e}>{e}</li>
+                                             ))}
+                                          </ul>
+                                       </TooltipContent>
+                                    </Tooltip>
+                                 </TooltipProvider>
+                              );
+                           }
+                           return rowEl;
                         })}
                      </div>
                   </div>
