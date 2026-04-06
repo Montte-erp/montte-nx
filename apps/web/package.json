@@ -81,6 +81,7 @@
       "recharts": "catalog:ui",
       "tailwind-merge": "catalog:ui",
       "tailwindcss": "catalog:ui",
+      "xlsx": "^0.18.5",
       "zod": "catalog:validation"
    },
    "devDependencies": {

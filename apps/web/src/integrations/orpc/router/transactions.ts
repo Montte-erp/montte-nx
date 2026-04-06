@@ -11,11 +11,16 @@ import {
    updateTransaction,
    validateTransactionReferences,
 } from "@core/database/repositories/transactions-repository";
+import { ensureBankAccountOwnership } from "@core/database/repositories/bank-accounts-repository";
 import {
    createTransactionSchema,
+   transactions,
    updateTransactionSchema,
 } from "@core/database/schemas/transactions";
+import { createEmitFn } from "@packages/events/emit";
+import { emitFinanceStatementImported } from "@packages/events/finance";
 import { z } from "zod";
+import { withCreditEnforcement } from "../middlewares/credit-enforcement";
 import { protectedProcedure } from "../server";
 
 const idSchema = z.object({ id: z.string().uuid() });
@@ -161,6 +166,80 @@ export const remove = protectedProcedure
       await ensureTransactionOwnership(context.db, input.id, context.teamId);
       await deleteTransaction(context.db, input.id);
       return { success: true };
+   });
+
+export const importStatement = withCreditEnforcement(
+   "finance.statement_imported",
+)
+   .input(
+      z.object({
+         bankAccountId: z.string().uuid(),
+         format: z.enum(["csv", "xlsx", "ofx"]),
+         transactions: z
+            .array(
+               z.object({
+                  name: z.string().max(500).optional(),
+                  type: z.enum(["income", "expense"]),
+                  amount: z.string().regex(/^-?\d+(\.\d+)?$/),
+                  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+                  description: z.string().max(1000).optional(),
+                  paymentMethod: z
+                     .enum([
+                        "pix",
+                        "credit_card",
+                        "debit_card",
+                        "boleto",
+                        "cash",
+                        "transfer",
+                        "other",
+                        "cheque",
+                        "automatic_debit",
+                     ])
+                     .optional(),
+               }),
+            )
+            .min(1)
+            .max(1000),
+      }),
+   )
+   .handler(async ({ context, input }) => {
+      await ensureBankAccountOwnership(
+         context.db,
+         input.bankAccountId,
+         context.teamId,
+      );
+
+      const rows = input.transactions.map((t) => ({
+         teamId: context.teamId,
+         bankAccountId: input.bankAccountId,
+         name: t.name ?? null,
+         type: t.type,
+         amount: t.amount,
+         date: t.date,
+         description: t.description ?? null,
+         paymentMethod: t.paymentMethod ?? null,
+      }));
+
+      await context.db.insert(transactions).values(rows);
+
+      try {
+         const emit = createEmitFn(context.db, context.posthog);
+         await emitFinanceStatementImported(
+            emit,
+            {
+               organizationId: context.organizationId,
+               userId: context.userId,
+               teamId: context.teamId,
+            },
+            {
+               bankAccountId: input.bankAccountId,
+               format: input.format,
+               rowCount: rows.length,
+            },
+         );
+      } catch {}
+
+      return { imported: rows.length };
    });
 
 export const importBulk = protectedProcedure

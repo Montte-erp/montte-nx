@@ -461,6 +461,85 @@ describe("remove", () => {
    });
 });
 
+describe("importStatement", () => {
+   it("imports transactions and returns the count", async () => {
+      const result = await call(
+         transactionsRouter.importStatement,
+         {
+            bankAccountId,
+            format: "csv",
+            transactions: [
+               {
+                  type: "expense",
+                  amount: "150.50",
+                  date: "2026-01-10",
+                  name: "Mercado",
+               },
+               {
+                  type: "income",
+                  amount: "2000.00",
+                  date: "2026-01-11",
+               },
+            ],
+         },
+         { context: ctx },
+      );
+
+      expect(result).toEqual({ imported: 2 });
+
+      const rows = await ctx.db.query.transactions.findMany();
+      expect(rows).toHaveLength(2);
+   });
+
+   it("rejects a bank account owned by another team", async () => {
+      await expect(
+         call(
+            transactionsRouter.importStatement,
+            {
+               bankAccountId,
+               format: "csv",
+               transactions: [
+                  { type: "expense", amount: "100.00", date: "2026-01-10" },
+               ],
+            },
+            { context: ctx2 },
+         ),
+      ).rejects.toThrow();
+   });
+
+   it("rejects non-numeric amount", async () => {
+      await expect(
+         call(
+            transactionsRouter.importStatement,
+            {
+               bankAccountId,
+               format: "csv",
+               transactions: [
+                  { type: "expense", amount: "abc", date: "2026-01-10" },
+               ],
+            },
+            { context: ctx },
+         ),
+      ).rejects.toThrow();
+   });
+
+   it("accepts negative amounts", async () => {
+      const result = await call(
+         transactionsRouter.importStatement,
+         {
+            bankAccountId,
+            format: "ofx",
+            transactions: [
+               { type: "expense", amount: "-75.00", date: "2026-01-12" },
+            ],
+         },
+         { context: ctx },
+      );
+
+      expect(result).toEqual({ imported: 1 });
+   });
+});
+
 describe("importBulk", () => {
    it("imports multiple transactions", async () => {
       const result = await call(

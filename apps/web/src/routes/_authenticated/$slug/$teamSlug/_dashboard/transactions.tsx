@@ -6,7 +6,7 @@ import type {
 } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Plus, Upload } from "lucide-react";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useState } from "react";
 import { z } from "zod";
 import { DefaultHeader } from "@/components/default-header";
 import type { PanelAction } from "@/features/context-panel/context-panel-store";
@@ -18,11 +18,11 @@ import {
    TransactionFilterBar,
    type TransactionFilters,
 } from "@/features/transactions/ui/transaction-filter-bar";
-import { TransactionImportDialogStack } from "@/features/transactions/ui/transaction-import-dialog-stack";
+import { StatementImportDialogStack } from "./-transactions/statement-import-dialog-stack";
 import { TransactionPrerequisitesBlocker } from "@/features/transactions/ui/transaction-prerequisites-blocker";
 import { TransactionsList } from "@/features/transactions/ui/transactions-list";
 import { TransactionsSkeleton } from "@/features/transactions/ui/transactions-skeleton";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
+import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
 
 const transactionsSearchSchema = z.object({
@@ -71,7 +71,7 @@ export const Route = createFileRoute(
 });
 
 function TransactionsPage() {
-   const { openDialogStack, closeDialogStack } = useDialogStack();
+   const { openCredenza, closeCredenza } = useCredenza();
    const navigate = Route.useNavigate();
    const { slug, teamSlug } = Route.useParams();
    const { hasBankAccounts } = useTransactionPrerequisites();
@@ -108,11 +108,11 @@ function TransactionsPage() {
 
    const handleCreate = useCallback(() => {
       if (!hasBankAccounts) {
-         openDialogStack({
+         openCredenza({
             children: (
                <TransactionPrerequisitesBlocker
                   onAction={() => {
-                     closeDialogStack();
+                     closeCredenza();
                      navigate({
                         to: "/$slug/$teamSlug/bank-accounts",
                         params: { slug, teamSlug },
@@ -123,55 +123,32 @@ function TransactionsPage() {
          });
          return;
       }
-      openDialogStack({
+      openCredenza({
          children: (
-            <TransactionDialogStack
-               mode="create"
-               onSuccess={closeDialogStack}
-            />
+            <TransactionDialogStack mode="create" onSuccess={closeCredenza} />
          ),
       });
-   }, [
-      hasBankAccounts,
-      openDialogStack,
-      closeDialogStack,
-      navigate,
-      slug,
-      teamSlug,
-   ]);
-
-   useEffect(() => {
-      const handler = (e: Event) => {
-         const detail = (e as CustomEvent<{ itemId: string }>).detail;
-         if (detail.itemId === "transactions") {
-            handleCreate();
-         }
-      };
-      window.addEventListener("sidebar:quick-create", handler);
-      return () => window.removeEventListener("sidebar:quick-create", handler);
-   }, [handleCreate]);
+   }, [hasBankAccounts, openCredenza, closeCredenza, navigate, slug, teamSlug]);
 
    const panelActions: PanelAction[] = [
       {
          icon: Upload,
          label: "Importar",
          onClick: () =>
-            openDialogStack({
-               children: (
-                  <TransactionImportDialogStack onClose={closeDialogStack} />
-               ),
+            openCredenza({
+               children: <StatementImportDialogStack onClose={closeCredenza} />,
             }),
       },
       {
          icon: Download,
          label: "Exportar",
          onClick: () =>
-            openDialogStack({
+            openCredenza({
                children: (
                   <TransactionExportDialogStack
                      dateFrom={filters.dateFrom}
                      dateTo={filters.dateTo}
-                     onClose={closeDialogStack}
+                     onClose={closeCredenza}
                   />
                ),
             }),
