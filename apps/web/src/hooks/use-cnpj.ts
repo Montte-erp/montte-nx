@@ -1,37 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { orpc } from "@/integrations/orpc/client";
+import type { Outputs } from "@/integrations/orpc/client";
 
-type CnpjData = {
-   cnpj?: string;
-   razao_social?: string;
-   nome_fantasia?: string | null;
-   cnae_fiscal?: number;
-   cnae_fiscal_descricao?: string | null;
-   porte?: string | null;
-   natureza_juridica?: string | null;
-   municipio?: string;
-   uf?: string;
-   data_inicio_atividade?: string;
-   descricao_situacao_cadastral?: string;
-};
+type CnpjData = NonNullable<Outputs["team"]["get"]["cnpjData"]>;
 
-function isCnpjData(value: unknown): value is CnpjData {
-   return typeof value === "object" && value !== null;
+function extractDataInicio(value: CnpjData): string | undefined {
+   if (typeof value !== "object" || value === null) return undefined;
+   if (!("data_inicio_atividade" in value)) return undefined;
+   const raw = value.data_inicio_atividade;
+   if (typeof raw !== "string") return undefined;
+   return raw;
 }
 
-export function useCnpj(teamId: string | null): {
-   data: CnpjData | null;
-   minDate: Date | undefined;
-   minDateStr: string | null;
-} {
+export function useCnpj(teamId: string | null) {
    const { data: teamData } = useQuery({
       ...orpc.team.get.queryOptions({ input: { teamId: teamId ?? "" } }),
       enabled: !!teamId,
    });
 
-   const cnpjData = isCnpjData(teamData?.cnpjData) ? teamData.cnpjData : null;
-   const raw = cnpjData?.data_inicio_atividade;
+   const cnpjData = teamData?.cnpjData ?? null;
+   const raw = cnpjData !== null ? extractDataInicio(cnpjData) : undefined;
 
    let minDate: Date | undefined;
    let minDateStr: string | null = null;
