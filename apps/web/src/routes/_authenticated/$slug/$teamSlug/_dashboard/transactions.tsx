@@ -19,12 +19,10 @@ import {
    type TransactionFilters,
 } from "@/features/transactions/ui/transaction-filter-bar";
 import { StatementImportDialogStack } from "./-transactions/statement-import-dialog-stack";
-import { TransactionImportDialogStack } from "@/features/transactions/ui/transaction-import-dialog-stack";
 import { TransactionPrerequisitesBlocker } from "@/features/transactions/ui/transaction-prerequisites-blocker";
 import { TransactionsList } from "@/features/transactions/ui/transactions-list";
 import { TransactionsSkeleton } from "@/features/transactions/ui/transactions-skeleton";
 import { useCredenza } from "@/hooks/use-credenza";
-import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
 
 const transactionsSearchSchema = z.object({
@@ -74,7 +72,6 @@ export const Route = createFileRoute(
 
 function TransactionsPage() {
    const { openCredenza, closeCredenza } = useCredenza();
-   const { openDialogStack, closeDialogStack } = useDialogStack();
    const navigate = Route.useNavigate();
    const { slug, teamSlug } = Route.useParams();
    const { hasBankAccounts } = useTransactionPrerequisites();
@@ -111,11 +108,11 @@ function TransactionsPage() {
 
    const handleCreate = useCallback(() => {
       if (!hasBankAccounts) {
-         openDialogStack({
+         openCredenza({
             children: (
                <TransactionPrerequisitesBlocker
                   onAction={() => {
-                     closeDialogStack();
+                     closeCredenza();
                      navigate({
                         to: "/$slug/$teamSlug/bank-accounts",
                         params: { slug, teamSlug },
@@ -126,22 +123,12 @@ function TransactionsPage() {
          });
          return;
       }
-      openDialogStack({
+      openCredenza({
          children: (
-            <TransactionDialogStack
-               mode="create"
-               onSuccess={closeDialogStack}
-            />
+            <TransactionDialogStack mode="create" onSuccess={closeCredenza} />
          ),
       });
-   }, [
-      hasBankAccounts,
-      openDialogStack,
-      closeDialogStack,
-      navigate,
-      slug,
-      teamSlug,
-   ]);
+   }, [hasBankAccounts, openCredenza, closeCredenza, navigate, slug, teamSlug]);
 
    useEffect(() => {
       const handler = (e: Event) => {
@@ -154,38 +141,25 @@ function TransactionsPage() {
       return () => window.removeEventListener("sidebar:quick-create", handler);
    }, [handleCreate]);
 
-   const handleStatementImport = useCallback(() => {
-      openCredenza({
-         children: <StatementImportDialogStack onClose={closeCredenza} />,
-      });
-   }, [openCredenza, closeCredenza]);
-
    const panelActions: PanelAction[] = [
       {
          icon: Upload,
          label: "Importar",
          onClick: () =>
-            openDialogStack({
-               children: (
-                  <TransactionImportDialogStack onClose={closeDialogStack} />
-               ),
+            openCredenza({
+               children: <StatementImportDialogStack onClose={closeCredenza} />,
             }),
-      },
-      {
-         icon: Upload,
-         label: "Importar extrato",
-         onClick: handleStatementImport,
       },
       {
          icon: Download,
          label: "Exportar",
          onClick: () =>
-            openDialogStack({
+            openCredenza({
                children: (
                   <TransactionExportDialogStack
                      dateFrom={filters.dateFrom}
                      dateTo={filters.dateTo}
-                     onClose={closeDialogStack}
+                     onClose={closeCredenza}
                   />
                ),
             }),
