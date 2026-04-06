@@ -416,42 +416,63 @@ function MapStep({
                   </div>
                )}
 
-               <div className="flex flex-col gap-2">
-                  {COLUMN_FIELDS.map((field) => (
-                     <div
-                        className="grid grid-cols-[7rem_1fr_6rem] items-center gap-4"
-                        key={field}
-                     >
-                        <span className="text-sm font-medium shrink-0">
-                           {FIELD_LABELS[field]}
-                        </span>
-                        <Combobox
-                           options={[
-                              { value: "__none__", label: "— Não mapear —" },
-                              ...raw.headers.map((h) => ({
-                                 value: h,
-                                 label: h,
-                              })),
-                           ]}
-                           onValueChange={(v) =>
-                              onMappingChange({
-                                 ...mapping,
-                                 [field]: v === "__none__" ? "" : v,
-                              })
-                           }
-                           value={mapping[field] || "__none__"}
-                        />
-                        <p className="text-xs text-muted-foreground truncate max-w-[6rem]">
-                           {mapping[field]
-                              ? getSampleValues(raw, mapping[field])
-                              : ""}
-                        </p>
-                     </div>
-                  ))}
+               <div className="flex flex-col gap-1">
+                  <div className="grid grid-cols-[10rem_1fr] items-center gap-2 px-1 pb-1">
+                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Campo
+                     </span>
+                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Coluna do arquivo
+                     </span>
+                  </div>
+                  {COLUMN_FIELDS.map((field) => {
+                     const sample = mapping[field]
+                        ? getSampleValues(raw, mapping[field])
+                        : null;
+                     return (
+                        <div
+                           className="grid grid-cols-[10rem_1fr] items-start gap-2 rounded-lg border bg-muted/20 px-3 py-2.5"
+                           key={field}
+                        >
+                           <div className="flex flex-col gap-0.5 pt-1">
+                              <span className="text-sm font-medium">
+                                 {FIELD_LABELS[field]}
+                              </span>
+                           </div>
+                           <div className="flex flex-col gap-1">
+                              <Combobox
+                                 options={[
+                                    {
+                                       value: "__none__",
+                                       label: "— Não mapear —",
+                                    },
+                                    ...raw.headers.map((h) => ({
+                                       value: h,
+                                       label: h,
+                                    })),
+                                 ]}
+                                 onValueChange={(v) =>
+                                    onMappingChange({
+                                       ...mapping,
+                                       [field]: v === "__none__" ? "" : v,
+                                    })
+                                 }
+                                 value={mapping[field] || "__none__"}
+                              />
+                              {sample && (
+                                 <p className="text-xs text-muted-foreground px-1 truncate">
+                                    {sample}
+                                 </p>
+                              )}
+                           </div>
+                        </div>
+                     );
+                  })}
                </div>
 
                <p className="text-xs text-muted-foreground">
-                  {raw.rows.length} linha(s) · Colunas: {raw.headers.join(", ")}
+                  {raw.rows.length} linha(s) · {raw.headers.length} colunas
+                  detectadas
                </p>
 
                <div className="flex gap-2">
