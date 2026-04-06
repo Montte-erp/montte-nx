@@ -1,15 +1,10 @@
-import {
-   parseBufferOrThrow as parseCsvBuffer,
-   generateFromObjects,
-} from "@f-o-t/csv";
+import { generateFromObjects } from "@f-o-t/csv";
 import {
    of as moneyOf,
    format as moneyFormat,
-   toMajorUnitsString,
    add as moneyAdd,
    zero as moneyZero,
 } from "@f-o-t/money";
-import { parseBufferOrThrow as parseOfx, getTransactions } from "@f-o-t/ofx";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
@@ -46,7 +41,6 @@ import {
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import dayjs from "dayjs";
-import customParseFormat from "dayjs/plugin/customParseFormat";
 import {
    AlertTriangle,
    ChevronRight,
@@ -57,36 +51,26 @@ import {
    Table2,
    X,
 } from "lucide-react";
-import { Suspense, useCallback, useRef, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { read as xlsxRead, utils as xlsxUtils, write as xlsxWrite } from "xlsx";
+import { utils as xlsxUtils, write as xlsxWrite } from "xlsx";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import { useCredenza } from "@/hooks/use-credenza";
-
-dayjs.extend(customParseFormat);
-
-type FileFormat = "csv" | "xlsx" | "ofx";
-
-type ParsedRow = {
-   date: string;
-   name: string;
-   type: "income" | "expense";
-   amount: string;
-   description: string;
-   categoryId?: string;
-};
-
-type ValidatedRow = ParsedRow & { isValid: boolean; errors: string[] };
-
-type RawData = {
-   headers: string[];
-   rows: string[][];
-};
-
-type ColumnField = "date" | "name" | "type" | "amount" | "description";
-
-type ColumnMapping = Record<ColumnField, string>;
+import {
+   type ColumnField,
+   type ColumnMapping,
+   type FileFormat,
+   type RawData,
+   type ValidatedRow,
+   COLUMN_FIELDS,
+   FIELD_LABELS,
+   REQUIRED_FIELDS,
+   getSampleValues,
+   parseAmount,
+   parseDate,
+   useStatementImport,
+} from "./use-statement-import";
 
 const { Stepper, useStepper } = defineStepper(
    { id: "upload", title: "Arquivo" },
@@ -97,110 +81,6 @@ const { Stepper, useStepper } = defineStepper(
 
 type StepperMethods = ReturnType<typeof useStepper>;
 
-const FIELD_LABELS: Record<ColumnField, string> = {
-   date: "Data *",
-   name: "Nome",
-   type: "Tipo",
-   amount: "Valor *",
-   description: "Descrição",
-};
-
-const REQUIRED_FIELDS: ColumnField[] = ["date", "amount"];
-const COLUMN_FIELDS: ColumnField[] = [
-   "date",
-   "name",
-   "type",
-   "amount",
-   "description",
-];
-
-function parseDate(raw: string): string | null {
-   const dateOnly = raw
-      .trim()
-      .replace(/\s*às\s*\d{1,2}:\d{2}(:\d{2})?/i, "")
-      .replace(/\s+\d{1,2}:\d{2}(:\d{2})?$/, "")
-      .replace(/T\d{2}:\d{2}.*$/, "")
-      .trim();
-   for (const fmt of [
-      "YYYY-MM-DD",
-      "DD/MM/YYYY",
-      "MM/DD/YYYY",
-      "DD-MM-YYYY",
-      "YYYYMMDD",
-      "DD/MM/YY",
-   ]) {
-      const d = dayjs(dateOnly, fmt, true);
-      if (d.isValid()) return d.format("YYYY-MM-DD");
-   }
-   return null;
-}
-
-function parseAmount(raw: string): string | null {
-   const cleaned = raw.replace(/R\$\s*/g, "").trim();
-   const hasComma = cleaned.includes(",");
-   const hasDot = cleaned.includes(".");
-   let normalized: string;
-   if (hasComma && hasDot) {
-      normalized = cleaned.replace(/\./g, "").replace(",", ".");
-   } else if (hasComma) {
-      normalized = cleaned.replace(",", ".");
-   } else {
-      normalized = cleaned;
-   }
-   try {
-      return toMajorUnitsString(moneyOf(normalized, "BRL")).replace("-", "");
-   } catch {
-      return null;
-   }
-}
-
-const OFX_INCOME_TYPES = new Set(["CREDIT", "INT", "DIV", "DIRECTDEP"]);
-
-function inferTypeFromOfx(
-   trnType: string,
-   trnAmt: number,
-): "income" | "expense" {
-   if (trnAmt > 0) return "income";
-   if (trnAmt < 0) return "expense";
-   if (OFX_INCOME_TYPES.has(trnType)) return "income";
-   return "expense";
-}
-
-function inferType(raw: string, amount: number): "income" | "expense" {
-   const t = raw.toLowerCase().trim();
-   if (
-      t === "receita" ||
-      t === "income" ||
-      t === "crédito" ||
-      t === "credito" ||
-      t === "credit"
-   )
-      return "income";
-   if (
-      t === "despesa" ||
-      t === "expense" ||
-      t === "débito" ||
-      t === "debito" ||
-      t === "debit"
-   )
-      return "expense";
-   if (amount < 0) return "expense";
-   return "expense";
-}
-
-function validateRow(row: ParsedRow, minDate?: string | null): ValidatedRow {
-   const errors: string[] = [];
-   const parsedDate = parseDate(row.date);
-   if (!parsedDate) errors.push("Data inválida");
-   if (parsedDate && minDate && parsedDate < minDate)
-      errors.push(
-         `Anterior à abertura da empresa (${dayjs(minDate).format("DD/MM/YYYY")})`,
-      );
-   if (!row.amount || parseAmount(row.amount) === null)
-      errors.push("Valor inválido");
-   return { ...row, isValid: errors.length === 0, errors };
-}
-
 function formatMoney(value: string): string {
    const normalized = parseAmount(value) ?? value;
    try {
@@ -208,135 +88,6 @@ function formatMoney(value: string): string {
    } catch {
       return value;
    }
-}
-
-function parseXlsxToRaw(buffer: ArrayBuffer): RawData {
-   const wb = xlsxRead(buffer, { type: "array" });
-   const ws = wb.Sheets[wb.SheetNames[0]];
-   if (!ws) throw new Error("Planilha vazia");
-   const data = xlsxUtils.sheet_to_json<unknown[]>(ws, {
-      header: 1,
-      defval: "",
-   });
-   if (data.length < 2) throw new Error("Planilha sem dados");
-   return {
-      headers: data[0].map(String),
-      rows: data
-         .slice(1)
-         .filter((r) => r.some((c) => String(c).trim() !== ""))
-         .map((r) => r.map(String)),
-   };
-}
-
-function guessMapping(headers: string[]): Partial<ColumnMapping> {
-   const lower = headers.map((h) => h.toLowerCase().trim());
-   const patterns: Record<ColumnField, string[]> = {
-      date: ["data", "date", "dt", "data_lancamento"],
-      name: ["nome", "name", "historico", "memo", "descricao"],
-      type: ["tipo", "type", "natureza", "operacao"],
-      amount: ["valor", "value", "amount", "montante", "vlr"],
-      description: ["descricao", "description", "obs", "complemento"],
-   };
-   const mapping: Partial<ColumnMapping> = {};
-   for (const field of COLUMN_FIELDS) {
-      const candidates = patterns[field];
-      const idx = lower.findIndex((h) => candidates.some((c) => h.includes(c)));
-      if (idx !== -1) mapping[field] = headers[idx];
-   }
-   return mapping;
-}
-
-function headersFingerprint(headers: string[]): string {
-   return [...headers].sort().join(",");
-}
-
-function mappingStorageKey(headers: string[]): string {
-   return `montte:import:mapping:${headersFingerprint(headers)}`;
-}
-
-function getSampleValues(raw: RawData, header: string): string {
-   const idx = raw.headers.indexOf(header);
-   if (idx === -1) return "";
-   return raw.rows
-      .slice(0, 3)
-      .map((r) => r[idx] ?? "")
-      .filter(Boolean)
-      .join(", ");
-}
-
-const INCOME_NAME_PATTERNS = [
-   "recebido",
-   "recebimento",
-   "depósito",
-   "deposito",
-   "salário",
-   "salario",
-   "crédito",
-   "credito",
-   "pix recebido",
-   "transferência recebida",
-   "ted recebida",
-   "doc recebido",
-   "rendimento",
-   "reembolso",
-   "estorno",
-];
-const EXPENSE_NAME_PATTERNS = [
-   "enviado",
-   "pagamento",
-   "compra",
-   "débito",
-   "debito",
-   "pix enviado",
-   "transferência enviada",
-   "ted enviada",
-   "doc enviado",
-   "saque",
-   "tarifa",
-   "cobrança",
-   "boleto",
-];
-
-function inferTypeFromName(name: string): "income" | "expense" | null {
-   const n = name.toLowerCase();
-   if (INCOME_NAME_PATTERNS.some((p) => n.includes(p))) return "income";
-   if (EXPENSE_NAME_PATTERNS.some((p) => n.includes(p))) return "expense";
-   return null;
-}
-
-function applyMapping(
-   row: string[],
-   headers: string[],
-   mapping: ColumnMapping,
-): ParsedRow {
-   const get = (field: ColumnField): string => {
-      const header = mapping[field];
-      if (!header) return "";
-      const idx = headers.indexOf(header);
-      return idx !== -1 ? (row[idx] ?? "") : "";
-   };
-
-   const rawAmount = get("amount");
-   const numericAmount = Number.parseFloat(
-      rawAmount.replace(/[^\d.,-]/g, "").replace(",", "."),
-   );
-   const rawType = get("type");
-   const name = get("name");
-
-   const type =
-      rawType.trim() !== ""
-         ? inferType(rawType, numericAmount)
-         : numericAmount < 0
-           ? "expense"
-           : (inferTypeFromName(name) ?? "expense");
-
-   return {
-      date: get("date"),
-      name,
-      type,
-      amount: rawAmount,
-      description: get("description"),
-   };
 }
 
 const TEMPLATE_ROWS = [
@@ -473,21 +224,17 @@ function StepBar({ methods }: { methods: StepperMethods }) {
 
 interface UploadStepProps {
    methods: StepperMethods;
-   onFileReady: (
-      rows: ValidatedRow[],
-      format: FileFormat,
-      raw: RawData | null,
-   ) => void;
+   parseFile: (file: File) => Promise<void>;
+   format: FileFormat;
    bankAccountId: string;
-   minImportDate: string | null;
    onBankAccountChange: (id: string) => void;
 }
 
 function UploadStep({
    methods,
-   onFileReady,
+   parseFile,
+   format,
    bankAccountId,
-   minImportDate,
    onBankAccountChange,
 }: UploadStepProps) {
    const [isParsing, setIsParsing] = useState(false);
@@ -497,95 +244,28 @@ function UploadStep({
       orpc.bankAccounts.getAll.queryOptions({}),
    );
 
-   function processFile(file: File) {
+   async function handleFile(file: File) {
       if (!bankAccountId) return;
       setSelectedFile(file);
       setIsParsing(true);
-
-      const ext = file.name.split(".").pop()?.toLowerCase();
-
-      if (ext === "ofx") {
-         const reader = new FileReader();
-         reader.onload = (ev) => {
-            try {
-               const buffer = ev.target?.result;
-               if (!(buffer instanceof ArrayBuffer))
-                  throw new Error("read error");
-               const ofxDoc = parseOfx(new Uint8Array(buffer));
-               const txs = getTransactions(ofxDoc);
-               const rows: ValidatedRow[] = txs.map((tx) => {
-                  const amount = Math.abs(tx.TRNAMT);
-                  const type = inferTypeFromOfx(tx.TRNTYPE, tx.TRNAMT);
-                  const dtDate = tx.DTPOSTED.toDate();
-                  const date = !Number.isNaN(dtDate.getTime())
-                     ? dayjs(dtDate).format("YYYY-MM-DD")
-                     : (parseDate(
-                          tx.DTPOSTED.raw.replace(/\[.*\]/, "").slice(0, 8),
-                       ) ?? tx.DTPOSTED.raw.slice(0, 8));
-                  const parsed: ParsedRow = {
-                     date,
-                     name: tx.NAME ?? tx.MEMO ?? "",
-                     type,
-                     amount: String(amount),
-                     description: tx.MEMO ?? "",
-                  };
-                  return validateRow(parsed, minImportDate);
-               });
-               onFileReady(rows, "ofx", null);
-               methods.navigation.goTo("preview");
-            } catch {
-               toast.error("Erro ao processar arquivo OFX.");
-               setSelectedFile(undefined);
-            } finally {
-               setIsParsing(false);
-            }
-         };
-         reader.readAsArrayBuffer(file);
-         return;
-      }
-
-      if (ext === "xlsx" || ext === "xls") {
-         const reader = new FileReader();
-         reader.onload = (ev) => {
-            try {
-               const buffer = ev.target?.result;
-               if (!(buffer instanceof ArrayBuffer))
-                  throw new Error("read error");
-               const raw = parseXlsxToRaw(buffer);
-               onFileReady([], "xlsx", raw);
-               methods.navigation.next();
-            } catch {
-               toast.error("Erro ao processar planilha XLSX.");
-               setSelectedFile(undefined);
-            } finally {
-               setIsParsing(false);
-            }
-         };
-         reader.readAsArrayBuffer(file);
-         return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-         try {
-            const buffer = ev.target?.result;
-            if (!(buffer instanceof ArrayBuffer)) throw new Error("read error");
-            const doc = parseCsvBuffer(new Uint8Array(buffer), {
-               hasHeaders: true,
-               trimFields: true,
-            });
-            const headers = doc.headers ?? [];
-            const rows = doc.rows.map((r) => r.fields);
-            onFileReady([], "csv", { headers, rows });
+      try {
+         await parseFile(file);
+         const ext = file.name.split(".").pop()?.toLowerCase();
+         if (ext === "ofx") {
+            methods.navigation.goTo("preview");
+         } else {
             methods.navigation.next();
-         } catch {
-            toast.error("Erro ao processar arquivo CSV.");
-            setSelectedFile(undefined);
-         } finally {
-            setIsParsing(false);
          }
-      };
-      reader.readAsArrayBuffer(file);
+      } catch {
+         const ext = file.name.split(".").pop()?.toLowerCase();
+         if (ext === "ofx") toast.error("Erro ao processar arquivo OFX.");
+         else if (ext === "xlsx" || ext === "xls")
+            toast.error("Erro ao processar planilha XLSX.");
+         else toast.error("Erro ao processar arquivo CSV.");
+         setSelectedFile(undefined);
+      } finally {
+         setIsParsing(false);
+      }
    }
 
    return (
@@ -627,7 +307,7 @@ function UploadStep({
                   disabled={isParsing || !bankAccountId}
                   maxFiles={1}
                   onDrop={([file]) => {
-                     if (file) processFile(file);
+                     if (file) void handleFile(file);
                   }}
                   src={selectedFile ? [selectedFile] : undefined}
                >

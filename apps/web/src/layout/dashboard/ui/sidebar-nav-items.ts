@@ -123,11 +123,10 @@ export const navGroups: NavGroupDef[] = [
          },
          {
             id: "tags",
-            label: "Tags",
+            label: "Centros de Custo",
             icon: Tags,
             route: "/$slug/$teamSlug/tags",
             configurable: true,
-            labelOverrides: { business: "Centros de Custo" },
          },
          {
             id: "goals",

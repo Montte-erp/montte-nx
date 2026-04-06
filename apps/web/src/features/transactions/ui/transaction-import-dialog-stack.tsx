@@ -132,7 +132,7 @@ const FIELD_LABELS: Record<keyof ColumnMapping, string> = {
    conta_destino: "Conta destino",
    categoria: "Categoria",
    subcategoria: "Subcategoria",
-   tags: "Tags",
+   tags: "Centros de Custo",
    forma_pagamento: "Forma de pagamento",
    parcelado: "Parcelado",
    num_parcelas: "Nº de parcelas",
