@@ -6,7 +6,11 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+   useMutation,
+   useQueryClient,
+   useSuspenseQuery,
+} from "@tanstack/react-query";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { Mail } from "lucide-react";
 import { toast } from "sonner";

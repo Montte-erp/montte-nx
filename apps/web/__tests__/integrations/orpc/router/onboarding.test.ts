@@ -1,6 +1,7 @@
 import { ORPCError, call } from "@orpc/server";
 import {
    afterAll,
+   afterEach,
    beforeAll,
    beforeEach,
    describe,
@@ -83,8 +84,14 @@ describe("createWorkspace", () => {
       };
 
       await expect(
-         call(onboardingRouter.createWorkspace, { workspaceName: "Test Org" }, { context: failAuthCtx }),
-      ).rejects.toSatisfy((e: ORPCError<string, unknown>) => e.code === "INTERNAL_SERVER_ERROR");
+         call(
+            onboardingRouter.createWorkspace,
+            { workspaceName: "Test Org" },
+            { context: failAuthCtx },
+         ),
+      ).rejects.toSatisfy(
+         (e: ORPCError<string, unknown>) => e.code === "INTERNAL_SERVER_ERROR",
+      );
    });
 
    it("throws when team creation returns no id", async () => {
@@ -94,7 +101,9 @@ describe("createWorkspace", () => {
             ...ctx.auth,
             api: {
                ...ctx.auth.api,
-               createOrganization: vi.fn().mockResolvedValue({ id: "org-fake-id", slug: "fake-slug" }),
+               createOrganization: vi
+                  .fn()
+                  .mockResolvedValue({ id: "org-fake-id", slug: "fake-slug" }),
                setActiveOrganization: vi.fn().mockResolvedValue(undefined),
                createTeam: vi.fn().mockResolvedValue(null),
             } as any,
@@ -102,8 +111,14 @@ describe("createWorkspace", () => {
       };
 
       await expect(
-         call(onboardingRouter.createWorkspace, { workspaceName: "Test Org" }, { context: failTeamAuthCtx }),
-      ).rejects.toSatisfy((e: ORPCError<string, unknown>) => e.code === "INTERNAL_SERVER_ERROR");
+         call(
+            onboardingRouter.createWorkspace,
+            { workspaceName: "Test Org" },
+            { context: failTeamAuthCtx },
+         ),
+      ).rejects.toSatisfy(
+         (e: ORPCError<string, unknown>) => e.code === "INTERNAL_SERVER_ERROR",
+      );
    });
 });
 
@@ -121,8 +136,12 @@ describe("getOnboardingStatus", () => {
       };
 
       await expect(
-         call(onboardingRouter.getOnboardingStatus, undefined, { context: orphanCtx }),
-      ).rejects.toSatisfy((e: ORPCError<string, unknown>) => e.code === "NOT_FOUND");
+         call(onboardingRouter.getOnboardingStatus, undefined, {
+            context: orphanCtx,
+         }),
+      ).rejects.toSatisfy(
+         (e: ORPCError<string, unknown>) => e.code === "NOT_FOUND",
+      );
    });
 
    it("throws NOT_FOUND when team does not exist", async () => {
@@ -138,8 +157,12 @@ describe("getOnboardingStatus", () => {
       };
 
       await expect(
-         call(onboardingRouter.getOnboardingStatus, undefined, { context: fakeTeamCtx }),
-      ).rejects.toSatisfy((e: ORPCError<string, unknown>) => e.code === "NOT_FOUND");
+         call(onboardingRouter.getOnboardingStatus, undefined, {
+            context: fakeTeamCtx,
+         }),
+      ).rejects.toSatisfy(
+         (e: ORPCError<string, unknown>) => e.code === "NOT_FOUND",
+      );
    });
 
    it("returns onboarding status with auto-detected tasks", async () => {
@@ -271,6 +294,176 @@ describe("fixOnboarding", () => {
             { organizationId: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee" },
             { context: ctx },
          ),
-      ).rejects.toSatisfy((e: ORPCError<string, unknown>) => e.code === "NOT_FOUND");
+      ).rejects.toSatisfy(
+         (e: ORPCError<string, unknown>) => e.code === "NOT_FOUND",
+      );
+   });
+
+   it("marks org and team as complete and returns slugs", async () => {
+      const orgId = ctx.session!.session.activeOrganizationId!;
+      const result = await call(
+         onboardingRouter.fixOnboarding,
+         { organizationId: orgId },
+         { context: ctx },
+      );
+      expect(result).toHaveProperty("orgSlug");
+      expect(result).toHaveProperty("teamSlug");
+   });
+});
+
+describe("completeOnboarding", () => {
+   it("runs onboarding completion and returns org slug and teamId", async () => {
+      const result = await call(
+         onboardingRouter.completeOnboarding,
+         { products: ["finance"] },
+         { context: ctx },
+      );
+      expect(result).toHaveProperty("slug");
+      expect(result).toHaveProperty("teamId");
+      expect(typeof result.slug).toBe("string");
+   });
+});
+
+describe("fetchCnpjData", () => {
+   afterEach(() => {
+      vi.unstubAllGlobals();
+   });
+
+   it("throws INTERNAL_SERVER_ERROR when fetch throws", async () => {
+      vi.stubGlobal(
+         "fetch",
+         vi.fn().mockRejectedValue(new Error("Network error")),
+      );
+      await expect(
+         call(
+            onboardingRouter.fetchCnpjData,
+            { cnpj: "12345678000190" },
+            { context: ctx },
+         ),
+      ).rejects.toSatisfy(
+         (e: ORPCError<string, unknown>) => e.code === "INTERNAL_SERVER_ERROR",
+      );
+   });
+
+   it("throws NOT_FOUND when response is not ok", async () => {
+      vi.stubGlobal(
+         "fetch",
+         vi.fn().mockResolvedValue({ ok: false } as Response),
+      );
+      await expect(
+         call(
+            onboardingRouter.fetchCnpjData,
+            { cnpj: "12345678000190" },
+            { context: ctx },
+         ),
+      ).rejects.toSatisfy(
+         (e: ORPCError<string, unknown>) => e.code === "NOT_FOUND",
+      );
+   });
+
+   it("throws INTERNAL_SERVER_ERROR when response JSON throws", async () => {
+      vi.stubGlobal(
+         "fetch",
+         vi.fn().mockResolvedValue({
+            ok: true,
+            json: vi.fn().mockRejectedValue(new Error("bad json")),
+         } as unknown as Response),
+      );
+      await expect(
+         call(
+            onboardingRouter.fetchCnpjData,
+            { cnpj: "12345678000190" },
+            { context: ctx },
+         ),
+      ).rejects.toSatisfy(
+         (e: ORPCError<string, unknown>) => e.code === "INTERNAL_SERVER_ERROR",
+      );
+   });
+
+   it("throws INTERNAL_SERVER_ERROR when response data fails schema validation", async () => {
+      vi.stubGlobal(
+         "fetch",
+         vi.fn().mockResolvedValue({
+            ok: true,
+            json: vi.fn().mockResolvedValue({ invalid: "data" }),
+         } as unknown as Response),
+      );
+      await expect(
+         call(
+            onboardingRouter.fetchCnpjData,
+            { cnpj: "12345678000190" },
+            { context: ctx },
+         ),
+      ).rejects.toSatisfy(
+         (e: ORPCError<string, unknown>) => e.code === "INTERNAL_SERVER_ERROR",
+      );
+   });
+
+   it("throws BAD_REQUEST when CNPJ is not active", async () => {
+      const inactiveCnpjData = {
+         cnpj: "12345678000190",
+         razao_social: "EMPRESA TESTE LTDA",
+         nome_fantasia: "EMPRESA TESTE",
+         descricao_situacao_cadastral: "BAIXADA",
+         cnae_fiscal: 4711301,
+         cnae_fiscal_descricao: "Comércio varejista",
+         cnaes_secundarios: [],
+         porte: "ME",
+         municipio: "São Paulo",
+         uf: "SP",
+         natureza_juridica: "Sociedade Empresária Limitada",
+         data_inicio_atividade: "2020-01-01",
+         qsa: [],
+         regime_tributario: [],
+      };
+      vi.stubGlobal(
+         "fetch",
+         vi.fn().mockResolvedValue({
+            ok: true,
+            json: vi.fn().mockResolvedValue(inactiveCnpjData),
+         } as unknown as Response),
+      );
+      await expect(
+         call(
+            onboardingRouter.fetchCnpjData,
+            { cnpj: "12345678000190" },
+            { context: ctx },
+         ),
+      ).rejects.toSatisfy(
+         (e: ORPCError<string, unknown>) => e.code === "BAD_REQUEST",
+      );
+   });
+
+   it("returns CNPJ data when active", async () => {
+      const activeCnpjData = {
+         cnpj: "12345678000190",
+         razao_social: "EMPRESA TESTE LTDA",
+         nome_fantasia: "EMPRESA TESTE",
+         descricao_situacao_cadastral: "ATIVA",
+         cnae_fiscal: 4711301,
+         cnae_fiscal_descricao: "Comércio varejista",
+         cnaes_secundarios: [],
+         porte: "ME",
+         municipio: "São Paulo",
+         uf: "SP",
+         natureza_juridica: "Sociedade Empresária Limitada",
+         data_inicio_atividade: "2020-01-01",
+         qsa: [],
+         regime_tributario: [],
+      };
+      vi.stubGlobal(
+         "fetch",
+         vi.fn().mockResolvedValue({
+            ok: true,
+            json: vi.fn().mockResolvedValue(activeCnpjData),
+         } as unknown as Response),
+      );
+      const result = await call(
+         onboardingRouter.fetchCnpjData,
+         { cnpj: "12345678000190" },
+         { context: ctx },
+      );
+      expect(result.cnpj).toBe("12345678000190");
+      expect(result.descricao_situacao_cadastral).toBe("ATIVA");
    });
 });

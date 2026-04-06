@@ -21,12 +21,15 @@ import {
    SelectTrigger,
    SelectValue,
 } from "@packages/ui/components/select";
+import { Skeleton } from "@packages/ui/components/skeleton";
 import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Suspense } from "react";
+import { ErrorBoundary } from "react-error-boundary";
+import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import type { BillRow } from "./bills-columns";
@@ -104,11 +107,12 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
                <FieldGroup>
-                  <form.Field name="type">
-                     {(field) => {
+                  <form.Field
+                     name="type"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
                               <FieldLabel>Tipo</FieldLabel>
@@ -138,17 +142,21 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
-                  <form.Field name="name">
-                     {(field) => {
+                  <form.Field
+                     name="name"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
-                              <FieldLabel>Nome</FieldLabel>
+                              <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
                               <Input
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
                                  onBlur={field.handleBlur}
                                  onChange={(e) =>
                                     field.handleChange(e.target.value)
@@ -162,10 +170,11 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
-                  <form.Field name="amount">
-                     {(field) => (
+                  <form.Field
+                     name="amount"
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Valor</FieldLabel>
                            <MoneyInput
@@ -186,10 +195,11 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                            <FieldError errors={field.state.meta.errors} />
                         </Field>
                      )}
-                  </form.Field>
+                  />
 
-                  <form.Field name="dueDate">
-                     {(field) => (
+                  <form.Field
+                     name="dueDate"
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Data de Vencimento</FieldLabel>
                            <DatePicker
@@ -207,11 +217,12 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                            <FieldError errors={field.state.meta.errors} />
                         </Field>
                      )}
-                  </form.Field>
+                  />
 
                   {accounts.length > 0 && (
-                     <form.Field name="bankAccountId">
-                        {(field) => (
+                     <form.Field
+                        name="bankAccountId"
+                        children={(field) => (
                            <Field>
                               <FieldLabel>Conta Bancária</FieldLabel>
                               <Select
@@ -231,7 +242,7 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                               </Select>
                            </Field>
                         )}
-                     </form.Field>
+                     />
                   )}
 
                   <form.Subscribe selector={(s) => s.values.type}>
@@ -243,8 +254,9 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                         );
                         if (filtered.length === 0) return null;
                         return (
-                           <form.Field name="categoryId">
-                              {(field) => (
+                           <form.Field
+                              name="categoryId"
+                              children={(field) => (
                                  <Field>
                                     <FieldLabel>Categoria</FieldLabel>
                                     <Select
@@ -267,27 +279,38 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
                                     </Select>
                                  </Field>
                               )}
-                           </form.Field>
+                           />
                         );
                      }}
                   </form.Subscribe>
 
-                  <form.Field name="description">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>Descrição (opcional)</FieldLabel>
-                           <Textarea
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="Observações sobre esta conta..."
-                              rows={2}
-                              value={field.state.value}
-                           />
-                        </Field>
-                     )}
-                  </form.Field>
+                  <form.Field
+                     name="description"
+                     children={(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           field.state.meta.errors.length > 0;
+                        return (
+                           <Field data-invalid={isInvalid}>
+                              <FieldLabel htmlFor={field.name}>
+                                 Descrição (opcional)
+                              </FieldLabel>
+                              <Textarea
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                 }
+                                 placeholder="Observações sobre esta conta..."
+                                 rows={2}
+                                 value={field.state.value}
+                              />
+                           </Field>
+                        );
+                     }}
+                  />
                </FieldGroup>
             </div>
 
@@ -314,10 +337,29 @@ function BillFormInner({ bill, onSuccess }: BillFormProps) {
    );
 }
 
+function BillFormSkeleton() {
+   return (
+      <div className="flex flex-col gap-4 p-4">
+         <Skeleton className="h-4 w-32" />
+         <Skeleton className="h-10 w-full" />
+         <Skeleton className="h-4 w-24" />
+         <Skeleton className="h-10 w-full" />
+         <Skeleton className="h-4 w-28" />
+         <Skeleton className="h-10 w-full" />
+      </div>
+   );
+}
+
 export function BillForm(props: BillFormProps) {
    return (
-      <Suspense fallback={null}>
-         <BillFormInner {...props} />
-      </Suspense>
+      <ErrorBoundary
+         FallbackComponent={createErrorFallback({
+            errorTitle: "Erro ao carregar conta",
+         })}
+      >
+         <Suspense fallback={<BillFormSkeleton />}>
+            <BillFormInner {...props} />
+         </Suspense>
+      </ErrorBoundary>
    );
 }

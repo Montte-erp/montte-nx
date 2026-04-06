@@ -1,5 +1,8 @@
 import { Button } from "@packages/ui/components/button";
-import { DataTable, type DataTableStoredState } from "@packages/ui/components/data-table";
+import {
+   DataTable,
+   type DataTableStoredState,
+} from "@packages/ui/components/data-table";
 import {
    DropdownMenu,
    DropdownMenuContent,
@@ -15,7 +18,11 @@ import {
    EmptyTitle,
 } from "@packages/ui/components/empty";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import type { ColumnFiltersState, OnChangeFn, SortingState } from "@tanstack/react-table";
+import type {
+   ColumnFiltersState,
+   OnChangeFn,
+   SortingState,
+} from "@tanstack/react-table";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
@@ -58,10 +65,11 @@ const searchSchema = z.object({
       .default([]),
 });
 
-const [useInventoryTableState] = createLocalStorageState<DataTableStoredState | null>(
-   "montte:datatable:inventory",
-   null,
-);
+const [useInventoryTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:inventory",
+      null,
+   );
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/inventory/",
@@ -120,19 +128,34 @@ function InventoryList() {
 
    const handleSortingChange: OnChangeFn<SortingState> = useCallback(
       (updater) => {
-         const next = typeof updater === "function" ? updater(sorting) : updater;
-         navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, sorting: next }), replace: true });
+         const next =
+            typeof updater === "function" ? updater(sorting) : updater;
+         navigate({
+            search: (prev: z.infer<typeof searchSchema>) => ({
+               ...prev,
+               sorting: next,
+            }),
+            replace: true,
+         });
       },
       [navigate, sorting],
    );
 
-   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
-      (updater) => {
-         const next = typeof updater === "function" ? updater(columnFilters) : updater;
-         navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, columnFilters: next }), replace: true });
-      },
-      [navigate, columnFilters],
-   );
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
+      useCallback(
+         (updater) => {
+            const next =
+               typeof updater === "function" ? updater(columnFilters) : updater;
+            navigate({
+               search: (prev: z.infer<typeof searchSchema>) => ({
+                  ...prev,
+                  columnFilters: next,
+               }),
+               replace: true,
+            });
+         },
+         [navigate, columnFilters],
+      );
 
    const archiveMutation = useMutation(
       orpc.inventory.archiveProduct.mutationOptions({

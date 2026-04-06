@@ -18,7 +18,6 @@ import {
 } from "@tanstack/react-router";
 import { ChevronRight, Settings2 } from "lucide-react";
 import { useCallback } from "react";
-import { useAccountType } from "@/hooks/use-account-type";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 import { useFinanceNavPreferences } from "@/layout/dashboard/hooks/use-finance-nav-preferences";
@@ -52,11 +51,9 @@ function NavItem({
 }) {
    const Icon = item.icon;
    const { getFeatureStage } = useEarlyAccess();
-   const { accountType } = useAccountType();
    const stage = item.earlyAccessFlag
       ? getFeatureStage(item.earlyAccessFlag)
       : null;
-   const resolvedLabel = item.labelOverrides?.[accountType] ?? item.label;
 
    const handleClick = useCallback(
       (e: React.MouseEvent) => {
@@ -79,7 +76,7 @@ function NavItem({
                   ? {
                        children: (
                           <span className="flex items-center gap-1.5">
-                             {resolvedLabel}
+                             {item.label}
                              <FeatureStageBadge isTooltip stage={stage} />
                           </span>
                        ),
@@ -90,7 +87,7 @@ function NavItem({
             {item.subPanel ? (
                <>
                   <Icon />
-                  <span>{resolvedLabel}</span>
+                  <span>{item.label}</span>
                   {stage && (
                      <FeatureStageBadge
                         className="ml-auto group-data-[collapsible=icon]:hidden"
@@ -106,7 +103,7 @@ function NavItem({
                   to={item.route}
                >
                   <Icon />
-                  <span>{resolvedLabel}</span>
+                  <span>{item.label}</span>
                   {stage && (
                      <FeatureStageBadge
                         className="ml-auto group-data-[collapsible=icon]:hidden"
@@ -249,8 +246,6 @@ function NavGroup({
    const visibleItems = group.items
       .filter((item) => {
          if (!item.earlyAccessFlag) return true;
-         // Labeled groups (finance, erp) use the finance nav preferences hook,
-         // falling back to enrollment so existing enrolled users aren't affected.
          if (group.label)
             return isWanted(item.id) || isEnrolled(item.earlyAccessFlag);
          return isEnrolled(item.earlyAccessFlag);

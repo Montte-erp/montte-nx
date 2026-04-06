@@ -135,6 +135,73 @@ Zod schemas belong in the backend. Frontend only imports inferred types via `Inp
 
 ---
 
+## TanStack Form Pattern
+
+### Rules
+- **Schema at module level** — never define `z.object({...})` inside a component function; always declare at module scope to prevent recreation on every render.
+- **`isInvalid` check** — use `field.state.meta.isTouched && field.state.meta.errors.length > 0` (not `!field.state.meta.isValid`).
+- **Accessibility** — always set `id={field.name}`, `name={field.name}`, `aria-invalid={isInvalid}` on `<Input>`/`<PasswordInput>`/`<Textarea>`. Always set `htmlFor={field.name}` on `<FieldLabel>`.
+- **`children` prop** — always use `children={(field) => ...}` as an explicit JSX prop, not `{(field) => ...}` as JSX children.
+
+### Correct Pattern
+
+```tsx
+const formSchema = z.object({
+  name: z.string().min(1, "Campo obrigatório."),
+});
+
+function MyForm() {
+  const form = useForm({
+    defaultValues: { name: "" },
+    validators: { onSubmit: formSchema },
+    onSubmit: async ({ value }) => { /* ... */ },
+  });
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        form.handleSubmit();
+      }}
+    >
+      <FieldGroup>
+        <form.Field
+          name="name"
+          children={(field) => {
+            const isInvalid = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  aria-invalid={isInvalid}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            );
+          }}
+        />
+      </FieldGroup>
+
+      <form.Subscribe selector={(s) => [s.canSubmit, s.isSubmitting]}>
+        {([canSubmit, isSubmitting]) => (
+          <Button type="submit" disabled={!canSubmit || isSubmitting}>
+            Salvar
+          </Button>
+        )}
+      </form.Subscribe>
+    </form>
+  );
+}
+```
+
+---
+
 ## Suspense, Error Boundaries & Empty States
 
 ### Suspense + ErrorBoundary
@@ -379,6 +446,62 @@ startTransition(async () => { await authClient.method(...); });
 
 ---
 
+## Input Masking (Maskito)
+
+Use `@maskito/core` + `@maskito/react` for all structured text inputs. Never build manual mask handlers or use `onChange` + `replace(/\D/g, '')` patterns for formatted inputs.
+
+```tsx
+import { useMaskito } from "@maskito/react";
+import type { MaskitoOptions } from "@maskito/core";
+
+// Define masks at module scope (never inside component)
+const phoneMaskOptions: MaskitoOptions = {
+   mask: ["(", /\d/, /\d/, ")", " ", /\d/, /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/, /\d/, /\d/],
+};
+const cpfMaskOptions: MaskitoOptions = {
+   mask: [/\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "-", /\d/, /\d/],
+};
+const cnpjMaskOptions: MaskitoOptions = {
+   mask: [/\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "/", /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/],
+};
+
+function MyForm() {
+   const phoneRef = useMaskito({ options: phoneMaskOptions });
+
+   return (
+      <Input
+         ref={phoneRef}
+         inputMode="numeric"
+         onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
+         placeholder="(11) 99999-9999"
+         defaultValue={field.state.value}
+      />
+   );
+}
+```
+
+**Rules:**
+- Always use `onInput` (not `onChange`) for masked inputs — Maskito fires before React's synthetic event.
+- Use `defaultValue` (not `value`) on masked inputs — controlled `value` conflicts with Maskito's DOM manipulation.
+- `Input` from `@packages/ui/components/input` uses `forwardRef` — the ref will reach the DOM element.
+- Use array masks `[/\d/, ".", /\d/]` for formatting (auto-inserts chars). Regex masks (`mask: /^regex$/`) only validate, they don't format.
+- Define `MaskitoOptions` at **module scope**, not inside components.
+- For dynamic masks (e.g. CPF vs CNPJ), use `useMemo` to compute options and pass to `useMaskito`.
+- Strip formatting before API calls when the backend expects raw digits: `value.replace(/\D/g, "")`.
+- `inputMode="numeric"` on digit-only inputs for mobile keyboard.
+- For currency inputs, use `MoneyInput` from `@packages/ui/components/money-input` — it uses `@maskito/kit`'s number mask internally.
+
+**Common masks:**
+| Field | Mask pattern |
+|-------|-------------|
+| Telefone | `["(", /\d/, /\d/, ")", " ", /\d/, /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/, /\d/, /\d/]` |
+| CPF | `[/\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "-", /\d/, /\d/]` |
+| CNPJ | `[/\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "/", /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/]` |
+| Agência | `mask: /^\d{0,4}(-\d{0,1})?$/` |
+| Conta | `mask: /^\d{0,12}(-\d{0,1})?$/` |
+
+---
+
 ## Foxact Hooks
 
 Standard hook library — SSR-safe. Import each hook from its own subpath. Never use `@uidotdev/usehooks` for browser-API hooks (server-unsafe).
@@ -401,6 +524,29 @@ Standard hook library — SSR-safe. Import each hook from its own subpath. Never
 - Use `useMediaQuery("(max-width: 767px)")` directly — no `useIsMobile` wrapper.
 - Context always created with `null` default so `invariant` guard is meaningful.
 - Never `typeof window === 'undefined'` guards — Vite SPA, window always defined.
+
+---
+
+## Debouncing & Throttling (@tanstack/pacer)
+
+Use `useDebouncedCallback` from `@tanstack/react-pacer` for debouncing callbacks in React components.
+
+```tsx
+import { useDebouncedCallback } from "@tanstack/react-pacer";
+import { useCallback } from "react";
+
+const fetchData = useDebouncedCallback(
+   async (value: string) => { /* ... */ },
+   { wait: 400 },
+);
+
+const handleChange = useCallback((value: string) => {
+   fetchData(value);
+}, [fetchData]);
+```
+
+- Never use `useDebouncedValue` from `foxact` for debouncing side effects — use `@tanstack/pacer` `useDebouncedCallback` instead.
+- `foxact/use-debounced-value` is for reactive derived values (UI display), not for debouncing API calls.
 
 ---
 

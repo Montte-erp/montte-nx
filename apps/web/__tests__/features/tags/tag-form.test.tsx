@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
+import {
+   render,
+   screen,
+   fireEvent,
+   waitFor,
+   cleanup,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const mockCreateMutate = vi.fn();
@@ -13,7 +19,13 @@ vi.mock("@/integrations/orpc/client", () => ({
    orpc: {
       tags: {
          create: {
-            mutationOptions: ({ onSuccess, onError }: { onSuccess?: () => void; onError?: (e: Error) => void }) => ({
+            mutationOptions: ({
+               onSuccess,
+               onError,
+            }: {
+               onSuccess?: () => void;
+               onError?: (e: Error) => void;
+            }) => ({
                mutationKey: ["tags.create"],
                mutationFn: async (input: unknown) => {
                   mockCreateMutate(input);
@@ -25,7 +37,13 @@ vi.mock("@/integrations/orpc/client", () => ({
             }),
          },
          update: {
-            mutationOptions: ({ onSuccess, onError }: { onSuccess?: () => void; onError?: (e: Error) => void }) => ({
+            mutationOptions: ({
+               onSuccess,
+               onError,
+            }: {
+               onSuccess?: () => void;
+               onError?: (e: Error) => void;
+            }) => ({
                mutationKey: ["tags.update"],
                mutationFn: async (input: unknown) => {
                   mockUpdateMutate(input);
@@ -48,15 +66,27 @@ vi.mock("sonner", () => ({
 }));
 
 vi.mock("@packages/ui/components/credenza", () => ({
-   CredenzaHeader: ({ children }: { children: React.ReactNode }) => <div data-testid="credenza-header">{children}</div>,
-   CredenzaTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
-   CredenzaDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
-   CredenzaBody: ({ children }: { children: React.ReactNode }) => <div data-testid="credenza-body">{children}</div>,
-   CredenzaFooter: ({ children }: { children: React.ReactNode }) => <div data-testid="credenza-footer">{children}</div>,
+   CredenzaHeader: ({ children }: { children: React.ReactNode }) => (
+      <div data-testid="credenza-header">{children}</div>
+   ),
+   CredenzaTitle: ({ children }: { children: React.ReactNode }) => (
+      <h2>{children}</h2>
+   ),
+   CredenzaDescription: ({ children }: { children: React.ReactNode }) => (
+      <p>{children}</p>
+   ),
+   CredenzaBody: ({ children }: { children: React.ReactNode }) => (
+      <div data-testid="credenza-body">{children}</div>
+   ),
+   CredenzaFooter: ({ children }: { children: React.ReactNode }) => (
+      <div data-testid="credenza-footer">{children}</div>
+   ),
 }));
 
 vi.mock("@packages/ui/components/color-picker", () => ({
-   ColorPicker: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+   ColorPicker: ({ children }: { children: React.ReactNode }) => (
+      <div>{children}</div>
+   ),
    ColorPickerAlpha: () => <div />,
    ColorPickerEyeDropper: () => <div />,
    ColorPickerFormat: () => <div />,
@@ -66,20 +96,36 @@ vi.mock("@packages/ui/components/color-picker", () => ({
 }));
 
 vi.mock("@packages/ui/components/popover", () => ({
-   Popover: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-   PopoverTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-   PopoverContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+   Popover: ({ children }: { children: React.ReactNode }) => (
+      <div>{children}</div>
+   ),
+   PopoverTrigger: ({ children }: { children: React.ReactNode }) => (
+      <div>{children}</div>
+   ),
+   PopoverContent: ({ children }: { children: React.ReactNode }) => (
+      <div>{children}</div>
+   ),
 }));
 
 vi.mock("@packages/ui/components/field", () => ({
-   Field: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-   FieldError: ({ errors }: { errors: string[] }) => <span>{errors?.join(", ")}</span>,
-   FieldGroup: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-   FieldLabel: ({ children }: { children: React.ReactNode }) => <label>{children}</label>,
+   Field: ({ children }: { children: React.ReactNode }) => (
+      <div>{children}</div>
+   ),
+   FieldError: ({ errors }: { errors: string[] }) => (
+      <span>{errors?.join(", ")}</span>
+   ),
+   FieldGroup: ({ children }: { children: React.ReactNode }) => (
+      <div>{children}</div>
+   ),
+   FieldLabel: ({ children }: { children: React.ReactNode }) => (
+      <label>{children}</label>
+   ),
 }));
 
 vi.mock("@packages/ui/components/spinner", () => ({
-   Spinner: ({ className }: { className?: string }) => <span data-testid="spinner" className={className} />,
+   Spinner: ({ className }: { className?: string }) => (
+      <span data-testid="spinner" className={className} />
+   ),
 }));
 
 import { TagForm } from "@/routes/_authenticated/$slug/$teamSlug/_dashboard/-tags/tags-form";
@@ -91,8 +137,12 @@ afterEach(() => {
 });
 
 function wrapper({ children }: { children: React.ReactNode }) {
-   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+   const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+   });
+   return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+   );
 }
 
 describe("TagForm", () => {
@@ -105,7 +155,12 @@ describe("TagForm", () => {
       render(
          <TagForm
             mode="edit"
-            tag={{ id: "1", name: "Marketing", color: "#6366f1", description: null }}
+            tag={{
+               id: "1",
+               name: "Marketing",
+               color: "#6366f1",
+               description: null,
+            }}
             onSuccess={vi.fn()}
          />,
          { wrapper },
@@ -115,7 +170,9 @@ describe("TagForm", () => {
 
    it("renders name input with default empty value in create mode", () => {
       render(<TagForm mode="create" onSuccess={vi.fn()} />, { wrapper });
-      const input = screen.getByPlaceholderText("Ex: Marketing, Recursos Humanos, Operações");
+      const input = screen.getByPlaceholderText(
+         "Ex: Marketing, Recursos Humanos",
+      );
       expect((input as HTMLInputElement).value).toBe("");
    });
 
@@ -123,12 +180,19 @@ describe("TagForm", () => {
       render(
          <TagForm
             mode="edit"
-            tag={{ id: "1", name: "Marketing", color: "#6366f1", description: "Desc" }}
+            tag={{
+               id: "1",
+               name: "Marketing",
+               color: "#6366f1",
+               description: "Desc",
+            }}
             onSuccess={vi.fn()}
          />,
          { wrapper },
       );
-      const input = screen.getByPlaceholderText("Ex: Marketing, Recursos Humanos, Operações");
+      const input = screen.getByPlaceholderText(
+         "Ex: Marketing, Recursos Humanos",
+      );
       expect((input as HTMLInputElement).value).toBe("Marketing");
    });
 
@@ -141,7 +205,12 @@ describe("TagForm", () => {
       render(
          <TagForm
             mode="edit"
-            tag={{ id: "1", name: "Marketing", color: "#6366f1", description: null }}
+            tag={{
+               id: "1",
+               name: "Marketing",
+               color: "#6366f1",
+               description: null,
+            }}
             onSuccess={vi.fn()}
          />,
          { wrapper },
@@ -152,7 +221,9 @@ describe("TagForm", () => {
    it("calls create mutation on form submit in create mode", async () => {
       render(<TagForm mode="create" onSuccess={vi.fn()} />, { wrapper });
 
-      const input = screen.getByPlaceholderText("Ex: Marketing, Recursos Humanos, Operações");
+      const input = screen.getByPlaceholderText(
+         "Ex: Marketing, Recursos Humanos",
+      );
       fireEvent.change(input, { target: { value: "Novo Tag" } });
 
       const submitBtn = screen.getByText("Criar centro de custo");
@@ -169,13 +240,20 @@ describe("TagForm", () => {
       render(
          <TagForm
             mode="edit"
-            tag={{ id: "tag-123", name: "Marketing", color: "#6366f1", description: null }}
+            tag={{
+               id: "tag-123",
+               name: "Marketing",
+               color: "#6366f1",
+               description: null,
+            }}
             onSuccess={vi.fn()}
          />,
          { wrapper },
       );
 
-      const input = screen.getByPlaceholderText("Ex: Marketing, Recursos Humanos, Operações");
+      const input = screen.getByPlaceholderText(
+         "Ex: Marketing, Recursos Humanos",
+      );
       fireEvent.change(input, { target: { value: "Marketing Atualizado" } });
 
       const submitBtn = screen.getByText("Salvar alterações");
@@ -183,14 +261,22 @@ describe("TagForm", () => {
 
       await waitFor(() => {
          expect(mockUpdateMutate).toHaveBeenCalledWith(
-            expect.objectContaining({ id: "tag-123", name: "Marketing Atualizado" }),
+            expect.objectContaining({
+               id: "tag-123",
+               name: "Marketing Atualizado",
+            }),
          );
       });
    });
 
    it("renders description textarea", () => {
-      const { getByPlaceholderText } = render(<TagForm mode="create" onSuccess={vi.fn()} />, { wrapper });
-      const textarea = getByPlaceholderText("Ex: Projeto X, Cliente Y, viagem de negócios");
+      const { getByPlaceholderText } = render(
+         <TagForm mode="create" onSuccess={vi.fn()} />,
+         { wrapper },
+      );
+      const textarea = getByPlaceholderText(
+         "Ex: Projeto X, Cliente Y, viagem de negócios",
+      );
       expect(textarea).toBeDefined();
    });
 
@@ -198,12 +284,19 @@ describe("TagForm", () => {
       const { getByPlaceholderText } = render(
          <TagForm
             mode="edit"
-            tag={{ id: "1", name: "Marketing", color: "#6366f1", description: "Minha descrição" }}
+            tag={{
+               id: "1",
+               name: "Marketing",
+               color: "#6366f1",
+               description: "Minha descrição",
+            }}
             onSuccess={vi.fn()}
          />,
          { wrapper },
       );
-      const textarea = getByPlaceholderText("Ex: Projeto X, Cliente Y, viagem de negócios");
+      const textarea = getByPlaceholderText(
+         "Ex: Projeto X, Cliente Y, viagem de negócios",
+      );
       expect((textarea as HTMLTextAreaElement).value).toBe("Minha descrição");
    });
 
@@ -212,12 +305,16 @@ describe("TagForm", () => {
       const onSuccess = vi.fn();
       render(<TagForm mode="create" onSuccess={onSuccess} />, { wrapper });
 
-      const input = screen.getByPlaceholderText("Ex: Marketing, Recursos Humanos, Operações");
+      const input = screen.getByPlaceholderText(
+         "Ex: Marketing, Recursos Humanos",
+      );
       fireEvent.change(input, { target: { value: "Novo Tag" } });
       fireEvent.click(screen.getByText("Criar centro de custo"));
 
       await waitFor(() => {
-         expect(toast.success).toHaveBeenCalledWith("Centro de custo criado com sucesso.");
+         expect(toast.success).toHaveBeenCalledWith(
+            "Centro de custo criado com sucesso.",
+         );
          expect(onSuccess).toHaveBeenCalled();
       });
    });
@@ -227,7 +324,9 @@ describe("TagForm", () => {
       mockCreateShouldFail = true;
       render(<TagForm mode="create" onSuccess={vi.fn()} />, { wrapper });
 
-      const input = screen.getByPlaceholderText("Ex: Marketing, Recursos Humanos, Operações");
+      const input = screen.getByPlaceholderText(
+         "Ex: Marketing, Recursos Humanos",
+      );
       fireEvent.change(input, { target: { value: "Vai Falhar" } });
       fireEvent.click(screen.getByText("Criar centro de custo"));
 
@@ -242,7 +341,12 @@ describe("TagForm", () => {
       render(
          <TagForm
             mode="edit"
-            tag={{ id: "tag-1", name: "Velho", color: "#6366f1", description: null }}
+            tag={{
+               id: "tag-1",
+               name: "Velho",
+               color: "#6366f1",
+               description: null,
+            }}
             onSuccess={onSuccess}
          />,
          { wrapper },
@@ -251,7 +355,9 @@ describe("TagForm", () => {
       fireEvent.click(screen.getByText("Salvar alterações"));
 
       await waitFor(() => {
-         expect(toast.success).toHaveBeenCalledWith("Centro de custo atualizado com sucesso.");
+         expect(toast.success).toHaveBeenCalledWith(
+            "Centro de custo atualizado com sucesso.",
+         );
          expect(onSuccess).toHaveBeenCalled();
       });
    });
@@ -262,7 +368,12 @@ describe("TagForm", () => {
       render(
          <TagForm
             mode="edit"
-            tag={{ id: "tag-2", name: "Velho", color: "#6366f1", description: null }}
+            tag={{
+               id: "tag-2",
+               name: "Velho",
+               color: "#6366f1",
+               description: null,
+            }}
             onSuccess={vi.fn()}
          />,
          { wrapper },

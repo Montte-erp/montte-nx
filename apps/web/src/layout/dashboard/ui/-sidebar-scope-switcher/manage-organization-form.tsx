@@ -170,8 +170,9 @@ export function ManageOrganizationForm({
          >
             <div className="flex-1 overflow-y-auto px-4 py-4">
                <div className="grid gap-4">
-                  <form.Field name="logo">
-                     {(field) => {
+                  <form.Field
+                     name="logo"
+                     children={(field) => {
                         const currentLogoFile = field.state.value;
                         const displayImage = fileUpload.filePreview;
 
@@ -179,7 +180,7 @@ export function ManageOrganizationForm({
                            <Field
                               data-invalid={
                                  field.state.meta.isTouched &&
-                                 !field.state.meta.isValid
+                                 field.state.meta.errors.length > 0
                               }
                            >
                               <FieldLabel>Organization Logo</FieldLabel>
@@ -230,7 +231,7 @@ export function ManageOrganizationForm({
                                  </p>
                               )}
                               {field.state.meta.isTouched &&
-                                 !field.state.meta.isValid && (
+                                 field.state.meta.errors.length > 0 && (
                                     <FieldError
                                        errors={field.state.meta.errors}
                                     />
@@ -238,13 +239,14 @@ export function ManageOrganizationForm({
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
-                  <form.Field name="name">
-                     {(field) => {
+                  <form.Field
+                     name="name"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
 
                         return (
                            <Field data-invalid={isInvalid}>
@@ -268,13 +270,14 @@ export function ManageOrganizationForm({
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
-                  <form.Field name="description">
-                     {(field) => {
+                  <form.Field
+                     name="description"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
 
                         return (
                            <Field data-invalid={isInvalid}>
@@ -300,7 +303,7 @@ export function ManageOrganizationForm({
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
                </div>
             </div>
 

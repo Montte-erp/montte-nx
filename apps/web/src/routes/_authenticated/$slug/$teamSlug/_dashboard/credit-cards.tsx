@@ -1,5 +1,8 @@
 import { Button } from "@packages/ui/components/button";
-import { DataTable } from "@packages/ui/components/data-table";
+import {
+   DataTable,
+   type DataTableStoredState,
+} from "@packages/ui/components/data-table";
 import {
    Empty,
    EmptyDescription,
@@ -15,8 +18,16 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { useRowSelection } from "@packages/ui/hooks/use-row-selection";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import type {
+   ColumnFiltersState,
+   OnChangeFn,
+   SortingState,
+} from "@tanstack/react-table";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
 import { CreditCard, Pencil, Plus, Trash2 } from "lucide-react";
 import { Suspense, useCallback } from "react";
+import { ErrorBoundary } from "react-error-boundary";
+import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { toast } from "sonner";
 import { DefaultHeader } from "@/components/default-header";
 import {
@@ -27,10 +38,19 @@ import { CreditCardForm } from "@/features/credit-cards/ui/credit-cards-form";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
+import { tableSearchSchema } from "@/lib/table-search-schema";
+import { z } from "zod";
+
+const [useCreditCardsTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:credit-cards",
+      null,
+   );
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/credit-cards",
 )({
+   validateSearch: tableSearchSchema,
    loader: ({ context }) => {
       context.queryClient.prefetchQuery(
          orpc.creditCards.getAll.queryOptions({}),
@@ -52,7 +72,23 @@ function CreditCardsSkeleton() {
    );
 }
 
+function CreditCardFormSkeleton() {
+   return (
+      <div className="flex flex-col gap-4 p-4">
+         <Skeleton className="h-4 w-32" />
+         <Skeleton className="h-10 w-full" />
+         <Skeleton className="h-4 w-24" />
+         <Skeleton className="h-10 w-full" />
+         <Skeleton className="h-4 w-28" />
+         <Skeleton className="h-10 w-full" />
+      </div>
+   );
+}
+
 function CreditCardsList() {
+   const navigate = Route.useNavigate();
+   const { sorting, columnFilters } = Route.useSearch();
+   const [tableState, setTableState] = useCreditCardsTableState();
    const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
    const {
@@ -78,17 +114,58 @@ function CreditCardsList() {
       }),
    );
 
+   const handleSortingChange: OnChangeFn<SortingState> = useCallback(
+      (updater) => {
+         const next =
+            typeof updater === "function"
+               ? updater(sorting as SortingState)
+               : updater;
+         navigate({
+            search: (prev: z.infer<typeof tableSearchSchema>) => ({
+               ...prev,
+               sorting: next,
+            }),
+            replace: true,
+         });
+      },
+      [navigate, sorting],
+   );
+
+   const handleColumnFiltersChange: OnChangeFn<ColumnFiltersState> =
+      useCallback(
+         (updater) => {
+            const next =
+               typeof updater === "function"
+                  ? updater(columnFilters as ColumnFiltersState)
+                  : updater;
+            navigate({
+               search: (prev: z.infer<typeof tableSearchSchema>) => ({
+                  ...prev,
+                  columnFilters: next,
+               }),
+               replace: true,
+            });
+         },
+         [navigate, columnFilters],
+      );
+
    const handleEdit = useCallback(
       (card: CreditCardRow) => {
          openDialogStack({
             children: (
-               <Suspense fallback={null}>
-                  <CreditCardForm
-                     card={card}
-                     mode="edit"
-                     onSuccess={closeDialogStack}
-                  />
-               </Suspense>
+               <ErrorBoundary
+                  FallbackComponent={createErrorFallback({
+                     errorTitle: "Erro ao carregar cartão",
+                  })}
+               >
+                  <Suspense fallback={<CreditCardFormSkeleton />}>
+                     <CreditCardForm
+                        card={card}
+                        mode="edit"
+                        onSuccess={closeDialogStack}
+                     />
+                  </Suspense>
+               </ErrorBoundary>
             ),
          });
       },
@@ -152,6 +229,12 @@ function CreditCardsList() {
             columns={columns}
             data={cards}
             getRowId={(row) => row.id}
+            sorting={sorting as SortingState}
+            onSortingChange={handleSortingChange}
+            columnFilters={columnFilters as ColumnFiltersState}
+            onColumnFiltersChange={handleColumnFiltersChange}
+            tableState={tableState}
+            onTableStateChange={setTableState}
             onRowSelectionChange={onRowSelectionChange}
             renderActions={({ row }) => (
                <>
@@ -193,9 +276,15 @@ function CreditCardsPage() {
    function handleCreate() {
       openDialogStack({
          children: (
-            <Suspense fallback={null}>
-               <CreditCardForm mode="create" onSuccess={closeDialogStack} />
-            </Suspense>
+            <ErrorBoundary
+               FallbackComponent={createErrorFallback({
+                  errorTitle: "Erro ao carregar formulário",
+               })}
+            >
+               <Suspense fallback={<CreditCardFormSkeleton />}>
+                  <CreditCardForm mode="create" onSuccess={closeDialogStack} />
+               </Suspense>
+            </ErrorBoundary>
          ),
       });
    }
@@ -212,9 +301,15 @@ function CreditCardsPage() {
             description="Gerencie seus cartões de crédito"
             title="Cartões de Crédito"
          />
-         <Suspense fallback={<CreditCardsSkeleton />}>
-            <CreditCardsList />
-         </Suspense>
+         <ErrorBoundary
+            FallbackComponent={createErrorFallback({
+               errorTitle: "Erro ao carregar cartões",
+            })}
+         >
+            <Suspense fallback={<CreditCardsSkeleton />}>
+               <CreditCardsList />
+            </Suspense>
+         </ErrorBoundary>
       </main>
    );
 }

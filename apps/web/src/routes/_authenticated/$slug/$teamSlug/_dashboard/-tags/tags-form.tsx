@@ -119,20 +119,25 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
 
          <CredenzaBody>
             <FieldGroup>
-                  <form.Field name="name">
-                     {(field) => {
+               <div className="flex items-end gap-2">
+                  <form.Field
+                     name="name"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
                         return (
-                           <Field data-invalid={isInvalid}>
-                              <FieldLabel>Nome</FieldLabel>
+                           <Field className="flex-1" data-invalid={isInvalid}>
+                              <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
                               <Input
+                                 aria-invalid={isInvalid}
+                                 id={field.name}
+                                 name={field.name}
                                  onBlur={field.handleBlur}
                                  onChange={(e) =>
                                     field.handleChange(e.target.value)
                                  }
-                                 placeholder="Ex: Marketing, Recursos Humanos, Operações"
+                                 placeholder="Ex: Marketing, Recursos Humanos"
                                  value={field.state.value}
                               />
                               {isInvalid && (
@@ -141,55 +146,31 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
-                  <form.Field name="description">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>
-                              Descrição{" "}
-                              <span className="text-muted-foreground font-normal">(opcional)</span>
-                           </FieldLabel>
-                           <Textarea
-                              maxLength={255}
-                              onBlur={field.handleBlur}
-                              onChange={(e) => field.handleChange(e.target.value)}
-                              placeholder="Ex: Projeto X, Cliente Y, viagem de negócios"
-                              rows={2}
-                              value={field.state.value}
-                           />
-                        </Field>
-                     )}
-                  </form.Field>
-
-                  <form.Field name="color">
-                     {(field) => {
-                        const isInvalid =
-                           field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                  <form.Field
+                     name="color"
+                     children={(field) => {
                         return (
-                           <Field data-invalid={isInvalid}>
-                              <FieldLabel>Cor de identificação</FieldLabel>
+                           <Field>
+                              <FieldLabel>Cor</FieldLabel>
                               <Popover>
                                  <PopoverTrigger asChild>
                                     <Button
-                                       aria-invalid={isInvalid || undefined}
-                                       className="w-full flex gap-2 justify-start"
+                                       className="w-10 h-10 p-0 shrink-0"
                                        type="button"
                                        variant="outline"
                                     >
                                        <div
-                                          className="w-5 h-5 rounded-full border border-border shrink-0"
+                                          className="w-5 h-5 rounded-full border border-border"
                                           style={{
                                              backgroundColor: field.state.value,
                                           }}
                                        />
-                                       <span className="flex-1 text-left">Selecionar cor</span>
-                                       <span className="text-muted-foreground font-mono text-xs">{field.state.value}</span>
                                     </Button>
                                  </PopoverTrigger>
                                  <PopoverContent
-                                    align="start"
+                                    align="end"
                                     className="rounded-md border bg-background"
                                  >
                                     <ColorPicker
@@ -224,14 +205,47 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
                                     </ColorPicker>
                                  </PopoverContent>
                               </Popover>
-                              {isInvalid && (
-                                 <FieldError errors={field.state.meta.errors} />
-                              )}
                            </Field>
                         );
                      }}
-                  </form.Field>
-               </FieldGroup>
+                  />
+               </div>
+
+               <form.Field
+                  name="description"
+                  children={(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
+                     return (
+                        <Field data-invalid={isInvalid}>
+                           <FieldLabel htmlFor={field.name}>
+                              Descrição{" "}
+                              <span className="text-muted-foreground font-normal">
+                                 (opcional)
+                              </span>
+                           </FieldLabel>
+                           <Textarea
+                              aria-invalid={isInvalid}
+                              id={field.name}
+                              maxLength={255}
+                              name={field.name}
+                              onBlur={field.handleBlur}
+                              onChange={(e) =>
+                                 field.handleChange(e.target.value)
+                              }
+                              placeholder="Ex: Projeto X, Cliente Y, viagem de negócios"
+                              rows={2}
+                              value={field.state.value}
+                           />
+                           {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                           )}
+                        </Field>
+                     );
+                  }}
+               />
+            </FieldGroup>
          </CredenzaBody>
 
          <CredenzaFooter>
@@ -249,7 +263,9 @@ export function TagForm({ mode, tag, onSuccess }: TagFormProps) {
                   >
                      {(state.isSubmitting ||
                         createMutation.isPending ||
-                        updateMutation.isPending) && <Spinner className="size-4" />}
+                        updateMutation.isPending) && (
+                        <Spinner className="size-4" />
+                     )}
                      {isCreate ? "Criar centro de custo" : "Salvar alterações"}
                   </Button>
                )}

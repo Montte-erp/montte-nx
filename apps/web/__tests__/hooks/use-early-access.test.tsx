@@ -14,9 +14,15 @@ const {
    const mockPosthog = {
       getEarlyAccessFeatures: mockGetEarlyAccessFeatures,
       isFeatureEnabled: mockIsFeatureEnabled,
-      updateEarlyAccessFeatureEnrollment: mockUpdateEarlyAccessFeatureEnrollment,
+      updateEarlyAccessFeatureEnrollment:
+         mockUpdateEarlyAccessFeatureEnrollment,
    };
-   return { mockGetEarlyAccessFeatures, mockIsFeatureEnabled, mockUpdateEarlyAccessFeatureEnrollment, mockPosthog };
+   return {
+      mockGetEarlyAccessFeatures,
+      mockIsFeatureEnabled,
+      mockUpdateEarlyAccessFeatureEnrollment,
+      mockPosthog,
+   };
 });
 
 vi.mock("foxact/create-local-storage-state", () => ({
@@ -38,8 +44,20 @@ vi.mock("@/integrations/posthog/client", () => ({
 import { EarlyAccessProvider, useEarlyAccess } from "@/hooks/use-early-access";
 
 const rawFeatures = [
-   { flagKey: "contatos", name: "Contatos", description: "Desc", stage: "beta", documentationUrl: null },
-   { flagKey: "dados", name: "Dados", description: "Desc2", stage: "alpha", documentationUrl: null },
+   {
+      flagKey: "contatos",
+      name: "Contatos",
+      description: "Desc",
+      stage: "beta",
+      documentationUrl: null,
+   },
+   {
+      flagKey: "dados",
+      name: "Dados",
+      description: "Desc2",
+      stage: "alpha",
+      documentationUrl: null,
+   },
 ];
 
 beforeEach(() => {
@@ -52,7 +70,9 @@ describe("EarlyAccessProvider", () => {
    it("calls getEarlyAccessFeatures with all stages", async () => {
       mockGetEarlyAccessFeatures.mockImplementation(() => {});
 
-      await act(async () => { render(<EarlyAccessProvider>{null}</EarlyAccessProvider>); });
+      await act(async () => {
+         render(<EarlyAccessProvider>{null}</EarlyAccessProvider>);
+      });
 
       expect(mockGetEarlyAccessFeatures).toHaveBeenCalledWith(
          expect.any(Function),
@@ -66,7 +86,9 @@ describe("EarlyAccessProvider", () => {
          (cb: (f: typeof rawFeatures) => void) => cb(rawFeatures),
       );
 
-      await act(async () => { render(<EarlyAccessProvider>{null}</EarlyAccessProvider>); });
+      await act(async () => {
+         render(<EarlyAccessProvider>{null}</EarlyAccessProvider>);
+      });
 
       expect(mockIsFeatureEnabled).not.toHaveBeenCalled();
    });
@@ -83,21 +105,33 @@ describe("useEarlyAccess", () => {
       mockGetEarlyAccessFeatures.mockImplementation(() => {});
       const { result } = renderHook(() => useEarlyAccess());
 
-      act(() => { result.current.updateEnrollment("contatos", true); });
+      act(() => {
+         result.current.updateEnrollment("contatos", true);
+      });
 
       expect(result.current.isEnrolled("contatos")).toBe(true);
-      expect(mockUpdateEarlyAccessFeatureEnrollment).toHaveBeenCalledWith("contatos", true);
+      expect(mockUpdateEarlyAccessFeatureEnrollment).toHaveBeenCalledWith(
+         "contatos",
+         true,
+      );
    });
 
    it("updateEnrollment removes key when enrolled=false", () => {
       mockGetEarlyAccessFeatures.mockImplementation(() => {});
       const { result } = renderHook(() => useEarlyAccess());
 
-      act(() => { result.current.updateEnrollment("contatos", true); });
-      act(() => { result.current.updateEnrollment("contatos", false); });
+      act(() => {
+         result.current.updateEnrollment("contatos", true);
+      });
+      act(() => {
+         result.current.updateEnrollment("contatos", false);
+      });
 
       expect(result.current.isEnrolled("contatos")).toBe(false);
-      expect(mockUpdateEarlyAccessFeatureEnrollment).toHaveBeenCalledWith("contatos", false);
+      expect(mockUpdateEarlyAccessFeatureEnrollment).toHaveBeenCalledWith(
+         "contatos",
+         false,
+      );
    });
 
    it("getFeatureStage returns null when features list is empty", () => {
@@ -116,7 +150,9 @@ describe("useEarlyAccess", () => {
       mockGetEarlyAccessFeatures.mockImplementation(() => {});
       const { result } = renderHook(() => useEarlyAccess());
 
-      act(() => { result.current.dismissBanner(); });
+      act(() => {
+         result.current.dismissBanner();
+      });
 
       expect(result.current.isBannerVisible).toBe(false);
    });

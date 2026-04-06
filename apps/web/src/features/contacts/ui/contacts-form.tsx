@@ -21,11 +21,79 @@ import {
 } from "@packages/ui/components/select";
 import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
+import type { MaskitoOptions } from "@maskito/core";
+import { useMaskito } from "@maskito/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
+import { useStore } from "@tanstack/react-store";
+import { useMemo } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import type { ContactRow } from "./contacts-columns";
+
+const phoneMaskOptions: MaskitoOptions = {
+   mask: [
+      "(",
+      /\d/,
+      /\d/,
+      ")",
+      " ",
+      /\d/,
+      /\d/,
+      /\d/,
+      /\d/,
+      /\d/,
+      "-",
+      /\d/,
+      /\d/,
+      /\d/,
+      /\d/,
+   ],
+};
+
+const cpfMaskOptions: MaskitoOptions = {
+   mask: [
+      /\d/,
+      /\d/,
+      /\d/,
+      ".",
+      /\d/,
+      /\d/,
+      /\d/,
+      ".",
+      /\d/,
+      /\d/,
+      /\d/,
+      "-",
+      /\d/,
+      /\d/,
+   ],
+};
+
+const cnpjMaskOptions: MaskitoOptions = {
+   mask: [
+      /\d/,
+      /\d/,
+      ".",
+      /\d/,
+      /\d/,
+      /\d/,
+      ".",
+      /\d/,
+      /\d/,
+      /\d/,
+      "/",
+      /\d/,
+      /\d/,
+      /\d/,
+      /\d/,
+      "-",
+      /\d/,
+      /\d/,
+   ],
+};
+
+const noMaskOptions: MaskitoOptions = { mask: /^.*$/ };
 
 interface ContactFormProps {
    mode: "create" | "edit";
@@ -35,6 +103,48 @@ interface ContactFormProps {
 
 export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
    const isCreate = mode === "create";
+
+   const form = useForm({
+      defaultValues: {
+         name: contact?.name ?? "",
+         type: contact?.type ?? ("cliente" as ContactRow["type"]),
+         email: contact?.email ?? "",
+         phone: contact?.phone ?? "",
+         document: contact?.document ?? "",
+         documentType: contact?.documentType ?? ("" as "" | "cpf" | "cnpj"),
+         notes: contact?.notes ?? "",
+      },
+      onSubmit: async ({ value }) => {
+         const payload = {
+            name: value.name.trim(),
+            type: value.type,
+            email: value.email?.trim() || null,
+            phone: value.phone?.trim() || null,
+            document: value.document?.trim() || null,
+            documentType: (value.documentType || null) as "cpf" | "cnpj" | null,
+            notes: value.notes?.trim() || null,
+         };
+         if (isCreate) {
+            createMutation.mutate(payload);
+         } else if (contact) {
+            updateMutation.mutate({ id: contact.id, ...payload });
+         }
+      },
+   });
+
+   const docType = useStore(
+      form.baseStore,
+      (state) => state.values.documentType,
+   );
+
+   const documentMaskOptions = useMemo<MaskitoOptions>(() => {
+      if (docType === "cpf") return cpfMaskOptions;
+      if (docType === "cnpj") return cnpjMaskOptions;
+      return noMaskOptions;
+   }, [docType]);
+
+   const phoneRef = useMaskito({ options: phoneMaskOptions });
+   const documentRef = useMaskito({ options: documentMaskOptions });
 
    const createMutation = useMutation(
       orpc.contacts.create.mutationOptions({
@@ -59,34 +169,6 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
          },
       }),
    );
-
-   const form = useForm({
-      defaultValues: {
-         name: contact?.name ?? "",
-         type: contact?.type ?? ("cliente" as ContactRow["type"]),
-         email: contact?.email ?? "",
-         phone: contact?.phone ?? "",
-         document: contact?.document ?? "",
-         documentType: contact?.documentType ?? ("" as "" | "cpf" | "cnpj"),
-         notes: "",
-      },
-      onSubmit: async ({ value }) => {
-         const payload = {
-            name: value.name.trim(),
-            type: value.type,
-            email: value.email?.trim() || null,
-            phone: value.phone?.trim() || null,
-            document: value.document?.trim() || null,
-            documentType: (value.documentType || null) as "cpf" | "cnpj" | null,
-            notes: value.notes?.trim() || null,
-         };
-         if (isCreate) {
-            createMutation.mutate(payload);
-         } else if (contact) {
-            updateMutation.mutate({ id: contact.id, ...payload });
-         }
-      },
-   });
 
    const isPending = createMutation.isPending || updateMutation.isPending;
 
@@ -113,15 +195,21 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
                <FieldGroup>
-                  <form.Field name="name">
-                     {(field) => {
+                  <form.Field
+                     name="name"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
                         return (
                            <Field data-invalid={isInvalid}>
-                              <FieldLabel>Nome *</FieldLabel>
+                              <FieldLabel htmlFor={field.name}>
+                                 Nome *
+                              </FieldLabel>
                               <Input
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
                                  onBlur={field.handleBlur}
                                  onChange={(e) =>
                                     field.handleChange(e.target.value)
@@ -135,10 +223,11 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
 
-                  <form.Field name="type">
-                     {(field) => (
+                  <form.Field
+                     name="type"
+                     children={(field) => (
                         <Field>
                            <FieldLabel>Tipo *</FieldLabel>
                            <Select
@@ -162,11 +251,12 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                            </Select>
                         </Field>
                      )}
-                  </form.Field>
+                  />
 
                   <div className="grid grid-cols-3 gap-2">
-                     <form.Field name="documentType">
-                        {(field) => (
+                     <form.Field
+                        name="documentType"
+                        children={(field) => (
                            <Field>
                               <FieldLabel>Tipo Doc.</FieldLabel>
                               <Select
@@ -185,74 +275,133 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                               </Select>
                            </Field>
                         )}
-                     </form.Field>
+                     />
 
-                     <form.Field name="document">
-                        {(field) => (
-                           <Field className="col-span-2">
-                              <FieldLabel>Número</FieldLabel>
+                     <form.Field
+                        name="document"
+                        children={(field) => {
+                           const isInvalid =
+                              field.state.meta.isTouched &&
+                              field.state.meta.errors.length > 0;
+                           return (
+                              <Field
+                                 className="col-span-2"
+                                 data-invalid={isInvalid}
+                              >
+                                 <FieldLabel htmlFor={field.name}>
+                                    Número
+                                 </FieldLabel>
+                                 <Input
+                                    ref={documentRef}
+                                    aria-invalid={isInvalid}
+                                    defaultValue={field.state.value}
+                                    id={field.name}
+                                    inputMode="numeric"
+                                    name={field.name}
+                                    onBlur={field.handleBlur}
+                                    onInput={(e) =>
+                                       field.handleChange(
+                                          (e.target as HTMLInputElement).value,
+                                       )
+                                    }
+                                    placeholder={
+                                       docType === "cnpj"
+                                          ? "00.000.000/0000-00"
+                                          : "000.000.000-00"
+                                    }
+                                 />
+                              </Field>
+                           );
+                        }}
+                     />
+                  </div>
+
+                  <form.Field
+                     name="email"
+                     children={(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           field.state.meta.errors.length > 0;
+                        return (
+                           <Field data-invalid={isInvalid}>
+                              <FieldLabel htmlFor={field.name}>
+                                 Email
+                              </FieldLabel>
                               <Input
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
                                  onBlur={field.handleBlur}
                                  onChange={(e) =>
                                     field.handleChange(e.target.value)
                                  }
-                                 placeholder="000.000.000-00"
+                                 placeholder="contato@empresa.com"
+                                 type="email"
                                  value={field.state.value}
                               />
                            </Field>
-                        )}
-                     </form.Field>
-                  </div>
+                        );
+                     }}
+                  />
 
-                  <form.Field name="email">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>Email</FieldLabel>
-                           <Input
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="contato@empresa.com"
-                              type="email"
-                              value={field.state.value}
-                           />
-                        </Field>
-                     )}
-                  </form.Field>
+                  <form.Field
+                     name="phone"
+                     children={(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           field.state.meta.errors.length > 0;
+                        return (
+                           <Field data-invalid={isInvalid}>
+                              <FieldLabel htmlFor={field.name}>
+                                 Telefone
+                              </FieldLabel>
+                              <Input
+                                 ref={phoneRef}
+                                 aria-invalid={isInvalid}
+                                 defaultValue={field.state.value}
+                                 id={field.name}
+                                 inputMode="numeric"
+                                 name={field.name}
+                                 onBlur={field.handleBlur}
+                                 onInput={(e) =>
+                                    field.handleChange(
+                                       (e.target as HTMLInputElement).value,
+                                    )
+                                 }
+                                 placeholder="(11) 99999-9999"
+                              />
+                           </Field>
+                        );
+                     }}
+                  />
 
-                  <form.Field name="phone">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>Telefone</FieldLabel>
-                           <Input
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="(11) 99999-9999"
-                              value={field.state.value}
-                           />
-                        </Field>
-                     )}
-                  </form.Field>
-
-                  <form.Field name="notes">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel>Observações</FieldLabel>
-                           <Textarea
-                              onBlur={field.handleBlur}
-                              onChange={(e) =>
-                                 field.handleChange(e.target.value)
-                              }
-                              placeholder="Informações adicionais..."
-                              rows={3}
-                              value={field.state.value}
-                           />
-                        </Field>
-                     )}
-                  </form.Field>
+                  <form.Field
+                     name="notes"
+                     children={(field) => {
+                        const isInvalid =
+                           field.state.meta.isTouched &&
+                           field.state.meta.errors.length > 0;
+                        return (
+                           <Field data-invalid={isInvalid}>
+                              <FieldLabel htmlFor={field.name}>
+                                 Observações
+                              </FieldLabel>
+                              <Textarea
+                                 id={field.name}
+                                 name={field.name}
+                                 aria-invalid={isInvalid}
+                                 onBlur={field.handleBlur}
+                                 onChange={(e) =>
+                                    field.handleChange(e.target.value)
+                                 }
+                                 placeholder="Informações adicionais..."
+                                 rows={3}
+                                 value={field.state.value}
+                              />
+                           </Field>
+                        );
+                     }}
+                  />
                </FieldGroup>
             </div>
 
@@ -260,14 +409,14 @@ export function ContactForm({ mode, contact, onSuccess }: ContactFormProps) {
                <form.Subscribe selector={(state) => state}>
                   {(state) => (
                      <Button
-                        className="w-full"
+                        className="w-full gap-2"
                         disabled={
                            !state.canSubmit || state.isSubmitting || isPending
                         }
                         type="submit"
                      >
                         {(state.isSubmitting || isPending) && (
-                           <Spinner className="size-4 mr-2" />
+                           <Spinner className="size-4" />
                         )}
                         {isCreate ? "Criar contato" : "Salvar alterações"}
                      </Button>

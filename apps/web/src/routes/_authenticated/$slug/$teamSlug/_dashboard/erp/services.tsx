@@ -1,6 +1,7 @@
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
+import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import {
    Empty,
    EmptyDescription,
@@ -19,7 +20,9 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { TooltipProvider } from "@packages/ui/components/tooltip";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import type { ColumnFiltersState, SortingState } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
 import {
    Briefcase,
    Download,
@@ -66,6 +69,12 @@ const TYPE_FILTER_OPTIONS = [
    { value: "product", label: "Produto" },
    { value: "subscription", label: "Assinatura" },
 ];
+
+const [useServicesTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:services",
+      null,
+   );
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/erp/services",
@@ -167,6 +176,9 @@ function ServiceFilters({
 // =============================================================================
 
 function ServicesList({ filters }: { filters: FiltersState }) {
+   const [sorting, setSorting] = useState<SortingState>([]);
+   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+   const [tableState, setTableState] = useServicesTableState();
    const { data: servicesList } = useSuspenseQuery(
       orpc.services.getAll.queryOptions({}),
    );
@@ -256,6 +268,12 @@ function ServicesList({ filters }: { filters: FiltersState }) {
                columns={columns}
                data={filtered}
                getRowId={(row) => row.id}
+               sorting={sorting}
+               onSortingChange={setSorting}
+               columnFilters={columnFilters}
+               onColumnFiltersChange={setColumnFilters}
+               tableState={tableState}
+               onTableStateChange={setTableState}
                renderActions={({ row }) => (
                   <>
                      <Button

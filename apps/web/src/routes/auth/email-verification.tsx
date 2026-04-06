@@ -27,12 +27,12 @@ export const Route = createFileRoute("/auth/email-verification")({
    validateSearch: searchParams,
 });
 
+const emailVerificationSchema = z.object({
+   otp: z.string().min(6, "O campo deve ter no minimo 6 caracteres.").max(6),
+});
+
 function EmailVerificationPage() {
    const { email } = Route.useSearch();
-   const schema = z.object({
-      otp: z.string().min(6, "O campo deve ter no minimo 6 caracteres.").max(6),
-   });
-
    const router = useRouter();
 
    const handleResendEmail = useCallback(async () => {
@@ -88,7 +88,7 @@ function EmailVerificationPage() {
          formApi.reset();
       },
       validators: {
-         onBlur: schema,
+         onBlur: emailVerificationSchema,
       },
    });
 
@@ -120,11 +120,12 @@ function EmailVerificationPage() {
                }}
             >
                <FieldGroup>
-                  <form.Field name="otp">
-                     {(field) => {
+                  <form.Field
+                     name="otp"
+                     children={(field) => {
                         const isInvalid =
                            field.state.meta.isTouched &&
-                           !field.state.meta.isValid;
+                           field.state.meta.errors.length > 0;
                         return (
                            <Field
                               className="flex flex-col items-center"
@@ -163,7 +164,7 @@ function EmailVerificationPage() {
                            </Field>
                         );
                      }}
-                  </form.Field>
+                  />
                </FieldGroup>
                <form.Subscribe selector={(state) => state}>
                   {(formState) => (

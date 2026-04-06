@@ -1,6 +1,7 @@
 import type { BudgetGoalWithProgress } from "@core/database/repositories/budget-goals-repository";
 import { Button } from "@packages/ui/components/button";
 import { DataTable } from "@packages/ui/components/data-table";
+import type { DataTableStoredState } from "@packages/ui/components/data-table";
 import {
    DropdownMenu,
    DropdownMenuContent,
@@ -16,7 +17,9 @@ import {
 } from "@packages/ui/components/empty";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import type { ColumnFiltersState, SortingState } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
+import { createLocalStorageState } from "foxact/create-local-storage-state";
 import {
    ChevronLeft,
    ChevronRight,
@@ -36,6 +39,12 @@ import { buildBudgetGoalColumns } from "@/features/budget-goals/ui/budget-goals-
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDialogStack } from "@/hooks/use-dialog-stack";
 import { orpc } from "@/integrations/orpc/client";
+
+const [useGoalsTableState] =
+   createLocalStorageState<DataTableStoredState | null>(
+      "montte:datatable:goals",
+      null,
+   );
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/goals",
@@ -195,6 +204,9 @@ interface GoalsListProps {
 }
 
 function GoalsList({ month, year }: GoalsListProps) {
+   const [sorting, setSorting] = useState<SortingState>([]);
+   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+   const [tableState, setTableState] = useGoalsTableState();
    const { openDialogStack, closeDialogStack } = useDialogStack();
    const { openAlertDialog } = useAlertDialog();
 
@@ -273,6 +285,12 @@ function GoalsList({ month, year }: GoalsListProps) {
             columns={columns}
             data={goals}
             getRowId={(row) => row.id}
+            sorting={sorting}
+            onSortingChange={setSorting}
+            columnFilters={columnFilters}
+            onColumnFiltersChange={setColumnFilters}
+            tableState={tableState}
+            onTableStateChange={setTableState}
             renderActions={({ row }) => (
                <DropdownMenu>
                   <DropdownMenuTrigger asChild>
