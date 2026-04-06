@@ -365,7 +365,7 @@ export function useStatementImport({
 
       const raw =
          ext === "xlsx" || ext === "xls"
-            ? xlsx.parse(await file.arrayBuffer())
+            ? await xlsx.parse(file)
             : await csv.parse(file);
 
       setFormat(ext === "xlsx" || ext === "xls" ? "xlsx" : "csv");
