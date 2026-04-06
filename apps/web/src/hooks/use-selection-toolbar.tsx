@@ -1,8 +1,6 @@
-import { useSet } from "foxact/use-set";
+import { Store, useStore } from "@tanstack/react-store";
 import { useIsomorphicLayoutEffect } from "foxact/use-isomorphic-layout-effect";
-import { useState } from "react";
-import { createPortal } from "react-dom";
-import type * as React from "react";
+import type React from "react";
 import {
    SelectionActionBar,
    SelectionActionButton,
@@ -10,52 +8,85 @@ import {
 
 export { SelectionActionButton };
 
+type ToolbarState = {
+   selectedIndices: Set<number>;
+   renderActions:
+      | ((ctx: {
+           selectedIndices: Set<number>;
+           clear: () => void;
+        }) => React.ReactNode)
+      | null;
+};
+
+const toolbarStore = new Store<ToolbarState>({
+   selectedIndices: new Set<number>(),
+   renderActions: null,
+});
+
+export const clearSelectionToolbar = () =>
+   toolbarStore.setState(() => ({
+      selectedIndices: new Set<number>(),
+      renderActions: null,
+   }));
+
+const addToSelection = (i: number) =>
+   toolbarStore.setState((s) => ({
+      ...s,
+      selectedIndices: new Set([...s.selectedIndices, i]),
+   }));
+
+const removeFromSelection = (i: number) =>
+   toolbarStore.setState((s) => {
+      const next = new Set(s.selectedIndices);
+      next.delete(i);
+      return { ...s, selectedIndices: next };
+   });
+
+const replaceSelection = (next: Set<number>) =>
+   toolbarStore.setState((s) => ({ ...s, selectedIndices: next }));
+
 export function useSelectionToolbar(
    renderActions: (ctx: {
       selectedIndices: Set<number>;
       clear: () => void;
    }) => React.ReactNode,
 ) {
-   const [mounted, setMounted] = useState(false);
+   const selectedIndices = useStore(toolbarStore, (s) => s.selectedIndices);
+
    useIsomorphicLayoutEffect(() => {
-      setMounted(true);
+      toolbarStore.setState((s) => ({ ...s, renderActions }));
+      return () => {
+         toolbarStore.setState(() => ({
+            selectedIndices: new Set<number>(),
+            renderActions: null,
+         }));
+      };
    }, []);
 
-   const [
-      selectedIndices,
-      addIndex,
-      removeIndex,
-      clearIndices,
-      replaceIndices,
-   ] = useSet<number>();
-
    function toggle(index: number) {
-      if (selectedIndices.has(index)) {
-         removeIndex(index);
-      } else {
-         addIndex(index);
-      }
+      if (selectedIndices.has(index)) removeFromSelection(index);
+      else addToSelection(index);
    }
-
-   const toolbar = mounted
-      ? createPortal(
-           <SelectionActionBar
-              selectedCount={selectedIndices.size}
-              onClear={clearIndices}
-           >
-              {renderActions({ selectedIndices, clear: clearIndices })}
-           </SelectionActionBar>,
-           document.body,
-        )
-      : null;
 
    return {
       selectedIndices,
       toggle,
-      add: addIndex,
-      remove: removeIndex,
-      clear: clearIndices,
-      replace: replaceIndices,
-      toolbar,
+      add: addToSelection,
+      remove: removeFromSelection,
+      clear: clearSelectionToolbar,
+      replace: replaceSelection,
    };
+}
+
+export function GlobalSelectionToolbar() {
+   const { selectedIndices, renderActions } = useStore(toolbarStore, (s) => s);
+   if (!renderActions) return null;
+   return (
+      <SelectionActionBar
+         selectedCount={selectedIndices.size}
+         onClear={clearSelectionToolbar}
+      >
+         {renderActions({ selectedIndices, clear: clearSelectionToolbar })}
+      </SelectionActionBar>
+   );
 }

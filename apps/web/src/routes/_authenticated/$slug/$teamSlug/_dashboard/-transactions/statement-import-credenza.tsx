@@ -544,8 +544,7 @@ function PreviewStep({
       remove: removeIndex,
       clear: clearIndices,
       replace: replaceIndices,
-      toolbar,
-   } = useSelectionToolbar(({ selectedIndices: sel, clear: clearSel }) => (
+   } = useSelectionToolbar(({ selectedIndices: _sel, clear: _clearSel }) => (
       <>
          <Popover>
             <PopoverTrigger asChild>
@@ -1034,7 +1033,6 @@ function PreviewStep({
                   </Button>
                </div>
             </div>
-            {toolbar}
          </CredenzaBody>
       </>
    );
