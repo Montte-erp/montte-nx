@@ -15,7 +15,6 @@ import {
    DropzoneContent,
    DropzoneEmptyState,
 } from "@packages/ui/components/dropzone";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import { defineStepper } from "@packages/ui/components/stepper";
 import {
    Table,
@@ -25,6 +24,8 @@ import {
    TableHeader,
    TableRow,
 } from "@packages/ui/components/table";
+import { createErrorFallback } from "@packages/ui/components/error-fallback";
+import { Field, FieldLabel } from "@packages/ui/components/field";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -36,8 +37,8 @@ import {
    FileText,
    Loader2,
 } from "lucide-react";
-import { ErrorBoundary } from "react-error-boundary";
 import { Suspense, useState } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import { read as xlsxRead, utils as xlsxUtils } from "xlsx";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
@@ -237,13 +238,36 @@ interface UploadStepProps {
       format: FileFormat,
       raw: RawData | null,
    ) => void;
+   bankAccountId: string;
+   onBankAccountChange: (id: string) => void;
 }
 
-function UploadStep({ methods, onFileReady }: UploadStepProps) {
+function UploadStep({
+   methods,
+   onFileReady,
+   bankAccountId,
+   onBankAccountChange,
+}: UploadStepProps) {
    const [isParsing, setIsParsing] = useState(false);
    const [selectedFile, setSelectedFile] = useState<File | undefined>();
+   const { data: bankAccounts } = useSuspenseQuery(
+      orpc.bankAccounts.getAll.queryOptions({}),
+   );
+
+   function handleDownloadTemplate() {
+      const content =
+         "data,nome,tipo,valor,descricao\n2024-01-15,Pagamento fornecedor,despesa,1500.00,NF 123";
+      const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "modelo-importacao.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+   }
 
    function processFile(file: File) {
+      if (!bankAccountId) return;
       setSelectedFile(file);
       setIsParsing(true);
 
@@ -345,6 +369,23 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
             <div className="flex flex-col gap-4">
                <StepBar methods={methods} />
 
+               <Field>
+                  <FieldLabel htmlFor="import-account">
+                     Conta bancária
+                  </FieldLabel>
+                  <Combobox
+                     emptyMessage="Nenhuma conta encontrada."
+                     onValueChange={onBankAccountChange}
+                     options={bankAccounts.map((a) => ({
+                        value: a.id,
+                        label: a.name,
+                     }))}
+                     placeholder="Selecionar conta..."
+                     searchPlaceholder="Buscar conta..."
+                     value={bankAccountId}
+                  />
+               </Field>
+
                <Dropzone
                   accept={{
                      "text/csv": [".csv"],
@@ -353,7 +394,7 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                      "application/vnd.ms-excel": [".xls"],
                      "application/x-ofx": [".ofx"],
                   }}
-                  disabled={isParsing}
+                  disabled={isParsing || !bankAccountId}
                   maxFiles={1}
                   onDrop={([file]) => {
                      if (file) processFile(file);
@@ -419,6 +460,14 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
                      </p>
                   </div>
                </div>
+
+               <button
+                  type="button"
+                  className="text-xs text-muted-foreground underline underline-offset-2 self-start"
+                  onClick={handleDownloadTemplate}
+               >
+                  Baixar modelo CSV
+               </button>
             </div>
          </CredenzaBody>
       </>
@@ -633,6 +682,7 @@ interface ConfirmStepInnerProps {
    methods: StepperMethods;
    rows: ValidatedRow[];
    format: FileFormat;
+   bankAccountId: string;
    onClose?: () => void;
 }
 
@@ -640,15 +690,11 @@ function ConfirmStepInner({
    methods,
    rows,
    format,
+   bankAccountId,
    onClose,
 }: ConfirmStepInnerProps) {
    const validRows = rows.filter((r) => r.isValid);
    const invalidCount = rows.filter((r) => !r.isValid).length;
-
-   const { data: bankAccounts } = useSuspenseQuery(
-      orpc.bankAccounts.getAll.queryOptions({}),
-   );
-   const [bankAccountId, setBankAccountId] = useState<string>("");
 
    const importMutation = useMutation(
       orpc.transactions.importStatement.mutationOptions({}),
@@ -690,23 +736,6 @@ function ConfirmStepInner({
          <CredenzaBody>
             <div className="flex flex-col gap-4">
                <StepBar methods={methods} />
-
-               <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium">
-                     Conta bancária <span className="text-destructive">*</span>
-                  </label>
-                  <Combobox
-                     options={(bankAccounts ?? []).map(
-                        (a: { id: string; name: string }) => ({
-                           value: a.id,
-                           label: a.name,
-                        }),
-                     )}
-                     onValueChange={setBankAccountId}
-                     placeholder="Selecionar conta..."
-                     value={bankAccountId}
-                  />
-               </div>
 
                <div className="rounded-xl border overflow-hidden">
                   <div className="bg-muted/40 px-4 py-2.5 border-b">
@@ -780,29 +809,17 @@ function ConfirmStep({
    methods,
    rows,
    format,
+   bankAccountId,
    onClose,
 }: ConfirmStepInnerProps) {
    return (
-      <ErrorBoundary
-         FallbackComponent={createErrorFallback({
-            errorTitle: "Erro ao carregar contas",
-         })}
-      >
-         <Suspense
-            fallback={
-               <div className="flex items-center justify-center p-8">
-                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
-               </div>
-            }
-         >
-            <ConfirmStepInner
-               format={format}
-               methods={methods}
-               rows={rows}
-               onClose={onClose}
-            />
-         </Suspense>
-      </ErrorBoundary>
+      <ConfirmStepInner
+         bankAccountId={bankAccountId}
+         format={format}
+         methods={methods}
+         rows={rows}
+         onClose={onClose}
+      />
    );
 }
 
@@ -817,6 +834,7 @@ function ImportWizard({
    const [rawData, setRawData] = useState<RawData | null>(null);
    const [rows, setRows] = useState<ValidatedRow[]>([]);
    const [format, setFormat] = useState<FileFormat>("csv");
+   const [bankAccountId, setBankAccountId] = useState<string>("");
    const [mapping, setMapping] = useState<ColumnMapping>({
       date: "",
       name: "",
@@ -842,7 +860,26 @@ function ImportWizard({
    return (
       <>
          {currentId === "upload" && (
-            <UploadStep methods={methods} onFileReady={handleFileReady} />
+            <ErrorBoundary
+               FallbackComponent={createErrorFallback({
+                  errorTitle: "Erro ao carregar contas",
+               })}
+            >
+               <Suspense
+                  fallback={
+                     <div className="flex items-center justify-center p-8">
+                        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                     </div>
+                  }
+               >
+                  <UploadStep
+                     bankAccountId={bankAccountId}
+                     methods={methods}
+                     onBankAccountChange={setBankAccountId}
+                     onFileReady={handleFileReady}
+                  />
+               </Suspense>
+            </ErrorBoundary>
          )}
          {currentId === "map" && rawData && (
             <MapStep
@@ -858,6 +895,7 @@ function ImportWizard({
          )}
          {currentId === "confirm" && (
             <ConfirmStep
+               bankAccountId={bankAccountId}
                format={format}
                methods={methods}
                rows={rows}
