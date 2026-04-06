@@ -490,7 +490,6 @@ npx vitest run apps/web/__tests__/integrations/orpc/router/transactions.test.ts
 3. **Pure logic unit tests** — functions with no React/oRPC/DB/external imports: Zod schemas with complex transforms, date/math utilities, analytics compute functions, event credits logic.
 
 **Decision rule:** would a bug here be invisible until a user reports it in production? Yes → test it. No → TypeScript + integration tests cover it.
-**Decision rule:** would a bug here be invisible until a user reports it in production? Yes → test it. No → TypeScript + the integration tests cover it.
 
 ### What NOT to test
 
@@ -502,7 +501,6 @@ npx vitest run apps/web/__tests__/integrations/orpc/router/transactions.test.ts
 ### Gaps to fill over time
 
 - Worker job logic (`apps/worker/src/jobs/`) — invoke jobs with real DB, assert DB state after
-- Worker job logic (`apps/worker/src/jobs/`) — schedule jobs with real DB, assert DB state after
 - Analytics compute functions (`packages/analytics/src/compute-*.ts`) — pure financial math, high value
 - Missing router coverage: `chat`, `agent-settings`, `contact-settings`, `financial-settings`
 
