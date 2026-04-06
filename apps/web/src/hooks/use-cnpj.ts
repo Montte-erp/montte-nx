@@ -1,11 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import customParseFormat from "dayjs/plugin/customParseFormat";
 import { orpc } from "@/integrations/orpc/client";
 
-dayjs.extend(customParseFormat);
-
-export type CnpjData = {
+type CnpjData = {
    cnpj?: string;
    razao_social?: string;
    nome_fantasia?: string | null;
@@ -19,25 +16,8 @@ export type CnpjData = {
    descricao_situacao_cadastral?: string;
 };
 
-function parseCnpjRaw(raw: unknown): CnpjData | null {
-   if (!raw || typeof raw !== "object") return null;
-   return raw as CnpjData;
-}
-
-function parseDateOfCreation(raw: string | undefined): {
-   minDate: Date | undefined;
-   minDateStr: string | null;
-} {
-   if (!raw) return { minDate: undefined, minDateStr: null };
-   const formats = ["DD/MM/YYYY", "YYYY-MM-DD", "DD-MM-YYYY"];
-   for (const fmt of formats) {
-      const d = dayjs(raw, fmt, true);
-      if (d.isValid()) {
-         const minDateStr = d.format("YYYY-MM-DD");
-         return { minDate: d.toDate(), minDateStr };
-      }
-   }
-   return { minDate: undefined, minDateStr: null };
+function isCnpjData(value: unknown): value is CnpjData {
+   return typeof value === "object" && value !== null;
 }
 
 export function useCnpj(teamId: string | null): {
@@ -50,10 +30,21 @@ export function useCnpj(teamId: string | null): {
       enabled: !!teamId,
    });
 
-   const data = parseCnpjRaw(teamData?.cnpjData);
-   const { minDate, minDateStr } = parseDateOfCreation(
-      data?.data_inicio_atividade,
-   );
+   const cnpjData = isCnpjData(teamData?.cnpjData) ? teamData.cnpjData : null;
+   const raw = cnpjData?.data_inicio_atividade;
 
-   return { data, minDate, minDateStr };
+   let minDate: Date | undefined;
+   let minDateStr: string | null = null;
+   if (raw) {
+      for (const fmt of ["DD/MM/YYYY", "YYYY-MM-DD", "DD-MM-YYYY"]) {
+         const d = dayjs(raw, fmt, true);
+         if (d.isValid()) {
+            minDateStr = d.format("YYYY-MM-DD");
+            minDate = d.toDate();
+            break;
+         }
+      }
+   }
+
+   return { data: cnpjData, minDate, minDateStr };
 }
