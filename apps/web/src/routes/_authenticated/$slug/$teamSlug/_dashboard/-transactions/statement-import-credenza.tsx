@@ -29,9 +29,9 @@ import {
 import { defineStepper } from "@packages/ui/components/stepper";
 import { createErrorFallback } from "@packages/ui/components/error-fallback";
 import {
-   SelectionActionBar,
+   useSelectionToolbar,
    SelectionActionButton,
-} from "@packages/ui/components/selection-action-bar";
+} from "@/hooks/use-selection-toolbar";
 import {
    Tooltip,
    TooltipContent,
@@ -51,7 +51,6 @@ import {
    Table2,
    X,
 } from "lucide-react";
-import { useSet } from "foxact/use-set";
 import { useDebouncedState } from "foxact/use-debounced-state";
 import { Suspense, useRef, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
@@ -519,13 +518,6 @@ function PreviewStep({
    onRowsChange,
    onSelectionReady,
 }: PreviewStepProps) {
-   const [
-      selectedIndices,
-      addIndex,
-      removeIndex,
-      clearIndices,
-      replaceIndices,
-   ] = useSet<number>();
    const [filterDuplicates, setFilterDuplicates] = useState(false);
    const [editingDescIdx, setEditingDescIdx] = useState<number | null>(null);
    const [editingDescValue, setEditingDescValue] = useState("");
@@ -543,6 +535,53 @@ function PreviewStep({
       value: c.id,
       label: c.name,
    }));
+
+   const {
+      selectedIndices,
+      toggle: toggleRow,
+      remove: removeIndex,
+      clear: clearIndices,
+      replace: replaceIndices,
+      toolbar,
+   } = useSelectionToolbar(({ selectedIndices: sel, clear: clearSel }) => (
+      <>
+         <Popover>
+            <PopoverTrigger asChild>
+               <SelectionActionButton>Alterar data</SelectionActionButton>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center" side="top">
+               <DatePicker
+                  date={bulkDate}
+                  onSelect={(d) => {
+                     if (d) applyBulkDate(d);
+                  }}
+                  placeholder="Selecionar data"
+               />
+            </PopoverContent>
+         </Popover>
+         <Popover>
+            <PopoverTrigger asChild>
+               <SelectionActionButton>Alterar categoria</SelectionActionButton>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-2" align="center" side="top">
+               <Combobox
+                  options={categoryOptions}
+                  onValueChange={(v) => {
+                     if (v) {
+                        applyBulkCategory(v);
+                        setBulkCategoryId("");
+                     }
+                  }}
+                  value={bulkCategoryId}
+                  placeholder="Alterar categoria"
+                  searchPlaceholder="Buscar categoria..."
+                  emptyMessage="Nenhuma categoria"
+                  className="w-full"
+               />
+            </PopoverContent>
+         </Popover>
+      </>
+   ));
 
    const validCount = rows.filter((r) => r.isValid).length;
 
@@ -607,14 +646,6 @@ function PreviewStep({
          return;
       }
       replaceIndices(new Set(selectableIndices));
-   }
-
-   function toggleRow(index: number) {
-      if (selectedIndices.has(index)) {
-         removeIndex(index);
-      } else {
-         addIndex(index);
-      }
    }
 
    function ignoreRow(index: number) {
@@ -731,59 +762,6 @@ function PreviewStep({
                      </button>
                   </div>
                </div>
-
-               <SelectionActionBar
-                  selectedCount={selectedIndices.size}
-                  onClear={() => clearIndices()}
-               >
-                  <Popover>
-                     <PopoverTrigger asChild>
-                        <SelectionActionButton>
-                           Alterar data
-                        </SelectionActionButton>
-                     </PopoverTrigger>
-                     <PopoverContent
-                        className="w-auto p-0"
-                        align="center"
-                        side="top"
-                     >
-                        <DatePicker
-                           date={bulkDate}
-                           onSelect={(d) => {
-                              if (d) applyBulkDate(d);
-                           }}
-                           placeholder="Selecionar data"
-                        />
-                     </PopoverContent>
-                  </Popover>
-                  <Popover>
-                     <PopoverTrigger asChild>
-                        <SelectionActionButton>
-                           Alterar categoria
-                        </SelectionActionButton>
-                     </PopoverTrigger>
-                     <PopoverContent
-                        className="w-56 p-2"
-                        align="center"
-                        side="top"
-                     >
-                        <Combobox
-                           options={categoryOptions}
-                           onValueChange={(v) => {
-                              if (v) {
-                                 applyBulkCategory(v);
-                                 setBulkCategoryId("");
-                              }
-                           }}
-                           value={bulkCategoryId}
-                           placeholder="Alterar categoria"
-                           searchPlaceholder="Buscar categoria..."
-                           emptyMessage="Nenhuma categoria"
-                           className="w-full"
-                        />
-                     </PopoverContent>
-                  </Popover>
-               </SelectionActionBar>
 
                <div className="rounded-lg border overflow-hidden">
                   <div className="grid grid-cols-[2rem_6rem_1fr_4rem_5.5rem_2rem] items-center gap-2 border-b bg-muted/50 px-3 py-2">
@@ -1045,6 +1023,7 @@ function PreviewStep({
                   </Button>
                </div>
             </div>
+            {toolbar}
          </CredenzaBody>
       </>
    );
