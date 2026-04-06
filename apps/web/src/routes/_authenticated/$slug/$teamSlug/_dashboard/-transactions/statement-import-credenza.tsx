@@ -3,6 +3,7 @@ import { of as moneyOf, format as moneyFormat } from "@f-o-t/money";
 import { parseOrThrow as parseOfx, getTransactions } from "@f-o-t/ofx";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import { Combobox } from "@packages/ui/components/combobox";
 import {
    CredenzaBody,
@@ -797,6 +798,7 @@ interface ConfirmStepInnerProps {
    rows: ValidatedRow[];
    format: FileFormat;
    bankAccountId: string;
+   duplicateFlags: boolean[];
    onClose?: () => void;
 }
 
@@ -805,9 +807,16 @@ function ConfirmStepInner({
    rows,
    format,
    bankAccountId,
+   duplicateFlags,
    onClose,
 }: ConfirmStepInnerProps) {
+   const duplicateCount = duplicateFlags.filter(Boolean).length;
+   const [skipDuplicates, setSkipDuplicates] = useState(true);
+
    const validRows = rows.filter((r) => r.isValid);
+   const rowsToImport = validRows.filter((_, i) =>
+      skipDuplicates ? !duplicateFlags[i] : true,
+   );
    const invalidCount = rows.filter((r) => !r.isValid).length;
 
    const importMutation = useMutation(
@@ -823,7 +832,7 @@ function ConfirmStepInner({
       await importMutation.mutateAsync({
          bankAccountId,
          format,
-         transactions: validRows.map((r) => ({
+         transactions: rowsToImport.map((r) => ({
             name: r.name || undefined,
             type: r.type,
             amount: parseAmount(r.amount) ?? r.amount,
@@ -833,7 +842,7 @@ function ConfirmStepInner({
       });
 
       toast.success(
-         `${validRows.length} transação(ões) importada(s) com sucesso.`,
+         `${rowsToImport.length} transação(ões) importada(s) com sucesso.`,
       );
       onClose?.();
    }
@@ -874,12 +883,29 @@ function ConfirmStepInner({
                            <Badge variant="destructive">{invalidCount}</Badge>
                         </div>
                      )}
+                     {duplicateCount > 0 && (
+                        <div className="flex items-center justify-between px-4 py-2.5">
+                           <label
+                              htmlFor="skip-duplicates"
+                              className="text-sm text-muted-foreground cursor-pointer"
+                           >
+                              Ignorar possíveis duplicatas
+                           </label>
+                           <Checkbox
+                              id="skip-duplicates"
+                              checked={skipDuplicates}
+                              onCheckedChange={(checked) =>
+                                 setSkipDuplicates(checked === true)
+                              }
+                           />
+                        </div>
+                     )}
                      <div className="flex items-center justify-between bg-primary/5 px-4 py-2.5">
                         <span className="text-sm font-medium">
                            Serão importadas
                         </span>
                         <span className="text-sm font-bold text-primary">
-                           {validRows.length}
+                           {rowsToImport.length}
                         </span>
                      </div>
                   </div>
@@ -899,7 +925,7 @@ function ConfirmStepInner({
                      className="flex-1"
                      disabled={
                         importMutation.isPending ||
-                        validRows.length === 0 ||
+                        rowsToImport.length === 0 ||
                         !bankAccountId
                      }
                      onClick={handleImport}
@@ -909,7 +935,7 @@ function ConfirmStepInner({
                         {importMutation.isPending && (
                            <Loader2 className="size-4 animate-spin" />
                         )}
-                        Importar {validRows.length} transação(ões)
+                        Importar {rowsToImport.length} transação(ões)
                      </span>
                   </Button>
                </div>
@@ -924,11 +950,13 @@ function ConfirmStep({
    rows,
    format,
    bankAccountId,
+   duplicateFlags,
    onClose,
 }: ConfirmStepInnerProps) {
    return (
       <ConfirmStepInner
          bankAccountId={bankAccountId}
+         duplicateFlags={duplicateFlags}
          format={format}
          methods={methods}
          rows={rows}
@@ -1071,6 +1099,7 @@ function ImportWizard({
          {currentId === "confirm" && (
             <ConfirmStep
                bankAccountId={bankAccountId}
+               duplicateFlags={duplicateFlags}
                format={format}
                methods={methods}
                rows={rows}
