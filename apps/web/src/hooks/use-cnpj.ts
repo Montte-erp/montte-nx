@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { orpc } from "@/integrations/orpc/client";
-import type { Outputs } from "@/integrations/orpc/client";
+import { orpc, type Outputs } from "@/integrations/orpc/client";
 
 type CnpjData = NonNullable<Outputs["team"]["get"]["cnpjData"]>;
 
