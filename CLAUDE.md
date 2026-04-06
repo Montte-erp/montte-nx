@@ -46,7 +46,7 @@ montte-nx/
 │   ├── transactional/   # Resend + email
 │   └── utils/           # Shared utilities
 ├── apps/
-│   ├── web/             # React/Vite SPA — dashboard + oRPC routers
+│   ├── web/             # TanStack Start (SSR) — dashboard + oRPC routers
 │   ├── server/          # Elysia API (SDK consumers)
 │   └── worker/          # BullMQ processor (queues + processors in src/)
 ├── packages/
@@ -209,70 +209,31 @@ function MyForm() {
 Every component that calls `useSuspenseQuery` must be wrapped in both `<Suspense>` and `<ErrorBoundary>` at the route or layout level.
 
 ```tsx
-import { Suspense } from "react";
-import { ErrorBoundary } from "react-error-boundary";
-import { createErrorFallback } from "@packages/ui/components/error-fallback";
-
-function MyPage() {
-   return (
-      <ErrorBoundary FallbackComponent={createErrorFallback({ errorTitle: "Erro ao carregar" })}>
-         <Suspense fallback={<MyPageSkeleton />}>
-            <MyPageContent />
-         </Suspense>
-      </ErrorBoundary>
-   );
-}
+// ErrorBoundary is always the outer layer
+<ErrorBoundary FallbackComponent={createErrorFallback({ errorTitle: "Erro ao carregar" })}>
+   <Suspense fallback={<MyPageSkeleton />}>
+      <MyPageContent /> {/* calls useSuspenseQuery — no isLoading checks inside */}
+   </Suspense>
+</ErrorBoundary>
 ```
 
-**Rules:**
-- `<ErrorBoundary>` wraps `<Suspense>` — error boundary is always the outer layer.
-- `<Suspense fallback={...}>` — always provide a meaningful skeleton, never `fallback={null}` unless the component is genuinely invisible while loading (e.g. a filter popover loading option data).
-- The inner component (`MyPageContent`) calls `useSuspenseQuery` — never add `isLoading` checks inside it.
-- Never render inline loading spinners or skeletons inside suspense children — that's the fallback's job.
-- Use `createErrorFallback({ errorTitle, errorDescription })` from `@packages/ui/components/error-fallback` for the `FallbackComponent`. Only write a custom fallback function for complex retry logic.
+- Always provide a meaningful skeleton — `fallback={null}` only for invisible-while-loading components (e.g. filter popovers).
+- `createErrorFallback` from `@packages/ui/components/error-fallback`. Custom fallback only for complex retry logic.
 
 ### Empty States
 
 Use the `Empty` family of components from `@packages/ui/components/empty` for all empty states. Never build custom empty states with raw `div` + `flex` + icon patterns.
 
 ```tsx
-import {
-   Empty,
-   EmptyHeader,
-   EmptyMedia,
-   EmptyTitle,
-   EmptyDescription,
-   EmptyContent,
-} from "@packages/ui/components/empty";
-import { Button } from "@packages/ui/components/button";
-import { SomeIcon } from "lucide-react";
-
-function MyEmptyState({ onCreate }: { onCreate: () => void }) {
-   return (
-      <Empty>
-         <EmptyHeader>
-            <EmptyMedia variant="icon">
-               <SomeIcon />
-            </EmptyMedia>
-            <EmptyTitle>Nenhum item encontrado</EmptyTitle>
-            <EmptyDescription>
-               Crie o primeiro item para começar.
-            </EmptyDescription>
-         </EmptyHeader>
-         <EmptyContent>
-            <Button onClick={onCreate}>Criar item</Button>
-         </EmptyContent>
-      </Empty>
-   );
-}
+<Empty>
+   <EmptyHeader>
+      <EmptyMedia variant="icon"><SomeIcon /></EmptyMedia>  {/* variant omitted = illustration */}
+      <EmptyTitle>Nenhum item encontrado</EmptyTitle>
+      <EmptyDescription>Crie o primeiro item para começar.</EmptyDescription>
+   </EmptyHeader>
+   <EmptyContent>{/* action buttons */}</EmptyContent>
+</Empty>
 ```
-
-**Rules:**
-- `EmptyMedia variant="icon"` — for a lucide icon in a rounded box.
-- `EmptyMedia` (no variant) — for illustrations or images.
-- `EmptyContent` — for action buttons below the header.
-- All text in pt-BR.
-- Never define a local `EmptyState` function using raw HTML — always use the `Empty` primitives.
 
 ---
 
@@ -450,46 +411,13 @@ startTransition(async () => { await authClient.method(...); });
 
 Use `@maskito/core` + `@maskito/react` for all structured text inputs. Never build manual mask handlers or use `onChange` + `replace(/\D/g, '')` patterns for formatted inputs.
 
-```tsx
-import { useMaskito } from "@maskito/react";
-import type { MaskitoOptions } from "@maskito/core";
-
-// Define masks at module scope (never inside component)
-const phoneMaskOptions: MaskitoOptions = {
-   mask: ["(", /\d/, /\d/, ")", " ", /\d/, /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/, /\d/, /\d/],
-};
-const cpfMaskOptions: MaskitoOptions = {
-   mask: [/\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "-", /\d/, /\d/],
-};
-const cnpjMaskOptions: MaskitoOptions = {
-   mask: [/\d/, /\d/, ".", /\d/, /\d/, /\d/, ".", /\d/, /\d/, /\d/, "/", /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/],
-};
-
-function MyForm() {
-   const phoneRef = useMaskito({ options: phoneMaskOptions });
-
-   return (
-      <Input
-         ref={phoneRef}
-         inputMode="numeric"
-         onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
-         placeholder="(11) 99999-9999"
-         defaultValue={field.state.value}
-      />
-   );
-}
-```
-
-**Rules:**
-- Always use `onInput` (not `onChange`) for masked inputs — Maskito fires before React's synthetic event.
-- Use `defaultValue` (not `value`) on masked inputs — controlled `value` conflicts with Maskito's DOM manipulation.
-- `Input` from `@packages/ui/components/input` uses `forwardRef` — the ref will reach the DOM element.
-- Use array masks `[/\d/, ".", /\d/]` for formatting (auto-inserts chars). Regex masks (`mask: /^regex$/`) only validate, they don't format.
+- Always use `onInput` (not `onChange`) — Maskito fires before React's synthetic event.
+- Use `defaultValue` (not `value`) — controlled `value` conflicts with Maskito's DOM manipulation.
 - Define `MaskitoOptions` at **module scope**, not inside components.
-- For dynamic masks (e.g. CPF vs CNPJ), use `useMemo` to compute options and pass to `useMaskito`.
-- Strip formatting before API calls when the backend expects raw digits: `value.replace(/\D/g, "")`.
-- `inputMode="numeric"` on digit-only inputs for mobile keyboard.
-- For currency inputs, use `MoneyInput` from `@packages/ui/components/money-input` — it uses `@maskito/kit`'s number mask internally.
+- For dynamic masks (e.g. CPF vs CNPJ), use `useMemo` to compute options.
+- Strip formatting before API calls: `value.replace(/\D/g, "")`.
+- `inputMode="numeric"` on digit-only inputs.
+- For currency inputs, use `MoneyInput` from `@packages/ui/components/money-input`.
 
 **Common masks:**
 | Field | Mask pattern |
@@ -523,7 +451,7 @@ Standard hook library — SSR-safe. Import each hook from its own subpath. Never
 - All localStorage keys prefixed `montte:` (e.g. `montte:sidebar-collapsed`).
 - Use `useMediaQuery("(max-width: 767px)")` directly — no `useIsMobile` wrapper.
 - Context always created with `null` default so `invariant` guard is meaningful.
-- Never `typeof window === 'undefined'` guards — Vite SPA, window always defined.
+- Prefer `createClientOnlyFn` / `createIsomorphicFn` from `@tanstack/react-start` for code that must run only on the client — avoids `typeof window === 'undefined'` guards.
 
 ---
 
@@ -531,22 +459,8 @@ Standard hook library — SSR-safe. Import each hook from its own subpath. Never
 
 Use `useDebouncedCallback` from `@tanstack/react-pacer` for debouncing callbacks in React components.
 
-```tsx
-import { useDebouncedCallback } from "@tanstack/react-pacer";
-import { useCallback } from "react";
-
-const fetchData = useDebouncedCallback(
-   async (value: string) => { /* ... */ },
-   { wait: 400 },
-);
-
-const handleChange = useCallback((value: string) => {
-   fetchData(value);
-}, [fetchData]);
-```
-
-- Never use `useDebouncedValue` from `foxact` for debouncing side effects — use `@tanstack/pacer` `useDebouncedCallback` instead.
-- `foxact/use-debounced-value` is for reactive derived values (UI display), not for debouncing API calls.
+- Never use `foxact/use-debounced-value` for side effects — use `@tanstack/pacer` `useDebouncedCallback` instead.
+- `foxact/use-debounced-value` is for reactive derived values (UI display only).
 
 ---
 
@@ -562,12 +476,33 @@ File-per-category in `packages/events/`: `finance.ts`, `ai.ts`, `contact.ts`, `i
 
 ## Testing
 
-Tests: `apps/web/__tests__/integrations/orpc/router/`. Run with Vitest.
-
 ```bash
 bun run test
 npx vitest run apps/web/__tests__/integrations/orpc/router/transactions.test.ts
 ```
+
+### What to test
+
+**Three layers, nothing else:**
+
+1. **oRPC router integration tests** (`apps/web/__tests__/integrations/orpc/router/`) — every procedure that touches the DB. Real DB, real inputs, real auth/ownership checks. Highest ROI.
+2. **Repository tests** (`core/database/__tests__/repositories/`) — non-trivial queries, aggregations, multi-table operations. Skip if the repo is a plain `db.insert`.
+3. **Pure logic unit tests** — functions with no React/oRPC/DB/external imports: Zod schemas with complex transforms, date/math utilities, analytics compute functions, event credits logic.
+
+**Decision rule:** would a bug here be invisible until a user reports it in production? Yes → test it. No → TypeScript + integration tests cover it.
+
+### What NOT to test
+
+- React components — jsdom ≠ browser; TypeScript catches prop errors; router tests cover mutation/query behavior
+- Hooks that wrap `useSuspenseQuery` or `usePostHog` — mocking 100% of behavior tests nothing
+- Singleton initialization — unless it has real config validation logic
+- File existence checks (`existsSync`)
+
+### Gaps to fill over time
+
+- Worker job logic (`apps/worker/src/jobs/`) — invoke jobs with real DB, assert DB state after
+- Analytics compute functions (`packages/analytics/src/compute-*.ts`) — pure financial math, high value
+- Missing router coverage: `chat`, `agent-settings`, `contact-settings`, `financial-settings`
 
 **⚠️ Gotcha — `member` and `team` tables have no `.defaultNow()` on `createdAt`.** Always provide `createdAt: new Date()` explicitly in test inserts.
 
