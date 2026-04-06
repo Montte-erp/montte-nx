@@ -355,59 +355,40 @@ export function useStatementImport({
    async function parseFile(file: File): Promise<void> {
       const ext = file.name.split(".").pop()?.toLowerCase();
 
-      return new Promise((resolve, reject) => {
-         const reader = new FileReader();
-         reader.onload = async (ev) => {
-            try {
-               const buffer = ev.target?.result;
-               if (!(buffer instanceof ArrayBuffer))
-                  throw new Error("read error");
+      if (ext === "ofx") {
+         const buffer = await file.arrayBuffer();
+         const parsed = parseOfxBuffer(buffer, minImportDate);
+         setFormat("ofx");
+         await applyRows(parsed);
+         return;
+      }
 
-               if (ext === "ofx") {
-                  const parsed = parseOfxBuffer(buffer, minImportDate);
-                  setFormat("ofx");
-                  await applyRows(parsed);
-                  resolve();
-                  return;
-               }
+      const raw =
+         ext === "xlsx" || ext === "xls"
+            ? xlsx.parse(await file.arrayBuffer())
+            : await csv.parse(file);
 
-               const raw =
-                  ext === "xlsx" || ext === "xls"
-                     ? xlsx.parse(buffer)
-                     : csv.parse(buffer);
+      setFormat(ext === "xlsx" || ext === "xls" ? "xlsx" : "csv");
+      setRawData(raw);
 
-               setFormat(ext === "xlsx" || ext === "xls" ? "xlsx" : "csv");
-               setRawData(raw);
-
-               const saved = localStorage.getItem(
-                  mappingStorageKey(raw.headers),
-               );
-               if (saved) {
-                  try {
-                     const parsed: ColumnMapping = JSON.parse(saved);
-                     setMapping((prev) => ({ ...prev, ...parsed }));
-                     setSavedMappingApplied(true);
-                  } catch {
-                     setMapping((prev) => ({
-                        ...prev,
-                        ...guessColumns(raw.headers),
-                     }));
-                  }
-               } else {
-                  setMapping((prev) => ({
-                     ...prev,
-                     ...guessColumns(raw.headers),
-                  }));
-               }
-
-               resolve();
-            } catch (err) {
-               reject(err);
-            }
-         };
-         reader.onerror = () => reject(new Error("Falha ao ler arquivo"));
-         reader.readAsArrayBuffer(file);
-      });
+      const saved = localStorage.getItem(mappingStorageKey(raw.headers));
+      if (saved) {
+         try {
+            const parsed: ColumnMapping = JSON.parse(saved);
+            setMapping((prev) => ({ ...prev, ...parsed }));
+            setSavedMappingApplied(true);
+         } catch {
+            setMapping((prev) => ({
+               ...prev,
+               ...guessColumns(raw.headers),
+            }));
+         }
+      } else {
+         setMapping((prev) => ({
+            ...prev,
+            ...guessColumns(raw.headers),
+         }));
+      }
    }
 
    async function applyColumnMapping(m: ColumnMapping) {
