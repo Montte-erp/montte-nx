@@ -2,7 +2,7 @@ import { isClientProduction } from "@core/environment/helpers";
 import type { PublicEnv } from "@/integrations/public-env";
 import posthog, { type PostHog } from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
-import { createIsomorphicFn } from "@tanstack/react-start";
+import { createClientOnlyFn } from "@tanstack/react-start";
 
 export type EarlyAccessStage =
    | "alpha"
@@ -33,11 +33,7 @@ export function normalizeEarlyAccessStage(
    return "beta";
 }
 
-export const getPosthogClient = createIsomorphicFn()
-   .server((): PostHog => {
-      throw new Error("posthog is client-only");
-   })
-   .client((): PostHog => posthog);
+export const getPosthogClient = createClientOnlyFn((): PostHog => posthog);
 
 function getReactPosthogConfig(env: PublicEnv) {
    return {
