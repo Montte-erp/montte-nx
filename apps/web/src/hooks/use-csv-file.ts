@@ -1,5 +1,5 @@
 import { parseBufferOrThrow, generateFromObjects } from "@f-o-t/csv";
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 
 export type CsvData = {
    headers: string[];
@@ -26,5 +26,5 @@ export function useCsvFile() {
       [],
    );
 
-   return useMemo(() => ({ parse, generate }), [parse, generate]);
+   return { parse, generate };
 }

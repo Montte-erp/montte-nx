@@ -1,5 +1,5 @@
 import { read as xlsxRead, utils as xlsxUtils, write as xlsxWrite } from "xlsx";
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 
 export type XlsxData = {
    headers: string[];
@@ -38,5 +38,5 @@ export function useXlsxFile() {
       [],
    );
 
-   return useMemo(() => ({ parse, generate }), [parse, generate]);
+   return { parse, generate };
 }
