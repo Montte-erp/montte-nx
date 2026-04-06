@@ -1,12 +1,14 @@
-import { parseBufferOrThrow as parseCsvBuffer } from "@f-o-t/csv";
 import { of as moneyOf, toMajorUnitsString } from "@f-o-t/money";
 import { parseBufferOrThrow as parseOfx, getTransactions } from "@f-o-t/ofx";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useDebouncedCallback } from "@tanstack/react-pacer";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { useCallback, useState } from "react";
-import { read as xlsxRead, utils as xlsxUtils } from "xlsx";
+import { useLocalStorage } from "foxact/use-local-storage";
 import { orpc } from "@/integrations/orpc/client";
+import { useCsvFile } from "@/hooks/use-csv-file";
+import { useXlsxFile } from "@/hooks/use-xlsx-file";
 
 dayjs.extend(customParseFormat);
 
@@ -51,12 +53,11 @@ export const FIELD_LABELS: Record<ColumnField, string> = {
 };
 
 const DATE_FORMATS = [
-   "YYYY-MM-DD",
    "DD/MM/YYYY",
-   "MM/DD/YYYY",
-   "DD-MM-YYYY",
-   "YYYYMMDD",
    "DD/MM/YY",
+   "DD-MM-YYYY",
+   "YYYY-MM-DD",
+   "YYYYMMDD",
 ] as const;
 
 export function parseDate(raw: string): string | null {
@@ -178,7 +179,7 @@ export function getSampleValues(raw: RawData, header: string): string {
       .join(", ");
 }
 
-export function mappingStorageKey(headers: string[]): string {
+function mappingStorageKey(headers: string[]): string {
    return `montte:import:mapping:${[...headers].sort().join(",")}`;
 }
 
@@ -236,34 +237,6 @@ function guessColumns(headers: string[]): Partial<ColumnMapping> {
    return mapping;
 }
 
-function parseXlsx(buffer: ArrayBuffer): RawData {
-   const wb = xlsxRead(buffer, { type: "array" });
-   const ws = wb.Sheets[wb.SheetNames[0]];
-   if (!ws) throw new Error("Planilha vazia");
-   const data = xlsxUtils.sheet_to_json<unknown[]>(ws, {
-      header: 1,
-      defval: "",
-   });
-   if (data.length < 2) throw new Error("Planilha sem dados");
-   return {
-      headers: (data[0] as unknown[]).map(String),
-      rows: (data.slice(1) as unknown[][])
-         .filter((r) => r.some((c) => String(c).trim() !== ""))
-         .map((r) => r.map(String)),
-   };
-}
-
-function parseCsv(buffer: ArrayBuffer): RawData {
-   const doc = parseCsvBuffer(new Uint8Array(buffer), {
-      hasHeaders: true,
-      trimFields: true,
-   });
-   return {
-      headers: doc.headers ?? [],
-      rows: doc.rows.map((r) => r.fields),
-   };
-}
-
 function parseOfxBuffer(
    buffer: ArrayBuffer,
    minImportDate: string | null,
@@ -297,13 +270,18 @@ const EMPTY_MAPPING: ColumnMapping = {
    description: "",
 };
 
-export function useStatementImport({ teamId }: { teamId: string }) {
+export function useStatementImport({
+   teamId,
+   onInitSelection,
+}: {
+   teamId: string;
+   onInitSelection?: (s: Set<number>) => void;
+}) {
+   const csv = useCsvFile();
+   const xlsx = useXlsxFile();
    const [rawData, setRawData] = useState<RawData | null>(null);
    const [rows, setRows] = useState<ValidatedRow[]>([]);
    const [duplicateFlags, setDuplicateFlags] = useState<boolean[]>([]);
-   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
-      new Set(),
-   );
    const [format, setFormat] = useState<FileFormat>("csv");
    const [bankAccountId, setBankAccountId] = useState("");
    const [mapping, setMapping] = useState<ColumnMapping>(EMPTY_MAPPING);
@@ -329,17 +307,27 @@ export function useStatementImport({ teamId }: { teamId: string }) {
       return parseDate(raw);
    })();
 
+   const [, setSavedMapping] = useLocalStorage<ColumnMapping>(
+      rawData
+         ? mappingStorageKey(rawData.headers)
+         : "montte:import:mapping:__none__",
+      undefined,
+      {
+         serializer: JSON.stringify,
+         deserializer: JSON.parse,
+      },
+   );
+
    function initSelection(mapped: ValidatedRow[], flags: boolean[]) {
       const sel = new Set<number>();
       mapped.forEach((r, i) => {
          if (r.isValid && !flags[i]) sel.add(i);
       });
-      setSelectedIndices(sel);
+      onInitSelection?.(sel);
    }
 
-   const applyRows = useCallback(
+   const debouncedCheckDuplicates = useDebouncedCallback(
       async (mapped: ValidatedRow[]) => {
-         setRows(mapped);
          const validRows = mapped.filter((r) => r.isValid);
          if (!bankAccountId || validRows.length === 0) {
             setDuplicateFlags([]);
@@ -366,8 +354,15 @@ export function useStatementImport({ teamId }: { teamId: string }) {
             initSelection(mapped, []);
          }
       },
-      // oxlint-ignore react-hooks/exhaustive-deps
-      [bankAccountId, checkDuplicatesMutation],
+      { wait: 400 },
+   );
+
+   const applyRows = useCallback(
+      async (mapped: ValidatedRow[]) => {
+         setRows(mapped);
+         debouncedCheckDuplicates(mapped);
+      },
+      [debouncedCheckDuplicates],
    );
 
    async function parseFile(file: File): Promise<void> {
@@ -391,8 +386,8 @@ export function useStatementImport({ teamId }: { teamId: string }) {
 
                const raw =
                   ext === "xlsx" || ext === "xls"
-                     ? parseXlsx(buffer)
-                     : parseCsv(buffer);
+                     ? xlsx.parse(buffer)
+                     : csv.parse(buffer);
 
                setFormat(ext === "xlsx" || ext === "xls" ? "xlsx" : "csv");
                setRawData(raw);
@@ -430,10 +425,7 @@ export function useStatementImport({ teamId }: { teamId: string }) {
 
    async function applyColumnMapping(m: ColumnMapping) {
       if (!rawData) return;
-      localStorage.setItem(
-         mappingStorageKey(rawData.headers),
-         JSON.stringify(m),
-      );
+      setSavedMapping(m);
       const mapped = rawData.rows.map((r) =>
          validateRow(applyMappingToRow(r, rawData.headers, m), minImportDate),
       );
@@ -443,9 +435,10 @@ export function useStatementImport({ teamId }: { teamId: string }) {
    function resetMapping() {
       setSavedMappingApplied(false);
       setMapping(EMPTY_MAPPING);
+      setSavedMapping(null);
    }
 
-   function buildImportPayload() {
+   function buildImportPayload(selectedIndices: Set<number>) {
       return rows
          .filter((_, i) => selectedIndices.has(i))
          .map((r) => ({
@@ -459,13 +452,10 @@ export function useStatementImport({ teamId }: { teamId: string }) {
    }
 
    return {
-      // state
       rawData,
       rows,
       setRows,
       duplicateFlags,
-      selectedIndices,
-      setSelectedIndices,
       format,
       bankAccountId,
       setBankAccountId,
@@ -473,7 +463,6 @@ export function useStatementImport({ teamId }: { teamId: string }) {
       setMapping,
       savedMappingApplied,
       minImportDate,
-      // actions
       parseFile,
       applyColumnMapping,
       resetMapping,

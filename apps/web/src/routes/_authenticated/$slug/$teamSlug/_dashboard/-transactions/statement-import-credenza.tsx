@@ -51,6 +51,8 @@ import {
    Table2,
    X,
 } from "lucide-react";
+import { useSet } from "foxact/use-set";
+import { useDebouncedState } from "foxact/use-debounced-state";
 import { Suspense, useRef, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { utils as xlsxUtils, write as xlsxWrite } from "xlsx";
@@ -58,7 +60,6 @@ import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
 import { useCredenza } from "@/hooks/use-credenza";
 import {
-   type ColumnField,
    type ColumnMapping,
    type FileFormat,
    type RawData,
@@ -92,14 +93,14 @@ function formatMoney(value: string): string {
 
 const TEMPLATE_ROWS = [
    {
-      data: "2024-01-15",
+      data: "15/01/2024",
       nome: "Pagamento fornecedor",
       tipo: "despesa",
       valor: "1500.00",
       descricao: "NF 123",
    },
    {
-      data: "2024-01-20",
+      data: "20/01/2024",
       nome: "Recebimento cliente",
       tipo: "receita",
       valor: "3200.00",
@@ -225,7 +226,6 @@ function StepBar({ methods }: { methods: StepperMethods }) {
 interface UploadStepProps {
    methods: StepperMethods;
    parseFile: (file: File) => Promise<void>;
-   format: FileFormat;
    bankAccountId: string;
    onBankAccountChange: (id: string) => void;
 }
@@ -233,7 +233,6 @@ interface UploadStepProps {
 function UploadStep({
    methods,
    parseFile,
-   format,
    bankAccountId,
    onBankAccountChange,
 }: UploadStepProps) {
@@ -368,9 +367,8 @@ interface MapStepProps {
    raw: RawData;
    mapping: ColumnMapping;
    savedMappingApplied: boolean;
-   minImportDate: string | null;
    onMappingChange: (m: ColumnMapping) => void;
-   onApply: (rows: ValidatedRow[]) => void | Promise<void>;
+   onApplyColumnMapping: (m: ColumnMapping) => Promise<void>;
    onDismissSavedMapping: () => void;
 }
 
@@ -379,22 +377,14 @@ function MapStep({
    raw,
    mapping,
    savedMappingApplied,
-   minImportDate,
    onMappingChange,
-   onApply,
+   onApplyColumnMapping,
    onDismissSavedMapping,
 }: MapStepProps) {
    const canProceed = REQUIRED_FIELDS.every((f) => mapping[f] !== "");
 
    async function handleNext() {
-      localStorage.setItem(
-         mappingStorageKey(raw.headers),
-         JSON.stringify(mapping),
-      );
-      const mapped = raw.rows.map((r) =>
-         validateRow(applyMapping(r, raw.headers, mapping), minImportDate),
-      );
-      await onApply(mapped);
+      await onApplyColumnMapping(mapping);
       methods.navigation.next();
    }
 
@@ -495,26 +485,34 @@ interface PreviewStepProps {
    methods: StepperMethods;
    rows: ValidatedRow[];
    duplicateFlags: boolean[];
-   selectedIndices: Set<number>;
    format: FileFormat;
-   onSelectionChange: (s: Set<number>) => void;
    onRowsChange: (rows: ValidatedRow[]) => void;
+   onSelectionReady: (indices: Set<number>) => void;
 }
 
 function PreviewStep({
    methods,
    rows,
    duplicateFlags,
-   selectedIndices,
    format,
-   onSelectionChange,
    onRowsChange,
+   onSelectionReady,
 }: PreviewStepProps) {
+   const [
+      selectedIndices,
+      addIndex,
+      removeIndex,
+      clearIndices,
+      replaceIndices,
+   ] = useSet<number>();
    const [filterDuplicates, setFilterDuplicates] = useState(false);
    const [editingDescIdx, setEditingDescIdx] = useState<number | null>(null);
    const [editingDescValue, setEditingDescValue] = useState("");
-   const [bulkDate, setBulkDate] = useState<Date | undefined>(undefined);
-   const [bulkCategoryId, setBulkCategoryId] = useState("");
+   const [bulkDate, , setBulkDate] = useDebouncedState<Date | undefined>(
+      undefined,
+      300,
+   );
+   const [bulkCategoryId, , setBulkCategoryId] = useDebouncedState("", 300);
 
    const { data: categories } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
@@ -584,26 +582,22 @@ function PreviewStep({
 
    function toggleSelectAll() {
       if (allSelected) {
-         onSelectionChange(new Set());
+         clearIndices();
          return;
       }
-      onSelectionChange(new Set(selectableIndices));
+      replaceIndices(new Set(selectableIndices));
    }
 
    function toggleRow(index: number) {
-      const next = new Set(selectedIndices);
-      if (next.has(index)) {
-         next.delete(index);
+      if (selectedIndices.has(index)) {
+         removeIndex(index);
       } else {
-         next.add(index);
+         addIndex(index);
       }
-      onSelectionChange(next);
    }
 
    function ignoreRow(index: number) {
-      const next = new Set(selectedIndices);
-      next.delete(index);
-      onSelectionChange(next);
+      removeIndex(index);
    }
 
    function applyBulkDate(date: Date) {
@@ -719,7 +713,7 @@ function PreviewStep({
 
                <SelectionActionBar
                   selectedCount={selectedIndices.size}
-                  onClear={() => onSelectionChange(new Set())}
+                  onClear={() => clearIndices()}
                >
                   <Popover>
                      <PopoverTrigger asChild>
@@ -1017,7 +1011,10 @@ function PreviewStep({
                   <Button
                      className="flex-1"
                      disabled={selectedIndices.size === 0}
-                     onClick={() => methods.navigation.next()}
+                     onClick={() => {
+                        onSelectionReady(selectedIndices);
+                        methods.navigation.next();
+                     }}
                      type="button"
                   >
                      <span className="flex items-center gap-2">
@@ -1038,6 +1035,14 @@ interface ConfirmStepProps {
    format: FileFormat;
    bankAccountId: string;
    selectedIndices: Set<number>;
+   buildImportPayload: () => Array<{
+      name?: string;
+      type: "income" | "expense";
+      amount: string;
+      date: string;
+      description?: string;
+      categoryId?: string;
+   }>;
    onClose?: () => void;
 }
 
@@ -1047,9 +1052,10 @@ function ConfirmStep({
    format,
    bankAccountId,
    selectedIndices,
+   buildImportPayload,
    onClose,
 }: ConfirmStepProps) {
-   const rowsToImport = rows.filter((_, i) => selectedIndices.has(i));
+   const selectedCount = selectedIndices.size;
    const invalidCount = rows.filter((r) => !r.isValid).length;
 
    const importMutation = useMutation(
@@ -1062,21 +1068,11 @@ function ConfirmStep({
          return;
       }
 
-      await importMutation.mutateAsync({
-         bankAccountId,
-         format,
-         transactions: rowsToImport.map((r) => ({
-            name: r.name || undefined,
-            type: r.type,
-            amount: parseAmount(r.amount) ?? r.amount,
-            date: parseDate(r.date) ?? r.date,
-            description: r.description || undefined,
-            categoryId: r.categoryId || undefined,
-         })),
-      });
+      const transactions = buildImportPayload();
+      await importMutation.mutateAsync({ bankAccountId, format, transactions });
 
       toast.success(
-         `${rowsToImport.length} transação(ões) importada(s) com sucesso.`,
+         `${transactions.length} transação(ões) importada(s) com sucesso.`,
       );
       onClose?.();
    }
@@ -1137,7 +1133,7 @@ function ConfirmStep({
                      className="flex-1"
                      disabled={
                         importMutation.isPending ||
-                        rowsToImport.length === 0 ||
+                        selectedCount === 0 ||
                         !bankAccountId
                      }
                      onClick={handleImport}
@@ -1147,7 +1143,7 @@ function ConfirmStep({
                         {importMutation.isPending && (
                            <Loader2 className="size-4 animate-spin" />
                         )}
-                        Importar {rowsToImport.length} transação(ões)
+                        Importar {selectedCount} transação(ões)
                      </span>
                   </Button>
                </div>
@@ -1167,108 +1163,28 @@ function ImportWizard({
    onClose?: () => void;
 }) {
    const currentId = methods.state.current.data.id;
-   const [rawData, setRawData] = useState<RawData | null>(null);
-   const [rows, setRows] = useState<ValidatedRow[]>([]);
-   const [duplicateFlags, setDuplicateFlags] = useState<boolean[]>([]);
-   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
+   const [confirmedIndices, setConfirmedIndices] = useState<Set<number>>(
       new Set(),
    );
-   const [format, setFormat] = useState<FileFormat>("csv");
-   const [bankAccountId, setBankAccountId] = useState<string>("");
-   const [mapping, setMapping] = useState<ColumnMapping>({
-      date: "",
-      name: "",
-      type: "",
-      amount: "",
-      description: "",
+   const {
+      rawData,
+      rows,
+      setRows,
+      duplicateFlags,
+      format,
+      bankAccountId,
+      setBankAccountId,
+      mapping,
+      setMapping,
+      savedMappingApplied,
+      parseFile,
+      applyColumnMapping,
+      resetMapping,
+      buildImportPayload,
+   } = useStatementImport({
+      teamId,
+      onInitSelection: (s) => setConfirmedIndices(s),
    });
-   const [savedMappingApplied, setSavedMappingApplied] = useState(false);
-
-   const checkDuplicatesMutation = useMutation(
-      orpc.transactions.checkDuplicates.mutationOptions({}),
-   );
-
-   const { data: teamData } = useSuspenseQuery(
-      orpc.team.get.queryOptions({ input: { teamId } }),
-   );
-
-   const cnpjData = teamData?.cnpjData as
-      | { data_inicio_atividade?: string }
-      | null
-      | undefined;
-   const minImportDate: string | null = (() => {
-      const raw = cnpjData?.data_inicio_atividade;
-      if (!raw) return null;
-      const d = dayjs(raw, "DD/MM/YYYY", true);
-      if (d.isValid()) return d.format("YYYY-MM-DD");
-      return parseDate(raw);
-   })();
-
-   function initSelection(mapped: ValidatedRow[], flags: boolean[]) {
-      const sel = new Set<number>();
-      mapped.forEach((r, i) => {
-         if (r.isValid && !flags[i]) sel.add(i);
-      });
-      setSelectedIndices(sel);
-   }
-
-   const handleApplyRows = useCallback(
-      async (mapped: ValidatedRow[]) => {
-         setRows(mapped);
-         const validRows = mapped.filter((r) => r.isValid);
-         if (!bankAccountId || validRows.length === 0) {
-            setDuplicateFlags([]);
-            initSelection(mapped, []);
-            return;
-         }
-         try {
-            const flags = await checkDuplicatesMutation.mutateAsync({
-               bankAccountId,
-               transactions: validRows.map((r) => ({
-                  date: parseDate(r.date) ?? r.date,
-                  amount: parseAmount(r.amount) ?? r.amount,
-                  type: r.type,
-               })),
-            });
-            let fi = 0;
-            const fullFlags = mapped.map((r) =>
-               r.isValid ? (flags[fi++] ?? false) : false,
-            );
-            setDuplicateFlags(fullFlags);
-            initSelection(mapped, fullFlags);
-         } catch {
-            setDuplicateFlags([]);
-            initSelection(mapped, []);
-         }
-      },
-      [bankAccountId, checkDuplicatesMutation],
-   );
-
-   function handleFileReady(
-      parsedRows: ValidatedRow[],
-      fmt: FileFormat,
-      raw: RawData | null,
-   ) {
-      setFormat(fmt);
-      if (raw) {
-         setRawData(raw);
-         const saved = localStorage.getItem(mappingStorageKey(raw.headers));
-         if (saved) {
-            try {
-               const parsed: ColumnMapping = JSON.parse(saved);
-               setMapping((prev) => ({ ...prev, ...parsed }));
-               setSavedMappingApplied(true);
-            } catch {
-               const guessed = guessMapping(raw.headers);
-               setMapping((prev) => ({ ...prev, ...guessed }));
-            }
-         } else {
-            const guessed = guessMapping(raw.headers);
-            setMapping((prev) => ({ ...prev, ...guessed }));
-         }
-      }
-      if (parsedRows.length > 0) void handleApplyRows(parsedRows);
-   }
 
    return (
       <>
@@ -1288,9 +1204,8 @@ function ImportWizard({
                   <UploadStep
                      bankAccountId={bankAccountId}
                      methods={methods}
-                     minImportDate={minImportDate}
                      onBankAccountChange={setBankAccountId}
-                     onFileReady={handleFileReady}
+                     parseFile={parseFile}
                   />
                </Suspense>
             </ErrorBoundary>
@@ -1299,21 +1214,11 @@ function ImportWizard({
             <MapStep
                mapping={mapping}
                methods={methods}
-               minImportDate={minImportDate}
                raw={rawData}
                savedMappingApplied={savedMappingApplied}
-               onApply={handleApplyRows}
+               onApplyColumnMapping={applyColumnMapping}
                onMappingChange={setMapping}
-               onDismissSavedMapping={() => {
-                  setSavedMappingApplied(false);
-                  setMapping({
-                     date: "",
-                     name: "",
-                     type: "",
-                     amount: "",
-                     description: "",
-                  });
-               }}
+               onDismissSavedMapping={resetMapping}
             />
          )}
          {currentId === "preview" && (
@@ -1322,18 +1227,18 @@ function ImportWizard({
                format={format}
                methods={methods}
                rows={rows}
-               selectedIndices={selectedIndices}
-               onSelectionChange={setSelectedIndices}
                onRowsChange={setRows}
+               onSelectionReady={setConfirmedIndices}
             />
          )}
          {currentId === "confirm" && (
             <ConfirmStep
                bankAccountId={bankAccountId}
+               buildImportPayload={() => buildImportPayload(confirmedIndices)}
                format={format}
                methods={methods}
                rows={rows}
-               selectedIndices={selectedIndices}
+               selectedIndices={confirmedIndices}
                onClose={onClose}
             />
          )}
