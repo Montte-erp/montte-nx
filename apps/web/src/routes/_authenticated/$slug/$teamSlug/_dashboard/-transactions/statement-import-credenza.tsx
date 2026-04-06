@@ -37,7 +37,7 @@ import {
    FileText,
    Loader2,
 } from "lucide-react";
-import { Suspense, useState } from "react";
+import { Suspense, useCallback, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { read as xlsxRead, utils as xlsxUtils } from "xlsx";
 import { toast } from "sonner";
@@ -498,7 +498,7 @@ interface MapStepProps {
    mapping: ColumnMapping;
    savedMappingApplied: boolean;
    onMappingChange: (m: ColumnMapping) => void;
-   onApply: (rows: ValidatedRow[]) => void;
+   onApply: (rows: ValidatedRow[]) => void | Promise<void>;
    onDismissSavedMapping: () => void;
 }
 
@@ -513,7 +513,7 @@ function MapStep({
 }: MapStepProps) {
    const canProceed = REQUIRED_FIELDS.every((f) => mapping[f] !== "");
 
-   function handleNext() {
+   async function handleNext() {
       localStorage.setItem(
          mappingStorageKey(raw.headers),
          JSON.stringify(mapping),
@@ -521,7 +521,7 @@ function MapStep({
       const mapped = raw.rows.map((r) =>
          validateRow(applyMapping(r, raw.headers, mapping)),
       );
-      onApply(mapped);
+      await onApply(mapped);
       methods.navigation.next();
    }
 
@@ -621,12 +621,38 @@ function MapStep({
 interface PreviewStepProps {
    methods: StepperMethods;
    rows: ValidatedRow[];
+   duplicateFlags: boolean[];
 }
 
-function PreviewStep({ methods, rows }: PreviewStepProps) {
-   const validCount = rows.filter((r) => r.isValid).length;
+function PreviewStep({ methods, rows, duplicateFlags }: PreviewStepProps) {
+   const validRows = rows.filter((r) => r.isValid);
+   const validCount = validRows.length;
    const invalidCount = rows.filter((r) => !r.isValid).length;
+   const duplicateCount = duplicateFlags.filter(Boolean).length;
    const previewRows = rows.slice(0, 15);
+
+   const totalIncome = validRows
+      .filter((r) => r.type === "income")
+      .reduce(
+         (sum, r) => sum + Number.parseFloat(parseAmount(r.amount) ?? "0"),
+         0,
+      );
+   const totalExpense = validRows
+      .filter((r) => r.type === "expense")
+      .reduce(
+         (sum, r) => sum + Number.parseFloat(parseAmount(r.amount) ?? "0"),
+         0,
+      );
+
+   const dates = validRows
+      .map((r) => parseDate(r.date))
+      .filter((d): d is string => d !== null);
+   const minDate = dates.length
+      ? dates.reduce((a, b) => (a < b ? a : b))
+      : null;
+   const maxDate = dates.length
+      ? dates.reduce((a, b) => (a > b ? a : b))
+      : null;
 
    return (
       <>
@@ -641,11 +667,44 @@ function PreviewStep({ methods, rows }: PreviewStepProps) {
             <div className="flex flex-col gap-4">
                <StepBar methods={methods} />
 
-               <div className="flex items-center gap-2">
+               <div className="flex items-center gap-4 flex-wrap">
+                  <div className="flex items-center gap-2 rounded-md border px-3 py-1.5">
+                     <span className="text-xs text-muted-foreground">
+                        Entradas
+                     </span>
+                     <span className="text-xs font-semibold text-emerald-600">
+                        {formatMoney(String(totalIncome))}
+                     </span>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-md border px-3 py-1.5">
+                     <span className="text-xs text-muted-foreground">
+                        Saídas
+                     </span>
+                     <span className="text-xs font-semibold text-destructive">
+                        {formatMoney(String(totalExpense))}
+                     </span>
+                  </div>
+                  {minDate && maxDate ? (
+                     <p className="text-xs text-muted-foreground ml-auto">
+                        {dayjs(minDate).format("DD/MM/YYYY")} –{" "}
+                        {dayjs(maxDate).format("DD/MM/YYYY")}
+                     </p>
+                  ) : null}
+               </div>
+
+               <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="default">{validCount} válida(s)</Badge>
                   {invalidCount > 0 && (
                      <Badge variant="destructive">
                         {invalidCount} com erro(s)
+                     </Badge>
+                  )}
+                  {duplicateCount > 0 && (
+                     <Badge
+                        variant="outline"
+                        className="text-yellow-600 border-yellow-300"
+                     >
+                        {duplicateCount} possível(is) duplicata(s)
                      </Badge>
                   )}
                </div>
@@ -664,7 +723,13 @@ function PreviewStep({ methods, rows }: PreviewStepProps) {
                      <TableBody>
                         {previewRows.map((row, i) => (
                            <TableRow
-                              className={row.isValid ? "" : "bg-destructive/5"}
+                              className={
+                                 !row.isValid
+                                    ? "bg-destructive/5"
+                                    : duplicateFlags[i]
+                                      ? "bg-yellow-500/5"
+                                      : ""
+                              }
                               key={`prev-${i + 1}`}
                            >
                               <TableCell className="text-xs">
@@ -680,10 +745,12 @@ function PreviewStep({ methods, rows }: PreviewStepProps) {
                                  {formatMoney(row.amount)}
                               </TableCell>
                               <TableCell className="text-xs">
-                                 {row.isValid ? (
-                                    <CheckCircle2 className="size-3.5 text-emerald-600" />
-                                 ) : (
+                                 {!row.isValid ? (
                                     <AlertTriangle className="size-3.5 text-destructive" />
+                                 ) : duplicateFlags[i] ? (
+                                    <AlertTriangle className="size-3.5 text-yellow-500" />
+                                 ) : (
+                                    <CheckCircle2 className="size-3.5 text-emerald-600" />
                                  )}
                               </TableCell>
                            </TableRow>
@@ -880,6 +947,7 @@ function ImportWizard({
    const currentId = methods.state.current.data.id;
    const [rawData, setRawData] = useState<RawData | null>(null);
    const [rows, setRows] = useState<ValidatedRow[]>([]);
+   const [duplicateFlags, setDuplicateFlags] = useState<boolean[]>([]);
    const [format, setFormat] = useState<FileFormat>("csv");
    const [bankAccountId, setBankAccountId] = useState<string>("");
    const [mapping, setMapping] = useState<ColumnMapping>({
@@ -890,6 +958,38 @@ function ImportWizard({
       description: "",
    });
    const [savedMappingApplied, setSavedMappingApplied] = useState(false);
+
+   const checkDuplicatesMutation = useMutation(
+      orpc.transactions.checkDuplicates.mutationOptions({}),
+   );
+
+   const handleApplyRows = useCallback(
+      async (mapped: ValidatedRow[]) => {
+         setRows(mapped);
+         const validRows = mapped.filter((r) => r.isValid);
+         if (!bankAccountId || validRows.length === 0) {
+            setDuplicateFlags([]);
+            return;
+         }
+         try {
+            const flags = await checkDuplicatesMutation.mutateAsync({
+               bankAccountId,
+               transactions: validRows.map((r) => ({
+                  date: parseDate(r.date) ?? r.date,
+                  amount: parseAmount(r.amount) ?? r.amount,
+                  type: r.type,
+               })),
+            });
+            let fi = 0;
+            setDuplicateFlags(
+               mapped.map((r) => (r.isValid ? (flags[fi++] ?? false) : false)),
+            );
+         } catch {
+            setDuplicateFlags([]);
+         }
+      },
+      [bankAccountId, checkDuplicatesMutation],
+   );
 
    function handleFileReady(
       parsedRows: ValidatedRow[],
@@ -947,7 +1047,7 @@ function ImportWizard({
                methods={methods}
                raw={rawData}
                savedMappingApplied={savedMappingApplied}
-               onApply={setRows}
+               onApply={handleApplyRows}
                onMappingChange={setMapping}
                onDismissSavedMapping={() => {
                   setSavedMappingApplied(false);
@@ -962,7 +1062,11 @@ function ImportWizard({
             />
          )}
          {currentId === "preview" && (
-            <PreviewStep methods={methods} rows={rows} />
+            <PreviewStep
+               duplicateFlags={duplicateFlags}
+               methods={methods}
+               rows={rows}
+            />
          )}
          {currentId === "confirm" && (
             <ConfirmStep
