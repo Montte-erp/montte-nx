@@ -868,11 +868,7 @@ function ImportWizard({
    );
 }
 
-export function StatementImportDialogStack({
-   onClose,
-}: {
-   onClose?: () => void;
-}) {
+export function StatementImportCredenza({ onClose }: { onClose?: () => void }) {
    return (
       <Stepper.Provider variant="line">
          {({ methods }) => <ImportWizard methods={methods} onClose={onClose} />}
