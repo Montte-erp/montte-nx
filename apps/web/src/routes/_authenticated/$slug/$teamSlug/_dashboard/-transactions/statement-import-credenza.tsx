@@ -182,6 +182,24 @@ function guessMapping(headers: string[]): Partial<ColumnMapping> {
    return mapping;
 }
 
+function headersFingerprint(headers: string[]): string {
+   return [...headers].sort().join(",");
+}
+
+function mappingStorageKey(headers: string[]): string {
+   return `montte:import:mapping:${headersFingerprint(headers)}`;
+}
+
+function getSampleValues(raw: RawData, header: string): string {
+   const idx = raw.headers.indexOf(header);
+   if (idx === -1) return "";
+   return raw.rows
+      .slice(0, 3)
+      .map((r) => r[idx] ?? "")
+      .filter(Boolean)
+      .join(", ");
+}
+
 function applyMapping(
    row: string[],
    headers: string[],
@@ -478,20 +496,28 @@ interface MapStepProps {
    methods: StepperMethods;
    raw: RawData;
    mapping: ColumnMapping;
+   savedMappingApplied: boolean;
    onMappingChange: (m: ColumnMapping) => void;
    onApply: (rows: ValidatedRow[]) => void;
+   onDismissSavedMapping: () => void;
 }
 
 function MapStep({
    methods,
    raw,
    mapping,
+   savedMappingApplied,
    onMappingChange,
    onApply,
+   onDismissSavedMapping,
 }: MapStepProps) {
    const canProceed = REQUIRED_FIELDS.every((f) => mapping[f] !== "");
 
    function handleNext() {
+      localStorage.setItem(
+         mappingStorageKey(raw.headers),
+         JSON.stringify(mapping),
+      );
       const mapped = raw.rows.map((r) =>
          validateRow(applyMapping(r, raw.headers, mapping)),
       );
@@ -512,30 +538,51 @@ function MapStep({
             <div className="flex flex-col gap-4">
                <StepBar methods={methods} />
 
+               {savedMappingApplied && (
+                  <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2">
+                     <p className="text-xs text-muted-foreground">
+                        Mapeamento anterior aplicado
+                     </p>
+                     <button
+                        type="button"
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                        onClick={onDismissSavedMapping}
+                     >
+                        Redefinir
+                     </button>
+                  </div>
+               )}
+
                <div className="flex flex-col gap-2">
                   {COLUMN_FIELDS.map((field) => (
-                     <div className="flex items-center gap-4" key={field}>
-                        <span className="text-sm font-medium w-28 shrink-0">
+                     <div
+                        className="grid grid-cols-[7rem_1fr_8rem] items-center gap-4"
+                        key={field}
+                     >
+                        <span className="text-sm font-medium shrink-0">
                            {FIELD_LABELS[field]}
                         </span>
-                        <div className="flex-1">
-                           <Combobox
-                              options={[
-                                 { value: "__none__", label: "— Não mapear —" },
-                                 ...raw.headers.map((h) => ({
-                                    value: h,
-                                    label: h,
-                                 })),
-                              ]}
-                              onValueChange={(v) =>
-                                 onMappingChange({
-                                    ...mapping,
-                                    [field]: v === "__none__" ? "" : v,
-                                 })
-                              }
-                              value={mapping[field] || "__none__"}
-                           />
-                        </div>
+                        <Combobox
+                           options={[
+                              { value: "__none__", label: "— Não mapear —" },
+                              ...raw.headers.map((h) => ({
+                                 value: h,
+                                 label: h,
+                              })),
+                           ]}
+                           onValueChange={(v) =>
+                              onMappingChange({
+                                 ...mapping,
+                                 [field]: v === "__none__" ? "" : v,
+                              })
+                           }
+                           value={mapping[field] || "__none__"}
+                        />
+                        <p className="text-xs text-muted-foreground truncate">
+                           {mapping[field]
+                              ? getSampleValues(raw, mapping[field])
+                              : ""}
+                        </p>
                      </div>
                   ))}
                </div>
@@ -842,6 +889,7 @@ function ImportWizard({
       amount: "",
       description: "",
    });
+   const [savedMappingApplied, setSavedMappingApplied] = useState(false);
 
    function handleFileReady(
       parsedRows: ValidatedRow[],
@@ -851,8 +899,20 @@ function ImportWizard({
       setFormat(fmt);
       if (raw) {
          setRawData(raw);
-         const guessed = guessMapping(raw.headers);
-         setMapping((prev) => ({ ...prev, ...guessed }));
+         const saved = localStorage.getItem(mappingStorageKey(raw.headers));
+         if (saved) {
+            try {
+               const parsed: ColumnMapping = JSON.parse(saved);
+               setMapping((prev) => ({ ...prev, ...parsed }));
+               setSavedMappingApplied(true);
+            } catch {
+               const guessed = guessMapping(raw.headers);
+               setMapping((prev) => ({ ...prev, ...guessed }));
+            }
+         } else {
+            const guessed = guessMapping(raw.headers);
+            setMapping((prev) => ({ ...prev, ...guessed }));
+         }
       }
       if (parsedRows.length > 0) setRows(parsedRows);
    }
@@ -886,8 +946,19 @@ function ImportWizard({
                mapping={mapping}
                methods={methods}
                raw={rawData}
+               savedMappingApplied={savedMappingApplied}
                onApply={setRows}
                onMappingChange={setMapping}
+               onDismissSavedMapping={() => {
+                  setSavedMappingApplied(false);
+                  setMapping({
+                     date: "",
+                     name: "",
+                     type: "",
+                     amount: "",
+                     description: "",
+                  });
+               }}
             />
          )}
          {currentId === "preview" && (
