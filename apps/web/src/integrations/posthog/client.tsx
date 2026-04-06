@@ -1,8 +1,7 @@
 import { isClientProduction } from "@core/environment/helpers";
 import type { PublicEnv } from "@/integrations/public-env";
-import posthog, { type PostHog } from "posthog-js";
+import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
-import { createClientOnlyFn } from "@tanstack/react-start";
 
 export type EarlyAccessStage =
    | "alpha"
@@ -32,8 +31,6 @@ export function normalizeEarlyAccessStage(
    }
    return "beta";
 }
-
-export const getPosthogClient = createClientOnlyFn((): PostHog => posthog);
 
 function getReactPosthogConfig(env: PublicEnv) {
    return {
