@@ -1,12 +1,13 @@
 import { of as moneyOf, toMajorUnitsString } from "@f-o-t/money";
 import { parseBufferOrThrow as parseOfx, getTransactions } from "@f-o-t/ofx";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { useCallback, useState } from "react";
 import { useLocalStorage } from "foxact/use-local-storage";
 import { orpc } from "@/integrations/orpc/client";
+import { useCnpj } from "@/hooks/use-cnpj";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 
@@ -291,21 +292,7 @@ export function useStatementImport({
       orpc.transactions.checkDuplicates.mutationOptions({}),
    );
 
-   const { data: teamData } = useSuspenseQuery(
-      orpc.team.get.queryOptions({ input: { teamId } }),
-   );
-
-   const cnpjData = teamData?.cnpjData as
-      | { data_inicio_atividade?: string }
-      | null
-      | undefined;
-   const minImportDate: string | null = (() => {
-      const raw = cnpjData?.data_inicio_atividade;
-      if (!raw) return null;
-      const d = dayjs(raw, "DD/MM/YYYY", true);
-      if (d.isValid()) return d.format("YYYY-MM-DD");
-      return parseDate(raw);
-   })();
+   const { minDateStr: minImportDate } = useCnpj(teamId);
 
    const [, setSavedMapping] = useLocalStorage<ColumnMapping>(
       rawData

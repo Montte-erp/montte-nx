@@ -50,7 +50,7 @@ import { cn } from "@packages/ui/lib/utils";
 import { useMaskito } from "@maskito/react";
 import type { MaskitoOptions } from "@maskito/core";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import Color from "color";
 import dayjs from "dayjs";
 import {
@@ -63,9 +63,11 @@ import {
    TrendingUp,
    Wallet,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/integrations/orpc/client";
+import { useActiveTeam } from "@/hooks/use-active-team";
+import { useCnpj } from "@/hooks/use-cnpj";
 import { useBrazilianBanks } from "../hooks/use-brazilian-banks";
 
 type BankAccountType =
@@ -168,16 +170,8 @@ export function BankAccountForm({
    const [dateOpen, setDateOpen] = useState(false);
    const { bankOptions } = useBrazilianBanks();
 
-   const { data: onboardingStatus } = useQuery(
-      orpc.onboarding.getOnboardingStatus.queryOptions({}),
-   );
-
-   const minDate = useMemo(() => {
-      const raw = onboardingStatus?.project?.cnpjData?.data_inicio_atividade;
-      if (!raw) return undefined;
-      const d = dayjs(raw);
-      return d.isValid() ? d.toDate() : undefined;
-   }, [onboardingStatus]);
+   const { activeTeamId } = useActiveTeam();
+   const { minDate } = useCnpj(activeTeamId ?? null);
 
    const branchRef = useMaskito({ options: branchMaskOptions });
    const accountRef = useMaskito({ options: accountMaskOptions });
