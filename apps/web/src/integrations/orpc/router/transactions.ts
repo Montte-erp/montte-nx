@@ -180,7 +180,7 @@ export const importStatement = withCreditEnforcement(
                z.object({
                   name: z.string().max(500).optional(),
                   type: z.enum(["income", "expense"]),
-                  amount: z.string(),
+                  amount: z.string().regex(/^-?\d+(\.\d+)?$/),
                   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
                   description: z.string().max(1000).optional(),
                   paymentMethod: z
@@ -224,7 +224,7 @@ export const importStatement = withCreditEnforcement(
 
       try {
          const emit = createEmitFn(context.db, context.posthog);
-         emitFinanceStatementImported(
+         await emitFinanceStatementImported(
             emit,
             {
                organizationId: context.organizationId,

@@ -10,15 +10,23 @@ export function withCreditEnforcement(eventName: string) {
             eventName,
             context.redis,
          );
-      } catch {
-         throw WebAppError.forbidden(
-            "Limite do plano gratuito atingido. Faça upgrade para continuar.",
-         );
+      } catch (err) {
+         if (
+            err instanceof Error &&
+            err.message.startsWith("Free tier limit exceeded")
+         ) {
+            throw WebAppError.forbidden(
+               "Limite do plano gratuito atingido. Faça upgrade para continuar.",
+            );
+         }
+         throw err;
       }
 
       const result = await next();
 
-      await incrementUsage(context.organizationId, eventName, context.redis);
+      try {
+         await incrementUsage(context.organizationId, eventName, context.redis);
+      } catch {}
 
       return result;
    });

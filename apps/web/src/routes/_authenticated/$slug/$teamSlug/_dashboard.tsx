@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createClientOnlyFn } from "@tanstack/react-start";
 import posthog from "posthog-js";
 import { DashboardLayout } from "@/layout/dashboard/ui/dashboard-layout";
 
@@ -18,7 +19,7 @@ export const Route = createFileRoute(
          throw redirect({ to: "/onboarding" });
       }
    },
-   onEnter: ({ context }) => {
+   onEnter: createClientOnlyFn(({ context }) => {
       const { user, session } = context.session;
       posthog.identify(user.id, {
          email: user.email ?? undefined,
@@ -28,7 +29,7 @@ export const Route = createFileRoute(
       if (organizationId) {
          posthog.group("organization", organizationId);
       }
-   },
+   }),
    component: DashboardLayoutRoute,
 });
 

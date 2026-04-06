@@ -309,8 +309,14 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
       const reader = new FileReader();
       reader.onload = (ev) => {
          try {
-            const content = ev.target?.result;
-            if (typeof content !== "string") throw new Error("read error");
+            const buffer = ev.target?.result;
+            if (!(buffer instanceof ArrayBuffer)) throw new Error("read error");
+            const utf8 = new TextDecoder("utf-8", { fatal: false }).decode(
+               buffer,
+            );
+            const content = utf8.includes("\uFFFD")
+               ? new TextDecoder("windows-1252").decode(buffer)
+               : utf8;
             const doc = parseCsv(content);
             const headers = doc.headers ?? [];
             const rows = doc.rows.map((r) => r.fields);
@@ -323,7 +329,7 @@ function UploadStep({ methods, onFileReady }: UploadStepProps) {
             setIsParsing(false);
          }
       };
-      reader.readAsText(file, "utf-8");
+      reader.readAsArrayBuffer(file);
    }
 
    return (
